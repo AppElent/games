@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --club-bg: #080a12;
+  --club-panel: rgba(18, 22, 38, 0.82);
+  --club-panel-strong: rgba(25, 31, 52, 0.94);
+  --club-line: rgba(148, 163, 184, 0.18);
+  --club-text: #f8fafc;
+  --club-muted: #aab6cc;
+  --club-soft: #64748b;
+  --club-green: #34d399;
+  --club-cyan: #22d3ee;
+  --club-pink: #f472b6;
+  --club-orange: #fb923c;
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --border: oklch(0.274 0.006 286.033);
+  --ring: oklch(0.705 0.015 286.067);
+}
+
+.light {
+  --club-bg: #f8fafc;
+  --club-panel: rgba(255, 255, 255, 0.82);
+  --club-panel-strong: rgba(255, 255, 255, 0.96);
+  --club-line: rgba(15, 23, 42, 0.12);
+  --club-text: #0f172a;
+  --club-muted: #475569;
+  --club-soft: #64748b;
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+}
+
+@theme inline {
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--club-text);
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(900px 460px at 12% -8%, rgba(34, 211, 238, 0.22), transparent 58%),
+    radial-gradient(760px 420px at 88% 4%, rgba(244, 114, 182, 0.18), transparent 62%),
+    linear-gradient(180deg, #080a12 0%, #111827 52%, #080a12 100%);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.light body {
+  background:
+    radial-gradient(900px 460px at 12% -8%, rgba(34, 211, 238, 0.2), transparent 58%),
+    radial-gradient(760px 420px at 88% 4%, rgba(244, 114, 182, 0.16), transparent 62%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 52%, #f8fafc 100%);
+}
+
+a {
+  color: inherit;
+}
+
+button,
+a {
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+button {
+  font: inherit;
+}
+
+.club-wrap {
+  width: min(1180px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.club-panel {
+  border: 1px solid var(--club-line);
+  background: linear-gradient(160deg, var(--club-panel-strong), var(--club-panel));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(14px);
+}
+
+.club-title {
+  font-family: var(--font-display);
+  letter-spacing: 0;
+}
+
+.club-kicker {
+  color: var(--club-green);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.club-nav-link {
+  color: var(--club-muted);
+  text-decoration: none;
+}
+
+.club-nav-link:hover,
+.club-nav-link.is-active {
+  color: var(--club-text);
+}
+
+code {
+  border: 1px solid var(--club-line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.12rem 0.35rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+}
