@@ -8,8 +8,10 @@
  * @module
  */
 
+import type * as backgammon from "../backgammon.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_codes from "../lib/codes.js";
+import type * as quiz from "../quiz.js";
 import type * as sessions from "../sessions.js";
 
 import type {
@@ -19,8 +21,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  backgammon: typeof backgammon;
   "lib/auth": typeof lib_auth;
   "lib/codes": typeof lib_codes;
+  quiz: typeof quiz;
   sessions: typeof sessions;
 }>;
 

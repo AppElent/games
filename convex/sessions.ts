@@ -107,6 +107,93 @@ export const joinByCode = mutation({
 	},
 });
 
+export const joinByToken = mutation({
+	args: {
+		shareToken: v.string(),
+		displayName: v.string(),
+		guestId: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const session = await ctx.db
+			.query("gameSessions")
+			.withIndex("by_shareToken", (q) => q.eq("shareToken", args.shareToken))
+			.unique();
+		if (
+			!session ||
+			session.status === "completed" ||
+			session.status === "cancelled"
+		) {
+			throw new Error("Game is unavailable");
+		}
+		const userId = await getOptionalUserId(ctx);
+		if (session.authPolicy === "signedInRequired" && !userId) {
+			throw new Error("Sign in required to join this game");
+		}
+
+		const existingByUser = userId
+			? await ctx.db
+					.query("sessionParticipants")
+					.withIndex("by_user", (q) => q.eq("userId", userId))
+					.collect()
+			: [];
+		const existingByGuest =
+			!userId && args.guestId
+				? await ctx.db
+						.query("sessionParticipants")
+						.withIndex("by_guest", (q) => q.eq("guestId", args.guestId))
+						.collect()
+				: [];
+		const existing = [...existingByUser, ...existingByGuest].find(
+			(participant) => participant.sessionId === session._id,
+		);
+
+		const participantId =
+			existing?._id ??
+			(await ctx.db.insert("sessionParticipants", {
+				sessionId: session._id,
+				userId,
+				guestId: userId ? undefined : args.guestId,
+				displayName: args.displayName,
+				role: "player",
+				connected: true,
+				lastSeen: Date.now(),
+			}));
+
+		if (existing) {
+			await ctx.db.patch(existing._id, {
+				connected: true,
+				lastSeen: Date.now(),
+			});
+		}
+
+		if (session.gameType === "backgammon") {
+			const state = await ctx.db
+				.query("backgammonStates")
+				.withIndex("by_session", (q) => q.eq("sessionId", session._id))
+				.unique();
+			if (state) {
+				if (
+					state.blackParticipantId &&
+					state.blackParticipantId !== participantId
+				) {
+					throw new Error("This challenge already has an opponent");
+				}
+				if (state.whiteParticipantId === participantId) {
+					await ctx.db.patch(participantId, { seat: "white" });
+				} else {
+					await ctx.db.patch(participantId, { seat: "black" });
+					await ctx.db.patch(state._id, {
+						blackParticipantId: participantId,
+						phase: "ready",
+					});
+				}
+			}
+		}
+
+		return { sessionId: session._id, participantId, gameType: session.gameType };
+	},
+});
+
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
