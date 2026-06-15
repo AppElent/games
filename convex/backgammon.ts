@@ -1,6 +1,61 @@
 import { v } from "convex/values";
-import { createInitialBackgammonState } from "../src/lib/games/backgammon";
+import {
+	applyBackgammonPrototypeMove,
+	createInitialBackgammonState,
+	rollBackgammonDice,
+	switchBackgammonColor,
+	type BackgammonColor,
+	type BackgammonMoveDestination,
+	type BackgammonMoveSource,
+} from "../src/lib/games/backgammon";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+
+async function getBackgammonState(
+	ctx: MutationCtx,
+	sessionId: Id<"gameSessions">,
+) {
+	const session = await ctx.db.get(sessionId);
+	if (!session || session.gameType !== "backgammon") {
+		throw new Error("Backgammon session not found");
+	}
+	const state = await ctx.db
+		.query("backgammonGameStates")
+		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+		.unique();
+	if (!state) {
+		throw new Error("Backgammon game not found");
+	}
+	return state;
+}
+
+function getParticipantColor(
+	state: Doc<"backgammonGameStates">,
+	participantId: Id<"sessionParticipants">,
+): BackgammonColor {
+	if (state.whiteParticipantId === participantId) {
+		return "white";
+	}
+	if (state.blackParticipantId === participantId) {
+		return "black";
+	}
+	throw new Error("It is not your turn");
+}
+
+function requireActiveParticipant(
+	state: Doc<"backgammonGameStates">,
+	participantId: Id<"sessionParticipants">,
+): BackgammonColor {
+	if (!state.whiteParticipantId || !state.blackParticipantId) {
+		throw new Error("Waiting for both players");
+	}
+	const color = getParticipantColor(state, participantId);
+	if (state.activeColor !== color) {
+		throw new Error("It is not your turn");
+	}
+	return color;
+}
 
 export const createState = mutation({
 	args: {
@@ -38,6 +93,112 @@ export const createState = mutation({
 	},
 });
 
+export const rollDice = mutation({
+	args: {
+		sessionId: v.id("gameSessions"),
+		participantId: v.id("sessionParticipants"),
+	},
+	handler: async (ctx, args) => {
+		const state = await getBackgammonState(ctx, args.sessionId);
+		const color = requireActiveParticipant(state, args.participantId);
+		const now = Date.now();
+		const dice = rollBackgammonDice();
+		await ctx.db.patch(state._id, {
+			phase: "active",
+			dice,
+			usedDice: [],
+			updatedAt: now,
+		});
+		const session = await ctx.db.get(args.sessionId);
+		await ctx.db.patch(args.sessionId, {
+			status: "active",
+			startedAt: session?.startedAt ?? now,
+		});
+		await ctx.db.insert("backgammonMoves", {
+			sessionId: args.sessionId,
+			participantId: args.participantId,
+			moveType: "roll",
+			color,
+			dice,
+			createdAt: now,
+		});
+		return dice;
+	},
+});
+
+export const applyMove = mutation({
+	args: {
+		sessionId: v.id("gameSessions"),
+		participantId: v.id("sessionParticipants"),
+		from: v.union(v.number(), v.literal("bar")),
+		to: v.union(v.number(), v.literal("off")),
+	},
+	handler: async (ctx, args) => {
+		const state = await getBackgammonState(ctx, args.sessionId);
+		const color = requireActiveParticipant(state, args.participantId);
+		const now = Date.now();
+		const result = applyBackgammonPrototypeMove(
+			{
+				points: state.points,
+				bar: state.bar,
+				off: state.off,
+				activeColor: state.activeColor,
+				dice: state.dice,
+				usedDice: state.usedDice,
+			},
+			{
+				color,
+				from: args.from as BackgammonMoveSource,
+				to: args.to as BackgammonMoveDestination,
+			},
+		);
+
+		await ctx.db.patch(state._id, {
+			points: result.state.points,
+			bar: result.state.bar,
+			off: result.state.off,
+			usedDice: result.state.usedDice,
+			updatedAt: now,
+		});
+		await ctx.db.insert("backgammonMoves", {
+			sessionId: args.sessionId,
+			participantId: args.participantId,
+			moveType: "move",
+			color,
+			from: args.from,
+			to: args.to,
+			dice: result.usedDie === undefined ? [] : [result.usedDie],
+			createdAt: now,
+		});
+	},
+});
+
+export const endTurn = mutation({
+	args: {
+		sessionId: v.id("gameSessions"),
+		participantId: v.id("sessionParticipants"),
+	},
+	handler: async (ctx, args) => {
+		const state = await getBackgammonState(ctx, args.sessionId);
+		const color = requireActiveParticipant(state, args.participantId);
+		const now = Date.now();
+		await ctx.db.patch(state._id, {
+			activeColor: switchBackgammonColor(state.activeColor),
+			dice: [],
+			usedDice: [],
+			updatedAt: now,
+		});
+		await ctx.db.insert("backgammonMoves", {
+			sessionId: args.sessionId,
+			participantId: args.participantId,
+			moveType: "endTurn",
+			color,
+			dice: [],
+			createdAt: now,
+		});
+	},
+});
+
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
@@ -53,6 +214,10 @@ export const getBundle = query({
 			.query("backgammonGameStates")
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.unique();
-		return { session, participants, state };
+		const moves = await ctx.db
+			.query("backgammonMoves")
+			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+			.collect();
+		return { session, participants, state, moves };
 	},
 });
