@@ -101,6 +101,9 @@ export const rollDice = mutation({
 	handler: async (ctx, args) => {
 		const state = await getBackgammonState(ctx, args.sessionId);
 		const color = requireActiveParticipant(state, args.participantId);
+		if (state.dice.length > 0) {
+			throw new Error("End your turn before rolling again");
+		}
 		const now = Date.now();
 		const dice = rollBackgammonDice();
 		await ctx.db.patch(state._id, {
@@ -181,6 +184,9 @@ export const endTurn = mutation({
 	handler: async (ctx, args) => {
 		const state = await getBackgammonState(ctx, args.sessionId);
 		const color = requireActiveParticipant(state, args.participantId);
+		if (state.dice.length === 0) {
+			throw new Error("Roll before ending your turn");
+		}
 		const now = Date.now();
 		await ctx.db.patch(state._id, {
 			activeColor: switchBackgammonColor(state.activeColor),
