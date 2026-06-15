@@ -18,7 +18,7 @@ async function getBackgammonState(
 ) {
 	const session = await ctx.db.get(sessionId);
 	if (!session || session.gameType !== "backgammon") {
-		throw new Error("Backgammon session not found");
+		throw new Error("Backgammon game not found");
 	}
 	const state = await ctx.db
 		.query("backgammonGameStates")
