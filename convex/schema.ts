@@ -57,6 +57,35 @@ export const quizQuestionValidator = v.object({
 	points: v.number(),
 });
 
+export const backgammonColorValidator = v.union(
+	v.literal("white"),
+	v.literal("black"),
+);
+
+export const backgammonPhaseValidator = v.union(
+	v.literal("waiting"),
+	v.literal("ready"),
+	v.literal("active"),
+	v.literal("finished"),
+);
+
+export const backgammonMoveTypeValidator = v.union(
+	v.literal("roll"),
+	v.literal("move"),
+	v.literal("endTurn"),
+);
+
+export const backgammonPointValidator = v.object({
+	point: v.number(),
+	color: v.optional(backgammonColorValidator),
+	count: v.number(),
+});
+
+export const backgammonCountersValidator = v.object({
+	white: v.number(),
+	black: v.number(),
+});
+
 export default defineSchema({
 	gameSessions: defineTable({
 		gameType: gameTypeValidator,
@@ -126,20 +155,36 @@ export default defineSchema({
 		.index("by_session_question", ["sessionId", "questionId"])
 		.index("by_participant", ["participantId"]),
 
-	backgammonStates: defineTable({
+	backgammonGameStates: defineTable({
 		sessionId: v.id("gameSessions"),
-		phase: v.union(
-			v.literal("waiting"),
-			v.literal("ready"),
-			v.literal("active"),
-			v.literal("finished"),
-		),
+		phase: backgammonPhaseValidator,
 		whiteParticipantId: v.optional(v.id("sessionParticipants")),
 		blackParticipantId: v.optional(v.id("sessionParticipants")),
+		activeColor: backgammonColorValidator,
+		points: v.array(backgammonPointValidator),
+		bar: backgammonCountersValidator,
+		off: backgammonCountersValidator,
+		dice: v.array(v.number()),
+		usedDice: v.array(v.number()),
 		winnerParticipantId: v.optional(v.id("sessionParticipants")),
-		moveLog: v.array(v.string()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
 	})
 		.index("by_session", ["sessionId"])
 		.index("by_white", ["whiteParticipantId"])
-		.index("by_black", ["blackParticipantId"]),
+		.index("by_black", ["blackParticipantId"])
+		.index("by_phase", ["phase"]),
+
+	backgammonMoves: defineTable({
+		sessionId: v.id("gameSessions"),
+		participantId: v.id("sessionParticipants"),
+		moveType: backgammonMoveTypeValidator,
+		color: backgammonColorValidator,
+		from: v.optional(v.union(v.number(), v.literal("bar"))),
+		to: v.optional(v.union(v.number(), v.literal("off"))),
+		dice: v.array(v.number()),
+		createdAt: v.number(),
+	})
+		.index("by_session", ["sessionId"])
+		.index("by_participant", ["participantId"]),
 });

@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { createInitialBackgammonState } from "../src/lib/games/backgammon";
 import { mutation, query } from "./_generated/server";
 
 export const createState = mutation({
@@ -12,18 +13,27 @@ export const createState = mutation({
 			throw new Error("Backgammon session not found");
 		}
 		const existing = await ctx.db
-			.query("backgammonStates")
+			.query("backgammonGameStates")
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.unique();
 		if (existing) {
 			return existing._id;
 		}
+		const now = Date.now();
+		const initialState = createInitialBackgammonState();
 		await ctx.db.patch(args.hostParticipantId, { seat: "white" });
-		return await ctx.db.insert("backgammonStates", {
+		return await ctx.db.insert("backgammonGameStates", {
 			sessionId: args.sessionId,
 			phase: "waiting",
 			whiteParticipantId: args.hostParticipantId,
-			moveLog: ["Challenge created"],
+			activeColor: initialState.activeColor,
+			points: initialState.points,
+			bar: initialState.bar,
+			off: initialState.off,
+			dice: initialState.dice,
+			usedDice: initialState.usedDice,
+			createdAt: now,
+			updatedAt: now,
 		});
 	},
 });
@@ -40,7 +50,7 @@ export const getBundle = query({
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.collect();
 		const state = await ctx.db
-			.query("backgammonStates")
+			.query("backgammonGameStates")
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.unique();
 		return { session, participants, state };

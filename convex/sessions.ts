@@ -168,7 +168,7 @@ export const joinByToken = mutation({
 
 		if (session.gameType === "backgammon") {
 			const state = await ctx.db
-				.query("backgammonStates")
+				.query("backgammonGameStates")
 				.withIndex("by_session", (q) => q.eq("sessionId", session._id))
 				.unique();
 			if (state) {
@@ -185,6 +185,7 @@ export const joinByToken = mutation({
 					await ctx.db.patch(state._id, {
 						blackParticipantId: participantId,
 						phase: "ready",
+						updatedAt: Date.now(),
 					});
 				}
 			}
