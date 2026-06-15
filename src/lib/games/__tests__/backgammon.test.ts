@@ -86,6 +86,22 @@ describe("backgammon prototype helpers", () => {
 		).toThrow("Roll before moving");
 	});
 
+	it("rejects moving after all dice are used", () => {
+		const state = {
+			...createInitialBackgammonState(),
+			dice: [3],
+			usedDice: [3],
+		};
+
+		expect(() =>
+			applyBackgammonPrototypeMove(state, {
+				color: "white",
+				from: 24,
+				to: 23,
+			}),
+		).toThrow("Roll before moving");
+	});
+
 	it("rejects moving from an empty or opponent point", () => {
 		const state = {
 			...createInitialBackgammonState(),
@@ -106,6 +122,23 @@ describe("backgammon prototype helpers", () => {
 				to: 2,
 			}),
 		).toThrow("Choose a point with your checker");
+	});
+
+	it("rejects moving to an opponent-occupied point without mutating caller state", () => {
+		const state = {
+			...createInitialBackgammonState(),
+			dice: [6],
+		};
+
+		expect(() =>
+			applyBackgammonPrototypeMove(state, {
+				color: "white",
+				from: 24,
+				to: 1,
+			}),
+		).toThrow("Invalid destination");
+		expect(countBackgammonCheckers(state, "white")).toBe(15);
+		expect(countBackgammonCheckers(state, "black")).toBe(15);
 	});
 
 	it("switches active colors", () => {

@@ -103,6 +103,11 @@ export function applyBackgammonPrototypeMove(
 		throw new Error("Roll before moving");
 	}
 
+	const usedDie = state.dice[state.usedDice.length];
+	if (usedDie === undefined) {
+		throw new Error("Roll before moving");
+	}
+
 	const points = state.points.map((point) => ({ ...point }));
 	const nextState: BackgammonPrototypeState = {
 		points,
@@ -116,10 +121,7 @@ export function applyBackgammonPrototypeMove(
 	removeSourceChecker(nextState, move);
 	addDestinationChecker(nextState, move);
 
-	const usedDie = state.dice.find((die, index) => index >= state.usedDice.length);
-	if (usedDie !== undefined) {
-		nextState.usedDice = [...state.usedDice, usedDie];
-	}
+	nextState.usedDice = [...state.usedDice, usedDie];
 
 	return { state: nextState, usedDie };
 }
@@ -157,6 +159,9 @@ function addDestinationChecker(
 
 	const destination = getBackgammonPoint(state, move.to);
 	if (!destination) {
+		throw new Error("Invalid destination");
+	}
+	if (destination.color && destination.color !== move.color) {
 		throw new Error("Invalid destination");
 	}
 	destination.color = move.color;
