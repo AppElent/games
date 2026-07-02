@@ -1,0 +1,24 @@
+# Supply-chain hardening: default-deny install/build lifecycle scripts,
+# only allow packages that genuinely compile a native binary at install time.
+allowBuilds:
+  esbuild: true # vite/tailwind bundler binary
+  lightningcss: true # tailwindcss v4 CSS transform binary
+  sharp: true # image processing binary (transitive, wrangler/miniflare tooling)
+  workerd: true # Cloudflare Workers runtime binary used by wrangler/miniflare dev server
+  '@clerk/shared': false
+  '@google/genai': false
+  protobufjs: false
+
+minimumReleaseAge: 4320 # 3 days — blocks the worm/account-takeover window
+minimumReleaseAgeExclude:
+  - "@appelent/*" # our own registry, always trusted
+
+overrides:
+  # GHSA-96hv-2xvq-fx4p — ws memory exhaustion DoS below 8.21.0, pulled in
+  # transitively by wrangler/miniflare's dev server (@cloudflare/vite-plugin,
+  # wrangler, convex, @tanstack/devtools-*, @google/genai).
+  ws: ">=8.21.0"
+  # GHSA-vmh5-mc38-953g, GHSA-vxpw-j846-p89q, GHSA-35p6-xmwp-9g52, GHSA-g8m3-5g58-fq7m
+  # — undici TLS/SSRF/DoS/cookie issues below 7.28.0, pulled in transitively by
+  # wrangler/miniflare and jsdom.
+  undici: ">=7.28.0"
