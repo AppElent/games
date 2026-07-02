@@ -1,3 +1,4 @@
+import { THEME_INIT_SCRIPT, ThemeSync } from "@appelent/auth";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -46,10 +47,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 		<html lang="en" suppressHydrationWarning>
 			<head>
 				<HeadContent />
+				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: static pre-paint script, no user input */}
+				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
 			</head>
 			<body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-cyan-300/30">
 				<ClerkProvider>
 					<ConvexProvider>
+						<ThemeSync />
 						<Header />
 						{children}
 						<Footer />

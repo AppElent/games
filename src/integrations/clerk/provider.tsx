@@ -1,4 +1,6 @@
+import { AuthConfigProvider } from "@appelent/auth";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { authConfig } from "../../lib/auth-config";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 if (!PUBLISHABLE_KEY) {
@@ -12,7 +14,7 @@ export default function AppClerkProvider({
 }) {
 	return (
 		<ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
-			{children}
+			<AuthConfigProvider config={authConfig}>{children}</AuthConfigProvider>
 		</ClerkProvider>
 	);
 }

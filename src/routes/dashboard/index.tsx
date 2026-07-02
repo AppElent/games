@@ -1,5 +1,7 @@
-import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/clerk-react";
-import { createFileRoute } from "@tanstack/react-router";
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { authConfig } from "../../lib/auth-config";
 
 export const Route = createFileRoute("/dashboard/")({
 	component: DashboardPage,
@@ -41,4 +43,14 @@ function DashboardPage() {
 			</SignedOut>
 		</>
 	);
+}
+
+function RedirectToSignIn() {
+	const navigate = useNavigate();
+
+	useEffect(() => {
+		navigate({ to: authConfig.paths.signIn });
+	}, [navigate]);
+
+	return null;
 }

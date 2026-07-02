@@ -1,6 +1,6 @@
+import { HeaderUser } from "@appelent/auth";
 import { Link } from "@tanstack/react-router";
 import { Gamepad2 } from "lucide-react";
-import ClerkHeader from "../integrations/clerk/header-user.tsx";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
@@ -34,7 +34,7 @@ export default function Header() {
 				</div>
 
 				<div className="ml-auto flex items-center gap-2">
-					<ClerkHeader />
+					<HeaderUser />
 					<ThemeToggle />
 				</div>
 			</nav>
