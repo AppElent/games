@@ -65,7 +65,7 @@ export function QuizPlayerView({
 		);
 	}
 
-	if (!question || state?.phase === "lobby") {
+	if (!state || !question || state.phase === "lobby") {
 		return (
 			<section className="club-panel max-w-md rounded-lg p-6 text-center">
 				<p className="club-kicker mb-3">You are in</p>
