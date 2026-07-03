@@ -51,6 +51,13 @@ function JoinPage() {
 							);
 							window.location.href = `/quiz/${result.sessionId}/play?participantId=${result.participantId}`;
 						}
+						if (result.gameType === "hitster") {
+							window.sessionStorage.setItem(
+								"arcade-club.participantId",
+								result.participantId,
+							);
+							window.location.href = `/hitster/${result.sessionId}/play?participantId=${result.participantId}`;
+						}
 						if (result.gameType === "backgammon") {
 							window.sessionStorage.setItem(
 								"arcade-club.participantId",

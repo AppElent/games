@@ -104,6 +104,71 @@ export const sudokuStatusValidator = v.union(
 	v.literal("completed"),
 );
 
+export const hitsterModeValidator = v.union(
+	v.literal("instant"),
+	v.literal("original"),
+	v.literal("pro"),
+	v.literal("expert"),
+	v.literal("coop"),
+);
+
+export const hitsterPhaseValidator = v.union(
+	v.literal("lobby"),
+	v.literal("nowPlaying"),
+	v.literal("reveal"),
+	v.literal("finished"),
+);
+
+export const hitsterPlaybackModeValidator = v.union(
+	v.literal("hostDevice"),
+	v.literal("preview"),
+);
+
+export const hitsterGuessValidator = v.object({
+	participantId: v.id("sessionParticipants"),
+	dropIndex: v.number(),
+	artistGuess: v.optional(v.string()),
+	titleGuess: v.optional(v.string()),
+	yearGuess: v.optional(v.number()),
+	submittedAt: v.number(),
+});
+
+export const hitsterTimelineValidator = v.object({
+	// Undefined participantId marks the shared cooperative timeline.
+	participantId: v.optional(v.id("sessionParticipants")),
+	cardIds: v.array(v.string()),
+});
+
+export const hitsterTokensValidator = v.object({
+	participantId: v.id("sessionParticipants"),
+	tokens: v.number(),
+});
+
+export const hitsterRecapValidator = v.object({
+	roundNumber: v.number(),
+	cardId: v.string(),
+	activeParticipantId: v.id("sessionParticipants"),
+	placementCorrect: v.boolean(),
+	artistCorrect: v.optional(v.boolean()),
+	titleCorrect: v.optional(v.boolean()),
+	yearCorrect: v.optional(v.boolean()),
+	cardWonByParticipantId: v.optional(v.id("sessionParticipants")),
+	cardWonByTeam: v.optional(v.boolean()),
+	tokenChanges: v.array(
+		v.object({
+			participantId: v.optional(v.id("sessionParticipants")),
+			delta: v.number(),
+		}),
+	),
+	stealResults: v.array(
+		v.object({
+			participantId: v.id("sessionParticipants"),
+			correct: v.boolean(),
+			wonCard: v.boolean(),
+		}),
+	),
+});
+
 export default defineSchema({
 	gameSessions: defineTable({
 		gameType: gameTypeValidator,
@@ -209,6 +274,32 @@ export default defineSchema({
 		autoCleanup: v.boolean(),
 		elapsedSeconds: v.number(),
 		lastResumedAt: v.optional(v.number()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	}).index("by_session", ["sessionId"]),
+
+	hitsterGameStates: defineTable({
+		sessionId: v.id("gameSessions"),
+		mode: hitsterModeValidator,
+		packId: v.string(),
+		targetCards: v.number(),
+		turnTimerSeconds: v.optional(v.number()),
+		playbackMode: hitsterPlaybackModeValidator,
+		phase: hitsterPhaseValidator,
+		deck: v.array(v.string()),
+		roundNumber: v.number(),
+		currentCardId: v.optional(v.string()),
+		roundStartedAt: v.optional(v.number()),
+		turnOrder: v.array(v.id("sessionParticipants")),
+		activeIndex: v.number(),
+		timelines: v.array(hitsterTimelineValidator),
+		tokens: v.array(hitsterTokensValidator),
+		coopTokens: v.optional(v.number()),
+		pendingGuess: v.optional(hitsterGuessValidator),
+		stealClaims: v.array(hitsterGuessValidator),
+		lastRecap: v.optional(hitsterRecapValidator),
+		coopResult: v.optional(v.union(v.literal("won"), v.literal("lost"))),
+		winnerParticipantId: v.optional(v.id("sessionParticipants")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	}).index("by_session", ["sessionId"]),
