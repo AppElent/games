@@ -23,6 +23,7 @@ import { Route as SudokuSessionIdRouteImport } from './routes/sudoku/$sessionId'
 import { Route as QuizNewRouteImport } from './routes/quiz/new'
 import { Route as GamesGameTypeRouteImport } from './routes/games/$gameType'
 import { Route as BackgammonNewRouteImport } from './routes/backgammon/new'
+import { Route as BackgammonLocalRouteImport } from './routes/backgammon/local'
 import { Route as BackgammonSessionIdRouteImport } from './routes/backgammon/$sessionId'
 import { Route as QuizSessionIdPlayRouteImport } from './routes/quiz/$sessionId/play'
 import { Route as QuizSessionIdHostRouteImport } from './routes/quiz/$sessionId/host'
@@ -97,6 +98,11 @@ const BackgammonNewRoute = BackgammonNewRouteImport.update({
   path: '/backgammon/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BackgammonLocalRoute = BackgammonLocalRouteImport.update({
+  id: '/backgammon/local',
+  path: '/backgammon/local',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BackgammonSessionIdRoute = BackgammonSessionIdRouteImport.update({
   id: '/backgammon/$sessionId',
   path: '/backgammon/$sessionId',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
+  '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/quiz/new': typeof QuizNewRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
+  '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/quiz/new': typeof QuizNewRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
+  '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/quiz/new': typeof QuizNewRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/backgammon/$sessionId'
+    | '/backgammon/local'
     | '/backgammon/new'
     | '/games/$gameType'
     | '/quiz/new'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/backgammon/$sessionId'
+    | '/backgammon/local'
     | '/backgammon/new'
     | '/games/$gameType'
     | '/quiz/new'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/backgammon/$sessionId'
+    | '/backgammon/local'
     | '/backgammon/new'
     | '/games/$gameType'
     | '/quiz/new'
@@ -240,6 +252,7 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   BackgammonSessionIdRoute: typeof BackgammonSessionIdRoute
+  BackgammonLocalRoute: typeof BackgammonLocalRoute
   BackgammonNewRoute: typeof BackgammonNewRoute
   GamesGameTypeRoute: typeof GamesGameTypeRoute
   QuizNewRoute: typeof QuizNewRoute
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BackgammonNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/backgammon/local': {
+      id: '/backgammon/local'
+      path: '/backgammon/local'
+      fullPath: '/backgammon/local'
+      preLoaderRoute: typeof BackgammonLocalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/backgammon/$sessionId': {
       id: '/backgammon/$sessionId'
       path: '/backgammon/$sessionId'
@@ -384,6 +404,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   BackgammonSessionIdRoute: BackgammonSessionIdRoute,
+  BackgammonLocalRoute: BackgammonLocalRoute,
   BackgammonNewRoute: BackgammonNewRoute,
   GamesGameTypeRoute: GamesGameTypeRoute,
   QuizNewRoute: QuizNewRoute,
