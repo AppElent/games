@@ -6,6 +6,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["run", "dev:watch"],
       "port": 3000
+    },
+    {
+      "name": "Vite only",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "vite", "dev", "--port", "3210"],
+      "port": 3210
     }
   ]
 }
