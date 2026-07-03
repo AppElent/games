@@ -1,7 +1,9 @@
 import { v } from "convex/values";
 import {
-	applyBackgammonPrototypeMove,
+	applyBackgammonMove,
+	computeUsedFlags,
 	createInitialBackgammonState,
+	getBackgammonWinner,
 	rollBackgammonDice,
 	switchBackgammonColor,
 	type BackgammonColor,
@@ -47,6 +49,9 @@ function requireActiveParticipant(
 	state: Doc<"backgammonGameStates">,
 	participantId: Id<"sessionParticipants">,
 ): BackgammonColor {
+	if (state.phase === "finished") {
+		throw new Error("This match is already finished");
+	}
 	if (!state.whiteParticipantId || !state.blackParticipantId) {
 		throw new Error("Waiting for both players");
 	}
@@ -86,7 +91,7 @@ export const createState = mutation({
 			bar: initialState.bar,
 			off: initialState.off,
 			dice: initialState.dice,
-			usedDice: initialState.usedDice,
+			usedDice: [],
 			createdAt: now,
 			updatedAt: now,
 		});
@@ -140,14 +145,14 @@ export const applyMove = mutation({
 		const state = await getBackgammonState(ctx, args.sessionId);
 		const color = requireActiveParticipant(state, args.participantId);
 		const now = Date.now();
-		const result = applyBackgammonPrototypeMove(
+		const result = applyBackgammonMove(
 			{
 				points: state.points,
 				bar: state.bar,
 				off: state.off,
 				activeColor: state.activeColor,
 				dice: state.dice,
-				usedDice: state.usedDice,
+				used: computeUsedFlags(state.dice, state.usedDice),
 			},
 			{
 				color,
@@ -156,13 +161,26 @@ export const applyMove = mutation({
 			},
 		);
 
+		const winner = getBackgammonWinner(result.state.off);
 		await ctx.db.patch(state._id, {
 			points: result.state.points,
 			bar: result.state.bar,
 			off: result.state.off,
-			usedDice: result.state.usedDice,
+			usedDice: [...state.usedDice, result.usedDie],
 			updatedAt: now,
+			...(winner
+				? {
+						phase: "finished" as const,
+						winnerParticipantId: args.participantId,
+					}
+				: {}),
 		});
+		if (winner) {
+			await ctx.db.patch(args.sessionId, {
+				status: "completed",
+				endedAt: now,
+			});
+		}
 		await ctx.db.insert("backgammonMoves", {
 			sessionId: args.sessionId,
 			participantId: args.participantId,
@@ -170,7 +188,7 @@ export const applyMove = mutation({
 			color,
 			from: args.from,
 			to: args.to,
-			dice: result.usedDie === undefined ? [] : [result.usedDie],
+			dice: [result.usedDie],
 			createdAt: now,
 		});
 	},

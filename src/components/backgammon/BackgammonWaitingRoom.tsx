@@ -1,18 +1,25 @@
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
+import {
+	BackgammonBoard,
+	type BackgammonBoardOptions,
+	type BackgammonOptionKey,
+} from "#/components/backgammon/BackgammonBoard";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import type {
-	BackgammonColor,
-	BackgammonMoveDestination,
-	BackgammonMoveSource,
-	BackgammonPoint,
+import {
+	applyBackgammonPlan,
+	type BackgammonColor,
+	type BackgammonMoveDestination,
+	type BackgammonMovePlan,
+	type BackgammonMoveSource,
+	type BackgammonPoint,
+	type BackgammonTurnState,
+	computeUsedFlags,
 } from "#/lib/games/backgammon";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { BackgammonBoard } from "./BackgammonBoard";
-import { BackgammonControls } from "./BackgammonControls";
 import { BackgammonMoveLog } from "./BackgammonMoveLog";
 
 type Participant = {
@@ -34,6 +41,7 @@ type Bundle = {
 		phase: "waiting" | "ready" | "active" | "finished";
 		whiteParticipantId?: Id<"sessionParticipants">;
 		blackParticipantId?: Id<"sessionParticipants">;
+		winnerParticipantId?: Id<"sessionParticipants">;
 		activeColor: BackgammonColor;
 		points: BackgammonPoint[];
 		bar: { white: number; black: number };
@@ -63,8 +71,13 @@ export function BackgammonWaitingRoom({
 	const applyMove = useMutation(api.backgammon.applyMove);
 	const endTurn = useMutation(api.backgammon.endTurn);
 	const [participantId, setParticipantId] = useState<string>();
-	const [selectedSource, setSelectedSource] = useState<BackgammonMoveSource>();
 	const [error, setError] = useState("");
+	const [options, setOptions] = useState<BackgammonBoardOptions>({
+		showNumbers: true,
+		autoRoll: false,
+		autoSwitchTurn: true,
+		autoCombine: true,
+	});
 
 	useEffect(() => {
 		setParticipantId(
@@ -78,22 +91,34 @@ export function BackgammonWaitingRoom({
 	const black = bundle.participants.find(
 		(participant) => participant._id === bundle.state?.blackParticipantId,
 	);
-	const localColor =
+	const winner = bundle.participants.find(
+		(participant) => participant._id === bundle.state?.winnerParticipantId,
+	);
+	const localColor: BackgammonColor | undefined =
 		bundle.state?.whiteParticipantId === participantId
 			? "white"
 			: bundle.state?.blackParticipantId === participantId
 				? "black"
 				: undefined;
 	const opponentJoined = Boolean(bundle.state?.blackParticipantId);
-	const canAct =
+	const finished = bundle.state?.phase === "finished";
+	const myTurn =
 		Boolean(participantId) &&
 		Boolean(localColor) &&
 		bundle.state?.activeColor === localColor &&
-		Boolean(bundle.state?.blackParticipantId);
-	const canMove =
-		canAct &&
-		Boolean(bundle.state?.dice.length) &&
-		(bundle.state?.usedDice.length ?? 0) < (bundle.state?.dice.length ?? 0);
+		opponentJoined &&
+		!finished;
+
+	const turnState: BackgammonTurnState | null = bundle.state
+		? {
+				points: bundle.state.points,
+				bar: bundle.state.bar,
+				off: bundle.state.off,
+				activeColor: bundle.state.activeColor,
+				dice: bundle.state.dice,
+				used: computeUsedFlags(bundle.state.dice, bundle.state.usedDice),
+			}
+		: null;
 
 	async function handleRoll() {
 		if (!participantId) {
@@ -113,19 +138,28 @@ export function BackgammonWaitingRoom({
 		}
 	}
 
-	async function handleMove(to: BackgammonMoveDestination) {
-		if (!participantId || selectedSource === undefined) {
+	async function handlePlan(plan: BackgammonMovePlan) {
+		if (!participantId || !turnState) {
 			return;
 		}
 		setError("");
 		try {
-			await applyMove({
-				sessionId: bundle.session._id,
-				participantId: participantId as Id<"sessionParticipants">,
-				from: selectedSource,
-				to,
-			});
-			setSelectedSource(undefined);
+			for (const step of plan.steps) {
+				await applyMove({
+					sessionId: bundle.session._id,
+					participantId: participantId as Id<"sessionParticipants">,
+					from: step.from,
+					to: step.to,
+				});
+			}
+			// End the turn automatically once every die is spent.
+			const after = applyBackgammonPlan(turnState, plan);
+			if (options.autoSwitchTurn && after.used.every(Boolean)) {
+				await endTurn({
+					sessionId: bundle.session._id,
+					participantId: participantId as Id<"sessionParticipants">,
+				});
+			}
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "Could not move");
 		}
@@ -142,14 +176,17 @@ export function BackgammonWaitingRoom({
 				sessionId: bundle.session._id,
 				participantId: participantId as Id<"sessionParticipants">,
 			});
-			setSelectedSource(undefined);
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "Could not end turn");
 		}
 	}
 
+	function handleToggleOption(key: BackgammonOptionKey) {
+		setOptions((current) => ({ ...current, [key]: !current[key] }));
+	}
+
 	return (
-		<div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+		<div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
 			<section className="space-y-4">
 				<div className="club-panel rounded-lg p-5">
 					<div className="flex flex-wrap items-start justify-between gap-4">
@@ -165,13 +202,17 @@ export function BackgammonWaitingRoom({
 					</div>
 					<div className="mt-4">
 						<SeatBanner
-							tone={opponentJoined ? "success" : "warning"}
+							tone={
+								finished ? "success" : opponentJoined ? "success" : "warning"
+							}
 							label={
-								opponentJoined
-									? localColor
-										? `You are playing ${localColor}.`
-										: "Both seats are claimed."
-									: "Share the link with one opponent to claim the black seat."
+								finished
+									? `${winner?.displayName ?? "Someone"} wins the match!`
+									: opponentJoined
+										? localColor
+											? `You are playing ${localColor}.`
+											: "Both seats are claimed — you are watching."
+										: "Share the link with one opponent to claim the black seat."
 							}
 						/>
 					</div>
@@ -184,7 +225,7 @@ export function BackgammonWaitingRoom({
 									? `Bar ${bundle.state.bar.white} / Off ${bundle.state.off.white}`
 									: undefined
 							}
-							active={bundle.state?.activeColor === "white"}
+							active={!finished && bundle.state?.activeColor === "white"}
 						/>
 						<SeatCard
 							label="Black"
@@ -194,35 +235,39 @@ export function BackgammonWaitingRoom({
 									? `Bar ${bundle.state.bar.black} / Off ${bundle.state.off.black}`
 									: undefined
 							}
-							active={bundle.state?.activeColor === "black"}
+							active={!finished && bundle.state?.activeColor === "black"}
 							open={!black}
 						/>
 					</div>
+					{error ? (
+						<p className="mt-3 text-sm text-orange-200">{error}</p>
+					) : null}
 				</div>
 
-				{bundle.state ? (
-					<>
-						<BackgammonControls
-							activeColor={bundle.state.activeColor}
-							dice={bundle.state.dice}
-							usedDice={bundle.state.usedDice}
-							canAct={canAct}
-							error={error}
+				{turnState ? (
+					<div className="flex justify-center">
+						<BackgammonBoard
+							state={turnState}
+							interactive={myTurn}
+							canRoll={myTurn && turnState.dice.length === 0}
+							canEndTurn={myTurn && turnState.dice.length > 0}
+							options={options}
+							optionKeys={["showNumbers", "autoSwitchTurn", "autoCombine"]}
+							onToggleOption={handleToggleOption}
+							onPlan={handlePlan}
 							onRoll={handleRoll}
 							onEndTurn={handleEndTurn}
+							statusOverride={
+								finished
+									? `${winner?.displayName ?? "Winner"} has borne off all 15 checkers`
+									: !opponentJoined
+										? "Waiting for an opponent to join"
+										: myTurn
+											? undefined
+											: `Waiting for ${bundle.state?.activeColor === "white" ? (white?.displayName ?? "white") : (black?.displayName ?? "black")} to play`
+							}
 						/>
-						<BackgammonBoard
-							points={bundle.state.points}
-							selectedSource={selectedSource}
-							activeColor={bundle.state.activeColor}
-							canMove={canMove}
-							onSelectSource={(source) => {
-								setError("");
-								setSelectedSource(source);
-							}}
-							onSelectDestination={handleMove}
-						/>
-					</>
+					</div>
 				) : (
 					<div className="club-panel rounded-lg p-6 text-center">
 						<p className="club-kicker mb-2">Setting up</p>
