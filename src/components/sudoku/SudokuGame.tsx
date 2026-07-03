@@ -357,7 +357,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 
 	return (
 		<div className="flex flex-col items-center gap-4">
-			<div className="flex w-full max-w-[min(92vw,540px)] flex-wrap items-center justify-between gap-2">
+			<div className="flex w-full max-w-[min(94vw,600px)] flex-wrap items-center justify-between gap-2">
 				<div className="min-w-0">
 					{editingTitle ? (
 						<input
@@ -419,7 +419,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 			</div>
 
 			{status === "completed" ? (
-				<div className="w-full max-w-[min(92vw,540px)] rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-4 py-3 text-emerald-200">
+				<div className="w-full max-w-[min(94vw,600px)] rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-4 py-3 text-emerald-200">
 					<p className="font-bold">Solved! 🎉</p>
 					<p className="text-sm">
 						Completed in {formatElapsed(elapsed)}.{" "}
@@ -430,7 +430,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 				</div>
 			) : null}
 
-			<div className="relative">
+			<div className="relative w-full max-w-[min(94vw,600px)]">
 				<SudokuBoard
 					board={board}
 					selectedCell={selectedCell}
@@ -454,7 +454,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 			</div>
 
 			{hint ? (
-				<div className="w-full max-w-[min(92vw,540px)] rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+				<div className="w-full max-w-[min(94vw,600px)] rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
 					<div className="flex items-center justify-between gap-2">
 						<p className="font-bold">{hintLevel >= 2 ? hint.title : "Hint"}</p>
 						<button
@@ -503,7 +503,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 				disabled={status !== "active"}
 			/>
 
-			<div className="flex w-full max-w-[min(92vw,540px)] flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+			<div className="flex w-full max-w-[min(94vw,600px)] flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
 				<label className="inline-flex cursor-pointer items-center gap-2">
 					<input
 						type="checkbox"
@@ -532,7 +532,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 					<RotateCcw className="h-3.5 w-3.5" /> Restart
 				</button>
 			</div>
-			<p className="max-w-[min(92vw,540px)] text-center text-xs text-slate-500">
+			<p className="max-w-[min(94vw,600px)] text-center text-xs text-slate-500">
 				Keyboard: 1-9 digits · Shift+digit corner note · Ctrl+digit center note
 				· Space cycles mode · Ctrl+Z/Y undo/redo · arrows move
 			</p>

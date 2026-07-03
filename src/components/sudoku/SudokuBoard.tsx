@@ -72,7 +72,7 @@ export function SudokuBoard({
 
 	return (
 		<div
-			className={`grid aspect-square w-full max-w-[min(92vw,540px)] select-none grid-cols-9 grid-rows-9 rounded-lg border-2 border-slate-300/80 bg-slate-900 ${className}`}
+			className={`grid aspect-square w-full select-none grid-cols-9 grid-rows-9 rounded-lg border-2 border-slate-400 bg-white shadow-lg dark:border-slate-300/80 dark:bg-slate-900 ${className}`}
 		>
 			{grid.map((value, cell) => {
 				const row = rowOf(cell);
@@ -98,23 +98,27 @@ export function SudokuBoard({
 
 				const borders = [
 					col % 3 === 0
-						? "border-l-2 border-l-slate-300/70"
-						: "border-l border-l-slate-600/60",
+						? "border-l-2 border-l-slate-400 dark:border-l-slate-300/70"
+						: "border-l border-l-slate-300 dark:border-l-slate-600/60",
 					row % 3 === 0
-						? "border-t-2 border-t-slate-300/70"
-						: "border-t border-t-slate-600/60",
-					col === 8 ? "border-r-2 border-r-slate-300/70" : "",
-					row === 8 ? "border-b-2 border-b-slate-300/70" : "",
+						? "border-t-2 border-t-slate-400 dark:border-t-slate-300/70"
+						: "border-t border-t-slate-300 dark:border-t-slate-600/60",
+					col === 8
+						? "border-r-2 border-r-slate-400 dark:border-r-slate-300/70"
+						: "",
+					row === 8
+						? "border-b-2 border-b-slate-400 dark:border-b-slate-300/70"
+						: "",
 				].join(" ");
 
 				const background = isSelected
-					? "bg-sky-400/30"
+					? "bg-sky-300/60 dark:bg-sky-400/30"
 					: isHint
-						? "bg-amber-300/25"
+						? "bg-amber-300/50 dark:bg-amber-300/25"
 						: sameDigit
-							? "bg-sky-500/20"
+							? "bg-sky-400/25 dark:bg-sky-500/20"
 							: isPeer
-								? "bg-slate-700/40"
+								? "bg-slate-200 dark:bg-slate-700/40"
 								: "";
 
 				return (
@@ -128,12 +132,12 @@ export function SudokuBoard({
 					>
 						{hidden ? null : value !== 0 ? (
 							<span
-								className={`text-[clamp(1rem,4.2vw,1.75rem)] font-semibold leading-none ${
+								className={`text-[clamp(1.15rem,5vw,2rem)] font-semibold leading-none ${
 									isConflict
-										? "text-red-400"
+										? "text-red-500 dark:text-red-400"
 										: isGiven
-											? "text-slate-100"
-											: "text-sky-300"
+											? "text-slate-900 dark:text-slate-100"
+											: "text-sky-600 dark:text-sky-300"
 								}`}
 							>
 								{value}
@@ -143,7 +147,7 @@ export function SudokuBoard({
 								{digitsInMask(board.corner[cell]).map((digit, index) => (
 									<span
 										key={digit}
-										className={`absolute text-[clamp(0.4rem,1.4vw,0.6rem)] font-medium leading-tight text-slate-300 ${
+										className={`absolute text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300 ${
 											CORNER_SLOTS[index] ?? CORNER_SLOTS[7]
 										}`}
 									>
@@ -151,7 +155,7 @@ export function SudokuBoard({
 									</span>
 								))}
 								{board.center[cell] !== 0 ? (
-									<span className="text-[clamp(0.4rem,1.6vw,0.7rem)] font-medium tracking-tight text-slate-300">
+									<span className="text-[clamp(0.5rem,1.9vw,0.82rem)] font-semibold tracking-tight text-slate-600 dark:text-slate-300">
 										{digitsInMask(board.center[cell]).join("")}
 									</span>
 								) : null}
