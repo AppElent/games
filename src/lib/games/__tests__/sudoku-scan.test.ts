@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-	digitsInMask,
-	generatePuzzle,
-	mulberry32,
-} from "../sudoku";
+import { digitsInMask, generatePuzzle, mulberry32 } from "../sudoku";
+import type { ScanCell } from "../sudoku-scan";
 import {
 	clearScanCell,
 	emptyScanResult,
@@ -14,7 +11,6 @@ import {
 	toggleScanCellNote,
 	validateScanResult,
 } from "../sudoku-scan";
-import type { ScanCell } from "../sudoku-scan";
 
 function scanFromPuzzle(seed = 5) {
 	const puzzle = generatePuzzle("easy", mulberry32(seed));
@@ -71,7 +67,7 @@ describe("scan validation", () => {
 
 	it("rejects handwritten user digits incompatible with the solution", () => {
 		const { puzzle, cells } = scanFromPuzzle();
-		const emptyCell = puzzle.givens.findIndex((value) => value === 0);
+		const emptyCell = puzzle.givens.indexOf(0);
 		// A digit that differs from the unique solution but does not conflict
 		// directly may still make the puzzle unsolvable.
 		const wrong = (puzzle.solution[emptyCell] % 9) + 1;
@@ -188,8 +184,12 @@ describe("verifier corrections", () => {
 describe("scan to board state", () => {
 	it("maps givens, user digits, and notes into a playable board", () => {
 		const { puzzle, cells } = scanFromPuzzle();
-		const emptyCell = puzzle.givens.findIndex((value) => value === 0);
-		let scanned = setScanCellDigit(cells, emptyCell, puzzle.solution[emptyCell]);
+		const emptyCell = puzzle.givens.indexOf(0);
+		let scanned = setScanCellDigit(
+			cells,
+			emptyCell,
+			puzzle.solution[emptyCell],
+		);
 		scanned = setScanCellType(scanned, emptyCell, "userDigit");
 		const noteCell = puzzle.givens.findIndex(
 			(value, index) => value === 0 && index !== emptyCell,

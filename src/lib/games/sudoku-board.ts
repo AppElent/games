@@ -1,13 +1,13 @@
+import type { SudokuGrid } from "./sudoku";
 import {
-	SUDOKU_CELL_COUNT,
-	SUDOKU_PEERS,
 	digitMask,
 	emptyGrid,
 	findConflicts,
 	isGridSolved,
+	SUDOKU_CELL_COUNT,
+	SUDOKU_PEERS,
 	toggleDigitInMask,
 } from "./sudoku";
-import type { SudokuGrid } from "./sudoku";
 
 /**
  * Board state for one Sudoku game. Notes are bitmasks (bit 0 = digit 1).
@@ -120,15 +120,15 @@ function reduceState(
 		}
 		case "toggleCorner":
 		case "toggleCenter": {
-			if (
-				state.givens[action.cell] !== 0 ||
-				state.digits[action.cell] !== 0
-			) {
+			if (state.givens[action.cell] !== 0 || state.digits[action.cell] !== 0) {
 				return null;
 			}
 			const next = cloneState(state);
 			const target = action.type === "toggleCorner" ? next.corner : next.center;
-			target[action.cell] = toggleDigitInMask(target[action.cell], action.digit);
+			target[action.cell] = toggleDigitInMask(
+				target[action.cell],
+				action.digit,
+			);
 			return next;
 		}
 		case "setColor": {
@@ -238,7 +238,9 @@ function parseDigitString(text: string): SudokuGrid {
 	return [...text].map(Number);
 }
 
-export function deserializeBoard(data: SerializedSudokuBoard): SudokuBoardState {
+export function deserializeBoard(
+	data: SerializedSudokuBoard,
+): SudokuBoardState {
 	return {
 		givens: parseDigitString(data.givens),
 		digits: parseDigitString(data.digits),

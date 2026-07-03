@@ -8,6 +8,7 @@ allowBuilds:
   '@clerk/shared': false
   '@google/genai': false
   protobufjs: false
+  tesseract.js: false # postinstall only prints a banner; dist ships prebuilt
 
 minimumReleaseAge: 4320 # 3 days — blocks the worm/account-takeover window
 minimumReleaseAgeExclude:

@@ -86,6 +86,24 @@ export const backgammonCountersValidator = v.object({
 	black: v.number(),
 });
 
+export const sudokuDifficultyValidator = v.union(
+	v.literal("easy"),
+	v.literal("medium"),
+	v.literal("hard"),
+	v.literal("expert"),
+);
+
+export const sudokuSourceValidator = v.union(
+	v.literal("generated"),
+	v.literal("scan"),
+);
+
+export const sudokuStatusValidator = v.union(
+	v.literal("active"),
+	v.literal("paused"),
+	v.literal("completed"),
+);
+
 export default defineSchema({
 	gameSessions: defineTable({
 		gameType: gameTypeValidator,
@@ -174,6 +192,26 @@ export default defineSchema({
 		.index("by_white", ["whiteParticipantId"])
 		.index("by_black", ["blackParticipantId"])
 		.index("by_phase", ["phase"]),
+
+	sudokuStates: defineTable({
+		sessionId: v.id("gameSessions"),
+		difficulty: v.optional(sudokuDifficultyValidator),
+		source: sudokuSourceValidator,
+		status: sudokuStatusValidator,
+		// 81-char strings, "0" = empty
+		givens: v.string(),
+		digits: v.string(),
+		solution: v.optional(v.string()),
+		// bitmask per cell, bit 0 = digit 1
+		cornerNotes: v.array(v.number()),
+		centerNotes: v.array(v.number()),
+		colors: v.array(v.number()),
+		autoCleanup: v.boolean(),
+		elapsedSeconds: v.number(),
+		lastResumedAt: v.optional(v.number()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	}).index("by_session", ["sessionId"]),
 
 	backgammonMoves: defineTable({
 		sessionId: v.id("gameSessions"),

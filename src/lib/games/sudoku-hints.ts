@@ -1,17 +1,17 @@
+import type { SudokuGrid } from "./sudoku";
 import {
-	SUDOKU_BOXES,
-	SUDOKU_COLS,
-	SUDOKU_ROWS,
 	boxOf,
 	colOf,
 	computeCandidates,
-	digitsInMask,
 	digitMask,
+	digitsInMask,
 	maskHasDigit,
 	maskSize,
 	rowOf,
+	SUDOKU_BOXES,
+	SUDOKU_COLS,
+	SUDOKU_ROWS,
 } from "./sudoku";
-import type { SudokuGrid } from "./sudoku";
 
 export type HintTechniqueLevel = "beginner" | "intermediate" | "advanced";
 
@@ -54,7 +54,11 @@ function listDigits(digits: number[]) {
 	return digits.join(", ");
 }
 
-type UnitRef = { kind: "row" | "column" | "box"; index: number; cells: readonly number[] };
+type UnitRef = {
+	kind: "row" | "column" | "box";
+	index: number;
+	cells: readonly number[];
+};
 
 function allUnits(): UnitRef[] {
 	const units: UnitRef[] = [];
@@ -155,7 +159,9 @@ function findPointing(
 			if (!sameRow && !sameCol) {
 				continue;
 			}
-			const line = sameRow ? SUDOKU_ROWS[rowOf(spots[0])] : SUDOKU_COLS[colOf(spots[0])];
+			const line = sameRow
+				? SUDOKU_ROWS[rowOf(spots[0])]
+				: SUDOKU_COLS[colOf(spots[0])];
 			const lineLabel = sameRow
 				? `row ${rowOf(spots[0]) + 1}`
 				: `column ${colOf(spots[0]) + 1}`;
@@ -279,7 +285,9 @@ function findNakedSet(
 				.filter((cell) => grid[cell] === 0 && !combo.includes(cell))
 				.map((cell) => ({
 					cell,
-					digits: digits.filter((digit) => maskHasDigit(candidates[cell], digit)),
+					digits: digits.filter((digit) =>
+						maskHasDigit(candidates[cell], digit),
+					),
 				}))
 				.filter((entry) => entry.digits.length > 0);
 			if (eliminations.length === 0) {
@@ -312,7 +320,9 @@ function findHiddenSet(
 		const open = unit.cells.filter((cell) => grid[cell] === 0);
 		const digitSpots = new Map<number, number[]>();
 		for (let digit = 1; digit <= 9; digit += 1) {
-			const spots = open.filter((cell) => maskHasDigit(candidates[cell], digit));
+			const spots = open.filter((cell) =>
+				maskHasDigit(candidates[cell], digit),
+			);
 			if (spots.length >= 2 && spots.length <= size) {
 				digitSpots.set(digit, spots);
 			}
@@ -324,7 +334,10 @@ function findHiddenSet(
 			if (cells.length !== size) {
 				continue;
 			}
-			const comboMask = combo.reduce((mask, digit) => mask | digitMask(digit), 0);
+			const comboMask = combo.reduce(
+				(mask, digit) => mask | digitMask(digit),
+				0,
+			);
 			const eliminations = cells
 				.map((cell) => ({
 					cell,

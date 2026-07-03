@@ -152,7 +152,11 @@ export function findConflicts(grid: SudokuGrid): Set<number> {
 	return conflicts;
 }
 
-export function isValidPlacement(grid: SudokuGrid, cell: number, digit: number) {
+export function isValidPlacement(
+	grid: SudokuGrid,
+	cell: number,
+	digit: number,
+) {
 	for (const peer of SUDOKU_PEERS[cell]) {
 		if (grid[peer] === digit) {
 			return false;
@@ -339,7 +343,8 @@ export function generatePuzzle(
 		if (saved[0] === 0 && saved[1] === 0) {
 			continue;
 		}
-		const removing = cell === mirror ? 1 : Number(saved[0] !== 0) + Number(saved[1] !== 0);
+		const removing =
+			cell === mirror ? 1 : Number(saved[0] !== 0) + Number(saved[1] !== 0);
 		givens[cell] = 0;
 		givens[mirror] = 0;
 		if (countSolutions(givens, 2) === 1) {

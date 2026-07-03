@@ -17,6 +17,9 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as SudokuScanRouteImport } from './routes/sudoku/scan'
+import { Route as SudokuNewRouteImport } from './routes/sudoku/new'
+import { Route as SudokuSessionIdRouteImport } from './routes/sudoku/$sessionId'
 import { Route as QuizNewRouteImport } from './routes/quiz/new'
 import { Route as GamesGameTypeRouteImport } from './routes/games/$gameType'
 import { Route as BackgammonNewRouteImport } from './routes/backgammon/new'
@@ -64,6 +67,21 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/dashboard/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SudokuScanRoute = SudokuScanRouteImport.update({
+  id: '/sudoku/scan',
+  path: '/sudoku/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SudokuNewRoute = SudokuNewRouteImport.update({
+  id: '/sudoku/new',
+  path: '/sudoku/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SudokuSessionIdRoute = SudokuSessionIdRouteImport.update({
+  id: '/sudoku/$sessionId',
+  path: '/sudoku/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuizNewRoute = QuizNewRouteImport.update({
   id: '/quiz/new',
   path: '/quiz/new',
@@ -107,6 +125,9 @@ export interface FileRoutesByFullPath {
   '/backgammon/new': typeof BackgammonNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/quiz/new': typeof QuizNewRoute
+  '/sudoku/$sessionId': typeof SudokuSessionIdRoute
+  '/sudoku/new': typeof SudokuNewRoute
+  '/sudoku/scan': typeof SudokuScanRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/quiz/$sessionId/host': typeof QuizSessionIdHostRoute
   '/quiz/$sessionId/play': typeof QuizSessionIdPlayRoute
@@ -123,6 +144,9 @@ export interface FileRoutesByTo {
   '/backgammon/new': typeof BackgammonNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/quiz/new': typeof QuizNewRoute
+  '/sudoku/$sessionId': typeof SudokuSessionIdRoute
+  '/sudoku/new': typeof SudokuNewRoute
+  '/sudoku/scan': typeof SudokuScanRoute
   '/dashboard': typeof DashboardIndexRoute
   '/quiz/$sessionId/host': typeof QuizSessionIdHostRoute
   '/quiz/$sessionId/play': typeof QuizSessionIdPlayRoute
@@ -140,6 +164,9 @@ export interface FileRoutesById {
   '/backgammon/new': typeof BackgammonNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/quiz/new': typeof QuizNewRoute
+  '/sudoku/$sessionId': typeof SudokuSessionIdRoute
+  '/sudoku/new': typeof SudokuNewRoute
+  '/sudoku/scan': typeof SudokuScanRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/quiz/$sessionId/host': typeof QuizSessionIdHostRoute
   '/quiz/$sessionId/play': typeof QuizSessionIdPlayRoute
@@ -158,6 +185,9 @@ export interface FileRouteTypes {
     | '/backgammon/new'
     | '/games/$gameType'
     | '/quiz/new'
+    | '/sudoku/$sessionId'
+    | '/sudoku/new'
+    | '/sudoku/scan'
     | '/dashboard/'
     | '/quiz/$sessionId/host'
     | '/quiz/$sessionId/play'
@@ -174,6 +204,9 @@ export interface FileRouteTypes {
     | '/backgammon/new'
     | '/games/$gameType'
     | '/quiz/new'
+    | '/sudoku/$sessionId'
+    | '/sudoku/new'
+    | '/sudoku/scan'
     | '/dashboard'
     | '/quiz/$sessionId/host'
     | '/quiz/$sessionId/play'
@@ -190,6 +223,9 @@ export interface FileRouteTypes {
     | '/backgammon/new'
     | '/games/$gameType'
     | '/quiz/new'
+    | '/sudoku/$sessionId'
+    | '/sudoku/new'
+    | '/sudoku/scan'
     | '/dashboard/'
     | '/quiz/$sessionId/host'
     | '/quiz/$sessionId/play'
@@ -207,6 +243,9 @@ export interface RootRouteChildren {
   BackgammonNewRoute: typeof BackgammonNewRoute
   GamesGameTypeRoute: typeof GamesGameTypeRoute
   QuizNewRoute: typeof QuizNewRoute
+  SudokuSessionIdRoute: typeof SudokuSessionIdRoute
+  SudokuNewRoute: typeof SudokuNewRoute
+  SudokuScanRoute: typeof SudokuScanRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   QuizSessionIdHostRoute: typeof QuizSessionIdHostRoute
   QuizSessionIdPlayRoute: typeof QuizSessionIdPlayRoute
@@ -270,6 +309,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sudoku/scan': {
+      id: '/sudoku/scan'
+      path: '/sudoku/scan'
+      fullPath: '/sudoku/scan'
+      preLoaderRoute: typeof SudokuScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sudoku/new': {
+      id: '/sudoku/new'
+      path: '/sudoku/new'
+      fullPath: '/sudoku/new'
+      preLoaderRoute: typeof SudokuNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sudoku/$sessionId': {
+      id: '/sudoku/$sessionId'
+      path: '/sudoku/$sessionId'
+      fullPath: '/sudoku/$sessionId'
+      preLoaderRoute: typeof SudokuSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quiz/new': {
       id: '/quiz/new'
       path: '/quiz/new'
@@ -327,6 +387,9 @@ const rootRouteChildren: RootRouteChildren = {
   BackgammonNewRoute: BackgammonNewRoute,
   GamesGameTypeRoute: GamesGameTypeRoute,
   QuizNewRoute: QuizNewRoute,
+  SudokuSessionIdRoute: SudokuSessionIdRoute,
+  SudokuNewRoute: SudokuNewRoute,
+  SudokuScanRoute: SudokuScanRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   QuizSessionIdHostRoute: QuizSessionIdHostRoute,
   QuizSessionIdPlayRoute: QuizSessionIdPlayRoute,

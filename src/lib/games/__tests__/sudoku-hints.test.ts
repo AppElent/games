@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
 	cellAt,
+	emptyGrid,
 	generatePuzzle,
 	mulberry32,
 	parseGrid,
-	emptyGrid,
 } from "../sudoku";
-import {
-	SUDOKU_TECHNIQUES,
-	findHint,
-	hintTextForLevel,
-} from "../sudoku-hints";
+import { findHint, hintTextForLevel, SUDOKU_TECHNIQUES } from "../sudoku-hints";
 
 function detectorsById(id: string) {
 	const detector = SUDOKU_TECHNIQUES.find((technique) => technique.id === id);
@@ -31,9 +27,7 @@ describe("sudoku hints", () => {
 		grid[cell] = 0;
 		const hint = findHint(grid);
 		expect(hint?.technique).toBe("naked-single");
-		expect(hint?.placements).toEqual([
-			{ cell, digit: puzzle.solution[cell] },
-		]);
+		expect(hint?.placements).toEqual([{ cell, digit: puzzle.solution[cell] }]);
 		expect(hint?.cells).toEqual([cell]);
 	});
 

@@ -7,16 +7,16 @@ import {
 } from "../catalog";
 
 describe("game catalog", () => {
-	it("lists live quiz and backgammon as playable games", () => {
+	it("lists live quiz, backgammon, and sudoku as playable games", () => {
 		expect(getPlayableGames().map((game) => game.type)).toEqual([
 			"live-quiz",
 			"backgammon",
+			"sudoku",
 		]);
 	});
 
 	it("keeps future games visible but not playable", () => {
 		const visibleTypes = getVisibleGames().map((game) => game.type);
-		expect(visibleTypes).toContain("sudoku");
 		expect(visibleTypes).toContain("chess");
 		expect(visibleTypes).toContain("hitster");
 		expect(visibleTypes).toContain("word-games");
@@ -24,7 +24,7 @@ describe("game catalog", () => {
 			getVisibleGames()
 				.filter((game) => game.availability !== "playable")
 				.map((game) => game.availability),
-		).toEqual(["coming-soon", "coming-soon", "coming-soon", "coming-soon"]);
+		).toEqual(["coming-soon", "coming-soon", "coming-soon"]);
 	});
 
 	it("uses room mode for quiz and challenge mode for backgammon", () => {

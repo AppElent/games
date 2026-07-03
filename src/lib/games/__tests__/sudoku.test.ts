@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-	SUDOKU_CELL_COUNT,
 	cellAt,
 	computeCandidates,
 	countSolutions,
@@ -12,6 +11,7 @@ import {
 	isGridSolved,
 	mulberry32,
 	parseGrid,
+	SUDOKU_CELL_COUNT,
 	solve,
 } from "../sudoku";
 import {
@@ -61,9 +61,7 @@ describe("sudoku rules", () => {
 		grid[cellAt(1, 1)] = 2;
 		grid[cellAt(5, 0)] = 3;
 		const candidates = computeCandidates(grid);
-		expect(digitsInMask(candidates[cellAt(0, 0)])).toEqual([
-			4, 5, 6, 7, 8, 9,
-		]);
+		expect(digitsInMask(candidates[cellAt(0, 0)])).toEqual([4, 5, 6, 7, 8, 9]);
 		expect(candidates[cellAt(0, 1)]).toBe(0); // filled cell
 	});
 
@@ -91,22 +89,24 @@ describe("sudoku rules", () => {
 });
 
 describe("sudoku generation", () => {
-	it.each(["easy", "medium", "hard", "expert"] as const)(
-		"generates a uniquely solvable %s puzzle",
-		(difficulty) => {
-			const rng = mulberry32(42);
-			const puzzle = generatePuzzle(difficulty, rng);
-			expect(countSolutions(puzzle.givens, 2)).toBe(1);
-			expect(isGridSolved(puzzle.solution)).toBe(true);
-			puzzle.givens.forEach((value, cell) => {
-				if (value !== 0) {
-					expect(puzzle.solution[cell]).toBe(value);
-				}
-			});
-			expect(puzzle.clueCount).toBeGreaterThanOrEqual(17);
-			expect(puzzle.clueCount).toBeLessThan(SUDOKU_CELL_COUNT);
-		},
-	);
+	it.each([
+		"easy",
+		"medium",
+		"hard",
+		"expert",
+	] as const)("generates a uniquely solvable %s puzzle", (difficulty) => {
+		const rng = mulberry32(42);
+		const puzzle = generatePuzzle(difficulty, rng);
+		expect(countSolutions(puzzle.givens, 2)).toBe(1);
+		expect(isGridSolved(puzzle.solution)).toBe(true);
+		puzzle.givens.forEach((value, cell) => {
+			if (value !== 0) {
+				expect(puzzle.solution[cell]).toBe(value);
+			}
+		});
+		expect(puzzle.clueCount).toBeGreaterThanOrEqual(17);
+		expect(puzzle.clueCount).toBeLessThan(SUDOKU_CELL_COUNT);
+	});
 
 	it("gives easier puzzles more clues", () => {
 		const easy = generatePuzzle("easy", mulberry32(7));
@@ -120,22 +120,34 @@ describe("sudoku board state", () => {
 
 	it("enters and toggles final digits, but never on givens", () => {
 		let history = createHistory(createBoardState(givens));
-		const openCell = givens.findIndex((value) => value === 0);
-		history = applyAction(history, { type: "setDigit", cell: openCell, digit: 4 });
+		const openCell = givens.indexOf(0);
+		history = applyAction(history, {
+			type: "setDigit",
+			cell: openCell,
+			digit: 4,
+		});
 		expect(history.current.digits[openCell]).toBe(4);
 		// toggle off by re-entering the same digit
-		history = applyAction(history, { type: "setDigit", cell: openCell, digit: 4 });
+		history = applyAction(history, {
+			type: "setDigit",
+			cell: openCell,
+			digit: 4,
+		});
 		expect(history.current.digits[openCell]).toBe(0);
 		// givens are locked
 		const givenCell = givens.findIndex((value) => value !== 0);
 		const before = history;
-		history = applyAction(history, { type: "setDigit", cell: givenCell, digit: 9 });
+		history = applyAction(history, {
+			type: "setDigit",
+			cell: givenCell,
+			digit: 9,
+		});
 		expect(history).toBe(before);
 	});
 
 	it("keeps corner and center notes independent from digits", () => {
 		let history = createHistory(createBoardState(givens));
-		const cell = givens.findIndex((value) => value === 0);
+		const cell = givens.indexOf(0);
 		history = applyAction(history, { type: "toggleCorner", cell, digit: 1 });
 		history = applyAction(history, { type: "toggleCorner", cell, digit: 2 });
 		history = applyAction(history, { type: "toggleCenter", cell, digit: 3 });
@@ -154,7 +166,11 @@ describe("sudoku board state", () => {
 		const cell = cellAt(0, 0);
 		const peer = cellAt(0, 5);
 		const nonPeer = cellAt(5, 5);
-		history = applyAction(history, { type: "toggleCenter", cell: peer, digit: 6 });
+		history = applyAction(history, {
+			type: "toggleCenter",
+			cell: peer,
+			digit: 6,
+		});
 		history = applyAction(history, {
 			type: "toggleCenter",
 			cell: nonPeer,
@@ -172,8 +188,16 @@ describe("sudoku board state", () => {
 	it("does not touch peer notes without auto-cleanup", () => {
 		let history = createHistory(createBoardState(emptyGrid()));
 		const peer = cellAt(0, 5);
-		history = applyAction(history, { type: "toggleCenter", cell: peer, digit: 6 });
-		history = applyAction(history, { type: "setDigit", cell: cellAt(0, 0), digit: 6 });
+		history = applyAction(history, {
+			type: "toggleCenter",
+			cell: peer,
+			digit: 6,
+		});
+		history = applyAction(history, {
+			type: "setDigit",
+			cell: cellAt(0, 0),
+			digit: 6,
+		});
 		expect(digitsInMask(history.current.center[peer])).toEqual([6]);
 	});
 
@@ -187,7 +211,7 @@ describe("sudoku board state", () => {
 
 	it("erases digit first, then notes, then color", () => {
 		let history = createHistory(createBoardState(givens));
-		const cell = givens.findIndex((value) => value === 0);
+		const cell = givens.indexOf(0);
 		history = applyAction(history, { type: "setColor", cell, color: 2 });
 		history = applyAction(history, { type: "setDigit", cell, digit: 8 });
 
@@ -204,10 +228,14 @@ describe("sudoku board state", () => {
 
 	it("supports undo and redo across the move history", () => {
 		let history = createHistory(createBoardState(givens));
-		const cell = givens.findIndex((value) => value === 0);
+		const cell = givens.indexOf(0);
 		expect(canUndo(history)).toBe(false);
 		history = applyAction(history, { type: "setDigit", cell, digit: 1 });
-		history = applyAction(history, { type: "toggleCorner", cell: cell + 1, digit: 2 });
+		history = applyAction(history, {
+			type: "toggleCorner",
+			cell: cell + 1,
+			digit: 2,
+		});
 		expect(history.past).toHaveLength(2);
 
 		history = undo(history);
@@ -235,7 +263,7 @@ describe("sudoku board state", () => {
 
 	it("restart clears everything but givens", () => {
 		let history = createHistory(createBoardState(givens));
-		const cell = givens.findIndex((value) => value === 0);
+		const cell = givens.indexOf(0);
 		history = applyAction(history, { type: "setDigit", cell, digit: 1 });
 		history = applyAction(history, { type: "setColor", cell, color: 4 });
 		history = applyAction(history, { type: "restart" });
@@ -259,16 +287,20 @@ describe("sudoku board state", () => {
 		expect(isBoardComplete(state)).toBe(true);
 		expect(boardConflicts(state).size).toBe(0);
 		// break one cell — no longer complete, conflict flagged
-		const cell = puzzle.givens.findIndex((value) => value === 0);
+		const cell = puzzle.givens.indexOf(0);
 		state.digits[cell] = state.digits[cell] === 1 ? 2 : 1;
 		expect(isBoardComplete(state)).toBe(false);
 	});
 
 	it("serializes and deserializes board state", () => {
 		let history = createHistory(createBoardState(givens));
-		const cell = givens.findIndex((value) => value === 0);
+		const cell = givens.indexOf(0);
 		history = applyAction(history, { type: "setDigit", cell, digit: 4 });
-		history = applyAction(history, { type: "toggleCorner", cell: cell + 1, digit: 9 });
+		history = applyAction(history, {
+			type: "toggleCorner",
+			cell: cell + 1,
+			digit: 9,
+		});
 		history = applyAction(history, { type: "setColor", cell: 3, color: 5 });
 		const roundTripped = deserializeBoard(serializeBoard(history.current));
 		expect(roundTripped).toEqual(history.current);

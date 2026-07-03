@@ -71,15 +71,16 @@ const GAME_CATALOG_ITEMS = [
 	{
 		type: "sudoku",
 		title: "Sudoku",
-		tagline: "Daily puzzle runs",
-		description: "Solo puzzles, timed challenges, and shared races.",
+		tagline: "Solo puzzle sessions",
+		description:
+			"Generate puzzles at four difficulties, annotate with pro notation, or scan a paper puzzle and keep solving digitally.",
 		joinMode: "solo",
 		authPolicy: "guestAllowed",
-		availability: "coming-soon",
+		availability: "playable",
 		accent: "from-sky-400 to-blue-500",
 		icon: Grid3X3,
-		primaryAction: "Preview",
-		route: "/games/sudoku",
+		primaryAction: "Play sudoku",
+		route: "/sudoku/new",
 		stats: "Solo",
 	},
 	{

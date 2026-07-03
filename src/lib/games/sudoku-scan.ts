@@ -1,13 +1,13 @@
+import type { SudokuGrid } from "./sudoku";
 import {
-	SUDOKU_CELL_COUNT,
 	countSolutions,
 	digitMask,
 	emptyGrid,
 	findConflicts,
+	SUDOKU_CELL_COUNT,
 } from "./sudoku";
-import type { SudokuGrid } from "./sudoku";
-import { createBoardState } from "./sudoku-board";
 import type { SudokuBoardState } from "./sudoku-board";
+import { createBoardState } from "./sudoku-board";
 
 export type ScanCellType =
 	| "given"
