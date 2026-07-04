@@ -66,6 +66,13 @@ function JoinPage() {
 							);
 							window.location.href = `/backgammon/${result.sessionId}`;
 						}
+						if (result.gameType === "chess") {
+							window.sessionStorage.setItem(
+								"arcade-club.participantId",
+								result.participantId,
+							);
+							window.location.href = `/chess/${result.sessionId}`;
+						}
 					} catch (caught) {
 						setError(getUserErrorMessage(caught, "Could not join game"));
 					}

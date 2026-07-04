@@ -169,6 +169,33 @@ export const hitsterRecapValidator = v.object({
 	),
 });
 
+export const chessColorValidator = v.union(
+	v.literal("white"),
+	v.literal("black"),
+);
+
+export const chessPhaseValidator = v.union(
+	v.literal("waiting"),
+	v.literal("active"),
+	v.literal("finished"),
+);
+
+export const chessTimeControlValidator = v.union(
+	v.literal("untimed"),
+	v.literal("10+0"),
+);
+
+export const chessOutcomeValidator = v.union(
+	v.literal("checkmate"),
+	v.literal("timeout"),
+	v.literal("resignation"),
+	v.literal("stalemate"),
+	v.literal("insufficientMaterial"),
+	v.literal("threefoldRepetition"),
+	v.literal("fiftyMoveRule"),
+	v.literal("drawAgreed"),
+);
+
 export default defineSchema({
 	gameSessions: defineTable({
 		gameType: gameTypeValidator,
@@ -299,6 +326,26 @@ export default defineSchema({
 		stealClaims: v.array(hitsterGuessValidator),
 		lastRecap: v.optional(hitsterRecapValidator),
 		coopResult: v.optional(v.union(v.literal("won"), v.literal("lost"))),
+		winnerParticipantId: v.optional(v.id("sessionParticipants")),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	}).index("by_session", ["sessionId"]),
+
+	chessGameStates: defineTable({
+		sessionId: v.id("gameSessions"),
+		phase: chessPhaseValidator,
+		whiteParticipantId: v.optional(v.id("sessionParticipants")),
+		blackParticipantId: v.optional(v.id("sessionParticipants")),
+		fen: v.string(),
+		sanHistory: v.array(v.string()),
+		activeColor: chessColorValidator,
+		timeControl: chessTimeControlValidator,
+		remainingWhiteMs: v.optional(v.number()),
+		remainingBlackMs: v.optional(v.number()),
+		turnStartedAt: v.optional(v.number()),
+		drawOfferBy: v.optional(chessColorValidator),
+		resultOutcome: v.optional(chessOutcomeValidator),
+		resultWinner: v.optional(chessColorValidator),
 		winnerParticipantId: v.optional(v.id("sessionParticipants")),
 		createdAt: v.number(),
 		updatedAt: v.number(),

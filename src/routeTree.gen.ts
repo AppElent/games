@@ -25,6 +25,8 @@ import { Route as SudokuSessionIdRouteImport } from './routes/sudoku/$sessionId'
 import { Route as QuizNewRouteImport } from './routes/quiz/new'
 import { Route as HitsterNewRouteImport } from './routes/hitster/new'
 import { Route as GamesGameTypeRouteImport } from './routes/games/$gameType'
+import { Route as ChessNewRouteImport } from './routes/chess/new'
+import { Route as ChessSessionIdRouteImport } from './routes/chess/$sessionId'
 import { Route as BackgammonNewRouteImport } from './routes/backgammon/new'
 import { Route as BackgammonLocalRouteImport } from './routes/backgammon/local'
 import { Route as BackgammonSessionIdRouteImport } from './routes/backgammon/$sessionId'
@@ -113,6 +115,16 @@ const GamesGameTypeRoute = GamesGameTypeRouteImport.update({
   path: '/games/$gameType',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChessNewRoute = ChessNewRouteImport.update({
+  id: '/chess/new',
+  path: '/chess/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChessSessionIdRoute = ChessSessionIdRouteImport.update({
+  id: '/chess/$sessionId',
+  path: '/chess/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BackgammonNewRoute = BackgammonNewRouteImport.update({
   id: '/backgammon/new',
   path: '/backgammon/new',
@@ -160,6 +172,8 @@ export interface FileRoutesByFullPath {
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
   '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
+  '/chess/$sessionId': typeof ChessSessionIdRoute
+  '/chess/new': typeof ChessNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
@@ -185,6 +199,8 @@ export interface FileRoutesByTo {
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
   '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
+  '/chess/$sessionId': typeof ChessSessionIdRoute
+  '/chess/new': typeof ChessNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
@@ -211,6 +227,8 @@ export interface FileRoutesById {
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
   '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
+  '/chess/$sessionId': typeof ChessSessionIdRoute
+  '/chess/new': typeof ChessNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
@@ -238,6 +256,8 @@ export interface FileRouteTypes {
     | '/backgammon/$sessionId'
     | '/backgammon/local'
     | '/backgammon/new'
+    | '/chess/$sessionId'
+    | '/chess/new'
     | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
@@ -263,6 +283,8 @@ export interface FileRouteTypes {
     | '/backgammon/$sessionId'
     | '/backgammon/local'
     | '/backgammon/new'
+    | '/chess/$sessionId'
+    | '/chess/new'
     | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
@@ -288,6 +310,8 @@ export interface FileRouteTypes {
     | '/backgammon/$sessionId'
     | '/backgammon/local'
     | '/backgammon/new'
+    | '/chess/$sessionId'
+    | '/chess/new'
     | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
@@ -314,6 +338,8 @@ export interface RootRouteChildren {
   BackgammonSessionIdRoute: typeof BackgammonSessionIdRoute
   BackgammonLocalRoute: typeof BackgammonLocalRoute
   BackgammonNewRoute: typeof BackgammonNewRoute
+  ChessSessionIdRoute: typeof ChessSessionIdRoute
+  ChessNewRoute: typeof ChessNewRoute
   GamesGameTypeRoute: typeof GamesGameTypeRoute
   HitsterNewRoute: typeof HitsterNewRoute
   QuizNewRoute: typeof QuizNewRoute
@@ -443,6 +469,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesGameTypeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chess/new': {
+      id: '/chess/new'
+      path: '/chess/new'
+      fullPath: '/chess/new'
+      preLoaderRoute: typeof ChessNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chess/$sessionId': {
+      id: '/chess/$sessionId'
+      path: '/chess/$sessionId'
+      fullPath: '/chess/$sessionId'
+      preLoaderRoute: typeof ChessSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/backgammon/new': {
       id: '/backgammon/new'
       path: '/backgammon/new'
@@ -506,6 +546,8 @@ const rootRouteChildren: RootRouteChildren = {
   BackgammonSessionIdRoute: BackgammonSessionIdRoute,
   BackgammonLocalRoute: BackgammonLocalRoute,
   BackgammonNewRoute: BackgammonNewRoute,
+  ChessSessionIdRoute: ChessSessionIdRoute,
+  ChessNewRoute: ChessNewRoute,
   GamesGameTypeRoute: GamesGameTypeRoute,
   HitsterNewRoute: HitsterNewRoute,
   QuizNewRoute: QuizNewRoute,

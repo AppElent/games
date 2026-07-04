@@ -9,6 +9,7 @@
  */
 
 import type * as backgammon from "../backgammon.js";
+import type * as chess from "../chess.js";
 import type * as hitster from "../hitster.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_codes from "../lib/codes.js";
@@ -24,6 +25,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   backgammon: typeof backgammon;
+  chess: typeof chess;
   hitster: typeof hitster;
   "lib/auth": typeof lib_auth;
   "lib/codes": typeof lib_codes;

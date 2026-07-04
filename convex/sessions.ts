@@ -191,6 +191,30 @@ export const joinByToken = mutation({
 			}
 		}
 
+		if (session.gameType === "chess") {
+			const state = await ctx.db
+				.query("chessGameStates")
+				.withIndex("by_session", (q) => q.eq("sessionId", session._id))
+				.unique();
+			if (state) {
+				const isSeated =
+					state.whiteParticipantId === participantId ||
+					state.blackParticipantId === participantId;
+				if (!isSeated) {
+					if (state.whiteParticipantId && state.blackParticipantId) {
+						throw new ConvexError("This challenge already has an opponent");
+					}
+					const seat = state.whiteParticipantId ? "black" : "white";
+					await ctx.db.patch(participantId, { seat });
+					await ctx.db.patch(state._id, {
+						[seat === "white" ? "whiteParticipantId" : "blackParticipantId"]:
+							participantId,
+						updatedAt: Date.now(),
+					});
+				}
+			}
+		}
+
 		return { sessionId: session._id, participantId, gameType: session.gameType };
 	},
 });
