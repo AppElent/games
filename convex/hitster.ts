@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
 	applyHitsterTokenDelta,
 	evaluateHitsterRound,
@@ -27,7 +27,7 @@ type Ctx = MutationCtx | QueryCtx;
 async function getSessionAndState(ctx: Ctx, sessionId: Id<"gameSessions">) {
 	const session = await ctx.db.get(sessionId);
 	if (!session || session.gameType !== "hitster") {
-		throw new Error("Hitster game not found");
+		throw new ConvexError("Hitster game not found");
 	}
 	const state = await ctx.db
 		.query("hitsterGameStates")
@@ -43,7 +43,7 @@ async function requireParticipant(
 ) {
 	const participant = await ctx.db.get(participantId);
 	if (!participant || participant.sessionId !== sessionId) {
-		throw new Error("You are not part of this game");
+		throw new ConvexError("You are not part of this game");
 	}
 	return participant;
 }
@@ -53,7 +53,7 @@ function requireHost(
 	participantId: Id<"sessionParticipants">,
 ) {
 	if (session.hostParticipantId !== participantId) {
-		throw new Error("Only the host can do this");
+		throw new ConvexError("Only the host can do this");
 	}
 }
 
@@ -64,7 +64,7 @@ function timelineYears(
 	return cardIds.map((cardId) => {
 		const card = getHitsterCard(packId, cardId);
 		if (!card) {
-			throw new Error("Unknown card in timeline");
+			throw new ConvexError("Unknown card in timeline");
 		}
 		return card.releaseYear;
 	});
@@ -79,7 +79,7 @@ function findTimeline(
 		? state.timelines[0]
 		: state.timelines.find((entry) => entry.participantId === participantId);
 	if (!timeline) {
-		throw new Error("Timeline not found");
+		throw new ConvexError("Timeline not found");
 	}
 	return timeline;
 }
@@ -97,7 +97,7 @@ function evaluateAnswerFlags(
 ): HitsterAnswerFlags {
 	const card = getHitsterCard(state.packId, cardId);
 	if (!card) {
-		throw new Error("Card not found");
+		throw new ConvexError("Card not found");
 	}
 	const timeline = findTimeline(state, guess.participantId);
 	const years = timelineYears(state.packId, timeline.cardIds);
@@ -132,14 +132,14 @@ export const setup = mutation({
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		requireHost(session, args.participantId);
 		if (session.status !== "lobby") {
-			throw new Error("Game has already started");
+			throw new ConvexError("Game has already started");
 		}
 		const playable = getPlayableHitsterCards(args.packId, args.playbackMode);
 		if (playable.length < args.targetCards + 5) {
-			throw new Error("Not enough playable tracks for this setup");
+			throw new ConvexError("Not enough playable tracks for this setup");
 		}
 		if (args.targetCards < 3 || args.targetCards > 20) {
-			throw new Error("Target cards must be between 3 and 20");
+			throw new ConvexError("Target cards must be between 3 and 20");
 		}
 		const now = Date.now();
 		const fields = {
@@ -180,7 +180,7 @@ export const start = mutation({
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		requireHost(session, args.participantId);
 		if (!state || state.phase !== "lobby") {
-			throw new Error("Game is not ready to start");
+			throw new ConvexError("Game is not ready to start");
 		}
 		const config = getHitsterModeConfig(state.mode as HitsterMode);
 		const participants = await ctx.db
@@ -191,7 +191,7 @@ export const start = mutation({
 			.filter((participant) => participant.role !== "watcher")
 			.sort((a, b) => a._creationTime - b._creationTime);
 		if (players.length < (config.shared ? 1 : 2)) {
-			throw new Error("Not enough players to start");
+			throw new ConvexError("Not enough players to start");
 		}
 
 		const playable = getPlayableHitsterCards(state.packId, state.playbackMode);
@@ -247,17 +247,17 @@ export const submitGuess = mutation({
 		const { state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		if (!state || state.phase !== "nowPlaying") {
-			throw new Error("Round is not accepting guesses");
+			throw new ConvexError("Round is not accepting guesses");
 		}
 		if (state.turnOrder[state.activeIndex] !== args.participantId) {
-			throw new Error("It is not your turn");
+			throw new ConvexError("It is not your turn");
 		}
 		if (state.pendingGuess) {
-			throw new Error("You already locked a guess this round");
+			throw new ConvexError("You already locked a guess this round");
 		}
 		const timeline = findTimeline(state, args.participantId);
 		if (args.dropIndex < 0 || args.dropIndex > timeline.cardIds.length) {
-			throw new Error("Invalid drop position");
+			throw new ConvexError("Invalid drop position");
 		}
 		await ctx.db.patch(state._id, {
 			pendingGuess: {
@@ -286,34 +286,34 @@ export const submitSteal = mutation({
 		const { state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		if (!state || state.phase !== "nowPlaying") {
-			throw new Error("Round is not accepting steal claims");
+			throw new ConvexError("Round is not accepting steal claims");
 		}
 		const config = getHitsterModeConfig(state.mode as HitsterMode);
 		if (!config.stealsEnabled) {
-			throw new Error("Steals are not available in this mode");
+			throw new ConvexError("Steals are not available in this mode");
 		}
 		if (state.turnOrder[state.activeIndex] === args.participantId) {
-			throw new Error("The active player cannot steal");
+			throw new ConvexError("The active player cannot steal");
 		}
 		if (!state.turnOrder.includes(args.participantId)) {
-			throw new Error("You are not playing this game");
+			throw new ConvexError("You are not playing this game");
 		}
 		if (
 			state.stealClaims.some(
 				(claim) => claim.participantId === args.participantId,
 			)
 		) {
-			throw new Error("You already placed a steal claim this round");
+			throw new ConvexError("You already placed a steal claim this round");
 		}
 		const tokenEntry = state.tokens.find(
 			(entry) => entry.participantId === args.participantId,
 		);
 		if (!tokenEntry || tokenEntry.tokens < 1) {
-			throw new Error("You need a token to steal");
+			throw new ConvexError("You need a token to steal");
 		}
 		const timeline = findTimeline(state, args.participantId);
 		if (args.dropIndex < 0 || args.dropIndex > timeline.cardIds.length) {
-			throw new Error("Invalid drop position");
+			throw new ConvexError("Invalid drop position");
 		}
 		await ctx.db.patch(state._id, {
 			tokens: state.tokens.map((entry) =>
@@ -347,7 +347,7 @@ export const reveal = mutation({
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		requireHost(session, args.participantId);
 		if (!state || state.phase !== "nowPlaying" || !state.currentCardId) {
-			throw new Error("There is nothing to reveal");
+			throw new ConvexError("There is nothing to reveal");
 		}
 		const mode = state.mode as HitsterMode;
 		const config = getHitsterModeConfig(mode);
@@ -382,7 +382,7 @@ export const reveal = mutation({
 					(entry) => entry.participantId === activeParticipantId,
 				);
 		if (!activeTimeline) {
-			throw new Error("Active timeline missing");
+			throw new ConvexError("Active timeline missing");
 		}
 
 		if (outcome.cardWon && guess) {
@@ -513,7 +513,7 @@ export const nextRound = mutation({
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		requireHost(session, args.participantId);
 		if (!state || state.phase !== "reveal") {
-			throw new Error("Finish the reveal first");
+			throw new ConvexError("Finish the reveal first");
 		}
 		const deck = [...state.deck];
 		const currentCardId = deck.pop();

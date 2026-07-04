@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
 import { quizQuestionValidator } from "./schema";
@@ -144,11 +144,11 @@ export const startForSession = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "live-quiz") {
-			throw new Error("Live quiz session not found");
+			throw new ConvexError("Live quiz session not found");
 		}
 		const quizSet = await ctx.db.get(args.quizSetId);
 		if (!quizSet) {
-			throw new Error("Quiz set not found");
+			throw new ConvexError("Quiz set not found");
 		}
 
 		const existing = await ctx.db
@@ -183,13 +183,13 @@ export const advancePhase = mutation({
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.unique();
 		if (!quizState) {
-			throw new Error("Quiz has not been prepared");
+			throw new ConvexError("Quiz has not been prepared");
 		}
 		const quizSet = quizState.quizSetId
 			? await ctx.db.get(quizState.quizSetId)
 			: null;
 		if (!quizSet) {
-			throw new Error("Quiz set not found");
+			throw new ConvexError("Quiz set not found");
 		}
 
 		const now = Date.now();
@@ -251,19 +251,19 @@ export const submitAnswer = mutation({
 	handler: async (ctx, args) => {
 		const participant = await ctx.db.get(args.participantId);
 		if (!participant || participant.sessionId !== args.sessionId) {
-			throw new Error("Participant not found for this quiz");
+			throw new ConvexError("Participant not found for this quiz");
 		}
 		const quizState = await ctx.db
 			.query("liveQuizStates")
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.unique();
 		if (!quizState || quizState.phase !== "question" || !quizState.quizSetId) {
-			throw new Error("Question is not accepting answers");
+			throw new ConvexError("Question is not accepting answers");
 		}
 		const quizSet = await ctx.db.get(quizState.quizSetId);
 		const question = quizSet?.questions[quizState.currentQuestionIndex];
 		if (!question) {
-			throw new Error("Question not found");
+			throw new ConvexError("Question not found");
 		}
 
 		const existingAnswers = await ctx.db

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Camera, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import type { SudokuDifficulty } from "#/lib/games/sudoku";
 import { generatePuzzle, gridToString } from "#/lib/games/sudoku";
@@ -72,9 +73,7 @@ function SudokuNewPage() {
 			});
 			window.location.href = `/sudoku/${result.sessionId}`;
 		} catch (caught) {
-			setError(
-				caught instanceof Error ? caught.message : "Could not start the puzzle",
-			);
+			setError(getUserErrorMessage(caught, "Could not start the puzzle"));
 			setBusy(null);
 		}
 	};

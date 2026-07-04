@@ -1,6 +1,7 @@
 import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { digitsInMask } from "#/lib/games/sudoku";
 import {
@@ -58,9 +59,7 @@ export function SudokuScanFlow() {
 				corners: defaultCorners(source.width, source.height),
 			});
 		} catch (caught) {
-			setError(
-				caught instanceof Error ? caught.message : "Could not read the image",
-			);
+			setError(getUserErrorMessage(caught, "Could not read the image"));
 		}
 	};
 
@@ -84,7 +83,7 @@ export function SudokuScanFlow() {
 			);
 			setStep({ id: "verify", warpedUrl, cells });
 		} catch (caught) {
-			setError(caught instanceof Error ? caught.message : "Recognition failed");
+			setError(getUserErrorMessage(caught, "Recognition failed"));
 			setStep({ id: "upload" });
 		}
 	};
@@ -357,9 +356,7 @@ function VerifyStep({
 			});
 			window.location.href = `/sudoku/${result.sessionId}`;
 		} catch (caught) {
-			onError(
-				caught instanceof Error ? caught.message : "Could not create session",
-			);
+			onError(getUserErrorMessage(caught, "Could not create session"));
 			setBusy(false);
 		}
 	};

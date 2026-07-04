@@ -1,5 +1,6 @@
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import {
 	getHitsterModeConfig,
 	HITSTER_MODES,
@@ -140,11 +141,7 @@ export function HitsterSetupForm() {
 						);
 						window.location.href = `/hitster/${result.sessionId}/host`;
 					} catch (caught) {
-						setError(
-							caught instanceof Error
-								? caught.message
-								: "Could not create the room",
-						);
+						setError(getUserErrorMessage(caught, "Could not create the room"));
 					} finally {
 						setBusy(false);
 					}

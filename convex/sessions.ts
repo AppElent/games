@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import {
 	authPolicyValidator,
@@ -20,7 +20,7 @@ export const create = mutation({
 	handler: async (ctx, args) => {
 		const userId = await getOptionalUserId(ctx);
 		if (args.authPolicy === "signedInRequired" && !userId) {
-			throw new Error("Sign in required to create this game");
+			throw new ConvexError("Sign in required to create this game");
 		}
 
 		let joinCode: string | undefined;
@@ -37,7 +37,7 @@ export const create = mutation({
 				}
 			}
 			if (!joinCode) {
-				throw new Error("Could not create a join code");
+				throw new ConvexError("Could not create a join code");
 			}
 		}
 
@@ -86,11 +86,11 @@ export const joinByCode = mutation({
 			session.status === "completed" ||
 			session.status === "cancelled"
 		) {
-			throw new Error("Game is unavailable");
+			throw new ConvexError("Room not found — check the code");
 		}
 		const userId = await getOptionalUserId(ctx);
 		if (session.authPolicy === "signedInRequired" && !userId) {
-			throw new Error("Sign in required to join this game");
+			throw new ConvexError("Sign in required to join this game");
 		}
 
 		const participantId = await ctx.db.insert("sessionParticipants", {
@@ -123,11 +123,11 @@ export const joinByToken = mutation({
 			session.status === "completed" ||
 			session.status === "cancelled"
 		) {
-			throw new Error("Game is unavailable");
+			throw new ConvexError("Game is unavailable");
 		}
 		const userId = await getOptionalUserId(ctx);
 		if (session.authPolicy === "signedInRequired" && !userId) {
-			throw new Error("Sign in required to join this game");
+			throw new ConvexError("Sign in required to join this game");
 		}
 
 		const existingByUser = userId
@@ -176,7 +176,7 @@ export const joinByToken = mutation({
 					state.blackParticipantId &&
 					state.blackParticipantId !== participantId
 				) {
-					throw new Error("This challenge already has an opponent");
+					throw new ConvexError("This challenge already has an opponent");
 				}
 				if (state.whiteParticipantId === participantId) {
 					await ctx.db.patch(participantId, { seat: "white" });
@@ -227,7 +227,7 @@ export const heartbeat = mutation({
 	handler: async (ctx, args) => {
 		const participant = await ctx.db.get(args.participantId);
 		if (!participant) {
-			throw new Error("Participant not found");
+			throw new ConvexError("Participant not found");
 		}
 		await ctx.db.patch(args.participantId, {
 			connected: true,

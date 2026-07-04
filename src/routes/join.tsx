@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import {
 	getOrCreateGuestIdentity,
 	normalizeJoinCode,
@@ -66,9 +67,7 @@ function JoinPage() {
 							window.location.href = `/backgammon/${result.sessionId}`;
 						}
 					} catch (caught) {
-						setError(
-							caught instanceof Error ? caught.message : "Could not join game",
-						);
+						setError(getUserErrorMessage(caught, "Could not join game"));
 					}
 				}}
 			>

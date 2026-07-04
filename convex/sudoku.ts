@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -8,7 +8,7 @@ const GRID_RE = /^[0-9]{81}$/;
 
 function assertGridString(value: string, label: string) {
 	if (!GRID_RE.test(value)) {
-		throw new Error(`Invalid ${label} grid`);
+		throw new ConvexError(`Invalid ${label} grid`);
 	}
 }
 
@@ -17,7 +17,7 @@ function assertMaskArray(values: number[], label: string) {
 		values.length !== 81 ||
 		values.some((mask) => !Number.isInteger(mask) || mask < 0 || mask > 0x1ff)
 	) {
-		throw new Error(`Invalid ${label}`);
+		throw new ConvexError(`Invalid ${label}`);
 	}
 }
 
@@ -72,7 +72,7 @@ async function getStateForSession(
 		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
 		.unique();
 	if (!state) {
-		throw new Error("Sudoku state not found");
+		throw new ConvexError("Sudoku state not found");
 	}
 	return state;
 }
@@ -105,14 +105,14 @@ export const createState = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "sudoku") {
-			throw new Error("Sudoku session not found");
+			throw new ConvexError("Sudoku session not found");
 		}
 		const existing = await ctx.db
 			.query("sudokuStates")
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.unique();
 		if (existing) {
-			throw new Error("Sudoku state already exists");
+			throw new ConvexError("Sudoku state already exists");
 		}
 		assertGridString(args.givens, "givens");
 		const digits = args.digits ?? "0".repeat(81);
@@ -121,7 +121,7 @@ export const createState = mutation({
 			assertGridString(args.solution, "solution");
 		}
 		if (hasConflicts(mergedGrid(args.givens, digits))) {
-			throw new Error("Puzzle contains conflicting digits");
+			throw new ConvexError("Puzzle contains conflicting digits");
 		}
 		const cornerNotes = args.cornerNotes ?? new Array(81).fill(0);
 		const centerNotes = args.centerNotes ?? new Array(81).fill(0);
@@ -246,7 +246,7 @@ export const complete = mutation({
 		}
 		assertGridString(args.digits, "digits");
 		if (!isSolved(state.givens, args.digits)) {
-			throw new Error("The grid is not solved yet");
+			throw new ConvexError("The grid is not solved yet");
 		}
 		const now = Date.now();
 		await ctx.db.patch(state._id, {
@@ -272,11 +272,11 @@ export const rename = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "sudoku") {
-			throw new Error("Sudoku session not found");
+			throw new ConvexError("Sudoku session not found");
 		}
 		const title = args.title.trim().slice(0, 80);
 		if (!title) {
-			throw new Error("Title cannot be empty");
+			throw new ConvexError("Title cannot be empty");
 		}
 		await ctx.db.patch(args.sessionId, { title });
 	},

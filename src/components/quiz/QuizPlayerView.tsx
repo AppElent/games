@@ -1,6 +1,7 @@
 import { useMutation } from "convex/react";
 import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -114,9 +115,7 @@ export function QuizPlayerView({
 									});
 								} catch (caught) {
 									setError(
-										caught instanceof Error
-											? caught.message
-											: "Could not submit answer",
+										getUserErrorMessage(caught, "Could not submit answer"),
 									);
 								}
 							}}

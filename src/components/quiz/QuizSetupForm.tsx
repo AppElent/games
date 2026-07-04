@@ -1,5 +1,6 @@
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
 
@@ -47,11 +48,7 @@ export function QuizSetupForm() {
 						);
 						window.location.href = `/quiz/${result.sessionId}/host`;
 					} catch (caught) {
-						setError(
-							caught instanceof Error
-								? caught.message
-								: "Could not create quiz room",
-						);
+						setError(getUserErrorMessage(caught, "Could not create quiz room"));
 					} finally {
 						setBusy(false);
 					}

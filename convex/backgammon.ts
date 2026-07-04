@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
 	applyBackgammonMove,
 	computeUsedFlags,
@@ -20,14 +20,14 @@ async function getBackgammonState(
 ) {
 	const session = await ctx.db.get(sessionId);
 	if (!session || session.gameType !== "backgammon") {
-		throw new Error("Backgammon game not found");
+		throw new ConvexError("Backgammon game not found");
 	}
 	const state = await ctx.db
 		.query("backgammonGameStates")
 		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
 		.unique();
 	if (!state) {
-		throw new Error("Backgammon game not found");
+		throw new ConvexError("Backgammon game not found");
 	}
 	return state;
 }
@@ -42,7 +42,7 @@ function getParticipantColor(
 	if (state.blackParticipantId === participantId) {
 		return "black";
 	}
-	throw new Error("It is not your turn");
+	throw new ConvexError("It is not your turn");
 }
 
 function requireActiveParticipant(
@@ -50,14 +50,14 @@ function requireActiveParticipant(
 	participantId: Id<"sessionParticipants">,
 ): BackgammonColor {
 	if (state.phase === "finished") {
-		throw new Error("This match is already finished");
+		throw new ConvexError("This match is already finished");
 	}
 	if (!state.whiteParticipantId || !state.blackParticipantId) {
-		throw new Error("Waiting for both players");
+		throw new ConvexError("Waiting for both players");
 	}
 	const color = getParticipantColor(state, participantId);
 	if (state.activeColor !== color) {
-		throw new Error("It is not your turn");
+		throw new ConvexError("It is not your turn");
 	}
 	return color;
 }
@@ -70,7 +70,7 @@ export const createState = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "backgammon") {
-			throw new Error("Backgammon session not found");
+			throw new ConvexError("Backgammon session not found");
 		}
 		const existing = await ctx.db
 			.query("backgammonGameStates")
@@ -107,7 +107,7 @@ export const rollDice = mutation({
 		const state = await getBackgammonState(ctx, args.sessionId);
 		const color = requireActiveParticipant(state, args.participantId);
 		if (state.dice.length > 0) {
-			throw new Error("End your turn before rolling again");
+			throw new ConvexError("End your turn before rolling again");
 		}
 		const now = Date.now();
 		const dice = rollBackgammonDice();
@@ -203,7 +203,7 @@ export const endTurn = mutation({
 		const state = await getBackgammonState(ctx, args.sessionId);
 		const color = requireActiveParticipant(state, args.participantId);
 		if (state.dice.length === 0) {
-			throw new Error("Roll before ending your turn");
+			throw new ConvexError("Roll before ending your turn");
 		}
 		const now = Date.now();
 		await ctx.db.patch(state._id, {

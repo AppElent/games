@@ -18,6 +18,7 @@ import {
 	type BackgammonTurnState,
 	computeUsedFlags,
 } from "#/lib/games/backgammon";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { BackgammonMoveLog } from "./BackgammonMoveLog";
@@ -132,9 +133,7 @@ export function BackgammonWaitingRoom({
 				participantId: participantId as Id<"sessionParticipants">,
 			});
 		} catch (caught) {
-			setError(
-				caught instanceof Error ? caught.message : "Could not roll dice",
-			);
+			setError(getUserErrorMessage(caught, "Could not roll dice"));
 		}
 	}
 
@@ -161,7 +160,7 @@ export function BackgammonWaitingRoom({
 				});
 			}
 		} catch (caught) {
-			setError(caught instanceof Error ? caught.message : "Could not move");
+			setError(getUserErrorMessage(caught, "Could not move"));
 		}
 	}
 
@@ -177,7 +176,7 @@ export function BackgammonWaitingRoom({
 				participantId: participantId as Id<"sessionParticipants">,
 			});
 		} catch (caught) {
-			setError(caught instanceof Error ? caught.message : "Could not end turn");
+			setError(getUserErrorMessage(caught, "Could not end turn"));
 		}
 	}
 

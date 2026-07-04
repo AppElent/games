@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
 
@@ -73,9 +74,7 @@ function BackgammonNewPage() {
 								window.location.href = `/backgammon/${result.sessionId}`;
 							} catch (caught) {
 								setError(
-									caught instanceof Error
-										? caught.message
-										: "Could not create challenge",
+									getUserErrorMessage(caught, "Could not create challenge"),
 								);
 							} finally {
 								setBusy(false);

@@ -1,6 +1,7 @@
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { ParticipantList } from "#/components/games/ParticipantList";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import { getHitsterModeConfig, type HitsterMode } from "#/lib/games/hitster";
 import { getHitsterPack } from "#/lib/games/hitsterPacks";
 import { formatJoinCode } from "#/lib/games/sessions";
@@ -29,7 +30,7 @@ export function HitsterHostView({
 		try {
 			await action();
 		} catch (caught) {
-			setError(caught instanceof Error ? caught.message : "Action failed");
+			setError(getUserErrorMessage(caught, "Action failed"));
 		}
 	};
 
