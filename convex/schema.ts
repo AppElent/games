@@ -8,6 +8,30 @@ export const gameTypeValidator = v.union(
 	v.literal("chess"),
 	v.literal("hitster"),
 	v.literal("word-links"),
+	v.literal("connect-four"),
+);
+
+export const connectFourColorValidator = v.union(
+	v.literal("red"),
+	v.literal("yellow"),
+);
+
+export const connectFourCellValidator = v.union(
+	v.literal("red"),
+	v.literal("yellow"),
+	v.literal("empty"),
+);
+
+export const connectFourPhaseValidator = v.union(
+	v.literal("waiting"),
+	v.literal("active"),
+	v.literal("finished"),
+);
+
+export const connectFourOutcomeValidator = v.union(
+	v.literal("connect"),
+	v.literal("draw"),
+	v.literal("resignation"),
 );
 
 export const joinModeValidator = v.union(
@@ -346,6 +370,20 @@ export default defineSchema({
 		drawOfferBy: v.optional(chessColorValidator),
 		resultOutcome: v.optional(chessOutcomeValidator),
 		resultWinner: v.optional(chessColorValidator),
+		winnerParticipantId: v.optional(v.id("sessionParticipants")),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	}).index("by_session", ["sessionId"]),
+
+	connectFourStates: defineTable({
+		sessionId: v.id("gameSessions"),
+		phase: connectFourPhaseValidator,
+		redParticipantId: v.optional(v.id("sessionParticipants")),
+		yellowParticipantId: v.optional(v.id("sessionParticipants")),
+		board: v.array(connectFourCellValidator),
+		activeColor: connectFourColorValidator,
+		resultOutcome: v.optional(connectFourOutcomeValidator),
+		resultWinner: v.optional(connectFourColorValidator),
 		winnerParticipantId: v.optional(v.id("sessionParticipants")),
 		createdAt: v.number(),
 		updatedAt: v.number(),

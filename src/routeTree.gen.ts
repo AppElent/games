@@ -25,6 +25,8 @@ import { Route as SudokuSessionIdRouteImport } from './routes/sudoku/$sessionId'
 import { Route as QuizNewRouteImport } from './routes/quiz/new'
 import { Route as HitsterNewRouteImport } from './routes/hitster/new'
 import { Route as GamesGameTypeRouteImport } from './routes/games/$gameType'
+import { Route as ConnectFourNewRouteImport } from './routes/connect-four/new'
+import { Route as ConnectFourSessionIdRouteImport } from './routes/connect-four/$sessionId'
 import { Route as ChessNewRouteImport } from './routes/chess/new'
 import { Route as ChessSessionIdRouteImport } from './routes/chess/$sessionId'
 import { Route as BackgammonNewRouteImport } from './routes/backgammon/new'
@@ -115,6 +117,16 @@ const GamesGameTypeRoute = GamesGameTypeRouteImport.update({
   path: '/games/$gameType',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConnectFourNewRoute = ConnectFourNewRouteImport.update({
+  id: '/connect-four/new',
+  path: '/connect-four/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectFourSessionIdRoute = ConnectFourSessionIdRouteImport.update({
+  id: '/connect-four/$sessionId',
+  path: '/connect-four/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChessNewRoute = ChessNewRouteImport.update({
   id: '/chess/new',
   path: '/chess/new',
@@ -174,6 +186,8 @@ export interface FileRoutesByFullPath {
   '/backgammon/new': typeof BackgammonNewRoute
   '/chess/$sessionId': typeof ChessSessionIdRoute
   '/chess/new': typeof ChessNewRoute
+  '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
+  '/connect-four/new': typeof ConnectFourNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
@@ -201,6 +215,8 @@ export interface FileRoutesByTo {
   '/backgammon/new': typeof BackgammonNewRoute
   '/chess/$sessionId': typeof ChessSessionIdRoute
   '/chess/new': typeof ChessNewRoute
+  '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
+  '/connect-four/new': typeof ConnectFourNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
@@ -229,6 +245,8 @@ export interface FileRoutesById {
   '/backgammon/new': typeof BackgammonNewRoute
   '/chess/$sessionId': typeof ChessSessionIdRoute
   '/chess/new': typeof ChessNewRoute
+  '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
+  '/connect-four/new': typeof ConnectFourNewRoute
   '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
@@ -258,6 +276,8 @@ export interface FileRouteTypes {
     | '/backgammon/new'
     | '/chess/$sessionId'
     | '/chess/new'
+    | '/connect-four/$sessionId'
+    | '/connect-four/new'
     | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
@@ -285,6 +305,8 @@ export interface FileRouteTypes {
     | '/backgammon/new'
     | '/chess/$sessionId'
     | '/chess/new'
+    | '/connect-four/$sessionId'
+    | '/connect-four/new'
     | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
@@ -312,6 +334,8 @@ export interface FileRouteTypes {
     | '/backgammon/new'
     | '/chess/$sessionId'
     | '/chess/new'
+    | '/connect-four/$sessionId'
+    | '/connect-four/new'
     | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
@@ -340,6 +364,8 @@ export interface RootRouteChildren {
   BackgammonNewRoute: typeof BackgammonNewRoute
   ChessSessionIdRoute: typeof ChessSessionIdRoute
   ChessNewRoute: typeof ChessNewRoute
+  ConnectFourSessionIdRoute: typeof ConnectFourSessionIdRoute
+  ConnectFourNewRoute: typeof ConnectFourNewRoute
   GamesGameTypeRoute: typeof GamesGameTypeRoute
   HitsterNewRoute: typeof HitsterNewRoute
   QuizNewRoute: typeof QuizNewRoute
@@ -469,6 +495,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesGameTypeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/connect-four/new': {
+      id: '/connect-four/new'
+      path: '/connect-four/new'
+      fullPath: '/connect-four/new'
+      preLoaderRoute: typeof ConnectFourNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect-four/$sessionId': {
+      id: '/connect-four/$sessionId'
+      path: '/connect-four/$sessionId'
+      fullPath: '/connect-four/$sessionId'
+      preLoaderRoute: typeof ConnectFourSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chess/new': {
       id: '/chess/new'
       path: '/chess/new'
@@ -548,6 +588,8 @@ const rootRouteChildren: RootRouteChildren = {
   BackgammonNewRoute: BackgammonNewRoute,
   ChessSessionIdRoute: ChessSessionIdRoute,
   ChessNewRoute: ChessNewRoute,
+  ConnectFourSessionIdRoute: ConnectFourSessionIdRoute,
+  ConnectFourNewRoute: ConnectFourNewRoute,
   GamesGameTypeRoute: GamesGameTypeRoute,
   HitsterNewRoute: HitsterNewRoute,
   QuizNewRoute: QuizNewRoute,

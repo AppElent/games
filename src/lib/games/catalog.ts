@@ -16,7 +16,8 @@ export type GameType =
 	| "sudoku"
 	| "chess"
 	| "hitster"
-	| "word-links";
+	| "word-links"
+	| "connect-four";
 
 export type JoinMode = "room" | "challenge" | "solo";
 export type AuthPolicy = "guestAllowed" | "signedInRequired" | "hostChoice";
@@ -126,6 +127,21 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Play daily",
 		route: "/word-links",
 		stats: "Daily",
+	},
+	{
+		type: "connect-four",
+		title: "Connect Four",
+		tagline: "Drop, stack, connect",
+		description:
+			"Classic four-in-a-row. Share a challenge link and drop discs in real time.",
+		joinMode: "challenge",
+		authPolicy: "guestAllowed",
+		availability: "playable",
+		accent: "from-amber-300 to-red-400",
+		icon: CircleDot,
+		primaryAction: "Start game",
+		route: "/connect-four/new",
+		stats: "2 players",
 	},
 ] satisfies readonly GameCatalogItem[];
 

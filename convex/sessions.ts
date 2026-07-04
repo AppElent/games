@@ -215,6 +215,30 @@ export const joinByToken = mutation({
 			}
 		}
 
+		if (session.gameType === "connect-four") {
+			const state = await ctx.db
+				.query("connectFourStates")
+				.withIndex("by_session", (q) => q.eq("sessionId", session._id))
+				.unique();
+			if (state) {
+				const isSeated =
+					state.redParticipantId === participantId ||
+					state.yellowParticipantId === participantId;
+				if (!isSeated) {
+					if (state.redParticipantId && state.yellowParticipantId) {
+						throw new ConvexError("This challenge already has an opponent");
+					}
+					const seat = state.redParticipantId ? "yellow" : "red";
+					await ctx.db.patch(participantId, { seat });
+					await ctx.db.patch(state._id, {
+						[seat === "red" ? "redParticipantId" : "yellowParticipantId"]:
+							participantId,
+						updatedAt: Date.now(),
+					});
+				}
+			}
+		}
+
 		return { sessionId: session._id, participantId, gameType: session.gameType };
 	},
 });

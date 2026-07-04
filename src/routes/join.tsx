@@ -66,6 +66,13 @@ function JoinPage() {
 							);
 							window.location.href = `/backgammon/${result.sessionId}`;
 						}
+						if (result.gameType === "connect-four") {
+							window.sessionStorage.setItem(
+								"arcade-club.participantId",
+								result.participantId,
+							);
+							window.location.href = `/connect-four/${result.sessionId}`;
+						}
 						if (result.gameType === "chess") {
 							window.sessionStorage.setItem(
 								"arcade-club.participantId",
