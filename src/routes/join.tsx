@@ -66,6 +66,13 @@ function JoinPage() {
 							);
 							window.location.href = `/backgammon/${result.sessionId}`;
 						}
+						if (result.gameType === "bluff-dice") {
+							window.sessionStorage.setItem(
+								"arcade-club.participantId",
+								result.participantId,
+							);
+							window.location.href = `/bluff-dice/${result.sessionId}`;
+						}
 						if (result.gameType === "signal-words") {
 							window.sessionStorage.setItem(
 								"arcade-club.participantId",

@@ -19,7 +19,8 @@ export type GameType =
 	| "hitster"
 	| "word-links"
 	| "connect-four"
-	| "signal-words";
+	| "signal-words"
+	| "bluff-dice";
 
 export type JoinMode = "room" | "challenge" | "solo";
 export type AuthPolicy = "guestAllowed" | "signedInRequired" | "hostChoice";
@@ -159,6 +160,21 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Host room",
 		route: "/signal-words/new",
 		stats: "Room code",
+	},
+	{
+		type: "bluff-dice",
+		title: "Bluff Dice",
+		tagline: "Hidden dice, bold claims",
+		description:
+			"Everyone rolls hidden dice, claims climb higher, and one challenge reveals who was bluffing.",
+		joinMode: "room",
+		authPolicy: "guestAllowed",
+		availability: "playable",
+		accent: "from-orange-300 to-rose-400",
+		icon: Dices,
+		primaryAction: "Host table",
+		route: "/bluff-dice/new",
+		stats: "2-8 players",
 	},
 ] satisfies readonly GameCatalogItem[];
 

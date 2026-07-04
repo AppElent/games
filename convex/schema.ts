@@ -10,7 +10,20 @@ export const gameTypeValidator = v.union(
 	v.literal("word-links"),
 	v.literal("connect-four"),
 	v.literal("signal-words"),
+	v.literal("bluff-dice"),
 );
+
+export const bluffPhaseValidator = v.union(
+	v.literal("lobby"),
+	v.literal("claim"),
+	v.literal("finished"),
+);
+
+export const bluffClaimValidator = v.object({
+	quantity: v.number(),
+	face: v.number(),
+	byParticipantId: v.id("sessionParticipants"),
+});
 
 export const signalTeamValidator = v.union(
 	v.literal("red"),
@@ -423,6 +436,39 @@ export default defineSchema({
 		guessesLeft: v.optional(v.number()),
 		winnerTeam: v.optional(signalTeamValidator),
 		trapHitBy: v.optional(signalTeamValidator),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	}).index("by_session", ["sessionId"]),
+
+	bluffDiceStates: defineTable({
+		sessionId: v.id("gameSessions"),
+		phase: bluffPhaseValidator,
+		turnOrder: v.array(v.id("sessionParticipants")),
+		// Private hands — only ever returned through getMyDice.
+		hands: v.array(
+			v.object({
+				participantId: v.id("sessionParticipants"),
+				values: v.array(v.number()),
+			}),
+		),
+		activeIndex: v.number(),
+		roundNumber: v.number(),
+		claimHistory: v.array(bluffClaimValidator),
+		lastReveal: v.optional(
+			v.object({
+				claim: bluffClaimValidator,
+				challengerParticipantId: v.id("sessionParticipants"),
+				actualCount: v.number(),
+				loserParticipantId: v.id("sessionParticipants"),
+				hands: v.array(
+					v.object({
+						participantId: v.id("sessionParticipants"),
+						values: v.array(v.number()),
+					}),
+				),
+			}),
+		),
+		winnerParticipantId: v.optional(v.id("sessionParticipants")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	}).index("by_session", ["sessionId"]),

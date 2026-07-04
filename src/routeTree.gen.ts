@@ -31,6 +31,8 @@ import { Route as ConnectFourNewRouteImport } from './routes/connect-four/new'
 import { Route as ConnectFourSessionIdRouteImport } from './routes/connect-four/$sessionId'
 import { Route as ChessNewRouteImport } from './routes/chess/new'
 import { Route as ChessSessionIdRouteImport } from './routes/chess/$sessionId'
+import { Route as BluffDiceNewRouteImport } from './routes/bluff-dice/new'
+import { Route as BluffDiceSessionIdRouteImport } from './routes/bluff-dice/$sessionId'
 import { Route as BackgammonNewRouteImport } from './routes/backgammon/new'
 import { Route as BackgammonLocalRouteImport } from './routes/backgammon/local'
 import { Route as BackgammonSessionIdRouteImport } from './routes/backgammon/$sessionId'
@@ -149,6 +151,16 @@ const ChessSessionIdRoute = ChessSessionIdRouteImport.update({
   path: '/chess/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BluffDiceNewRoute = BluffDiceNewRouteImport.update({
+  id: '/bluff-dice/new',
+  path: '/bluff-dice/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BluffDiceSessionIdRoute = BluffDiceSessionIdRouteImport.update({
+  id: '/bluff-dice/$sessionId',
+  path: '/bluff-dice/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BackgammonNewRoute = BackgammonNewRouteImport.update({
   id: '/backgammon/new',
   path: '/backgammon/new',
@@ -196,6 +208,8 @@ export interface FileRoutesByFullPath {
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
   '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
+  '/bluff-dice/$sessionId': typeof BluffDiceSessionIdRoute
+  '/bluff-dice/new': typeof BluffDiceNewRoute
   '/chess/$sessionId': typeof ChessSessionIdRoute
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
@@ -227,6 +241,8 @@ export interface FileRoutesByTo {
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
   '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
+  '/bluff-dice/$sessionId': typeof BluffDiceSessionIdRoute
+  '/bluff-dice/new': typeof BluffDiceNewRoute
   '/chess/$sessionId': typeof ChessSessionIdRoute
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
@@ -259,6 +275,8 @@ export interface FileRoutesById {
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
   '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
+  '/bluff-dice/$sessionId': typeof BluffDiceSessionIdRoute
+  '/bluff-dice/new': typeof BluffDiceNewRoute
   '/chess/$sessionId': typeof ChessSessionIdRoute
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
@@ -292,6 +310,8 @@ export interface FileRouteTypes {
     | '/backgammon/$sessionId'
     | '/backgammon/local'
     | '/backgammon/new'
+    | '/bluff-dice/$sessionId'
+    | '/bluff-dice/new'
     | '/chess/$sessionId'
     | '/chess/new'
     | '/connect-four/$sessionId'
@@ -323,6 +343,8 @@ export interface FileRouteTypes {
     | '/backgammon/$sessionId'
     | '/backgammon/local'
     | '/backgammon/new'
+    | '/bluff-dice/$sessionId'
+    | '/bluff-dice/new'
     | '/chess/$sessionId'
     | '/chess/new'
     | '/connect-four/$sessionId'
@@ -354,6 +376,8 @@ export interface FileRouteTypes {
     | '/backgammon/$sessionId'
     | '/backgammon/local'
     | '/backgammon/new'
+    | '/bluff-dice/$sessionId'
+    | '/bluff-dice/new'
     | '/chess/$sessionId'
     | '/chess/new'
     | '/connect-four/$sessionId'
@@ -386,6 +410,8 @@ export interface RootRouteChildren {
   BackgammonSessionIdRoute: typeof BackgammonSessionIdRoute
   BackgammonLocalRoute: typeof BackgammonLocalRoute
   BackgammonNewRoute: typeof BackgammonNewRoute
+  BluffDiceSessionIdRoute: typeof BluffDiceSessionIdRoute
+  BluffDiceNewRoute: typeof BluffDiceNewRoute
   ChessSessionIdRoute: typeof ChessSessionIdRoute
   ChessNewRoute: typeof ChessNewRoute
   ConnectFourSessionIdRoute: typeof ConnectFourSessionIdRoute
@@ -563,6 +589,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChessSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bluff-dice/new': {
+      id: '/bluff-dice/new'
+      path: '/bluff-dice/new'
+      fullPath: '/bluff-dice/new'
+      preLoaderRoute: typeof BluffDiceNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bluff-dice/$sessionId': {
+      id: '/bluff-dice/$sessionId'
+      path: '/bluff-dice/$sessionId'
+      fullPath: '/bluff-dice/$sessionId'
+      preLoaderRoute: typeof BluffDiceSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/backgammon/new': {
       id: '/backgammon/new'
       path: '/backgammon/new'
@@ -626,6 +666,8 @@ const rootRouteChildren: RootRouteChildren = {
   BackgammonSessionIdRoute: BackgammonSessionIdRoute,
   BackgammonLocalRoute: BackgammonLocalRoute,
   BackgammonNewRoute: BackgammonNewRoute,
+  BluffDiceSessionIdRoute: BluffDiceSessionIdRoute,
+  BluffDiceNewRoute: BluffDiceNewRoute,
   ChessSessionIdRoute: ChessSessionIdRoute,
   ChessNewRoute: ChessNewRoute,
   ConnectFourSessionIdRoute: ConnectFourSessionIdRoute,
