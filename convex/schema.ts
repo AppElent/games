@@ -9,6 +9,26 @@ export const gameTypeValidator = v.union(
 	v.literal("hitster"),
 	v.literal("word-links"),
 	v.literal("connect-four"),
+	v.literal("signal-words"),
+);
+
+export const signalTeamValidator = v.union(
+	v.literal("red"),
+	v.literal("blue"),
+);
+
+export const signalRoleValidator = v.union(
+	v.literal("red"),
+	v.literal("blue"),
+	v.literal("neutral"),
+	v.literal("trap"),
+);
+
+export const signalPhaseValidator = v.union(
+	v.literal("lobby"),
+	v.literal("clue"),
+	v.literal("guess"),
+	v.literal("finished"),
 );
 
 export const connectFourColorValidator = v.union(
@@ -385,6 +405,24 @@ export default defineSchema({
 		resultOutcome: v.optional(connectFourOutcomeValidator),
 		resultWinner: v.optional(connectFourColorValidator),
 		winnerParticipantId: v.optional(v.id("sessionParticipants")),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	}).index("by_session", ["sessionId"]),
+
+	signalWordsStates: defineTable({
+		sessionId: v.id("gameSessions"),
+		phase: signalPhaseValidator,
+		words: v.array(v.string()),
+		// Hidden key — only ever returned through the clue-giver query.
+		assignments: v.array(signalRoleValidator),
+		revealed: v.array(v.boolean()),
+		startingTeam: signalTeamValidator,
+		currentTeam: signalTeamValidator,
+		clueWord: v.optional(v.string()),
+		clueCount: v.optional(v.number()),
+		guessesLeft: v.optional(v.number()),
+		winnerTeam: v.optional(signalTeamValidator),
+		trapHitBy: v.optional(signalTeamValidator),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	}).index("by_session", ["sessionId"]),

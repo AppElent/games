@@ -22,6 +22,8 @@ import { Route as WordLinksPuzzleIdRouteImport } from './routes/word-links/$puzz
 import { Route as SudokuScanRouteImport } from './routes/sudoku/scan'
 import { Route as SudokuNewRouteImport } from './routes/sudoku/new'
 import { Route as SudokuSessionIdRouteImport } from './routes/sudoku/$sessionId'
+import { Route as SignalWordsNewRouteImport } from './routes/signal-words/new'
+import { Route as SignalWordsSessionIdRouteImport } from './routes/signal-words/$sessionId'
 import { Route as QuizNewRouteImport } from './routes/quiz/new'
 import { Route as HitsterNewRouteImport } from './routes/hitster/new'
 import { Route as GamesGameTypeRouteImport } from './routes/games/$gameType'
@@ -100,6 +102,16 @@ const SudokuNewRoute = SudokuNewRouteImport.update({
 const SudokuSessionIdRoute = SudokuSessionIdRouteImport.update({
   id: '/sudoku/$sessionId',
   path: '/sudoku/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignalWordsNewRoute = SignalWordsNewRouteImport.update({
+  id: '/signal-words/new',
+  path: '/signal-words/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignalWordsSessionIdRoute = SignalWordsSessionIdRouteImport.update({
+  id: '/signal-words/$sessionId',
+  path: '/signal-words/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuizNewRoute = QuizNewRouteImport.update({
@@ -191,6 +203,8 @@ export interface FileRoutesByFullPath {
   '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
+  '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
+  '/signal-words/new': typeof SignalWordsNewRoute
   '/sudoku/$sessionId': typeof SudokuSessionIdRoute
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
@@ -220,6 +234,8 @@ export interface FileRoutesByTo {
   '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
+  '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
+  '/signal-words/new': typeof SignalWordsNewRoute
   '/sudoku/$sessionId': typeof SudokuSessionIdRoute
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
@@ -250,6 +266,8 @@ export interface FileRoutesById {
   '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
+  '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
+  '/signal-words/new': typeof SignalWordsNewRoute
   '/sudoku/$sessionId': typeof SudokuSessionIdRoute
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
@@ -281,6 +299,8 @@ export interface FileRouteTypes {
     | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
+    | '/signal-words/$sessionId'
+    | '/signal-words/new'
     | '/sudoku/$sessionId'
     | '/sudoku/new'
     | '/sudoku/scan'
@@ -310,6 +330,8 @@ export interface FileRouteTypes {
     | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
+    | '/signal-words/$sessionId'
+    | '/signal-words/new'
     | '/sudoku/$sessionId'
     | '/sudoku/new'
     | '/sudoku/scan'
@@ -339,6 +361,8 @@ export interface FileRouteTypes {
     | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
+    | '/signal-words/$sessionId'
+    | '/signal-words/new'
     | '/sudoku/$sessionId'
     | '/sudoku/new'
     | '/sudoku/scan'
@@ -369,6 +393,8 @@ export interface RootRouteChildren {
   GamesGameTypeRoute: typeof GamesGameTypeRoute
   HitsterNewRoute: typeof HitsterNewRoute
   QuizNewRoute: typeof QuizNewRoute
+  SignalWordsSessionIdRoute: typeof SignalWordsSessionIdRoute
+  SignalWordsNewRoute: typeof SignalWordsNewRoute
   SudokuSessionIdRoute: typeof SudokuSessionIdRoute
   SudokuNewRoute: typeof SudokuNewRoute
   SudokuScanRoute: typeof SudokuScanRoute
@@ -472,6 +498,20 @@ declare module '@tanstack/react-router' {
       path: '/sudoku/$sessionId'
       fullPath: '/sudoku/$sessionId'
       preLoaderRoute: typeof SudokuSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signal-words/new': {
+      id: '/signal-words/new'
+      path: '/signal-words/new'
+      fullPath: '/signal-words/new'
+      preLoaderRoute: typeof SignalWordsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signal-words/$sessionId': {
+      id: '/signal-words/$sessionId'
+      path: '/signal-words/$sessionId'
+      fullPath: '/signal-words/$sessionId'
+      preLoaderRoute: typeof SignalWordsSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quiz/new': {
@@ -593,6 +633,8 @@ const rootRouteChildren: RootRouteChildren = {
   GamesGameTypeRoute: GamesGameTypeRoute,
   HitsterNewRoute: HitsterNewRoute,
   QuizNewRoute: QuizNewRoute,
+  SignalWordsSessionIdRoute: SignalWordsSessionIdRoute,
+  SignalWordsNewRoute: SignalWordsNewRoute,
   SudokuSessionIdRoute: SudokuSessionIdRoute,
   SudokuNewRoute: SudokuNewRoute,
   SudokuScanRoute: SudokuScanRoute,

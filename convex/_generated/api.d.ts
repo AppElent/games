@@ -16,6 +16,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_codes from "../lib/codes.js";
 import type * as quiz from "../quiz.js";
 import type * as sessions from "../sessions.js";
+import type * as signalWords from "../signalWords.js";
 import type * as sudoku from "../sudoku.js";
 
 import type {
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   "lib/codes": typeof lib_codes;
   quiz: typeof quiz;
   sessions: typeof sessions;
+  signalWords: typeof signalWords;
   sudoku: typeof sudoku;
 }>;
 

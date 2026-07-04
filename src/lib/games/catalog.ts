@@ -7,6 +7,7 @@ import {
 	Grid3X3,
 	Music,
 	Trophy,
+	Users,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -17,7 +18,8 @@ export type GameType =
 	| "chess"
 	| "hitster"
 	| "word-links"
-	| "connect-four";
+	| "connect-four"
+	| "signal-words";
 
 export type JoinMode = "room" | "challenge" | "solo";
 export type AuthPolicy = "guestAllowed" | "signedInRequired" | "hostChoice";
@@ -142,6 +144,21 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Start game",
 		route: "/connect-four/new",
 		stats: "2 players",
+	},
+	{
+		type: "signal-words",
+		title: "Signal Words",
+		tagline: "Team clue battles",
+		description:
+			"Two teams, one grid of 25 words. Clue-givers signal, teams guess — and everyone avoids the trap tile.",
+		joinMode: "room",
+		authPolicy: "guestAllowed",
+		availability: "playable",
+		accent: "from-rose-400 to-sky-400",
+		icon: Users,
+		primaryAction: "Host room",
+		route: "/signal-words/new",
+		stats: "Room code",
 	},
 ] satisfies readonly GameCatalogItem[];
 
