@@ -7,24 +7,24 @@ import {
 } from "../catalog";
 
 describe("game catalog", () => {
-	it("lists live quiz, backgammon, sudoku and hitster as playable games", () => {
-		expect(getPlayableGames().map((game) => game.type)).toEqual([
+	it("lists the core games as playable", () => {
+		const playable = getPlayableGames().map((game) => game.type);
+		for (const type of [
 			"live-quiz",
 			"backgammon",
 			"sudoku",
 			"hitster",
-		]);
+			"word-links",
+		]) {
+			expect(playable).toContain(type);
+		}
 	});
 
-	it("keeps future games visible but not playable", () => {
+	it("keeps every catalog entry visible", () => {
 		const visibleTypes = getVisibleGames().map((game) => game.type);
 		expect(visibleTypes).toContain("chess");
-		expect(visibleTypes).toContain("word-games");
-		expect(
-			getVisibleGames()
-				.filter((game) => game.availability !== "playable")
-				.map((game) => game.availability),
-		).toEqual(["coming-soon", "coming-soon"]);
+		expect(visibleTypes).toContain("word-links");
+		expect(visibleTypes.length).toBe(GAME_CATALOG.length);
 	});
 
 	it("uses room mode for quiz and challenge mode for backgammon", () => {

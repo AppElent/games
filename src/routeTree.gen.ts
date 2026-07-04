@@ -16,7 +16,9 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WordLinksIndexRouteImport } from './routes/word-links/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as WordLinksPuzzleIdRouteImport } from './routes/word-links/$puzzleId'
 import { Route as SudokuScanRouteImport } from './routes/sudoku/scan'
 import { Route as SudokuNewRouteImport } from './routes/sudoku/new'
 import { Route as SudokuSessionIdRouteImport } from './routes/sudoku/$sessionId'
@@ -66,9 +68,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WordLinksIndexRoute = WordLinksIndexRouteImport.update({
+  id: '/word-links/',
+  path: '/word-links/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WordLinksPuzzleIdRoute = WordLinksPuzzleIdRouteImport.update({
+  id: '/word-links/$puzzleId',
+  path: '/word-links/$puzzleId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SudokuScanRoute = SudokuScanRouteImport.update({
@@ -154,7 +166,9 @@ export interface FileRoutesByFullPath {
   '/sudoku/$sessionId': typeof SudokuSessionIdRoute
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
+  '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/word-links/': typeof WordLinksIndexRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
   '/quiz/$sessionId/host': typeof QuizSessionIdHostRoute
@@ -177,7 +191,9 @@ export interface FileRoutesByTo {
   '/sudoku/$sessionId': typeof SudokuSessionIdRoute
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
+  '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/word-links': typeof WordLinksIndexRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
   '/quiz/$sessionId/host': typeof QuizSessionIdHostRoute
@@ -201,7 +217,9 @@ export interface FileRoutesById {
   '/sudoku/$sessionId': typeof SudokuSessionIdRoute
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
+  '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/word-links/': typeof WordLinksIndexRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
   '/quiz/$sessionId/host': typeof QuizSessionIdHostRoute
@@ -226,7 +244,9 @@ export interface FileRouteTypes {
     | '/sudoku/$sessionId'
     | '/sudoku/new'
     | '/sudoku/scan'
+    | '/word-links/$puzzleId'
     | '/dashboard/'
+    | '/word-links/'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
     | '/quiz/$sessionId/host'
@@ -249,7 +269,9 @@ export interface FileRouteTypes {
     | '/sudoku/$sessionId'
     | '/sudoku/new'
     | '/sudoku/scan'
+    | '/word-links/$puzzleId'
     | '/dashboard'
+    | '/word-links'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
     | '/quiz/$sessionId/host'
@@ -272,7 +294,9 @@ export interface FileRouteTypes {
     | '/sudoku/$sessionId'
     | '/sudoku/new'
     | '/sudoku/scan'
+    | '/word-links/$puzzleId'
     | '/dashboard/'
+    | '/word-links/'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
     | '/quiz/$sessionId/host'
@@ -296,7 +320,9 @@ export interface RootRouteChildren {
   SudokuSessionIdRoute: typeof SudokuSessionIdRoute
   SudokuNewRoute: typeof SudokuNewRoute
   SudokuScanRoute: typeof SudokuScanRoute
+  WordLinksPuzzleIdRoute: typeof WordLinksPuzzleIdRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  WordLinksIndexRoute: typeof WordLinksIndexRoute
   HitsterSessionIdHostRoute: typeof HitsterSessionIdHostRoute
   HitsterSessionIdPlayRoute: typeof HitsterSessionIdPlayRoute
   QuizSessionIdHostRoute: typeof QuizSessionIdHostRoute
@@ -354,11 +380,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/word-links/': {
+      id: '/word-links/'
+      path: '/word-links'
+      fullPath: '/word-links/'
+      preLoaderRoute: typeof WordLinksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/': {
       id: '/dashboard/'
       path: '/dashboard'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/word-links/$puzzleId': {
+      id: '/word-links/$puzzleId'
+      path: '/word-links/$puzzleId'
+      fullPath: '/word-links/$puzzleId'
+      preLoaderRoute: typeof WordLinksPuzzleIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sudoku/scan': {
@@ -472,7 +512,9 @@ const rootRouteChildren: RootRouteChildren = {
   SudokuSessionIdRoute: SudokuSessionIdRoute,
   SudokuNewRoute: SudokuNewRoute,
   SudokuScanRoute: SudokuScanRoute,
+  WordLinksPuzzleIdRoute: WordLinksPuzzleIdRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  WordLinksIndexRoute: WordLinksIndexRoute,
   HitsterSessionIdHostRoute: HitsterSessionIdHostRoute,
   HitsterSessionIdPlayRoute: HitsterSessionIdPlayRoute,
   QuizSessionIdHostRoute: QuizSessionIdHostRoute,

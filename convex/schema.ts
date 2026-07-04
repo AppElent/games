@@ -7,7 +7,7 @@ export const gameTypeValidator = v.union(
 	v.literal("sudoku"),
 	v.literal("chess"),
 	v.literal("hitster"),
-	v.literal("word-games"),
+	v.literal("word-links"),
 );
 
 export const joinModeValidator = v.union(

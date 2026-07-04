@@ -12,6 +12,18 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["exec", "vite", "dev", "--port", "3210"],
       "port": 3210
+    },
+    {
+      "name": "Vite alt",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "vite", "dev", "--port", "3211"],
+      "port": 3211
+    },
+    {
+      "name": "Vite session",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "vite", "dev", "--port", "3212"],
+      "port": 3212
     }
   ]
 }

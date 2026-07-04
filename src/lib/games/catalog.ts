@@ -16,7 +16,7 @@ export type GameType =
 	| "sudoku"
 	| "chess"
 	| "hitster"
-	| "word-games";
+	| "word-links";
 
 export type JoinMode = "room" | "challenge" | "solo";
 export type AuthPolicy = "guestAllowed" | "signedInRequired" | "hostChoice";
@@ -113,18 +113,19 @@ const GAME_CATALOG_ITEMS = [
 		stats: "Room code",
 	},
 	{
-		type: "word-games",
-		title: "Word Games",
-		tagline: "Quick brain sparks",
-		description: "Fast shared word rounds for calls, parties, and breaks.",
-		joinMode: "room",
+		type: "word-links",
+		title: "Word Links",
+		tagline: "Daily grouping puzzle",
+		description:
+			"Sort 16 words into four hidden groups. A fresh daily puzzle plus a stack of practice puzzles.",
+		joinMode: "solo",
 		authPolicy: "guestAllowed",
-		availability: "coming-soon",
+		availability: "playable",
 		accent: "from-lime-300 to-emerald-400",
 		icon: CircleDot,
-		primaryAction: "Preview",
-		route: "/games/word-games",
-		stats: "Fast play",
+		primaryAction: "Play daily",
+		route: "/word-links",
+		stats: "Daily",
 	},
 ] satisfies readonly GameCatalogItem[];
 
