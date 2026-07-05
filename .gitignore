@@ -4,6 +4,8 @@ dist
 dist-ssr
 *.local
 .env
+.env.*
+!.env.example
 .nitro
 .tanstack
 .wrangler
@@ -15,3 +17,14 @@ todos.json
 # claude local files
 .claude/settings.local.json
 CLAUDE.local.md
+.superpowers/
+
+# generated docs
+docs/.generated
+
+# playwright mcp artifacts
+.playwright-mcp/
+
+# stray WSL-path directory (accidental worktree copy)
+*wsl.localhost*/
+review-notes/

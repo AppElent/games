@@ -4,32 +4,83 @@
     {
       "name": "All (dev:watch)",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["run", "dev:watch"],
+      "runtimeArgs": [
+        "run",
+        "dev:watch"
+      ],
       "port": 3000
     },
     {
       "name": "Vite only",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "vite", "dev", "--port", "3210"],
+      "runtimeArgs": [
+        "exec",
+        "vite",
+        "dev",
+        "--port",
+        "3210"
+      ],
       "port": 3210
     },
     {
       "name": "Vite alt",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "vite", "dev", "--port", "3211"],
+      "runtimeArgs": [
+        "exec",
+        "vite",
+        "dev",
+        "--port",
+        "3211"
+      ],
       "port": 3211
     },
     {
       "name": "Vite session",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "vite", "dev", "--port", "3212"],
+      "runtimeArgs": [
+        "exec",
+        "vite",
+        "dev",
+        "--port",
+        "3212"
+      ],
       "port": 3212
     },
     {
       "name": "Vite squad",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "vite", "dev", "--port", "3213"],
+      "runtimeArgs": [
+        "exec",
+        "vite",
+        "dev",
+        "--port",
+        "3213"
+      ],
       "port": 3213
+    },
+    {
+      "name": "Vite fullscreen",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "exec",
+        "vite",
+        "dev",
+        "--port",
+        "3214"
+      ],
+      "port": 3214
+    },
+    {
+      "name": "Vite surge",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "exec",
+        "vite",
+        "dev",
+        "--port",
+        "3215"
+      ],
+      "port": 3215
     }
   ]
 }
