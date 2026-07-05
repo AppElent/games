@@ -32,6 +32,10 @@
   --club-text: #0f172a;
   --club-muted: #475569;
   --club-soft: #64748b;
+  --club-green: #047857;
+  --club-cyan: #0e7490;
+  --club-pink: #be185d;
+  --club-orange: #c2410c;
   --background: oklch(0.985 0 0);
   --foreground: oklch(0.141 0.005 285.823);
 }
@@ -71,17 +75,21 @@ body {
     linear-gradient(180deg, #f8fafc 0%, #eef2ff 52%, #f8fafc 100%);
 }
 
-a {
-  color: inherit;
-}
+/* Element defaults live in @layer base so Tailwind utilities (in @layer
+   utilities) can override them — unlayered rules would always win. */
+@layer base {
+  a {
+    color: inherit;
+  }
 
-button,
-a {
-  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
-}
+  button,
+  a {
+    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+  }
 
-button {
-  font: inherit;
+  button {
+    font: inherit;
+  }
 }
 
 .club-wrap {
@@ -109,17 +117,32 @@ button {
   text-transform: uppercase;
 }
 
+/* The header stays dark in both themes, so nav links use fixed colors
+   instead of theme tokens (which would go near-black in light mode). */
 .club-nav-link {
-  color: var(--club-muted);
+  color: #aab6cc;
   text-decoration: none;
 }
 
 .club-nav-link:hover,
 .club-nav-link.is-active {
-  color: var(--club-text);
+  color: #f8fafc;
 }
 
 .game-fullscreen {
+  /* Game surfaces are always dark (bg-slate-950), so pin the dark theme
+     tokens here — otherwise light mode turns club-panel/club-text into
+     white-on-white inside pause menus, lobbies, and setup forms. */
+  --club-panel: rgba(18, 22, 38, 0.82);
+  --club-panel-strong: rgba(25, 31, 52, 0.94);
+  --club-line: rgba(148, 163, 184, 0.18);
+  --club-text: #f8fafc;
+  --club-muted: #aab6cc;
+  --club-soft: #64748b;
+  --club-green: #34d399;
+  --club-cyan: #22d3ee;
+  --club-pink: #f472b6;
+  --club-orange: #fb923c;
   position: fixed;
   inset: 0;
   height: 100svh; /* small viewport height — stable under mobile browser chrome */

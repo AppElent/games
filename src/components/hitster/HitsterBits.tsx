@@ -164,7 +164,7 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 							key={row.participantId ?? index}
 							className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2 ${
 								winner
-									? "bg-[var(--club-text)] text-[var(--club-bg)]"
+									? "bg-[var(--club-text)] text-[color:var(--club-bg)]"
 									: "bg-[var(--club-line)] text-[var(--club-text)]"
 							}`}
 						>

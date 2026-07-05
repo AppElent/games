@@ -11,7 +11,9 @@ function GameDetailPage() {
 
 	if (!game) {
 		return (
-			<main className="club-wrap py-10 text-orange-200">Game not found.</main>
+			<main className="club-wrap py-10 text-[var(--club-orange)]">
+				Game not found.
+			</main>
 		);
 	}
 
@@ -25,17 +27,19 @@ function GameDetailPage() {
 					<Icon className="h-7 w-7" />
 				</div>
 				<p className="club-kicker mb-2">{game.tagline}</p>
-				<h1 className="club-title mb-4 text-4xl font-bold text-white">
+				<h1 className="club-title mb-4 text-4xl font-bold text-[var(--club-text)]">
 					{game.title}
 				</h1>
-				<p className="text-lg leading-8 text-slate-300">{game.description}</p>
-				<p className="mt-5 rounded-md border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+				<p className="text-lg leading-8 text-[var(--club-muted)]">
+					{game.description}
+				</p>
+				<p className="mt-5 rounded-md border border-[var(--club-line)] bg-[var(--club-line)] p-4 text-sm text-[var(--club-muted)]">
 					This game is on the Arcade Club shelf and will use the same live
 					session system when it becomes playable.
 				</p>
 				<a
 					href="/"
-					className="mt-6 inline-flex rounded-md bg-white px-4 py-2 text-sm font-bold text-slate-950 no-underline"
+					className="mt-6 inline-flex rounded-md bg-[var(--club-text)] px-4 py-2 text-sm font-bold text-[color:var(--club-bg)] no-underline"
 				>
 					Back to games
 				</a>

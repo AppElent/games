@@ -104,7 +104,7 @@ export function HitsterHostView({
 										{bundle.hostPlayback.artistNames.join(", ")}
 									</p>
 									<a
-										className="mt-2 inline-block rounded-lg bg-[var(--club-text)] px-4 py-2 text-sm font-bold text-[var(--club-bg)]"
+										className="mt-2 inline-block rounded-lg bg-[var(--club-text)] px-4 py-2 text-sm font-bold text-[color:var(--club-bg)]"
 										href={bundle.hostPlayback.spotifySearchUrl}
 										target="_blank"
 										rel="noreferrer"
@@ -125,7 +125,7 @@ export function HitsterHostView({
 							</span>
 							<button
 								type="button"
-								className="rounded-xl bg-[var(--club-text)] px-5 py-2.5 font-bold text-[var(--club-bg)] disabled:opacity-50"
+								className="rounded-xl bg-[var(--club-text)] px-5 py-2.5 font-bold text-[color:var(--club-bg)] disabled:opacity-50"
 								disabled={!state.pendingGuess}
 								onClick={() =>
 									hostAction(() =>
@@ -143,7 +143,7 @@ export function HitsterHostView({
 					<div className="flex justify-end">
 						<button
 							type="button"
-							className="rounded-xl bg-[var(--club-text)] px-5 py-2.5 font-bold text-[var(--club-bg)]"
+							className="rounded-xl bg-[var(--club-text)] px-5 py-2.5 font-bold text-[color:var(--club-bg)]"
 							onClick={() =>
 								hostAction(() =>
 									nextRound({ sessionId: bundle.session._id, participantId }),

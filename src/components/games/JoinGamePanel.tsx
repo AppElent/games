@@ -16,7 +16,7 @@ export function JoinGamePanel() {
 			}}
 		>
 			<label
-				className="mb-2 block text-sm font-bold text-white"
+				className="mb-2 block text-sm font-bold text-[var(--club-text)]"
 				htmlFor="join-code"
 			>
 				Join a game
@@ -27,7 +27,7 @@ export function JoinGamePanel() {
 					value={code}
 					onChange={(event) => setCode(event.target.value)}
 					placeholder="Room code"
-					className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300"
+					className="min-w-0 flex-1 rounded-md border border-[var(--club-line)] bg-[var(--club-panel-strong)] px-3 py-2 text-sm text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-cyan-300"
 				/>
 				<button
 					type="submit"

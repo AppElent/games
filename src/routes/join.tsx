@@ -100,11 +100,11 @@ function JoinPage() {
 				}}
 			>
 				<p className="club-kicker mb-2">Join game</p>
-				<h1 className="club-title mb-5 text-3xl font-bold text-white">
+				<h1 className="club-title mb-5 text-3xl font-bold text-[var(--club-text)]">
 					{joiningByLink ? "Claim your seat" : "Enter your code"}
 				</h1>
 				<label
-					className="mb-2 block text-sm font-bold text-slate-200"
+					className="mb-2 block text-sm font-bold text-[var(--club-muted)]"
 					htmlFor="join-name"
 				>
 					Display name
@@ -113,17 +113,17 @@ function JoinPage() {
 					id="join-name"
 					value={name}
 					onChange={(event) => setName(event.target.value)}
-					className="mb-4 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white"
+					className="mb-4 w-full rounded-md border border-[var(--club-line)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
 					placeholder="Player name"
 				/>
 				{joiningByLink ? (
-					<div className="mb-4 rounded-md border border-cyan-300/30 bg-cyan-300/10 p-3 text-sm text-cyan-50">
+					<div className="mb-4 rounded-md border border-cyan-300/30 bg-cyan-300/10 p-3 text-sm text-[var(--club-text)]">
 						This invite link will add you to the game.
 					</div>
 				) : (
 					<>
 						<label
-							className="mb-2 block text-sm font-bold text-slate-200"
+							className="mb-2 block text-sm font-bold text-[var(--club-muted)]"
 							htmlFor="join-code"
 						>
 							Room code
@@ -132,12 +132,14 @@ function JoinPage() {
 							id="join-code"
 							value={code}
 							onChange={(event) => setCode(event.target.value)}
-							className="mb-4 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white"
+							className="mb-4 w-full rounded-md border border-[var(--club-line)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
 							placeholder="ABC123"
 						/>
 					</>
 				)}
-				{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
+				{error ? (
+					<p className="mb-4 text-sm text-[var(--club-orange)]">{error}</p>
+				) : null}
 				<button
 					type="submit"
 					className="w-full rounded-md bg-cyan-300 px-4 py-2.5 font-bold text-slate-950"
