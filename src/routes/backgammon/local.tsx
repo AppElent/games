@@ -1,10 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
 	BackgammonBoard,
 	type BackgammonBoardOptions,
 	type BackgammonOptionKey,
 } from "#/components/backgammon/BackgammonBoard";
+import { FitScale, RotateHint } from "#/components/games/FitScale";
+import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
 import {
 	applyBackgammonPlan,
 	type BackgammonMovePlan,
@@ -24,6 +26,7 @@ import {
 
 export const Route = createFileRoute("/backgammon/local")({
 	component: BackgammonLocalPage,
+	staticData: { fullscreen: true },
 });
 
 /**
@@ -67,9 +70,11 @@ function BackgammonLocalPage() {
 
 	if (!state) {
 		return (
-			<main className="club-wrap py-10 text-slate-300">
-				Setting up board...
-			</main>
+			<FullscreenGameShell title="Local Backgammon">
+				<div className="flex h-full items-center justify-center text-slate-300">
+					Setting up board...
+				</div>
+			</FullscreenGameShell>
 		);
 	}
 
@@ -180,59 +185,41 @@ function BackgammonLocalPage() {
 	}
 
 	return (
-		<main className="club-wrap py-6">
-			<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-				<div>
-					<p className="club-kicker mb-1">Backgammon</p>
-					<h1 className="club-title text-3xl font-bold text-white">
-						Local match
-					</h1>
-					<p className="mt-1 text-sm text-slate-400">
-						Two players, one device. Progress is saved on this device only.
-					</p>
+		<FullscreenGameShell title="Local Backgammon" onRestart={handleReset}>
+			<div className="flex h-full flex-col">
+				<div className="min-h-0 flex-1 px-2 pt-14 pb-1">
+					<FitScale designWidth={1060}>
+						<BackgammonBoard
+							state={state}
+							interactive={!winner}
+							canRoll={!winner && state.dice.length === 0 && !options.autoRoll}
+							canEndTurn={!winner && state.dice.length > 0}
+							options={options}
+							optionKeys={[
+								"showNumbers",
+								"autoRoll",
+								"autoSwitchTurn",
+								"autoCombine",
+							]}
+							onToggleOption={handleToggleOption}
+							onPlan={handlePlan}
+							onRoll={handleRoll}
+							onEndTurn={handleEndTurn}
+							onUndo={handleUndo}
+							onRedo={handleRedo}
+							onReset={handleReset}
+							canUndo={history.length > 0}
+							canRedo={future.length > 0}
+							statusOverride={
+								winner
+									? `${winner === "white" ? "White" : "Black"} has borne off all 15 checkers`
+									: undefined
+							}
+						/>
+					</FitScale>
 				</div>
-				<Link
-					to="/backgammon/new"
-					className="rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-white/10"
-				>
-					Play online instead
-				</Link>
+				<RotateHint />
 			</div>
-			{winner ? (
-				<div className="mb-4 rounded-lg border border-emerald-300/40 bg-emerald-300/10 p-4 text-emerald-100">
-					<span className="font-bold capitalize">{winner}</span> wins the match!
-					Use Reset to play again.
-				</div>
-			) : null}
-			<div className="flex justify-center">
-				<BackgammonBoard
-					state={state}
-					interactive={!winner}
-					canRoll={!winner && state.dice.length === 0 && !options.autoRoll}
-					canEndTurn={!winner && state.dice.length > 0}
-					options={options}
-					optionKeys={[
-						"showNumbers",
-						"autoRoll",
-						"autoSwitchTurn",
-						"autoCombine",
-					]}
-					onToggleOption={handleToggleOption}
-					onPlan={handlePlan}
-					onRoll={handleRoll}
-					onEndTurn={handleEndTurn}
-					onUndo={handleUndo}
-					onRedo={handleRedo}
-					onReset={handleReset}
-					canUndo={history.length > 0}
-					canRedo={future.length > 0}
-					statusOverride={
-						winner
-							? `${winner === "white" ? "White" : "Black"} has borne off all 15 checkers`
-							: undefined
-					}
-				/>
-			</div>
-		</main>
+		</FullscreenGameShell>
 	);
 }

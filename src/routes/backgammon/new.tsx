@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/backgammon/new")({
 	component: BackgammonNewPage,
+	staticData: { fullscreen: true },
 });
 
 function BackgammonNewPage() {
@@ -16,7 +18,7 @@ function BackgammonNewPage() {
 	const [error, setError] = useState("");
 
 	return (
-		<main className="club-wrap py-10">
+		<FullscreenGamePage title="Backgammon">
 			<p className="club-kicker mb-2">Backgammon</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
 				Start a match
@@ -85,6 +87,6 @@ function BackgammonNewPage() {
 					</button>
 				</div>
 			</div>
-		</main>
+		</FullscreenGamePage>
 	);
 }

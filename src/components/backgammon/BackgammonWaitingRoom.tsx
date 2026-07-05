@@ -5,6 +5,9 @@ import {
 	type BackgammonBoardOptions,
 	type BackgammonOptionKey,
 } from "#/components/backgammon/BackgammonBoard";
+import { FitScale, RotateHint } from "#/components/games/FitScale";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
@@ -73,6 +76,7 @@ export function BackgammonWaitingRoom({
 	const endTurn = useMutation(api.backgammon.endTurn);
 	const [participantId, setParticipantId] = useState<string>();
 	const [error, setError] = useState("");
+	const [showInfo, setShowInfo] = useState(false);
 	const [options, setOptions] = useState<BackgammonBoardOptions>({
 		showNumbers: true,
 		autoRoll: false,
@@ -184,67 +188,81 @@ export function BackgammonWaitingRoom({
 		setOptions((current) => ({ ...current, [key]: !current[key] }));
 	}
 
-	return (
-		<div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-			<section className="space-y-4">
-				<div className="club-panel rounded-lg p-5">
-					<div className="flex flex-wrap items-start justify-between gap-4">
-						<div>
-							<p className="club-kicker mb-2">Backgammon</p>
-							<h1 className="club-title text-3xl font-bold text-white">
-								{bundle.session.title}
-							</h1>
-						</div>
-						<span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-300">
-							{bundle.state?.phase ?? "loading"}
-						</span>
-					</div>
-					<div className="mt-4">
-						<SeatBanner
-							tone={
-								finished ? "success" : opponentJoined ? "success" : "warning"
-							}
-							label={
-								finished
-									? `${winner?.displayName ?? "Someone"} wins the match!`
-									: opponentJoined
-										? localColor
-											? `You are playing ${localColor}.`
-											: "Both seats are claimed — you are watching."
-										: "Share the link with one opponent to claim the black seat."
-							}
-						/>
-					</div>
-					<div className="mt-4 grid gap-3 md:grid-cols-2">
-						<SeatCard
-							label="White"
-							name={white?.displayName ?? "Host"}
-							counts={
-								bundle.state
-									? `Bar ${bundle.state.bar.white} / Off ${bundle.state.off.white}`
-									: undefined
-							}
-							active={!finished && bundle.state?.activeColor === "white"}
-						/>
-						<SeatCard
-							label="Black"
-							name={black?.displayName ?? "Open seat"}
-							counts={
-								bundle.state
-									? `Bar ${bundle.state.bar.black} / Off ${bundle.state.off.black}`
-									: undefined
-							}
-							active={!finished && bundle.state?.activeColor === "black"}
-							open={!black}
-						/>
-					</div>
-					{error ? (
-						<p className="mt-3 text-sm text-orange-200">{error}</p>
-					) : null}
-				</div>
+	const seatCards = (
+		<div className="grid gap-3 md:grid-cols-2">
+			<SeatCard
+				label="White"
+				name={white?.displayName ?? "Host"}
+				counts={
+					bundle.state
+						? `Bar ${bundle.state.bar.white} / Off ${bundle.state.off.white}`
+						: undefined
+				}
+				active={!finished && bundle.state?.activeColor === "white"}
+			/>
+			<SeatCard
+				label="Black"
+				name={black?.displayName ?? "Open seat"}
+				counts={
+					bundle.state
+						? `Bar ${bundle.state.bar.black} / Off ${bundle.state.off.black}`
+						: undefined
+				}
+				active={!finished && bundle.state?.activeColor === "black"}
+				open={!black}
+			/>
+		</div>
+	);
 
-				{turnState ? (
-					<div className="flex justify-center">
+	// Pre-game: opponent hasn't claimed the black seat yet — show a scrollable
+	// share screen instead of the board.
+	if (!turnState || !opponentJoined) {
+		return (
+			<FullscreenGamePage
+				title={bundle.session.title}
+				maxWidthClassName="max-w-md"
+			>
+				<p className="club-kicker mb-2">Backgammon</p>
+				<h1 className="club-title mb-4 text-3xl font-bold text-white">
+					{bundle.session.title}
+				</h1>
+				<div className="space-y-4">
+					<SeatBanner
+						tone="warning"
+						label="Share the link with one opponent to claim the black seat."
+					/>
+					{seatCards}
+					{error ? <p className="text-sm text-orange-200">{error}</p> : null}
+					<QrSharePanel label="Challenge link" url={shareUrl} />
+					<ParticipantList participants={bundle.participants} />
+				</div>
+			</FullscreenGamePage>
+		);
+	}
+
+	return (
+		<FullscreenGameShell
+			title={bundle.session.title}
+			hud={
+				<div className="flex items-center justify-end gap-2">
+					{error ? (
+						<span className="max-w-[50vw] truncate rounded-xl bg-orange-950/70 px-3 py-2 text-xs text-orange-200 backdrop-blur">
+							{error}
+						</span>
+					) : null}
+					<button
+						type="button"
+						onClick={() => setShowInfo((open) => !open)}
+						className="flex h-11 items-center rounded-xl border border-white/20 bg-slate-900/70 px-4 text-sm font-bold text-white backdrop-blur"
+					>
+						Info
+					</button>
+				</div>
+			}
+		>
+			<div className="flex h-full flex-col">
+				<div className="min-h-0 flex-1 px-2 pt-14 pb-1">
+					<FitScale designWidth={1060}>
 						<BackgammonBoard
 							state={turnState}
 							interactive={myTurn}
@@ -259,29 +277,45 @@ export function BackgammonWaitingRoom({
 							statusOverride={
 								finished
 									? `${winner?.displayName ?? "Winner"} has borne off all 15 checkers`
-									: !opponentJoined
-										? "Waiting for an opponent to join"
-										: myTurn
-											? undefined
-											: `Waiting for ${bundle.state?.activeColor === "white" ? (white?.displayName ?? "white") : (black?.displayName ?? "black")} to play`
+									: myTurn
+										? undefined
+										: `Waiting for ${bundle.state?.activeColor === "white" ? (white?.displayName ?? "white") : (black?.displayName ?? "black")} to play`
 							}
 						/>
+					</FitScale>
+				</div>
+				<RotateHint />
+			</div>
+			{showInfo ? (
+				<div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm">
+					<div className="h-full touch-pan-y overflow-y-auto overscroll-contain p-4 pt-16">
+						<div className="mx-auto max-w-md space-y-4">
+							<SeatBanner
+								tone="success"
+								label={
+									finished
+										? `${winner?.displayName ?? "Someone"} wins the match!`
+										: localColor
+											? `You are playing ${localColor}.`
+											: "Both seats are claimed — you are watching."
+								}
+							/>
+							{seatCards}
+							<QrSharePanel label="Challenge link" url={shareUrl} />
+							<ParticipantList participants={bundle.participants} />
+							<BackgammonMoveLog moves={bundle.moves} />
+							<button
+								type="button"
+								onClick={() => setShowInfo(false)}
+								className="w-full min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
+							>
+								Close
+							</button>
+						</div>
 					</div>
-				) : (
-					<div className="club-panel rounded-lg p-6 text-center">
-						<p className="club-kicker mb-2">Setting up</p>
-						<h2 className="club-title text-2xl font-bold text-white">
-							Board is loading
-						</h2>
-					</div>
-				)}
-			</section>
-			<aside className="space-y-4">
-				<QrSharePanel label="Challenge link" url={shareUrl} />
-				<ParticipantList participants={bundle.participants} />
-				<BackgammonMoveLog moves={bundle.moves} />
-			</aside>
-		</div>
+				</div>
+			) : null}
+		</FullscreenGameShell>
 	);
 }
 
