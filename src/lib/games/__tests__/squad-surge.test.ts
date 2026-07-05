@@ -18,6 +18,7 @@ function makeLevel(overrides: Partial<Level> = {}): Level {
 		length: 100,
 		gatePairs: [],
 		waves: [],
+		weaponDrops: [],
 		boss: 10,
 		startArmy: 10,
 		...overrides,

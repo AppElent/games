@@ -6,12 +6,17 @@ import { getUserErrorMessage } from "#/lib/games/errors";
 import {
 	generateLevel,
 	type Level,
-	type SimState,
+	type SimStatus,
 } from "#/lib/games/squad-surge";
+
 import {
+	loadSquadSurgeSettings,
 	recordSquadSurgeRun,
 	type SquadSurgeProgress,
+	saveSquadSurgeSettings,
 } from "#/lib/games/squad-surge-local";
+
+type SquadSurgeEndState = { status: SimStatus; army: number; z: number };
 
 export const Route = createFileRoute("/squad-surge/play")({
 	component: SquadSurgePlay,
@@ -27,8 +32,18 @@ function SquadSurgePlay() {
 	const { d, seed } = Route.useSearch();
 	const navigate = useNavigate();
 	const [paused, setPaused] = useState(false);
-	const [endState, setEndState] = useState<SimState | null>(null);
+	const [endState, setEndState] = useState<SquadSurgeEndState | null>(null);
 	const [progress, setProgress] = useState<SquadSurgeProgress | null>(null);
+	const [soundOn, setSoundOn] = useState(
+		() => loadSquadSurgeSettings().soundOn,
+	);
+
+	const toggleSound = useCallback(() => {
+		setSoundOn((prev) => {
+			saveSquadSurgeSettings({ soundOn: !prev });
+			return !prev;
+		});
+	}, []);
 
 	const { level, error } = useMemo<{ level?: Level; error?: string }>(() => {
 		try {
@@ -46,7 +61,7 @@ function SquadSurgePlay() {
 	}, [seed, d]);
 
 	const handleEnd = useCallback(
-		(state: SimState) => {
+		(state: SquadSurgeEndState) => {
 			setEndState(state);
 			setProgress(
 				recordSquadSurgeRun({
@@ -74,12 +89,23 @@ function SquadSurgePlay() {
 			onPauseChange={setPaused}
 		>
 			{level ? (
-				<SquadSurgeCanvas
-					key={`${seed}-${d}`}
-					level={level}
-					paused={paused || endState !== null}
-					onEnd={handleEnd}
-				/>
+				<>
+					<SquadSurgeCanvas
+						key={`${seed}-${d}`}
+						level={level}
+						paused={paused || endState !== null}
+						soundOn={soundOn}
+						onEnd={handleEnd}
+					/>
+					<button
+						type="button"
+						onClick={toggleSound}
+						aria-label={soundOn ? "Mute sound" : "Unmute sound"}
+						className="absolute top-3 right-3 z-10 flex size-11 items-center justify-center rounded-xl border border-white/20 bg-slate-950/60 text-lg backdrop-blur-sm"
+					>
+						{soundOn ? "🔊" : "🔇"}
+					</button>
+				</>
 			) : (
 				<div className="flex h-full items-center justify-center p-4">
 					<p className="text-orange-200">{error ?? "Squad Surge hit a snag"}</p>
@@ -98,10 +124,10 @@ function SquadSurgePlay() {
 						</h2>
 						<p className="mb-1 text-sm text-slate-300">
 							{endState.status === "won"
-								? `${endState.army} soldiers beat the boss (${level.boss}).`
+								? `Your ${endState.army} soldiers gunned the boss down.`
 								: endState.army > 0
-									? `The boss (${level.boss}) outnumbered your ${endState.army} soldiers.`
-									: "The enemy waves wiped out your squad."}
+									? "The boss reached your line before you could take it down."
+									: "The horde wiped out your squad."}
 						</p>
 						<p className="mb-5 text-sm text-slate-300">
 							Distance: {Math.floor(endState.z)}m

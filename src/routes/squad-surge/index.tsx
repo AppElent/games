@@ -33,8 +33,9 @@ function SquadSurgeStart() {
 						Grow your army, break the line
 					</h1>
 					<p className="mb-5 text-sm text-slate-300">
-						Steer through the better gate, survive the enemy waves, and bring
-						more soldiers than the boss.
+						Your squad fires automatically — steer through the better gate, grab
+						weapon crates, mow down the horde, and gun down the boss at the end
+						of the road.
 					</p>
 					<div className="mb-5 flex justify-center gap-4 text-sm text-slate-300">
 						<span>

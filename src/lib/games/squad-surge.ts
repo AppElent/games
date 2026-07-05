@@ -12,6 +12,63 @@ export type Gate = { side: 0 | 1; op: GateOp; value: number };
 export type GatePair = { z: number; gates: [Gate, Gate] };
 export type Wave = { z: number; strength: number };
 
+export type WeaponId = "pistol" | "smg" | "shotgun" | "minigun";
+
+export type WeaponSpec = {
+	id: WeaponId;
+	name: string;
+	/** Shots per second per soldier. */
+	rps: number;
+	/** Enemy hit points removed per shot. */
+	damage: number;
+	/** How far ahead (track units) the squad can hit. */
+	range: number;
+	tier: number;
+	color: string;
+};
+
+export const WEAPONS: Record<WeaponId, WeaponSpec> = {
+	pistol: {
+		id: "pistol",
+		name: "Pistol",
+		rps: 1.2,
+		damage: 1,
+		range: 30,
+		tier: 0,
+		color: "#94a3b8",
+	},
+	smg: {
+		id: "smg",
+		name: "SMG",
+		rps: 3,
+		damage: 1,
+		range: 34,
+		tier: 1,
+		color: "#38bdf8",
+	},
+	shotgun: {
+		id: "shotgun",
+		name: "Shotgun",
+		rps: 1.4,
+		damage: 3,
+		range: 27,
+		tier: 2,
+		color: "#fb923c",
+	},
+	minigun: {
+		id: "minigun",
+		name: "Minigun",
+		rps: 6,
+		damage: 1,
+		range: 38,
+		tier: 3,
+		color: "#f43f5e",
+	},
+};
+
+/** A weapon crate sitting on one side of the road; run over it to pick it up. */
+export type WeaponDrop = { z: number; weapon: WeaponId; lane: number };
+
 export type Level = {
 	seed: number;
 	difficulty: number;
@@ -21,6 +78,8 @@ export type Level = {
 	gatePairs: GatePair[];
 	/** Sorted by z. */
 	waves: Wave[];
+	/** Sorted by z. */
+	weaponDrops: WeaponDrop[];
 	/** Army needed (strictly more) to win at z === length. */
 	boss: number;
 	startArmy: number;
@@ -132,12 +191,35 @@ export function generateLevel(seed: number, difficulty: number): Level {
 	}
 	const length = z + segment;
 
+	// Weapon crates appear at fixed fractions of the track; higher difficulty
+	// unlocks later tiers. Each sits on one side so grabbing it is a choice.
+	const dropTiers: WeaponId[] = ["smg", "shotgun", "minigun"];
+	const dropCount = Math.min(dropTiers.length, 1 + Math.floor(difficulty / 2));
+	const weaponDrops: WeaponDrop[] = [];
+	for (let i = 0; i < dropCount; i += 1) {
+		const frac = (i + 1) / (dropCount + 1);
+		weaponDrops.push({
+			z: Math.round(length * frac) + 10,
+			weapon: dropTiers[i],
+			lane: rng() < 0.5 ? 0.25 : 0.75,
+		});
+	}
+
 	const boss = Math.max(
 		1,
 		Math.min(expected - 1, Math.floor(expected * (0.5 + difficulty * 0.06))),
 	);
 
-	return { seed, difficulty, length, gatePairs, waves, boss, startArmy };
+	return {
+		seed,
+		difficulty,
+		length,
+		gatePairs,
+		waves,
+		weaponDrops,
+		boss,
+		startArmy,
+	};
 }
 
 export function initialState(level: Level): SimState {
