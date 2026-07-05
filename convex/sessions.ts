@@ -22,6 +22,11 @@ export const create = mutation({
 		if (args.authPolicy === "signedInRequired" && !userId) {
 			throw new ConvexError("Sign in required to create this game");
 		}
+		// Hosting a multiplayer session always requires an account; only solo
+		// sessions (sudoku) can be created as a guest.
+		if (args.joinMode !== "solo" && !userId) {
+			throw new ConvexError("Sign in to host a game");
+		}
 
 		let joinCode: string | undefined;
 		if (args.joinMode === "room") {

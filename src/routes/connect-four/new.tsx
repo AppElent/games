@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/connect-four/new")({
 function ConnectFourNewPage() {
 	const createSession = useMutation(api.sessions.create);
 	const createState = useMutation(api.connectFour.createState);
+	const hostName = useHostDisplayName();
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 
@@ -27,7 +29,7 @@ function ConnectFourNewPage() {
 				joinMode: "challenge",
 				authPolicy: "guestAllowed",
 				title: "Connect Four",
-				displayName: guest.displayName,
+				displayName: hostName,
 				guestId: guest.id,
 			});
 			await createState({
@@ -52,20 +54,22 @@ function ConnectFourNewPage() {
 				Start a game
 			</h1>
 			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
-			<div className="club-panel max-w-xl rounded-lg p-6">
-				<p className="mb-5 text-sm text-slate-300">
-					You play red and move first. Share the link or QR code — your opponent
-					claims the yellow seat automatically.
-				</p>
-				<button
-					type="button"
-					disabled={busy}
-					onClick={handleCreate}
-					className="min-h-11 w-full rounded-md bg-white px-5 py-3 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-				>
-					{busy ? "Creating challenge..." : "Create challenge link"}
-				</button>
-			</div>
+			<HostGate>
+				<div className="club-panel max-w-xl rounded-lg p-6">
+					<p className="mb-5 text-sm text-slate-300">
+						You play red and move first. Share the link or QR code — your
+						opponent claims the yellow seat automatically.
+					</p>
+					<button
+						type="button"
+						disabled={busy}
+						onClick={handleCreate}
+						className="min-h-11 w-full rounded-md bg-white px-5 py-3 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						{busy ? "Creating challenge..." : "Create challenge link"}
+					</button>
+				</div>
+			</HostGate>
 		</FullscreenGamePage>
 	);
 }

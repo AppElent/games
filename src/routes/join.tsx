@@ -1,6 +1,7 @@
+import { useUser } from "@clerk/clerk-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import {
 	getOrCreateGuestIdentity,
@@ -24,6 +25,17 @@ function JoinPage() {
 	const [name, setName] = useState("");
 	const [error, setError] = useState("");
 	const joiningByLink = Boolean(search.token);
+
+	// Signed-in players get their first name prefilled (still editable);
+	// guests start with an empty field.
+	const { user } = useUser();
+	const prefilled = useRef(false);
+	useEffect(() => {
+		if (!prefilled.current && user?.firstName) {
+			prefilled.current = true;
+			setName((current) => current || user.firstName || "");
+		}
+	}, [user]);
 
 	return (
 		<main className="club-wrap flex min-h-[70vh] items-center justify-center py-10">

@@ -1,5 +1,6 @@
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import {
 	getHitsterModeConfig,
@@ -21,7 +22,16 @@ const TIMER_OPTIONS = [
 ];
 
 export function HitsterSetupForm() {
+	return (
+		<HostGate>
+			<HitsterSetupFormInner />
+		</HostGate>
+	);
+}
+
+function HitsterSetupFormInner() {
 	const createSession = useMutation(api.sessions.create);
+	const hostName = useHostDisplayName();
 	const setup = useMutation(api.hitster.setup);
 	const [mode, setMode] = useState<HitsterMode>("original");
 	const [packId, setPackId] = useState("normal");
@@ -123,7 +133,7 @@ export function HitsterSetupForm() {
 							joinMode: "room",
 							authPolicy: "hostChoice",
 							title: "Music Timeline",
-							displayName: guest.displayName,
+							displayName: hostName,
 							guestId: guest.id,
 						});
 						await setup({

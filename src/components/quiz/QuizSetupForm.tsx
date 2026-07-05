@@ -1,13 +1,23 @@
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
 
 export function QuizSetupForm() {
+	return (
+		<HostGate>
+			<QuizSetupFormInner />
+		</HostGate>
+	);
+}
+
+function QuizSetupFormInner() {
 	const createSession = useMutation(api.sessions.create);
 	const ensureSampleSet = useMutation(api.quiz.ensureSampleSet);
 	const startQuiz = useMutation(api.quiz.startForSession);
+	const hostName = useHostDisplayName();
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 
@@ -34,7 +44,7 @@ export function QuizSetupForm() {
 								joinMode: "room",
 								authPolicy: "hostChoice",
 								title: "Live Quiz",
-								displayName: guest.displayName,
+								displayName: hostName,
 								guestId: guest.id,
 							}),
 						]);
