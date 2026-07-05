@@ -1,24 +1,60 @@
 import { ConvexError, v } from "convex/values";
+import {
+	findBinaryConflicts,
+	isBinarySolved,
+} from "../src/lib/games/binary-puzzle";
+import {
+	findKillerConflicts,
+	type KillerCage,
+	validateKillerCages,
+} from "../src/lib/games/sudoku-killer";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { sudokuDifficultyValidator, sudokuSourceValidator } from "./schema";
+import {
+	sudokuCageValidator,
+	sudokuDifficultyValidator,
+	sudokuSourceValidator,
+	sudokuVariantValidator,
+} from "./schema";
 
-const GRID_RE = /^[0-9]{81}$/;
+type SudokuVariant = "classic" | "killer" | "binary";
 
-function assertGridString(value: string, label: string) {
-	if (!GRID_RE.test(value)) {
+const BINARY_SIZES = [6, 8, 10, 12];
+
+/** Cell count and digit alphabet for a state's variant. */
+function gridSpec(variant: SudokuVariant, size?: number) {
+	if (variant === "binary") {
+		const side = size ?? 0;
+		if (!BINARY_SIZES.includes(side)) {
+			throw new ConvexError("Invalid binary board size");
+		}
+		return { cells: side * side, re: new RegExp(`^[0-2]{${side * side}}$`) };
+	}
+	return { cells: 81, re: /^[0-9]{81}$/ };
+}
+
+function assertGridString(
+	value: string,
+	label: string,
+	spec: { re: RegExp },
+) {
+	if (!spec.re.test(value)) {
 		throw new ConvexError(`Invalid ${label} grid`);
 	}
 }
 
-function assertMaskArray(values: number[], label: string) {
+function assertMaskArray(values: number[], label: string, cells: number) {
 	if (
-		values.length !== 81 ||
+		values.length !== cells ||
 		values.some((mask) => !Number.isInteger(mask) || mask < 0 || mask > 0x1ff)
 	) {
 		throw new ConvexError(`Invalid ${label}`);
 	}
+}
+
+function gridToArray(grid: string) {
+	return [...grid].map(Number);
 }
 
 /** Row/column/box duplicate check on an 81-char digit string. */
@@ -58,9 +94,37 @@ function mergedGrid(givens: string, digits: string) {
 	return merged;
 }
 
-function isSolved(givens: string, digits: string) {
-	const merged = mergedGrid(givens, digits);
-	return !merged.includes("0") && !hasConflicts(merged);
+function mergedGridAny(givens: string, digits: string) {
+	let merged = "";
+	for (let cell = 0; cell < givens.length; cell += 1) {
+		merged += givens[cell] !== "0" ? givens[cell] : digits[cell];
+	}
+	return merged;
+}
+
+function isSolved(state: {
+	variant?: SudokuVariant;
+	givens: string;
+	cages?: KillerCage[];
+	size?: number;
+	digits?: string;
+}) {
+	const variant = state.variant ?? "classic";
+	const digits = state.digits ?? "";
+	if (variant === "binary") {
+		const merged = mergedGridAny(state.givens, digits);
+		return isBinarySolved(gridToArray(merged), state.size ?? 0);
+	}
+	const merged = mergedGrid(state.givens, digits);
+	if (merged.includes("0") || hasConflicts(merged)) {
+		return false;
+	}
+	if (variant === "killer") {
+		return (
+			findKillerConflicts(gridToArray(merged), state.cages ?? []).size === 0
+		);
+	}
+	return true;
 }
 
 async function getStateForSession(
@@ -95,6 +159,9 @@ export const createState = mutation({
 		sessionId: v.id("gameSessions"),
 		source: sudokuSourceValidator,
 		difficulty: v.optional(sudokuDifficultyValidator),
+		variant: v.optional(sudokuVariantValidator),
+		cages: v.optional(v.array(sudokuCageValidator)),
+		size: v.optional(v.number()),
 		givens: v.string(),
 		digits: v.optional(v.string()),
 		solution: v.optional(v.string()),
@@ -114,19 +181,43 @@ export const createState = mutation({
 		if (existing) {
 			throw new ConvexError("Sudoku state already exists");
 		}
-		assertGridString(args.givens, "givens");
-		const digits = args.digits ?? "0".repeat(81);
-		assertGridString(digits, "digits");
+		const variant = args.variant ?? "classic";
+		const spec = gridSpec(variant, args.size);
+		assertGridString(args.givens, "givens", spec);
+		const digits = args.digits ?? "0".repeat(spec.cells);
+		assertGridString(digits, "digits", spec);
 		if (args.solution) {
-			assertGridString(args.solution, "solution");
+			assertGridString(args.solution, "solution", spec);
 		}
-		if (hasConflicts(mergedGrid(args.givens, digits))) {
-			throw new ConvexError("Puzzle contains conflicting digits");
+		if (variant === "binary") {
+			if (
+				findBinaryConflicts(
+					gridToArray(mergedGridAny(args.givens, digits)),
+					args.size ?? 0,
+				).size > 0
+			) {
+				throw new ConvexError("Puzzle contains conflicting digits");
+			}
+		} else {
+			if (hasConflicts(mergedGrid(args.givens, digits))) {
+				throw new ConvexError("Puzzle contains conflicting digits");
+			}
 		}
-		const cornerNotes = args.cornerNotes ?? new Array(81).fill(0);
-		const centerNotes = args.centerNotes ?? new Array(81).fill(0);
-		assertMaskArray(cornerNotes, "corner notes");
-		assertMaskArray(centerNotes, "center notes");
+		if (variant === "killer") {
+			if (!args.cages || !validateKillerCages(args.cages)) {
+				throw new ConvexError("Invalid killer cages");
+			}
+			if (
+				args.solution &&
+				findKillerConflicts(gridToArray(args.solution), args.cages).size > 0
+			) {
+				throw new ConvexError("Solution does not satisfy the cages");
+			}
+		}
+		const cornerNotes = args.cornerNotes ?? new Array(spec.cells).fill(0);
+		const centerNotes = args.centerNotes ?? new Array(spec.cells).fill(0);
+		assertMaskArray(cornerNotes, "corner notes", spec.cells);
+		assertMaskArray(centerNotes, "center notes", spec.cells);
 
 		const now = Date.now();
 		const stateId = await ctx.db.insert("sudokuStates", {
@@ -134,12 +225,15 @@ export const createState = mutation({
 			difficulty: args.difficulty,
 			source: args.source,
 			status: "active",
+			variant: args.variant,
+			cages: variant === "killer" ? args.cages : undefined,
+			size: variant === "binary" ? args.size : undefined,
 			givens: args.givens,
 			digits,
 			solution: args.solution,
 			cornerNotes,
 			centerNotes,
-			colors: new Array(81).fill(0),
+			colors: new Array(spec.cells).fill(0),
 			autoCleanup: args.autoCleanup ?? false,
 			elapsedSeconds: 0,
 			lastResumedAt: now,
@@ -189,10 +283,11 @@ export const saveProgress = mutation({
 		if (state.status === "completed") {
 			return;
 		}
-		assertGridString(args.digits, "digits");
-		assertMaskArray(args.cornerNotes, "corner notes");
-		assertMaskArray(args.centerNotes, "center notes");
-		assertMaskArray(args.colors, "colors");
+		const spec = gridSpec(state.variant ?? "classic", state.size);
+		assertGridString(args.digits, "digits", spec);
+		assertMaskArray(args.cornerNotes, "corner notes", spec.cells);
+		assertMaskArray(args.centerNotes, "center notes", spec.cells);
+		assertMaskArray(args.colors, "colors", spec.cells);
 		await ctx.db.patch(state._id, {
 			digits: args.digits,
 			cornerNotes: args.cornerNotes,
@@ -244,8 +339,12 @@ export const complete = mutation({
 		if (state.status === "completed") {
 			return { completed: true };
 		}
-		assertGridString(args.digits, "digits");
-		if (!isSolved(state.givens, args.digits)) {
+		assertGridString(
+			args.digits,
+			"digits",
+			gridSpec(state.variant ?? "classic", state.size),
+		);
+		if (!isSolved({ ...state, digits: args.digits })) {
 			throw new ConvexError("The grid is not solved yet");
 		}
 		const now = Date.now();

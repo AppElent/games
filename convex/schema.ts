@@ -162,6 +162,17 @@ export const sudokuStatusValidator = v.union(
 	v.literal("completed"),
 );
 
+export const sudokuVariantValidator = v.union(
+	v.literal("classic"),
+	v.literal("killer"),
+	v.literal("binary"),
+);
+
+export const sudokuCageValidator = v.object({
+	sum: v.number(),
+	cells: v.array(v.number()),
+});
+
 export const hitsterModeValidator = v.union(
 	v.literal("instant"),
 	v.literal("original"),
@@ -348,7 +359,13 @@ export default defineSchema({
 		difficulty: v.optional(sudokuDifficultyValidator),
 		source: sudokuSourceValidator,
 		status: sudokuStatusValidator,
-		// 81-char strings, "0" = empty
+		// Absent variant = classic (pre-variant rows).
+		variant: v.optional(sudokuVariantValidator),
+		// Killer only: cages partitioning the board.
+		cages: v.optional(v.array(sudokuCageValidator)),
+		// Binary only: board side length (grids are size*size chars).
+		size: v.optional(v.number()),
+		// 81-char strings, "0" = empty (size*size chars for binary)
 		givens: v.string(),
 		digits: v.string(),
 		solution: v.optional(v.string()),

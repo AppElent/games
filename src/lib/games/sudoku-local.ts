@@ -18,6 +18,7 @@ export function autoSessionTitle(
 	difficulty: SudokuDifficulty | undefined,
 	source: "generated" | "scan",
 	now = new Date(),
+	variant: "classic" | "killer" | "binary" = "classic",
 ) {
 	const stamp = `${now.toLocaleDateString(undefined, {
 		month: "short",
@@ -29,10 +30,16 @@ export function autoSessionTitle(
 	if (source === "scan") {
 		return `Scanned sudoku · ${stamp}`;
 	}
+	const kind =
+		variant === "killer"
+			? "killer sudoku"
+			: variant === "binary"
+				? "binary"
+				: "sudoku";
 	const level = difficulty
 		? difficulty[0].toUpperCase() + difficulty.slice(1)
 		: "Sudoku";
-	return `${level} sudoku · ${stamp}`;
+	return `${level} ${kind} · ${stamp}`;
 }
 
 export function listLocalSudokuSessions(

@@ -20,6 +20,10 @@ import {
 } from "#/lib/games/sudoku-board";
 import type { SudokuHint } from "#/lib/games/sudoku-hints";
 import { findHint, hintTextForLevel } from "#/lib/games/sudoku-hints";
+import {
+	findKillerConflicts,
+	type KillerCage,
+} from "#/lib/games/sudoku-killer";
 import { renameLocalSudokuSession } from "#/lib/games/sudoku-local";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -35,6 +39,8 @@ type SudokuStateDoc = {
 	status: "active" | "paused" | "completed";
 	difficulty?: "easy" | "medium" | "hard" | "expert";
 	source: "generated" | "scan";
+	variant?: "classic" | "killer" | "binary";
+	cages?: KillerCage[];
 	autoCleanup: boolean;
 	elapsedSeconds: number;
 	lastResumedAt?: number;
@@ -88,7 +94,16 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 	const [titleDraft, setTitleDraft] = useState(title);
 
 	const board = history.current;
-	const conflicts = useMemo(() => boardConflicts(board), [board]);
+	const cages = state.cages;
+	const conflicts = useMemo(() => {
+		const merged = boardConflicts(board);
+		if (cages) {
+			for (const cell of findKillerConflicts(effectiveGrid(board), cages)) {
+				merged.add(cell);
+			}
+		}
+		return merged;
+	}, [board, cages]);
 	const digitCounts = useMemo(() => {
 		const counts = new Array<number>(10).fill(0);
 		for (const value of effectiveGrid(board)) {
@@ -142,6 +157,12 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 			if (!isBoardComplete(next.current)) {
 				return;
 			}
+			if (
+				cages &&
+				findKillerConflicts(effectiveGrid(next.current), cages).size > 0
+			) {
+				return;
+			}
 			clearTimeout(saveTimeout.current);
 			setStatus("completed");
 			complete({
@@ -150,7 +171,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 				elapsedSeconds: elapsedRef.current,
 			}).catch(() => undefined);
 		},
-		[complete, sessionId],
+		[complete, sessionId, cages],
 	);
 
 	const dispatch = useCallback(
@@ -391,6 +412,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 						{state.difficulty
 							? `${state.difficulty[0].toUpperCase()}${state.difficulty.slice(1)}`
 							: "Imported"}
+						{state.variant === "killer" ? " · Killer" : ""}
 						{state.source === "scan" ? " · scanned" : ""}
 					</p>
 				</div>
@@ -440,6 +462,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 					conflicts={conflicts}
 					hintCells={hintCells}
 					hidden={status === "paused"}
+					cages={cages}
 				/>
 				{status === "paused" ? (
 					<button

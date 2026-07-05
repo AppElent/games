@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { colOf, digitsInMask, rowOf } from "#/lib/games/sudoku";
 import type { SudokuBoardState } from "#/lib/games/sudoku-board";
 import { effectiveGrid } from "#/lib/games/sudoku-board";
+import type { KillerCage } from "#/lib/games/sudoku-killer";
 
 export const SUDOKU_COLOR_CLASSES = [
 	"", // 0 = none
@@ -50,6 +52,15 @@ export type SudokuBoardProps = {
 	highlight?: SudokuHighlightSettings;
 	hidden?: boolean;
 	className?: string;
+	/** Killer sudoku cages: dashed outlines plus a sum in each cage's corner. */
+	cages?: KillerCage[];
+};
+
+type CageInfo = {
+	/** Cage index per cell, -1 when uncaged. */
+	byCell: number[];
+	/** Sum label for the cage's top-left-most cell. */
+	sumAt: Map<number, number>;
 };
 
 export function SudokuBoard({
@@ -61,8 +72,23 @@ export function SudokuBoard({
 	highlight = { peers: true, matchingDigits: true },
 	hidden = false,
 	className = "",
+	cages,
 }: SudokuBoardProps) {
 	const grid = effectiveGrid(board);
+	const cageInfo = useMemo<CageInfo | null>(() => {
+		if (!cages || cages.length === 0) {
+			return null;
+		}
+		const byCell = new Array<number>(81).fill(-1);
+		const sumAt = new Map<number, number>();
+		cages.forEach((cage, index) => {
+			for (const cell of cage.cells) {
+				byCell[cell] = index;
+			}
+			sumAt.set(Math.min(...cage.cells), cage.sum);
+		});
+		return { byCell, sumAt };
+	}, [cages]);
 	const selectedDigit =
 		selectedCell !== null && grid[selectedCell] !== 0 ? grid[selectedCell] : 0;
 	const selRow = selectedCell !== null ? rowOf(selectedCell) : -1;
@@ -121,6 +147,17 @@ export function SudokuBoard({
 								? "bg-slate-200 dark:bg-slate-700/40"
 								: "";
 
+				const cage = cageInfo ? cageInfo.byCell[cell] : -1;
+				const cageEdges = cageInfo
+					? {
+							top: row === 0 || cageInfo.byCell[cell - 9] !== cage,
+							bottom: row === 8 || cageInfo.byCell[cell + 9] !== cage,
+							left: col === 0 || cageInfo.byCell[cell - 1] !== cage,
+							right: col === 8 || cageInfo.byCell[cell + 1] !== cage,
+						}
+					: null;
+				const cageSum = cageInfo?.sumAt.get(cell);
+
 				return (
 					<button
 						// biome-ignore lint/suspicious/noArrayIndexKey: fixed 81-cell grid
@@ -130,6 +167,30 @@ export function SudokuBoard({
 						onClick={() => onSelectCell?.(cell)}
 						className={`relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
 					>
+						{cageEdges && !hidden ? (
+							<span
+								aria-hidden="true"
+								className="pointer-events-none absolute border-dashed border-slate-500/70 dark:border-slate-400/60"
+								style={{
+									top: cageEdges.top ? 2 : 0,
+									bottom: cageEdges.bottom ? 2 : 0,
+									left: cageEdges.left ? 2 : 0,
+									right: cageEdges.right ? 2 : 0,
+									borderTopWidth: cageEdges.top ? 1 : 0,
+									borderBottomWidth: cageEdges.bottom ? 1 : 0,
+									borderLeftWidth: cageEdges.left ? 1 : 0,
+									borderRightWidth: cageEdges.right ? 1 : 0,
+								}}
+							/>
+						) : null}
+						{cageSum !== undefined && !hidden ? (
+							<span
+								aria-hidden="true"
+								className="pointer-events-none absolute left-1 top-0.5 text-[clamp(0.42rem,1.5vw,0.62rem)] font-bold leading-none text-slate-500 dark:text-slate-400"
+							>
+								{cageSum}
+							</span>
+						) : null}
 						{hidden ? null : value !== 0 ? (
 							<span
 								className={`text-[clamp(1.15rem,5vw,2rem)] font-semibold leading-none ${

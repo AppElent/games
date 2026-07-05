@@ -3,10 +3,15 @@ import { useMutation } from "convex/react";
 import { Camera, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import {
+	binaryGridToString,
+	generateBinaryPuzzle,
+} from "#/lib/games/binary-puzzle";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import type { SudokuDifficulty } from "#/lib/games/sudoku";
 import { generatePuzzle, gridToString } from "#/lib/games/sudoku";
+import { generateKillerPuzzle } from "#/lib/games/sudoku-killer";
 import type { LocalSudokuSession } from "#/lib/games/sudoku-local";
 import {
 	autoSessionTitle,
@@ -21,20 +26,61 @@ export const Route = createFileRoute("/sudoku/new")({
 	staticData: { fullscreen: true },
 });
 
+type SudokuVariant = "classic" | "killer" | "binary";
+
+const VARIANTS: { id: SudokuVariant; label: string; blurb: string }[] = [
+	{ id: "classic", label: "Classic", blurb: "The familiar 9×9 grid" },
+	{ id: "killer", label: "Killer", blurb: "Cages must add up to their sum" },
+	{ id: "binary", label: "Binary", blurb: "Fill the grid with 0s and 1s" },
+];
+
 const DIFFICULTIES: {
 	id: SudokuDifficulty;
 	label: string;
-	blurb: string;
+	blurb: Record<SudokuVariant, string>;
 }[] = [
-	{ id: "easy", label: "Easy", blurb: "Plenty of clues, gentle start" },
-	{ id: "medium", label: "Medium", blurb: "Singles and simple pairs" },
-	{ id: "hard", label: "Hard", blurb: "Pointing pairs and reductions" },
-	{ id: "expert", label: "Expert", blurb: "Sparse clues, deep scanning" },
+	{
+		id: "easy",
+		label: "Easy",
+		blurb: {
+			classic: "Plenty of clues, gentle start",
+			killer: "Many givens, small cages",
+			binary: "6×6 grid, gentle start",
+		},
+	},
+	{
+		id: "medium",
+		label: "Medium",
+		blurb: {
+			classic: "Singles and simple pairs",
+			killer: "Fewer givens, lean on the sums",
+			binary: "8×8 grid",
+		},
+	},
+	{
+		id: "hard",
+		label: "Hard",
+		blurb: {
+			classic: "Pointing pairs and reductions",
+			killer: "A handful of givens",
+			binary: "10×10 grid",
+		},
+	},
+	{
+		id: "expert",
+		label: "Expert",
+		blurb: {
+			classic: "Sparse clues, deep scanning",
+			killer: "Cages only — no givens",
+			binary: "10×10, sparse clues",
+		},
+	},
 ];
 
 function SudokuNewPage() {
 	const createSession = useMutation(api.sessions.create);
 	const createState = useMutation(api.sudoku.createState);
+	const [variant, setVariant] = useState<SudokuVariant>("classic");
 	const [busy, setBusy] = useState<SudokuDifficulty | null>(null);
 	const [error, setError] = useState("");
 	const [name, setName] = useState("");
@@ -48,9 +94,10 @@ function SudokuNewPage() {
 		setBusy(difficulty);
 		setError("");
 		try {
-			const puzzle = generatePuzzle(difficulty);
 			const guest = getOrCreateGuestIdentity();
-			const title = name.trim() || autoSessionTitle(difficulty, "generated");
+			const title =
+				name.trim() ||
+				autoSessionTitle(difficulty, "generated", new Date(), variant);
 			const result = await createSession({
 				gameType: "sudoku",
 				joinMode: "solo",
@@ -59,13 +106,38 @@ function SudokuNewPage() {
 				displayName: guest.displayName,
 				guestId: guest.id,
 			});
-			await createState({
-				sessionId: result.sessionId,
-				source: "generated",
-				difficulty,
-				givens: gridToString(puzzle.givens),
-				solution: gridToString(puzzle.solution),
-			});
+			if (variant === "binary") {
+				const puzzle = generateBinaryPuzzle(difficulty);
+				await createState({
+					sessionId: result.sessionId,
+					source: "generated",
+					difficulty,
+					variant: "binary",
+					size: puzzle.size,
+					givens: binaryGridToString(puzzle.givens),
+					solution: binaryGridToString(puzzle.solution),
+				});
+			} else if (variant === "killer") {
+				const puzzle = generateKillerPuzzle(difficulty);
+				await createState({
+					sessionId: result.sessionId,
+					source: "generated",
+					difficulty,
+					variant: "killer",
+					cages: puzzle.cages,
+					givens: gridToString(puzzle.givens),
+					solution: gridToString(puzzle.solution),
+				});
+			} else {
+				const puzzle = generatePuzzle(difficulty);
+				await createState({
+					sessionId: result.sessionId,
+					source: "generated",
+					difficulty,
+					givens: gridToString(puzzle.givens),
+					solution: gridToString(puzzle.solution),
+				});
+			}
 			rememberLocalSudokuSession({
 				sessionId: result.sessionId,
 				title,
@@ -105,6 +177,34 @@ function SudokuNewPage() {
 				/>
 			</label>
 
+			<fieldset className="mb-6 max-w-3xl">
+				<legend className="mb-2 block text-sm font-semibold text-slate-300">
+					Game type
+				</legend>
+				<div className="flex flex-wrap gap-2">
+					{VARIANTS.map((entry) => (
+						<button
+							key={entry.id}
+							type="button"
+							aria-pressed={variant === entry.id}
+							disabled={busy !== null}
+							onClick={() => setVariant(entry.id)}
+							title={entry.blurb}
+							className={`min-h-11 rounded-md px-4 py-2 font-bold ${
+								variant === entry.id
+									? "bg-white text-slate-950"
+									: "border border-white/20 bg-white/10 text-white"
+							} disabled:cursor-not-allowed disabled:opacity-50`}
+						>
+							{entry.label}
+						</button>
+					))}
+				</div>
+				<p className="mt-2 text-sm text-slate-400">
+					{VARIANTS.find((entry) => entry.id === variant)?.blurb}
+				</p>
+			</fieldset>
+
 			<div className="mb-8 grid max-w-3xl gap-3 sm:grid-cols-2">
 				{DIFFICULTIES.map((entry) => (
 					<button
@@ -117,7 +217,9 @@ function SudokuNewPage() {
 						<span className="block text-lg font-bold text-white">
 							{busy === entry.id ? "Generating..." : entry.label}
 						</span>
-						<span className="text-sm text-slate-400">{entry.blurb}</span>
+						<span className="text-sm text-slate-400">
+							{entry.blurb[variant]}
+						</span>
 					</button>
 				))}
 			</div>
