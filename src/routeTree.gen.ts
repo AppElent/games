@@ -17,11 +17,13 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WordLinksIndexRouteImport } from './routes/word-links/index'
+import { Route as SquadSurgeIndexRouteImport } from './routes/squad-surge/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as WordLinksPuzzleIdRouteImport } from './routes/word-links/$puzzleId'
 import { Route as SudokuScanRouteImport } from './routes/sudoku/scan'
 import { Route as SudokuNewRouteImport } from './routes/sudoku/new'
 import { Route as SudokuSessionIdRouteImport } from './routes/sudoku/$sessionId'
+import { Route as SquadSurgePlayRouteImport } from './routes/squad-surge/play'
 import { Route as SignalWordsNewRouteImport } from './routes/signal-words/new'
 import { Route as SignalWordsSessionIdRouteImport } from './routes/signal-words/$sessionId'
 import { Route as QuizNewRouteImport } from './routes/quiz/new'
@@ -81,6 +83,11 @@ const WordLinksIndexRoute = WordLinksIndexRouteImport.update({
   path: '/word-links/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SquadSurgeIndexRoute = SquadSurgeIndexRouteImport.update({
+  id: '/squad-surge/',
+  path: '/squad-surge/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
@@ -104,6 +111,11 @@ const SudokuNewRoute = SudokuNewRouteImport.update({
 const SudokuSessionIdRoute = SudokuSessionIdRouteImport.update({
   id: '/sudoku/$sessionId',
   path: '/sudoku/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SquadSurgePlayRoute = SquadSurgePlayRouteImport.update({
+  id: '/squad-surge/play',
+  path: '/squad-surge/play',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignalWordsNewRoute = SignalWordsNewRouteImport.update({
@@ -219,11 +231,13 @@ export interface FileRoutesByFullPath {
   '/quiz/new': typeof QuizNewRoute
   '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
   '/signal-words/new': typeof SignalWordsNewRoute
+  '/squad-surge/play': typeof SquadSurgePlayRoute
   '/sudoku/$sessionId': typeof SudokuSessionIdRoute
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/squad-surge/': typeof SquadSurgeIndexRoute
   '/word-links/': typeof WordLinksIndexRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -252,11 +266,13 @@ export interface FileRoutesByTo {
   '/quiz/new': typeof QuizNewRoute
   '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
   '/signal-words/new': typeof SignalWordsNewRoute
+  '/squad-surge/play': typeof SquadSurgePlayRoute
   '/sudoku/$sessionId': typeof SudokuSessionIdRoute
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/squad-surge': typeof SquadSurgeIndexRoute
   '/word-links': typeof WordLinksIndexRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -286,11 +302,13 @@ export interface FileRoutesById {
   '/quiz/new': typeof QuizNewRoute
   '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
   '/signal-words/new': typeof SignalWordsNewRoute
+  '/squad-surge/play': typeof SquadSurgePlayRoute
   '/sudoku/$sessionId': typeof SudokuSessionIdRoute
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/squad-surge/': typeof SquadSurgeIndexRoute
   '/word-links/': typeof WordLinksIndexRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -321,11 +339,13 @@ export interface FileRouteTypes {
     | '/quiz/new'
     | '/signal-words/$sessionId'
     | '/signal-words/new'
+    | '/squad-surge/play'
     | '/sudoku/$sessionId'
     | '/sudoku/new'
     | '/sudoku/scan'
     | '/word-links/$puzzleId'
     | '/dashboard/'
+    | '/squad-surge/'
     | '/word-links/'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -354,11 +374,13 @@ export interface FileRouteTypes {
     | '/quiz/new'
     | '/signal-words/$sessionId'
     | '/signal-words/new'
+    | '/squad-surge/play'
     | '/sudoku/$sessionId'
     | '/sudoku/new'
     | '/sudoku/scan'
     | '/word-links/$puzzleId'
     | '/dashboard'
+    | '/squad-surge'
     | '/word-links'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -387,11 +409,13 @@ export interface FileRouteTypes {
     | '/quiz/new'
     | '/signal-words/$sessionId'
     | '/signal-words/new'
+    | '/squad-surge/play'
     | '/sudoku/$sessionId'
     | '/sudoku/new'
     | '/sudoku/scan'
     | '/word-links/$puzzleId'
     | '/dashboard/'
+    | '/squad-surge/'
     | '/word-links/'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -421,11 +445,13 @@ export interface RootRouteChildren {
   QuizNewRoute: typeof QuizNewRoute
   SignalWordsSessionIdRoute: typeof SignalWordsSessionIdRoute
   SignalWordsNewRoute: typeof SignalWordsNewRoute
+  SquadSurgePlayRoute: typeof SquadSurgePlayRoute
   SudokuSessionIdRoute: typeof SudokuSessionIdRoute
   SudokuNewRoute: typeof SudokuNewRoute
   SudokuScanRoute: typeof SudokuScanRoute
   WordLinksPuzzleIdRoute: typeof WordLinksPuzzleIdRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  SquadSurgeIndexRoute: typeof SquadSurgeIndexRoute
   WordLinksIndexRoute: typeof WordLinksIndexRoute
   HitsterSessionIdHostRoute: typeof HitsterSessionIdHostRoute
   HitsterSessionIdPlayRoute: typeof HitsterSessionIdPlayRoute
@@ -491,6 +517,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WordLinksIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/squad-surge/': {
+      id: '/squad-surge/'
+      path: '/squad-surge'
+      fullPath: '/squad-surge/'
+      preLoaderRoute: typeof SquadSurgeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/': {
       id: '/dashboard/'
       path: '/dashboard'
@@ -524,6 +557,13 @@ declare module '@tanstack/react-router' {
       path: '/sudoku/$sessionId'
       fullPath: '/sudoku/$sessionId'
       preLoaderRoute: typeof SudokuSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/squad-surge/play': {
+      id: '/squad-surge/play'
+      path: '/squad-surge/play'
+      fullPath: '/squad-surge/play'
+      preLoaderRoute: typeof SquadSurgePlayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signal-words/new': {
@@ -677,11 +717,13 @@ const rootRouteChildren: RootRouteChildren = {
   QuizNewRoute: QuizNewRoute,
   SignalWordsSessionIdRoute: SignalWordsSessionIdRoute,
   SignalWordsNewRoute: SignalWordsNewRoute,
+  SquadSurgePlayRoute: SquadSurgePlayRoute,
   SudokuSessionIdRoute: SudokuSessionIdRoute,
   SudokuNewRoute: SudokuNewRoute,
   SudokuScanRoute: SudokuScanRoute,
   WordLinksPuzzleIdRoute: WordLinksPuzzleIdRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  SquadSurgeIndexRoute: SquadSurgeIndexRoute,
   WordLinksIndexRoute: WordLinksIndexRoute,
   HitsterSessionIdHostRoute: HitsterSessionIdHostRoute,
   HitsterSessionIdPlayRoute: HitsterSessionIdPlayRoute,

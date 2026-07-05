@@ -5,8 +5,10 @@ import {
 	createRootRouteWithContext,
 	HeadContent,
 	Scripts,
+	useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import "#/lib/router-static-data";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import ClerkProvider from "../integrations/clerk/provider";
@@ -26,7 +28,19 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			},
 			{
 				name: "viewport",
-				content: "width=device-width, initial-scale=1",
+				content: "width=device-width, initial-scale=1, viewport-fit=cover",
+			},
+			{
+				name: "apple-mobile-web-app-capable",
+				content: "yes",
+			},
+			{
+				name: "apple-mobile-web-app-status-bar-style",
+				content: "black-translucent",
+			},
+			{
+				name: "mobile-web-app-capable",
+				content: "yes",
 			},
 			{
 				title: "Arcade Club",
@@ -43,6 +57,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+	const isFullscreen = useRouterState({
+		select: (s) => s.matches.some((m) => m.staticData.fullscreen === true),
+	});
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<head>
@@ -54,9 +71,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<ClerkProvider>
 					<ConvexProvider>
 						<ThemeSync />
-						<Header />
+						{!isFullscreen && <Header />}
 						{children}
-						<Footer />
+						{!isFullscreen && <Footer />}
 						<TanStackDevtools
 							config={{
 								position: "bottom-right",

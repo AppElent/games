@@ -6,6 +6,7 @@ import {
 	Gamepad2,
 	Grid3X3,
 	Music,
+	Swords,
 	Trophy,
 	Users,
 } from "lucide-react";
@@ -20,7 +21,8 @@ export type GameType =
 	| "word-links"
 	| "connect-four"
 	| "signal-words"
-	| "bluff-dice";
+	| "bluff-dice"
+	| "squad-surge";
 
 export type JoinMode = "room" | "challenge" | "solo";
 export type AuthPolicy = "guestAllowed" | "signedInRequired" | "hostChoice";
@@ -175,6 +177,21 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Host table",
 		route: "/bluff-dice/new",
 		stats: "2-8 players",
+	},
+	{
+		type: "squad-surge",
+		title: "Squad Surge",
+		tagline: "Grow your army, break the line",
+		description:
+			"Steer your squad through multiplier gates, survive enemy waves, and outnumber the boss at the finish.",
+		joinMode: "solo",
+		authPolicy: "guestAllowed",
+		availability: "playable",
+		accent: "from-red-500 to-orange-400",
+		icon: Swords,
+		primaryAction: "Deploy squad",
+		route: "/squad-surge",
+		stats: "Solo",
 	},
 ] satisfies readonly GameCatalogItem[];
 

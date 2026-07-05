@@ -24,6 +24,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["exec", "vite", "dev", "--port", "3212"],
       "port": 3212
+    },
+    {
+      "name": "Vite squad",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "vite", "dev", "--port", "3213"],
+      "port": 3213
     }
   ]
 }

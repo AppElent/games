@@ -119,6 +119,21 @@ button {
   color: var(--club-text);
 }
 
+.game-fullscreen {
+  position: fixed;
+  inset: 0;
+  height: 100svh; /* small viewport height — stable under mobile browser chrome */
+  height: 100dvh; /* progressive enhancement where supported */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overscroll-behavior: none; /* kill pull-to-refresh / rubber-band */
+  touch-action: none; /* the play surface handles its own gestures */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  overflow: hidden;
+}
+
 code {
   border: 1px solid var(--club-line);
   border-radius: 6px;

@@ -11,6 +11,7 @@ export const gameTypeValidator = v.union(
 	v.literal("connect-four"),
 	v.literal("signal-words"),
 	v.literal("bluff-dice"),
+	v.literal("squad-surge"),
 );
 
 export const bluffPhaseValidator = v.union(
