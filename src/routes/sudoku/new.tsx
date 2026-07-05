@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Camera, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import type { SudokuDifficulty } from "#/lib/games/sudoku";
@@ -17,6 +18,7 @@ import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/sudoku/new")({
 	component: SudokuNewPage,
+	staticData: { fullscreen: true },
 });
 
 const DIFFICULTIES: {
@@ -79,7 +81,7 @@ function SudokuNewPage() {
 	};
 
 	return (
-		<main className="club-wrap py-10">
+		<FullscreenGamePage title="Sudoku">
 			<p className="club-kicker mb-2">Sudoku</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
 				Start a puzzle
@@ -161,6 +163,6 @@ function SudokuNewPage() {
 					</ul>
 				</section>
 			) : null}
-		</main>
+		</FullscreenGamePage>
 	);
 }

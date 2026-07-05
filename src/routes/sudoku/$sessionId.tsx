@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { SudokuGame } from "#/components/sudoku/SudokuGame";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/sudoku/$sessionId")({
 	component: SudokuSessionPage,
+	staticData: { fullscreen: true },
 });
 
 function SudokuSessionPage() {
@@ -16,17 +18,24 @@ function SudokuSessionPage() {
 
 	if (bundle === undefined) {
 		return (
-			<main className="club-wrap py-10 text-slate-300">Loading puzzle...</main>
+			<FullscreenGamePage title="Sudoku">
+				<p className="text-slate-300">Loading puzzle...</p>
+			</FullscreenGamePage>
 		);
 	}
 	if (bundle === null) {
 		return (
-			<main className="club-wrap py-10 text-orange-200">Puzzle not found.</main>
+			<FullscreenGamePage title="Sudoku">
+				<p className="text-orange-200">Puzzle not found.</p>
+			</FullscreenGamePage>
 		);
 	}
 
 	return (
-		<main className="club-wrap py-6">
+		<FullscreenGamePage
+			title={bundle.session.title}
+			maxWidthClassName="max-w-2xl"
+		>
 			<SudokuGame
 				// Remount when switching sessions so local history resets.
 				key={bundle.session._id}
@@ -34,6 +43,6 @@ function SudokuSessionPage() {
 				title={bundle.session.title}
 				state={bundle.state}
 			/>
-		</main>
+		</FullscreenGamePage>
 	);
 }

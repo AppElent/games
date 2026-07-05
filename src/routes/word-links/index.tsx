@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { WordLinksGame } from "#/components/word-links/WordLinksGame";
 import { getDailyPuzzleId } from "#/lib/games/word-links";
 import { loadWordLinkStreak } from "#/lib/games/word-links-local";
@@ -10,6 +11,7 @@ import {
 
 export const Route = createFileRoute("/word-links/")({
 	component: WordLinksDailyPage,
+	staticData: { fullscreen: true },
 	ssr: false,
 });
 
@@ -25,11 +27,15 @@ function WordLinksDailyPage() {
 	}, [dailyId]);
 
 	if (!puzzle) {
-		return <main className="club-wrap py-10 text-orange-200">No puzzle.</main>;
+		return (
+			<FullscreenGamePage title="Word Links">
+				<p className="text-orange-200">No puzzle.</p>
+			</FullscreenGamePage>
+		);
 	}
 
 	return (
-		<main className="club-wrap py-10">
+		<FullscreenGamePage title="Word Links" maxWidthClassName="max-w-xl">
 			<p className="club-kicker mb-2">Word Links</p>
 			<div className="mb-6 flex flex-wrap items-end justify-between gap-3">
 				<h1 className="club-title text-4xl font-bold text-white">
@@ -49,6 +55,6 @@ function WordLinksDailyPage() {
 				</div>
 			</div>
 			<WordLinksGame key={puzzle.id} puzzle={puzzle} mode="daily" />
-		</main>
+		</FullscreenGamePage>
 	);
 }
