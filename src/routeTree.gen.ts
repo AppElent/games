@@ -17,8 +17,16 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WordLinksIndexRouteImport } from './routes/word-links/index'
+import { Route as SudokuIndexRouteImport } from './routes/sudoku/index'
 import { Route as SquadSurgeIndexRouteImport } from './routes/squad-surge/index'
+import { Route as SignalWordsIndexRouteImport } from './routes/signal-words/index'
+import { Route as QuizIndexRouteImport } from './routes/quiz/index'
+import { Route as HitsterIndexRouteImport } from './routes/hitster/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as ConnectFourIndexRouteImport } from './routes/connect-four/index'
+import { Route as ChessIndexRouteImport } from './routes/chess/index'
+import { Route as BluffDiceIndexRouteImport } from './routes/bluff-dice/index'
+import { Route as BackgammonIndexRouteImport } from './routes/backgammon/index'
 import { Route as WordLinksPuzzleIdRouteImport } from './routes/word-links/$puzzleId'
 import { Route as SudokuScanRouteImport } from './routes/sudoku/scan'
 import { Route as SudokuNewRouteImport } from './routes/sudoku/new'
@@ -83,14 +91,54 @@ const WordLinksIndexRoute = WordLinksIndexRouteImport.update({
   path: '/word-links/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SudokuIndexRoute = SudokuIndexRouteImport.update({
+  id: '/sudoku/',
+  path: '/sudoku/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SquadSurgeIndexRoute = SquadSurgeIndexRouteImport.update({
   id: '/squad-surge/',
   path: '/squad-surge/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignalWordsIndexRoute = SignalWordsIndexRouteImport.update({
+  id: '/signal-words/',
+  path: '/signal-words/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizIndexRoute = QuizIndexRouteImport.update({
+  id: '/quiz/',
+  path: '/quiz/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HitsterIndexRoute = HitsterIndexRouteImport.update({
+  id: '/hitster/',
+  path: '/hitster/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectFourIndexRoute = ConnectFourIndexRouteImport.update({
+  id: '/connect-four/',
+  path: '/connect-four/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChessIndexRoute = ChessIndexRouteImport.update({
+  id: '/chess/',
+  path: '/chess/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BluffDiceIndexRoute = BluffDiceIndexRouteImport.update({
+  id: '/bluff-dice/',
+  path: '/bluff-dice/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BackgammonIndexRoute = BackgammonIndexRouteImport.update({
+  id: '/backgammon/',
+  path: '/backgammon/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WordLinksPuzzleIdRoute = WordLinksPuzzleIdRouteImport.update({
@@ -236,8 +284,16 @@ export interface FileRoutesByFullPath {
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
+  '/backgammon/': typeof BackgammonIndexRoute
+  '/bluff-dice/': typeof BluffDiceIndexRoute
+  '/chess/': typeof ChessIndexRoute
+  '/connect-four/': typeof ConnectFourIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/hitster/': typeof HitsterIndexRoute
+  '/quiz/': typeof QuizIndexRoute
+  '/signal-words/': typeof SignalWordsIndexRoute
   '/squad-surge/': typeof SquadSurgeIndexRoute
+  '/sudoku/': typeof SudokuIndexRoute
   '/word-links/': typeof WordLinksIndexRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -271,8 +327,16 @@ export interface FileRoutesByTo {
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
+  '/backgammon': typeof BackgammonIndexRoute
+  '/bluff-dice': typeof BluffDiceIndexRoute
+  '/chess': typeof ChessIndexRoute
+  '/connect-four': typeof ConnectFourIndexRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/hitster': typeof HitsterIndexRoute
+  '/quiz': typeof QuizIndexRoute
+  '/signal-words': typeof SignalWordsIndexRoute
   '/squad-surge': typeof SquadSurgeIndexRoute
+  '/sudoku': typeof SudokuIndexRoute
   '/word-links': typeof WordLinksIndexRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -307,8 +371,16 @@ export interface FileRoutesById {
   '/sudoku/new': typeof SudokuNewRoute
   '/sudoku/scan': typeof SudokuScanRoute
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
+  '/backgammon/': typeof BackgammonIndexRoute
+  '/bluff-dice/': typeof BluffDiceIndexRoute
+  '/chess/': typeof ChessIndexRoute
+  '/connect-four/': typeof ConnectFourIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/hitster/': typeof HitsterIndexRoute
+  '/quiz/': typeof QuizIndexRoute
+  '/signal-words/': typeof SignalWordsIndexRoute
   '/squad-surge/': typeof SquadSurgeIndexRoute
+  '/sudoku/': typeof SudokuIndexRoute
   '/word-links/': typeof WordLinksIndexRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -344,8 +416,16 @@ export interface FileRouteTypes {
     | '/sudoku/new'
     | '/sudoku/scan'
     | '/word-links/$puzzleId'
+    | '/backgammon/'
+    | '/bluff-dice/'
+    | '/chess/'
+    | '/connect-four/'
     | '/dashboard/'
+    | '/hitster/'
+    | '/quiz/'
+    | '/signal-words/'
     | '/squad-surge/'
+    | '/sudoku/'
     | '/word-links/'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -379,8 +459,16 @@ export interface FileRouteTypes {
     | '/sudoku/new'
     | '/sudoku/scan'
     | '/word-links/$puzzleId'
+    | '/backgammon'
+    | '/bluff-dice'
+    | '/chess'
+    | '/connect-four'
     | '/dashboard'
+    | '/hitster'
+    | '/quiz'
+    | '/signal-words'
     | '/squad-surge'
+    | '/sudoku'
     | '/word-links'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -414,8 +502,16 @@ export interface FileRouteTypes {
     | '/sudoku/new'
     | '/sudoku/scan'
     | '/word-links/$puzzleId'
+    | '/backgammon/'
+    | '/bluff-dice/'
+    | '/chess/'
+    | '/connect-four/'
     | '/dashboard/'
+    | '/hitster/'
+    | '/quiz/'
+    | '/signal-words/'
     | '/squad-surge/'
+    | '/sudoku/'
     | '/word-links/'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -450,8 +546,16 @@ export interface RootRouteChildren {
   SudokuNewRoute: typeof SudokuNewRoute
   SudokuScanRoute: typeof SudokuScanRoute
   WordLinksPuzzleIdRoute: typeof WordLinksPuzzleIdRoute
+  BackgammonIndexRoute: typeof BackgammonIndexRoute
+  BluffDiceIndexRoute: typeof BluffDiceIndexRoute
+  ChessIndexRoute: typeof ChessIndexRoute
+  ConnectFourIndexRoute: typeof ConnectFourIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  HitsterIndexRoute: typeof HitsterIndexRoute
+  QuizIndexRoute: typeof QuizIndexRoute
+  SignalWordsIndexRoute: typeof SignalWordsIndexRoute
   SquadSurgeIndexRoute: typeof SquadSurgeIndexRoute
+  SudokuIndexRoute: typeof SudokuIndexRoute
   WordLinksIndexRoute: typeof WordLinksIndexRoute
   HitsterSessionIdHostRoute: typeof HitsterSessionIdHostRoute
   HitsterSessionIdPlayRoute: typeof HitsterSessionIdPlayRoute
@@ -517,6 +621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WordLinksIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sudoku/': {
+      id: '/sudoku/'
+      path: '/sudoku'
+      fullPath: '/sudoku/'
+      preLoaderRoute: typeof SudokuIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/squad-surge/': {
       id: '/squad-surge/'
       path: '/squad-surge'
@@ -524,11 +635,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SquadSurgeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signal-words/': {
+      id: '/signal-words/'
+      path: '/signal-words'
+      fullPath: '/signal-words/'
+      preLoaderRoute: typeof SignalWordsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz/': {
+      id: '/quiz/'
+      path: '/quiz'
+      fullPath: '/quiz/'
+      preLoaderRoute: typeof QuizIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hitster/': {
+      id: '/hitster/'
+      path: '/hitster'
+      fullPath: '/hitster/'
+      preLoaderRoute: typeof HitsterIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/': {
       id: '/dashboard/'
       path: '/dashboard'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect-four/': {
+      id: '/connect-four/'
+      path: '/connect-four'
+      fullPath: '/connect-four/'
+      preLoaderRoute: typeof ConnectFourIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chess/': {
+      id: '/chess/'
+      path: '/chess'
+      fullPath: '/chess/'
+      preLoaderRoute: typeof ChessIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bluff-dice/': {
+      id: '/bluff-dice/'
+      path: '/bluff-dice'
+      fullPath: '/bluff-dice/'
+      preLoaderRoute: typeof BluffDiceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/backgammon/': {
+      id: '/backgammon/'
+      path: '/backgammon'
+      fullPath: '/backgammon/'
+      preLoaderRoute: typeof BackgammonIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/word-links/$puzzleId': {
@@ -722,8 +882,16 @@ const rootRouteChildren: RootRouteChildren = {
   SudokuNewRoute: SudokuNewRoute,
   SudokuScanRoute: SudokuScanRoute,
   WordLinksPuzzleIdRoute: WordLinksPuzzleIdRoute,
+  BackgammonIndexRoute: BackgammonIndexRoute,
+  BluffDiceIndexRoute: BluffDiceIndexRoute,
+  ChessIndexRoute: ChessIndexRoute,
+  ConnectFourIndexRoute: ConnectFourIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  HitsterIndexRoute: HitsterIndexRoute,
+  QuizIndexRoute: QuizIndexRoute,
+  SignalWordsIndexRoute: SignalWordsIndexRoute,
   SquadSurgeIndexRoute: SquadSurgeIndexRoute,
+  SudokuIndexRoute: SudokuIndexRoute,
   WordLinksIndexRoute: WordLinksIndexRoute,
   HitsterSessionIdHostRoute: HitsterSessionIdHostRoute,
   HitsterSessionIdPlayRoute: HitsterSessionIdPlayRoute,
