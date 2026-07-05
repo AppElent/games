@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { SignalWordsRoom } from "#/components/signal-words/SignalWordsRoom";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/signal-words/$sessionId")({
 	component: SignalWordsSessionPage,
+	staticData: { fullscreen: true },
 });
 
 function SignalWordsSessionPage() {
@@ -16,12 +18,16 @@ function SignalWordsSessionPage() {
 
 	if (bundle === undefined) {
 		return (
-			<main className="club-wrap py-10 text-slate-300">Loading room...</main>
+			<FullscreenGamePage title="Signal Words" className="text-slate-300">
+				Loading room...
+			</FullscreenGamePage>
 		);
 	}
 	if (bundle === null) {
 		return (
-			<main className="club-wrap py-10 text-orange-200">Room not found.</main>
+			<FullscreenGamePage title="Signal Words" className="text-orange-200">
+				Room not found.
+			</FullscreenGamePage>
 		);
 	}
 
@@ -30,8 +36,8 @@ function SignalWordsSessionPage() {
 		: window.location.href;
 
 	return (
-		<main className="club-wrap py-6">
+		<FullscreenGamePage title="Signal Words" maxWidthClassName="max-w-5xl">
 			<SignalWordsRoom bundle={bundle} joinUrl={joinUrl} />
-		</main>
+		</FullscreenGamePage>
 	);
 }

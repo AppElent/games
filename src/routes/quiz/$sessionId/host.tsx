@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { QuizHostView } from "#/components/quiz/QuizHostView";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/quiz/$sessionId/host")({
 	component: QuizHostPage,
+	staticData: { fullscreen: true },
 });
 
 function QuizHostPage() {
@@ -16,17 +18,21 @@ function QuizHostPage() {
 
 	if (bundle === undefined) {
 		return (
-			<main className="club-wrap py-10 text-slate-300">Loading quiz...</main>
+			<FullscreenGamePage title="Live Quiz" className="text-slate-300">
+				Loading quiz...
+			</FullscreenGamePage>
 		);
 	}
 	if (bundle === null) {
 		return (
-			<main className="club-wrap py-10 text-orange-200">Quiz not found.</main>
+			<FullscreenGamePage title="Live Quiz" className="text-orange-200">
+				Quiz not found.
+			</FullscreenGamePage>
 		);
 	}
 	return (
-		<main className="club-wrap py-6">
+		<FullscreenGamePage title="Live Quiz" maxWidthClassName="max-w-5xl">
 			<QuizHostView bundle={bundle} />
-		</main>
+		</FullscreenGamePage>
 	);
 }

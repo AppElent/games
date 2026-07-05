@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/signal-words/new")({
 	component: SignalWordsNewPage,
+	staticData: { fullscreen: true },
 });
 
 function SignalWordsNewPage() {
@@ -44,7 +46,7 @@ function SignalWordsNewPage() {
 	}
 
 	return (
-		<main className="club-wrap py-10">
+		<FullscreenGamePage title="Signal Words">
 			<p className="club-kicker mb-2">Signal Words</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
 				Host a room
@@ -65,6 +67,6 @@ function SignalWordsNewPage() {
 					{busy ? "Creating room..." : "Create room"}
 				</button>
 			</div>
-		</main>
+		</FullscreenGamePage>
 	);
 }

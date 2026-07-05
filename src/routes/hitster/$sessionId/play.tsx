@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HitsterStage } from "#/components/hitster/HitsterStage";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/hitster/$sessionId/play")({
 			typeof search.participantId === "string" ? search.participantId : "",
 	}),
 	component: HitsterPlayerPage,
+	staticData: { fullscreen: true },
 });
 
 function HitsterPlayerPage() {
@@ -29,30 +31,32 @@ function HitsterPlayerPage() {
 
 	if (bundle === undefined) {
 		return (
-			<main className="club-wrap py-10 text-[var(--club-muted)]">
+			<FullscreenGamePage title="Hitster" className="text-[var(--club-muted)]">
 				Loading game...
-			</main>
+			</FullscreenGamePage>
 		);
 	}
 	if (bundle === null) {
 		return (
-			<main className="club-wrap py-10 text-orange-500">Game not found.</main>
+			<FullscreenGamePage title="Hitster" className="text-orange-500">
+				Game not found.
+			</FullscreenGamePage>
 		);
 	}
 	if (!participantId) {
 		return (
-			<main className="club-wrap py-10 text-orange-500">
+			<FullscreenGamePage title="Hitster" className="text-orange-500">
 				Join this room with its code from the home page first.
-			</main>
+			</FullscreenGamePage>
 		);
 	}
 	return (
-		<main className="club-wrap py-6">
+		<FullscreenGamePage title="Hitster" maxWidthClassName="max-w-5xl">
 			<p className="club-kicker mb-2">Music Timeline</p>
 			<HitsterStage
 				bundle={bundle}
 				participantId={participantId as Id<"sessionParticipants">}
 			/>
-		</main>
+		</FullscreenGamePage>
 	);
 }

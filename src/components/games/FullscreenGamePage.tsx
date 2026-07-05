@@ -6,6 +6,8 @@ type FullscreenGamePageProps = {
 	children: ReactNode;
 	/** Tailwind max-width class for the content column. */
 	maxWidthClassName?: string;
+	/** Extra classes for the content column. */
+	className?: string;
 	onRestart?: () => void;
 };
 
@@ -19,13 +21,14 @@ export function FullscreenGamePage({
 	title,
 	children,
 	maxWidthClassName = "max-w-3xl",
+	className,
 	onRestart,
 }: FullscreenGamePageProps) {
 	return (
 		<FullscreenGameShell title={title} onRestart={onRestart}>
 			<div className="h-full touch-pan-y overflow-y-auto overscroll-contain">
 				<div
-					className={`mx-auto w-full px-4 pt-16 pb-8 sm:px-6 ${maxWidthClassName}`}
+					className={`mx-auto w-full px-4 pt-16 pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
 				>
 					{children}
 				</div>

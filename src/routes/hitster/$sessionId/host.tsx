@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HitsterHostView } from "#/components/hitster/HitsterHostView";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/hitster/$sessionId/host")({
 	component: HitsterHostPage,
+	staticData: { fullscreen: true },
 });
 
 function HitsterHostPage() {
@@ -23,26 +25,26 @@ function HitsterHostPage() {
 
 	if (bundle === undefined) {
 		return (
-			<main className="club-wrap py-10 text-[var(--club-muted)]">
+			<FullscreenGamePage title="Hitster" className="text-[var(--club-muted)]">
 				Loading room...
-			</main>
+			</FullscreenGamePage>
 		);
 	}
 	if (bundle === null || !participantId) {
 		return (
-			<main className="club-wrap py-10 text-orange-500">
+			<FullscreenGamePage title="Hitster" className="text-orange-500">
 				{bundle === null
 					? "Room not found."
 					: "Host session expired. Create a new room."}
-			</main>
+			</FullscreenGamePage>
 		);
 	}
 	return (
-		<main className="club-wrap py-6">
+		<FullscreenGamePage title="Hitster" maxWidthClassName="max-w-5xl">
 			<HitsterHostView
 				bundle={bundle}
 				participantId={participantId as Id<"sessionParticipants">}
 			/>
-		</main>
+		</FullscreenGamePage>
 	);
 }

@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/bluff-dice/new")({
 	component: BluffDiceNewPage,
+	staticData: { fullscreen: true },
 });
 
 function BluffDiceNewPage() {
@@ -44,7 +46,7 @@ function BluffDiceNewPage() {
 	}
 
 	return (
-		<main className="club-wrap py-10">
+		<FullscreenGamePage title="Bluff Dice">
 			<p className="club-kicker mb-2">Bluff Dice</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
 				Host a table
@@ -64,6 +66,6 @@ function BluffDiceNewPage() {
 					{busy ? "Creating room..." : "Create room"}
 				</button>
 			</div>
-		</main>
+		</FullscreenGamePage>
 	);
 }
