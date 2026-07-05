@@ -1,5 +1,8 @@
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
+import { FitScale } from "#/components/games/FitScale";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
@@ -53,6 +56,7 @@ export function ConnectFourMatch({
 	const rematch = useMutation(api.connectFour.rematch);
 	const [participantId, setParticipantId] = useState<string>();
 	const [error, setError] = useState("");
+	const [showInfo, setShowInfo] = useState(false);
 
 	useEffect(() => {
 		setParticipantId(
@@ -63,12 +67,11 @@ export function ConnectFourMatch({
 	const state = bundle.state;
 	if (!state) {
 		return (
-			<div className="club-panel rounded-lg p-6 text-center">
-				<p className="club-kicker mb-2">Setting up</p>
-				<h2 className="club-title text-2xl font-bold text-white">
-					Board is loading
-				</h2>
-			</div>
+			<FullscreenGameShell title={bundle.session.title}>
+				<div className="flex h-full items-center justify-center text-slate-300">
+					Board is loading...
+				</div>
+			</FullscreenGameShell>
 		);
 	}
 
@@ -133,126 +136,173 @@ export function ConnectFourMatch({
 		);
 	}
 
-	return (
-		<div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-			<section className="space-y-4">
-				<div className="club-panel rounded-lg p-5">
-					<div className="flex flex-wrap items-start justify-between gap-4">
-						<div>
-							<p className="club-kicker mb-2">Connect Four</p>
-							<h1 className="club-title text-3xl font-bold text-white">
-								{bundle.session.title}
-							</h1>
-						</div>
-					</div>
-					<div className="mt-4">
-						<SeatBanner
-							tone={finished || opponentJoined ? "success" : "warning"}
-							label={statusLabel}
-						/>
-					</div>
-					<div className="mt-4 grid gap-3 md:grid-cols-2">
-						<DiscCard
-							color="red"
-							name={red?.displayName ?? "Open seat"}
-							active={
-								!finished && opponentJoined && state.activeColor === "red"
-							}
-							open={!red}
-						/>
-						<DiscCard
-							color="yellow"
-							name={yellow?.displayName ?? "Open seat"}
-							active={
-								!finished && opponentJoined && state.activeColor === "yellow"
-							}
-							open={!yellow}
-						/>
-					</div>
-					{error ? (
-						<p className="mt-3 text-sm text-orange-200">{error}</p>
-					) : null}
-				</div>
-
-				<div className="mx-auto w-full max-w-[480px]">
-					<div className="rounded-xl border border-white/10 bg-sky-950/60 p-2 sm:p-3">
-						<div className="grid grid-cols-7 gap-1 sm:gap-2">
-							{Array.from({ length: CONNECT_FOUR_ROWS }).map((_, row) =>
-								Array.from({ length: CONNECT_FOUR_COLS }).map((__, col) => {
-									const cell = getCell(state.board, row, col);
-									return (
-										<button
-											// biome-ignore lint/suspicious/noArrayIndexKey: fixed grid
-											key={`${row}-${col}`}
-											type="button"
-											aria-label={`Drop in column ${col + 1}`}
-											disabled={!myTurn || isColumnFull(state.board, col)}
-											onClick={() => handleDrop(col)}
-											className="flex aspect-square items-center justify-center rounded-full bg-black/40"
-										>
-											{cell !== "empty" ? (
-												<span
-													className={`block h-[85%] w-[85%] rounded-full ${
-														cell === "red"
-															? "bg-gradient-to-br from-red-400 to-red-600"
-															: "bg-gradient-to-br from-yellow-300 to-amber-500"
-													}`}
-												/>
-											) : (
-												<span className="sr-only">empty</span>
-											)}
-										</button>
-									);
-								}),
-							)}
-						</div>
-					</div>
-				</div>
-
-				<div className="flex flex-wrap justify-center gap-3">
-					{localColor && !finished && opponentJoined ? (
-						<button
-							type="button"
-							className="rounded-md border border-orange-300/40 bg-orange-300/10 px-4 py-2 text-sm font-bold text-orange-100"
-							onClick={() =>
-								run(
-									() =>
-										resign({
-											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
-										}),
-									"Could not resign",
-								)
-							}
-						>
-							Resign
-						</button>
-					) : null}
-					{finished && localColor ? (
-						<button
-							type="button"
-							className="rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
-							onClick={() =>
-								run(
-									() =>
-										rematch({
-											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
-										}),
-									"Could not start rematch",
-								)
-							}
-						>
-							Rematch (colors swap)
-						</button>
-					) : null}
-				</div>
-			</section>
-			<aside className="space-y-4">
-				<QrSharePanel label="Challenge link" url={shareUrl} />
-				<ParticipantList participants={bundle.participants} />
-			</aside>
+	const discCards = (
+		<div className="grid gap-3 md:grid-cols-2">
+			<DiscCard
+				color="red"
+				name={red?.displayName ?? "Open seat"}
+				active={!finished && opponentJoined && state.activeColor === "red"}
+				open={!red}
+			/>
+			<DiscCard
+				color="yellow"
+				name={yellow?.displayName ?? "Open seat"}
+				active={!finished && opponentJoined && state.activeColor === "yellow"}
+				open={!yellow}
+			/>
 		</div>
+	);
+
+	const board = (
+		<div className="rounded-xl border border-white/10 bg-sky-950/60 p-3">
+			<div className="grid grid-cols-7 gap-2">
+				{Array.from({ length: CONNECT_FOUR_ROWS }).map((_, row) =>
+					Array.from({ length: CONNECT_FOUR_COLS }).map((__, col) => {
+						const cell = getCell(state.board, row, col);
+						return (
+							<button
+								// biome-ignore lint/suspicious/noArrayIndexKey: fixed grid
+								key={`${row}-${col}`}
+								type="button"
+								aria-label={`Drop in column ${col + 1}`}
+								disabled={!myTurn || isColumnFull(state.board, col)}
+								onClick={() => handleDrop(col)}
+								className="flex aspect-square items-center justify-center rounded-full bg-black/40"
+							>
+								{cell !== "empty" ? (
+									<span
+										className={`block h-[85%] w-[85%] rounded-full ${
+											cell === "red"
+												? "bg-gradient-to-br from-red-400 to-red-600"
+												: "bg-gradient-to-br from-yellow-300 to-amber-500"
+										}`}
+									/>
+								) : (
+									<span className="sr-only">empty</span>
+								)}
+							</button>
+						);
+					}),
+				)}
+			</div>
+		</div>
+	);
+
+	const actionRow = (
+		<div className="flex flex-wrap justify-center gap-3 empty:hidden">
+			{localColor && !finished && opponentJoined ? (
+				<button
+					type="button"
+					className="rounded-md border border-orange-300/40 bg-orange-300/10 px-4 py-2 text-sm font-bold text-orange-100"
+					onClick={() =>
+						run(
+							() =>
+								resign({
+									sessionId: bundle.session._id,
+									participantId: participantId as Id<"sessionParticipants">,
+								}),
+							"Could not resign",
+						)
+					}
+				>
+					Resign
+				</button>
+			) : null}
+			{finished && localColor ? (
+				<button
+					type="button"
+					className="rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
+					onClick={() =>
+						run(
+							() =>
+								rematch({
+									sessionId: bundle.session._id,
+									participantId: participantId as Id<"sessionParticipants">,
+								}),
+							"Could not start rematch",
+						)
+					}
+				>
+					Rematch (colors swap)
+				</button>
+			) : null}
+		</div>
+	);
+
+	// Pre-game: waiting for the second seat — scrollable share screen.
+	if (!opponentJoined) {
+		return (
+			<FullscreenGamePage
+				title={bundle.session.title}
+				maxWidthClassName="max-w-md"
+			>
+				<p className="club-kicker mb-2">Connect Four</p>
+				<h1 className="club-title mb-4 text-3xl font-bold text-white">
+					{bundle.session.title}
+				</h1>
+				<div className="space-y-4">
+					<SeatBanner tone="warning" label={statusLabel} />
+					{discCards}
+					{error ? <p className="text-sm text-orange-200">{error}</p> : null}
+					<QrSharePanel label="Challenge link" url={shareUrl} />
+					<ParticipantList participants={bundle.participants} />
+				</div>
+			</FullscreenGamePage>
+		);
+	}
+
+	return (
+		<FullscreenGameShell
+			title={bundle.session.title}
+			hud={
+				<div className="flex items-center justify-end gap-2">
+					<span className="hidden max-w-[40vw] truncate rounded-xl bg-slate-900/70 px-3 py-2 text-xs text-slate-200 backdrop-blur sm:inline">
+						{statusLabel}
+					</span>
+					<button
+						type="button"
+						onClick={() => setShowInfo((open) => !open)}
+						className="flex h-11 items-center rounded-xl border border-white/20 bg-slate-900/70 px-4 text-sm font-bold text-white backdrop-blur"
+					>
+						Info
+					</button>
+				</div>
+			}
+		>
+			<div className="flex h-full flex-col">
+				{error ? (
+					<p className="px-4 pt-14 text-center text-xs text-orange-200">
+						{error}
+					</p>
+				) : null}
+				<div className={`min-h-0 flex-1 px-2 pb-1 ${error ? "pt-1" : "pt-14"}`}>
+					<FitScale designWidth={480}>{board}</FitScale>
+				</div>
+				<p className="truncate px-2 pb-1 text-center text-xs text-slate-300 sm:hidden">
+					{statusLabel}
+				</p>
+				<div className="px-2 pb-2">{actionRow}</div>
+			</div>
+			{showInfo ? (
+				<div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm">
+					<div className="h-full touch-pan-y overflow-y-auto overscroll-contain p-4 pt-16">
+						<div className="mx-auto max-w-md space-y-4">
+							<SeatBanner tone="success" label={statusLabel} />
+							{discCards}
+							<QrSharePanel label="Challenge link" url={shareUrl} />
+							<ParticipantList participants={bundle.participants} />
+							<button
+								type="button"
+								onClick={() => setShowInfo(false)}
+								className="w-full min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
+							>
+								Close
+							</button>
+						</div>
+					</div>
+				</div>
+			) : null}
+		</FullscreenGameShell>
 	);
 }
 

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { CHESS_TIME_CONTROLS, type ChessTimeControl } from "#/lib/games/chess";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
@@ -8,6 +9,7 @@ import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/chess/new")({
 	component: ChessNewPage,
+	staticData: { fullscreen: true },
 });
 
 type HostColor = "white" | "black" | "random";
@@ -51,7 +53,7 @@ function ChessNewPage() {
 	}
 
 	return (
-		<main className="club-wrap py-10">
+		<FullscreenGamePage title="Chess">
 			<p className="club-kicker mb-2">Chess</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
 				Start a match
@@ -117,6 +119,6 @@ function ChessNewPage() {
 					automatically.
 				</p>
 			</div>
-		</main>
+		</FullscreenGamePage>
 	);
 }

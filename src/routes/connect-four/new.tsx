@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/connect-four/new")({
 	component: ConnectFourNewPage,
+	staticData: { fullscreen: true },
 });
 
 function ConnectFourNewPage() {
@@ -44,7 +46,7 @@ function ConnectFourNewPage() {
 	}
 
 	return (
-		<main className="club-wrap py-10">
+		<FullscreenGamePage title="Connect Four">
 			<p className="club-kicker mb-2">Connect Four</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
 				Start a game
@@ -64,6 +66,6 @@ function ConnectFourNewPage() {
 					{busy ? "Creating challenge..." : "Create challenge link"}
 				</button>
 			</div>
-		</main>
+		</FullscreenGamePage>
 	);
 }
