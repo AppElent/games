@@ -27,7 +27,6 @@ export default function Header() {
 					</Link>
 					<Link
 						to="/join"
-						search={{ code: "", token: "" }}
 						className="club-nav-link"
 						activeProps={{ className: "club-nav-link is-active" }}
 					>

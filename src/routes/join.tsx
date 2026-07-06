@@ -10,10 +10,16 @@ import {
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/join")({
-	validateSearch: (search) => ({
-		code: typeof search.code === "string" ? search.code : "",
-		token: typeof search.token === "string" ? search.token : "",
-	}),
+	validateSearch: (search): { code?: string; token?: string } => {
+		const code = typeof search.code === "string" ? search.code : "";
+		const token = typeof search.token === "string" ? search.token : "";
+		// Omit empty keys so a bare visit to /join keeps a clean URL
+		// (no trailing ?code=&token=).
+		return {
+			...(code ? { code } : {}),
+			...(token ? { token } : {}),
+		};
+	},
 	component: JoinPage,
 });
 
@@ -21,7 +27,7 @@ function JoinPage() {
 	const search = Route.useSearch();
 	const joinByCode = useMutation(api.sessions.joinByCode);
 	const joinByToken = useMutation(api.sessions.joinByToken);
-	const [code, setCode] = useState(search.code);
+	const [code, setCode] = useState(search.code ?? "");
 	const [name, setName] = useState("");
 	const [error, setError] = useState("");
 	const joiningByLink = Boolean(search.token);
@@ -48,7 +54,7 @@ function JoinPage() {
 					try {
 						const result = joiningByLink
 							? await joinByToken({
-									shareToken: search.token,
+									shareToken: search.token ?? "",
 									displayName: name || guest.displayName,
 									guestId: guest.id,
 								})
