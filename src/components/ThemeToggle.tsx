@@ -36,10 +36,13 @@ export default function ThemeToggle() {
 		setThemeMode(nextMode);
 	}
 
+	// Matches the cycle in toggleMode: light -> dark -> auto -> light.
 	const label =
-		mode === "auto"
-			? "Theme mode: auto (system). Click to switch to light mode."
-			: `Theme mode: ${mode}. Click to switch mode.`;
+		mode === "light"
+			? "Theme mode: light. Click to switch to dark mode."
+			: mode === "dark"
+				? "Theme mode: dark. Click to switch to auto (system) mode."
+				: "Theme mode: auto (system). Click to switch to light mode.";
 
 	return (
 		<button
