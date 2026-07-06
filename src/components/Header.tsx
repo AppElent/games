@@ -25,12 +25,21 @@ export default function Header() {
 					>
 						Games
 					</Link>
-					<a href="/join" className="club-nav-link">
+					<Link
+						to="/join"
+						search={{ code: "", token: "" }}
+						className="club-nav-link"
+						activeProps={{ className: "club-nav-link is-active" }}
+					>
 						Join
-					</a>
-					<a href="/dashboard" className="club-nav-link">
+					</Link>
+					<Link
+						to="/dashboard"
+						className="club-nav-link"
+						activeProps={{ className: "club-nav-link is-active" }}
+					>
 						Dashboard
-					</a>
+					</Link>
 				</div>
 
 				<div className="ml-auto flex items-center gap-2">
