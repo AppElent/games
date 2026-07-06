@@ -377,188 +377,197 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 	}, [titleDraft, title, rename, sessionId]);
 
 	return (
-		<div className="flex flex-col items-center gap-4">
-			<div className="flex w-full max-w-[min(94vw,600px)] flex-wrap items-center justify-between gap-2">
-				<div className="min-w-0">
-					{editingTitle ? (
-						<input
-							ref={(element) => element?.focus()}
-							value={titleDraft}
-							onChange={(event) => setTitleDraft(event.target.value)}
-							onBlur={saveTitle}
-							onKeyDown={(event) => {
-								if (event.key === "Enter") {
-									saveTitle();
-								}
-								if (event.key === "Escape") {
-									setTitleDraft(title);
-									setEditingTitle(false);
-								}
-							}}
-							className="w-full rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-sm text-white"
-							maxLength={80}
-						/>
-					) : (
-						<button
-							type="button"
-							onClick={() => setEditingTitle(true)}
-							title="Rename this puzzle"
-							className="truncate text-left text-lg font-bold text-white hover:text-sky-300"
-						>
-							{titleDraft}
-						</button>
-					)}
-					<p className="text-xs text-slate-400">
-						{state.difficulty
-							? `${state.difficulty[0].toUpperCase()}${state.difficulty.slice(1)}`
-							: "Imported"}
-						{state.variant === "killer" ? " · Killer" : ""}
-						{state.source === "scan" ? " · scanned" : ""}
-					</p>
+		<div className="flex flex-col items-center gap-4 lg:flex-row lg:items-start lg:justify-center lg:gap-6">
+			{/* Board column: title bar + board. On large/landscape viewports this
+			    sits beside the controls column so the keypad stays above the fold. */}
+			<div className="flex w-full max-w-[min(94vw,600px)] flex-col items-center gap-4 lg:w-[min(70vh,600px)]">
+				<div className="flex w-full flex-wrap items-center justify-between gap-2">
+					<div className="min-w-0">
+						{editingTitle ? (
+							<input
+								ref={(element) => element?.focus()}
+								value={titleDraft}
+								onChange={(event) => setTitleDraft(event.target.value)}
+								onBlur={saveTitle}
+								onKeyDown={(event) => {
+									if (event.key === "Enter") {
+										saveTitle();
+									}
+									if (event.key === "Escape") {
+										setTitleDraft(title);
+										setEditingTitle(false);
+									}
+								}}
+								className="w-full rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-sm text-white"
+								maxLength={80}
+							/>
+						) : (
+							<button
+								type="button"
+								onClick={() => setEditingTitle(true)}
+								title="Rename this puzzle"
+								className="truncate text-left text-lg font-bold text-white hover:text-sky-300"
+							>
+								{titleDraft}
+							</button>
+						)}
+						<p className="text-xs text-slate-400">
+							{state.difficulty
+								? `${state.difficulty[0].toUpperCase()}${state.difficulty.slice(1)}`
+								: "Imported"}
+							{state.variant === "killer" ? " · Killer" : ""}
+							{state.source === "scan" ? " · scanned" : ""}
+						</p>
+					</div>
+					<div className="flex items-center gap-2">
+						<span className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 bg-slate-800/70 px-2 py-1 font-mono text-sm text-slate-200">
+							<Timer className="h-4 w-4" /> {formatElapsed(elapsed)}
+						</span>
+						{status !== "completed" ? (
+							<button
+								type="button"
+								onClick={togglePause}
+								className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 bg-slate-800/70 px-2 py-1 text-sm font-semibold text-slate-200 hover:bg-slate-700"
+							>
+								{status === "active" ? (
+									<>
+										<Pause className="h-4 w-4" /> Pause
+									</>
+								) : (
+									<>
+										<Play className="h-4 w-4" /> Resume
+									</>
+								)}
+							</button>
+						) : null}
+					</div>
 				</div>
-				<div className="flex items-center gap-2">
-					<span className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 bg-slate-800/70 px-2 py-1 font-mono text-sm text-slate-200">
-						<Timer className="h-4 w-4" /> {formatElapsed(elapsed)}
-					</span>
-					{status !== "completed" ? (
+
+				{status === "completed" ? (
+					<div className="w-full rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-4 py-3 text-emerald-200">
+						<p className="font-bold">Solved! 🎉</p>
+						<p className="text-sm">
+							Completed in {formatElapsed(elapsed)}.{" "}
+							<a href="/sudoku/new" className="underline hover:text-white">
+								Start another puzzle
+							</a>
+						</p>
+					</div>
+				) : null}
+
+				<div className="relative w-full">
+					<SudokuBoard
+						board={board}
+						selectedCell={selectedCell}
+						onSelectCell={(cell) =>
+							setSelectedCell((current) => (current === cell ? null : cell))
+						}
+						conflicts={conflicts}
+						hintCells={hintCells}
+						hidden={status === "paused"}
+						cages={cages}
+					/>
+					{status === "paused" ? (
 						<button
 							type="button"
 							onClick={togglePause}
-							className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 bg-slate-800/70 px-2 py-1 text-sm font-semibold text-slate-200 hover:bg-slate-700"
+							className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-slate-950/80 text-slate-200"
 						>
-							{status === "active" ? (
-								<>
-									<Pause className="h-4 w-4" /> Pause
-								</>
-							) : (
-								<>
-									<Play className="h-4 w-4" /> Resume
-								</>
-							)}
+							<Play className="h-10 w-10" />
+							<span className="font-bold">Paused — tap to resume</span>
 						</button>
 					) : null}
 				</div>
 			</div>
 
-			{status === "completed" ? (
-				<div className="w-full max-w-[min(94vw,600px)] rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-4 py-3 text-emerald-200">
-					<p className="font-bold">Solved! 🎉</p>
-					<p className="text-sm">
-						Completed in {formatElapsed(elapsed)}.{" "}
-						<a href="/sudoku/new" className="underline hover:text-white">
-							Start another puzzle
-						</a>
-					</p>
-				</div>
-			) : null}
+			{/* Controls column: hint, keypad, options, keyboard help. */}
+			<div className="flex w-full max-w-[min(94vw,600px)] flex-col items-center gap-4 lg:w-[360px] lg:max-w-[360px]">
+				{hint ? (
+					<div className="w-full rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+						<div className="flex items-center justify-between gap-2">
+							<p className="font-bold">
+								{hintLevel >= 2 ? hint.title : "Hint"}
+							</p>
+							<button
+								type="button"
+								onClick={() => setHint(null)}
+								className="text-xs text-amber-200/80 hover:text-white"
+							>
+								Dismiss
+							</button>
+						</div>
+						<p className="mt-1">{hintTextForLevel(hint, hintLevel)}</p>
+						{hintLevel < 3 ? (
+							<button
+								type="button"
+								onClick={() =>
+									setHintLevel((level) =>
+										level < 3 ? ((level + 1) as 2 | 3) : level,
+									)
+								}
+								className="mt-2 rounded-md border border-amber-300/50 px-2 py-1 text-xs font-semibold hover:bg-amber-400/20"
+							>
+								Tell me more
+							</button>
+						) : null}
+					</div>
+				) : null}
 
-			<div className="relative w-full max-w-[min(94vw,600px)]">
-				<SudokuBoard
-					board={board}
-					selectedCell={selectedCell}
-					onSelectCell={(cell) =>
-						setSelectedCell((current) => (current === cell ? null : cell))
+				<SudokuKeypad
+					mode={mode}
+					onModeChange={setMode}
+					onDigit={handleDigit}
+					onColor={(color) =>
+						selectedCell !== null &&
+						dispatch({ type: "setColor", cell: selectedCell, color })
 					}
-					conflicts={conflicts}
-					hintCells={hintCells}
-					hidden={status === "paused"}
-					cages={cages}
+					onErase={() =>
+						selectedCell !== null &&
+						dispatch({ type: "erase", cell: selectedCell })
+					}
+					onUndo={handleUndo}
+					onRedo={handleRedo}
+					onHint={requestHint}
+					canUndo={canUndo(history)}
+					canRedo={canRedo(history)}
+					digitCounts={digitCounts}
+					disabled={status !== "active"}
 				/>
-				{status === "paused" ? (
+
+				<div className="flex w-full flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+					<label className="inline-flex cursor-pointer items-center gap-2">
+						<input
+							type="checkbox"
+							checked={autoCleanup}
+							onChange={(event) => {
+								setAutoCleanup(event.target.checked);
+								scheduleSave(history, event.target.checked);
+							}}
+							className="accent-sky-400"
+						/>
+						Auto-remove notes when a digit is placed
+					</label>
 					<button
 						type="button"
-						onClick={togglePause}
-						className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-slate-950/80 text-slate-200"
-					>
-						<Play className="h-10 w-10" />
-						<span className="font-bold">Paused — tap to resume</span>
-					</button>
-				) : null}
-			</div>
-
-			{hint ? (
-				<div className="w-full max-w-[min(94vw,600px)] rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-					<div className="flex items-center justify-between gap-2">
-						<p className="font-bold">{hintLevel >= 2 ? hint.title : "Hint"}</p>
-						<button
-							type="button"
-							onClick={() => setHint(null)}
-							className="text-xs text-amber-200/80 hover:text-white"
-						>
-							Dismiss
-						</button>
-					</div>
-					<p className="mt-1">{hintTextForLevel(hint, hintLevel)}</p>
-					{hintLevel < 3 ? (
-						<button
-							type="button"
-							onClick={() =>
-								setHintLevel((level) =>
-									level < 3 ? ((level + 1) as 2 | 3) : level,
+						onClick={() => {
+							if (
+								window.confirm(
+									"Restart this puzzle? Your progress is kept in undo history.",
 								)
+							) {
+								dispatch({ type: "restart" });
 							}
-							className="mt-2 rounded-md border border-amber-300/50 px-2 py-1 text-xs font-semibold hover:bg-amber-400/20"
-						>
-							Tell me more
-						</button>
-					) : null}
-				</div>
-			) : null}
-
-			<SudokuKeypad
-				mode={mode}
-				onModeChange={setMode}
-				onDigit={handleDigit}
-				onColor={(color) =>
-					selectedCell !== null &&
-					dispatch({ type: "setColor", cell: selectedCell, color })
-				}
-				onErase={() =>
-					selectedCell !== null &&
-					dispatch({ type: "erase", cell: selectedCell })
-				}
-				onUndo={handleUndo}
-				onRedo={handleRedo}
-				onHint={requestHint}
-				canUndo={canUndo(history)}
-				canRedo={canRedo(history)}
-				digitCounts={digitCounts}
-				disabled={status !== "active"}
-			/>
-
-			<div className="flex w-full max-w-[min(94vw,600px)] flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
-				<label className="inline-flex cursor-pointer items-center gap-2">
-					<input
-						type="checkbox"
-						checked={autoCleanup}
-						onChange={(event) => {
-							setAutoCleanup(event.target.checked);
-							scheduleSave(history, event.target.checked);
 						}}
-						className="accent-sky-400"
-					/>
-					Auto-remove notes when a digit is placed
-				</label>
-				<button
-					type="button"
-					onClick={() => {
-						if (
-							window.confirm(
-								"Restart this puzzle? Your progress is kept in undo history.",
-							)
-						) {
-							dispatch({ type: "restart" });
-						}
-					}}
-					className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 px-2 py-1 font-semibold text-slate-300 hover:bg-slate-800"
-				>
-					<RotateCcw className="h-3.5 w-3.5" /> Restart
-				</button>
+						className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 px-2 py-1 font-semibold text-slate-300 hover:bg-slate-800"
+					>
+						<RotateCcw className="h-3.5 w-3.5" /> Restart
+					</button>
+				</div>
+				<p className="text-center text-xs text-slate-500">
+					Keyboard: 1-9 digits · Shift+digit corner note · Ctrl+digit center
+					note · Space cycles mode · Ctrl+Z/Y undo/redo · arrows move
+				</p>
 			</div>
-			<p className="max-w-[min(94vw,600px)] text-center text-xs text-slate-500">
-				Keyboard: 1-9 digits · Shift+digit corner note · Ctrl+digit center note
-				· Space cycles mode · Ctrl+Z/Y undo/redo · arrows move
-			</p>
 		</div>
 	);
 }
