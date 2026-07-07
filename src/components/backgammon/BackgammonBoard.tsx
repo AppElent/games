@@ -385,12 +385,24 @@ export function BackgammonBoard({
 		}
 
 		return (
-			// biome-ignore lint/a11y/noStaticElementInteractions: board surface
-			// biome-ignore lint/a11y/useKeyWithClickEvents: board surface
+			// biome-ignore lint/a11y/useSemanticElements: point keeps its custom triangle styling; keyboard + aria added below
 			<div
 				key={n}
 				data-dest={String(n)}
 				onClick={() => handleCell(n)}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						handleCell(n);
+					}
+				}}
+				role="button"
+				tabIndex={movable ? 0 : -1}
+				aria-label={`Point ${n}${
+					point.count > 0
+						? `, ${point.count} ${point.color} checker${point.count === 1 ? "" : "s"}`
+						: ", empty"
+				}`}
 				onPointerDown={(e) => pointerDown(e, n)}
 				style={{
 					position: "relative",
