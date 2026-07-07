@@ -18,6 +18,12 @@ export default function Header() {
 				</Link>
 
 				<div className="order-3 flex w-full items-center gap-4 text-sm font-bold sm:order-none sm:w-auto">
+					{/*
+					 * "Games" and the logo both point to "/" on purpose: the logo is the
+					 * brand mark, while "Games" is the labeled catalog nav item that also
+					 * carries the active-state highlight (via activeProps). Home is the
+					 * game catalog, so there is no separate games-index route to link to.
+					 */}
 					<Link
 						to="/"
 						className="club-nav-link"
