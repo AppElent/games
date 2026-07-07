@@ -188,7 +188,7 @@ function BackgammonLocalPage() {
 		<FullscreenGameShell title="Local Backgammon" onRestart={handleReset}>
 			<div className="flex h-full flex-col">
 				<div className="min-h-0 flex-1 px-2 pt-14 pb-1 landscape:pt-1 landscape:pl-14">
-					<FitScale designWidth={1060}>
+					<FitScale designWidth={1060} align="top">
 						<BackgammonBoard
 							state={state}
 							interactive={!winner}

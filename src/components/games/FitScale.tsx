@@ -16,6 +16,12 @@ type FitScaleProps = {
 	/** Never scale beyond this (default 1 — shrink only, keep native size on big screens). */
 	maxScale?: number;
 	className?: string;
+	/**
+	 * Vertical alignment of the scaled content within the available space.
+	 * Defaults to "center"; use "top" for tall content that would otherwise
+	 * float in a large empty band (e.g. a portrait phone board).
+	 */
+	align?: "center" | "top";
 };
 
 /**
@@ -28,6 +34,7 @@ export function FitScale({
 	children,
 	maxScale = 1,
 	className,
+	align = "center",
 }: FitScaleProps) {
 	const outerRef = useRef<HTMLDivElement>(null);
 	const innerRef = useRef<HTMLDivElement>(null);
@@ -60,7 +67,7 @@ export function FitScale({
 	return (
 		<div
 			ref={outerRef}
-			className={`flex h-full w-full items-center justify-center overflow-hidden ${className ?? ""}`}
+			className={`flex h-full w-full justify-center overflow-hidden ${align === "top" ? "items-start" : "items-center"} ${className ?? ""}`}
 		>
 			<div
 				style={{ width: designWidth * scale, height: contentHeight * scale }}
