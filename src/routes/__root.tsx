@@ -10,6 +10,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import "#/lib/router-static-data";
 import { LocaleProvider, readClientLocale } from "#/lib/i18n";
+import { LanguageSync } from "#/lib/i18n/LanguageSync";
 import { getSsrLocale } from "#/lib/i18n/server";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
@@ -81,6 +82,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					<ClerkProvider>
 						<ConvexProvider>
 							<ThemeSync />
+							<LanguageSync />
 							{!isFullscreen && <Header />}
 							{children}
 							{!isFullscreen && <Footer />}

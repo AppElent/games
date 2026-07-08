@@ -1,6 +1,7 @@
 import { HeaderUser } from "@appelent/auth";
 import { Link } from "@tanstack/react-router";
 import { Gamepad2 } from "lucide-react";
+import LanguageToggle from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
@@ -49,6 +50,7 @@ export default function Header() {
 
 				<div className="ml-auto flex items-center gap-2">
 					<HeaderUser />
+					<LanguageToggle />
 					<ThemeToggle />
 				</div>
 			</nav>
