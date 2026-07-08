@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Menu, Volume2, VolumeX, X } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { useMessages } from "#/lib/i18n";
 
 type FullscreenGameShellProps = {
 	title: string;
@@ -28,6 +29,7 @@ export function FullscreenGameShell({
 	soundOn,
 	onSoundToggle,
 }: FullscreenGameShellProps) {
+	const messages = useMessages();
 	const [menuOpen, setMenuOpen] = useState(false);
 
 	const setMenu = (open: boolean) => {
@@ -42,7 +44,11 @@ export function FullscreenGameShell({
 				<div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3">
 					<button
 						type="button"
-						aria-label={menuOpen ? "Close menu" : "Open menu"}
+						aria-label={
+							menuOpen
+								? messages.common.gameShell.closeMenu
+								: messages.common.gameShell.openMenu
+						}
 						onClick={() => setMenu(!menuOpen)}
 						className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-slate-900/70 text-white backdrop-blur"
 					>
@@ -59,7 +65,9 @@ export function FullscreenGameShell({
 				{menuOpen ? (
 					<div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
 						<div className="club-panel w-full max-w-xs rounded-2xl p-6">
-							<p className="club-kicker mb-1">Paused</p>
+							<p className="club-kicker mb-1">
+								{messages.common.gameShell.paused}
+							</p>
 							<h2 className="club-title mb-5 text-2xl font-bold text-white">
 								{title}
 							</h2>
@@ -69,7 +77,7 @@ export function FullscreenGameShell({
 									onClick={() => setMenu(false)}
 									className="min-h-11 rounded-xl bg-emerald-400 px-4 py-2 font-bold text-slate-950"
 								>
-									Resume
+									{messages.common.gameShell.resume}
 								</button>
 								{onRestart ? (
 									<button
@@ -80,7 +88,7 @@ export function FullscreenGameShell({
 										}}
 										className="min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
 									>
-										Restart
+										{messages.common.gameShell.restart}
 									</button>
 								) : null}
 								{onSoundToggle ? (
@@ -94,14 +102,16 @@ export function FullscreenGameShell({
 										) : (
 											<VolumeX className="h-4 w-4" />
 										)}
-										Sound {soundOn ? "on" : "off"}
+										{soundOn
+											? messages.common.gameShell.soundOn
+											: messages.common.gameShell.soundOff}
 									</button>
 								) : null}
 								<Link
 									to="/"
 									className="min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-center font-bold text-white"
 								>
-									Return to Games
+									{messages.common.gameShell.returnToGames}
 								</Link>
 							</div>
 						</div>

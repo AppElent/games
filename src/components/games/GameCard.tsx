@@ -1,6 +1,8 @@
 import type { GameCatalogItem } from "#/lib/games/catalog";
+import { useMessages } from "#/lib/i18n";
 
 export function GameCard({ game }: { game: GameCatalogItem }) {
+	const messages = useMessages();
 	const Icon = game.icon;
 	const disabled = game.availability !== "playable";
 
@@ -35,7 +37,7 @@ export function GameCard({ game }: { game: GameCatalogItem }) {
 						: "bg-[var(--club-text)] text-[color:var(--club-bg)] hover:-translate-y-0.5"
 				}`}
 			>
-				{disabled ? "Coming soon" : game.primaryAction}
+				{disabled ? messages.common.gameCard.comingSoon : game.primaryAction}
 			</a>
 		</article>
 	);

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type GameType, getGameByType } from "#/lib/games/catalog";
+import { useMessages } from "#/lib/i18n";
 import { useGameLocalizer } from "#/lib/i18n/catalog";
 
 export const Route = createFileRoute("/games/$gameType")({
@@ -7,6 +8,7 @@ export const Route = createFileRoute("/games/$gameType")({
 });
 
 function GameDetailPage() {
+	const messages = useMessages();
 	const { gameType } = Route.useParams();
 	const localize = useGameLocalizer();
 	const base = getGameByType(gameType as GameType);
@@ -15,7 +17,7 @@ function GameDetailPage() {
 	if (!game) {
 		return (
 			<main className="club-wrap py-10 text-[var(--club-orange)]">
-				Game not found.
+				{messages.common.gameDetail.notFound}
 			</main>
 		);
 	}
@@ -37,14 +39,13 @@ function GameDetailPage() {
 					{game.description}
 				</p>
 				<p className="mt-5 rounded-md border border-[var(--club-line)] bg-[var(--club-line)] p-4 text-sm text-[var(--club-muted)]">
-					This game is on the Arcade Club shelf and will use the same live
-					session system when it becomes playable.
+					{messages.common.gameDetail.comingSoonNotice}
 				</p>
 				<a
 					href="/"
 					className="mt-6 inline-flex rounded-md bg-[var(--club-text)] px-4 py-2 text-sm font-bold text-[color:var(--club-bg)] no-underline"
 				>
-					Back to games
+					{messages.common.gameDetail.backToGames}
 				</a>
 			</section>
 		</main>

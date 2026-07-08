@@ -1,8 +1,10 @@
 import { Copy, Link as LinkIcon } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
+import { useMessages } from "#/lib/i18n";
 
 export function QrSharePanel({ url, label }: { url: string; label: string }) {
+	const messages = useMessages();
 	const [qrSrc, setQrSrc] = useState("");
 
 	useEffect(() => {
@@ -34,11 +36,13 @@ export function QrSharePanel({ url, label }: { url: string; label: string }) {
 				{qrSrc ? (
 					<img
 						src={qrSrc}
-						alt="QR code for game link"
+						alt={messages.common.qrShare.qrAlt}
 						className="h-full w-full"
 					/>
 				) : (
-					<span className="text-sm text-slate-400">Generating QR...</span>
+					<span className="text-sm text-slate-400">
+						{messages.common.qrShare.generating}
+					</span>
 				)}
 			</div>
 			<div className="rounded-md border border-dashed border-cyan-300/40 bg-cyan-300/10 p-4 text-sm text-cyan-50">
@@ -50,7 +54,7 @@ export function QrSharePanel({ url, label }: { url: string; label: string }) {
 				className="mt-4 inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-bold text-slate-950"
 			>
 				<Copy className="h-4 w-4" />
-				Copy link
+				{messages.common.qrShare.copyLink}
 			</button>
 		</section>
 	);

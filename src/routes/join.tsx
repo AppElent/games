@@ -7,6 +7,7 @@ import {
 	getOrCreateGuestIdentity,
 	normalizeJoinCode,
 } from "#/lib/games/sessions";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/join")({
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/join")({
 });
 
 function JoinPage() {
+	const messages = useMessages();
 	const search = Route.useSearch();
 	const joinByCode = useMutation(api.sessions.joinByCode);
 	const joinByToken = useMutation(api.sessions.joinByToken);
@@ -113,30 +115,34 @@ function JoinPage() {
 							window.location.href = `/chess/${result.sessionId}`;
 						}
 					} catch (caught) {
-						setError(getUserErrorMessage(caught, "Could not join game"));
+						setError(
+							getUserErrorMessage(caught, messages.common.joinPanel.joinError),
+						);
 					}
 				}}
 			>
-				<p className="club-kicker mb-2">Join game</p>
+				<p className="club-kicker mb-2">{messages.common.joinPanel.kicker}</p>
 				<h1 className="club-title mb-5 text-3xl font-bold text-[var(--club-text)]">
-					{joiningByLink ? "Claim your seat" : "Enter your code"}
+					{joiningByLink
+						? messages.common.joinPanel.claimSeat
+						: messages.common.joinPanel.enterCode}
 				</h1>
 				<label
 					className="mb-2 block text-sm font-bold text-[var(--club-muted)]"
 					htmlFor="join-name"
 				>
-					Display name
+					{messages.common.joinPanel.displayName}
 				</label>
 				<input
 					id="join-name"
 					value={name}
 					onChange={(event) => setName(event.target.value)}
 					className="mb-4 w-full rounded-md border border-[var(--club-line)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
-					placeholder="Player name"
+					placeholder={messages.common.joinPanel.playerNamePlaceholder}
 				/>
 				{joiningByLink ? (
 					<div className="mb-4 rounded-md border border-cyan-300/30 bg-cyan-300/10 p-3 text-sm text-[var(--club-text)]">
-						This invite link will add you to the game.
+						{messages.common.joinPanel.inviteNotice}
 					</div>
 				) : (
 					<>
@@ -144,7 +150,7 @@ function JoinPage() {
 							className="mb-2 block text-sm font-bold text-[var(--club-muted)]"
 							htmlFor="join-code"
 						>
-							Room code
+							{messages.common.session.roomCode}
 						</label>
 						<input
 							id="join-code"
@@ -162,7 +168,7 @@ function JoinPage() {
 					type="submit"
 					className="w-full rounded-md bg-cyan-300 px-4 py-2.5 font-bold text-slate-950"
 				>
-					Join
+					{messages.common.header.join}
 				</button>
 			</form>
 		</main>
