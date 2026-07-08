@@ -1,10 +1,13 @@
 import { HeaderUser } from "@appelent/auth";
 import { Link } from "@tanstack/react-router";
 import { Gamepad2 } from "lucide-react";
+import { useMessages } from "#/lib/i18n";
 import LanguageToggle from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
+	const messages = useMessages();
+
 	return (
 		<header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/72 px-4 backdrop-blur-xl">
 			<nav className="club-wrap flex flex-wrap items-center gap-x-4 gap-y-3 py-3">
@@ -30,21 +33,21 @@ export default function Header() {
 						className="club-nav-link"
 						activeProps={{ className: "club-nav-link is-active" }}
 					>
-						Games
+						{messages.common.header.games}
 					</Link>
 					<Link
 						to="/join"
 						className="club-nav-link"
 						activeProps={{ className: "club-nav-link is-active" }}
 					>
-						Join
+						{messages.common.header.join}
 					</Link>
 					<Link
 						to="/dashboard"
 						className="club-nav-link"
 						activeProps={{ className: "club-nav-link is-active" }}
 					>
-						Dashboard
+						{messages.common.header.dashboard}
 					</Link>
 				</div>
 
