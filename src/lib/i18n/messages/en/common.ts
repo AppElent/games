@@ -19,9 +19,9 @@ export const common = {
 	about: {
 		kicker: "About",
 		title: "Arcade Club",
-		paragraph1:
+		intro:
 			"Arcade Club is a shelf of party and board games you can start in seconds and play together from anywhere. Host a live quiz night, send a friend a backgammon or chess challenge, race through a solo Sudoku, or gather a room for Signal Words and Bluff Dice.",
-		paragraph2:
+		howItWorks:
 			"Everything runs right in the browser — no installs. Create a room code or a share link and players join instantly on their own device, signed in or as a guest.",
 	},
 	actions: {

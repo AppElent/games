@@ -16,10 +16,10 @@ function About() {
 			</h1>
 			<div className="club-panel max-w-3xl rounded-2xl p-6 sm:p-8">
 				<p className="text-base leading-8 text-[var(--club-muted)]">
-					{messages.common.about.paragraph1}
+					{messages.common.about.intro}
 				</p>
 				<p className="mt-4 text-base leading-8 text-[var(--club-muted)]">
-					{messages.common.about.paragraph2}
+					{messages.common.about.howItWorks}
 				</p>
 			</div>
 		</main>

@@ -21,9 +21,9 @@ export const common = {
 	about: {
 		kicker: "Over",
 		title: "Arcade Club",
-		paragraph1:
+		intro:
 			"Arcade Club is een plank vol party- en bordspellen die je in een paar seconden kunt starten en samen kunt spelen, waar je ook bent. Host een live quizavond, stuur een vriend een backgammon- of schaakuitdaging, race door een solo Sudoku, of verzamel een kamer voor Signal Words en Blufdobbelen.",
-		paragraph2:
+		howItWorks:
 			"Alles draait rechtstreeks in de browser — niets te installeren. Maak een kamercode of deellink aan en spelers doen direct mee op hun eigen apparaat, ingelogd of als gast.",
 	},
 	actions: {
