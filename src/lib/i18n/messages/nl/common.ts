@@ -16,7 +16,7 @@ export const common = {
 		kicker: "Arcade Club",
 		title: "Start een kamer, deel een link, speel samen.",
 		intro:
-			"Live quizavonden, directe bordspeluitdagingen en een groeiende plank partyspellen voor je volgende call, klas of banksessie.",
+			"Live quizavonden, directe bordspeluitdagingen en een groeiend aanbod partyspellen voor je volgende call, klas of banksessie.",
 	},
 	actions: {
 		start: "Start",
