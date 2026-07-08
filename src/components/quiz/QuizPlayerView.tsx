@@ -2,6 +2,7 @@ import { useMutation } from "convex/react";
 import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { getUserErrorMessage } from "#/lib/games/errors";
+import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -36,6 +37,7 @@ export function QuizPlayerView({
 	bundle: QuizBundle;
 	participantId?: string;
 }) {
+	const messages = useMessages();
 	const submitAnswer = useMutation(api.quiz.submitAnswer);
 	const [pendingChoice, setPendingChoice] = useState("");
 	const [error, setError] = useState("");
@@ -54,13 +56,14 @@ export function QuizPlayerView({
 	if (!participantId) {
 		return (
 			<section className="club-panel max-w-md rounded-lg p-6 text-center">
-				<p className="club-kicker mb-3">Join needed</p>
+				<p className="club-kicker mb-3">
+					{messages.games.quiz.playerView.joinNeeded}
+				</p>
 				<h1 className="club-title text-3xl font-bold text-white">
-					Use the room code first
+					{messages.games.quiz.playerView.useRoomCodeFirst}
 				</h1>
 				<p className="mt-3 text-slate-300">
-					Join from the home screen so Arcade Club can attach your answers to
-					your seat.
+					{messages.games.quiz.playerView.joinFromHomeNotice}
 				</p>
 			</section>
 		);
@@ -69,12 +72,14 @@ export function QuizPlayerView({
 	if (!state || !question || state.phase === "lobby") {
 		return (
 			<section className="club-panel max-w-md rounded-lg p-6 text-center">
-				<p className="club-kicker mb-3">You are in</p>
+				<p className="club-kicker mb-3">
+					{messages.games.quiz.playerView.youAreIn}
+				</p>
 				<h1 className="club-title text-3xl font-bold text-white">
-					Waiting for the host
+					{messages.games.quiz.playerView.waitingForHost}
 				</h1>
 				<p className="mt-3 text-slate-300">
-					The first question will appear here.
+					{messages.games.quiz.playerView.firstQuestionNotice}
 				</p>
 			</section>
 		);
@@ -84,9 +89,13 @@ export function QuizPlayerView({
 		<section className="club-panel w-full max-w-2xl rounded-lg p-5">
 			<p className="club-kicker mb-2">{bundle.session.title}</p>
 			<div className="mb-4 flex items-center justify-between gap-3 text-sm text-slate-300">
-				<span>Question {state.currentQuestionIndex + 1}</span>
+				<span>
+					{fmt(messages.games.quiz.questionNumber, {
+						number: state.currentQuestionIndex + 1,
+					})}
+				</span>
 				<span className="rounded-full bg-white/10 px-3 py-1">
-					{state.phase}
+					{messages.games.quiz.phase[state.phase]}
 				</span>
 			</div>
 			<h1 className="club-title mb-5 text-3xl font-bold text-white">
@@ -115,7 +124,10 @@ export function QuizPlayerView({
 									});
 								} catch (caught) {
 									setError(
-										getUserErrorMessage(caught, "Could not submit answer"),
+										getUserErrorMessage(
+											caught,
+											messages.games.quiz.playerView.submitError,
+										),
 									);
 								}
 							}}
@@ -135,7 +147,9 @@ export function QuizPlayerView({
 			</div>
 			{existingAnswer ? (
 				<p className="mt-4 rounded-md bg-white/5 p-3 text-sm text-slate-200">
-					Answer locked. Score: {existingAnswer.score}
+					{fmt(messages.games.quiz.playerView.answerLocked, {
+						score: existingAnswer.score,
+					})}
 				</p>
 			) : null}
 			{error ? <p className="mt-4 text-sm text-orange-200">{error}</p> : null}

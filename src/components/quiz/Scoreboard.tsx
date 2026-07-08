@@ -1,3 +1,5 @@
+import { fmt, useMessages } from "#/lib/i18n";
+
 type Participant = {
 	_id: string;
 	displayName: string;
@@ -17,6 +19,7 @@ export function Scoreboard({
 	participants: Participant[];
 	answers: Answer[];
 }) {
+	const messages = useMessages();
 	const totals = new Map<string, { score: number; correct: number }>();
 	for (const answer of answers) {
 		const current = totals.get(answer.participantId) ?? {
@@ -39,10 +42,12 @@ export function Scoreboard({
 	return (
 		<section className="club-panel rounded-lg p-4">
 			<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-300">
-				Scoreboard
+				{messages.common.results.scoreboard}
 			</h2>
 			{rows.length === 0 ? (
-				<p className="text-sm text-slate-400">Players will appear here.</p>
+				<p className="text-sm text-slate-400">
+					{messages.games.quiz.scoreboard.playersWillAppear}
+				</p>
 			) : (
 				<ol className="space-y-2">
 					{rows.map((row, index) => (
@@ -59,7 +64,9 @@ export function Scoreboard({
 									{row.score}
 								</span>
 								<span className="text-xs text-slate-400">
-									{row.correct} correct
+									{fmt(messages.games.quiz.scoreboard.correctCount, {
+										count: row.correct,
+									})}
 								</span>
 							</span>
 						</li>
