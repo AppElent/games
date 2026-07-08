@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type GameType, getGameByType } from "#/lib/games/catalog";
+import { useGameLocalizer } from "#/lib/i18n/catalog";
 
 export const Route = createFileRoute("/games/$gameType")({
 	component: GameDetailPage,
@@ -7,7 +8,9 @@ export const Route = createFileRoute("/games/$gameType")({
 
 function GameDetailPage() {
 	const { gameType } = Route.useParams();
-	const game = getGameByType(gameType as GameType);
+	const localize = useGameLocalizer();
+	const base = getGameByType(gameType as GameType);
+	const game = base ? localize(base) : undefined;
 
 	if (!game) {
 		return (
