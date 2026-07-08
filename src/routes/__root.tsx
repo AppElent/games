@@ -9,6 +9,8 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import "#/lib/router-static-data";
+import { LocaleProvider, readClientLocale } from "#/lib/i18n";
+import { getSsrLocale } from "#/lib/i18n/server";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import ClerkProvider from "../integrations/clerk/provider";
@@ -53,41 +55,50 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			},
 		],
 	}),
+	loader: () => {
+		if (typeof document !== "undefined") {
+			return { locale: readClientLocale() };
+		}
+		return getSsrLocale();
+	},
 	shellComponent: RootDocument,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+	const { locale } = Route.useLoaderData();
 	const isFullscreen = useRouterState({
 		select: (s) => s.matches.some((m) => m.staticData.fullscreen === true),
 	});
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html lang={locale} suppressHydrationWarning>
 			<head>
 				<HeadContent />
 				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: static pre-paint script, no user input */}
 				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
 			</head>
 			<body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-cyan-300/30">
-				<ClerkProvider>
-					<ConvexProvider>
-						<ThemeSync />
-						{!isFullscreen && <Header />}
-						{children}
-						{!isFullscreen && <Footer />}
-						<TanStackDevtools
-							config={{
-								position: "bottom-right",
-							}}
-							plugins={[
-								{
-									name: "Tanstack Router",
-									render: <TanStackRouterDevtoolsPanel />,
-								},
-								TanStackQueryDevtools,
-							]}
-						/>
-					</ConvexProvider>
-				</ClerkProvider>
+				<LocaleProvider initialLocale={locale}>
+					<ClerkProvider>
+						<ConvexProvider>
+							<ThemeSync />
+							{!isFullscreen && <Header />}
+							{children}
+							{!isFullscreen && <Footer />}
+							<TanStackDevtools
+								config={{
+									position: "bottom-right",
+								}}
+								plugins={[
+									{
+										name: "Tanstack Router",
+										render: <TanStackRouterDevtoolsPanel />,
+									},
+									TanStackQueryDevtools,
+								]}
+							/>
+						</ConvexProvider>
+					</ClerkProvider>
+				</LocaleProvider>
 				<Scripts />
 			</body>
 		</html>
