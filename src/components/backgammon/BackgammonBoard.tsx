@@ -10,6 +10,7 @@ import {
 	getMoveHighlights,
 	planBackgammonMove,
 } from "#/lib/games/backgammon";
+import { fmt, plural, useI18n } from "#/lib/i18n";
 
 /**
  * Backgammon board from the Claude Design handoff, converted to a controlled
@@ -26,13 +27,6 @@ export type BackgammonBoardOptions = {
 };
 
 export type BackgammonOptionKey = keyof BackgammonBoardOptions;
-
-const OPTION_LABELS: Record<BackgammonOptionKey, string> = {
-	showNumbers: "Show point numbers",
-	autoRoll: "Auto-roll",
-	autoSwitchTurn: "Auto end turn",
-	autoCombine: "Combine two dice",
-};
 
 type Props = {
 	state: BackgammonTurnState;
@@ -188,6 +182,14 @@ export function BackgammonBoard({
 	lightPoint = "#e7d2a4",
 	darkPoint = "#a54c38",
 }: Props) {
+	const { locale, messages } = useI18n();
+	const backgammon = messages.games.backgammon;
+	const optionLabels: Record<BackgammonOptionKey, string> = {
+		showNumbers: backgammon.board.optionShowNumbers,
+		autoRoll: backgammon.board.optionAutoRoll,
+		autoSwitchTurn: backgammon.board.optionAutoSwitchTurn,
+		autoCombine: backgammon.board.optionAutoCombine,
+	};
 	const [selectedSource, setSelectedSource] =
 		useState<BackgammonMoveSource | null>(null);
 	const [optionsOpen, setOptionsOpen] = useState(false);
@@ -398,11 +400,23 @@ export function BackgammonBoard({
 				}}
 				role="button"
 				tabIndex={movable ? 0 : -1}
-				aria-label={`Point ${n}${
+				aria-label={
 					point.count > 0
-						? `, ${point.count} ${point.color} checker${point.count === 1 ? "" : "s"}`
-						: ", empty"
-				}`}
+						? fmt(backgammon.board.pointOccupied, {
+								number: n,
+								count: point.count,
+								color:
+									point.color === "white"
+										? backgammon.board.colorWhite
+										: backgammon.board.colorBlack,
+								checkerWord: plural(
+									locale,
+									point.count,
+									backgammon.board.checkerWord,
+								),
+							})
+						: fmt(backgammon.board.pointEmpty, { number: n })
+				}
 				onPointerDown={(e) => pointerDown(e, n)}
 				style={{
 					position: "relative",
@@ -531,16 +545,20 @@ export function BackgammonBoard({
 		statusText = statusOverride;
 	} else if (state.dice.length === 0) {
 		statusText = interactive
-			? "Roll the dice to begin"
-			: "Waiting for the dice";
+			? backgammon.board.statusRollToBegin
+			: backgammon.board.statusWaitingForDice;
 	} else if (selectedSource != null) {
-		statusText = `Pick a destination — ${remaining} move(s) left`;
+		statusText = plural(
+			locale,
+			remaining,
+			backgammon.board.statusPickDestination,
+		);
 	} else if (remaining > 0) {
 		statusText = interactive
-			? `${remaining} move(s) available`
-			: `${remaining} move(s) left this turn`;
+			? plural(locale, remaining, backgammon.board.statusMovesAvailable)
+			: plural(locale, remaining, backgammon.board.statusMovesLeftThisTurn);
 	} else {
-		statusText = "No moves left — end the turn";
+		statusText = backgammon.board.statusNoMovesLeft;
 	}
 
 	const halfStyle: React.CSSProperties = {
@@ -617,7 +635,9 @@ export function BackgammonBoard({
 							textTransform: "uppercase",
 						}}
 					>
-						{active === "white" ? "White to move" : "Black to move"}
+						{active === "white"
+							? backgammon.board.whiteToMove
+							: backgammon.board.blackToMove}
 					</span>
 				</div>
 				<div
@@ -639,7 +659,7 @@ export function BackgammonBoard({
 									letterSpacing: "0.08em",
 								}}
 							>
-								— roll the dice —
+								{backgammon.board.rollHint}
 							</div>
 						) : (
 							state.dice.map((die, i) => (
@@ -669,7 +689,7 @@ export function BackgammonBoard({
 									"0 2px 5px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)",
 							}}
 						>
-							Roll
+							{backgammon.board.rollButton}
 						</button>
 					) : null}
 					{onEndTurn ? (
@@ -687,7 +707,7 @@ export function BackgammonBoard({
 								cursor: canEndTurn ? "pointer" : "not-allowed",
 							}}
 						>
-							End turn
+							{backgammon.board.endTurnButton}
 						</button>
 					) : null}
 					{onUndo ? (
@@ -704,7 +724,7 @@ export function BackgammonBoard({
 								cursor: canUndo ? "pointer" : "not-allowed",
 							}}
 						>
-							↶ Undo
+							{backgammon.board.undoButton}
 						</button>
 					) : null}
 					{onRedo ? (
@@ -721,7 +741,7 @@ export function BackgammonBoard({
 								cursor: canRedo ? "pointer" : "not-allowed",
 							}}
 						>
-							↷ Redo
+							{backgammon.board.redoButton}
 						</button>
 					) : null}
 					{onReset ? (
@@ -735,7 +755,7 @@ export function BackgammonBoard({
 								border: "1px solid rgba(233,217,189,0.14)",
 							}}
 						>
-							Reset
+							{backgammon.board.resetButton}
 						</button>
 					) : null}
 					{onToggleOption && optionKeys.length > 0 ? (
@@ -785,7 +805,7 @@ export function BackgammonBoard({
 											marginBottom: 6,
 										}}
 									>
-										Options
+										{backgammon.board.optionsHeading}
 									</div>
 									{optionKeys.map((key) => {
 										const on = options[key];
@@ -806,7 +826,7 @@ export function BackgammonBoard({
 												}}
 											>
 												<span style={{ fontSize: 16, color: "#e4d5ba" }}>
-													{OPTION_LABELS[key]}
+													{optionLabels[key]}
 												</span>
 												<span
 													style={{
@@ -945,7 +965,7 @@ export function BackgammonBoard({
 								color: "rgba(233,217,189,0.5)",
 							}}
 						>
-							Bar
+							{backgammon.board.barLabel}
 						</div>
 						<div
 							style={{
@@ -1017,7 +1037,7 @@ export function BackgammonBoard({
 									textTransform: "uppercase",
 								}}
 							>
-								Off
+								{backgammon.board.offLabel}
 							</div>
 							{Array.from({ length: Math.min(state.off.black, 12) }).map(
 								(_, i) => (
@@ -1116,7 +1136,7 @@ export function BackgammonBoard({
 						color: "#6f6552",
 					}}
 				>
-					Click or drag a checker — two dice can combine into one move
+					{backgammon.board.dragHint}
 				</div>
 			</div>
 		</div>

@@ -5,6 +5,7 @@ import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/backgammon/new")({
@@ -13,6 +14,8 @@ export const Route = createFileRoute("/backgammon/new")({
 });
 
 function BackgammonNewPage() {
+	const messages = useMessages();
+	const backgammon = messages.games.backgammon;
 	const createSession = useMutation(api.sessions.create);
 	const createState = useMutation(api.backgammon.createState);
 	const hostName = useHostDisplayName();
@@ -20,36 +23,34 @@ function BackgammonNewPage() {
 	const [error, setError] = useState("");
 
 	return (
-		<FullscreenGamePage title="Backgammon">
-			<p className="club-kicker mb-2">Backgammon</p>
+		<FullscreenGamePage title={messages.catalog.backgammon.title}>
+			<p className="club-kicker mb-2">{messages.catalog.backgammon.title}</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
-				Start a match
+				{backgammon.newGame.heading}
 			</h1>
 			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
 			<div className="grid max-w-3xl gap-4 md:grid-cols-2">
 				<div className="club-panel flex flex-col rounded-lg p-6">
 					<h2 className="club-title text-2xl font-bold text-white">
-						Local match
+						{backgammon.newGame.localMatchHeading}
 					</h2>
 					<p className="mt-2 flex-1 text-sm text-slate-300">
-						Two players on this device. Nothing leaves your browser — the game
-						is saved locally so you can pick it up later.
+						{backgammon.newGame.localMatchDescription}
 					</p>
 					<Link
 						to="/backgammon/local"
 						className="mt-5 rounded-md bg-white px-5 py-3 text-center font-bold text-slate-950"
 					>
-						Play on this device
+						{backgammon.newGame.playOnDevice}
 					</Link>
 				</div>
 				<HostGate>
 					<div className="club-panel flex flex-col rounded-lg p-6">
 						<h2 className="club-title text-2xl font-bold text-white">
-							Online challenge
+							{backgammon.newGame.onlineChallengeHeading}
 						</h2>
 						<p className="mt-2 flex-1 text-sm text-slate-300">
-							Create a challenge link. The other player scans the QR code or
-							opens the link and automatically claims the black seat.
+							{backgammon.newGame.onlineChallengeDescription}
 						</p>
 						<button
 							type="button"
@@ -64,7 +65,7 @@ function BackgammonNewPage() {
 										gameType: "backgammon",
 										joinMode: "challenge",
 										authPolicy: "guestAllowed",
-										title: "Backgammon Match",
+										title: messages.catalog.backgammon.title,
 										displayName: hostName,
 										guestId: guest.id,
 									});
@@ -79,14 +80,19 @@ function BackgammonNewPage() {
 									window.location.href = `/backgammon/${result.sessionId}`;
 								} catch (caught) {
 									setError(
-										getUserErrorMessage(caught, "Could not create challenge"),
+										getUserErrorMessage(
+											caught,
+											backgammon.newGame.createChallengeError,
+										),
 									);
 								} finally {
 									setBusy(false);
 								}
 							}}
 						>
-							{busy ? "Creating challenge..." : "Create challenge link"}
+							{busy
+								? backgammon.newGame.creatingChallenge
+								: backgammon.newGame.createChallengeLink}
 						</button>
 					</div>
 				</HostGate>

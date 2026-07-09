@@ -3,6 +3,8 @@ import type {
 	BackgammonMoveDestination,
 	BackgammonMoveSource,
 } from "#/lib/games/backgammon";
+import type { Messages } from "#/lib/i18n";
+import { fmt, useI18n } from "#/lib/i18n";
 
 type BackgammonMove = {
 	_id: string;
@@ -15,18 +17,24 @@ type BackgammonMove = {
 };
 
 export function BackgammonMoveLog({ moves }: { moves: BackgammonMove[] }) {
+	const { locale, messages } = useI18n();
+	const backgammon = messages.games.backgammon;
 	const newestMoves = [...moves].sort(
 		(left, right) => right.createdAt - left.createdAt,
 	);
+	const colorLabel = (color: BackgammonColor) =>
+		color === "white"
+			? backgammon.board.colorWhite
+			: backgammon.board.colorBlack;
 
 	return (
 		<div className="club-panel rounded-lg p-4">
 			<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-300">
-				Move log
+				{backgammon.moveLog.heading}
 			</h2>
 			{newestMoves.length === 0 ? (
 				<p className="rounded-md bg-white/5 px-3 py-2 text-sm text-slate-400">
-					No moves yet
+					{backgammon.moveLog.empty}
 				</p>
 			) : (
 				<ul className="max-h-72 space-y-2 overflow-y-auto pr-1">
@@ -37,16 +45,18 @@ export function BackgammonMoveLog({ moves }: { moves: BackgammonMove[] }) {
 						>
 							<div className="flex items-center justify-between gap-3">
 								<span className="font-bold capitalize text-white">
-									{move.color}
+									{colorLabel(move.color)}
 								</span>
 								<span className="text-xs text-slate-500">
-									{new Date(move.createdAt).toLocaleTimeString([], {
+									{new Date(move.createdAt).toLocaleTimeString(locale, {
 										hour: "2-digit",
 										minute: "2-digit",
 									})}
 								</span>
 							</div>
-							<p className="mt-1 text-slate-300">{formatMove(move)}</p>
+							<p className="mt-1 text-slate-300">
+								{formatMove(move, backgammon.moveLog)}
+							</p>
 						</li>
 					))}
 				</ul>
@@ -55,26 +65,33 @@ export function BackgammonMoveLog({ moves }: { moves: BackgammonMove[] }) {
 	);
 }
 
-function formatMove(move: BackgammonMove) {
+function formatMove(
+	move: BackgammonMove,
+	moveLog: Messages["games"]["backgammon"]["moveLog"],
+) {
 	if (move.moveType === "roll") {
-		return `Rolled ${move.dice.join(" + ")}`;
+		return fmt(moveLog.rolled, { dice: move.dice.join(" + ") });
 	}
 	if (move.moveType === "endTurn") {
-		return "Ended turn";
+		return moveLog.endedTurn;
 	}
-	return `${formatEndpoint(move.from)} to ${formatEndpoint(move.to)}${
-		move.dice.length > 0 ? ` using ${move.dice.join(", ")}` : ""
-	}`;
+	const from = formatEndpoint(move.from, moveLog);
+	const to = formatEndpoint(move.to, moveLog);
+	if (move.dice.length > 0) {
+		return fmt(moveLog.moveWithDice, { from, to, dice: move.dice.join(", ") });
+	}
+	return fmt(moveLog.move, { from, to });
 }
 
 function formatEndpoint(
-	endpoint?: BackgammonMoveSource | BackgammonMoveDestination,
+	endpoint: BackgammonMoveSource | BackgammonMoveDestination | undefined,
+	moveLog: Messages["games"]["backgammon"]["moveLog"],
 ) {
 	if (endpoint === undefined) {
-		return "point";
+		return moveLog.pointFallback;
 	}
 	if (endpoint === "bar" || endpoint === "off") {
 		return endpoint;
 	}
-	return `point ${endpoint}`;
+	return fmt(moveLog.pointLabel, { number: endpoint });
 }

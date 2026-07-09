@@ -23,6 +23,7 @@ import {
 	loadLocalBackgammonGame,
 	saveLocalBackgammonGame,
 } from "#/lib/games/backgammon-local";
+import { fmt, useMessages } from "#/lib/i18n";
 
 export const Route = createFileRoute("/backgammon/local")({
 	component: BackgammonLocalPage,
@@ -34,6 +35,8 @@ export const Route = createFileRoute("/backgammon/local")({
  * session, no server traffic.
  */
 function BackgammonLocalPage() {
+	const messages = useMessages();
+	const backgammon = messages.games.backgammon;
 	const [state, setState] = useState<BackgammonTurnState | null>(null);
 	const [history, setHistory] = useState<BackgammonTurnState[]>([]);
 	const [future, setFuture] = useState<BackgammonTurnState[]>([]);
@@ -70,9 +73,9 @@ function BackgammonLocalPage() {
 
 	if (!state) {
 		return (
-			<FullscreenGameShell title="Local Backgammon">
+			<FullscreenGameShell title={backgammon.localPlay.title}>
 				<div className="flex h-full items-center justify-center text-slate-300">
-					Setting up board...
+					{backgammon.localPlay.settingUp}
 				</div>
 			</FullscreenGameShell>
 		);
@@ -185,7 +188,10 @@ function BackgammonLocalPage() {
 	}
 
 	return (
-		<FullscreenGameShell title="Local Backgammon" onRestart={handleReset}>
+		<FullscreenGameShell
+			title={backgammon.localPlay.title}
+			onRestart={handleReset}
+		>
 			<div className="flex h-full flex-col">
 				<div className="min-h-0 flex-1 px-2 pt-14 pb-1 landscape:pt-1 landscape:pl-14">
 					<FitScale designWidth={1060} align="top">
@@ -212,7 +218,12 @@ function BackgammonLocalPage() {
 							canRedo={future.length > 0}
 							statusOverride={
 								winner
-									? `${winner === "white" ? "White" : "Black"} has borne off all 15 checkers`
+									? fmt(backgammon.localPlay.bornOffAll, {
+											color:
+												winner === "white"
+													? backgammon.localPlay.colorWhite
+													: backgammon.localPlay.colorBlack,
+										})
 									: undefined
 							}
 						/>
