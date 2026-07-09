@@ -6,6 +6,7 @@ import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
 import { CHESS_TIME_CONTROLS, type ChessTimeControl } from "#/lib/games/chess";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/chess/new")({
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/chess/new")({
 type HostColor = "white" | "black" | "random";
 
 function ChessNewPage() {
+	const messages = useMessages();
+	const chess = messages.games.chess;
 	const createSession = useMutation(api.sessions.create);
 	const createState = useMutation(api.chess.createState);
 	const hostName = useHostDisplayName();
@@ -33,7 +36,7 @@ function ChessNewPage() {
 				gameType: "chess",
 				joinMode: "challenge",
 				authPolicy: "guestAllowed",
-				title: "Chess Match",
+				title: chess.newGame.defaultTitle,
 				displayName: hostName,
 				guestId: guest.id,
 			});
@@ -49,23 +52,23 @@ function ChessNewPage() {
 			);
 			window.location.href = `/chess/${result.sessionId}`;
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "Could not create challenge"));
+			setError(getUserErrorMessage(caught, chess.newGame.createChallengeError));
 			setBusy(false);
 		}
 	}
 
 	return (
-		<FullscreenGamePage title="Chess">
-			<p className="club-kicker mb-2">Chess</p>
+		<FullscreenGamePage title={messages.catalog.chess.title}>
+			<p className="club-kicker mb-2">{messages.catalog.chess.title}</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
-				Start a match
+				{chess.newGame.heading}
 			</h1>
 			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
 			<HostGate>
 				<div className="club-panel max-w-xl rounded-lg p-6">
 					<fieldset className="mb-5">
 						<legend className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-400">
-							Time control
+							{chess.newGame.timeControlLegend}
 						</legend>
 						<div className="flex flex-wrap gap-2">
 							{(Object.keys(CHESS_TIME_CONTROLS) as ChessTimeControl[]).map(
@@ -89,7 +92,7 @@ function ChessNewPage() {
 					</fieldset>
 					<fieldset className="mb-6">
 						<legend className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-400">
-							Your color
+							{chess.newGame.colorLegend}
 						</legend>
 						<div className="flex flex-wrap gap-2">
 							{(["random", "white", "black"] as const).map((color) => (
@@ -104,7 +107,7 @@ function ChessNewPage() {
 											: "border border-white/20 bg-white/10 text-white"
 									}`}
 								>
-									{color}
+									{chess.newGame.colorOptions[color]}
 								</button>
 							))}
 						</div>
@@ -115,11 +118,12 @@ function ChessNewPage() {
 						onClick={handleCreate}
 						className="min-h-11 w-full rounded-md bg-white px-5 py-3 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
 					>
-						{busy ? "Creating challenge..." : "Create challenge link"}
+						{busy
+							? chess.newGame.creatingChallenge
+							: chess.newGame.createChallengeLink}
 					</button>
 					<p className="mt-3 text-sm text-slate-400">
-						Share the link or QR code — your opponent claims the open seat
-						automatically.
+						{chess.newGame.shareInstructions}
 					</p>
 				</div>
 			</HostGate>

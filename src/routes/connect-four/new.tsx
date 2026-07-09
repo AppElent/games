@@ -5,6 +5,7 @@ import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/connect-four/new")({
@@ -13,6 +14,8 @@ export const Route = createFileRoute("/connect-four/new")({
 });
 
 function ConnectFourNewPage() {
+	const messages = useMessages();
+	const connectFour = messages.games.connectFour;
 	const createSession = useMutation(api.sessions.create);
 	const createState = useMutation(api.connectFour.createState);
 	const hostName = useHostDisplayName();
@@ -28,7 +31,7 @@ function ConnectFourNewPage() {
 				gameType: "connect-four",
 				joinMode: "challenge",
 				authPolicy: "guestAllowed",
-				title: "Connect Four",
+				title: messages.catalog["connect-four"].title,
 				displayName: hostName,
 				guestId: guest.id,
 			});
@@ -42,23 +45,26 @@ function ConnectFourNewPage() {
 			);
 			window.location.href = `/connect-four/${result.sessionId}`;
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "Could not create challenge"));
+			setError(
+				getUserErrorMessage(caught, connectFour.newGame.createChallengeError),
+			);
 			setBusy(false);
 		}
 	}
 
 	return (
-		<FullscreenGamePage title="Connect Four">
-			<p className="club-kicker mb-2">Connect Four</p>
+		<FullscreenGamePage title={messages.catalog["connect-four"].title}>
+			<p className="club-kicker mb-2">
+				{messages.catalog["connect-four"].title}
+			</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
-				Start a game
+				{connectFour.newGame.heading}
 			</h1>
 			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
 			<HostGate>
 				<div className="club-panel max-w-xl rounded-lg p-6">
 					<p className="mb-5 text-sm text-slate-300">
-						You play red and move first. Share the link or QR code — your
-						opponent claims the yellow seat automatically.
+						{connectFour.newGame.instructions}
 					</p>
 					<button
 						type="button"
@@ -66,7 +72,9 @@ function ConnectFourNewPage() {
 						onClick={handleCreate}
 						className="min-h-11 w-full rounded-md bg-white px-5 py-3 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
 					>
-						{busy ? "Creating challenge..." : "Create challenge link"}
+						{busy
+							? connectFour.newGame.creatingChallenge
+							: connectFour.newGame.createChallengeLink}
 					</button>
 				</div>
 			</HostGate>
