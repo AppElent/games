@@ -13,6 +13,7 @@ export const Route = createFileRoute("/squad-surge/")({
 function SquadSurgeStart() {
 	const messages = useMessages();
 	const start = messages.games.squadSurge.start;
+	const title = messages.catalog["squad-surge"].title;
 	const navigate = useNavigate();
 	const progress = useMemo(() => loadSquadSurgeProgress(), []);
 	const [difficulty, setDifficulty] = useState(() =>
@@ -27,10 +28,10 @@ function SquadSurgeStart() {
 	];
 
 	return (
-		<FullscreenGameShell title="Squad Surge">
+		<FullscreenGameShell title={title}>
 			<div className="flex h-full items-center justify-center overflow-y-auto p-4">
 				<div className="club-panel w-full max-w-sm rounded-2xl p-6 text-center">
-					<p className="club-kicker mb-1">Squad Surge</p>
+					<p className="club-kicker mb-1">{title}</p>
 					<h1 className="club-title mb-2 text-3xl font-bold text-white">
 						{start.heading}
 					</h1>

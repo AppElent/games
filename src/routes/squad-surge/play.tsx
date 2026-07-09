@@ -32,6 +32,7 @@ export const Route = createFileRoute("/squad-surge/play")({
 function SquadSurgePlay() {
 	const messages = useMessages();
 	const play = messages.games.squadSurge.play;
+	const title = messages.catalog["squad-surge"].title;
 	const { d, seed } = Route.useSearch();
 	const navigate = useNavigate();
 	const [paused, setPaused] = useState(false);
@@ -87,7 +88,7 @@ function SquadSurgePlay() {
 
 	return (
 		<FullscreenGameShell
-			title="Squad Surge"
+			title={title}
 			onRestart={restart}
 			onPauseChange={setPaused}
 		>
