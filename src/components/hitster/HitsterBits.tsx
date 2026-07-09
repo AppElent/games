@@ -1,6 +1,7 @@
 import type { FunctionReturnType } from "convex/server";
 import { getHitsterModeConfig, type HitsterMode } from "#/lib/games/hitster";
 import { getHitsterCard, type HitsterCard } from "#/lib/games/hitsterPacks";
+import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import type { api } from "../../../convex/_generated/api";
 
 export type HitsterBundle = NonNullable<
@@ -11,13 +12,14 @@ export type HitsterState = NonNullable<HitsterBundle["state"]>;
 export function participantName(
 	bundle: HitsterBundle,
 	participantId: string | undefined,
+	fallbacks: { team: string; player: string },
 ) {
 	if (!participantId) {
-		return "Team";
+		return fallbacks.team;
 	}
 	return (
 		bundle.participants.find((entry) => entry._id === participantId)
-			?.displayName ?? "Player"
+			?.displayName ?? fallbacks.player
 	);
 }
 
@@ -58,6 +60,7 @@ export function TimelineRow({
 	onSelectDrop?: (index: number) => void;
 	highlightCardId?: string;
 }) {
+	const messages = useMessages();
 	const slots: React.ReactNode[] = [];
 	for (let index = 0; index <= cards.length; index += 1) {
 		if (onSelectDrop) {
@@ -66,7 +69,9 @@ export function TimelineRow({
 				<button
 					key={`drop-${index}`}
 					type="button"
-					aria-label={`Place here (position ${index + 1})`}
+					aria-label={fmt(messages.games.hitster.bits.timeline.placeHere, {
+						position: index + 1,
+					})}
 					aria-pressed={selected}
 					onClick={() => onSelectDrop(index)}
 					className={`h-24 w-11 shrink-0 self-center rounded-xl border-2 border-dashed text-xl font-bold transition focus-visible:outline-2 focus-visible:outline-blue-400 ${
@@ -110,15 +115,22 @@ export function TimelineRow({
 }
 
 export function TokenPips({ tokens }: { tokens: number }) {
+	const { locale, messages } = useI18n();
 	return (
 		<span className="inline-flex items-center gap-1 rounded-full border border-[var(--club-line)] bg-[var(--club-line)] px-2.5 py-1 text-xs font-semibold tabular-nums text-[var(--club-text)]">
 			<span aria-hidden className="size-2 rounded-full bg-blue-500" />
-			{tokens} token{tokens === 1 ? "" : "s"}
+			{plural(locale, tokens, messages.games.hitster.bits.tokens.count)}
 		</span>
 	);
 }
 
 export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
+	const { locale, messages } = useI18n();
+	const scoreboard = messages.games.hitster.bits.scoreboard;
+	const fallbacks = {
+		team: messages.games.hitster.bits.participantFallbackTeam,
+		player: messages.games.hitster.bits.participantFallbackPlayer,
+	};
 	const state = bundle.state;
 	if (!state) {
 		return null;
@@ -129,10 +141,13 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 		return (
 			<div className="rounded-3xl border border-[var(--club-line)] bg-[var(--club-panel)] p-5">
 				<p className="text-xs font-bold uppercase tracking-wide text-[var(--club-soft)]">
-					Team progress
+					{scoreboard.teamProgress}
 				</p>
 				<p className="mt-2 text-3xl font-bold tabular-nums text-[var(--club-text)]">
-					{cards} / {state.targetCards} cards
+					{fmt(scoreboard.cardsProgress, {
+						cards,
+						target: state.targetCards,
+					})}
 				</p>
 				<div className="mt-2">
 					<TokenPips tokens={state.coopTokens ?? 0} />
@@ -143,7 +158,7 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 	const rows = state.timelines
 		.map((timeline) => ({
 			participantId: timeline.participantId,
-			name: participantName(bundle, timeline.participantId),
+			name: participantName(bundle, timeline.participantId, fallbacks),
 			cards: timeline.cardIds.length,
 			tokens:
 				state.tokens.find(
@@ -154,7 +169,7 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 	return (
 		<div className="rounded-3xl border border-[var(--club-line)] bg-[var(--club-panel)] p-5">
 			<p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--club-soft)]">
-				Standings · first to {state.targetCards}
+				{fmt(scoreboard.standingsHeading, { target: state.targetCards })}
 			</p>
 			<ol className="space-y-2">
 				{rows.map((row, index) => {
@@ -174,11 +189,15 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 								</span>
 								<span className="font-semibold">{row.name}</span>
 								{winner ? (
-									<span className="text-xs font-bold uppercase">Winner</span>
+									<span className="text-xs font-bold uppercase">
+										{scoreboard.winner}
+									</span>
 								) : null}
 							</span>
 							<span className="flex items-center gap-2 text-sm tabular-nums">
-								<span className="font-bold">{row.cards} cards</span>
+								<span className="font-bold">
+									{plural(locale, row.cards, scoreboard.cardsCount)}
+								</span>
 								{getHitsterModeConfig(state.mode as HitsterMode).tokenCap >
 								0 ? (
 									<span
@@ -186,7 +205,7 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 											winner ? "opacity-70" : "text-[var(--club-soft)]"
 										}
 									>
-										{row.tokens} tk
+										{fmt(scoreboard.tokensAbbrev, { count: row.tokens })}
 									</span>
 								) : null}
 							</span>
@@ -199,37 +218,42 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 }
 
 export function RulesPanel({ state }: { state: HitsterState }) {
+	const messages = useMessages();
+	const rulesText = messages.games.hitster.bits.rules;
 	const config = getHitsterModeConfig(state.mode as HitsterMode);
 	const rules: Array<{ heading: string; body: string }> = [
 		{
-			heading: "Listen together",
-			body: "The host plays a mystery track. Nobody sees the title, artist or year.",
+			heading: rulesText.listenTogetherHeading,
+			body: rulesText.listenTogetherBody,
 		},
 		{
-			heading: "Place it in time",
+			heading: rulesText.placeInTimeHeading,
 			body: config.shared
-				? "The active player drops the song into the shared team timeline."
-				: "The active player drops the song into their own timeline.",
+				? rulesText.placeInTimeBodyShared
+				: rulesText.placeInTimeBodySolo,
 		},
 		{
-			heading: "Reveal and score",
+			heading: rulesText.revealScoreHeading,
 			body: config.shared
-				? `Correct keeps the card. Wrong burns a team token. Reach ${state.targetCards} cards before ${config.startTokens} tokens run out.`
-				: `Correct placements grow your timeline. First to ${state.targetCards} cards wins.`,
+				? fmt(rulesText.revealScoreBodyShared, {
+						target: state.targetCards,
+						tokens: config.startTokens,
+					})
+				: fmt(rulesText.revealScoreBodySolo, { target: state.targetCards }),
 		},
 	];
 	if (config.earnTokens) {
 		rules.push({
-			heading: "Earn tokens",
-			body: `Name artist and title for a bonus token (max ${config.tokenCap}). Spend a token to steal a missed card.`,
+			heading: rulesText.earnTokensHeading,
+			body: fmt(rulesText.earnTokensBody, { cap: config.tokenCap }),
 		});
 	}
 	if (config.needsArtistTitle) {
 		rules.push({
-			heading: "Name it to claim it",
+			heading: rulesText.nameToClaimHeading,
 			body: config.needsYear
-				? "You only win the card with correct placement plus exact year, artist and title. No new tokens."
-				: "You only win the card with correct placement plus artist and title. No new tokens.",
+				? rulesText.nameToClaimBodyYear
+				: rulesText.nameToClaimBodyNoYear,
 		});
 	}
 	return (
@@ -255,20 +279,32 @@ export function RulesPanel({ state }: { state: HitsterState }) {
 }
 
 export function RecapPanel({ bundle }: { bundle: HitsterBundle }) {
+	const messages = useMessages();
+	const recapText = messages.games.hitster.bits.recap;
+	const fallbacks = {
+		team: messages.games.hitster.bits.participantFallbackTeam,
+		player: messages.games.hitster.bits.participantFallbackPlayer,
+	};
+	const resultWord = (correct: boolean) =>
+		correct ? recapText.correctWord : recapText.wrongWord;
 	const state = bundle.state;
 	const recap = state?.lastRecap;
 	if (!state || !recap) {
 		return null;
 	}
 	const card = getHitsterCard(state.packId, recap.cardId);
-	const activeName = participantName(bundle, recap.activeParticipantId);
+	const activeName = participantName(
+		bundle,
+		recap.activeParticipantId,
+		fallbacks,
+	);
 	const wonBy = recap.cardWonByParticipantId
-		? participantName(bundle, recap.cardWonByParticipantId)
+		? participantName(bundle, recap.cardWonByParticipantId, fallbacks)
 		: undefined;
 	return (
 		<div className="rounded-3xl border border-[var(--club-line)] bg-[var(--club-panel)] p-6">
 			<p className="text-xs font-bold uppercase tracking-wide text-[var(--club-soft)]">
-				Round {recap.roundNumber} recap
+				{fmt(recapText.heading, { round: recap.roundNumber })}
 			</p>
 			{card ? (
 				<div className="mt-3">
@@ -291,46 +327,56 @@ export function RecapPanel({ bundle }: { bundle: HitsterBundle }) {
 							: "bg-[var(--club-line)] text-[var(--club-muted)]"
 					}`}
 				>
-					{activeName}: placement {recap.placementCorrect ? "correct" : "wrong"}
+					{fmt(recapText.placementLine, {
+						name: activeName,
+						result: resultWord(recap.placementCorrect),
+					})}
 				</span>
 				{recap.artistCorrect !== undefined ? (
 					<span className="rounded-full bg-[var(--club-line)] px-3 py-1 text-[var(--club-muted)]">
-						Artist {recap.artistCorrect ? "correct" : "wrong"}
+						{fmt(recapText.artistLine, {
+							result: resultWord(recap.artistCorrect),
+						})}
 					</span>
 				) : null}
 				{recap.titleCorrect !== undefined ? (
 					<span className="rounded-full bg-[var(--club-line)] px-3 py-1 text-[var(--club-muted)]">
-						Title {recap.titleCorrect ? "correct" : "wrong"}
+						{fmt(recapText.titleLine, {
+							result: resultWord(recap.titleCorrect),
+						})}
 					</span>
 				) : null}
 				{recap.yearCorrect !== undefined ? (
 					<span className="rounded-full bg-[var(--club-line)] px-3 py-1 text-[var(--club-muted)]">
-						Year {recap.yearCorrect ? "correct" : "wrong"}
+						{fmt(recapText.yearLine, { result: resultWord(recap.yearCorrect) })}
 					</span>
 				) : null}
 			</div>
 			{recap.cardWonByTeam !== undefined ? (
 				<p className="mt-3 text-sm text-[var(--club-muted)]">
 					{recap.cardWonByTeam
-						? "The card stays on the team timeline."
-						: "The card is discarded and the team loses a token."}
+						? recapText.cardStaysTeam
+						: recapText.cardDiscardedTeam}
 				</p>
 			) : (
 				<p className="mt-3 text-sm text-[var(--club-muted)]">
-					{wonBy ? `${wonBy} wins the card.` : "Nobody wins the card."}
+					{wonBy
+						? fmt(recapText.wonByName, { name: wonBy })
+						: recapText.nobodyWins}
 				</p>
 			)}
 			{recap.stealResults.length > 0 ? (
 				<ul className="mt-3 space-y-1 text-sm text-[var(--club-muted)]">
 					{recap.stealResults.map((steal) => (
 						<li key={steal.participantId}>
-							Steal by {participantName(bundle, steal.participantId)}:{" "}
-							{steal.wonCard
-								? "won the card"
-								: steal.correct
-									? "correct, but too late"
-									: "missed"}{" "}
-							(−1 token)
+							{fmt(recapText.stealByLine, {
+								name: participantName(bundle, steal.participantId, fallbacks),
+								result: steal.wonCard
+									? recapText.stealWonCard
+									: steal.correct
+										? recapText.stealCorrectTooLate
+										: recapText.stealMissed,
+							})}
 						</li>
 					))}
 				</ul>

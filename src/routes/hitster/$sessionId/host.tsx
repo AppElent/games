@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HitsterHostView } from "#/components/hitster/HitsterHostView";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
@@ -11,6 +12,8 @@ export const Route = createFileRoute("/hitster/$sessionId/host")({
 });
 
 function HitsterHostPage() {
+	const messages = useMessages();
+	const session = messages.games.hitster.session;
 	const { sessionId } = Route.useParams();
 	const participantId =
 		typeof window !== "undefined"
@@ -26,16 +29,14 @@ function HitsterHostPage() {
 	if (bundle === undefined) {
 		return (
 			<FullscreenGamePage title="Hitster" className="text-[var(--club-muted)]">
-				Loading room...
+				{session.loadingRoom}
 			</FullscreenGamePage>
 		);
 	}
 	if (bundle === null || !participantId) {
 		return (
 			<FullscreenGamePage title="Hitster" className="text-orange-500">
-				{bundle === null
-					? "Room not found."
-					: "Host session expired. Create a new room."}
+				{bundle === null ? session.roomNotFound : session.hostSessionExpired}
 			</FullscreenGamePage>
 		);
 	}

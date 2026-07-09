@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HitsterStage } from "#/components/hitster/HitsterStage";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
@@ -15,6 +16,8 @@ export const Route = createFileRoute("/hitster/$sessionId/play")({
 });
 
 function HitsterPlayerPage() {
+	const messages = useMessages();
+	const hitster = messages.games.hitster;
 	const { sessionId } = Route.useParams();
 	const search = Route.useSearch();
 	const participantId =
@@ -32,27 +35,27 @@ function HitsterPlayerPage() {
 	if (bundle === undefined) {
 		return (
 			<FullscreenGamePage title="Hitster" className="text-[var(--club-muted)]">
-				Loading game...
+				{hitster.session.loadingGame}
 			</FullscreenGamePage>
 		);
 	}
 	if (bundle === null) {
 		return (
 			<FullscreenGamePage title="Hitster" className="text-orange-500">
-				Game not found.
+				{hitster.session.gameNotFound}
 			</FullscreenGamePage>
 		);
 	}
 	if (!participantId) {
 		return (
 			<FullscreenGamePage title="Hitster" className="text-orange-500">
-				Join this room with its code from the home page first.
+				{hitster.session.joinFirst}
 			</FullscreenGamePage>
 		);
 	}
 	return (
 		<FullscreenGamePage title="Hitster" maxWidthClassName="max-w-5xl">
-			<p className="club-kicker mb-2">Music Timeline</p>
+			<p className="club-kicker mb-2">{hitster.musicTimelineKicker}</p>
 			<HitsterStage
 				bundle={bundle}
 				participantId={participantId as Id<"sessionParticipants">}

@@ -12,14 +12,11 @@ import {
 	listHitsterPacks,
 } from "#/lib/games/hitsterPacks";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
-const TIMER_OPTIONS = [
-	{ value: 0, label: "No timer" },
-	{ value: 30, label: "30 seconds" },
-	{ value: 60, label: "60 seconds" },
-	{ value: 90, label: "90 seconds" },
-];
+const TIMER_VALUES = [0, 30, 60, 90];
+const TARGET_CARDS_OPTIONS = [5, 8, 10, 12, 15];
 
 export function HitsterSetupForm() {
 	return (
@@ -30,6 +27,8 @@ export function HitsterSetupForm() {
 }
 
 function HitsterSetupFormInner() {
+	const { locale, messages } = useI18n();
+	const setupForm = messages.games.hitster.setupForm;
 	const createSession = useMutation(api.sessions.create);
 	const hostName = useHostDisplayName();
 	const setup = useMutation(api.hitster.setup);
@@ -49,7 +48,7 @@ function HitsterSetupFormInner() {
 		<div className="max-w-2xl space-y-5 rounded-3xl border border-[var(--club-line)] bg-[var(--club-panel)] p-6">
 			<div className="grid gap-4 sm:grid-cols-2">
 				<label className="block text-sm font-semibold text-[var(--club-muted)]">
-					Game mode
+					{setupForm.gameModeLabel}
 					<select
 						className={selectClass}
 						value={mode}
@@ -63,7 +62,7 @@ function HitsterSetupFormInner() {
 					</select>
 				</label>
 				<label className="block text-sm font-semibold text-[var(--club-muted)]">
-					Song pack
+					{setupForm.songPackLabel}
 					<select
 						className={selectClass}
 						value={packId}
@@ -71,35 +70,39 @@ function HitsterSetupFormInner() {
 					>
 						{packs.map((pack) => (
 							<option key={pack.id} value={pack.id}>
-								{pack.title} ({pack.cards.length} tracks)
+								{fmt(plural(locale, pack.cards.length, setupForm.packOption), {
+									packTitle: pack.title,
+								})}
 							</option>
 						))}
 					</select>
 				</label>
 				<label className="block text-sm font-semibold text-[var(--club-muted)]">
-					Cards to win
+					{setupForm.cardsToWinLabel}
 					<select
 						className={selectClass}
 						value={targetCards}
 						onChange={(event) => setTargetCards(Number(event.target.value))}
 					>
-						{[5, 8, 10, 12, 15].map((value) => (
+						{TARGET_CARDS_OPTIONS.map((value) => (
 							<option key={value} value={value}>
-								{value} cards
+								{fmt(setupForm.cardsOption, { count: value })}
 							</option>
 						))}
 					</select>
 				</label>
 				<label className="block text-sm font-semibold text-[var(--club-muted)]">
-					Turn timer
+					{setupForm.turnTimerLabel}
 					<select
 						className={selectClass}
 						value={timer}
 						onChange={(event) => setTimer(Number(event.target.value))}
 					>
-						{TIMER_OPTIONS.map((option) => (
-							<option key={option.value} value={option.value}>
-								{option.label}
+						{TIMER_VALUES.map((value) => (
+							<option key={value} value={value}>
+								{value === 0
+									? setupForm.noTimer
+									: fmt(setupForm.timerSecondsOption, { count: value })}
 							</option>
 						))}
 					</select>
@@ -112,9 +115,7 @@ function HitsterSetupFormInner() {
 				</p>
 				<p className="mt-1">{getHitsterModeConfig(mode).summary}</p>
 				<p className="mt-2 text-[var(--club-soft)]">
-					{playableCount} playable tracks with host-device playback. The host
-					plays each mystery track on their own speaker (for example via
-					Spotify) — this prototype does not stream audio itself.
+					{plural(locale, playableCount, setupForm.playableTracksInfo)}
 				</p>
 			</div>
 
@@ -132,7 +133,7 @@ function HitsterSetupFormInner() {
 							gameType: "hitster",
 							joinMode: "room",
 							authPolicy: "hostChoice",
-							title: "Music Timeline",
+							title: messages.games.hitster.musicTimelineKicker,
 							displayName: hostName,
 							guestId: guest.id,
 						});
@@ -151,13 +152,13 @@ function HitsterSetupFormInner() {
 						);
 						window.location.href = `/hitster/${result.sessionId}/host`;
 					} catch (caught) {
-						setError(getUserErrorMessage(caught, "Could not create the room"));
+						setError(getUserErrorMessage(caught, setupForm.createRoomError));
 					} finally {
 						setBusy(false);
 					}
 				}}
 			>
-				{busy ? "Creating room..." : "Create music room"}
+				{busy ? setupForm.creatingRoom : setupForm.createRoom}
 			</button>
 		</div>
 	);

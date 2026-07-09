@@ -2,6 +2,7 @@ import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getHitsterModeConfig, type HitsterMode } from "#/lib/games/hitster";
+import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -58,6 +59,8 @@ function AnswerInputs({
 	onTitle: (value: string) => void;
 	onYear: (value: string) => void;
 }) {
+	const { messages } = useI18n();
+	const stage = messages.games.hitster.stage;
 	const config = getHitsterModeConfig(mode);
 	const showArtistTitle =
 		config.needsArtistTitle || (!forSteal && config.earnTokens);
@@ -71,36 +74,38 @@ function AnswerInputs({
 			{showArtistTitle ? (
 				<>
 					<label className="block text-sm text-[var(--club-muted)]">
-						Artist{" "}
-						{config.needsArtistTitle ? "(required to win)" : "(bonus token)"}
+						{config.needsArtistTitle
+							? stage.artistLabelRequired
+							: stage.artistLabelBonus}
 						<input
 							className={`mt-1 ${inputClass}`}
 							value={artist}
 							onChange={(event) => onArtist(event.target.value)}
-							placeholder="Who plays it?"
+							placeholder={stage.artistPlaceholder}
 						/>
 					</label>
 					<label className="block text-sm text-[var(--club-muted)]">
-						Title{" "}
-						{config.needsArtistTitle ? "(required to win)" : "(bonus token)"}
+						{config.needsArtistTitle
+							? stage.titleLabelRequired
+							: stage.titleLabelBonus}
 						<input
 							className={`mt-1 ${inputClass}`}
 							value={title}
 							onChange={(event) => onTitle(event.target.value)}
-							placeholder="What is it called?"
+							placeholder={stage.titlePlaceholder}
 						/>
 					</label>
 				</>
 			) : null}
 			{config.needsYear ? (
 				<label className="block text-sm text-[var(--club-muted)]">
-					Exact year (required to win)
+					{stage.exactYearLabel}
 					<input
 						className={`mt-1 ${inputClass}`}
 						value={year}
 						onChange={(event) => onYear(event.target.value)}
 						inputMode="numeric"
-						placeholder="e.g. 1987"
+						placeholder={stage.yearPlaceholder}
 					/>
 				</label>
 			) : null}
@@ -117,6 +122,8 @@ function PlacementForm({
 	participantId: Id<"sessionParticipants">;
 	forSteal: boolean;
 }) {
+	const { messages } = useI18n();
+	const stage = messages.games.hitster.stage;
 	const state = bundle.state as HitsterState;
 	const submitGuess = useMutation(api.hitster.submitGuess);
 	const submitSteal = useMutation(api.hitster.submitSteal);
@@ -136,8 +143,7 @@ function PlacementForm({
 	return (
 		<div className="space-y-4">
 			<p className="text-sm text-[var(--club-muted)]">
-				Pick the spot where the mystery song belongs. Years grow from left to
-				right.
+				{stage.placementInstructions}
 			</p>
 			<TimelineRow
 				cards={cards}
@@ -180,13 +186,13 @@ function PlacementForm({
 							await submitGuess(payload);
 						}
 					} catch (caught) {
-						setError(getUserErrorMessage(caught, "Could not submit"));
+						setError(getUserErrorMessage(caught, stage.submitError));
 					} finally {
 						setBusy(false);
 					}
 				}}
 			>
-				{forSteal ? "Spend 1 token · lock steal" : "Lock placement"}
+				{forSteal ? stage.stealSubmit : stage.lockPlacement}
 			</button>
 		</div>
 	);
@@ -199,20 +205,24 @@ export function HitsterStage({
 	bundle: HitsterBundle;
 	participantId: Id<"sessionParticipants">;
 }) {
+	const { locale, messages } = useI18n();
+	const stage = messages.games.hitster.stage;
+	const fallbacks = {
+		team: messages.games.hitster.bits.participantFallbackTeam,
+		player: messages.games.hitster.bits.participantFallbackPlayer,
+	};
 	const state = bundle.state;
 	const [stealOpen, setStealOpen] = useState(false);
 	const remaining = useCountdown((state ?? { phase: "lobby" }) as HitsterState);
 	if (!state) {
 		return (
-			<p className="text-[var(--club-muted)]">
-				The host is still setting up the game.
-			</p>
+			<p className="text-[var(--club-muted)]">{stage.hostStillSettingUp}</p>
 		);
 	}
 	const mode = state.mode as HitsterMode;
 	const config = getHitsterModeConfig(mode);
 	const activeParticipantId = state.turnOrder[state.activeIndex];
-	const activeName = participantName(bundle, activeParticipantId);
+	const activeName = participantName(bundle, activeParticipantId, fallbacks);
 	const isActive = activeParticipantId === participantId;
 	const myTokens =
 		state.tokens.find((entry) => entry.participantId === participantId)
@@ -227,12 +237,15 @@ export function HitsterStage({
 
 	const status =
 		state.phase === "lobby"
-			? "Waiting for the host to start"
+			? stage.statusWaitingForHost
 			: state.phase === "nowPlaying"
-				? `Round ${state.roundNumber} · ${activeName}'s turn`
+				? fmt(stage.statusNowPlaying, {
+						round: state.roundNumber,
+						name: activeName,
+					})
 				: state.phase === "reveal"
-					? `Round ${state.roundNumber} revealed`
-					: "Game over";
+					? fmt(stage.statusRevealed, { round: state.roundNumber })
+					: stage.statusGameOver;
 
 	return (
 		<div className="space-y-5">
@@ -244,7 +257,7 @@ export function HitsterStage({
 				<span className="flex items-center gap-2 text-sm text-[var(--club-muted)]">
 					{remaining !== null ? (
 						<span className="rounded-full bg-[var(--club-line)] px-3 py-1 font-bold tabular-nums text-[var(--club-text)]">
-							{remaining}s
+							{fmt(stage.remainingSeconds, { count: remaining })}
 						</span>
 					) : null}
 					{!config.shared && config.tokenCap > 0 && isPlaying ? (
@@ -257,7 +270,7 @@ export function HitsterStage({
 			{state.phase === "lobby" ? (
 				<section className="space-y-4">
 					<h2 className="text-2xl font-bold tracking-tight text-[var(--club-text)]">
-						How {config.label} works
+						{fmt(stage.howItWorksHeading, { mode: config.label })}
 					</h2>
 					<RulesPanel state={state} />
 				</section>
@@ -267,16 +280,16 @@ export function HitsterStage({
 				isActive ? (
 					<section className="rounded-3xl border border-[var(--club-line)] bg-[var(--club-panel)] p-5">
 						<h2 className="mb-4 text-2xl font-bold tracking-tight text-[var(--club-text)]">
-							Your turn · place the mystery song
+							{stage.yourTurnHeading}
 						</h2>
 						{state.pendingGuess ? (
 							<div className="py-8 text-center">
 								<VinylDisc spinning />
 								<p className="mt-4 font-semibold text-[var(--club-text)]">
-									Placement locked
+									{stage.placementLocked}
 								</p>
 								<p className="text-sm text-[var(--club-soft)]">
-									Waiting for the host to reveal the year.
+									{stage.waitingForHostReveal}
 								</p>
 							</div>
 						) : (
@@ -291,23 +304,27 @@ export function HitsterStage({
 					<section className="rounded-3xl border border-[var(--club-line)] bg-[var(--club-panel)] p-6 text-center">
 						<VinylDisc spinning />
 						<h2 className="mt-4 text-2xl font-bold tracking-tight text-[var(--club-text)]">
-							Now playing · answers hidden
+							{stage.nowPlayingHeading}
 						</h2>
 						<p className="mt-1 text-[var(--club-muted)]">
-							{activeName} is placing the song.{" "}
-							{state.pendingGuess ? "Placement locked." : "Listen along."}
+							{fmt(
+								state.pendingGuess
+									? stage.activePlacingSongLocked
+									: stage.activePlacingSongListen,
+								{ name: activeName },
+							)}
 						</p>
 						{config.stealsEnabled && isPlaying ? (
 							myClaim ? (
 								<p className="mt-4 text-sm font-semibold text-blue-700 dark:text-blue-200">
-									Steal claim locked. The reveal decides.
+									{stage.stealClaimLocked}
 								</p>
 							) : myTokens > 0 ? (
 								<div className="mt-5 text-left">
 									{stealOpen ? (
 										<div className="rounded-2xl border border-[var(--club-line)] bg-[var(--club-panel-strong)] p-4">
 											<p className="mb-3 font-semibold text-[var(--club-text)]">
-												Steal: place it on your own timeline
+												{stage.stealFormHeading}
 											</p>
 											<PlacementForm
 												bundle={bundle}
@@ -322,14 +339,14 @@ export function HitsterStage({
 												className="rounded-xl border border-[var(--club-line)] px-5 py-2.5 font-semibold text-[var(--club-text)] hover:border-[var(--club-soft)]"
 												onClick={() => setStealOpen(true)}
 											>
-												Think they're wrong? Steal for 1 token
+												{stage.stealButton}
 											</button>
 										</div>
 									)}
 								</div>
 							) : (
 								<p className="mt-4 text-sm text-[var(--club-soft)]">
-									No tokens left to steal with.
+									{stage.noTokensToSteal}
 								</p>
 							)
 						) : null}
@@ -341,7 +358,7 @@ export function HitsterStage({
 				<section className="space-y-4">
 					<RecapPanel bundle={bundle} />
 					<p className="text-sm text-[var(--club-soft)]">
-						Waiting for the host to start the next round.
+						{stage.waitingForNextRound}
 					</p>
 				</section>
 			) : null}
@@ -351,9 +368,7 @@ export function HitsterStage({
 					{state.coopResult ? (
 						<div className="rounded-3xl border border-[var(--club-line)] bg-[var(--club-panel)] p-8 text-center">
 							<h2 className="text-4xl font-bold tracking-tight text-[var(--club-text)]">
-								{state.coopResult === "won"
-									? "Timeline complete — the team wins"
-									: "Out of tokens — the timeline wins"}
+								{state.coopResult === "won" ? stage.coopWon : stage.coopLost}
 							</h2>
 						</div>
 					) : null}
@@ -365,9 +380,13 @@ export function HitsterStage({
 			{state.phase !== "lobby" && myTimeline ? (
 				<section>
 					<h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--club-soft)]">
-						{config.shared ? "Team timeline" : "Your timeline"} ·{" "}
-						{myTimeline.cardIds.length} card
-						{myTimeline.cardIds.length === 1 ? "" : "s"}
+						{plural(
+							locale,
+							myTimeline.cardIds.length,
+							config.shared
+								? stage.teamTimelineHeading
+								: stage.yourTimelineHeading,
+						)}
 					</h3>
 					<TimelineRow
 						cards={resolveTimelineCards(state, myTimeline.cardIds)}
