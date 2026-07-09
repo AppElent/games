@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { WordLinksGame } from "#/components/word-links/WordLinksGame";
 import { getWordLinkPuzzleById } from "#/lib/games/word-links-puzzles";
+import { useMessages } from "#/lib/i18n";
 
 export const Route = createFileRoute("/word-links/$puzzleId")({
 	component: WordLinksPracticePage,
@@ -10,16 +11,18 @@ export const Route = createFileRoute("/word-links/$puzzleId")({
 });
 
 function WordLinksPracticePage() {
+	const messages = useMessages();
+	const wordLinks = messages.games.wordLinks;
 	const { puzzleId } = Route.useParams();
 	const puzzle = getWordLinkPuzzleById(puzzleId);
 
 	if (!puzzle) {
 		return (
-			<FullscreenGamePage title="Word Links">
+			<FullscreenGamePage title={messages.catalog["word-links"].title}>
 				<p className="text-orange-200">
-					Puzzle not found.{" "}
+					{wordLinks.page.puzzleNotFound}{" "}
 					<Link to="/word-links" className="underline">
-						Back to the daily puzzle
+						{wordLinks.page.backToDaily}
 					</Link>
 				</p>
 			</FullscreenGamePage>
@@ -27,17 +30,20 @@ function WordLinksPracticePage() {
 	}
 
 	return (
-		<FullscreenGamePage title="Word Links" maxWidthClassName="max-w-xl">
-			<p className="club-kicker mb-2">Word Links</p>
+		<FullscreenGamePage
+			title={messages.catalog["word-links"].title}
+			maxWidthClassName="max-w-xl"
+		>
+			<p className="club-kicker mb-2">{messages.catalog["word-links"].title}</p>
 			<div className="mb-6 flex flex-wrap items-end justify-between gap-3">
 				<h1 className="club-title text-4xl font-bold text-white">
-					{puzzle.title ?? "Practice puzzle"}
+					{puzzle.title ?? wordLinks.page.practicePuzzleFallback}
 				</h1>
 				<Link
 					to="/word-links"
 					className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white"
 				>
-					Daily puzzle
+					{wordLinks.page.dailyLink}
 				</Link>
 			</div>
 			<WordLinksGame key={puzzle.id} puzzle={puzzle} mode="practice" />

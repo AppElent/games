@@ -10,8 +10,8 @@ import { isLocale, LANG_COOKIE, type Locale, resolveLocale } from "./core";
 import { en, type Messages } from "./messages/en";
 import { nl } from "./messages/nl";
 
-export { fmt, isLocale, LANG_COOKIE, plural, resolveLocale } from "./core";
 export type { Locale } from "./core";
+export { fmt, isLocale, LANG_COOKIE, plural, resolveLocale } from "./core";
 export type { Messages };
 
 const MESSAGES: Record<Locale, Messages> = { en, nl };

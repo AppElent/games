@@ -8,6 +8,7 @@ import {
 	getWordLinkPuzzleById,
 	WORD_LINK_PUZZLES,
 } from "#/lib/games/word-links-puzzles";
+import { fmt, useMessages } from "#/lib/i18n";
 
 export const Route = createFileRoute("/word-links/")({
 	component: WordLinksDailyPage,
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/word-links/")({
 });
 
 function WordLinksDailyPage() {
+	const messages = useMessages();
+	const wordLinks = messages.games.wordLinks;
 	const dailyId = getDailyPuzzleId(WORD_LINK_PUZZLES);
 	const puzzle = getWordLinkPuzzleById(dailyId);
 	const streak = useMemo(() => loadWordLinkStreak(), []);
@@ -28,28 +31,35 @@ function WordLinksDailyPage() {
 
 	if (!puzzle) {
 		return (
-			<FullscreenGamePage title="Word Links">
-				<p className="text-orange-200">No puzzle.</p>
+			<FullscreenGamePage title={messages.catalog["word-links"].title}>
+				<p className="text-orange-200">{wordLinks.page.noPuzzle}</p>
 			</FullscreenGamePage>
 		);
 	}
 
 	return (
-		<FullscreenGamePage title="Word Links" maxWidthClassName="max-w-xl">
-			<p className="club-kicker mb-2">Word Links</p>
+		<FullscreenGamePage
+			title={messages.catalog["word-links"].title}
+			maxWidthClassName="max-w-xl"
+		>
+			<p className="club-kicker mb-2">{messages.catalog["word-links"].title}</p>
 			<div className="mb-6 flex flex-wrap items-end justify-between gap-3">
 				<h1 className="club-title text-4xl font-bold text-white">
-					Daily puzzle
+					{wordLinks.page.dailyHeading}
 				</h1>
 				<div className="flex items-center gap-4 text-sm text-slate-300">
-					{streak.current > 0 ? <span>🔥 Streak: {streak.current}</span> : null}
+					{streak.current > 0 ? (
+						<span>
+							{fmt(wordLinks.page.streakLabel, { count: streak.current })}
+						</span>
+					) : null}
 					{practiceId ? (
 						<Link
 							to="/word-links/$puzzleId"
 							params={{ puzzleId: practiceId }}
 							className="rounded-md border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
 						>
-							Practice
+							{wordLinks.page.practiceLink}
 						</Link>
 					) : null}
 				</div>

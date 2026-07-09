@@ -4,6 +4,7 @@ import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import type { SignalCardRole, SignalTeam } from "#/lib/games/signal-words";
+import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -59,6 +60,8 @@ export function SignalWordsRoom({
 	bundle: Bundle;
 	joinUrl: string;
 }) {
+	const { messages, locale } = useI18n();
+	const signalWords = messages.games.signalWords;
 	const joinTeam = useMutation(api.signalWords.joinTeam);
 	const start = useMutation(api.signalWords.start);
 	const submitClue = useMutation(api.signalWords.submitClue);
@@ -111,9 +114,9 @@ export function SignalWordsRoom({
 	if (!state) {
 		return (
 			<div className="club-panel rounded-lg p-6 text-center">
-				<p className="club-kicker mb-2">Setting up</p>
+				<p className="club-kicker mb-2">{signalWords.loading.kicker}</p>
 				<h2 className="club-title text-2xl font-bold text-white">
-					Room is loading
+					{signalWords.loading.heading}
 				</h2>
 			</div>
 		);
@@ -126,13 +129,38 @@ export function SignalWordsRoom({
 	const myGuessTurn =
 		state.phase === "guess" && !amClueGiver && myTeam === state.currentTeam;
 
+	const teamNameCap = (team: SignalTeam | undefined) =>
+		team === "red" ? signalWords.teams.nameRed : signalWords.teams.nameBlue;
+	const teamNameLower = (team: SignalTeam | undefined) =>
+		team === "red"
+			? signalWords.teams.nameRedLower
+			: signalWords.teams.nameBlueLower;
+
 	const statusLabel = inLobby
-		? "Pick teams — each team needs one clue-giver and at least one guesser."
+		? signalWords.status.pickTeams
 		: finished
-			? `${state.winnerTeam === "red" ? "Red" : "Blue"} team wins${state.trapHitBy ? ` — ${state.trapHitBy} hit the trap tile!` : "!"}`
+			? state.trapHitBy
+				? fmt(signalWords.status.teamWinsByTrap, {
+						team: teamNameCap(state.winnerTeam),
+						trapTeam: teamNameLower(state.trapHitBy),
+					})
+				: fmt(signalWords.status.teamWins, {
+						team: teamNameCap(state.winnerTeam),
+					})
 			: state.phase === "clue"
-				? `Waiting for the ${state.currentTeam} clue-giver...`
-				: `${state.currentTeam === "red" ? "Red" : "Blue"} team is guessing: "${state.clueWord}" (${state.clueCount}) — ${state.guessesLeft} guesses left.`;
+				? fmt(signalWords.status.waitingForClueGiver, {
+						team: teamNameLower(state.currentTeam),
+					})
+				: fmt(signalWords.status.guessing, {
+						team: teamNameCap(state.currentTeam),
+						clue: state.clueWord ?? "",
+						count: state.clueCount ?? 0,
+						guessesLeft: plural(
+							locale,
+							state.guessesLeft ?? 0,
+							signalWords.status.guessesLeftCount,
+						),
+					});
 
 	function teamMembers(team: SignalTeam) {
 		return bundle.participants.filter(
@@ -147,7 +175,9 @@ export function SignalWordsRoom({
 				<div className="club-panel rounded-lg p-5">
 					<div className="flex flex-wrap items-start justify-between gap-4">
 						<div>
-							<p className="club-kicker mb-2">Signal Words</p>
+							<p className="club-kicker mb-2">
+								{messages.catalog["signal-words"].title}
+							</p>
 							<h1 className="club-title text-3xl font-bold text-white">
 								{bundle.session.title}
 							</h1>
@@ -179,7 +209,7 @@ export function SignalWordsRoom({
 								}`}
 							>
 								<p className="text-xs font-bold uppercase tracking-wide text-slate-300">
-									{team} team
+									{fmt(signalWords.teams.label, { team: teamNameLower(team) })}
 								</p>
 								<ul className="mt-2 space-y-1 text-sm text-white">
 									{teamMembers(team).map((participant) => (
@@ -189,13 +219,15 @@ export function SignalWordsRoom({
 											</span>
 											{participant.seat?.endsWith("-clue") ? (
 												<span className="text-xs uppercase text-slate-300">
-													clue-giver
+													{signalWords.teams.clueGiverTag}
 												</span>
 											) : null}
 										</li>
 									))}
 									{teamMembers(team).length === 0 ? (
-										<li className="text-slate-400">No players yet</li>
+										<li className="text-slate-400">
+											{signalWords.teams.noPlayersYet}
+										</li>
 									) : null}
 								</ul>
 								{inLobby && me ? (
@@ -213,11 +245,11 @@ export function SignalWordsRoom({
 															team,
 															clueGiver: false,
 														}),
-													"Could not join team",
+													signalWords.teams.joinError,
 												)
 											}
 										>
-											Join as guesser
+											{signalWords.teams.joinAsGuesser}
 										</button>
 										<button
 											type="button"
@@ -232,11 +264,11 @@ export function SignalWordsRoom({
 															team,
 															clueGiver: true,
 														}),
-													"Could not join team",
+													signalWords.teams.joinError,
 												)
 											}
 										>
-											Be clue-giver
+											{signalWords.teams.joinAsClueGiver}
 										</button>
 									</div>
 								) : null}
@@ -255,11 +287,11 @@ export function SignalWordsRoom({
 											sessionId: bundle.session._id,
 											participantId: participantId as Id<"sessionParticipants">,
 										}),
-									"Could not start the game",
+									signalWords.actions.startGameError,
 								)
 							}
 						>
-							Start game
+							{signalWords.actions.startGame}
 						</button>
 					) : null}
 				</div>
@@ -284,7 +316,7 @@ export function SignalWordsRoom({
 														participantId as Id<"sessionParticipants">,
 													cardIndex: index,
 												}),
-											"Could not guess",
+											signalWords.actions.guessError,
 										)
 									}
 									className={`relative flex min-h-11 items-center justify-center rounded-md border px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide sm:py-4 sm:text-xs ${
@@ -299,7 +331,7 @@ export function SignalWordsRoom({
 									{keyRole && !state.revealed[index] && !finished ? (
 										<span
 											className={`absolute right-1 top-1 h-2 w-2 rounded-full ${KEY_DOT[keyRole]}`}
-											title={keyRole}
+											title={signalWords.roles[keyRole]}
 										/>
 									) : null}
 								</button>
@@ -321,24 +353,24 @@ export function SignalWordsRoom({
 										clue,
 										count,
 									}),
-								"Could not send clue",
+								signalWords.clueForm.error,
 							).then(() => setClue(""));
 						}}
 					>
 						<label className="flex-1">
 							<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-								One-word clue
+								{signalWords.clueForm.label}
 							</span>
 							<input
 								value={clue}
 								onChange={(event) => setClue(event.target.value)}
 								className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white"
-								placeholder="Clue"
+								placeholder={signalWords.clueForm.placeholder}
 							/>
 						</label>
 						<label>
 							<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-								Count
+								{signalWords.clueForm.countLabel}
 							</span>
 							<select
 								value={count}
@@ -356,7 +388,7 @@ export function SignalWordsRoom({
 							type="submit"
 							className="min-h-11 rounded-md bg-white px-5 py-2 font-bold text-slate-950"
 						>
-							Send clue
+							{signalWords.clueForm.submit}
 						</button>
 					</form>
 				) : null}
@@ -373,11 +405,11 @@ export function SignalWordsRoom({
 											sessionId: bundle.session._id,
 											participantId: participantId as Id<"sessionParticipants">,
 										}),
-									"Could not pass",
+									signalWords.actions.passError,
 								)
 							}
 						>
-							Pass turn
+							{signalWords.actions.passTurn}
 						</button>
 					</div>
 				) : null}
@@ -394,24 +426,24 @@ export function SignalWordsRoom({
 											sessionId: bundle.session._id,
 											participantId: participantId as Id<"sessionParticipants">,
 										}),
-									"Could not start rematch",
+									signalWords.actions.rematchError,
 								)
 							}
 						>
-							Play again (new board)
+							{signalWords.actions.playAgain}
 						</button>
 					</div>
 				) : null}
 			</section>
 			<aside className="space-y-4">
-				<QrSharePanel label="Invite players" url={joinUrl} />
+				<QrSharePanel label={signalWords.share.invitePlayers} url={joinUrl} />
 				<div className="club-panel rounded-lg p-4">
-					<p className="club-kicker mb-2">How to play</p>
+					<p className="club-kicker mb-2">{signalWords.howToPlay.heading}</p>
 					<ul className="space-y-1.5 text-sm text-slate-300">
-						<li>Clue-givers see the hidden key and send a one-word clue.</li>
-						<li>Guessers tap words — team words keep the turn going.</li>
-						<li>Decoys end the turn; the trap tile loses instantly.</li>
-						<li>Clear all your team's words first to win.</li>
+						<li>{signalWords.howToPlay.step1}</li>
+						<li>{signalWords.howToPlay.step2}</li>
+						<li>{signalWords.howToPlay.step3}</li>
+						<li>{signalWords.howToPlay.step4}</li>
 					</ul>
 				</div>
 			</aside>

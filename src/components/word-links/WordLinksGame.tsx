@@ -15,6 +15,7 @@ import {
 	recordDailyResult,
 	saveWordLinkAttempt,
 } from "#/lib/games/word-links-local";
+import { useMessages } from "#/lib/i18n";
 
 const GROUP_STYLES: Record<WordLinkDifficulty, string> = {
 	easy: "bg-emerald-500/80 text-emerald-950",
@@ -29,6 +30,8 @@ type Props = {
 };
 
 export function WordLinksGame({ puzzle, mode }: Props) {
+	const messages = useMessages();
+	const wordLinks = messages.games.wordLinks;
 	const [attempt, setAttempt] = useState<WordLinkAttempt>(() => {
 		const saved = loadWordLinkAttempt(puzzle.id);
 		return saved ?? createWordLinkAttempt(puzzle);
@@ -72,21 +75,21 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 		setAttempt(next);
 		if (result.type === "correct") {
 			setSelected([]);
-			setMessage(result.won ? "Solved! 🎉" : "Correct!");
+			setMessage(result.won ? wordLinks.game.solved : wordLinks.game.correct);
 			if (result.won && mode === "daily") {
 				recordDailyResult(true);
 			}
 		} else if (result.type === "oneAway") {
-			setMessage("One away...");
+			setMessage(wordLinks.game.oneAway);
 		} else if (result.type === "wrong") {
-			setMessage("Not a group.");
+			setMessage(wordLinks.game.notAGroup);
 		} else if (result.type === "duplicateGuess") {
-			setMessage("Already tried that combination.");
+			setMessage(wordLinks.game.duplicateGuess);
 		} else {
 			setMessage(result.reason);
 		}
 		if ((result.type === "oneAway" || result.type === "wrong") && result.lost) {
-			setMessage("Out of guesses — the groups are revealed below.");
+			setMessage(wordLinks.game.outOfGuesses);
 			setSelected([]);
 			if (mode === "daily") {
 				recordDailyResult(false);
@@ -101,7 +104,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		} catch {
-			setMessage("Could not copy — select and copy manually.");
+			setMessage(wordLinks.game.copyError);
 		}
 	}
 
@@ -121,11 +124,13 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 		<div className="mx-auto w-full max-w-xl">
 			<div className="mb-3 flex items-center justify-between">
 				<p className="text-sm text-slate-300">
-					Find four groups of four.{" "}
-					{mode === "daily" ? "Today's puzzle." : "Practice puzzle."}
+					{wordLinks.game.intro}{" "}
+					{mode === "daily"
+						? wordLinks.game.dailyNotice
+						: wordLinks.game.practiceNotice}
 				</p>
 				<p className="text-sm text-slate-300">
-					<span className="sr-only">Mistakes remaining: </span>
+					<span className="sr-only">{wordLinks.game.mistakesRemainingSr}</span>
 					{"●".repeat(Math.max(0, attempt.mistakeLimit - attempt.mistakes))}
 					{"○".repeat(attempt.mistakes)}
 				</p>
@@ -199,14 +204,14 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 							onClick={submit}
 							className="min-h-11 rounded-md bg-white px-5 py-2 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
 						>
-							Submit
+							{wordLinks.game.submit}
 						</button>
 						<button
 							type="button"
 							onClick={() => setOrder((current) => shuffleTerms(current))}
 							className="min-h-11 rounded-md border border-white/20 bg-white/10 px-5 py-2 font-bold text-white"
 						>
-							Shuffle
+							{wordLinks.game.shuffle}
 						</button>
 						<button
 							type="button"
@@ -214,7 +219,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 							onClick={() => setSelected([])}
 							className="min-h-11 rounded-md border border-white/20 bg-white/10 px-5 py-2 font-bold text-white disabled:opacity-50"
 						>
-							Deselect
+							{wordLinks.game.deselect}
 						</button>
 					</>
 				) : (
@@ -223,7 +228,9 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 						onClick={share}
 						className="min-h-11 rounded-md bg-white px-5 py-2 font-bold text-slate-950"
 					>
-						{copied ? "Copied!" : "Share result"}
+						{copied
+							? messages.common.actions.copied
+							: messages.common.endScreen.shareResult}
 					</button>
 				)}
 			</div>

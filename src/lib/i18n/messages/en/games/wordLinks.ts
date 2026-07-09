@@ -1,0 +1,30 @@
+/** Word Links UI chrome. Puzzle terms and group labels are puzzle content,
+ * not English prose, and are never routed through message keys. */
+export const wordLinks = {
+	game: {
+		intro: "Find four groups of four.",
+		dailyNotice: "Today's puzzle.",
+		practiceNotice: "Practice puzzle.",
+		mistakesRemainingSr: "Mistakes remaining: ",
+		solved: "Solved! 🎉",
+		correct: "Correct!",
+		oneAway: "One away...",
+		notAGroup: "Not a group.",
+		duplicateGuess: "Already tried that combination.",
+		outOfGuesses: "Out of guesses — the groups are revealed below.",
+		copyError: "Could not copy — select and copy manually.",
+		submit: "Submit",
+		shuffle: "Shuffle",
+		deselect: "Deselect",
+	},
+	page: {
+		dailyHeading: "Daily puzzle",
+		streakLabel: "🔥 Streak: {count}",
+		practiceLink: "Practice",
+		dailyLink: "Daily puzzle",
+		noPuzzle: "No puzzle.",
+		puzzleNotFound: "Puzzle not found.",
+		backToDaily: "Back to the daily puzzle",
+		practicePuzzleFallback: "Practice puzzle",
+	},
+};
