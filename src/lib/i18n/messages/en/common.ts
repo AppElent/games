@@ -127,6 +127,12 @@ export const common = {
 		finished: "{count} finished",
 		won: "— {count} won",
 		youWon: "— you won 🏆",
+		status: {
+			lobby: "lobby",
+			active: "active",
+			completed: "completed",
+			cancelled: "cancelled",
+		},
 	},
 	results: {
 		backToDashboard: "Back to dashboard",

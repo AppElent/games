@@ -129,6 +129,12 @@ export const common = {
 		finished: "{count} afgerond",
 		won: "— {count} gewonnen",
 		youWon: "— jij hebt gewonnen 🏆",
+		status: {
+			lobby: "wachtkamer",
+			active: "actief",
+			completed: "afgerond",
+			cancelled: "geannuleerd",
+		},
 	},
 	results: {
 		backToDashboard: "Terug naar dashboard",
