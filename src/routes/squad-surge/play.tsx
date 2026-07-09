@@ -15,6 +15,7 @@ import {
 	type SquadSurgeProgress,
 	saveSquadSurgeSettings,
 } from "#/lib/games/squad-surge-local";
+import { fmt, useMessages } from "#/lib/i18n";
 
 type SquadSurgeEndState = { status: SimStatus; army: number; z: number };
 
@@ -29,6 +30,8 @@ export const Route = createFileRoute("/squad-surge/play")({
 });
 
 function SquadSurgePlay() {
+	const messages = useMessages();
+	const play = messages.games.squadSurge.play;
 	const { d, seed } = Route.useSearch();
 	const navigate = useNavigate();
 	const [paused, setPaused] = useState(false);
@@ -49,9 +52,9 @@ function SquadSurgePlay() {
 		try {
 			return { level: generateLevel(seed, d) };
 		} catch (caught) {
-			return { error: getUserErrorMessage(caught, "Squad Surge hit a snag") };
+			return { error: getUserErrorMessage(caught, play.hitASnag) };
 		}
-	}, [seed, d]);
+	}, [seed, d, play.hitASnag]);
 
 	// Restart navigates to a new seed; clear the end overlay for the new run.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: seed/d changing IS the trigger — a new run starts
@@ -100,7 +103,7 @@ function SquadSurgePlay() {
 					<button
 						type="button"
 						onClick={toggleSound}
-						aria-label={soundOn ? "Mute sound" : "Unmute sound"}
+						aria-label={soundOn ? play.muteSound : play.unmuteSound}
 						className="absolute top-3 right-3 z-10 flex size-11 items-center justify-center rounded-xl border border-white/20 bg-slate-950/60 text-lg backdrop-blur-sm"
 					>
 						{soundOn ? "🔊" : "🔇"}
@@ -108,30 +111,32 @@ function SquadSurgePlay() {
 				</>
 			) : (
 				<div className="flex h-full items-center justify-center p-4">
-					<p className="text-orange-200">{error ?? "Squad Surge hit a snag"}</p>
+					<p className="text-orange-200">{error ?? play.hitASnag}</p>
 				</div>
 			)}
 			{endState && level ? (
 				<div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
 					<div className="club-panel w-full max-w-xs rounded-2xl p-6 text-center">
 						<p className="club-kicker mb-1">
-							{endState.status === "won" ? "Victory" : "Defeat"}
+							{endState.status === "won"
+								? play.victoryKicker
+								: play.defeatKicker}
 						</p>
 						<h2 className="club-title mb-3 text-3xl font-bold text-white">
-							{endState.status === "won"
-								? "The line is broken!"
-								: "Your squad fell"}
+							{endState.status === "won" ? play.wonHeading : play.lostHeading}
 						</h2>
 						<p className="mb-1 text-sm text-slate-300">
 							{endState.status === "won"
-								? `Your ${endState.army} soldiers gunned the boss down.`
+								? fmt(play.wonBody, { army: endState.army })
 								: endState.army > 0
-									? "The boss reached your line before you could take it down."
-									: "The horde wiped out your squad."}
+									? play.bossReachedBody
+									: play.hordeWipedBody}
 						</p>
 						<p className="mb-5 text-sm text-slate-300">
-							Distance: {Math.floor(endState.z)}m
-							{progress ? ` · Best: ${progress.bestDistance}m` : ""}
+							{fmt(play.distanceLabel, { distance: Math.floor(endState.z) })}
+							{progress
+								? fmt(play.bestSuffix, { best: progress.bestDistance })
+								: ""}
 						</p>
 						<div className="flex flex-col gap-3">
 							<button
@@ -139,19 +144,19 @@ function SquadSurgePlay() {
 								onClick={restart}
 								className="min-h-11 rounded-xl bg-emerald-400 px-4 py-2 font-bold text-slate-950"
 							>
-								Play again
+								{messages.common.actions.playAgain}
 							</button>
 							<Link
 								to="/squad-surge"
 								className="min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
 							>
-								Change difficulty
+								{play.changeDifficultyButton}
 							</Link>
 							<Link
 								to="/"
 								className="min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
 							>
-								Return to Games
+								{messages.common.gameShell.returnToGames}
 							</Link>
 						</div>
 					</div>

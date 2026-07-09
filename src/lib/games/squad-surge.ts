@@ -16,7 +16,6 @@ export type WeaponId = "pistol" | "smg" | "shotgun" | "minigun";
 
 export type WeaponSpec = {
 	id: WeaponId;
-	name: string;
 	/** Shots per second per soldier. */
 	rps: number;
 	/** Enemy hit points removed per shot. */
@@ -27,10 +26,15 @@ export type WeaponSpec = {
 	color: string;
 };
 
+/**
+ * Display names for each weapon are UI text, not game logic — they live in
+ * the i18n message catalog (`games.squadSurge.hud.weapons`) and get threaded
+ * into the canvas draw loop as plain data. This module must never import
+ * from `#/lib/i18n`.
+ */
 export const WEAPONS: Record<WeaponId, WeaponSpec> = {
 	pistol: {
 		id: "pistol",
-		name: "Pistol",
 		rps: 1.2,
 		damage: 1,
 		range: 30,
@@ -39,7 +43,6 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
 	},
 	smg: {
 		id: "smg",
-		name: "SMG",
 		rps: 3,
 		damage: 1,
 		range: 34,
@@ -48,7 +51,6 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
 	},
 	shotgun: {
 		id: "shotgun",
-		name: "Shotgun",
 		rps: 1.4,
 		damage: 3,
 		range: 27,
@@ -57,7 +59,6 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
 	},
 	minigun: {
 		id: "minigun",
-		name: "Minigun",
 		rps: 6,
 		damage: 1,
 		range: 38,

@@ -4,6 +4,7 @@ import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
 import { describeBluffClaim } from "#/lib/games/bluff-dice";
 import { getUserErrorMessage } from "#/lib/games/errors";
+import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -61,6 +62,8 @@ export function BluffDiceRoom({
 	bundle: Bundle;
 	joinUrl: string;
 }) {
+	const { messages, locale } = useI18n();
+	const bluffDice = messages.games.bluffDice;
 	const start = useMutation(api.bluffDice.start);
 	const submitClaim = useMutation(api.bluffDice.submitClaim);
 	const challenge = useMutation(api.bluffDice.challenge);
@@ -99,9 +102,9 @@ export function BluffDiceRoom({
 	if (!state) {
 		return (
 			<div className="club-panel rounded-lg p-6 text-center">
-				<p className="club-kicker mb-2">Setting up</p>
+				<p className="club-kicker mb-2">{bluffDice.room.loadingKicker}</p>
 				<h2 className="club-title text-2xl font-bold text-white">
-					Room is loading
+					{bluffDice.room.loadingHeading}
 				</h2>
 			</div>
 		);
@@ -109,7 +112,7 @@ export function BluffDiceRoom({
 
 	const nameOf = (id: Id<"sessionParticipants">) =>
 		bundle.participants.find((participant) => participant._id === id)
-			?.displayName ?? "Player";
+			?.displayName ?? bluffDice.room.playerFallback;
 	const inLobby = state.phase === "lobby";
 	const finished = state.phase === "finished";
 	const activeId = state.turnOrder[state.activeIndex];
@@ -122,14 +125,18 @@ export function BluffDiceRoom({
 	);
 
 	const statusLabel = inLobby
-		? "Waiting for players — the host starts the game (2-8 players)."
+		? bluffDice.room.waitingForPlayers
 		: finished
-			? `${state.winnerParticipantId ? nameOf(state.winnerParticipantId) : "Someone"} wins the table!`
+			? fmt(bluffDice.room.winsTable, {
+					name: state.winnerParticipantId
+						? nameOf(state.winnerParticipantId)
+						: bluffDice.room.someoneFallback,
+				})
 			: myTurn
 				? lastClaim
-					? "Your turn — raise the claim or challenge it."
-					: "Your turn — make the first claim."
-				: `Waiting for ${nameOf(activeId)}...`;
+					? bluffDice.room.yourTurnRaiseOrChallenge
+					: bluffDice.room.yourTurnFirstClaim
+				: fmt(bluffDice.room.waitingForPlayer, { name: nameOf(activeId) });
 
 	return (
 		<div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -137,7 +144,9 @@ export function BluffDiceRoom({
 				<div className="club-panel rounded-lg p-5">
 					<div className="flex flex-wrap items-start justify-between gap-4">
 						<div>
-							<p className="club-kicker mb-2">Bluff Dice</p>
+							<p className="club-kicker mb-2">
+								{messages.catalog["bluff-dice"].title}
+							</p>
 							<h1 className="club-title text-3xl font-bold text-white">
 								{bundle.session.title}
 							</h1>
@@ -179,7 +188,9 @@ export function BluffDiceRoom({
 								</span>
 								{entry.count !== undefined ? (
 									<span className="text-sm text-slate-300">
-										{entry.count === 0 ? "out" : `${entry.count} dice`}
+										{entry.count === 0
+											? bluffDice.room.diceOut
+											: plural(locale, entry.count, bluffDice.room.diceCount)}
 									</span>
 								) : null}
 							</li>
@@ -197,25 +208,31 @@ export function BluffDiceRoom({
 											sessionId: bundle.session._id,
 											participantId: participantId as Id<"sessionParticipants">,
 										}),
-									"Could not start the game",
+									bluffDice.room.couldNotStartGame,
 								)
 							}
 						>
-							Start game
+							{bluffDice.room.startGameButton}
 						</button>
 					) : null}
 				</div>
 
 				{state.lastReveal ? (
 					<div className="club-panel rounded-lg p-4">
-						<p className="club-kicker mb-2">Last challenge</p>
+						<p className="club-kicker mb-2">
+							{bluffDice.room.lastChallengeKicker}
+						</p>
 						<p className="text-sm text-slate-200">
-							{nameOf(state.lastReveal.challengerParticipantId)} challenged{" "}
-							{nameOf(state.lastReveal.claim.byParticipantId)}'s claim of{" "}
-							{describeBluffClaim(state.lastReveal.claim)} — there were{" "}
-							{state.lastReveal.actualCount}.{" "}
+							{fmt(bluffDice.room.challengeSummary, {
+								challenger: nameOf(state.lastReveal.challengerParticipantId),
+								claimant: nameOf(state.lastReveal.claim.byParticipantId),
+								claim: describeBluffClaim(state.lastReveal.claim),
+								actual: state.lastReveal.actualCount,
+							})}{" "}
 							<span className="font-bold text-orange-200">
-								{nameOf(state.lastReveal.loserParticipantId)} loses a die.
+								{fmt(bluffDice.room.loserLosesDie, {
+									name: nameOf(state.lastReveal.loserParticipantId),
+								})}
 							</span>
 						</p>
 						<div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-300">
@@ -235,7 +252,9 @@ export function BluffDiceRoom({
 					<div className="club-panel rounded-lg p-4">
 						<div className="flex flex-wrap items-center justify-between gap-3">
 							<div>
-								<p className="club-kicker mb-1">Your dice</p>
+								<p className="club-kicker mb-1">
+									{bluffDice.room.yourDiceKicker}
+								</p>
 								<p className="text-3xl text-white">
 									{myDice
 										? myDice.map((value) => DIE_FACES[value]).join(" ")
@@ -243,27 +262,33 @@ export function BluffDiceRoom({
 								</p>
 							</div>
 							<div className="text-right text-sm text-slate-300">
-								<p>Round {state.roundNumber}</p>
-								<p>{totalDice} dice on the table</p>
+								<p>
+									{fmt(bluffDice.room.roundLabel, {
+										number: state.roundNumber,
+									})}
+								</p>
+								<p>{plural(locale, totalDice, bluffDice.room.diceOnTable)}</p>
 							</div>
 						</div>
 						{lastClaim ? (
 							<p className="mt-3 text-sm text-slate-200">
-								Current claim by {nameOf(lastClaim.byParticipantId)}:{" "}
+								{fmt(bluffDice.room.currentClaimBy, {
+									name: nameOf(lastClaim.byParticipantId),
+								})}{" "}
 								<span className="font-bold text-white">
 									{describeBluffClaim(lastClaim)}
 								</span>
 							</p>
 						) : (
 							<p className="mt-3 text-sm text-slate-400">
-								No claim yet this round.
+								{bluffDice.room.noClaimYet}
 							</p>
 						)}
 						{myTurn ? (
 							<div className="mt-4 flex flex-wrap items-end gap-3">
 								<label>
 									<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-										Quantity
+										{bluffDice.room.quantityLabel}
 									</span>
 									<select
 										value={quantity}
@@ -283,7 +308,7 @@ export function BluffDiceRoom({
 								</label>
 								<label>
 									<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-										Face
+										{bluffDice.room.faceLabel}
 									</span>
 									<select
 										value={face}
@@ -310,11 +335,11 @@ export function BluffDiceRoom({
 													quantity,
 													face,
 												}),
-											"Could not claim",
+											bluffDice.room.couldNotClaim,
 										)
 									}
 								>
-									Claim
+									{bluffDice.room.claimButton}
 								</button>
 								{lastClaim ? (
 									<button
@@ -328,11 +353,11 @@ export function BluffDiceRoom({
 														participantId:
 															participantId as Id<"sessionParticipants">,
 													}),
-												"Could not challenge",
+												bluffDice.room.couldNotChallenge,
 											)
 										}
 									>
-										Challenge!
+										{bluffDice.room.challengeButton}
 									</button>
 								) : null}
 							</div>
@@ -352,24 +377,24 @@ export function BluffDiceRoom({
 											sessionId: bundle.session._id,
 											participantId: participantId as Id<"sessionParticipants">,
 										}),
-									"Could not start rematch",
+									bluffDice.room.couldNotStartRematch,
 								)
 							}
 						>
-							Play again
+							{messages.common.actions.playAgain}
 						</button>
 					</div>
 				) : null}
 			</section>
 			<aside className="space-y-4">
-				<QrSharePanel label="Invite players" url={joinUrl} />
+				<QrSharePanel label={bluffDice.share.invitePlayers} url={joinUrl} />
 				<div className="club-panel rounded-lg p-4">
-					<p className="club-kicker mb-2">How to play</p>
+					<p className="club-kicker mb-2">{bluffDice.room.howToPlayKicker}</p>
 					<ul className="space-y-1.5 text-sm text-slate-300">
-						<li>Everyone rolls hidden dice.</li>
-						<li>Take turns claiming how many of a face exist in total.</li>
-						<li>Each claim must outrank the last — or challenge it.</li>
-						<li>Whoever is wrong loses a die. Last player with dice wins.</li>
+						<li>{bluffDice.room.howToPlayRollDice}</li>
+						<li>{bluffDice.room.howToPlayClaim}</li>
+						<li>{bluffDice.room.howToPlayOutrank}</li>
+						<li>{bluffDice.room.howToPlayLoseDie}</li>
 					</ul>
 				</div>
 			</aside>

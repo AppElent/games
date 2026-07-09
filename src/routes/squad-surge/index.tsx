@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
 import { loadSquadSurgeProgress } from "#/lib/games/squad-surge-local";
+import { fmt, useMessages } from "#/lib/i18n";
 
 export const Route = createFileRoute("/squad-surge/")({
 	component: SquadSurgeStart,
@@ -9,20 +10,21 @@ export const Route = createFileRoute("/squad-surge/")({
 	ssr: false,
 });
 
-const DIFFICULTIES = [
-	{ value: 1, label: "Recruit" },
-	{ value: 2, label: "Regular" },
-	{ value: 3, label: "Veteran" },
-	{ value: 4, label: "Elite" },
-	{ value: 5, label: "Legend" },
-];
-
 function SquadSurgeStart() {
+	const messages = useMessages();
+	const start = messages.games.squadSurge.start;
 	const navigate = useNavigate();
 	const progress = useMemo(() => loadSquadSurgeProgress(), []);
 	const [difficulty, setDifficulty] = useState(() =>
 		Math.min(5, Math.max(1, progress.highestCleared + 1)),
 	);
+	const difficulties = [
+		{ value: 1, label: start.difficulties.recruit },
+		{ value: 2, label: start.difficulties.regular },
+		{ value: 3, label: start.difficulties.veteran },
+		{ value: 4, label: start.difficulties.elite },
+		{ value: 5, label: start.difficulties.legend },
+	];
 
 	return (
 		<FullscreenGameShell title="Squad Surge">
@@ -30,30 +32,26 @@ function SquadSurgeStart() {
 				<div className="club-panel w-full max-w-sm rounded-2xl p-6 text-center">
 					<p className="club-kicker mb-1">Squad Surge</p>
 					<h1 className="club-title mb-2 text-3xl font-bold text-white">
-						Grow your army, break the line
+						{start.heading}
 					</h1>
-					<p className="mb-5 text-sm text-slate-300">
-						Your squad fires automatically — steer through the better gate, grab
-						weapon crates, mow down the horde, and gun down the boss at the end
-						of the road.
-					</p>
+					<p className="mb-5 text-sm text-slate-300">{start.description}</p>
 					<div className="mb-5 flex justify-center gap-4 text-sm text-slate-300">
 						<span>
-							Best distance:{" "}
+							{start.bestDistanceLabel}{" "}
 							<strong className="text-white">{progress.bestDistance}m</strong>
 						</span>
 						<span>
-							Cleared:{" "}
+							{start.clearedLabel}{" "}
 							<strong className="text-white">
 								{progress.highestCleared > 0
-									? `Level ${progress.highestCleared}`
+									? fmt(start.clearedLevel, { level: progress.highestCleared })
 									: "—"}
 							</strong>
 						</span>
 					</div>
-					<p className="club-kicker mb-2">Difficulty</p>
+					<p className="club-kicker mb-2">{start.difficultyKicker}</p>
 					<div className="mb-6 flex flex-wrap justify-center gap-2">
-						{DIFFICULTIES.map((option) => (
+						{difficulties.map((option) => (
 							<button
 								key={option.value}
 								type="button"
@@ -78,12 +76,9 @@ function SquadSurgeStart() {
 						}
 						className="mb-4 w-full min-h-12 rounded-xl bg-gradient-to-r from-red-500 to-orange-400 px-4 py-3 text-lg font-bold text-white"
 					>
-						Deploy squad
+						{start.deployButton}
 					</button>
-					<p className="text-xs text-slate-400">
-						Drag or use ←/→ to steer. On iPhone/iPad, add this page to your Home
-						Screen for true fullscreen play.
-					</p>
+					<p className="text-xs text-slate-400">{start.controlsHint}</p>
 				</div>
 			</div>
 		</FullscreenGameShell>

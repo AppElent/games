@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { BluffDiceRoom } from "#/components/bluff-dice/BluffDiceRoom";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -11,6 +12,8 @@ export const Route = createFileRoute("/bluff-dice/$sessionId")({
 });
 
 function BluffDiceSessionPage() {
+	const messages = useMessages();
+	const bluffDiceTitle = messages.catalog["bluff-dice"].title;
 	const { sessionId } = Route.useParams();
 	const bundle = useQuery(api.bluffDice.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
@@ -18,15 +21,15 @@ function BluffDiceSessionPage() {
 
 	if (bundle === undefined) {
 		return (
-			<FullscreenGamePage title="Bluff Dice" className="text-slate-300">
-				Loading table...
+			<FullscreenGamePage title={bluffDiceTitle} className="text-slate-300">
+				{messages.games.bluffDice.session.loadingTable}
 			</FullscreenGamePage>
 		);
 	}
 	if (bundle === null) {
 		return (
-			<FullscreenGamePage title="Bluff Dice" className="text-orange-200">
-				Table not found.
+			<FullscreenGamePage title={bluffDiceTitle} className="text-orange-200">
+				{messages.games.bluffDice.session.tableNotFound}
 			</FullscreenGamePage>
 		);
 	}
@@ -36,7 +39,7 @@ function BluffDiceSessionPage() {
 		: window.location.href;
 
 	return (
-		<FullscreenGamePage title="Bluff Dice" maxWidthClassName="max-w-5xl">
+		<FullscreenGamePage title={bluffDiceTitle} maxWidthClassName="max-w-5xl">
 			<BluffDiceRoom bundle={bundle} joinUrl={joinUrl} />
 		</FullscreenGamePage>
 	);

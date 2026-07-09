@@ -6,9 +6,23 @@ import {
 	type SimStatus,
 	SPEED,
 	WEAPONS,
+	type WeaponId,
 	type WeaponSpec,
 } from "#/lib/games/squad-surge";
+import { useMessages } from "#/lib/i18n";
 import { SquadSurgeAudio } from "./audio";
+
+/**
+ * Text drawn onto the canvas via ctx.fillText — read once from the message
+ * catalog in the component body (React render), then threaded as plain data
+ * into the step/draw functions below, which run inside requestAnimationFrame
+ * and must never call i18n hooks themselves.
+ */
+type CanvasStrings = {
+	weaponNames: Record<WeaponId, string>;
+	bossArrived: string;
+	bossHudLabel: string;
+};
 
 /** Track distance visible ahead of the squad. */
 const VIEW_DIST = 110;
@@ -222,6 +236,7 @@ function step(
 	dt: number,
 	audio: SquadSurgeAudio,
 	keys: Set<string>,
+	strings: CanvasStrings,
 ) {
 	rt.elapsed += dt;
 	rt.fireGlow = Math.max(0, rt.fireGlow - dt * 6);
@@ -257,7 +272,7 @@ function step(
 				hp: bossHp(level),
 				maxHp: bossHp(level),
 			};
-			addFloat(rt, "BOSS!", 0.5, rt.z + 40, "#fda4af", true);
+			addFloat(rt, strings.bossArrived, 0.5, rt.z + 40, "#fda4af", true);
 			audio.bossRoar();
 			rt.shake = Math.max(rt.shake, 7);
 		}
@@ -333,7 +348,7 @@ function step(
 				rt.weapon = spec;
 				addFloat(
 					rt,
-					spec.name.toUpperCase(),
+					strings.weaponNames[spec.id].toUpperCase(),
 					rt.lane,
 					drop.z,
 					spec.color,
@@ -844,6 +859,7 @@ function drawCrates(
 	p: Projection,
 	level: Level,
 	rt: Runtime,
+	strings: CanvasStrings,
 ) {
 	for (let i = rt.nextDropIdx; i < level.weaponDrops.length; i += 1) {
 		const drop = level.weaponDrops[i];
@@ -882,7 +898,7 @@ function drawCrates(
 		ctx.stroke();
 		ctx.fillStyle = spec.color;
 		ctx.font = `bold ${Math.max(10, 13 * s)}px system-ui, sans-serif`;
-		ctx.fillText(spec.name, x, y - w * 1.35 + bob);
+		ctx.fillText(strings.weaponNames[spec.id], x, y - w * 1.35 + bob);
 		ctx.globalAlpha = 1;
 	}
 }
@@ -996,6 +1012,7 @@ function drawBoss(
 	p: Projection,
 	rt: Runtime,
 	cw: number,
+	strings: CanvasStrings,
 ) {
 	const boss = rt.boss;
 	if (!boss) {
@@ -1065,7 +1082,7 @@ function drawBoss(
 	ctx.fillRect(bx, 49, bw * clamp01(boss.hp / boss.maxHp), 12);
 	ctx.fillStyle = "#fecdd3";
 	ctx.font = "bold 12px system-ui, sans-serif";
-	ctx.fillText("BOSS", cw / 2, 41);
+	ctx.fillText(strings.bossHudLabel, cw / 2, 41);
 }
 
 function drawSquad(
@@ -1246,6 +1263,7 @@ function drawHud(
 	ch: number,
 	level: Level,
 	rt: Runtime,
+	strings: CanvasStrings,
 ) {
 	// Progress bar.
 	const barX0 = cw * 0.24;
@@ -1286,7 +1304,7 @@ function drawHud(
 	ctx.fillStyle = "#e2e8f0";
 	ctx.font = "bold 14px system-ui, sans-serif";
 	ctx.textAlign = "left";
-	ctx.fillText(spec.name, 46, chipY + 1);
+	ctx.fillText(strings.weaponNames[spec.id], 46, chipY + 1);
 	ctx.textAlign = "center";
 }
 
@@ -1296,6 +1314,7 @@ function draw(
 	ch: number,
 	level: Level,
 	rt: Runtime,
+	strings: CanvasStrings,
 ) {
 	ctx.clearRect(0, 0, cw, ch);
 	ctx.save();
@@ -1313,13 +1332,13 @@ function draw(
 	drawBackdrop(ctx, cw, ch, p, rt.z, rt.elapsed);
 	drawRoad(ctx, p, rt.z, level.length);
 	drawGates(ctx, p, level, rt, labelSize);
-	drawCrates(ctx, p, level, rt);
+	drawCrates(ctx, p, level, rt, strings);
 	// Enemies far-to-near so nearer ones overlap.
 	const sorted = [...rt.enemies].sort((a, b) => b.z - a.z);
 	for (const enemy of sorted) {
 		drawEnemy(ctx, p, rt, enemy);
 	}
-	drawBoss(ctx, p, rt, cw);
+	drawBoss(ctx, p, rt, cw, strings);
 	drawSquad(ctx, p, rt, labelSize);
 	drawEffects(ctx, p, rt);
 	ctx.restore();
@@ -1348,7 +1367,7 @@ function draw(
 		ctx.fillRect(0, 0, cw, ch);
 	}
 
-	drawHud(ctx, cw, ch, level, rt);
+	drawHud(ctx, cw, ch, level, rt, strings);
 }
 
 export function SquadSurgeCanvas({
@@ -1357,10 +1376,23 @@ export function SquadSurgeCanvas({
 	soundOn,
 	onEnd,
 }: SquadSurgeCanvasProps) {
+	const messages = useMessages();
+	const squadSurge = messages.games.squadSurge;
+	const strings: CanvasStrings = {
+		weaponNames: {
+			pistol: squadSurge.hud.weapons.pistol,
+			smg: squadSurge.hud.weapons.smg,
+			shotgun: squadSurge.hud.weapons.shotgun,
+			minigun: squadSurge.hud.weapons.minigun,
+		},
+		bossArrived: squadSurge.hud.bossArrived,
+		bossHudLabel: squadSurge.hud.bossHudLabel,
+	};
 	const containerRef = useRef<HTMLDivElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const pausedRef = useRef(paused);
 	const onEndRef = useRef(onEnd);
+	const stringsRef = useRef(strings);
 	const audioRef = useRef<SquadSurgeAudio | null>(null);
 
 	if (audioRef.current === null) {
@@ -1373,6 +1405,9 @@ export function SquadSurgeCanvas({
 	useEffect(() => {
 		onEndRef.current = onEnd;
 	}, [onEnd]);
+	useEffect(() => {
+		stringsRef.current = strings;
+	});
 	useEffect(() => {
 		if (audioRef.current) {
 			audioRef.current.muted = !soundOn;
@@ -1461,7 +1496,7 @@ export function SquadSurgeCanvas({
 			const dt = Math.min((now - last) / 1000, MAX_DT);
 			last = now;
 			if (!pausedRef.current && !document.hidden) {
-				step(rt, level, dt, audio, keys);
+				step(rt, level, dt, audio, keys, stringsRef.current);
 				// Give the final explosion/flash a beat before the overlay.
 				if (rt.status !== "running" && !rt.endSent && rt.endTimer > 0.7) {
 					rt.endSent = true;
@@ -1470,7 +1505,14 @@ export function SquadSurgeCanvas({
 			}
 			const dpr = window.devicePixelRatio || 1;
 			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-			draw(ctx, canvas.width / dpr, canvas.height / dpr, level, rt);
+			draw(
+				ctx,
+				canvas.width / dpr,
+				canvas.height / dpr,
+				level,
+				rt,
+				stringsRef.current,
+			);
 			raf = requestAnimationFrame(frame);
 		};
 		raf = requestAnimationFrame(frame);

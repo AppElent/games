@@ -5,6 +5,7 @@ import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/bluff-dice/new")({
@@ -13,6 +14,8 @@ export const Route = createFileRoute("/bluff-dice/new")({
 });
 
 function BluffDiceNewPage() {
+	const messages = useMessages();
+	const bluffDice = messages.games.bluffDice;
 	const createSession = useMutation(api.sessions.create);
 	const createState = useMutation(api.bluffDice.createState);
 	const hostName = useHostDisplayName();
@@ -28,7 +31,7 @@ function BluffDiceNewPage() {
 				gameType: "bluff-dice",
 				joinMode: "room",
 				authPolicy: "guestAllowed",
-				title: "Bluff Dice",
+				title: messages.catalog["bluff-dice"].title,
 				displayName: hostName,
 				guestId: guest.id,
 			});
@@ -42,23 +45,22 @@ function BluffDiceNewPage() {
 			);
 			window.location.href = `/bluff-dice/${result.sessionId}`;
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "Could not create room"));
+			setError(getUserErrorMessage(caught, bluffDice.new.couldNotCreateRoom));
 			setBusy(false);
 		}
 	}
 
 	return (
-		<FullscreenGamePage title="Bluff Dice">
-			<p className="club-kicker mb-2">Bluff Dice</p>
+		<FullscreenGamePage title={messages.catalog["bluff-dice"].title}>
+			<p className="club-kicker mb-2">{messages.catalog["bluff-dice"].title}</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
-				Host a table
+				{bluffDice.new.heading}
 			</h1>
 			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
 			<HostGate>
 				<div className="club-panel max-w-xl rounded-lg p-6">
 					<p className="mb-5 text-sm text-slate-300">
-						Hidden dice, rising claims, and one big question: is anyone
-						bluffing? 2-8 players, everyone joins with the room code.
+						{bluffDice.new.description}
 					</p>
 					<button
 						type="button"
@@ -66,7 +68,9 @@ function BluffDiceNewPage() {
 						onClick={handleCreate}
 						className="min-h-11 w-full rounded-md bg-white px-5 py-3 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
 					>
-						{busy ? "Creating room..." : "Create room"}
+						{busy
+							? bluffDice.new.creatingRoomButton
+							: bluffDice.new.createRoomButton}
 					</button>
 				</div>
 			</HostGate>
