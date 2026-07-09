@@ -63,6 +63,7 @@ export const common = {
 		soundOn: "Geluid aan",
 		soundOff: "Geluid uit",
 		returnToGames: "Terug naar spellen",
+		rotateHint: "Draai je telefoon voor een groter bord",
 	},
 	gameCard: {
 		comingSoon: "Binnenkort beschikbaar",

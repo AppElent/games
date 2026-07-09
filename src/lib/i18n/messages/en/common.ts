@@ -61,6 +61,7 @@ export const common = {
 		soundOn: "Sound on",
 		soundOff: "Sound off",
 		returnToGames: "Return to Games",
+		rotateHint: "Rotate your phone for a bigger board",
 	},
 	gameCard: {
 		comingSoon: "Coming soon",

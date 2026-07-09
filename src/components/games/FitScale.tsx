@@ -1,10 +1,12 @@
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { useMessages } from "#/lib/i18n";
 
 /** Small-screen portrait nudge for games that play best in landscape. */
 export function RotateHint() {
+	const messages = useMessages();
 	return (
 		<p className="pointer-events-none block px-4 pb-2 text-center text-xs text-slate-400 landscape:hidden sm:hidden">
-			Rotate your phone for a bigger board
+			{messages.common.gameShell.rotateHint}
 		</p>
 	);
 }
