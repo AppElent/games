@@ -20,6 +20,16 @@ export const chess = {
 		yourMoveCheck: "Jouw zet — schaak!",
 		waitingFor: "Wachten op {name}",
 		waitingForCheck: "Wachten op {name} — schaak!",
+		result: {
+			checkmate: "Schaakmat — {winner} wint",
+			timeout: "Tijd verstreken — {winner} wint",
+			resignation: "Opgave — {winner} wint",
+			stalemate: "Remise — patstelling",
+			insufficientMaterial: "Remise — onvoldoende materiaal",
+			threefoldRepetition: "Remise — drievoudige zetherhaling",
+			fiftyMoveRule: "Remise — vijftigzettenregel",
+			drawAgreed: "Remise — overeengekomen",
+		},
 	},
 	drawOffer: {
 		waitingForOpponent: "Remise aangeboden — wachten op je tegenstander.",

@@ -23,6 +23,16 @@ export const chess = {
 		yourMoveCheck: "Your move — check!",
 		waitingFor: "Waiting for {name}",
 		waitingForCheck: "Waiting for {name} — check!",
+		result: {
+			checkmate: "Checkmate — {winner} wins",
+			timeout: "Time out — {winner} wins",
+			resignation: "Resignation — {winner} wins",
+			stalemate: "Draw — stalemate",
+			insufficientMaterial: "Draw — insufficient material",
+			threefoldRepetition: "Draw — threefold repetition",
+			fiftyMoveRule: "Draw — fifty-move rule",
+			drawAgreed: "Draw — agreed",
+		},
 	},
 	drawOffer: {
 		waitingForOpponent: "Draw offered — waiting for your opponent.",
