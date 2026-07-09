@@ -6,6 +6,7 @@ import {
 	findBinaryConflicts,
 	isBinarySolved,
 } from "#/lib/games/binary-puzzle";
+import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -40,6 +41,8 @@ function initialElapsed(state: BinaryStateDoc) {
 }
 
 export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
+	const { locale, messages } = useI18n();
+	const sudoku = messages.games.sudoku;
 	const saveProgress = useMutation(api.sudoku.saveProgress);
 	const setPaused = useMutation(api.sudoku.setPaused);
 	const complete = useMutation(api.sudoku.complete);
@@ -152,14 +155,14 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 		if (statusRef.current !== "active") {
 			return;
 		}
-		if (!window.confirm("Restart this puzzle?")) {
+		if (!window.confirm(sudoku.binary.restartConfirm)) {
 			return;
 		}
 		const cleared = new Array<number>(cellCount).fill(0);
 		setUndoStack((stack) => [...stack.slice(-99), entries]);
 		setEntries(cleared);
 		scheduleSave(cleared);
-	}, [cellCount, entries, scheduleSave]);
+	}, [cellCount, entries, scheduleSave, sudoku]);
 
 	return (
 		<div className="flex flex-col items-center gap-4">
@@ -168,9 +171,9 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 					<p className="truncate text-lg font-bold text-white">{title}</p>
 					<p className="text-xs text-slate-400">
 						{state.difficulty
-							? `${state.difficulty[0].toUpperCase()}${state.difficulty.slice(1)}`
-							: "Binary"}
-						{` · Binary ${size}×${size}`}
+							? sudoku.difficulty[state.difficulty]
+							: sudoku.variant.binary}
+						{` · ${fmt(sudoku.binary.dimensions, { size })}`}
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
@@ -185,11 +188,12 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 						>
 							{status === "active" ? (
 								<>
-									<Pause className="h-4 w-4" /> Pause
+									<Pause className="h-4 w-4" /> {sudoku.game.pauseButton}
 								</>
 							) : (
 								<>
-									<Play className="h-4 w-4" /> Resume
+									<Play className="h-4 w-4" />{" "}
+									{messages.common.gameShell.resume}
 								</>
 							)}
 						</button>
@@ -199,11 +203,11 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 
 			{status === "completed" ? (
 				<div className="w-full max-w-[min(94vw,560px)] rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-4 py-3 text-emerald-200">
-					<p className="font-bold">Solved! 🎉</p>
+					<p className="font-bold">{sudoku.game.solvedTitle}</p>
 					<p className="text-sm">
-						Completed in {formatElapsed(elapsed)}.{" "}
+						{fmt(sudoku.game.completedIn, { time: formatElapsed(elapsed) })}{" "}
 						<a href="/sudoku/new" className="underline hover:text-white">
-							Start another puzzle
+							{sudoku.game.startAnotherPuzzle}
 						</a>
 					</p>
 				</div>
@@ -227,7 +231,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 								// biome-ignore lint/suspicious/noArrayIndexKey: fixed grid
 								key={cell}
 								type="button"
-								aria-label={`Row ${row + 1} column ${col + 1}${value !== 0 ? `, ${binaryDigitLabel(value)}` : ""}`}
+								aria-label={`${fmt(sudoku.board.cellLabel, { row: row + 1, col: col + 1 })}${value !== 0 ? `, ${binaryDigitLabel(value)}` : ""}`}
 								disabled={isGiven || status !== "active"}
 								onClick={() => cycleCell(cell)}
 								className={`flex items-center justify-center border-slate-300 p-0 dark:border-slate-600/60 ${
@@ -262,16 +266,13 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 						className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-slate-950/80 text-slate-200"
 					>
 						<Play className="h-10 w-10" />
-						<span className="font-bold">Paused — tap to resume</span>
+						<span className="font-bold">{sudoku.game.pausedOverlay}</span>
 					</button>
 				) : null}
 			</div>
 
 			<div className="flex w-full max-w-[min(94vw,560px)] flex-wrap items-center justify-between gap-2">
-				<p className="text-xs text-slate-400">
-					Tap a cell to cycle 0 → 1 → empty. No three alike in a row, equal 0s
-					and 1s per line, no duplicate lines.
-				</p>
+				<p className="text-xs text-slate-400">{sudoku.binary.instructions}</p>
 				<div className="flex items-center gap-2">
 					<button
 						type="button"
@@ -279,7 +280,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 						disabled={undoStack.length === 0 || status !== "active"}
 						className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
 					>
-						<Undo2 className="h-4 w-4" /> Undo
+						<Undo2 className="h-4 w-4" /> {sudoku.keypad.undo}
 					</button>
 					<button
 						type="button"
@@ -287,12 +288,15 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 						disabled={status !== "active"}
 						className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
 					>
-						<RotateCcw className="h-4 w-4" /> Restart
+						<RotateCcw className="h-4 w-4" />{" "}
+						{messages.common.gameShell.restart}
 					</button>
 				</div>
 			</div>
 			{remaining > 0 && status === "active" ? (
-				<p className="text-xs text-slate-500">{remaining} cells to go</p>
+				<p className="text-xs text-slate-500">
+					{plural(locale, remaining, sudoku.binary.remainingCells)}
+				</p>
 			) : null}
 		</div>
 	);

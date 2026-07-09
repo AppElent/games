@@ -3,6 +3,7 @@ import { colOf, digitsInMask, rowOf } from "#/lib/games/sudoku";
 import type { SudokuBoardState } from "#/lib/games/sudoku-board";
 import { effectiveGrid } from "#/lib/games/sudoku-board";
 import type { KillerCage } from "#/lib/games/sudoku-killer";
+import { fmt, useMessages } from "#/lib/i18n";
 
 export const SUDOKU_COLOR_CLASSES = [
 	"", // 0 = none
@@ -74,6 +75,8 @@ export function SudokuBoard({
 	className = "",
 	cages,
 }: SudokuBoardProps) {
+	const messages = useMessages();
+	const sudoku = messages.games.sudoku;
 	const grid = effectiveGrid(board);
 	const cageInfo = useMemo<CageInfo | null>(() => {
 		if (!cages || cages.length === 0) {
@@ -163,7 +166,10 @@ export function SudokuBoard({
 						// biome-ignore lint/suspicious/noArrayIndexKey: fixed 81-cell grid
 						key={cell}
 						type="button"
-						aria-label={`Row ${row + 1} column ${col + 1}`}
+						aria-label={fmt(sudoku.board.cellLabel, {
+							row: row + 1,
+							col: col + 1,
+						})}
 						onClick={() => onSelectCell?.(cell)}
 						className={`relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
 					>

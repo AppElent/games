@@ -25,6 +25,7 @@ import {
 	recognizeGrid,
 	warpToSquare,
 } from "#/lib/games/sudoku-scan-image";
+import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import { SudokuBoard } from "./SudokuBoard";
 
@@ -34,15 +35,9 @@ type Step =
 	| { id: "recognizing"; warpedUrl: string; progress: ScanProgress }
 	| { id: "verify"; warpedUrl: string; cells: ScanCell[] };
 
-const CELL_TYPES: { id: ScanCellType; label: string }[] = [
-	{ id: "given", label: "Given" },
-	{ id: "userDigit", label: "Your digit" },
-	{ id: "cornerNotes", label: "Corner notes" },
-	{ id: "centerNotes", label: "Center notes" },
-	{ id: "empty", label: "Empty" },
-];
-
 export function SudokuScanFlow() {
+	const messages = useMessages();
+	const sudoku = messages.games.sudoku;
 	const [step, setStep] = useState<Step>({ id: "upload" });
 	const [error, setError] = useState("");
 
@@ -59,7 +54,7 @@ export function SudokuScanFlow() {
 				corners: defaultCorners(source.width, source.height),
 			});
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "Could not read the image"));
+			setError(getUserErrorMessage(caught, sudoku.scan.couldNotReadImage));
 		}
 	};
 
@@ -83,7 +78,7 @@ export function SudokuScanFlow() {
 			);
 			setStep({ id: "verify", warpedUrl, cells });
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "Recognition failed"));
+			setError(getUserErrorMessage(caught, sudoku.scan.recognitionFailed));
 			setStep({ id: "upload" });
 		}
 	};
@@ -106,12 +101,15 @@ export function SudokuScanFlow() {
 					<Loader2 className="h-8 w-8 animate-spin" />
 					<p>
 						{step.progress.step === "preparing"
-							? "Preparing image..."
-							: `Reading cells ${step.progress.cellsDone}/81...`}
+							? sudoku.scan.preparingImage
+							: fmt(sudoku.scan.readingCells, {
+									done: step.progress.cellsDone,
+									total: step.progress.cellsTotal,
+								})}
 					</p>
 					<img
 						src={step.warpedUrl}
-						alt="Corrected sudoku grid"
+						alt={sudoku.scan.correctedGridAlt}
 						className="w-48 rounded-md border border-slate-700 opacity-70"
 					/>
 				</div>
@@ -130,15 +128,13 @@ export function SudokuScanFlow() {
 }
 
 function UploadStep({ onFile }: { onFile: (file: File | undefined) => void }) {
+	const messages = useMessages();
+	const sudoku = messages.games.sudoku;
 	const uploadRef = useRef<HTMLInputElement>(null);
 	const cameraRef = useRef<HTMLInputElement>(null);
 	return (
 		<div className="flex max-w-xl flex-col gap-3">
-			<p className="text-slate-300">
-				Photograph or upload a printed sudoku — including one you already
-				started solving on paper. You will verify the recognized grid before
-				playing.
-			</p>
+			<p className="text-slate-300">{sudoku.scan.uploadInstructions}</p>
 			<input
 				ref={uploadRef}
 				type="file"
@@ -160,14 +156,14 @@ function UploadStep({ onFile }: { onFile: (file: File | undefined) => void }) {
 					onClick={() => cameraRef.current?.click()}
 					className="inline-flex items-center gap-2 rounded-md bg-white px-5 py-3 font-bold text-slate-950"
 				>
-					<Camera className="h-5 w-5" /> Take a photo
+					<Camera className="h-5 w-5" /> {sudoku.scan.takePhoto}
 				</button>
 				<button
 					type="button"
 					onClick={() => uploadRef.current?.click()}
 					className="inline-flex items-center gap-2 rounded-md border border-slate-600/70 bg-slate-800/60 px-5 py-3 font-bold text-slate-200"
 				>
-					<Upload className="h-5 w-5" /> Upload an image
+					<Upload className="h-5 w-5" /> {sudoku.scan.uploadImage}
 				</button>
 			</div>
 		</div>
@@ -187,6 +183,8 @@ function CornerStep({
 	onConfirm: () => void;
 	onBack: () => void;
 }) {
+	const messages = useMessages();
+	const sudoku = messages.games.sudoku;
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [imageUrl] = useState(() => source.toDataURL("image/jpeg", 0.8));
 	const dragIndex = useRef<number | null>(null);
@@ -206,9 +204,7 @@ function CornerStep({
 
 	return (
 		<div className="flex max-w-xl flex-col gap-3">
-			<p className="text-slate-300">
-				Drag the four handles onto the corners of the sudoku grid.
-			</p>
+			<p className="text-slate-300">{sudoku.scan.dragCorners}</p>
 			<div
 				ref={containerRef}
 				className="relative w-full touch-none select-none overflow-hidden rounded-lg border border-slate-600"
@@ -228,7 +224,11 @@ function CornerStep({
 					dragIndex.current = null;
 				}}
 			>
-				<img src={imageUrl} alt="Uploaded sudoku" className="block w-full" />
+				<img
+					src={imageUrl}
+					alt={sudoku.scan.uploadedImageAlt}
+					className="block w-full"
+				/>
 				<svg
 					viewBox={`0 0 ${source.width} ${source.height}`}
 					className="absolute inset-0 h-full w-full"
@@ -265,14 +265,14 @@ function CornerStep({
 					onClick={onBack}
 					className="rounded-md border border-slate-600/70 px-4 py-2 font-semibold text-slate-300"
 				>
-					Back
+					{messages.common.actions.back}
 				</button>
 				<button
 					type="button"
 					onClick={onConfirm}
 					className="rounded-md bg-white px-5 py-2 font-bold text-slate-950"
 				>
-					Read this grid
+					{sudoku.scan.readGrid}
 				</button>
 			</div>
 		</div>
@@ -305,6 +305,15 @@ function VerifyStep({
 	onRescan: () => void;
 	onError: (message: string) => void;
 }) {
+	const { locale, messages } = useI18n();
+	const sudoku = messages.games.sudoku;
+	const CELL_TYPES: { id: ScanCellType; label: string }[] = [
+		{ id: "given", label: sudoku.scan.cellTypeGiven },
+		{ id: "userDigit", label: sudoku.scan.cellTypeUserDigit },
+		{ id: "cornerNotes", label: sudoku.scan.cellTypeCornerNotes },
+		{ id: "centerNotes", label: sudoku.scan.cellTypeCenterNotes },
+		{ id: "empty", label: sudoku.scan.cellTypeEmpty },
+	];
 	const createSession = useMutation(api.sessions.create);
 	const createState = useMutation(api.sudoku.createState);
 	const [selected, setSelected] = useState<number | null>(null);
@@ -356,7 +365,7 @@ function VerifyStep({
 			});
 			window.location.href = `/sudoku/${result.sessionId}`;
 		} catch (caught) {
-			onError(getUserErrorMessage(caught, "Could not create session"));
+			onError(getUserErrorMessage(caught, sudoku.scan.couldNotCreateSession));
 			setBusy(false);
 		}
 	};
@@ -368,17 +377,17 @@ function VerifyStep({
 			<div className="flex flex-wrap items-start gap-4">
 				<div>
 					<p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-						Scanned image
+						{sudoku.scan.scannedImageLabel}
 					</p>
 					<img
 						src={warpedUrl}
-						alt="Corrected sudoku grid"
+						alt={sudoku.scan.correctedGridAlt}
 						className="w-40 rounded-md border border-slate-700 sm:w-56"
 					/>
 				</div>
 				<div className="min-w-[260px] flex-1">
 					<p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-						Recognized grid — tap a cell to correct it
+						{sudoku.scan.recognizedGridLabel}
 					</p>
 					<div className="grid aspect-square w-full max-w-[420px] grid-cols-9 grid-rows-9 rounded-md border-2 border-slate-400/70 bg-slate-900">
 						{cells.map((entry, index) => {
@@ -424,8 +433,12 @@ function VerifyStep({
 					</div>
 					<p className="mt-1 text-xs text-slate-400">
 						{lowConfidenceCount > 0
-							? `${lowConfidenceCount} low-confidence cells highlighted in amber.`
-							: "All recognitions look confident — still, double-check before starting."}
+							? plural(
+									locale,
+									lowConfidenceCount,
+									sudoku.scan.lowConfidenceHighlighted,
+								)
+							: sudoku.scan.allConfident}
 					</p>
 				</div>
 			</div>
@@ -433,10 +446,13 @@ function VerifyStep({
 			{cell !== null && selected !== null ? (
 				<div className="max-w-xl rounded-lg border border-slate-600/70 bg-slate-800/60 p-4">
 					<p className="mb-2 text-sm font-bold text-white">
-						Cell R{Math.floor(selected / 9) + 1}C{(selected % 9) + 1}
+						{fmt(sudoku.scan.cellLabel, {
+							row: Math.floor(selected / 9) + 1,
+							col: (selected % 9) + 1,
+						})}
 						{isLowConfidence(cell) ? (
 							<span className="ml-2 rounded bg-amber-400/30 px-1.5 py-0.5 text-xs font-semibold text-amber-200">
-								low confidence
+								{sudoku.scan.lowConfidenceBadge}
 							</span>
 						) : null}
 					</p>
@@ -483,7 +499,9 @@ function VerifyStep({
 							{(["corner", "center"] as const).map((kind) => (
 								<div key={kind} className="flex items-center gap-1">
 									<span className="w-14 text-xs text-slate-400">
-										{kind === "corner" ? "Corner" : "Center"}
+										{kind === "corner"
+											? sudoku.keypad.modeCorner
+											: sudoku.keypad.modeCenter}
 									</span>
 									{Array.from({ length: 9 }, (_, i) => i + 1).map((digit) => {
 										const mask =
@@ -517,14 +535,14 @@ function VerifyStep({
 						onClick={() => onCellsChange(clearScanCell(cells, selected))}
 						className="rounded-md border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-700"
 					>
-						Clear cell
+						{sudoku.scan.clearCell}
 					</button>
 				</div>
 			) : null}
 
 			<div>
 				<p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-					Preview — exactly how the puzzle will start
+					{sudoku.scan.previewLabel}
 				</p>
 				<SudokuBoard
 					board={previewBoard}
@@ -543,12 +561,11 @@ function VerifyStep({
 					</ul>
 				) : !validation.givensUnique ? (
 					<p className="mb-3 rounded-md border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-						The givens allow more than one solution. You can still play, but
-						consider double-checking for missed digits.
+						{sudoku.scan.multipleSolutionsWarning}
 					</p>
 				) : (
 					<p className="mb-3 rounded-md border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-						Looks good: the givens define a unique solution.
+						{sudoku.scan.uniqueSolution}
 					</p>
 				)}
 				<div className="flex gap-3">
@@ -557,7 +574,7 @@ function VerifyStep({
 						onClick={onRescan}
 						className="rounded-md border border-slate-600/70 px-4 py-2 font-semibold text-slate-300"
 					>
-						Start over
+						{sudoku.scan.startOver}
 					</button>
 					<button
 						type="button"
@@ -566,7 +583,7 @@ function VerifyStep({
 						className="inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<Check className="h-4 w-4" />
-						{busy ? "Creating puzzle..." : "Confirm and play"}
+						{busy ? sudoku.scan.creatingPuzzle : sudoku.scan.confirmAndPlay}
 					</button>
 				</div>
 			</div>

@@ -19,6 +19,7 @@ import {
 	listLocalSudokuSessions,
 	rememberLocalSudokuSession,
 } from "#/lib/games/sudoku-local";
+import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/sudoku/new")({
@@ -28,56 +29,52 @@ export const Route = createFileRoute("/sudoku/new")({
 
 type SudokuVariant = "classic" | "killer" | "binary";
 
-const VARIANTS: { id: SudokuVariant; label: string; blurb: string }[] = [
-	{ id: "classic", label: "Classic", blurb: "The familiar 9×9 grid" },
-	{ id: "killer", label: "Killer", blurb: "Cages must add up to their sum" },
-	{ id: "binary", label: "Binary", blurb: "Fill the grid with 0s and 1s" },
-];
-
-const DIFFICULTIES: {
-	id: SudokuDifficulty;
-	label: string;
-	blurb: Record<SudokuVariant, string>;
-}[] = [
-	{
-		id: "easy",
-		label: "Easy",
-		blurb: {
-			classic: "Plenty of clues, gentle start",
-			killer: "Many givens, small cages",
-			binary: "6×6 grid, gentle start",
-		},
-	},
-	{
-		id: "medium",
-		label: "Medium",
-		blurb: {
-			classic: "Singles and simple pairs",
-			killer: "Fewer givens, lean on the sums",
-			binary: "8×8 grid",
-		},
-	},
-	{
-		id: "hard",
-		label: "Hard",
-		blurb: {
-			classic: "Pointing pairs and reductions",
-			killer: "A handful of givens",
-			binary: "10×10 grid",
-		},
-	},
-	{
-		id: "expert",
-		label: "Expert",
-		blurb: {
-			classic: "Sparse clues, deep scanning",
-			killer: "Cages only — no givens",
-			binary: "10×10, sparse clues",
-		},
-	},
-];
-
 function SudokuNewPage() {
+	const messages = useMessages();
+	const sudoku = messages.games.sudoku;
+	const VARIANTS: { id: SudokuVariant; label: string; blurb: string }[] = [
+		{
+			id: "classic",
+			label: sudoku.variant.classic,
+			blurb: sudoku.newGame.variantBlurbClassic,
+		},
+		{
+			id: "killer",
+			label: sudoku.variant.killer,
+			blurb: sudoku.newGame.variantBlurbKiller,
+		},
+		{
+			id: "binary",
+			label: sudoku.variant.binary,
+			blurb: sudoku.newGame.variantBlurbBinary,
+		},
+	];
+	const DIFFICULTIES: {
+		id: SudokuDifficulty;
+		label: string;
+		blurb: Record<SudokuVariant, string>;
+	}[] = [
+		{
+			id: "easy",
+			label: sudoku.difficulty.easy,
+			blurb: sudoku.newGame.difficultyBlurbs.easy,
+		},
+		{
+			id: "medium",
+			label: sudoku.difficulty.medium,
+			blurb: sudoku.newGame.difficultyBlurbs.medium,
+		},
+		{
+			id: "hard",
+			label: sudoku.difficulty.hard,
+			blurb: sudoku.newGame.difficultyBlurbs.hard,
+		},
+		{
+			id: "expert",
+			label: sudoku.difficulty.expert,
+			blurb: sudoku.newGame.difficultyBlurbs.expert,
+		},
+	];
 	const createSession = useMutation(api.sessions.create);
 	const createState = useMutation(api.sudoku.createState);
 	const [variant, setVariant] = useState<SudokuVariant>("classic");
@@ -147,31 +144,28 @@ function SudokuNewPage() {
 			});
 			window.location.href = `/sudoku/${result.sessionId}`;
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "Could not start the puzzle"));
+			setError(getUserErrorMessage(caught, sudoku.newGame.couldNotStart));
 			setBusy(null);
 		}
 	};
 
 	return (
-		<FullscreenGamePage title="Sudoku">
-			<p className="club-kicker mb-2">Sudoku</p>
+		<FullscreenGamePage title={messages.catalog.sudoku.title}>
+			<p className="club-kicker mb-2">{messages.catalog.sudoku.title}</p>
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
-				Start a puzzle
+				{sudoku.newGame.heading}
 			</h1>
-			<p className="mb-6 max-w-2xl text-slate-300">
-				Pick a difficulty and play solo. Your progress saves automatically, and
-				you can keep several puzzles going at once.
-			</p>
+			<p className="mb-6 max-w-2xl text-slate-300">{sudoku.newGame.intro}</p>
 			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
 
 			<label className="mb-6 block max-w-md">
 				<span className="mb-1 block text-sm font-semibold text-slate-300">
-					Puzzle name (optional)
+					{sudoku.newGame.nameLabel}
 				</span>
 				<input
 					value={name}
 					onChange={(event) => setName(event.target.value)}
-					placeholder="Auto-named by level and time"
+					placeholder={sudoku.newGame.namePlaceholder}
 					maxLength={80}
 					className="w-full rounded-md border border-slate-600 bg-slate-800/70 px-3 py-2 text-white placeholder:text-slate-500"
 				/>
@@ -179,7 +173,7 @@ function SudokuNewPage() {
 
 			<fieldset className="mb-6 max-w-3xl">
 				<legend className="mb-2 block text-sm font-semibold text-slate-300">
-					Game type
+					{sudoku.newGame.gameTypeLegend}
 				</legend>
 				<div className="flex flex-wrap gap-2">
 					{VARIANTS.map((entry) => (
@@ -215,7 +209,7 @@ function SudokuNewPage() {
 						className="rounded-lg border border-slate-600/70 bg-slate-800/60 px-5 py-4 text-left transition hover:border-sky-400/70 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<span className="block text-lg font-bold text-white">
-							{busy === entry.id ? "Generating..." : entry.label}
+							{busy === entry.id ? sudoku.newGame.generating : entry.label}
 						</span>
 						<span className="text-sm text-slate-400">
 							{entry.blurb[variant]}
@@ -228,12 +222,14 @@ function SudokuNewPage() {
 				to="/sudoku/scan"
 				className="mb-10 inline-flex items-center gap-2 rounded-md border border-slate-600/70 bg-slate-800/60 px-4 py-3 font-semibold text-slate-200 transition hover:border-sky-400/70"
 			>
-				<Camera className="h-5 w-5" /> Scan a paper puzzle instead
+				<Camera className="h-5 w-5" /> {sudoku.newGame.scanInstead}
 			</Link>
 
 			{recent.length > 0 ? (
 				<section className="max-w-3xl">
-					<h2 className="mb-3 text-xl font-bold text-white">Your puzzles</h2>
+					<h2 className="mb-3 text-xl font-bold text-white">
+						{sudoku.newGame.yourPuzzles}
+					</h2>
 					<ul className="space-y-2">
 						{recent.map((entry) => (
 							<li
@@ -251,7 +247,9 @@ function SudokuNewPage() {
 								</span>
 								<button
 									type="button"
-									aria-label={`Remove ${entry.title} from this list`}
+									aria-label={fmt(sudoku.newGame.removeFromList, {
+										title: entry.title,
+									})}
 									onClick={() => {
 										forgetLocalSudokuSession(entry.sessionId);
 										setRecent(listLocalSudokuSessions());

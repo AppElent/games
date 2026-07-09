@@ -25,6 +25,7 @@ import {
 	type KillerCage,
 } from "#/lib/games/sudoku-killer";
 import { renameLocalSudokuSession } from "#/lib/games/sudoku-local";
+import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { SudokuBoard } from "./SudokuBoard";
@@ -67,6 +68,8 @@ function initialElapsed(state: SudokuStateDoc) {
 }
 
 export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
+	const messages = useMessages();
+	const sudoku = messages.games.sudoku;
 	const saveProgress = useMutation(api.sudoku.saveProgress);
 	const setPaused = useMutation(api.sudoku.setPaused);
 	const complete = useMutation(api.sudoku.complete);
@@ -405,7 +408,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 							<button
 								type="button"
 								onClick={() => setEditingTitle(true)}
-								title="Rename this puzzle"
+								title={sudoku.game.renameTooltip}
 								className="truncate text-left text-lg font-bold text-white hover:text-sky-300"
 							>
 								{titleDraft}
@@ -413,10 +416,10 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 						)}
 						<p className="text-xs text-slate-400">
 							{state.difficulty
-								? `${state.difficulty[0].toUpperCase()}${state.difficulty.slice(1)}`
-								: "Imported"}
-							{state.variant === "killer" ? " · Killer" : ""}
-							{state.source === "scan" ? " · scanned" : ""}
+								? sudoku.difficulty[state.difficulty]
+								: sudoku.game.importedFallback}
+							{state.variant === "killer" ? ` · ${sudoku.variant.killer}` : ""}
+							{state.source === "scan" ? ` · ${sudoku.game.scannedLabel}` : ""}
 						</p>
 					</div>
 					<div className="flex items-center gap-2">
@@ -431,11 +434,12 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 							>
 								{status === "active" ? (
 									<>
-										<Pause className="h-4 w-4" /> Pause
+										<Pause className="h-4 w-4" /> {sudoku.game.pauseButton}
 									</>
 								) : (
 									<>
-										<Play className="h-4 w-4" /> Resume
+										<Play className="h-4 w-4" />{" "}
+										{messages.common.gameShell.resume}
 									</>
 								)}
 							</button>
@@ -445,11 +449,11 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 
 				{status === "completed" ? (
 					<div className="w-full rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-4 py-3 text-emerald-200">
-						<p className="font-bold">Solved! 🎉</p>
+						<p className="font-bold">{sudoku.game.solvedTitle}</p>
 						<p className="text-sm">
-							Completed in {formatElapsed(elapsed)}.{" "}
+							{fmt(sudoku.game.completedIn, { time: formatElapsed(elapsed) })}{" "}
 							<a href="/sudoku/new" className="underline hover:text-white">
-								Start another puzzle
+								{sudoku.game.startAnotherPuzzle}
 							</a>
 						</p>
 					</div>
@@ -474,7 +478,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 							className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-slate-950/80 text-slate-200"
 						>
 							<Play className="h-10 w-10" />
-							<span className="font-bold">Paused — tap to resume</span>
+							<span className="font-bold">{sudoku.game.pausedOverlay}</span>
 						</button>
 					) : null}
 				</div>
@@ -486,14 +490,14 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 					<div className="w-full rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
 						<div className="flex items-center justify-between gap-2">
 							<p className="font-bold">
-								{hintLevel >= 2 ? hint.title : "Hint"}
+								{hintLevel >= 2 ? hint.title : sudoku.game.hintFallbackTitle}
 							</p>
 							<button
 								type="button"
 								onClick={() => setHint(null)}
 								className="text-xs text-amber-200/80 hover:text-white"
 							>
-								Dismiss
+								{sudoku.game.dismissHint}
 							</button>
 						</div>
 						<p className="mt-1">{hintTextForLevel(hint, hintLevel)}</p>
@@ -507,7 +511,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 								}
 								className="mt-2 rounded-md border border-amber-300/50 px-2 py-1 text-xs font-semibold hover:bg-amber-400/20"
 							>
-								Tell me more
+								{sudoku.game.tellMeMore}
 							</button>
 						) : null}
 					</div>
@@ -545,27 +549,23 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 							}}
 							className="accent-sky-400"
 						/>
-						Auto-remove notes when a digit is placed
+						{sudoku.game.autoCleanupLabel}
 					</label>
 					<button
 						type="button"
 						onClick={() => {
-							if (
-								window.confirm(
-									"Restart this puzzle? Your progress is kept in undo history.",
-								)
-							) {
+							if (window.confirm(sudoku.game.restartConfirm)) {
 								dispatch({ type: "restart" });
 							}
 						}}
 						className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 px-2 py-1 font-semibold text-slate-300 hover:bg-slate-800"
 					>
-						<RotateCcw className="h-3.5 w-3.5" /> Restart
+						<RotateCcw className="h-3.5 w-3.5" />{" "}
+						{messages.common.gameShell.restart}
 					</button>
 				</div>
 				<p className="text-center text-xs text-slate-500">
-					Keyboard: 1-9 digits · Shift+digit corner note · Ctrl+digit center
-					note · Space cycles mode · Ctrl+Z/Y undo/redo · arrows move
+					{sudoku.game.keyboardHelp}
 				</p>
 			</div>
 		</div>

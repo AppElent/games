@@ -1,13 +1,7 @@
 import { Eraser, Lightbulb, Palette, Pencil, Redo2, Undo2 } from "lucide-react";
 import type { SudokuInputMode } from "#/lib/games/sudoku-board";
+import { fmt, useMessages } from "#/lib/i18n";
 import { SUDOKU_COLOR_SWATCHES } from "./SudokuBoard";
-
-const MODES: { id: SudokuInputMode; label: string }[] = [
-	{ id: "digit", label: "Digit" },
-	{ id: "corner", label: "Corner" },
-	{ id: "center", label: "Center" },
-	{ id: "color", label: "Color" },
-];
 
 export type SudokuKeypadProps = {
 	mode: SudokuInputMode;
@@ -41,6 +35,14 @@ export function SudokuKeypad({
 	digitCounts,
 	disabled = false,
 }: SudokuKeypadProps) {
+	const messages = useMessages();
+	const sudoku = messages.games.sudoku;
+	const MODES: { id: SudokuInputMode; label: string }[] = [
+		{ id: "digit", label: sudoku.keypad.modeDigit },
+		{ id: "corner", label: sudoku.keypad.modeCorner },
+		{ id: "center", label: sudoku.keypad.modeCenter },
+		{ id: "color", label: sudoku.keypad.modeColor },
+	];
 	return (
 		<div className="flex w-full max-w-[min(92vw,540px)] flex-col gap-2">
 			<div className="grid grid-cols-4 gap-1.5">
@@ -79,7 +81,9 @@ export function SudokuKeypad({
 							type="button"
 							disabled={disabled}
 							onClick={() => onColor(index + 1)}
-							aria-label={`Color ${index + 1}`}
+							aria-label={fmt(sudoku.keypad.colorAriaLabel, {
+								number: index + 1,
+							})}
 							className={`aspect-square rounded-md ${swatch} transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40`}
 						/>
 					))}
@@ -112,7 +116,7 @@ export function SudokuKeypad({
 					onClick={onUndo}
 					disabled={disabled || !canUndo}
 				>
-					<Undo2 className="h-4 w-4" /> Undo
+					<Undo2 className="h-4 w-4" /> {sudoku.keypad.undo}
 				</button>
 				<button
 					type="button"
@@ -120,7 +124,7 @@ export function SudokuKeypad({
 					onClick={onRedo}
 					disabled={disabled || !canRedo}
 				>
-					<Redo2 className="h-4 w-4" /> Redo
+					<Redo2 className="h-4 w-4" /> {sudoku.keypad.redo}
 				</button>
 				<button
 					type="button"
@@ -128,7 +132,7 @@ export function SudokuKeypad({
 					onClick={onErase}
 					disabled={disabled}
 				>
-					<Eraser className="h-4 w-4" /> Erase
+					<Eraser className="h-4 w-4" /> {sudoku.keypad.erase}
 				</button>
 				<button
 					type="button"
@@ -136,7 +140,7 @@ export function SudokuKeypad({
 					onClick={onHint}
 					disabled={disabled}
 				>
-					<Lightbulb className="h-4 w-4" /> Hint
+					<Lightbulb className="h-4 w-4" /> {sudoku.keypad.hint}
 				</button>
 			</div>
 		</div>
