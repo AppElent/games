@@ -9,8 +9,9 @@ export const backgammon = {
 		pointEmpty: "Punt {number}, leeg",
 		pointOccupied: "Punt {number}, {count} {color} {checkerWord}",
 		checkerWord: { one: "schijf", other: "schijven" },
-		colorWhite: "wit",
-		colorBlack: "zwart",
+		// Attributive form (modifies checkerWord) — not "wit"/"zwart", see localPlay's predicative pair below.
+		colorWhite: "witte",
+		colorBlack: "zwarte",
 		whiteToMove: "Wit is aan zet",
 		blackToMove: "Zwart is aan zet",
 		rollHint: "— gooi de dobbelstenen —",
