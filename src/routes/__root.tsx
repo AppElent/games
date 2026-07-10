@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import "#/lib/router-static-data";
-import { LocaleProvider, readClientLocale } from "#/lib/i18n";
+import { type Locale, LocaleProvider, readClientLocale } from "#/lib/i18n";
 import { LanguageSync } from "#/lib/i18n/LanguageSync";
 import { getSsrLocale } from "#/lib/i18n/server";
 import Footer from "../components/Footer";
@@ -56,11 +56,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			},
 		],
 	}),
-	loader: () => {
+	loader: async (): Promise<{ locale: Locale }> => {
 		if (typeof document !== "undefined") {
 			return { locale: readClientLocale() };
 		}
-		return getSsrLocale();
+		const { locale } = await getSsrLocale();
+		return { locale: locale as Locale };
 	},
 	shellComponent: RootDocument,
 });
