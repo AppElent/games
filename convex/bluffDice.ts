@@ -13,6 +13,7 @@ import {
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { completeSession, reopenSession } from "./lib/completion";
 
 async function getState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
 	const session = await ctx.db.get(sessionId);
@@ -35,7 +36,11 @@ async function requireParticipant(
 	participantId: Id<"sessionParticipants">,
 ) {
 	const participant = await ctx.db.get(participantId);
-	if (!participant || participant.sessionId !== sessionId) {
+	if (
+		!participant ||
+		participant.sessionId !== sessionId ||
+		participant.kickedAt
+	) {
 		throw new ConvexError("You are not part of this game");
 	}
 	return participant;
@@ -233,9 +238,9 @@ export const challenge = mutation({
 			updatedAt: now,
 		});
 		if (winnerIndex !== undefined) {
-			await ctx.db.patch(args.sessionId, {
-				status: "completed",
+			await completeSession(ctx, args.sessionId, {
 				endedAt: now,
+				winnerParticipantIds: [state.turnOrder[winnerIndex]],
 			});
 		}
 	},
@@ -268,7 +273,7 @@ export const rematch = mutation({
 			winnerParticipantId: undefined,
 			updatedAt: now,
 		});
-		await ctx.db.patch(args.sessionId, { status: "active", endedAt: undefined });
+		await reopenSession(ctx, args.sessionId);
 	},
 });
 

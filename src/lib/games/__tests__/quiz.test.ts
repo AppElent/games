@@ -3,6 +3,7 @@ import {
 	calculateAnswerScore,
 	getNextQuizPhase,
 	isCorrectAnswer,
+	parseQuizQuestionsTsv,
 	summarizeScores,
 } from "../quiz";
 
@@ -54,5 +55,55 @@ describe("quiz logic", () => {
 		expect(getNextQuizPhase("reveal")).toBe("scoreboard");
 		expect(getNextQuizPhase("scoreboard")).toBe("question");
 		expect(getNextQuizPhase("finished")).toBe("finished");
+	});
+
+	it("parses pasted TSV rows into questions", () => {
+		const { questions, errors } = parseQuizQuestionsTsv(
+			[
+				"What is 2+2?\t3\t4\t5\t22\t2",
+				"Pick primes\t2\t4\t7\t9\t1,3\t30\t500",
+				"True or false: the sky is blue\tTrue\tFalse\t1",
+			].join("\n"),
+		);
+		expect(errors).toEqual([]);
+		expect(questions).toHaveLength(3);
+		expect(questions[0]).toMatchObject({
+			prompt: "What is 2+2?",
+			correctChoiceIds: ["b"],
+			durationSeconds: 20,
+			points: 1000,
+		});
+		expect(questions[0].choices.map((choice) => choice.label)).toEqual([
+			"3",
+			"4",
+			"5",
+			"22",
+		]);
+		expect(questions[1]).toMatchObject({
+			correctChoiceIds: ["a", "c"],
+			durationSeconds: 30,
+			points: 500,
+		});
+		expect(questions[2].choices).toHaveLength(2);
+		expect(questions[2].correctChoiceIds).toEqual(["a"]);
+	});
+
+	it("reports row-level errors for bad TSV input", () => {
+		const { questions, errors } = parseQuizQuestionsTsv(
+			["\t3\t4\t1", "Only one choice\tA\t1", "No correct\tA\tB\tC\tD"].join(
+				"\n",
+			),
+		);
+		expect(questions).toEqual([]);
+		expect(errors).toHaveLength(3);
+		expect(errors[0]).toContain("Row 1");
+		expect(errors[1]).toContain("two choices");
+		expect(errors[2]).toContain("correct column");
+	});
+
+	it("skips blank lines when parsing TSV", () => {
+		const { questions, errors } = parseQuizQuestionsTsv("\nQ?\tA\tB\t1\n\n");
+		expect(errors).toEqual([]);
+		expect(questions).toHaveLength(1);
 	});
 });

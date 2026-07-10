@@ -15,10 +15,12 @@ import type * as connectFour from "../connectFour.js";
 import type * as hitster from "../hitster.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_codes from "../lib/codes.js";
+import type * as lib_completion from "../lib/completion.js";
 import type * as quiz from "../quiz.js";
 import type * as sessions from "../sessions.js";
 import type * as signalWords from "../signalWords.js";
 import type * as sudoku from "../sudoku.js";
+import type * as workbench from "../workbench.js";
 
 import type {
   ApiFromModules,
@@ -34,10 +36,12 @@ declare const fullApi: ApiFromModules<{
   hitster: typeof hitster;
   "lib/auth": typeof lib_auth;
   "lib/codes": typeof lib_codes;
+  "lib/completion": typeof lib_completion;
   quiz: typeof quiz;
   sessions: typeof sessions;
   signalWords: typeof signalWords;
   sudoku: typeof sudoku;
+  workbench: typeof workbench;
 }>;
 
 /**

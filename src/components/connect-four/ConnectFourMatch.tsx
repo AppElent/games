@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { FitScale } from "#/components/games/FitScale";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
@@ -15,6 +16,7 @@ import {
 	isColumnFull,
 } from "#/lib/games/connect-four";
 import { getUserErrorMessage } from "#/lib/games/errors";
+import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -51,6 +53,8 @@ export function ConnectFourMatch({
 	bundle: Bundle;
 	shareUrl: string;
 }) {
+	const messages = useMessages();
+	const connectFour = messages.games.connectFour;
 	const drop = useMutation(api.connectFour.drop);
 	const resign = useMutation(api.connectFour.resign);
 	const rematch = useMutation(api.connectFour.rematch);
@@ -69,7 +73,7 @@ export function ConnectFourMatch({
 		return (
 			<FullscreenGameShell title={bundle.session.title}>
 				<div className="flex h-full items-center justify-center text-slate-300">
-					Board is loading...
+					{connectFour.game.boardLoading}
 				</div>
 			</FullscreenGameShell>
 		);
@@ -99,13 +103,29 @@ export function ConnectFourMatch({
 
 	const statusLabel = finished
 		? state.resultOutcome === "draw"
-			? "Draw — the board is full"
-			: `${state.resultWinner === "red" ? (red?.displayName ?? "Red") : (yellow?.displayName ?? "Yellow")} wins${state.resultOutcome === "resignation" ? " by resignation" : ""}!`
+			? connectFour.status.draw
+			: fmt(
+					state.resultOutcome === "resignation"
+						? connectFour.status.winsByResignation
+						: connectFour.status.wins,
+					{
+						name:
+							state.resultWinner === "red"
+								? (red?.displayName ?? connectFour.status.winnerFallbackRed)
+								: (yellow?.displayName ??
+									connectFour.status.winnerFallbackYellow),
+					},
+				)
 		: !opponentJoined
-			? "Share the link with one opponent to claim the yellow seat."
+			? connectFour.status.waitingForOpponent
 			: myTurn
-				? "Your move — pick a column."
-				: `Waiting for ${state.activeColor === "red" ? (red?.displayName ?? "red") : (yellow?.displayName ?? "yellow")}.`;
+				? connectFour.status.yourMove
+				: fmt(connectFour.status.waitingFor, {
+						name:
+							state.activeColor === "red"
+								? (red?.displayName ?? connectFour.players.red)
+								: (yellow?.displayName ?? connectFour.players.yellow),
+					});
 
 	async function run(action: () => Promise<unknown>, fallback: string) {
 		setError("");
@@ -132,7 +152,7 @@ export function ConnectFourMatch({
 					participantId: participantId as Id<"sessionParticipants">,
 					column,
 				}),
-			"Could not drop",
+			connectFour.actions.dropError,
 		);
 	}
 
@@ -140,13 +160,17 @@ export function ConnectFourMatch({
 		<div className="grid gap-3 md:grid-cols-2">
 			<DiscCard
 				color="red"
-				name={red?.displayName ?? "Open seat"}
+				label={connectFour.players.red}
+				turnLabel={connectFour.players.turnBadge}
+				name={red?.displayName ?? connectFour.players.openSeat}
 				active={!finished && opponentJoined && state.activeColor === "red"}
 				open={!red}
 			/>
 			<DiscCard
 				color="yellow"
-				name={yellow?.displayName ?? "Open seat"}
+				label={connectFour.players.yellow}
+				turnLabel={connectFour.players.turnBadge}
+				name={yellow?.displayName ?? connectFour.players.openSeat}
 				active={!finished && opponentJoined && state.activeColor === "yellow"}
 				open={!yellow}
 			/>
@@ -164,7 +188,9 @@ export function ConnectFourMatch({
 								// biome-ignore lint/suspicious/noArrayIndexKey: fixed grid
 								key={`${row}-${col}`}
 								type="button"
-								aria-label={`Drop in column ${col + 1}`}
+								aria-label={fmt(connectFour.game.dropInColumn, {
+									column: col + 1,
+								})}
 								disabled={!myTurn || isColumnFull(state.board, col)}
 								onClick={() => handleDrop(col)}
 								className="flex aspect-square items-center justify-center rounded-full bg-black/40"
@@ -178,7 +204,7 @@ export function ConnectFourMatch({
 										}`}
 									/>
 								) : (
-									<span className="sr-only">empty</span>
+									<span className="sr-only">{connectFour.game.emptyCell}</span>
 								)}
 							</button>
 						);
@@ -201,33 +227,37 @@ export function ConnectFourMatch({
 									sessionId: bundle.session._id,
 									participantId: participantId as Id<"sessionParticipants">,
 								}),
-							"Could not resign",
+							connectFour.actions.resignError,
 						)
 					}
 				>
-					Resign
-				</button>
-			) : null}
-			{finished && localColor ? (
-				<button
-					type="button"
-					className="rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
-					onClick={() =>
-						run(
-							() =>
-								rematch({
-									sessionId: bundle.session._id,
-									participantId: participantId as Id<"sessionParticipants">,
-								}),
-							"Could not start rematch",
-						)
-					}
-				>
-					Rematch (colors swap)
+					{connectFour.actions.resign}
 				</button>
 			) : null}
 		</div>
 	);
+
+	const endScreen = finished ? (
+		<GameEndScreen
+			heading={statusLabel}
+			shareText={fmt(connectFour.endScreen.shareText, { status: statusLabel })}
+			onRematch={
+				localColor
+					? () =>
+							run(
+								() =>
+									rematch({
+										sessionId: bundle.session._id,
+										participantId: participantId as Id<"sessionParticipants">,
+									}),
+								connectFour.endScreen.rematchError,
+							)
+					: undefined
+			}
+			rematchLabel={connectFour.endScreen.rematchLabel}
+			newGameRoute="/connect-four/new"
+		/>
+	) : null;
 
 	// Pre-game: waiting for the second seat — scrollable share screen.
 	if (!opponentJoined) {
@@ -236,7 +266,9 @@ export function ConnectFourMatch({
 				title={bundle.session.title}
 				maxWidthClassName="max-w-md"
 			>
-				<p className="club-kicker mb-2">Connect Four</p>
+				<p className="club-kicker mb-2">
+					{messages.catalog["connect-four"].title}
+				</p>
 				<h1 className="club-title mb-4 text-3xl font-bold text-white">
 					{bundle.session.title}
 				</h1>
@@ -244,7 +276,10 @@ export function ConnectFourMatch({
 					<SeatBanner tone="warning" label={statusLabel} />
 					{discCards}
 					{error ? <p className="text-sm text-orange-200">{error}</p> : null}
-					<QrSharePanel label="Challenge link" url={shareUrl} />
+					<QrSharePanel
+						label={connectFour.share.challengeLinkLabel}
+						url={shareUrl}
+					/>
 					<ParticipantList participants={bundle.participants} />
 				</div>
 			</FullscreenGamePage>
@@ -264,7 +299,7 @@ export function ConnectFourMatch({
 						onClick={() => setShowInfo((open) => !open)}
 						className="flex h-11 items-center rounded-xl border border-white/20 bg-slate-900/70 px-4 text-sm font-bold text-white backdrop-blur"
 					>
-						Info
+						{connectFour.info.button}
 					</button>
 				</div>
 			}
@@ -282,6 +317,9 @@ export function ConnectFourMatch({
 					{statusLabel}
 				</p>
 				<div className="px-2 pb-2">{actionRow}</div>
+				{endScreen ? (
+					<div className="mx-auto w-full max-w-md px-2 pb-3">{endScreen}</div>
+				) : null}
 			</div>
 			{showInfo ? (
 				<div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm">
@@ -289,14 +327,17 @@ export function ConnectFourMatch({
 						<div className="mx-auto max-w-md space-y-4">
 							<SeatBanner tone="success" label={statusLabel} />
 							{discCards}
-							<QrSharePanel label="Challenge link" url={shareUrl} />
+							<QrSharePanel
+								label={connectFour.share.challengeLinkLabel}
+								url={shareUrl}
+							/>
 							<ParticipantList participants={bundle.participants} />
 							<button
 								type="button"
 								onClick={() => setShowInfo(false)}
 								className="w-full min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
 							>
-								Close
+								{messages.common.actions.close}
 							</button>
 						</div>
 					</div>
@@ -308,11 +349,15 @@ export function ConnectFourMatch({
 
 function DiscCard({
 	color,
+	label,
+	turnLabel,
 	name,
 	active = false,
 	open = false,
 }: {
 	color: ConnectFourColor;
+	label: string;
+	turnLabel: string;
 	name: string;
 	active?: boolean;
 	open?: boolean;
@@ -334,11 +379,11 @@ function DiscCard({
 							color === "red" ? "bg-red-500" : "bg-yellow-400"
 						}`}
 					/>
-					{color}
+					{label}
 				</p>
 				{active ? (
 					<span className="rounded-full bg-cyan-300/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-100">
-						Turn
+						{turnLabel}
 					</span>
 				) : null}
 			</div>

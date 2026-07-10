@@ -20,6 +20,7 @@ import {
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { completeSession } from "./lib/completion";
 import { hitsterModeValidator, hitsterPlaybackModeValidator } from "./schema";
 
 type Ctx = MutationCtx | QueryCtx;
@@ -42,7 +43,11 @@ async function requireParticipant(
 	participantId: Id<"sessionParticipants">,
 ) {
 	const participant = await ctx.db.get(participantId);
-	if (!participant || participant.sessionId !== sessionId) {
+	if (
+		!participant ||
+		participant.sessionId !== sessionId ||
+		participant.kickedAt
+	) {
 		throw new ConvexError("You are not part of this game");
 	}
 	return participant;
@@ -498,7 +503,10 @@ export const reveal = mutation({
 			updatedAt: now,
 		});
 		if (phase === "finished") {
-			await ctx.db.patch(args.sessionId, { status: "completed", endedAt: now });
+			await completeSession(ctx, args.sessionId, {
+				endedAt: now,
+				winnerParticipantIds: winnerParticipantId ? [winnerParticipantId] : [],
+			});
 		}
 	},
 });
@@ -534,7 +542,12 @@ export const nextRound = mutation({
 				coopResult: config.shared ? "lost" : undefined,
 				updatedAt: now,
 			});
-			await ctx.db.patch(args.sessionId, { status: "completed", endedAt: now });
+			await completeSession(ctx, args.sessionId, {
+				endedAt: now,
+				winnerParticipantIds: leader?.participantId
+					? [leader.participantId]
+					: [],
+			});
 			return;
 		}
 		await ctx.db.patch(state._id, {

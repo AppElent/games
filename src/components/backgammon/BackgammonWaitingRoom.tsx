@@ -8,6 +8,7 @@ import {
 import { FitScale, RotateHint } from "#/components/games/FitScale";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
@@ -22,6 +23,7 @@ import {
 	computeUsedFlags,
 } from "#/lib/games/backgammon";
 import { getUserErrorMessage } from "#/lib/games/errors";
+import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { BackgammonMoveLog } from "./BackgammonMoveLog";
@@ -71,9 +73,12 @@ export function BackgammonWaitingRoom({
 	bundle: Bundle;
 	shareUrl: string;
 }) {
+	const messages = useMessages();
+	const backgammon = messages.games.backgammon;
 	const rollDice = useMutation(api.backgammon.rollDice);
 	const applyMove = useMutation(api.backgammon.applyMove);
 	const endTurn = useMutation(api.backgammon.endTurn);
+	const rematch = useMutation(api.backgammon.rematch);
 	const [participantId, setParticipantId] = useState<string>();
 	const [error, setError] = useState("");
 	const [showInfo, setShowInfo] = useState(false);
@@ -127,7 +132,7 @@ export function BackgammonWaitingRoom({
 
 	async function handleRoll() {
 		if (!participantId) {
-			setError("Join this challenge before rolling");
+			setError(backgammon.waitingRoom.joinBeforeRolling);
 			return;
 		}
 		setError("");
@@ -137,7 +142,7 @@ export function BackgammonWaitingRoom({
 				participantId: participantId as Id<"sessionParticipants">,
 			});
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "Could not roll dice"));
+			setError(getUserErrorMessage(caught, backgammon.waitingRoom.rollError));
 		}
 	}
 
@@ -164,13 +169,13 @@ export function BackgammonWaitingRoom({
 				});
 			}
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "Could not move"));
+			setError(getUserErrorMessage(caught, backgammon.waitingRoom.moveError));
 		}
 	}
 
 	async function handleEndTurn() {
 		if (!participantId) {
-			setError("Join this challenge before ending a turn");
+			setError(backgammon.waitingRoom.joinBeforeEndingTurn);
 			return;
 		}
 		setError("");
@@ -180,7 +185,9 @@ export function BackgammonWaitingRoom({
 				participantId: participantId as Id<"sessionParticipants">,
 			});
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "Could not end turn"));
+			setError(
+				getUserErrorMessage(caught, backgammon.waitingRoom.endTurnError),
+			);
 		}
 	}
 
@@ -191,21 +198,29 @@ export function BackgammonWaitingRoom({
 	const seatCards = (
 		<div className="grid gap-3 md:grid-cols-2">
 			<SeatCard
-				label="White"
-				name={white?.displayName ?? "Host"}
+				label={backgammon.waitingRoom.seatWhite}
+				turnLabel={backgammon.waitingRoom.turnBadge}
+				name={white?.displayName ?? messages.common.session.host}
 				counts={
 					bundle.state
-						? `Bar ${bundle.state.bar.white} / Off ${bundle.state.off.white}`
+						? fmt(backgammon.waitingRoom.seatCounts, {
+								bar: bundle.state.bar.white,
+								off: bundle.state.off.white,
+							})
 						: undefined
 				}
 				active={!finished && bundle.state?.activeColor === "white"}
 			/>
 			<SeatCard
-				label="Black"
-				name={black?.displayName ?? "Open seat"}
+				label={backgammon.waitingRoom.seatBlack}
+				turnLabel={backgammon.waitingRoom.turnBadge}
+				name={black?.displayName ?? backgammon.waitingRoom.openSeat}
 				counts={
 					bundle.state
-						? `Bar ${bundle.state.bar.black} / Off ${bundle.state.off.black}`
+						? fmt(backgammon.waitingRoom.seatCounts, {
+								bar: bundle.state.bar.black,
+								off: bundle.state.off.black,
+							})
 						: undefined
 				}
 				active={!finished && bundle.state?.activeColor === "black"}
@@ -222,18 +237,21 @@ export function BackgammonWaitingRoom({
 				title={bundle.session.title}
 				maxWidthClassName="max-w-md"
 			>
-				<p className="club-kicker mb-2">Backgammon</p>
+				<p className="club-kicker mb-2">{messages.catalog.backgammon.title}</p>
 				<h1 className="club-title mb-4 text-3xl font-bold text-white">
 					{bundle.session.title}
 				</h1>
 				<div className="space-y-4">
 					<SeatBanner
 						tone="warning"
-						label="Share the link with one opponent to claim the black seat."
+						label={backgammon.waitingRoom.shareToClaimBlackSeat}
 					/>
 					{seatCards}
 					{error ? <p className="text-sm text-orange-200">{error}</p> : null}
-					<QrSharePanel label="Challenge link" url={shareUrl} />
+					<QrSharePanel
+						label={backgammon.waitingRoom.challengeLinkLabel}
+						url={shareUrl}
+					/>
 					<ParticipantList participants={bundle.participants} />
 				</div>
 			</FullscreenGamePage>
@@ -255,7 +273,7 @@ export function BackgammonWaitingRoom({
 						onClick={() => setShowInfo((open) => !open)}
 						className="flex h-11 items-center rounded-xl border border-white/20 bg-slate-900/70 px-4 text-sm font-bold text-white backdrop-blur"
 					>
-						Info
+						{backgammon.waitingRoom.infoButton}
 					</button>
 				</div>
 			}
@@ -276,16 +294,75 @@ export function BackgammonWaitingRoom({
 							onEndTurn={handleEndTurn}
 							statusOverride={
 								finished
-									? `${winner?.displayName ?? "Winner"} has borne off all 15 checkers`
+									? fmt(backgammon.waitingRoom.finishedStatus, {
+											name:
+												winner?.displayName ??
+												backgammon.waitingRoom.winnerFallback,
+										})
 									: myTurn
 										? undefined
-										: `Waiting for ${bundle.state?.activeColor === "white" ? (white?.displayName ?? "white") : (black?.displayName ?? "black")} to play`
+										: fmt(backgammon.waitingRoom.waitingForPlayerToPlay, {
+												name:
+													bundle.state?.activeColor === "white"
+														? (white?.displayName ??
+															backgammon.board.colorWhite)
+														: (black?.displayName ??
+															backgammon.board.colorBlack),
+											})
 							}
 						/>
 					</FitScale>
 				</div>
 				<RotateHint />
 			</div>
+			{finished && !showInfo ? (
+				<div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm">
+					<div className="h-full touch-pan-y overflow-y-auto overscroll-contain p-4 pt-16">
+						<div className="mx-auto max-w-md">
+							<GameEndScreen
+								heading={fmt(backgammon.waitingRoom.winsTheMatch, {
+									name:
+										winner?.displayName ??
+										backgammon.waitingRoom.someoneFallback,
+								})}
+								subtitle={
+									localColor
+										? winner &&
+											bundle.state?.winnerParticipantId === participantId
+											? backgammon.waitingRoom.subtitleWon
+											: backgammon.waitingRoom.subtitleLost
+										: undefined
+								}
+								shareText={fmt(backgammon.waitingRoom.shareText, {
+									name:
+										winner?.displayName ??
+										backgammon.waitingRoom.someoneFallbackLower,
+								})}
+								onRematch={
+									localColor
+										? () => {
+												void rematch({
+													sessionId: bundle.session._id,
+													participantId:
+														participantId as Id<"sessionParticipants">,
+												}).catch((caught) =>
+													setError(
+														getUserErrorMessage(
+															caught,
+															backgammon.waitingRoom.rematchError,
+														),
+													),
+												);
+											}
+										: undefined
+								}
+								rematchLabel={backgammon.waitingRoom.rematchLabel}
+								newGameRoute="/backgammon/new"
+							/>
+						</div>
+					</div>
+				</div>
+			) : null}
 			{showInfo ? (
 				<div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm">
 					<div className="h-full touch-pan-y overflow-y-auto overscroll-contain p-4 pt-16">
@@ -294,14 +371,26 @@ export function BackgammonWaitingRoom({
 								tone="success"
 								label={
 									finished
-										? `${winner?.displayName ?? "Someone"} wins the match!`
+										? fmt(backgammon.waitingRoom.winsTheMatch, {
+												name:
+													winner?.displayName ??
+													backgammon.waitingRoom.someoneFallback,
+											})
 										: localColor
-											? `You are playing ${localColor}.`
-											: "Both seats are claimed — you are watching."
+											? fmt(backgammon.waitingRoom.youArePlaying, {
+													color:
+														localColor === "white"
+															? backgammon.board.colorWhite
+															: backgammon.board.colorBlack,
+												})
+											: backgammon.waitingRoom.bothSeatsClaimed
 								}
 							/>
 							{seatCards}
-							<QrSharePanel label="Challenge link" url={shareUrl} />
+							<QrSharePanel
+								label={backgammon.waitingRoom.challengeLinkLabel}
+								url={shareUrl}
+							/>
 							<ParticipantList participants={bundle.participants} />
 							<BackgammonMoveLog moves={bundle.moves} />
 							<button
@@ -309,7 +398,7 @@ export function BackgammonWaitingRoom({
 								onClick={() => setShowInfo(false)}
 								className="w-full min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
 							>
-								Close
+								{messages.common.actions.close}
 							</button>
 						</div>
 					</div>
@@ -321,12 +410,14 @@ export function BackgammonWaitingRoom({
 
 function SeatCard({
 	label,
+	turnLabel,
 	name,
 	counts,
 	active = false,
 	open = false,
 }: {
 	label: string;
+	turnLabel: string;
 	name: string;
 	counts?: string;
 	active?: boolean;
@@ -348,7 +439,7 @@ function SeatCard({
 				</p>
 				{active ? (
 					<span className="rounded-full bg-cyan-300/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-100">
-						Turn
+						{turnLabel}
 					</span>
 				) : null}
 			</div>

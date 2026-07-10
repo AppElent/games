@@ -11,6 +11,7 @@ import { SIGNAL_WORDS_DEFAULT_PACK } from "../src/lib/games/signal-words-packs";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { completeSession, reopenSession } from "./lib/completion";
 import { signalTeamValidator } from "./schema";
 
 async function getState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
@@ -34,7 +35,11 @@ async function requireParticipant(
 	participantId: Id<"sessionParticipants">,
 ) {
 	const participant = await ctx.db.get(participantId);
-	if (!participant || participant.sessionId !== sessionId) {
+	if (
+		!participant ||
+		participant.sessionId !== sessionId ||
+		participant.kickedAt
+	) {
 		throw new ConvexError("You are not part of this game");
 	}
 	return participant;
@@ -78,7 +83,19 @@ async function patchGameState(
 		updatedAt: now,
 	});
 	if (next.phase === "finished") {
-		await ctx.db.patch(state.sessionId, { status: "completed", endedAt: now });
+		const participants = await ctx.db
+			.query("sessionParticipants")
+			.withIndex("by_session", (q) => q.eq("sessionId", state.sessionId))
+			.collect();
+		const winners = next.winnerTeam
+			? participants
+					.filter((participant) => participant.seat?.startsWith(next.winnerTeam as string))
+					.map((participant) => participant._id)
+			: [];
+		await completeSession(ctx, state.sessionId, {
+			endedAt: now,
+			winnerParticipantIds: winners,
+		});
 	}
 }
 
@@ -322,7 +339,7 @@ export const rematch = mutation({
 			trapHitBy: undefined,
 			updatedAt: now,
 		});
-		await ctx.db.patch(args.sessionId, { status: "active", endedAt: undefined });
+		await reopenSession(ctx, args.sessionId);
 	},
 });
 

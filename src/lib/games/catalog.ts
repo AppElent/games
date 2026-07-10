@@ -41,6 +41,11 @@ export type GameCatalogItem = {
 	readonly primaryAction: string;
 	readonly route: string;
 	readonly stats: string;
+	readonly minPlayers: number;
+	readonly maxPlayers: number;
+	readonly supportsGuests: boolean;
+	readonly supportsRematch: boolean;
+	readonly supportsSpectators: boolean;
 };
 
 const GAME_CATALOG_ITEMS = [
@@ -58,6 +63,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Host quiz",
 		route: "/quiz/new",
 		stats: "Room code",
+		minPlayers: 2,
+		maxPlayers: 50,
+		supportsGuests: true,
+		supportsRematch: true,
+		supportsSpectators: true,
 	},
 	{
 		type: "backgammon",
@@ -73,6 +83,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Start match",
 		route: "/backgammon/new",
 		stats: "Share link",
+		minPlayers: 2,
+		maxPlayers: 2,
+		supportsGuests: true,
+		supportsRematch: true,
+		supportsSpectators: true,
 	},
 	{
 		type: "sudoku",
@@ -88,6 +103,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Play sudoku",
 		route: "/sudoku/new",
 		stats: "Solo",
+		minPlayers: 1,
+		maxPlayers: 1,
+		supportsGuests: true,
+		supportsRematch: false,
+		supportsSpectators: false,
 	},
 	{
 		type: "chess",
@@ -102,6 +122,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Start match",
 		route: "/chess/new",
 		stats: "2 players",
+		minPlayers: 2,
+		maxPlayers: 2,
+		supportsGuests: true,
+		supportsRematch: true,
+		supportsSpectators: true,
 	},
 	{
 		type: "hitster",
@@ -117,6 +142,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Host room",
 		route: "/hitster/new",
 		stats: "Room code",
+		minPlayers: 2,
+		maxPlayers: 10,
+		supportsGuests: true,
+		supportsRematch: true,
+		supportsSpectators: true,
 	},
 	{
 		type: "word-links",
@@ -132,6 +162,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Play daily",
 		route: "/word-links",
 		stats: "Daily",
+		minPlayers: 1,
+		maxPlayers: 1,
+		supportsGuests: true,
+		supportsRematch: false,
+		supportsSpectators: false,
 	},
 	{
 		type: "connect-four",
@@ -147,6 +182,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Start game",
 		route: "/connect-four/new",
 		stats: "2 players",
+		minPlayers: 2,
+		maxPlayers: 2,
+		supportsGuests: true,
+		supportsRematch: true,
+		supportsSpectators: true,
 	},
 	{
 		type: "signal-words",
@@ -162,6 +202,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Host room",
 		route: "/signal-words/new",
 		stats: "Room code",
+		minPlayers: 4,
+		maxPlayers: 12,
+		supportsGuests: true,
+		supportsRematch: true,
+		supportsSpectators: true,
 	},
 	{
 		type: "bluff-dice",
@@ -177,6 +222,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Host table",
 		route: "/bluff-dice/new",
 		stats: "2-8 players",
+		minPlayers: 2,
+		maxPlayers: 8,
+		supportsGuests: true,
+		supportsRematch: true,
+		supportsSpectators: true,
 	},
 	{
 		type: "squad-surge",
@@ -192,6 +242,11 @@ const GAME_CATALOG_ITEMS = [
 		primaryAction: "Deploy squad",
 		route: "/squad-surge",
 		stats: "Solo",
+		minPlayers: 1,
+		maxPlayers: 1,
+		supportsGuests: true,
+		supportsRematch: false,
+		supportsSpectators: false,
 	},
 ] satisfies readonly GameCatalogItem[];
 

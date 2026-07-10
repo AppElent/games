@@ -87,6 +87,12 @@ export const sessionStatusValidator = v.union(
 	v.literal("cancelled"),
 );
 
+export const completedReasonValidator = v.union(
+	v.literal("finished"),
+	v.literal("cancelled"),
+	v.literal("abandoned"),
+);
+
 export const participantRoleValidator = v.union(
 	v.literal("host"),
 	v.literal("player"),
@@ -281,6 +287,11 @@ export default defineSchema({
 		),
 		startedAt: v.optional(v.number()),
 		endedAt: v.optional(v.number()),
+		completedReason: v.optional(completedReasonValidator),
+		participantCount: v.optional(v.number()),
+		winnerParticipantIds: v.optional(v.array(v.id("sessionParticipants"))),
+		rematchOfSessionId: v.optional(v.id("gameSessions")),
+		locked: v.optional(v.boolean()),
 	})
 		.index("by_joinCode", ["joinCode"])
 		.index("by_shareToken", ["shareToken"])
@@ -296,11 +307,34 @@ export default defineSchema({
 		seat: v.optional(v.string()),
 		connected: v.boolean(),
 		lastSeen: v.number(),
+		kickedAt: v.optional(v.number()),
 	})
 		.index("by_session", ["sessionId"])
 		.index("by_session_seat", ["sessionId", "seat"])
 		.index("by_user", ["userId"])
 		.index("by_guest", ["guestId"]),
+
+	contentDrafts: defineTable({
+		ownerUserId: v.string(),
+		gameType: gameTypeValidator,
+		kind: v.union(
+			v.literal("word-links-puzzle"),
+			v.literal("signal-words-pack"),
+			v.literal("quiz-set"),
+		),
+		title: v.string(),
+		// JSON-encoded draft payload; validated before approval.
+		payload: v.string(),
+		status: v.union(
+			v.literal("draft"),
+			v.literal("approved"),
+			v.literal("rejected"),
+		),
+		validationErrors: v.array(v.string()),
+		reviewedAt: v.optional(v.number()),
+	})
+		.index("by_owner", ["ownerUserId"])
+		.index("by_status", ["status"]),
 
 	quizSets: defineTable({
 		ownerUserId: v.optional(v.string()),

@@ -13,6 +13,7 @@ import {
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { completeSession, reopenSession } from "./lib/completion";
 
 async function getBackgammonState(
 	ctx: MutationCtx,
@@ -176,9 +177,9 @@ export const applyMove = mutation({
 				: {}),
 		});
 		if (winner) {
-			await ctx.db.patch(args.sessionId, {
-				status: "completed",
+			await completeSession(ctx, args.sessionId, {
 				endedAt: now,
+				winnerParticipantIds: [args.participantId],
 			});
 		}
 		await ctx.db.insert("backgammonMoves", {
@@ -220,6 +221,50 @@ export const endTurn = mutation({
 			dice: [],
 			createdAt: now,
 		});
+	},
+});
+
+export const rematch = mutation({
+	args: {
+		sessionId: v.id("gameSessions"),
+		participantId: v.id("sessionParticipants"),
+	},
+	handler: async (ctx, args) => {
+		const state = await getBackgammonState(ctx, args.sessionId);
+		if (state.phase !== "finished") {
+			throw new ConvexError("The current game is not finished");
+		}
+		const isSeated =
+			state.whiteParticipantId === args.participantId ||
+			state.blackParticipantId === args.participantId;
+		if (!isSeated) {
+			throw new ConvexError("Only players can start a rematch");
+		}
+		const now = Date.now();
+		// Swap colors for the rematch.
+		const white = state.blackParticipantId;
+		const black = state.whiteParticipantId;
+		if (white) {
+			await ctx.db.patch(white, { seat: "white" });
+		}
+		if (black) {
+			await ctx.db.patch(black, { seat: "black" });
+		}
+		const initialState = createInitialBackgammonState();
+		await ctx.db.patch(state._id, {
+			phase: "ready",
+			whiteParticipantId: white,
+			blackParticipantId: black,
+			activeColor: initialState.activeColor,
+			points: initialState.points,
+			bar: initialState.bar,
+			off: initialState.off,
+			dice: initialState.dice,
+			usedDice: [],
+			winnerParticipantId: undefined,
+			updatedAt: now,
+		});
+		await reopenSession(ctx, args.sessionId);
 	},
 });
 

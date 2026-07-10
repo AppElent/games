@@ -9,6 +9,7 @@ import {
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { completeSession, reopenSession } from "./lib/completion";
 
 async function getState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
 	const session = await ctx.db.get(sessionId);
@@ -45,19 +46,23 @@ async function finishGame(
 	winner: ConnectFourColor | undefined,
 	now: number,
 ) {
+	const winnerParticipantId =
+		winner === "red"
+			? state.redParticipantId
+			: winner === "yellow"
+				? state.yellowParticipantId
+				: undefined;
 	await ctx.db.patch(state._id, {
 		phase: "finished",
 		resultOutcome: outcome,
 		resultWinner: winner,
-		winnerParticipantId:
-			winner === "red"
-				? state.redParticipantId
-				: winner === "yellow"
-					? state.yellowParticipantId
-					: undefined,
+		winnerParticipantId,
 		updatedAt: now,
 	});
-	await ctx.db.patch(state.sessionId, { status: "completed", endedAt: now });
+	await completeSession(ctx, state.sessionId, {
+		endedAt: now,
+		winnerParticipantIds: winnerParticipantId ? [winnerParticipantId] : [],
+	});
 }
 
 export const createState = mutation({
@@ -196,10 +201,7 @@ export const rematch = mutation({
 			winnerParticipantId: undefined,
 			updatedAt: now,
 		});
-		await ctx.db.patch(args.sessionId, {
-			status: "active",
-			endedAt: undefined,
-		});
+		await reopenSession(ctx, args.sessionId);
 	},
 });
 

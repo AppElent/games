@@ -11,6 +11,7 @@ import {
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { completeSession, reopenSession } from "./lib/completion";
 import { chessTimeControlValidator } from "./schema";
 
 async function getChessState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
@@ -77,7 +78,10 @@ async function finishGame(
 		drawOfferBy: undefined,
 		updatedAt: now,
 	});
-	await ctx.db.patch(state.sessionId, { status: "completed", endedAt: now });
+	await completeSession(ctx, state.sessionId, {
+		endedAt: now,
+		winnerParticipantIds: winnerParticipantId ? [winnerParticipantId] : [],
+	});
 }
 
 export const createState = mutation({
@@ -358,10 +362,7 @@ export const rematch = mutation({
 			winnerParticipantId: undefined,
 			updatedAt: now,
 		});
-		await ctx.db.patch(args.sessionId, {
-			status: "active",
-			endedAt: undefined,
-		});
+		await reopenSession(ctx, args.sessionId);
 	},
 });
 

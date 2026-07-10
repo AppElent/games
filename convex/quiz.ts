@@ -1,6 +1,8 @@
 import { ConvexError, v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
+import { completeSession } from "./lib/completion";
 import { quizQuestionValidator } from "./schema";
 
 const SAMPLE_QUESTIONS = [
@@ -115,6 +117,57 @@ export const createSet = mutation({
 	},
 });
 
+export const updateSet = mutation({
+	args: {
+		quizSetId: v.id("quizSets"),
+		title: v.string(),
+		description: v.optional(v.string()),
+		questions: v.array(quizQuestionValidator),
+	},
+	handler: async (ctx, args) => {
+		const ownerUserId = await requireUserId(ctx);
+		const quizSet = await ctx.db.get(args.quizSetId);
+		if (!quizSet || quizSet.ownerUserId !== ownerUserId) {
+			throw new ConvexError("Quiz set not found");
+		}
+		await ctx.db.patch(args.quizSetId, {
+			title: args.title,
+			description: args.description,
+			questions: args.questions,
+		});
+	},
+});
+
+export const deleteSet = mutation({
+	args: { quizSetId: v.id("quizSets") },
+	handler: async (ctx, args) => {
+		const ownerUserId = await requireUserId(ctx);
+		const quizSet = await ctx.db.get(args.quizSetId);
+		if (!quizSet || quizSet.ownerUserId !== ownerUserId) {
+			throw new ConvexError("Quiz set not found");
+		}
+		await ctx.db.delete(args.quizSetId);
+	},
+});
+
+export const getSet = query({
+	args: { quizSetId: v.id("quizSets") },
+	handler: async (ctx, args) => {
+		const quizSet = await ctx.db.get(args.quizSetId);
+		if (!quizSet) {
+			return null;
+		}
+		// Sample sets are public; owned sets are private to their owner.
+		if (!quizSet.isSample) {
+			const identity = await ctx.auth.getUserIdentity();
+			if (!identity || quizSet.ownerUserId !== identity.subject) {
+				return null;
+			}
+		}
+		return quizSet;
+	},
+});
+
 export const listSampleSets = query({
 	args: {},
 	handler: async (ctx) => {
@@ -224,9 +277,24 @@ export const advancePhase = mutation({
 					questionStartedAt: undefined,
 					showCorrectAnswer: true,
 				});
-				await ctx.db.patch(args.sessionId, {
-					status: "completed",
+				const answers = await ctx.db
+					.query("liveQuizAnswers")
+					.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+					.collect();
+				const totals = new Map<Id<"sessionParticipants">, number>();
+				for (const answer of answers) {
+					totals.set(
+						answer.participantId,
+						(totals.get(answer.participantId) ?? 0) + answer.score,
+					);
+				}
+				const topScore = Math.max(0, ...totals.values());
+				const winners = [...totals.entries()]
+					.filter(([, score]) => score === topScore && topScore > 0)
+					.map(([participantId]) => participantId);
+				await completeSession(ctx, args.sessionId, {
 					endedAt: now,
+					winnerParticipantIds: winners,
 				});
 				return "finished";
 			}
@@ -250,8 +318,15 @@ export const submitAnswer = mutation({
 	},
 	handler: async (ctx, args) => {
 		const participant = await ctx.db.get(args.participantId);
-		if (!participant || participant.sessionId !== args.sessionId) {
+		if (
+			!participant ||
+			participant.sessionId !== args.sessionId ||
+			participant.kickedAt
+		) {
 			throw new ConvexError("Participant not found for this quiz");
+		}
+		if (participant.role === "watcher") {
+			throw new ConvexError("Spectators cannot submit answers");
 		}
 		const quizState = await ctx.db
 			.query("liveQuizStates")

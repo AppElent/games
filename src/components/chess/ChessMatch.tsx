@@ -4,13 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { FitScale } from "#/components/games/FitScale";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
 import {
 	type ChessColor,
 	type ChessGameResult,
-	describeChessResult,
 	formatClockMs,
 	getLegalMoves,
 	getRemainingMs,
@@ -18,6 +18,7 @@ import {
 	isPromotionMove,
 } from "#/lib/games/chess";
 import { getUserErrorMessage } from "#/lib/games/errors";
+import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -78,6 +79,8 @@ export function ChessMatch({
 	bundle: Bundle;
 	shareUrl: string;
 }) {
+	const messages = useMessages();
+	const chess = messages.games.chess;
 	const applyMove = useMutation(api.chess.applyMove);
 	const resign = useMutation(api.chess.resign);
 	const offerDraw = useMutation(api.chess.offerDraw);
@@ -136,7 +139,7 @@ export function ChessMatch({
 		return (
 			<FullscreenGameShell title={bundle.session.title}>
 				<div className="flex h-full items-center justify-center text-slate-300">
-					Board is loading...
+					{chess.game.boardLoading}
 				</div>
 			</FullscreenGameShell>
 		);
@@ -211,7 +214,7 @@ export function ChessMatch({
 							? "q"
 							: undefined,
 					}),
-				"Could not move",
+				chess.actions.moveError,
 			);
 			return;
 		}
@@ -224,35 +227,42 @@ export function ChessMatch({
 
 	const statusLabel = finished
 		? state.resultOutcome
-			? describeChessResult(
-					state.resultWinner
-						? ({
-								outcome: state.resultOutcome,
-								winner: state.resultWinner,
-							} as ChessGameResult)
-						: ({ outcome: state.resultOutcome } as ChessGameResult),
-				)
-			: "Game over"
+			? fmt(chess.status.result[state.resultOutcome], {
+					winner:
+						state.resultWinner === "white"
+							? chess.players.colorWhite
+							: chess.players.colorBlack,
+				})
+			: chess.status.gameOver
 		: !opponentJoined
-			? "Share the link with one opponent to claim the open seat."
+			? chess.status.waitingForOpponent
 			: myTurn
-				? `Your move${check ? " — check!" : ""}`
-				: `Waiting for ${state.activeColor === "white" ? (white?.displayName ?? "white") : (black?.displayName ?? "black")}${check ? " — check!" : ""}`;
+				? check
+					? chess.status.yourMoveCheck
+					: chess.status.yourMove
+				: fmt(check ? chess.status.waitingForCheck : chess.status.waitingFor, {
+						name:
+							state.activeColor === "white"
+								? (white?.displayName ?? chess.players.colorWhite)
+								: (black?.displayName ?? chess.players.colorBlack),
+					});
 
 	const rows = flipped ? [...board].reverse() : board;
 
 	const playerCards = (
 		<div className="grid gap-3 md:grid-cols-2">
 			<PlayerCard
-				label="White"
-				name={white?.displayName ?? "Open seat"}
+				label={chess.players.white}
+				turnLabel={chess.players.turnBadge}
+				name={white?.displayName ?? chess.players.openSeat}
 				clock={timed ? formatClockMs(clockFor("white") ?? 0) : undefined}
 				active={!finished && opponentJoined && state.activeColor === "white"}
 				open={!white}
 			/>
 			<PlayerCard
-				label="Black"
-				name={black?.displayName ?? "Open seat"}
+				label={chess.players.black}
+				turnLabel={chess.players.turnBadge}
+				name={black?.displayName ?? chess.players.openSeat}
 				clock={timed ? formatClockMs(clockFor("black") ?? 0) : undefined}
 				active={!finished && opponentJoined && state.activeColor === "black"}
 				open={!black}
@@ -264,10 +274,10 @@ export function ChessMatch({
 		state.drawOfferBy && !finished ? (
 			<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-200">
 				{state.drawOfferBy === localColor ? (
-					<span>Draw offered — waiting for your opponent.</span>
+					<span>{chess.drawOffer.waitingForOpponent}</span>
 				) : localColor ? (
 					<>
-						<span>Your opponent offers a draw.</span>
+						<span>{chess.drawOffer.opponentOffers}</span>
 						<button
 							type="button"
 							className="rounded-md bg-white px-3 py-1.5 font-bold text-slate-950"
@@ -279,11 +289,11 @@ export function ChessMatch({
 											participantId: participantId as Id<"sessionParticipants">,
 											accept: true,
 										}),
-									"Could not accept draw",
+									chess.drawOffer.acceptError,
 								)
 							}
 						>
-							Accept
+							{chess.drawOffer.accept}
 						</button>
 						<button
 							type="button"
@@ -296,11 +306,11 @@ export function ChessMatch({
 											participantId: participantId as Id<"sessionParticipants">,
 											accept: false,
 										}),
-									"Could not decline draw",
+									chess.drawOffer.declineError,
 								)
 							}
 						>
-							Decline
+							{chess.drawOffer.decline}
 						</button>
 					</>
 				) : null}
@@ -375,11 +385,11 @@ export function ChessMatch({
 										sessionId: bundle.session._id,
 										participantId: participantId as Id<"sessionParticipants">,
 									}),
-								"Could not offer draw",
+								chess.actions.offerDrawError,
 							)
 						}
 					>
-						Offer draw
+						{chess.actions.offerDraw}
 					</button>
 					<button
 						type="button"
@@ -391,11 +401,11 @@ export function ChessMatch({
 										sessionId: bundle.session._id,
 										participantId: participantId as Id<"sessionParticipants">,
 									}),
-								"Could not resign",
+								chess.actions.resignError,
 							)
 						}
 					>
-						Resign
+						{chess.actions.resign}
 					</button>
 					{opponentFlagDown ? (
 						<button
@@ -408,43 +418,57 @@ export function ChessMatch({
 											sessionId: bundle.session._id,
 											participantId: participantId as Id<"sessionParticipants">,
 										}),
-									"Could not claim timeout",
+									chess.actions.claimTimeoutError,
 								)
 							}
 						>
-							Claim win on time
+							{chess.actions.claimWinOnTime}
 						</button>
 					) : null}
 				</div>
 			) : null}
-			{finished && localColor ? (
-				<div className="flex justify-center">
-					<button
-						type="button"
-						className="rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
-						onClick={() =>
-							run(
-								() =>
-									rematch({
-										sessionId: bundle.session._id,
-										participantId: participantId as Id<"sessionParticipants">,
-									}),
-								"Could not start rematch",
-							)
-						}
-					>
-						Rematch (colors swap)
-					</button>
-				</div>
+			{finished ? (
+				<GameEndScreen
+					heading={statusLabel}
+					subtitle={
+						localColor
+							? state.resultWinner === localColor
+								? chess.endScreen.youWin
+								: state.resultWinner
+									? chess.endScreen.betterLuck
+									: undefined
+							: undefined
+					}
+					shareText={fmt(chess.endScreen.shareText, {
+						status: statusLabel,
+						count: state.sanHistory.length,
+					})}
+					onRematch={
+						localColor
+							? () =>
+									run(
+										() =>
+											rematch({
+												sessionId: bundle.session._id,
+												participantId:
+													participantId as Id<"sessionParticipants">,
+											}),
+										chess.endScreen.rematchError,
+									)
+							: undefined
+					}
+					rematchLabel={chess.endScreen.rematchLabel}
+					newGameRoute="/chess/new"
+				/>
 			) : null}
 		</>
 	);
 
 	const moveList = (
 		<div className="club-panel rounded-lg p-4">
-			<p className="club-kicker mb-2">Moves</p>
+			<p className="club-kicker mb-2">{chess.moveList.heading}</p>
 			{state.sanHistory.length === 0 ? (
-				<p className="text-sm text-slate-400">No moves yet.</p>
+				<p className="text-sm text-slate-400">{chess.moveList.empty}</p>
 			) : (
 				<ol className="grid grid-cols-2 gap-x-4 text-sm text-slate-200">
 					{state.sanHistory.map((san, index) => (
@@ -469,7 +493,7 @@ export function ChessMatch({
 				title={bundle.session.title}
 				maxWidthClassName="max-w-md"
 			>
-				<p className="club-kicker mb-2">Chess</p>
+				<p className="club-kicker mb-2">{messages.catalog.chess.title}</p>
 				<h1 className="club-title mb-4 text-3xl font-bold text-white">
 					{bundle.session.title}
 				</h1>
@@ -477,7 +501,7 @@ export function ChessMatch({
 					<SeatBanner tone="warning" label={statusLabel} />
 					{playerCards}
 					{error ? <p className="text-sm text-orange-200">{error}</p> : null}
-					<QrSharePanel label="Challenge link" url={shareUrl} />
+					<QrSharePanel label={chess.share.challengeLinkLabel} url={shareUrl} />
 					<ParticipantList participants={bundle.participants} />
 				</div>
 			</FullscreenGamePage>
@@ -503,7 +527,7 @@ export function ChessMatch({
 						onClick={() => setShowInfo((open) => !open)}
 						className="flex h-11 items-center rounded-xl border border-white/20 bg-slate-900/70 px-4 text-sm font-bold text-white backdrop-blur"
 					>
-						Info
+						{chess.info.button}
 					</button>
 				</div>
 			}
@@ -530,7 +554,10 @@ export function ChessMatch({
 						<div className="mx-auto max-w-md space-y-4">
 							<SeatBanner tone="success" label={statusLabel} />
 							{playerCards}
-							<QrSharePanel label="Challenge link" url={shareUrl} />
+							<QrSharePanel
+								label={chess.share.challengeLinkLabel}
+								url={shareUrl}
+							/>
 							<ParticipantList participants={bundle.participants} />
 							{moveList}
 							<button
@@ -538,7 +565,7 @@ export function ChessMatch({
 								onClick={() => setShowInfo(false)}
 								className="w-full min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
 							>
-								Close
+								{messages.common.actions.close}
 							</button>
 						</div>
 					</div>
@@ -550,12 +577,14 @@ export function ChessMatch({
 
 function PlayerCard({
 	label,
+	turnLabel,
 	name,
 	clock,
 	active = false,
 	open = false,
 }: {
 	label: string;
+	turnLabel: string;
 	name: string;
 	clock?: string;
 	active?: boolean;
@@ -577,7 +606,7 @@ function PlayerCard({
 				</p>
 				{active ? (
 					<span className="rounded-full bg-cyan-300/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-100">
-						Turn
+						{turnLabel}
 					</span>
 				) : null}
 			</div>

@@ -11,6 +11,7 @@ import {
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
+import { completeSession } from "./lib/completion";
 import {
 	sudokuCageValidator,
 	sudokuDifficultyValidator,
@@ -355,10 +356,7 @@ export const complete = mutation({
 			lastResumedAt: undefined,
 			updatedAt: now,
 		});
-		await ctx.db.patch(args.sessionId, {
-			status: "completed",
-			endedAt: now,
-		});
+		await completeSession(ctx, args.sessionId, { endedAt: now });
 		return { completed: true };
 	},
 });
