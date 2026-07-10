@@ -13,10 +13,10 @@
       "status": "candidate"
     },
     "i18n": {
-      "owner": "capability-skill",
+      "owner": "package",
+      "package": "@appelent/i18n",
       "skill": "add-i18n",
-      "package": null,
-      "status": "candidate"
+      "status": "active"
     }
   }
 }

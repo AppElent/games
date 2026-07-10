@@ -5,7 +5,8 @@
       "path": "D:\\Dev\\games",
       "baseline": "tanstack-convex-clerk-cloudflare",
       "capabilities": [
-        "auth"
+        "auth",
+        "i18n"
       ]
     },
     "gather": {
