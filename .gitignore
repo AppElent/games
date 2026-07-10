@@ -16,6 +16,7 @@ todos.json
 
 # claude local files
 .claude/settings.local.json
+.claude/worktrees/
 CLAUDE.local.md
 .superpowers/
 
