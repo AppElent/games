@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WorkbenchIndexRouteImport } from './routes/workbench/index'
 import { Route as WordLinksIndexRouteImport } from './routes/word-links/index'
 import { Route as SudokuIndexRouteImport } from './routes/sudoku/index'
 import { Route as SquadSurgeIndexRouteImport } from './routes/squad-surge/index'
@@ -88,6 +89,11 @@ const AboutRoute = AboutRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkbenchIndexRoute = WorkbenchIndexRouteImport.update({
+  id: '/workbench/',
+  path: '/workbench/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WordLinksIndexRoute = WordLinksIndexRouteImport.update({
@@ -320,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/squad-surge/': typeof SquadSurgeIndexRoute
   '/sudoku/': typeof SudokuIndexRoute
   '/word-links/': typeof WordLinksIndexRoute
+  '/workbench/': typeof WorkbenchIndexRoute
   '/dashboard/results/$sessionId': typeof DashboardResultsSessionIdRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -367,6 +374,7 @@ export interface FileRoutesByTo {
   '/squad-surge': typeof SquadSurgeIndexRoute
   '/sudoku': typeof SudokuIndexRoute
   '/word-links': typeof WordLinksIndexRoute
+  '/workbench': typeof WorkbenchIndexRoute
   '/dashboard/results/$sessionId': typeof DashboardResultsSessionIdRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -415,6 +423,7 @@ export interface FileRoutesById {
   '/squad-surge/': typeof SquadSurgeIndexRoute
   '/sudoku/': typeof SudokuIndexRoute
   '/word-links/': typeof WordLinksIndexRoute
+  '/workbench/': typeof WorkbenchIndexRoute
   '/dashboard/results/$sessionId': typeof DashboardResultsSessionIdRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -464,6 +473,7 @@ export interface FileRouteTypes {
     | '/squad-surge/'
     | '/sudoku/'
     | '/word-links/'
+    | '/workbench/'
     | '/dashboard/results/$sessionId'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -511,6 +521,7 @@ export interface FileRouteTypes {
     | '/squad-surge'
     | '/sudoku'
     | '/word-links'
+    | '/workbench'
     | '/dashboard/results/$sessionId'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -558,6 +569,7 @@ export interface FileRouteTypes {
     | '/squad-surge/'
     | '/sudoku/'
     | '/word-links/'
+    | '/workbench/'
     | '/dashboard/results/$sessionId'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -606,6 +618,7 @@ export interface RootRouteChildren {
   SquadSurgeIndexRoute: typeof SquadSurgeIndexRoute
   SudokuIndexRoute: typeof SudokuIndexRoute
   WordLinksIndexRoute: typeof WordLinksIndexRoute
+  WorkbenchIndexRoute: typeof WorkbenchIndexRoute
   DashboardResultsSessionIdRoute: typeof DashboardResultsSessionIdRoute
   HitsterSessionIdHostRoute: typeof HitsterSessionIdHostRoute
   HitsterSessionIdPlayRoute: typeof HitsterSessionIdPlayRoute
@@ -665,6 +678,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workbench/': {
+      id: '/workbench/'
+      path: '/workbench'
+      fullPath: '/workbench/'
+      preLoaderRoute: typeof WorkbenchIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/word-links/': {
@@ -974,6 +994,7 @@ const rootRouteChildren: RootRouteChildren = {
   SquadSurgeIndexRoute: SquadSurgeIndexRoute,
   SudokuIndexRoute: SudokuIndexRoute,
   WordLinksIndexRoute: WordLinksIndexRoute,
+  WorkbenchIndexRoute: WorkbenchIndexRoute,
   DashboardResultsSessionIdRoute: DashboardResultsSessionIdRoute,
   HitsterSessionIdHostRoute: HitsterSessionIdHostRoute,
   HitsterSessionIdPlayRoute: HitsterSessionIdPlayRoute,

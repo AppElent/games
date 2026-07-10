@@ -32,6 +32,7 @@ function JoinPage() {
 	const [code, setCode] = useState(search.code ?? "");
 	const [name, setName] = useState("");
 	const [error, setError] = useState("");
+	const [asSpectator, setAsSpectator] = useState(false);
 	const joiningByLink = Boolean(search.token);
 
 	// Signed-in players get their first name prefilled (still editable);
@@ -59,11 +60,13 @@ function JoinPage() {
 									shareToken: search.token ?? "",
 									displayName: name || guest.displayName,
 									guestId: guest.id,
+									asSpectator,
 								})
 							: await joinByCode({
 									joinCode: normalizeJoinCode(code),
 									displayName: name || guest.displayName,
 									guestId: guest.id,
+									asSpectator,
 								});
 						if (result.gameType === "live-quiz") {
 							window.sessionStorage.setItem(
@@ -161,6 +164,15 @@ function JoinPage() {
 						/>
 					</>
 				)}
+				<label className="mb-4 flex items-center gap-2 text-sm text-[var(--club-muted)]">
+					<input
+						type="checkbox"
+						checked={asSpectator}
+						onChange={(event) => setAsSpectator(event.target.checked)}
+						className="h-4 w-4 rounded border-[var(--club-line)]"
+					/>
+					{messages.common.session.spectating} only (watch, don't play)
+				</label>
 				{error ? (
 					<p className="mb-4 text-sm text-[var(--club-orange)]">{error}</p>
 				) : null}
