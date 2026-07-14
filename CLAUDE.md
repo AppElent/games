@@ -51,30 +51,23 @@ See `.cursorrules` for the full validator (`v`) reference and an example schema 
 
 ## Claude Code workflow layer
 
-- `.claude/skills/review-app`, `.claude/skills/review-session`, `.claude/commands/upgrade-deps.md`, `.claude/commands/review-session.md` are project-local copies of the global `~/.claude/skills/custom-review-app` / `custom-review-session` / `~/.claude/commands/custom-upgrade-deps.md` / `custom-review-session.md` templates (renamed to avoid the duplicate-skill collision). The global copies are the source of truth — port non-project-specific fixes back there, don't let them drift.
-- `.claude/skills/verify/SKILL.md` is the one exception: it's project-specific (route → module map) and has no global counterpart.
+- `.claude/skills/review-app`, `.claude/skills/review-session`, `.claude/skills/upgrade-deps` are project-local copies of the `appelent` plugin's bundled `skills/review-app`/`skills/review-session`/`skills/upgrade-deps` — the plugin's copies are the source of truth; refresh with `/appelent:project sync-skills <name>` rather than hand-editing drift in.
+- `.claude/commands/upgrade-deps.md` and `.claude/commands/review-session.md` are project-local copies of the global `~/.claude/commands/custom-upgrade-deps.md`/`custom-review-session.md` templates — the global copies remain the source of truth for those two. `upgrade-deps.md`'s content duplicates the `.claude/skills/upgrade-deps` skill; keep them in sync if either changes.
+- `.claude/skills/verify/SKILL.md` is the one exception: it's project-specific (route → module map) and has no source-of-truth counterpart.
 - `.claude/commands/babysit.md` — standing PR-babysitting policy (CI fixes, review comments, status checklist).
-- `.github/workflows/ci.yml` — the quality gate on `master` (`check`, `typecheck`, `test`, `build`); `.github/workflows/preview.yml` — per-PR Convex + Cloudflare Worker preview, secrets already configured (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CONVEX_DEPLOY_KEY`, `NODE_AUTH_TOKEN`, `PREVIEW_CLERK_PUBLISHABLE_KEY`).
+- `.claude/hooks/session-start.mjs` — SessionStart hook: writes the GitHub Packages token into `~/.npmrc` when `NODE_AUTH_TOKEN` is set, runs `pnpm install` once per fresh container, logs the current branch.
+- `.github/workflows/ci.yml` — the quality gate on `master` (`check`, `typecheck`, `test`, `build`); `.github/workflows/preview.yml` — per-PR Convex + Cloudflare Worker preview, secrets already configured (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CONVEX_DEPLOY_KEY`, `NODE_AUTH_TOKEN`, `PREVIEW_CLERK_PUBLISHABLE_KEY`). `preview.yml` has no `--preview-run` seed step yet (no `convex/seed.ts`) — PR previews deploy against an empty Convex backend.
 - `AGENTS.md` mirrors `CLAUDE.md` for Codex parity.
+- `appelent.json` records this app's opted-in Appelent features (`baseline`, `auth`, `i18n`) — see the managed block below.
 
 <!-- appelent-managed:start -->
 ## Appelent Managed Project
 
-This repo follows the shared Appelent project baseline.
+This is an Appelent-managed app. Opted-in features and their options are
+recorded in `appelent.json`. Feature definitions live in the `appelent`
+plugin (locally installed) or https://github.com/AppElent/appelent-packages
+(`skills/<feature>/FEATURE.md`).
 
-Source of truth:
-- `C:\Users\ericj\.claude\appelent\projects.json`
-- `C:\Users\ericj\.claude\appelent\capabilities.json`
-- `C:\Users\ericj\.claude\skills`
-
-Web/browser fallback:
-- `.claude\appelent`
-- `.claude\skills`
-
-Before adding functionality that could apply to multiple apps, check whether it belongs in:
-- an existing or new `@appelent/*` package
-- `custom-bootstrap`
-- a capability skill such as `add-cli` or `add-i18n`
-
-If you add, remove, or generalize cross-app functionality, update the Appelent registry files or explain why no registry change is needed.
+Before adding functionality that could apply to multiple apps, check the
+feature catalog first. To add or update a feature, use `/appelent`.
 <!-- appelent-managed:end -->
