@@ -8,6 +8,7 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { useEffect } from "react";
 import "#/lib/router-static-data";
 import { type Locale, LocaleProvider, readClientLocale } from "#/lib/i18n";
 import { LanguageSync } from "#/lib/i18n/LanguageSync";
@@ -46,6 +47,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				content: "yes",
 			},
 			{
+				name: "theme-color",
+				content: "#080a12",
+			},
+			{
 				title: "Arcade Club",
 			},
 		],
@@ -53,6 +58,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			{
 				rel: "stylesheet",
 				href: appCss,
+			},
+			{
+				rel: "manifest",
+				href: "/manifest.webmanifest",
+			},
+			{
+				rel: "apple-touch-icon",
+				href: "/apple-touch-icon.png",
 			},
 		],
 	}),
@@ -71,6 +84,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	const isFullscreen = useRouterState({
 		select: (s) => s.matches.some((m) => m.staticData.fullscreen === true),
 	});
+
+	useEffect(() => {
+		if (typeof window === "undefined" || !("serviceWorker" in navigator))
+			return;
+		navigator.serviceWorker.register("/sw.js").catch(() => {
+			// non-fatal: app still works without offline/installable support
+		});
+	}, []);
+
 	return (
 		<html lang={locale} suppressHydrationWarning>
 			<head>
