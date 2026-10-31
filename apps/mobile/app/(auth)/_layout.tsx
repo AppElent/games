@@ -12,7 +12,7 @@ import { useEffect } from "react";
 import { Platform } from "react-native";
 import { useI18n } from "../../src/i18n";
 import { useTokens } from "../../src/theme";
-import { Button } from "../../src/ui/button";
+import { HeaderButton } from "../../src/ui/button";
 
 export default function AuthLayout() {
 	const { isSignedIn } = useAuth();
@@ -42,12 +42,7 @@ export default function AuthLayout() {
 				headerRight:
 					Platform.OS === "ios"
 						? () => (
-								<Button
-									variant="plain"
-									compact
-									label={t.common.actions.close}
-									onPress={close}
-								/>
+								<HeaderButton label={t.common.actions.close} onPress={close} />
 							)
 						: undefined,
 			}}

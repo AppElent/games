@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
 import { metrics, spacing, type Tokens, useThemedStyles } from "../../../theme";
-import { Button } from "../../../ui/button";
+import { Button, HeaderButton } from "../../../ui/button";
 import { BackgammonBoard } from "../board/backgammon-board";
 import { useBoardSelection } from "../board/use-board-selection";
 import { colorLabel } from "../components/color-label";
@@ -78,9 +78,7 @@ export function LocalGameScreen() {
 				options={{
 					title: t.catalog.backgammon.title,
 					headerRight: () => (
-						<Button
-							variant="plain"
-							compact
+						<HeaderButton
 							label={t.common.endScreen.newGame}
 							onPress={confirmRestart}
 							testID="bg-new-game"

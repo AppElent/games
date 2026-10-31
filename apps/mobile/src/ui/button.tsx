@@ -37,7 +37,15 @@ type Props = {
 	testID?: string;
 	style?: StyleProp<ViewStyle>;
 	compact?: boolean;
+	/** Largest system text-size multiplier the label follows. */
+	maxFontSizeMultiplier?: number;
 };
+
+/**
+ * Native header bars keep their actions at a fixed size (iOS bar buttons
+ * ignore Dynamic Type), so the screen title still fits beside them.
+ */
+const HEADER_TEXT_SCALE = 1.25;
 
 export function Button({
 	label,
@@ -51,6 +59,7 @@ export function Button({
 	testID,
 	style,
 	compact = false,
+	maxFontSizeMultiplier,
 }: Props) {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
@@ -83,11 +92,29 @@ export function Button({
 		>
 			<View style={styles.content}>
 				{busy ? <ActivityIndicator color={ink} /> : icon}
-				<AppText variant="control" style={{ color: ink }}>
+				<AppText
+					variant="control"
+					style={{ color: ink }}
+					maxFontSizeMultiplier={maxFontSizeMultiplier}
+				>
 					{label}
 				</AppText>
 			</View>
 		</Pressable>
+	);
+}
+
+/** A text action in a navigation header bar. */
+export function HeaderButton(
+	props: Omit<Props, "variant" | "compact" | "maxFontSizeMultiplier">,
+) {
+	return (
+		<Button
+			{...props}
+			variant="plain"
+			compact
+			maxFontSizeMultiplier={HEADER_TEXT_SCALE}
+		/>
 	);
 }
 

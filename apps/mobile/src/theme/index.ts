@@ -6,6 +6,10 @@ export {
 	useThemedStyles,
 	useTokens,
 } from "./appearance";
+export {
+	ACCESSIBILITY_TEXT_SCALE,
+	useAccessibilityTextSize,
+} from "./text-size";
 export type { Tokens } from "./tokens";
 export {
 	backgammonColors,

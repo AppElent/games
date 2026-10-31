@@ -5,7 +5,7 @@
  */
 import { Stack } from "expo-router";
 import { useI18n } from "../../../i18n";
-import { Button } from "../../../ui/button";
+import { HeaderButton } from "../../../ui/button";
 import type { SudokuStatus } from "../saves/sudoku-save-store";
 
 export function PuzzleHeader({
@@ -29,9 +29,7 @@ export function PuzzleHeader({
 					status === "completed"
 						? undefined
 						: () => (
-								<Button
-									variant="plain"
-									compact
+								<HeaderButton
 									label={
 										status === "active"
 											? copy.pauseButton

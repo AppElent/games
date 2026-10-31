@@ -11,6 +11,7 @@ import {
 	radius,
 	spacing,
 	type Tokens,
+	useAccessibilityTextSize,
 	useThemedStyles,
 	useTokens,
 } from "../../../theme";
@@ -61,6 +62,7 @@ export function PlayHomeScreen() {
 	const { t, locale } = useI18n();
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
+	const stacked = useAccessibilityTextSize();
 	const [items, setItems] = useState<ContinueItem[]>([]);
 
 	useFocusEffect(
@@ -84,7 +86,7 @@ export function PlayHomeScreen() {
 							accessibilityHint={tagline}
 							testID={`play-${game.key}`}
 						>
-							<View style={styles.row}>
+							<View style={[styles.row, stacked && styles.stacked]}>
 								<View
 									style={[
 										styles.badge,
@@ -102,12 +104,14 @@ export function PlayHomeScreen() {
 									<AppText variant="heading">{title}</AppText>
 									<AppText variant="secondary">{tagline}</AppText>
 								</View>
-								<Icon
-									ios="chevron.right"
-									android="chevron_right"
-									size={16}
-									color={tokens.textFaint}
-								/>
+								{stacked ? null : (
+									<Icon
+										ios="chevron.right"
+										android="chevron_right"
+										size={16}
+										color={tokens.textFaint}
+									/>
+								)}
 							</View>
 						</Card>
 					);
@@ -143,6 +147,7 @@ const createStyles = (_colors: Tokens) =>
 	StyleSheet.create({
 		list: { gap: spacing.md },
 		row: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
+		stacked: { flexDirection: "column", alignItems: "flex-start" },
 		badge: {
 			width: 52,
 			height: 52,
@@ -150,5 +155,5 @@ const createStyles = (_colors: Tokens) =>
 			alignItems: "center",
 			justifyContent: "center",
 		},
-		text: { flex: 1, gap: spacing.xxs },
+		text: { flexShrink: 1, flexGrow: 1, gap: spacing.xxs },
 	});
