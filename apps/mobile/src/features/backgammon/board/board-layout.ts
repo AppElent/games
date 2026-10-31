@@ -6,6 +6,7 @@
  * Black's board is White's with the rows swapped.
  */
 import type { BackgammonColor } from "@games/core/backgammon";
+import { type as typeRamp } from "../../../theme/tokens";
 
 /** Point numbers per row, left to right, as seen by `viewer`. */
 export function boardRows(viewer: BackgammonColor) {
@@ -23,12 +24,27 @@ const GAP_UNITS = 1;
 /** Checkers drawn per point before the stack shows a count instead. */
 export const MAX_STACK = 5;
 
-export function boardGeometry(width: number) {
+/**
+ * Board text sizes for the system text scale. Labels follow `fontScale`
+ * until a two-digit point number fills its column (or a stack count fills
+ * its checker); the band between the halves grows to fit both label rows.
+ */
+export function boardText(unit: number, fontScale: number) {
+	const label = Math.min(typeRamp.boardLabel.fontSize * fontScale, unit * 0.78);
+	const count = Math.min(
+		typeRamp.checkerCount.fontSize * fontScale,
+		unit * 0.5,
+	);
+	return { label, labelLine: Math.ceil(label * 1.25), count };
+}
+
+export function boardGeometry(width: number, fontScale = 1) {
 	const frame = Math.max(4, Math.round(width * 0.015));
 	const inner = width - frame * 2;
 	const unit = inner / (12 + BAR_UNITS + TRAY_UNITS);
 	const half = unit * HALF_UNITS;
-	const gap = unit * GAP_UNITS;
+	const text = boardText(unit, fontScale);
+	const gap = Math.max(unit * GAP_UNITS, text.labelLine * 2 + 2);
 	const height = half * 2 + gap + frame * 2;
 	/** Left edge of a point column (0–11, left to right), inside the frame. */
 	const columnX = (column: number) =>
@@ -47,6 +63,7 @@ export function boardGeometry(width: number) {
 		trayX: (12 + BAR_UNITS) * unit,
 		trayWidth: TRAY_UNITS * unit,
 		bottomY: half + gap,
+		text,
 	};
 }
 

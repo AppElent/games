@@ -1,4 +1,4 @@
-import { boardGeometry, boardRows } from "./board-layout";
+import { boardGeometry, boardRows, boardText } from "./board-layout";
 
 describe("board layout", () => {
 	it("puts the viewer's home board bottom right", () => {
@@ -22,5 +22,20 @@ describe("board layout", () => {
 		const inner = 360 - geometry.frame * 2;
 		expect(geometry.trayX + geometry.trayWidth).toBeCloseTo(inner);
 		expect(geometry.columnX(6)).toBeCloseTo(geometry.barX + geometry.barWidth);
+	});
+
+	it("follows the system text scale and grows the label band to fit", () => {
+		const normal = boardGeometry(360, 1);
+		const large = boardGeometry(360, 1.6);
+		expect(large.text.label).toBeGreaterThan(normal.text.label);
+		expect(large.gap).toBeGreaterThanOrEqual(large.text.labelLine * 2);
+		expect(large.height).toBeGreaterThan(normal.height);
+	});
+
+	it("stops growing board text once it fills a column or checker", () => {
+		const unit = boardGeometry(360).unit;
+		const huge = boardText(unit, 3.5);
+		expect(huge.label).toBeLessThanOrEqual(unit * 0.78);
+		expect(huge.count).toBeLessThanOrEqual(unit * 0.5);
 	});
 });

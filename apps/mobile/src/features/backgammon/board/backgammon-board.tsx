@@ -11,7 +11,7 @@ import type {
 	BackgammonTurnState,
 } from "@games/core/backgammon";
 import { memo, useMemo } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Svg, { Polygon, Rect } from "react-native-svg";
 import { fmt, plural, useI18n } from "../../../i18n";
 import { backgammonColors as board } from "../../../theme";
@@ -37,9 +37,6 @@ type Props = {
 
 const STACK = Array.from({ length: MAX_STACK }, (_, index) => index);
 const SLABS = Array.from({ length: 15 }, (_, index) => index);
-// Board text sits in fixed geometry; the accessibility labels carry the
-// full information, so cap system text scaling here.
-const BOARD_TEXT_SCALE = 1.2;
 
 export function BackgammonBoard({
 	state,
@@ -55,7 +52,11 @@ export function BackgammonBoard({
 	const { t, locale } = useI18n();
 	const copy = t.games.backgammon;
 	const colors = copy.localPlay;
-	const geometry = useMemo(() => boardGeometry(width), [width]);
+	const { fontScale } = useWindowDimensions();
+	const geometry = useMemo(
+		() => boardGeometry(width, fontScale),
+		[width, fontScale],
+	);
 	const rows = boardRows(viewer);
 	const opponent: BackgammonColor = viewer === "white" ? "black" : "white";
 
@@ -115,6 +116,7 @@ export function BackgammonBoard({
 									color={point.color}
 									count={point.count}
 									size={geometry.checker}
+									countSize={geometry.text.count}
 									fromTop={row === "top"}
 									selected={isSelected}
 								/>
@@ -145,6 +147,7 @@ export function BackgammonBoard({
 							color={viewer}
 							count={state.bar[viewer]}
 							size={geometry.checker}
+							countSize={geometry.text.count}
 							fromTop={false}
 							selected={selected === "bar"}
 						/>
@@ -154,6 +157,7 @@ export function BackgammonBoard({
 							color={opponent}
 							count={state.bar[opponent]}
 							size={geometry.checker}
+							countSize={geometry.text.count}
 							fromTop
 							selected={false}
 						/>
@@ -267,15 +271,21 @@ function NumberRow({
 	top: number[];
 	bottom: number[];
 }) {
-	const { unit, half, gap } = geometry;
+	const { unit, half, gap, text } = geometry;
 	const label = (point: number, column: number, y: number) => (
 		<AppText
 			key={point}
 			variant="boardLabel"
-			maxFontSizeMultiplier={BOARD_TEXT_SCALE}
+			allowFontScaling={false}
 			style={[
 				styles.number,
-				{ left: geometry.columnX(column), top: y, width: unit },
+				{
+					left: geometry.columnX(column),
+					top: y,
+					width: unit,
+					fontSize: text.label,
+					lineHeight: text.labelLine,
+				},
 			]}
 			accessible={false}
 		>
@@ -285,7 +295,9 @@ function NumberRow({
 	return (
 		<View pointerEvents="none" style={StyleSheet.absoluteFill}>
 			{top.map((point, column) => label(point, column, half + 1))}
-			{bottom.map((point, column) => label(point, column, half + gap / 2))}
+			{bottom.map((point, column) =>
+				label(point, column, half + gap - text.labelLine - 1),
+			)}
 		</View>
 	);
 }
@@ -294,12 +306,14 @@ function CheckerStack({
 	color,
 	count,
 	size,
+	countSize,
 	fromTop,
 	selected,
 }: {
 	color?: BackgammonColor;
 	count: number;
 	size: number;
+	countSize: number;
 	fromTop: boolean;
 	selected: boolean;
 }) {
@@ -317,6 +331,7 @@ function CheckerStack({
 						key={index}
 						color={color}
 						size={size}
+						countSize={countSize}
 						selected={selected && outermost}
 						label={outermost && count > MAX_STACK ? String(count) : null}
 					/>
@@ -329,11 +344,13 @@ function CheckerStack({
 function Checker({
 	color,
 	size,
+	countSize,
 	selected,
 	label,
 }: {
 	color: BackgammonColor;
 	size: number;
+	countSize: number;
 	selected: boolean;
 	label: string | null;
 }) {
@@ -359,8 +376,10 @@ function Checker({
 			{label ? (
 				<AppText
 					variant="checkerCount"
-					maxFontSizeMultiplier={BOARD_TEXT_SCALE}
+					allowFontScaling={false}
 					style={{
+						fontSize: countSize,
+						lineHeight: Math.ceil(countSize * 1.2),
 						color: white ? board.checkerWhiteInk : board.checkerBlackInk,
 					}}
 				>
