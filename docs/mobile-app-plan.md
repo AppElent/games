@@ -141,7 +141,7 @@ Where this changed from the plan:
 - Sentry is not wired yet (no DSN/project); add it before the first store build.
 - The structure check is `scripts/check-mobile-structure.mjs`, run from `pnpm run check`.
 - CI needed no new jobs: the root `check`/`typecheck`/`test` already include mobile.
-  Label-triggered EAS builds are not added; `eas init` is still pending.
+  Label-triggered EAS builds are not added. The EAS project `@appelent/arcadeclub` is linked.
 - Device verification ran on the Android emulator. The iOS simulator was not
   verified because CoreSimulatorService was unresponsive on the build machine.
   Host-side flows (create challenge, Hitster DJ panel) were not driven on a

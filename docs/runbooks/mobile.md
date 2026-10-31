@@ -14,9 +14,8 @@ version: 1.0.0
 | Preview | `preview` | `com.appelent.arcadeclub.preview` | `arcadeclub-preview` |
 | Development | `development` (or unset locally) | `com.appelent.arcadeclub.dev` | `arcadeclub-dev` |
 
-`apps/mobile/app.config.ts` maps the variant; `eas.json` sets it per profile.
-The EAS project is not linked yet: run `eas init` under the `appelent` owner before
-the first cloud build.
+`apps/mobile/app.config.ts` maps the variant; `eas.json` sets it per profile. EAS
+project: `@appelent/arcadeclub` (id in `app.json`).
 
 ## Environment
 
