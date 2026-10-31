@@ -1,6 +1,9 @@
 # Appelent Mobile App Design Guide
 
-Status: Draft reusable standard, proven first in Arcade Club Sudoku
+Status: Draft reusable standard, proven first in Arcade Club Sudoku. Superseded for
+this repo by the developer-tools standards in `docs/standards/` (mobile-*) and the
+app's `apps/mobile/CODING_STANDARDS.md` / `DESIGN_SYSTEM.md`; where they disagree,
+those win. Promote what is still missing upstream through developer-tools.
 
 ## Purpose
 

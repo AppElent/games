@@ -126,3 +126,24 @@ notifications, universal links, cross-device sync of solo games.
 - `@tanstack/ai*` dependencies and `ANTHROPIC_API_KEY` are unused.
 - Live quiz Convex duplicates `isCorrectAnswer`/`calculateAnswerScore` instead of
   importing the shared helpers.
+
+## v1 outcome (2026-10-31)
+
+Milestones 1–6 are delivered on `feat/mobile-app`. Milestone 7 delivered the polish
+pass (Continue row for the local backgammon match, dark mode and large-text checks,
+board text scaling cap) and the docs: `apps/mobile/CODING_STANDARDS.md`,
+`apps/mobile/DESIGN_SYSTEM.md`, `docs/runbooks/mobile.md`.
+
+Where this changed from the plan:
+
+- Message catalogs are app-owned in `apps/mobile/src/i18n/messages/`, not shared
+  from `@games/core`.
+- Sentry is not wired yet (no DSN/project); add it before the first store build.
+- The structure check is `scripts/check-mobile-structure.mjs`, run from `pnpm run check`.
+- CI needed no new jobs: the root `check`/`typecheck`/`test` already include mobile.
+  Label-triggered EAS builds are not added; `eas init` is still pending.
+- Device verification ran on the Android emulator. The iOS simulator was not
+  verified because CoreSimulatorService was unresponsive on the build machine.
+  Host-side flows (create challenge, Hitster DJ panel) were not driven on a
+  device: no Clerk test account existed. They were exercised from the Convex CLI
+  instead.

@@ -26,6 +26,8 @@ pnpm run deploy:dev        # convex dev --once && build:development && wrangler 
 pnpm run deploy:prod       # convex deploy && build && wrangler deploy (= `pnpm run deploy`)
 ```
 
+`check`, `typecheck` and `test` also cover `packages/core` and `apps/mobile` (Jest).
+
 `pnpm exec convex env list` / `--prod` to inspect deployment env vars. `CLERK_JWT_ISSUER_DOMAIN` is required on every Convex deployment (dev, prod, and as a `preview` type default via `convex env default set ... --type preview`) — without it Convex never validates the Clerk JWT and `ctx.auth.getUserIdentity()` silently returns `undefined`.
 
 ## Architecture
@@ -37,6 +39,10 @@ All games share one `gameSessions` + `sessionParticipants` pair of tables, not p
 Joining happens through `sessions.joinByCode` (room code) or `sessions.joinByToken` (share token for challenge links); both create a `sessionParticipants` row and, for backgammon specifically, seat the joining participant into the waiting `backgammonGameStates` row. Participants can be signed-in users (`userId`) or guests (`guestId`, generated client-side) — `convex/lib/auth.ts`'s `getOptionalUserId`/`requireUserId` are the two entry points for reading identity in a Convex function.
 
 The frontend mirrors this: `src/lib/games/catalog.ts` is the single source of truth for which games exist, their routes, and availability (`playable` vs `coming-soon`); `src/lib/games/sessions.ts` and `src/lib/games/<game>.ts` hold client-side helpers/types per game. `src/routes/games/$gameType.tsx` and per-game routes (`src/routes/quiz/*`, `src/routes/backgammon/*`) render off the catalog + session bundle (`sessions.getBundle`).
+
+### Mobile app (`apps/mobile`, `packages/core`)
+
+pnpm workspace: `apps/mobile` is the Expo app **Arcade Club** (`com.appelent.arcadeclub`, scheme `arcadeclub`) with Sudoku (local), Backgammon (local pass-and-play + online challenge) and Hitster (online room). Other games are web-only and not listed in the app. `packages/core` (`@games/core`) holds the pure rules shared by web, Convex and mobile. Mobile is just another Convex client: it calls the same functions, stores its seats and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=` links. Before native changes read `apps/mobile/CODING_STANDARDS.md` / `DESIGN_SYSTEM.md`; to run or verify it on a device, see `docs/runbooks/mobile.md`.
 
 ### Auth wiring
 

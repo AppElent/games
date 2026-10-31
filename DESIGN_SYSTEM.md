@@ -20,3 +20,8 @@ Read a pattern only when building that interaction: [number fields](docs/standar
 decisions below bind these standards to product components, identity, and justified exceptions.
 Conform, improve, or differ as described in [working with standards](CODING_STANDARDS.md#working-with-standards).
 <!-- appelent-standards:end -->
+
+## Project bindings
+
+The web app's palette lives in `src/styles.css` (`--club-*`). Native UI follows
+[the mobile design system](apps/mobile/DESIGN_SYSTEM.md), which transcribes the same palette.
