@@ -1,8 +1,10 @@
 /**
  * Everything this phone can resume, newest first: online seats from the seat
- * store and local saves from the solo games.
+ * store, local Sudoku saves and the pass-and-play backgammon match.
  */
+import { getBackgammonWinner } from "@games/core/backgammon";
 import type { Href } from "expo-router";
+import { readLocalMatch } from "../../backgammon/local/local-match-store";
 import {
 	type AppGameType,
 	isAppGameType,
@@ -53,8 +55,23 @@ function unfinishedPuzzles(): ContinueItem[] {
 		}));
 }
 
+function localBackgammon(): ContinueItem[] {
+	const match = readLocalMatch();
+	if (!match || match.history.length === 0) return [];
+	if (getBackgammonWinner(match.state.off)) return [];
+	return [
+		{
+			id: "backgammon:local",
+			gameType: "backgammon",
+			kind: "saved",
+			href: "/backgammon/local",
+			updatedAt: match.updatedAt,
+		},
+	];
+}
+
 export function listContinueItems(now = Date.now()): ContinueItem[] {
-	return [...unfinishedPuzzles(), ...onlineSeats(now)]
+	return [...unfinishedPuzzles(), ...localBackgammon(), ...onlineSeats(now)]
 		.sort((a, b) => b.updatedAt - a.updatedAt)
 		.slice(0, LIMIT);
 }
