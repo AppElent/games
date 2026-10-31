@@ -131,19 +131,18 @@ notifications, universal links, cross-device sync of solo games.
 
 Milestones 1–6 are delivered on `feat/mobile-app`. Milestone 7 delivered the polish
 pass (Continue row for the local backgammon match, dark mode and large-text checks,
-board text scaling cap) and the docs: `apps/mobile/CODING_STANDARDS.md`,
+board text scaling) and the docs: `apps/mobile/CODING_STANDARDS.md`,
 `apps/mobile/DESIGN_SYSTEM.md`, `docs/runbooks/mobile.md`.
 
 Where this changed from the plan:
 
-- Message catalogs are app-owned in `apps/mobile/src/i18n/messages/`, not shared
-  from `@games/core`.
-- Sentry is not wired yet (no DSN/project); add it before the first store build.
+- Web and mobile share one en/nl catalog (`@games/core/messages`). Server and
+  rule errors carry a message key (`serverErrors.*`), not English text.
+- Sentry reports errors from preview and production builds
+  (`appelent/arcadeclub-mobile`); see the runbook.
 - The structure check is `scripts/check-mobile-structure.mjs`, run from `pnpm run check`.
 - CI needed no new jobs: the root `check`/`typecheck`/`test` already include mobile.
   Label-triggered EAS builds are not added. The EAS project `@appelent/arcadeclub` is linked.
-- Device verification ran on the Android emulator. The iOS simulator was not
-  verified because CoreSimulatorService was unresponsive on the build machine.
-  Host-side flows (create challenge, Hitster DJ panel) were not driven on a
-  device: no Clerk test account existed. They were exercised from the Convex CLI
-  instead.
+- Device verification ran on the Android emulator and the iOS simulator: localized
+  server errors (en and nl) and the largest text size on both; hosting a backgammon
+  challenge and a Hitster room with the Clerk test account on Android.

@@ -27,6 +27,8 @@ project: `@appelent/arcadeclub` (id in `app.json`).
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Same Clerk instance as the web app; its Native API must be enabled |
 | `EXPO_PUBLIC_WEB_ORIGIN` | Web origin for share links. Unset: invites share the room code only and challenge links are hidden |
 | `EXPO_PUBLIC_TEST_USER_EMAIL` / `_PASSWORD` | Optional, `pk_test_` only: prefill sign-in |
+| `EXPO_PUBLIC_SENTRY_DSN` | Optional locally; set per EAS profile in `eas.json` |
+| `EXPO_PUBLIC_SENTRY_DEBUG` | `1` to report from a development bundle |
 
 ## Run locally
 
@@ -36,6 +38,10 @@ cd apps/mobile
 APP_VARIANT=development pnpm exec expo run:android     # or run:ios; builds + installs the dev client
 APP_VARIANT=development pnpm exec expo start --dev-client
 ```
+
+With a local Convex backend (`EXPO_PUBLIC_CONVEX_URL=http://127.0.0.1:3210`), an
+Android emulator needs `adb reverse tcp:3210 tcp:3210` (and the Metro port) after
+every emulator restart.
 
 Rebuild the dev client after adding a native module (any new `expo-*` package with
 native code). JS-only changes reload through Metro.
@@ -51,8 +57,15 @@ Useful entry points:
 - `settings appearance dark|light` and `settings text-size …` for theme and large
   text checks.
 
-Hosting needs a signed-in user. Without a test account on the device, host from the
-CLI against the local deployment and join from the device as a guest:
+Hosting needs a signed-in user: set the test-account variables and sign in from
+Profile. To add a second player, join from the CLI as a guest:
+
+```bash
+pnpm exec convex run sessions:joinByCode '{"joinCode":"ABCDEF","displayName":"CLI Guest","guestId":"cli-guest-1"}'
+```
+
+Without a test account, host from the CLI against the local deployment and join
+from the device as a guest:
 
 ```bash
 ID='{"subject":"cli-host","issuer":"https://<CLERK_JWT_ISSUER_DOMAIN>","tokenIdentifier":"cli-host"}'
@@ -61,6 +74,17 @@ pnpm exec convex run --identity "$ID" sessions:create \
 # then hitster:setup / hitster:start / hitster:reveal / hitster:nextRound with the
 # returned sessionId and host participantId; backgammon:createState for a challenge.
 ```
+
+## Error reporting
+
+Sentry project `appelent/arcadeclub-mobile`, set up in `src/observability/`. Preview and
+production builds report errors only, with no user data and no URL query strings. The
+environment is the EAS Update channel. Development bundles do not report, and
+`Sentry.wrap` is skipped, unless `EXPO_PUBLIC_SENTRY_DEBUG=1`.
+
+EAS builds upload source maps through the `@sentry/react-native/expo` plugin. That needs
+a `SENTRY_AUTH_TOKEN` EAS secret (`eas env:create --name SENTRY_AUTH_TOKEN
+--visibility secret`). Never put it in `EXPO_PUBLIC_*` or a tracked file.
 
 ## Checks
 
