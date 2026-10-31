@@ -1,3 +1,4 @@
+import { GameRuleError } from "./errors";
 export type BackgammonColor = "white" | "black";
 export type BackgammonPhase = "waiting" | "ready" | "active" | "finished";
 export type BackgammonMoveSource = number | "bar";
@@ -209,14 +210,14 @@ function removeChecker(
 ) {
 	if (from === "bar") {
 		if (board.bar[color] <= 0) {
-			throw new Error("Choose a point with your checker");
+			throw new GameRuleError("choosePointWithChecker");
 		}
 		board.bar[color] -= 1;
 		return;
 	}
 	const source = getBackgammonPoint(board, from);
 	if (!source || source.color !== color || source.count <= 0) {
-		throw new Error("Choose a point with your checker");
+		throw new GameRuleError("choosePointWithChecker");
 	}
 	source.count -= 1;
 	if (source.count === 0) {
@@ -235,7 +236,7 @@ function addChecker(
 	}
 	const dest = getBackgammonPoint(board, to);
 	if (!dest) {
-		throw new Error("Invalid destination");
+		throw new GameRuleError("invalidDestination");
 	}
 	if (dest.color && dest.color !== color) {
 		// A lone opposing blot gets hit to the bar.
@@ -412,26 +413,26 @@ export function applyBackgammonMove(
 	move: BackgammonMove,
 ): { state: BackgammonTurnState; usedDie: number } {
 	if (move.color !== state.activeColor) {
-		throw new Error("It is not your turn");
+		throw new GameRuleError("notYourTurn");
 	}
 	if (!canMoveNow(state)) {
-		throw new Error("Roll before moving");
+		throw new GameRuleError("rollBeforeMoving");
 	}
 	if (state.bar[move.color] > 0 && move.from !== "bar") {
-		throw new Error("Enter from the bar first");
+		throw new GameRuleError("enterFromBarFirst");
 	}
 	if (move.from === "bar" && state.bar[move.color] <= 0) {
-		throw new Error("Choose a point with your checker");
+		throw new GameRuleError("choosePointWithChecker");
 	}
 	if (move.from !== "bar") {
 		const source = getBackgammonPoint(state, move.from);
 		if (!source || source.color !== move.color || source.count <= 0) {
-			throw new Error("Choose a point with your checker");
+			throw new GameRuleError("choosePointWithChecker");
 		}
 	}
 	const plan = planBackgammonMove(state, move.from, move.to, false);
 	if (!plan) {
-		throw new Error("Invalid destination");
+		throw new GameRuleError("invalidDestination");
 	}
 	const next = applyBackgammonPlan(state, plan);
 	return { state: next, usedDie: plan.steps[0].die };

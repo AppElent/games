@@ -35,7 +35,7 @@ export function useOnlineMatch(sessionId: string, autoSwitchTurn: boolean) {
 	const endTurnMutation = useMutation(api.backgammon.endTurn);
 	const rematchMutation = useMutation(api.backgammon.rematch);
 	const [busy, setBusy] = useState(false);
-	const [failed, setFailed] = useState(false);
+	const [error, setError] = useState<unknown>(null);
 
 	const server = bundle?.state ?? null;
 	const turn = useMemo<BackgammonTurnState | null>(
@@ -71,13 +71,13 @@ export function useOnlineMatch(sessionId: string, autoSwitchTurn: boolean) {
 
 	const run = useCallback(async (action: () => Promise<unknown>) => {
 		setBusy(true);
-		setFailed(false);
+		setError(null);
 		try {
 			await action();
 			return true;
-		} catch {
+		} catch (caught) {
 			haptics.actionFailed();
-			setFailed(true);
+			setError(caught);
 			return false;
 		} finally {
 			setBusy(false);
@@ -123,7 +123,7 @@ export function useOnlineMatch(sessionId: string, autoSwitchTurn: boolean) {
 		),
 		nameOf,
 		busy,
-		failed,
+		error,
 		roll,
 		play,
 		endTurn,

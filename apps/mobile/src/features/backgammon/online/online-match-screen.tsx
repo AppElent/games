@@ -3,12 +3,14 @@
  * and the invite while the second seat is empty. Every action goes to
  * Convex; the board redraws from the live bundle.
  */
+
 import {
 	type BackgammonColor,
 	type BackgammonMovePlan,
 	createInitialBackgammonState,
 	getBackgammonWinner,
 } from "@games/core/backgammon";
+import { gameErrorMessage } from "@games/core/errors";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -216,7 +218,15 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 						</TurnPanel>
 					)}
 					<Notice
-						message={match.failed ? t.common.errors.somethingWentWrong : null}
+						message={
+							match.error
+								? gameErrorMessage(
+										t,
+										match.error,
+										t.common.errors.somethingWentWrong,
+									)
+								: null
+						}
 					/>
 					{match.myColor ? (
 						<AppText variant="caption">

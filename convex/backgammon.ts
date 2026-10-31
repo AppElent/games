@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import {
 	applyBackgammonMove,
 	computeUsedFlags,
@@ -14,6 +14,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { completeSession, reopenSession } from "./lib/completion";
+import { gameError, toGameError } from "./lib/errors";
 
 async function getBackgammonState(
 	ctx: MutationCtx,
@@ -21,14 +22,14 @@ async function getBackgammonState(
 ) {
 	const session = await ctx.db.get(sessionId);
 	if (!session || session.gameType !== "backgammon") {
-		throw new ConvexError("Backgammon game not found");
+		throw gameError("gameNotFound");
 	}
 	const state = await ctx.db
 		.query("backgammonGameStates")
 		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
 		.unique();
 	if (!state) {
-		throw new ConvexError("Backgammon game not found");
+		throw gameError("gameNotFound");
 	}
 	return state;
 }
@@ -43,7 +44,7 @@ function getParticipantColor(
 	if (state.blackParticipantId === participantId) {
 		return "black";
 	}
-	throw new ConvexError("It is not your turn");
+	throw gameError("notYourTurn");
 }
 
 function requireActiveParticipant(
@@ -51,14 +52,14 @@ function requireActiveParticipant(
 	participantId: Id<"sessionParticipants">,
 ): BackgammonColor {
 	if (state.phase === "finished") {
-		throw new ConvexError("This match is already finished");
+		throw gameError("gameAlreadyFinished");
 	}
 	if (!state.whiteParticipantId || !state.blackParticipantId) {
-		throw new ConvexError("Waiting for both players");
+		throw gameError("waitingForBothPlayers");
 	}
 	const color = getParticipantColor(state, participantId);
 	if (state.activeColor !== color) {
-		throw new ConvexError("It is not your turn");
+		throw gameError("notYourTurn");
 	}
 	return color;
 }
@@ -71,7 +72,7 @@ export const createState = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "backgammon") {
-			throw new ConvexError("Backgammon session not found");
+			throw gameError("sessionNotFound");
 		}
 		const existing = await ctx.db
 			.query("backgammonGameStates")
@@ -108,7 +109,7 @@ export const rollDice = mutation({
 		const state = await getBackgammonState(ctx, args.sessionId);
 		const color = requireActiveParticipant(state, args.participantId);
 		if (state.dice.length > 0) {
-			throw new ConvexError("End your turn before rolling again");
+			throw gameError("endTurnBeforeRolling");
 		}
 		const now = Date.now();
 		const dice = rollBackgammonDice();
@@ -146,7 +147,9 @@ export const applyMove = mutation({
 		const state = await getBackgammonState(ctx, args.sessionId);
 		const color = requireActiveParticipant(state, args.participantId);
 		const now = Date.now();
-		const result = applyBackgammonMove(
+		let result: ReturnType<typeof applyBackgammonMove>;
+		try {
+			result = applyBackgammonMove(
 			{
 				points: state.points,
 				bar: state.bar,
@@ -161,6 +164,9 @@ export const applyMove = mutation({
 				to: args.to as BackgammonMoveDestination,
 			},
 		);
+		} catch (caught) {
+			throw toGameError(caught);
+		}
 
 		const winner = getBackgammonWinner(result.state.off);
 		await ctx.db.patch(state._id, {
@@ -204,7 +210,7 @@ export const endTurn = mutation({
 		const state = await getBackgammonState(ctx, args.sessionId);
 		const color = requireActiveParticipant(state, args.participantId);
 		if (state.dice.length === 0) {
-			throw new ConvexError("Roll before ending your turn");
+			throw gameError("rollBeforeEndingTurn");
 		}
 		const now = Date.now();
 		await ctx.db.patch(state._id, {
@@ -232,13 +238,13 @@ export const rematch = mutation({
 	handler: async (ctx, args) => {
 		const state = await getBackgammonState(ctx, args.sessionId);
 		if (state.phase !== "finished") {
-			throw new ConvexError("The current game is not finished");
+			throw gameError("currentGameNotFinished");
 		}
 		const isSeated =
 			state.whiteParticipantId === args.participantId ||
 			state.blackParticipantId === args.participantId;
 		if (!isSeated) {
-			throw new ConvexError("Only players can start a rematch");
+			throw gameError("playersOnlyRematch");
 		}
 		const now = Date.now();
 		// Swap colors for the rematch.

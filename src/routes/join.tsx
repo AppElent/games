@@ -2,7 +2,7 @@ import { useUser } from "@clerk/clerk-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import {
 	getOrCreateGuestIdentity,
 	normalizeJoinCode,
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/join")({
 });
 
 function JoinPage() {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const search = Route.useSearch();
 	const joinByCode = useMutation(api.sessions.joinByCode);
@@ -118,9 +119,7 @@ function JoinPage() {
 							window.location.href = `/chess/${result.sessionId}`;
 						}
 					} catch (caught) {
-						setError(
-							getUserErrorMessage(caught, messages.common.joinPanel.joinError),
-						);
+						setError(errorMessage(caught, messages.common.joinPanel.joinError));
 					}
 				}}
 			>

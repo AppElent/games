@@ -26,7 +26,7 @@ export function useJoinSession() {
 	const joinByCode = useMutation(api.sessions.joinByCode);
 	const joinByToken = useMutation(api.sessions.joinByToken);
 	const [busy, setBusy] = useState(false);
-	const [failed, setFailed] = useState(false);
+	const [error, setError] = useState<unknown>(null);
 	const authPending = Boolean(isSignedIn) && !convexAuth.isAuthenticated;
 
 	const join = useCallback(
@@ -35,7 +35,7 @@ export function useJoinSession() {
 			displayName: string,
 		): Promise<JoinResult | null> => {
 			setBusy(true);
-			setFailed(false);
+			setError(null);
 			try {
 				const base = {
 					displayName: displayName.trim() || identity.defaultName,
@@ -51,8 +51,8 @@ export function useJoinSession() {
 					gameType: result.gameType,
 				});
 				return result;
-			} catch {
-				setFailed(true);
+			} catch (caught) {
+				setError(caught);
 				return null;
 			} finally {
 				setBusy(false);
@@ -61,5 +61,5 @@ export function useJoinSession() {
 		[identity.defaultName, identity.guestId, joinByCode, joinByToken],
 	);
 
-	return { join, busy: busy || authPending, failed };
+	return { join, busy: busy || authPending, error };
 }

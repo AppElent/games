@@ -3,6 +3,7 @@
  * bundle. The host also gets the DJ panel; every player sees their own
  * timeline (the team's in co-op).
  */
+import { gameErrorMessage } from "@games/core/errors";
 import { useKeepAwake } from "expo-keep-awake";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
@@ -270,7 +271,15 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 				) : null}
 
 				<Notice
-					message={room.failed ? t.common.errors.somethingWentWrong : null}
+					message={
+						room.error
+							? gameErrorMessage(
+									t,
+									room.error,
+									t.common.errors.somethingWentWrong,
+								)
+							: null
+					}
 				/>
 
 				{live.phase !== "lobby" &&

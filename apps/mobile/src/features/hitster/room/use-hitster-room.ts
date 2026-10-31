@@ -1,7 +1,7 @@
 /**
  * A Hitster room from this phone's seat: the live bundle (which hides the
  * mystery card and other players' answers until the reveal) and the room's
- * mutations, each reporting failure through one `failed` flag.
+ * mutations, each reporting failure through one `error` value (the last caught error).
  */
 import { useMutation } from "convex/react";
 import { useCallback, useState } from "react";
@@ -35,7 +35,7 @@ export function useHitsterRoom(sessionId: string) {
 	const revealMutation = useMutation(api.hitster.reveal);
 	const nextMutation = useMutation(api.hitster.nextRound);
 	const [busy, setBusy] = useState(false);
-	const [failed, setFailed] = useState(false);
+	const [error, setError] = useState<unknown>(null);
 
 	const run = useCallback(
 		async (
@@ -46,13 +46,13 @@ export function useHitsterRoom(sessionId: string) {
 		) => {
 			if (!participantId) return false;
 			setBusy(true);
-			setFailed(false);
+			setError(null);
 			try {
 				await action({ sessionId: id, participantId });
 				return true;
-			} catch {
+			} catch (caught) {
 				haptics.actionFailed();
-				setFailed(true);
+				setError(caught);
 				return false;
 			} finally {
 				setBusy(false);
@@ -66,7 +66,7 @@ export function useHitsterRoom(sessionId: string) {
 		loading: bundle === undefined,
 		bundle: bundle ?? null,
 		busy,
-		failed,
+		error,
 		start: () => run((seat) => startMutation(seat)),
 		reveal: () => run((seat) => revealMutation(seat)),
 		nextRound: () => run((seat) => nextMutation(seat)),

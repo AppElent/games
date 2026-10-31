@@ -1,7 +1,7 @@
 import { useMutation } from "convex/react";
 import { Lock, LockOpen, Pencil } from "lucide-react";
 import { useState } from "react";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -21,6 +21,7 @@ export function SessionHostControls({
 	title: string;
 	locked: boolean;
 }) {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const setLocked = useMutation(api.sessions.setLocked);
 	const rename = useMutation(api.sessions.rename);
@@ -33,7 +34,7 @@ export function SessionHostControls({
 		try {
 			await action();
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, fallback));
+			setError(errorMessage(caught, fallback));
 		}
 	}
 

@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import {
 	applyChessMove,
 	CHESS_INITIAL_FEN,
@@ -13,18 +13,19 @@ import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { completeSession, reopenSession } from "./lib/completion";
 import { chessTimeControlValidator } from "./schema";
+import { gameError } from "./lib/errors";
 
 async function getChessState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
 	const session = await ctx.db.get(sessionId);
 	if (!session || session.gameType !== "chess") {
-		throw new ConvexError("Chess game not found");
+		throw gameError("gameNotFound");
 	}
 	const state = await ctx.db
 		.query("chessGameStates")
 		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
 		.unique();
 	if (!state) {
-		throw new ConvexError("Chess game not found");
+		throw gameError("gameNotFound");
 	}
 	return { session, state };
 }
@@ -39,7 +40,7 @@ function getParticipantColor(
 	if (state.blackParticipantId === participantId) {
 		return "black";
 	}
-	throw new ConvexError("You are not seated in this game");
+	throw gameError("notSeated");
 }
 
 function getClock(state: Doc<"chessGameStates">) {
@@ -98,7 +99,7 @@ export const createState = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "chess") {
-			throw new ConvexError("Chess session not found");
+			throw gameError("sessionNotFound");
 		}
 		const existing = await ctx.db
 			.query("chessGameStates")
@@ -149,14 +150,14 @@ export const applyMove = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getChessState(ctx, args.sessionId);
 		if (state.phase === "finished") {
-			throw new ConvexError("This game is already finished");
+			throw gameError("gameAlreadyFinished");
 		}
 		if (!state.whiteParticipantId || !state.blackParticipantId) {
-			throw new ConvexError("Waiting for an opponent");
+			throw gameError("waitingForOpponent");
 		}
 		const color = getParticipantColor(state, args.participantId);
 		if (state.activeColor !== color) {
-			throw new ConvexError("It is not your turn");
+			throw gameError("notYourTurn");
 		}
 		const now = Date.now();
 
@@ -169,7 +170,7 @@ export const applyMove = mutation({
 				color === "white" ? "black" : "white",
 				now,
 			);
-			throw new ConvexError("Your time ran out");
+			throw gameError("timeRanOut");
 		}
 
 		let outcome: ReturnType<typeof applyChessMove>;
@@ -180,7 +181,7 @@ export const applyMove = mutation({
 				promotion: args.promotion,
 			});
 		} catch {
-			throw new ConvexError("Illegal move");
+			throw gameError("illegalMove");
 		}
 
 		if (clock) {
@@ -235,7 +236,7 @@ export const resign = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getChessState(ctx, args.sessionId);
 		if (state.phase === "finished") {
-			throw new ConvexError("This game is already finished");
+			throw gameError("gameAlreadyFinished");
 		}
 		const color = getParticipantColor(state, args.participantId);
 		await finishGame(
@@ -256,7 +257,7 @@ export const offerDraw = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getChessState(ctx, args.sessionId);
 		if (state.phase !== "active") {
-			throw new ConvexError("No active game");
+			throw gameError("noActiveGame");
 		}
 		const color = getParticipantColor(state, args.participantId);
 		if (state.drawOfferBy && state.drawOfferBy !== color) {
@@ -279,11 +280,11 @@ export const respondDraw = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getChessState(ctx, args.sessionId);
 		if (state.phase !== "active" || !state.drawOfferBy) {
-			throw new ConvexError("No draw offer to respond to");
+			throw gameError("noDrawOffer");
 		}
 		const color = getParticipantColor(state, args.participantId);
 		if (state.drawOfferBy === color) {
-			throw new ConvexError("You cannot respond to your own offer");
+			throw gameError("ownOffer");
 		}
 		if (args.accept) {
 			await finishGame(ctx, state, "drawAgreed", undefined, Date.now());
@@ -304,19 +305,19 @@ export const claimTimeout = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getChessState(ctx, args.sessionId);
 		if (state.phase !== "active") {
-			throw new ConvexError("No active game");
+			throw gameError("noActiveGame");
 		}
 		const color = getParticipantColor(state, args.participantId);
 		const clock = getClock(state);
 		if (!clock) {
-			throw new ConvexError("This game is untimed");
+			throw gameError("gameUntimed");
 		}
 		const now = Date.now();
 		if (
 			state.activeColor === color ||
 			!hasFlagFallen(clock, state.activeColor, now)
 		) {
-			throw new ConvexError("Your opponent still has time");
+			throw gameError("opponentHasTime");
 		}
 		await finishGame(ctx, state, "timeout", color, now);
 	},
@@ -330,7 +331,7 @@ export const rematch = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getChessState(ctx, args.sessionId);
 		if (state.phase !== "finished") {
-			throw new ConvexError("The current game is not finished");
+			throw gameError("currentGameNotFinished");
 		}
 		getParticipantColor(state, args.participantId);
 		const now = Date.now();

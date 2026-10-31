@@ -3,7 +3,7 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/connect-four/new")({
 });
 
 function ConnectFourNewPage() {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const connectFour = messages.games.connectFour;
 	const createSession = useMutation(api.sessions.create);
@@ -45,9 +46,7 @@ function ConnectFourNewPage() {
 			);
 			window.location.href = `/connect-four/${result.sessionId}`;
 		} catch (caught) {
-			setError(
-				getUserErrorMessage(caught, connectFour.newGame.createChallengeError),
-			);
+			setError(errorMessage(caught, connectFour.newGame.createChallengeError));
 			setBusy(false);
 		}
 	}

@@ -2,7 +2,9 @@
  * Backgammon's front door: continue or start pass-and-play on this phone,
  * or create an online challenge to send to a friend.
  */
+
 import { getBackgammonWinner } from "@games/core/backgammon";
+import { gameErrorMessage } from "@games/core/errors";
 import { useMutation } from "convex/react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -130,7 +132,15 @@ export function BackgammonHomeScreen() {
 						<HostGate />
 					)}
 					<Notice
-						message={hosting.failed ? copy.newGame.createChallengeError : null}
+						message={
+							hosting.error
+								? gameErrorMessage(
+										t,
+										hosting.error,
+										copy.newGame.createChallengeError,
+									)
+								: null
+						}
 					/>
 				</View>
 			</Card>

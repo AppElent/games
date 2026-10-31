@@ -3,7 +3,7 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/backgammon/new")({
 });
 
 function BackgammonNewPage() {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const backgammon = messages.games.backgammon;
 	const createSession = useMutation(api.sessions.create);
@@ -80,7 +81,7 @@ function BackgammonNewPage() {
 									window.location.href = `/backgammon/${result.sessionId}`;
 								} catch (caught) {
 									setError(
-										getUserErrorMessage(
+										errorMessage(
 											caught,
 											backgammon.newGame.createChallengeError,
 										),

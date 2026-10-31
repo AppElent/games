@@ -7,7 +7,7 @@ import {
 	CONTENT_DRAFT_KINDS,
 	type ContentDraftKind,
 } from "#/lib/games/content-drafts";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -73,6 +73,7 @@ function WorkbenchPage() {
 }
 
 function Workbench() {
+	const errorMessage = useErrorMessage();
 	const drafts = useQuery(api.workbench.listMine);
 	const createDraft = useMutation(api.workbench.createDraft);
 	const updateDraft = useMutation(api.workbench.updateDraft);
@@ -92,7 +93,7 @@ function Workbench() {
 		try {
 			await action();
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, "That action failed"));
+			setError(errorMessage(caught, "That action failed"));
 		} finally {
 			setBusyId(undefined);
 		}

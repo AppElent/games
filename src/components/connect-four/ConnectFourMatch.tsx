@@ -15,7 +15,7 @@ import {
 	getCell,
 	isColumnFull,
 } from "#/lib/games/connect-four";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -53,6 +53,7 @@ export function ConnectFourMatch({
 	bundle: Bundle;
 	shareUrl: string;
 }) {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const connectFour = messages.games.connectFour;
 	const drop = useMutation(api.connectFour.drop);
@@ -132,7 +133,7 @@ export function ConnectFourMatch({
 		try {
 			await action();
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, fallback));
+			setError(errorMessage(caught, fallback));
 		}
 	}
 

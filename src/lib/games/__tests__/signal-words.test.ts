@@ -214,9 +214,9 @@ describe("applySignalGuess", () => {
 		const state = stateWithClue();
 		const index = findIndex(state, state.currentTeam);
 		const { state: next } = applySignalGuess(state, index);
-		expect(() => applySignalGuess(next, index)).toThrow("already revealed");
-		expect(() => applySignalGuess(state, -1)).toThrow("Invalid card");
-		expect(() => applySignalGuess(state, 25)).toThrow("Invalid card");
+		expect(() => applySignalGuess(next, index)).toThrow("cardAlreadyRevealed");
+		expect(() => applySignalGuess(state, -1)).toThrow("invalidCard");
+		expect(() => applySignalGuess(state, 25)).toThrow("invalidCard");
 		const board = generateSignalBoard(
 			SIGNAL_WORDS_DEFAULT_PACK,
 			seededRandom(3),

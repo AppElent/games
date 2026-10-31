@@ -3,6 +3,7 @@
  * room friends join with its code. Hosting needs an account; joining a room
  * goes through the Join tab.
  */
+import { gameErrorMessage } from "@games/core/errors";
 import { HITSTER_MODES, type HitsterMode } from "@games/core/hitster";
 import {
 	getPlayableHitsterCards,
@@ -123,7 +124,15 @@ export function HitsterSetupScreen() {
 					</Section>
 					<AppText variant="caption">{copy.setupForm.playbackNote}</AppText>
 					<Notice
-						message={hosting.failed ? copy.setupForm.createRoomError : null}
+						message={
+							hosting.error
+								? gameErrorMessage(
+										t,
+										hosting.error,
+										copy.setupForm.createRoomError,
+									)
+								: null
+						}
 					/>
 					<Button
 						label={copy.setupForm.createRoom}

@@ -10,7 +10,7 @@ import { useMutation } from "convex/react";
 import { Camera, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import type { LocalSudokuSession } from "#/lib/games/sudoku-local";
 import {
@@ -30,6 +30,7 @@ export const Route = createFileRoute("/sudoku/new")({
 type SudokuVariant = "classic" | "killer" | "binary";
 
 function SudokuNewPage() {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
 	const VARIANTS: { id: SudokuVariant; label: string; blurb: string }[] = [
@@ -144,7 +145,7 @@ function SudokuNewPage() {
 			});
 			window.location.href = `/sudoku/${result.sessionId}`;
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, sudoku.newGame.couldNotStart));
+			setError(errorMessage(caught, sudoku.newGame.couldNotStart));
 			setBusy(null);
 		}
 	};

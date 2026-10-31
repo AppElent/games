@@ -1,20 +1,17 @@
-import { ConvexError } from "convex/values";
+import { gameErrorMessage } from "@games/core/errors";
+import { useCallback } from "react";
+import { useMessages } from "#/lib/i18n";
 
 /**
- * Turn a caught error into a message safe to show to users.
- * ConvexError data is written for users; anything else falls back so raw
- * server dumps ("[CONVEX M(...)] Server Error ...") never reach the UI.
+ * Turn a caught error into text safe to show to users. Keyed server and
+ * rule errors are localized from `messages.serverErrors`; anything else
+ * (network failures, "[CONVEX M(...)] Server Error" dumps) shows `fallback`.
  */
-export function getUserErrorMessage(caught: unknown, fallback: string) {
-	if (caught instanceof ConvexError) {
-		return typeof caught.data === "string" ? caught.data : fallback;
-	}
-	if (
-		caught instanceof Error &&
-		caught.message &&
-		!caught.message.includes("[CONVEX")
-	) {
-		return caught.message;
-	}
-	return fallback;
+export function useErrorMessage() {
+	const messages = useMessages();
+	return useCallback(
+		(caught: unknown, fallback: string) =>
+			gameErrorMessage(messages, caught, fallback),
+		[messages],
+	);
 }

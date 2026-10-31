@@ -3,7 +3,7 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/bluff-dice/new")({
 });
 
 function BluffDiceNewPage() {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const bluffDice = messages.games.bluffDice;
 	const createSession = useMutation(api.sessions.create);
@@ -45,7 +46,7 @@ function BluffDiceNewPage() {
 			);
 			window.location.href = `/bluff-dice/${result.sessionId}`;
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, bluffDice.new.couldNotCreateRoom));
+			setError(errorMessage(caught, bluffDice.new.couldNotCreateRoom));
 			setBusy(false);
 		}
 	}

@@ -49,13 +49,13 @@ describe("applyConnectFourDrop", () => {
 	it("rejects out-of-range columns", () => {
 		expect(() =>
 			applyConnectFourDrop(createConnectFourBoard(), "red", -1),
-		).toThrow("Invalid column");
+		).toThrow("invalidColumn");
 		expect(() =>
 			applyConnectFourDrop(createConnectFourBoard(), "red", CONNECT_FOUR_COLS),
-		).toThrow("Invalid column");
+		).toThrow("invalidColumn");
 		expect(() =>
 			applyConnectFourDrop(createConnectFourBoard(), "red", 1.5),
-		).toThrow("Invalid column");
+		).toThrow("invalidColumn");
 	});
 
 	it("rejects a full column", () => {
@@ -68,9 +68,7 @@ describe("applyConnectFourDrop", () => {
 			).board;
 		}
 		expect(isColumnFull(board, 2)).toBe(true);
-		expect(() => applyConnectFourDrop(board, "red", 2)).toThrow(
-			"That column is full",
-		);
+		expect(() => applyConnectFourDrop(board, "red", 2)).toThrow("columnFull");
 	});
 });
 

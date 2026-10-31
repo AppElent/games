@@ -3,6 +3,7 @@
  * token in an invite link (`arcadeclub://join?token=…`). A game the app
  * cannot play yet points to the web instead.
  */
+import { gameErrorMessage } from "@games/core/errors";
 import type { GameType } from "@games/core/games";
 import {
 	formatJoinCode,
@@ -31,7 +32,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 	const { t } = useI18n();
 	const copy = t.common.joinPanel;
 	const identity = usePlayerIdentity();
-	const { join, busy, failed } = useJoinSession();
+	const { join, busy, error } = useJoinSession();
 	const [code, setCode] = useState(
 		initialCode ? formatJoinCode(initialCode) : "",
 	);
@@ -107,7 +108,9 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 				onSubmitEditing={submit}
 				testID="join-name"
 			/>
-			<Notice message={failed ? copy.joinError : null} />
+			<Notice
+				message={error ? gameErrorMessage(t, error, copy.joinError) : null}
+			/>
 			{unsupported ? (
 				<Card>
 					<AppText variant="secondary" tone="default">

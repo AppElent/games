@@ -2,7 +2,7 @@ import { digitsInMask } from "@games/core/sudoku";
 import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import {
 	autoSessionTitle,
@@ -36,6 +36,7 @@ type Step =
 	| { id: "verify"; warpedUrl: string; cells: ScanCell[] };
 
 export function SudokuScanFlow() {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
 	const [step, setStep] = useState<Step>({ id: "upload" });
@@ -54,7 +55,7 @@ export function SudokuScanFlow() {
 				corners: defaultCorners(source.width, source.height),
 			});
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, sudoku.scan.couldNotReadImage));
+			setError(errorMessage(caught, sudoku.scan.couldNotReadImage));
 		}
 	};
 
@@ -78,7 +79,7 @@ export function SudokuScanFlow() {
 			);
 			setStep({ id: "verify", warpedUrl, cells });
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, sudoku.scan.recognitionFailed));
+			setError(errorMessage(caught, sudoku.scan.recognitionFailed));
 			setStep({ id: "upload" });
 		}
 	};
@@ -305,6 +306,7 @@ function VerifyStep({
 	onRescan: () => void;
 	onError: (message: string) => void;
 }) {
+	const errorMessage = useErrorMessage();
 	const { locale, messages } = useI18n();
 	const sudoku = messages.games.sudoku;
 	const CELL_TYPES: { id: ScanCellType; label: string }[] = [
@@ -365,7 +367,7 @@ function VerifyStep({
 			});
 			window.location.href = `/sudoku/${result.sessionId}`;
 		} catch (caught) {
-			onError(getUserErrorMessage(caught, sudoku.scan.couldNotCreateSession));
+			onError(errorMessage(caught, sudoku.scan.couldNotCreateSession));
 			setBusy(false);
 		}
 	};

@@ -79,7 +79,7 @@ describe("backgammon engine", () => {
 
 		expect(() =>
 			applyBackgammonMove(state, { color: "white", from: 24, to: 19 }),
-		).toThrow("Invalid destination");
+		).toThrow("invalidDestination");
 	});
 
 	it("rejects landing on a made point and allows hitting a blot", () => {
@@ -87,7 +87,7 @@ describe("backgammon engine", () => {
 		// 24 - 5 = point 19, held by 5 black checkers
 		expect(() =>
 			applyBackgammonMove(state, { color: "white", from: 24, to: 19 }),
-		).toThrow("Invalid destination");
+		).toThrow("invalidDestination");
 
 		// Put a lone black blot on point 21 and hit it with 24 - 3.
 		const blot = withDice(createInitialBackgammonState(), [5, 3]);
@@ -111,7 +111,7 @@ describe("backgammon engine", () => {
 
 		expect(() =>
 			applyBackgammonMove(state, { color: "white", from: 24, to: 22 }),
-		).toThrow("Enter from the bar first");
+		).toThrow("enterFromBarFirst");
 
 		// bar entry for white with die 4 lands on 25 - 4 = 21
 		const result = applyBackgammonMove(state, {
@@ -171,24 +171,24 @@ describe("backgammon engine", () => {
 		const state = createInitialBackgammonState();
 		expect(() =>
 			applyBackgammonMove(state, { color: "white", from: 24, to: 23 }),
-		).toThrow("Roll before moving");
+		).toThrow("rollBeforeMoving");
 		expect(() =>
 			applyBackgammonMove(withDice(state, [3, 1]), {
 				color: "black",
 				from: 1,
 				to: 4,
 			}),
-		).toThrow("It is not your turn");
+		).toThrow("notYourTurn");
 	});
 
 	it("rejects moving from an empty or opponent point", () => {
 		const state = withDice(createInitialBackgammonState(), [3, 1]);
 		expect(() =>
 			applyBackgammonMove(state, { color: "white", from: 2, to: 3 }),
-		).toThrow("Choose a point with your checker");
+		).toThrow("choosePointWithChecker");
 		expect(() =>
 			applyBackgammonMove(state, { color: "white", from: 1, to: 2 }),
-		).toThrow("Choose a point with your checker");
+		).toThrow("choosePointWithChecker");
 		// caller state untouched
 		expect(countBackgammonCheckers(state, "white")).toBe(15);
 	});

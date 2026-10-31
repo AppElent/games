@@ -1,10 +1,11 @@
 import { calculateAnswerScore, isCorrectAnswer } from "@games/core/quiz";
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
 import { completeSession } from "./lib/completion";
 import { quizQuestionValidator } from "./schema";
+import { gameError } from "./lib/errors";
 
 const SAMPLE_QUESTIONS = [
 	{
@@ -96,7 +97,7 @@ export const updateSet = mutation({
 		const ownerUserId = await requireUserId(ctx);
 		const quizSet = await ctx.db.get(args.quizSetId);
 		if (!quizSet || quizSet.ownerUserId !== ownerUserId) {
-			throw new ConvexError("Quiz set not found");
+			throw gameError("quizSetNotFound");
 		}
 		await ctx.db.patch(args.quizSetId, {
 			title: args.title,
@@ -112,7 +113,7 @@ export const deleteSet = mutation({
 		const ownerUserId = await requireUserId(ctx);
 		const quizSet = await ctx.db.get(args.quizSetId);
 		if (!quizSet || quizSet.ownerUserId !== ownerUserId) {
-			throw new ConvexError("Quiz set not found");
+			throw gameError("quizSetNotFound");
 		}
 		await ctx.db.delete(args.quizSetId);
 	},
@@ -165,11 +166,11 @@ export const startForSession = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "live-quiz") {
-			throw new ConvexError("Live quiz session not found");
+			throw gameError("sessionNotFound");
 		}
 		const quizSet = await ctx.db.get(args.quizSetId);
 		if (!quizSet) {
-			throw new ConvexError("Quiz set not found");
+			throw gameError("quizSetNotFound");
 		}
 
 		const existing = await ctx.db
@@ -204,13 +205,13 @@ export const advancePhase = mutation({
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.unique();
 		if (!quizState) {
-			throw new ConvexError("Quiz has not been prepared");
+			throw gameError("quizNotPrepared");
 		}
 		const quizSet = quizState.quizSetId
 			? await ctx.db.get(quizState.quizSetId)
 			: null;
 		if (!quizSet) {
-			throw new ConvexError("Quiz set not found");
+			throw gameError("quizSetNotFound");
 		}
 
 		const now = Date.now();
@@ -291,22 +292,22 @@ export const submitAnswer = mutation({
 			participant.sessionId !== args.sessionId ||
 			participant.kickedAt
 		) {
-			throw new ConvexError("Participant not found for this quiz");
+			throw gameError("participantNotFound");
 		}
 		if (participant.role === "watcher") {
-			throw new ConvexError("Spectators cannot submit answers");
+			throw gameError("spectatorsCannotAnswer");
 		}
 		const quizState = await ctx.db
 			.query("liveQuizStates")
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.unique();
 		if (!quizState || quizState.phase !== "question" || !quizState.quizSetId) {
-			throw new ConvexError("Question is not accepting answers");
+			throw gameError("questionClosed");
 		}
 		const quizSet = await ctx.db.get(quizState.quizSetId);
 		const question = quizSet?.questions[quizState.currentQuestionIndex];
 		if (!question) {
-			throw new ConvexError("Question not found");
+			throw gameError("questionNotFound");
 		}
 
 		const existingAnswers = await ctx.db

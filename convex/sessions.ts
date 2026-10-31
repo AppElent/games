@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -9,6 +9,7 @@ import {
 } from "./schema";
 import { getOptionalUserId, requireUserId } from "./lib/auth";
 import { makeJoinCode, makeShareToken } from "./lib/codes";
+import { gameError } from "./lib/errors";
 
 /** Finds this identity's existing participant row inside one session. */
 async function findExistingParticipant(
@@ -36,7 +37,7 @@ async function guardJoin(
 ) {
 	const userId = await getOptionalUserId(ctx);
 	if (session.authPolicy === "signedInRequired" && !userId) {
-		throw new ConvexError("Sign in required to join this game");
+		throw gameError("signInToJoin");
 	}
 	const existing = await findExistingParticipant(
 		ctx,
@@ -45,10 +46,10 @@ async function guardJoin(
 		args.guestId,
 	);
 	if (existing?.kickedAt) {
-		throw new ConvexError("You were removed from this game by the host");
+		throw gameError("removedByHost");
 	}
 	if (!existing && session.locked) {
-		throw new ConvexError("This room is locked by the host");
+		throw gameError("roomLocked");
 	}
 	return { userId, existing };
 }
@@ -61,10 +62,10 @@ async function requireHost(
 ) {
 	const session = await ctx.db.get(sessionId);
 	if (!session) {
-		throw new ConvexError("Game not found");
+		throw gameError("gameNotFound");
 	}
 	if (session.hostParticipantId !== hostParticipantId) {
-		throw new ConvexError("Only the host can do this");
+		throw gameError("hostOnly");
 	}
 	return session;
 }
@@ -81,12 +82,12 @@ export const create = mutation({
 	handler: async (ctx, args) => {
 		const userId = await getOptionalUserId(ctx);
 		if (args.authPolicy === "signedInRequired" && !userId) {
-			throw new ConvexError("Sign in required to create this game");
+			throw gameError("signInToHost");
 		}
 		// Hosting a multiplayer session always requires an account; only solo
 		// sessions (sudoku) can be created as a guest.
 		if (args.joinMode !== "solo" && !userId) {
-			throw new ConvexError("Sign in to host a game");
+			throw gameError("signInToHost");
 		}
 
 		let joinCode: string | undefined;
@@ -103,7 +104,7 @@ export const create = mutation({
 				}
 			}
 			if (!joinCode) {
-				throw new ConvexError("Could not create a join code");
+				throw gameError("joinCodeFailed");
 			}
 		}
 
@@ -153,7 +154,7 @@ export const joinByCode = mutation({
 			session.status === "completed" ||
 			session.status === "cancelled"
 		) {
-			throw new ConvexError("Room not found — check the code");
+			throw gameError("roomNotFound");
 		}
 		const { userId, existing } = await guardJoin(ctx, session, args);
 
@@ -202,7 +203,7 @@ export const joinByToken = mutation({
 			session.status === "completed" ||
 			session.status === "cancelled"
 		) {
-			throw new ConvexError("Game is unavailable");
+			throw gameError("gameUnavailable");
 		}
 		const { userId, existing } = await guardJoin(ctx, session, args);
 
@@ -402,7 +403,7 @@ export const heartbeat = mutation({
 	handler: async (ctx, args) => {
 		const participant = await ctx.db.get(args.participantId);
 		if (!participant) {
-			throw new ConvexError("Participant not found");
+			throw gameError("participantNotFound");
 		}
 		await ctx.db.patch(args.participantId, {
 			connected: true,
@@ -420,11 +421,11 @@ export const kickParticipant = mutation({
 	handler: async (ctx, args) => {
 		await requireHost(ctx, args.sessionId, args.hostParticipantId);
 		if (args.targetParticipantId === args.hostParticipantId) {
-			throw new ConvexError("The host cannot kick themselves");
+			throw gameError("hostCannotKickSelf");
 		}
 		const target = await ctx.db.get(args.targetParticipantId);
 		if (!target || target.sessionId !== args.sessionId) {
-			throw new ConvexError("Player not found in this game");
+			throw gameError("participantNotFound");
 		}
 		await ctx.db.patch(args.targetParticipantId, {
 			kickedAt: Date.now(),
@@ -455,7 +456,7 @@ export const rename = mutation({
 		await requireHost(ctx, args.sessionId, args.hostParticipantId);
 		const title = args.title.trim();
 		if (!title || title.length > 80) {
-			throw new ConvexError("Title must be 1-80 characters");
+			throw gameError("titleLength");
 		}
 		await ctx.db.patch(args.sessionId, { title });
 	},
@@ -475,7 +476,7 @@ export const transferHost = mutation({
 		);
 		const target = await ctx.db.get(args.targetParticipantId);
 		if (!target || target.sessionId !== args.sessionId || target.kickedAt) {
-			throw new ConvexError("Player not found in this game");
+			throw gameError("participantNotFound");
 		}
 		await ctx.db.patch(args.targetParticipantId, { role: "host" });
 		await ctx.db.patch(args.hostParticipantId, { role: "player" });

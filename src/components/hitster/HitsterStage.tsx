@@ -1,7 +1,7 @@
 import { getHitsterModeConfig, type HitsterMode } from "@games/core/hitster";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -122,6 +122,7 @@ function PlacementForm({
 	participantId: Id<"sessionParticipants">;
 	forSteal: boolean;
 }) {
+	const errorMessage = useErrorMessage();
 	const { messages } = useI18n();
 	const stage = messages.games.hitster.stage;
 	const state = bundle.state as HitsterState;
@@ -186,7 +187,7 @@ function PlacementForm({
 							await submitGuess(payload);
 						}
 					} catch (caught) {
-						setError(getUserErrorMessage(caught, stage.submitError));
+						setError(errorMessage(caught, stage.submitError));
 					} finally {
 						setBusy(false);
 					}

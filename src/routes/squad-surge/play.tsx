@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
 import { SquadSurgeCanvas } from "#/components/squad-surge/SquadSurgeCanvas";
-import { getUserErrorMessage } from "#/lib/games/errors";
 import {
 	generateLevel,
 	type Level,
@@ -52,8 +51,8 @@ function SquadSurgePlay() {
 	const { level, error } = useMemo<{ level?: Level; error?: string }>(() => {
 		try {
 			return { level: generateLevel(seed, d) };
-		} catch (caught) {
-			return { error: getUserErrorMessage(caught, play.hitASnag) };
+		} catch {
+			return { error: play.hitASnag };
 		}
 	}, [seed, d, play.hitASnag]);
 

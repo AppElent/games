@@ -13,6 +13,7 @@ import { sudoku } from "./games/sudoku";
 import { wordLinks } from "./games/wordLinks";
 import { play } from "./play";
 import { profile } from "./profile";
+import { serverErrors } from "./serverErrors";
 
 export const en = {
 	common,
@@ -20,6 +21,7 @@ export const en = {
 	auth,
 	play,
 	profile,
+	serverErrors,
 	games: {
 		quiz,
 		backgammon,

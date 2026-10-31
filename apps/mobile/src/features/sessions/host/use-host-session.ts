@@ -22,7 +22,7 @@ export function useHostSession() {
 	const identity = usePlayerIdentity();
 	const create = useMutation(api.sessions.create);
 	const [busy, setBusy] = useState(false);
-	const [failed, setFailed] = useState(false);
+	const [error, setError] = useState<unknown>(null);
 
 	const host = useCallback(
 		async (
@@ -35,7 +35,7 @@ export function useHostSession() {
 			setup?: (session: HostedSession) => Promise<unknown>,
 		): Promise<HostedSession | null> => {
 			setBusy(true);
-			setFailed(false);
+			setError(null);
 			try {
 				const session = await create({
 					...args,
@@ -50,8 +50,8 @@ export function useHostSession() {
 					gameType: args.gameType,
 				});
 				return session;
-			} catch {
-				setFailed(true);
+			} catch (caught) {
+				setError(caught);
 				return null;
 			} finally {
 				setBusy(false);
@@ -63,7 +63,7 @@ export function useHostSession() {
 	return {
 		host,
 		busy: busy || (Boolean(isSignedIn) && convexAuth.isLoading),
-		failed,
+		error,
 		isSignedIn: Boolean(isSignedIn),
 		canHost: Boolean(isSignedIn) && convexAuth.isAuthenticated,
 	};

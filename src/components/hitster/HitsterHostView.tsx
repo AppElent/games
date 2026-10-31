@@ -3,7 +3,7 @@ import { getHitsterPack } from "@games/core/hitster-packs";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { ParticipantList } from "#/components/games/ParticipantList";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { formatJoinCode } from "#/lib/games/sessions";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -18,6 +18,7 @@ export function HitsterHostView({
 	bundle: HitsterBundle;
 	participantId: Id<"sessionParticipants">;
 }) {
+	const errorMessage = useErrorMessage();
 	const { locale, messages } = useI18n();
 	const hostView = messages.games.hitster.hostView;
 	const start = useMutation(api.hitster.start);
@@ -33,7 +34,7 @@ export function HitsterHostView({
 		try {
 			await action();
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, hostView.actionFailed));
+			setError(errorMessage(caught, hostView.actionFailed));
 		}
 	};
 

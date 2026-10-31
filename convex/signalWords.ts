@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import {
 	applySignalClue,
 	applySignalGuess,
@@ -13,18 +13,19 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { completeSession, reopenSession } from "./lib/completion";
 import { signalTeamValidator } from "./schema";
+import { gameError, toGameError } from "./lib/errors";
 
 async function getState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
 	const session = await ctx.db.get(sessionId);
 	if (!session || session.gameType !== "signal-words") {
-		throw new ConvexError("Signal Words game not found");
+		throw gameError("gameNotFound");
 	}
 	const state = await ctx.db
 		.query("signalWordsStates")
 		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
 		.unique();
 	if (!state) {
-		throw new ConvexError("Signal Words game not found");
+		throw gameError("gameNotFound");
 	}
 	return { session, state };
 }
@@ -40,7 +41,7 @@ async function requireParticipant(
 		participant.sessionId !== sessionId ||
 		participant.kickedAt
 	) {
-		throw new ConvexError("You are not part of this game");
+		throw gameError("notInGame");
 	}
 	return participant;
 }
@@ -107,7 +108,7 @@ export const createState = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "signal-words") {
-			throw new ConvexError("Signal Words session not found");
+			throw gameError("sessionNotFound");
 		}
 		const existing = await ctx.db
 			.query("signalWordsStates")
@@ -141,7 +142,7 @@ export const joinTeam = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getState(ctx, args.sessionId);
 		if (state.phase !== "lobby") {
-			throw new ConvexError("The game has already started");
+			throw gameError("gameAlreadyStarted");
 		}
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		const seat = args.clueGiver ? `${args.team}-clue` : args.team;
@@ -155,9 +156,7 @@ export const joinTeam = mutation({
 					participant.seat === seat && participant._id !== args.participantId,
 			);
 			if (taken) {
-				throw new ConvexError(
-					`${args.team === "red" ? "Red" : "Blue"} already has a clue-giver`,
-				);
+				throw gameError(args.team === "red" ? "redHasClueGiver" : "blueHasClueGiver");
 			}
 		}
 		await ctx.db.patch(args.participantId, { seat });
@@ -172,10 +171,10 @@ export const start = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getState(ctx, args.sessionId);
 		if (state.phase !== "lobby") {
-			throw new ConvexError("The game has already started");
+			throw gameError("gameAlreadyStarted");
 		}
 		if (session.hostParticipantId !== args.participantId) {
-			throw new ConvexError("Only the host can start the game");
+			throw gameError("hostOnlyStart");
 		}
 		const participants = await ctx.db
 			.query("sessionParticipants")
@@ -189,9 +188,7 @@ export const start = mutation({
 				(participant) => participant.seat === team,
 			);
 			if (!clueGiver || !guesser) {
-				throw new ConvexError(
-					`Each team needs a clue-giver and at least one guesser (${team} team is not ready)`,
-				);
+				throw gameError(team === "red" ? "redTeamNotReady" : "blueTeamNotReady");
 			}
 		}
 		const board = generateSignalBoard(SIGNAL_WORDS_DEFAULT_PACK);
@@ -229,7 +226,7 @@ export const submitClue = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getState(ctx, args.sessionId);
 		if (state.phase !== "clue") {
-			throw new ConvexError("Not expecting a clue right now");
+			throw gameError("notExpectingClue");
 		}
 		const participant = await requireParticipant(
 			ctx,
@@ -237,15 +234,13 @@ export const submitClue = mutation({
 			args.participantId,
 		);
 		if (participant.seat !== `${state.currentTeam}-clue`) {
-			throw new ConvexError("Only the active team's clue-giver can send a clue");
+			throw gameError("clueGiverOnly");
 		}
 		let next: SignalGameState;
 		try {
 			next = applySignalClue(toGameState(state), args.clue, args.count);
 		} catch (caught) {
-			throw new ConvexError(
-				caught instanceof Error ? caught.message : "Invalid clue",
-			);
+			throw toGameError(caught);
 		}
 		await patchGameState(ctx, state, next, Date.now());
 	},
@@ -260,7 +255,7 @@ export const submitGuess = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getState(ctx, args.sessionId);
 		if (state.phase !== "guess") {
-			throw new ConvexError("Not expecting a guess right now");
+			throw gameError("notExpectingGuess");
 		}
 		const participant = await requireParticipant(
 			ctx,
@@ -268,15 +263,13 @@ export const submitGuess = mutation({
 			args.participantId,
 		);
 		if (participant.seat !== state.currentTeam) {
-			throw new ConvexError("Only the active team's guessers can pick a card");
+			throw gameError("guessersOnlyPick");
 		}
 		let outcome: ReturnType<typeof applySignalGuess>;
 		try {
 			outcome = applySignalGuess(toGameState(state), args.cardIndex);
 		} catch (caught) {
-			throw new ConvexError(
-				caught instanceof Error ? caught.message : "Invalid guess",
-			);
+			throw toGameError(caught);
 		}
 		await patchGameState(ctx, state, outcome.state, Date.now());
 	},
@@ -290,7 +283,7 @@ export const pass = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getState(ctx, args.sessionId);
 		if (state.phase !== "guess") {
-			throw new ConvexError("You can only pass during a guess phase");
+			throw gameError("passOnlyDuringGuess");
 		}
 		const participant = await requireParticipant(
 			ctx,
@@ -298,7 +291,7 @@ export const pass = mutation({
 			args.participantId,
 		);
 		if (participant.seat !== state.currentTeam) {
-			throw new ConvexError("Only the active team's guessers can pass");
+			throw gameError("guessersOnlyPass");
 		}
 		await patchGameState(
 			ctx,
@@ -317,10 +310,10 @@ export const rematch = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getState(ctx, args.sessionId);
 		if (state.phase !== "finished") {
-			throw new ConvexError("The current game is not finished");
+			throw gameError("currentGameNotFinished");
 		}
 		if (session.hostParticipantId !== args.participantId) {
-			throw new ConvexError("Only the host can start a rematch");
+			throw gameError("hostOnlyRematch");
 		}
 		const board = generateSignalBoard(SIGNAL_WORDS_DEFAULT_PACK);
 		const gameState = createSignalGameState(board);
