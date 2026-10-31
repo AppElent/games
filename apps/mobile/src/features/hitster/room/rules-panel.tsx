@@ -1,0 +1,58 @@
+/** How the chosen mode plays, shown in the lobby. */
+import type { HitsterModeConfig } from "@games/core/hitster";
+import { StyleSheet, View } from "react-native";
+import { fmt, useI18n } from "../../../i18n";
+import { spacing } from "../../../theme";
+import { AppText } from "../../../ui/text";
+
+export function RulesPanel({
+	config,
+	target,
+}: {
+	config: HitsterModeConfig;
+	target: number;
+}) {
+	const { t } = useI18n();
+	const copy = t.hitster.rules;
+	const rules: Array<[string, string]> = [
+		[copy.listenHeading, copy.listenBody],
+		[
+			copy.placeHeading,
+			config.shared ? copy.placeBodyShared : copy.placeBodySolo,
+		],
+		[
+			copy.scoreHeading,
+			fmt(config.shared ? copy.scoreBodyShared : copy.scoreBodySolo, {
+				target,
+				tokens: config.startTokens,
+			}),
+		],
+	];
+	if (config.earnTokens) {
+		rules.push([
+			copy.tokensHeading,
+			fmt(copy.tokensBody, { cap: config.tokenCap }),
+		]);
+	}
+	if (config.needsArtistTitle) {
+		rules.push([
+			copy.claimHeading,
+			config.needsYear ? copy.claimBodyYear : copy.claimBodyNoYear,
+		]);
+	}
+	return (
+		<View style={styles.list}>
+			{rules.map(([heading, body]) => (
+				<View key={heading} style={styles.rule}>
+					<AppText variant="body">{heading}</AppText>
+					<AppText variant="secondary">{body}</AppText>
+				</View>
+			))}
+		</View>
+	);
+}
+
+const styles = StyleSheet.create({
+	list: { gap: spacing.md },
+	rule: { gap: spacing.xxs },
+});

@@ -10,5 +10,12 @@ export default function JoinRoute() {
 		token?: string;
 		code?: string;
 	}>();
-	return <JoinScreen shareToken={token} initialCode={code} />;
+	// The tab stays mounted, so a new invite link remounts the form.
+	return (
+		<JoinScreen
+			key={`${token ?? ""}:${code ?? ""}`}
+			shareToken={token}
+			initialCode={code}
+		/>
+	);
 }

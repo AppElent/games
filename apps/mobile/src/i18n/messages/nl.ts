@@ -2,6 +2,7 @@ import type { Messages } from "./en";
 import { auth } from "./nl/auth";
 import { backgammon } from "./nl/backgammon";
 import { common } from "./nl/common";
+import { hitster } from "./nl/hitster";
 import { join } from "./nl/join";
 import { play } from "./nl/play";
 import { profile } from "./nl/profile";
@@ -15,4 +16,5 @@ export const nl: Messages = {
 	profile,
 	sudoku,
 	backgammon,
+	hitster,
 };
