@@ -44,6 +44,14 @@
 				}
 			],
 			"expo-sqlite",
+			[
+				"@sentry/react-native/expo",
+				{
+					"url": "https://sentry.io/",
+					"organization": "appelent",
+					"project": "arcadeclub-mobile"
+				}
+			],
 			"expo-web-browser",
 			[
 				"expo-splash-screen",

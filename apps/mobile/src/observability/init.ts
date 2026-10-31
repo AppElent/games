@@ -1,0 +1,34 @@
+/**
+ * Starts Sentry. Imported first by `app/_layout.tsx` so a crash during the
+ * rest of module evaluation is still reported. A no-op without
+ * `EXPO_PUBLIC_SENTRY_DSN`, and in a development bundle unless
+ * `EXPO_PUBLIC_SENTRY_DEBUG=1`.
+ *
+ * Static dot access on `process.env` is load-bearing: Metro inlines
+ * `EXPO_PUBLIC_*` textually at bundle time.
+ */
+import * as Sentry from "@sentry/react-native";
+import * as Updates from "expo-updates";
+import {
+	buildSentryOptions,
+	environmentFromChannel,
+	shouldInitSentry,
+} from "./options";
+
+const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+
+if (
+	dsn &&
+	shouldInitSentry({
+		dsn,
+		dev: __DEV__,
+		debug: process.env.EXPO_PUBLIC_SENTRY_DEBUG,
+	})
+) {
+	Sentry.init(
+		buildSentryOptions({
+			dsn,
+			environment: environmentFromChannel(Updates.channel, __DEV__),
+		}),
+	);
+}

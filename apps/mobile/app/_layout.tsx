@@ -13,9 +13,19 @@
  * Unlike Foundry there is no signed-in shell: guests play everything except
  * hosting online rooms, so `(auth)` is a modal stack over the tabs.
  */
+// First, so a crash while the rest of the app loads is still reported.
+import "../src/observability/init";
 import { ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
+import * as Sentry from "@sentry/react-native";
+import {
+	DarkTheme,
+	DefaultTheme,
+	type ErrorBoundaryProps,
+	ErrorBoundary as RouterErrorBoundary,
+	Stack,
+	ThemeProvider,
+} from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
@@ -27,6 +37,8 @@ import { publishableKey } from "../src/auth/config";
 import { AppConvexProvider } from "../src/convex/provider";
 import { AppQueryCacheProvider } from "../src/convex/query-cache";
 import { LocaleProvider } from "../src/i18n";
+import { useNavigationBreadcrumbs } from "../src/observability/navigation";
+import { reportError } from "../src/observability/report";
 import { AppearanceProvider, useAppearance, useTokens } from "../src/theme";
 
 SplashScreen.preventAutoHideAsync();
@@ -34,7 +46,21 @@ SplashScreen.preventAutoHideAsync();
 /** Deep links into a modal or game still get the tabs beneath them. */
 export const unstable_settings = { anchor: "(tabs)" };
 
-export default function RootLayout() {
+/**
+ * Expo Router's own error screen plus a report: its boundary catches what
+ * would otherwise reach the global handler, so Sentry would never see it.
+ */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+	const { error } = props;
+	useEffect(() => {
+		reportError(error);
+	}, [error]);
+	return <RouterErrorBoundary {...props} />;
+}
+
+export default Sentry.wrap(RootLayout);
+
+function RootLayout() {
 	return (
 		<AppearanceProvider>
 			<ThemedRoot />
@@ -111,6 +137,7 @@ function RootNavigator({ windowReady }: { windowReady: boolean }) {
 	const colors = useTokens();
 	const { isLoaded } = useAuth();
 	const ready = isLoaded && windowReady;
+	useNavigationBreadcrumbs();
 
 	useEffect(() => {
 		if (ready) SplashScreen.hideAsync();

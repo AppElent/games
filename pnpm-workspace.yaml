@@ -19,6 +19,7 @@ allowBuilds:
   "@parcel/watcher": false # eas-cli transitive; ships prebuilt binaries
   dtrace-provider: false # eas-cli transitive optional native probe
   unrs-resolver: false # jest transitive; ships prebuilt binaries
+  "@sentry/cli": true # downloads the sentry-cli binary for native source-map and debug-symbol uploads
 
 # Keeps Expo fingerprints identical across macOS and Windows checkouts
 # (autolinking paths are part of the native fingerprint).

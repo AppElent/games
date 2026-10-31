@@ -22,7 +22,8 @@
 			"channel": "preview",
 			"environment": "preview",
 			"env": {
-				"APP_VARIANT": "preview"
+				"APP_VARIANT": "preview",
+				"EXPO_PUBLIC_SENTRY_DSN": "https://6aadd60de214ee0977243d34bc50a28a@o4504753234051072.ingest.us.sentry.io/4512351895552000"
 			}
 		},
 		"preview-internal": {
@@ -37,7 +38,8 @@
 			"channel": "production",
 			"environment": "production",
 			"env": {
-				"APP_VARIANT": "production"
+				"APP_VARIANT": "production",
+				"EXPO_PUBLIC_SENTRY_DSN": "https://6aadd60de214ee0977243d34bc50a28a@o4504753234051072.ingest.us.sentry.io/4512351895552000"
 			}
 		}
 	},
