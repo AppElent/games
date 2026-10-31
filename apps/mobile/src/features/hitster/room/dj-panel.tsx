@@ -25,7 +25,7 @@ export function DjPanel({
 	onNextRound: () => void;
 }) {
 	const { t, locale } = useI18n();
-	const copy = t.hitster.dj;
+	const copy = t.games.hitster.hostView;
 	const styles = useThemedStyles(createStyles);
 	const [shown, setShown] = useState(false);
 	const track = bundle.hostPlayback;
@@ -44,8 +44,7 @@ export function DjPanel({
 
 	return (
 		<View style={styles.panel} testID="hitster-dj">
-			<AppText variant="label">{copy.heading.toUpperCase()}</AppText>
-			<AppText variant="caption">{copy.hint}</AppText>
+			<AppText variant="label">{copy.djPanelKicker.toUpperCase()}</AppText>
 			{track && shown ? (
 				<View style={styles.track}>
 					<AppText variant="heading" selectable>
@@ -60,7 +59,7 @@ export function DjPanel({
 				<Button
 					variant="secondary"
 					compact
-					label={shown ? copy.hideTrack : copy.showTrack}
+					label={shown ? copy.hideTrack : copy.revealTrackSummary}
 					onPress={() => setShown((value) => !value)}
 					testID="hitster-show-track"
 				/>
@@ -81,7 +80,7 @@ export function DjPanel({
 					: ""}
 			</AppText>
 			<Button
-				label={copy.reveal}
+				label={copy.revealYear}
 				onPress={onReveal}
 				busy={busy}
 				testID="hitster-reveal"

@@ -38,7 +38,7 @@ export function SudokuHomeScreen() {
 	const router = useRouter();
 	const tokens = useTokens();
 	const { t, locale } = useI18n();
-	const copy = t.sudoku;
+	const copy = t.games.sudoku;
 	const [variant, setVariant] = useState<SudokuVariant>("classic");
 	const [busy, setBusy] = useState<SudokuDifficulty | null>(null);
 	const [failed, setFailed] = useState(false);
@@ -87,10 +87,10 @@ export function SudokuHomeScreen() {
 		<Screen>
 			<View style={styles.group}>
 				<AppText variant="label" accessibilityRole="header">
-					{copy.newGame.variantLabel.toUpperCase()}
+					{copy.newGame.gameTypeLegend.toUpperCase()}
 				</AppText>
 				<Segmented
-					accessibilityLabel={copy.newGame.variantLabel}
+					accessibilityLabel={copy.newGame.gameTypeLegend}
 					options={VARIANTS.map((value) => ({
 						value,
 						label: copy.variant[value],
@@ -141,7 +141,7 @@ export function SudokuHomeScreen() {
 			</View>
 			<View style={styles.group}>
 				<AppText variant="label" accessibilityRole="header">
-					{copy.saved.heading.toUpperCase()}
+					{copy.newGame.yourPuzzles.toUpperCase()}
 				</AppText>
 				{saves.length === 0 ? (
 					<AppText variant="secondary">{copy.saved.empty}</AppText>

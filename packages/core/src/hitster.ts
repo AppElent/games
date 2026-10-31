@@ -3,8 +3,6 @@ export type HitsterMode = "instant" | "original" | "pro" | "expert" | "coop";
 export type HitsterPlaybackMode = "hostDevice" | "preview";
 
 export type HitsterModeConfig = {
-	label: string;
-	summary: string;
 	startTokens: number;
 	tokenCap: number;
 	/** Original mode: artist + title bonus earns a token. */
@@ -20,8 +18,6 @@ export type HitsterModeConfig = {
 
 const MODE_CONFIGS: Record<HitsterMode, HitsterModeConfig> = {
 	instant: {
-		label: "Instant Party",
-		summary: "Place the song in the right spot. First to the target wins.",
 		startTokens: 0,
 		tokenCap: 0,
 		earnTokens: false,
@@ -31,9 +27,6 @@ const MODE_CONFIGS: Record<HitsterMode, HitsterModeConfig> = {
 		shared: false,
 	},
 	original: {
-		label: "Original",
-		summary:
-			"Place chronologically. Name artist + title for a bonus token. Tokens fuel steals.",
 		startTokens: 2,
 		tokenCap: 5,
 		earnTokens: true,
@@ -43,9 +36,6 @@ const MODE_CONFIGS: Record<HitsterMode, HitsterModeConfig> = {
 		shared: false,
 	},
 	pro: {
-		label: "Pro",
-		summary:
-			"Win the card only with correct placement plus artist + title. No new tokens.",
 		startTokens: 5,
 		tokenCap: 5,
 		earnTokens: false,
@@ -55,9 +45,6 @@ const MODE_CONFIGS: Record<HitsterMode, HitsterModeConfig> = {
 		shared: false,
 	},
 	expert: {
-		label: "Expert",
-		summary:
-			"Placement plus exact year, artist and title required. No new tokens.",
 		startTokens: 3,
 		tokenCap: 5,
 		earnTokens: false,
@@ -67,9 +54,6 @@ const MODE_CONFIGS: Record<HitsterMode, HitsterModeConfig> = {
 		shared: false,
 	},
 	coop: {
-		label: "Cooperative",
-		summary:
-			"One shared timeline, 5 team tokens. Wrong placement burns a token. Reach the target before tokens run out.",
 		startTokens: 5,
 		tokenCap: 5,
 		earnTokens: false,

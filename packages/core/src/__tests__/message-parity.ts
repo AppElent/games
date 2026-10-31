@@ -1,7 +1,4 @@
-// Copied from developer-tools `i18n/examples/test-utils.ts`; Jest supplies
-// `describe`/`expect`/`it` as globals here instead of importing Vitest, and Jest
-// has no assertion-message argument, so each assertion carries its label in
-// the compared value.
+import { describe, expect, it } from "vitest";
 
 type Tree = { [key: string]: string | Tree };
 
@@ -49,20 +46,14 @@ export function assertMessageParity(locales: Record<string, Tree>): void {
 				const keys = [
 					...(leavesByLocale.get(locale) as Map<string, string>).keys(),
 				].sort();
-				expect({ locale, keys }).toEqual({ locale, keys: firstKeys });
+				expect(keys, locale).toEqual(firstKeys);
 			}
 		});
 
 		it("have no empty messages", () => {
 			for (const [locale, leaves] of leavesByLocale) {
 				for (const [path, value] of leaves) {
-					expect({
-						at: `${locale}: ${path}`,
-						empty: value.trim() === "",
-					}).toEqual({
-						at: `${locale}: ${path}`,
-						empty: false,
-					});
+					expect(value.trim(), `${locale}: ${path}`).not.toBe("");
 				}
 			}
 		});
@@ -79,11 +70,10 @@ export function assertMessageParity(locales: Record<string, Tree>): void {
 				const leaves = leavesByLocale.get(locale) as Map<string, string>;
 				for (const [path, firstValue] of firstLeaves) {
 					const value = leaves.get(path);
-					const at = `${locale}: ${path}`;
-					expect({ at, placeholders: placeholders(value ?? "") }).toEqual({
-						at,
-						placeholders: placeholders(firstValue),
-					});
+					expect(value, `${locale}: ${path}`).toBeDefined();
+					expect(placeholders(value as string), `${locale}: ${path}`).toEqual(
+						placeholders(firstValue),
+					);
 				}
 			}
 		});

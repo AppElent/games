@@ -1,8 +1,4 @@
-import {
-	getHitsterModeConfig,
-	HITSTER_MODES,
-	type HitsterMode,
-} from "@games/core/hitster";
+import { HITSTER_MODES, type HitsterMode } from "@games/core/hitster";
 import {
 	getPlayableHitsterCards,
 	listHitsterPacks,
@@ -56,7 +52,7 @@ function HitsterSetupFormInner() {
 					>
 						{HITSTER_MODES.map((entry) => (
 							<option key={entry} value={entry}>
-								{getHitsterModeConfig(entry).label}
+								{messages.games.hitster.modes[entry].label}
 							</option>
 						))}
 					</select>
@@ -111,9 +107,9 @@ function HitsterSetupFormInner() {
 
 			<div className="rounded-2xl border border-[var(--club-line)] bg-[var(--club-panel-strong)] p-4 text-sm text-[var(--club-muted)]">
 				<p className="font-semibold text-[var(--club-text)]">
-					{getHitsterModeConfig(mode).label}
+					{messages.games.hitster.modes[mode].label}
 				</p>
-				<p className="mt-1">{getHitsterModeConfig(mode).summary}</p>
+				<p className="mt-1">{messages.games.hitster.modes[mode].summary}</p>
 				<p className="mt-2 text-[var(--club-soft)]">
 					{plural(locale, playableCount, setupForm.playableTracksInfo)}
 				</p>

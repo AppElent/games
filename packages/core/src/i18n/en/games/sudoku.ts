@@ -3,6 +3,13 @@
  * notation content, not translatable prose, and are never routed through
  * message keys. */
 export const sudoku = {
+	saved: {
+		empty: "Puzzles you start appear here so you can pick them up later.",
+		solved: "Solved in {time}",
+		inProgress: "{time} played",
+		deleteTitle: "Delete this puzzle?",
+		deleteBody: "Its progress is removed from this device.",
+	},
 	difficulty: {
 		easy: "Easy",
 		medium: "Medium",
@@ -15,9 +22,16 @@ export const sudoku = {
 		binary: "Binary",
 	},
 	board: {
-		cellLabel: "Row {row} column {col}",
+		cellLabel: "Row {row}, column {col}",
+		given: "given",
+		empty: "empty",
+		notes: "notes {digits}",
+		cage: "cage sum {sum}",
+		conflict: "conflict",
 	},
 	keypad: {
+		modeLabel: "Entry mode",
+		digitLabel: "{digit}, {count} left",
 		modeDigit: "Digit",
 		modeCorner: "Corner",
 		modeCenter: "Center",
@@ -29,6 +43,11 @@ export const sudoku = {
 		hint: "Hint",
 	},
 	game: {
+		timer: "Time {time}",
+		pausedBody: "The board is hidden while the clock is stopped.",
+		noHint: "No simple step found. Check your digits for mistakes.",
+		restartTitle: "Restart this puzzle?",
+		restartBody: "The grid is cleared. You can still undo.",
 		renameTooltip: "Rename this puzzle",
 		importedFallback: "Imported",
 		scannedLabel: "scanned",
@@ -47,6 +66,7 @@ export const sudoku = {
 			"Keyboard: 1-9 digits · Shift+digit corner note · Ctrl+digit center note · Space cycles mode · Ctrl+Z/Y undo/redo · arrows move",
 	},
 	binary: {
+		restartBody: "The grid goes back to its givens.",
 		dimensions: "Binary {size}×{size}",
 		restartConfirm: "Restart this puzzle?",
 		instructions:
@@ -102,9 +122,12 @@ export const sudoku = {
 		nameLabel: "Puzzle name (optional)",
 		namePlaceholder: "Auto-named by level and time",
 		gameTypeLegend: "Game type",
-		variantBlurbClassic: "The familiar 9×9 grid",
-		variantBlurbKiller: "Cages must add up to their sum",
-		variantBlurbBinary: "Fill the grid with 0s and 1s",
+		variantBlurbs: {
+			classic: "The familiar 9×9 grid",
+			killer: "Cages must add up to their sum",
+			binary: "Fill the grid with 0s and 1s",
+		},
+		offlineNote: "Puzzles are saved on this device and work offline.",
 		difficultyBlurbs: {
 			easy: {
 				classic: "Plenty of clues, gentle start",

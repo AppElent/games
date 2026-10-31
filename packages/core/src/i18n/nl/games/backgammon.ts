@@ -2,6 +2,15 @@ import type { backgammon as enBackgammon } from "../../en/games/backgammon";
 
 export const backgammon = {
 	board: {
+		selected: "Geselecteerd",
+		target: "Hierheen",
+		bearOff: "Uitspelen",
+		dice: "Dobbelstenen: {dice}",
+		diceUsed: "gebruikt",
+		hintPickChecker: "Tik op een schijf om te zetten.",
+		hintPickTarget: "Tik op een gemarkeerd punt.",
+		hintEnterFromBar: "Breng eerst je schijf van de bar in.",
+		hintNoMoves: "Geen zetten meer met deze worp.",
 		optionShowNumbers: "Puntnummers tonen",
 		optionAutoRoll: "Automatisch gooien",
 		optionAutoSwitchTurn: "Beurt automatisch beëindigen",
@@ -52,6 +61,12 @@ export const backgammon = {
 		pointLabel: "punt {number}",
 	},
 	waitingRoom: {
+		youWon: "Jij hebt gewonnen!",
+		onlineTitle: "Online partij",
+		waitingHeading: "Wachten op je tegenstander",
+		sendInvite: "Uitnodiging sturen",
+		noInviteLink:
+			"Voor uitnodigingslinks moet het webadres zijn ingesteld. Laat je tegenstander via de webapp meedoen.",
 		joinBeforeRolling: "Doe mee aan deze uitdaging voordat je gooit",
 		rollError: "Kon niet gooien",
 		moveError: "Kon niet zetten",
@@ -82,14 +97,17 @@ export const backgammon = {
 		bothSeatsClaimed: "Beide plekken zijn bezet — jij kijkt mee.",
 	},
 	newGame: {
+		continueLocal: "Verder spelen",
+		confirmNewTitle: "Nieuw spel starten?",
+		confirmNewBody: "Het spel op dit apparaat wordt vervangen.",
 		heading: "Start een partij",
 		localMatchHeading: "Lokale partij",
 		localMatchDescription:
-			"Twee spelers op dit apparaat. Niets verlaat je browser — het spel wordt lokaal opgeslagen zodat je later verder kunt gaan.",
+			"Twee spelers op dit apparaat. Het spel wordt op dit apparaat bewaard zodat je later verder kunt gaan.",
 		playOnDevice: "Speel op dit apparaat",
 		onlineChallengeHeading: "Online uitdaging",
 		onlineChallengeDescription:
-			"Maak een uitdagingslink. De andere speler scant de QR-code of opent de link en claimt automatisch de zwarte plek.",
+			"Maak een uitdagingslink en stuur die op. Je tegenstander opent hem in de app of een browser en neemt de zwarte plek.",
 		createChallengeError: "Kon uitdaging niet aanmaken",
 		creatingChallenge: "Uitdaging aanmaken...",
 		createChallengeLink: "Uitdagingslink aanmaken",

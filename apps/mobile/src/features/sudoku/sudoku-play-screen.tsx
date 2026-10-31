@@ -17,9 +17,9 @@ export function SudokuPlayScreen({ id }: { id: string }) {
 	if (!save) {
 		return (
 			<CenteredState
-				title={t.sudoku.game.notFound}
+				title={t.games.sudoku.session.puzzleNotFound}
 				action={{
-					label: t.sudoku.game.newPuzzle,
+					label: t.games.sudoku.game.startAnotherPuzzle,
 					onPress: () => router.replace("/sudoku"),
 				}}
 			/>

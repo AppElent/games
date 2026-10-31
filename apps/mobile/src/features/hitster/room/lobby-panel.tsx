@@ -26,7 +26,7 @@ export function LobbyPanel({
 	onStart: () => void;
 }) {
 	const { t, locale } = useI18n();
-	const copy = t.hitster.room;
+	const copy = t.games.hitster.hostView;
 	const players = bundle.participants.filter(
 		(participant) => participant.role !== "watcher" && !participant.kickedAt,
 	);
@@ -37,14 +37,18 @@ export function LobbyPanel({
 			{code ? (
 				<Card>
 					<View style={styles.section}>
-						<AppText variant="label">{copy.roomCode.toUpperCase()}</AppText>
+						<AppText variant="label">
+							{t.common.session.roomCode.toUpperCase()}
+						</AppText>
 						<AppText variant="code" selectable testID="hitster-room-code">
 							{code}
 						</AppText>
 						<Button
 							variant="secondary"
 							label={copy.shareCode}
-							onPress={() => void shareInvite(t, t.hitster.title, { code })}
+							onPress={() =>
+								void shareInvite(t, t.catalog.hitster.title, { code })
+							}
 							testID="hitster-share-code"
 						/>
 					</View>
@@ -53,7 +57,7 @@ export function LobbyPanel({
 			<Card>
 				<View style={styles.section}>
 					<AppText variant="label">
-						{`${copy.players} · ${plural(locale, players.length, t.common.session.players)}`.toUpperCase()}
+						{`${t.common.participants.heading} · ${plural(locale, players.length, t.common.session.players)}`.toUpperCase()}
 					</AppText>
 					{players.map((player) => (
 						<AppText key={player._id} variant="body">
@@ -69,7 +73,7 @@ export function LobbyPanel({
 						<AppText variant="caption">{copy.needPlayers}</AppText>
 					)}
 					<Button
-						label={copy.start}
+						label={copy.startGame}
 						onPress={onStart}
 						disabled={!enough}
 						busy={busy}
@@ -77,12 +81,14 @@ export function LobbyPanel({
 					/>
 				</>
 			) : (
-				<AppText variant="secondary">{copy.waitingForHost}</AppText>
+				<AppText variant="secondary">
+					{t.games.hitster.stage.statusWaitingForHost}
+				</AppText>
 			)}
 			<Card>
 				<View style={styles.section}>
 					<AppText variant="heading" accessibilityRole="header">
-						{fmt(t.hitster.stage.howItWorks, { mode: modeLabel })}
+						{fmt(t.games.hitster.stage.howItWorksHeading, { mode: modeLabel })}
 					</AppText>
 					<RulesPanel
 						config={config}

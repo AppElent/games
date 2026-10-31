@@ -29,7 +29,7 @@ export function PuzzleStatus({
 	onNewPuzzle: () => void;
 }) {
 	const { t } = useI18n();
-	const copy = t.sudoku.game;
+	const copy = t.games.sudoku.game;
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const time = formatElapsed(elapsed);
@@ -53,7 +53,7 @@ export function PuzzleStatus({
 						</AppText>
 					</View>
 				</View>
-				<Button label={copy.newPuzzle} onPress={onNewPuzzle} compact />
+				<Button label={copy.startAnotherPuzzle} onPress={onNewPuzzle} compact />
 			</View>
 		);
 	}

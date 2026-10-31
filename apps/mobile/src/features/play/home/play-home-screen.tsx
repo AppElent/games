@@ -74,13 +74,14 @@ export function PlayHomeScreen() {
 			<AppText variant="secondary">{t.play.subtitle}</AppText>
 			<View style={styles.list}>
 				{GAMES.map((game) => {
-					const copy = t.play.games[game.key];
+					const title = t.catalog[game.key].title;
+					const tagline = t.play.taglines[game.key];
 					return (
 						<Card
 							key={game.key}
 							onPress={() => router.push(game.href)}
-							accessibilityLabel={copy.title}
-							accessibilityHint={copy.tagline}
+							accessibilityLabel={title}
+							accessibilityHint={tagline}
 							testID={`play-${game.key}`}
 						>
 							<View style={styles.row}>
@@ -98,8 +99,8 @@ export function PlayHomeScreen() {
 									/>
 								</View>
 								<View style={styles.text}>
-									<AppText variant="heading">{copy.title}</AppText>
-									<AppText variant="secondary">{copy.tagline}</AppText>
+									<AppText variant="heading">{title}</AppText>
+									<AppText variant="secondary">{tagline}</AppText>
 								</View>
 								<Icon
 									ios="chevron.right"
@@ -123,10 +124,10 @@ export function PlayHomeScreen() {
 							<Card
 								key={item.id}
 								onPress={() => router.push(item.href)}
-								accessibilityLabel={`${t.play.games[item.gameType].title}, ${detail}`}
+								accessibilityLabel={`${t.catalog[item.gameType].title}, ${detail}`}
 							>
 								<AppText variant="body">
-									{t.play.games[item.gameType].title}
+									{t.catalog[item.gameType].title}
 								</AppText>
 								<AppText variant="caption">{detail}</AppText>
 							</Card>

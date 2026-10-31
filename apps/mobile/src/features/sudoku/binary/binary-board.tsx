@@ -79,7 +79,7 @@ const BinaryCell = memo(function BinaryCell({
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const { t } = useI18n();
-	const copy = t.sudoku.board;
+	const copy = t.games.sudoku.board;
 	const label = binaryDigitLabel(value);
 	const fill =
 		value === 0

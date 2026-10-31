@@ -58,7 +58,7 @@ export function SudokuKeypad({
 	disabled,
 }: Props) {
 	const { t } = useI18n();
-	const copy = t.sudoku.keypad;
+	const copy = t.games.sudoku.keypad;
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const modeLabels: Record<SudokuInputMode, string> = {
@@ -84,7 +84,9 @@ export function SudokuKeypad({
 								// biome-ignore lint/suspicious/noArrayIndexKey: fixed palette
 								key={index}
 								accessibilityRole="button"
-								accessibilityLabel={fmt(copy.colorLabel, { number: index + 1 })}
+								accessibilityLabel={fmt(copy.colorAriaLabel, {
+									number: index + 1,
+								})}
 								onPress={() => onColor(index + 1)}
 								style={({ pressed }) => [styles.key, pressed && styles.pressed]}
 							>

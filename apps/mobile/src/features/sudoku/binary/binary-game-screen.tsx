@@ -17,7 +17,7 @@ import { useBinaryGame } from "./use-binary-game";
 export function BinaryGameScreen({ save }: { save: BinarySave }) {
 	const router = useRouter();
 	const { t, locale } = useI18n();
-	const copy = t.sudoku;
+	const copy = t.games.sudoku;
 	const styles = useThemedStyles(createStyles);
 	const insets = useSafeAreaInsets();
 	const game = useBinaryGame(save);
@@ -31,7 +31,11 @@ export function BinaryGameScreen({ save }: { save: BinarySave }) {
 	const confirmRestart = () =>
 		Alert.alert(copy.game.restartTitle, copy.binary.restartBody, [
 			{ text: t.common.actions.cancel, style: "cancel" },
-			{ text: copy.game.restart, style: "destructive", onPress: game.restart },
+			{
+				text: t.common.gameShell.restart,
+				style: "destructive",
+				onPress: game.restart,
+			},
 		]);
 
 	return (
@@ -85,7 +89,7 @@ export function BinaryGameScreen({ save }: { save: BinarySave }) {
 								<Button
 									variant="plain"
 									compact
-									label={copy.game.restart}
+									label={t.common.gameShell.restart}
 									onPress={confirmRestart}
 									disabled={game.status !== "active"}
 								/>

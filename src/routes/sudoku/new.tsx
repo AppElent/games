@@ -36,17 +36,17 @@ function SudokuNewPage() {
 		{
 			id: "classic",
 			label: sudoku.variant.classic,
-			blurb: sudoku.newGame.variantBlurbClassic,
+			blurb: sudoku.newGame.variantBlurbs.classic,
 		},
 		{
 			id: "killer",
 			label: sudoku.variant.killer,
-			blurb: sudoku.newGame.variantBlurbKiller,
+			blurb: sudoku.newGame.variantBlurbs.killer,
 		},
 		{
 			id: "binary",
 			label: sudoku.variant.binary,
-			blurb: sudoku.newGame.variantBlurbBinary,
+			blurb: sudoku.newGame.variantBlurbs.binary,
 		},
 	];
 	const DIFFICULTIES: {

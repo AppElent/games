@@ -32,7 +32,7 @@ const TIMERS = ["0", "30", "60", "90"] as const;
 export function HitsterSetupScreen() {
 	const router = useRouter();
 	const { t, locale } = useI18n();
-	const copy = t.hitster;
+	const copy = t.games.hitster;
 	const hosting = useHostSession();
 	const setup = useMutation(api.hitster.setup);
 	const [mode, setMode] = useState<HitsterMode>("original");
@@ -44,7 +44,7 @@ export function HitsterSetupScreen() {
 
 	const create = async () => {
 		const session = await hosting.host(
-			{ gameType: "hitster", joinMode: "room", title: copy.title },
+			{ gameType: "hitster", joinMode: "room", title: t.catalog.hitster.title },
 			(created) =>
 				setup({
 					sessionId: created.sessionId,
@@ -66,10 +66,10 @@ export function HitsterSetupScreen() {
 
 	return (
 		<Screen>
-			<AppText variant="secondary">{copy.setup.intro}</AppText>
+			<AppText variant="secondary">{copy.newGame.intro}</AppText>
 			{hosting.isSignedIn ? (
 				<>
-					<Section label={copy.setup.mode}>
+					<Section label={copy.setupForm.gameModeLabel}>
 						<ChoiceList
 							choices={HITSTER_MODES.map((value) => ({
 								value,
@@ -78,11 +78,11 @@ export function HitsterSetupScreen() {
 							}))}
 							value={mode}
 							onChange={setMode}
-							accessibilityLabel={copy.setup.mode}
+							accessibilityLabel={copy.setupForm.gameModeLabel}
 							testID="hitster-mode"
 						/>
 					</Section>
-					<Section label={copy.setup.pack}>
+					<Section label={copy.setupForm.songPackLabel}>
 						<ChoiceList
 							choices={packs.map((pack) => ({
 								value: pack.id,
@@ -90,41 +90,43 @@ export function HitsterSetupScreen() {
 								detail: `${pack.description} ${plural(
 									locale,
 									getPlayableHitsterCards(pack.id, "hostDevice").length,
-									copy.setup.packTracks,
+									copy.setupForm.packTracks,
 								)}`,
 							}))}
 							value={packId}
 							onChange={setPackId}
-							accessibilityLabel={copy.setup.pack}
+							accessibilityLabel={copy.setupForm.songPackLabel}
 							testID="hitster-pack"
 						/>
 					</Section>
-					<Section label={copy.setup.target}>
+					<Section label={copy.setupForm.cardsToWinLabel}>
 						<Segmented
 							options={TARGETS.map((value) => ({ value, label: value }))}
 							value={target}
 							onChange={setTarget}
-							accessibilityLabel={copy.setup.target}
+							accessibilityLabel={copy.setupForm.cardsToWinLabel}
 						/>
 					</Section>
-					<Section label={copy.setup.timer}>
+					<Section label={copy.setupForm.turnTimerLabel}>
 						<Segmented
 							options={TIMERS.map((value) => ({
 								value,
 								label:
 									value === "0"
-										? copy.setup.noTimer
-										: fmt(copy.setup.seconds, { count: value }),
+										? copy.setupForm.noTimer
+										: fmt(copy.setupForm.timerSecondsShort, { count: value }),
 							}))}
 							value={timer}
 							onChange={setTimer}
-							accessibilityLabel={copy.setup.timer}
+							accessibilityLabel={copy.setupForm.turnTimerLabel}
 						/>
 					</Section>
-					<AppText variant="caption">{copy.setup.playbackNote}</AppText>
-					<Notice message={hosting.failed ? copy.setup.couldNotCreate : null} />
+					<AppText variant="caption">{copy.setupForm.playbackNote}</AppText>
+					<Notice
+						message={hosting.failed ? copy.setupForm.createRoomError : null}
+					/>
 					<Button
-						label={copy.setup.create}
+						label={copy.setupForm.createRoom}
 						onPress={create}
 						busy={hosting.busy}
 						disabled={!hosting.canHost}
@@ -136,7 +138,7 @@ export function HitsterSetupScreen() {
 			)}
 			<Button
 				variant="plain"
-				label={copy.setup.joinInstead}
+				label={copy.setupForm.joinInstead}
 				onPress={() => router.push("/join")}
 				testID="hitster-join-instead"
 			/>

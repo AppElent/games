@@ -25,8 +25,9 @@ import { shareInvite } from "../../sessions/host/share-invite";
 import { hasWebOrigin } from "../../sessions/session-links";
 import { BackgammonBoard } from "../board/backgammon-board";
 import { useBoardSelection } from "../board/use-board-selection";
+import { colorLabel } from "../components/color-label";
 import { OptionsPanel } from "../components/options-panel";
-import { turnHint } from "../components/turn-hint";
+import { TURN_HINT_MESSAGE, turnHint } from "../components/turn-hint";
 import { TurnPanel } from "../components/turn-panel";
 import { useBoardWidth } from "../components/use-board-width";
 import {
@@ -42,7 +43,7 @@ const PLACEHOLDER_TURN = createInitialBackgammonState();
 
 export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 	const { t } = useI18n();
-	const copy = t.backgammon;
+	const copy = t.games.backgammon;
 	const styles = useThemedStyles(createStyles);
 	const insets = useSafeAreaInsets();
 	const [options, setOptions] = useState<BackgammonOptions>(
@@ -69,13 +70,15 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 		if (won) haptics.gameWon();
 	}, [won]);
 
-	const title = <Stack.Screen options={{ title: copy.online.title }} />;
+	const title = (
+		<Stack.Screen options={{ title: copy.waitingRoom.onlineTitle }} />
+	);
 
 	if (match.loading) {
 		return (
 			<>
 				{title}
-				<CenteredState loading message={t.common.states.loading} />
+				<CenteredState loading message={t.common.errors.loading} />
 			</>
 		);
 	}
@@ -83,7 +86,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 		return (
 			<>
 				{title}
-				<CenteredState title={t.common.session.notFound} />
+				<CenteredState title={t.common.session.unavailable} />
 			</>
 		);
 	}
@@ -94,24 +97,24 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 		viewer === "white" ? state.blackParticipantId : state.whiteParticipantId;
 	const opponentName =
 		match.nameOf(opponentId) ??
-		copy.colors[viewer === "white" ? "black" : "white"];
+		colorLabel(copy, viewer === "white" ? "black" : "white");
 	const activeName =
 		match.nameOf(
 			turn.activeColor === "white"
 				? state.whiteParticipantId
 				: state.blackParticipantId,
-		) ?? copy.colors[turn.activeColor];
+		) ?? colorLabel(copy, turn.activeColor);
 	const waiting = match.phase === "waiting";
 
 	const heading = winner
 		? match.myColor
 			? won
-				? copy.online.youWon
-				: fmt(copy.online.youLost, { name: opponentName })
-			: fmt(copy.game.winner, { color: copy.colors[winner] })
+				? copy.waitingRoom.youWon
+				: fmt(copy.waitingRoom.winsTheMatch, { name: opponentName })
+			: fmt(copy.waitingRoom.winsTheMatch, { name: colorLabel(copy, winner) })
 		: match.isMyTurn
-			? copy.online.yourTurn
-			: fmt(copy.online.theirTurn, { name: activeName });
+			? t.common.session.yourTurn
+			: fmt(copy.waitingRoom.waitingForPlayerToPlay, { name: activeName });
 
 	const hint = match.isMyTurn ? turnHint(turn, selection.selected) : null;
 	const canInvite = Boolean(session.shareToken) && hasWebOrigin();
@@ -144,21 +147,23 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 						<Card>
 							<View style={styles.section}>
 								<AppText variant="heading" accessibilityRole="header">
-									{copy.online.waitingHeading}
+									{copy.waitingRoom.waitingHeading}
 								</AppText>
-								<AppText variant="secondary">{copy.online.waitingBody}</AppText>
+								<AppText variant="secondary">
+									{copy.waitingRoom.shareToClaimBlackSeat}
+								</AppText>
 								{canInvite ? (
 									<Button
-										label={copy.online.shareInvite}
+										label={copy.waitingRoom.sendInvite}
 										onPress={() =>
-											void shareInvite(t, copy.title, {
+											void shareInvite(t, t.catalog.backgammon.title, {
 												token: session.shareToken,
 											})
 										}
 										testID="bg-share-invite"
 									/>
 								) : (
-									<Notice tone="info" message={copy.online.noInviteLink} />
+									<Notice tone="info" message={copy.waitingRoom.noInviteLink} />
 								)}
 							</View>
 						</Card>
@@ -168,17 +173,17 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 							heading={heading}
 							message={
 								hint
-									? copy.game[hint]
+									? copy.board[TURN_HINT_MESSAGE[hint]]
 									: match.myColor
 										? null
-										: copy.online.spectating
+										: copy.waitingRoom.bothSeatsClaimed
 							}
 							dice={turn.dice}
 							used={turn.used}
 						>
 							{winner && match.myColor ? (
 								<Button
-									label={copy.online.rematch}
+									label={copy.waitingRoom.rematchLabel}
 									onPress={() => void match.rematch()}
 									busy={match.busy}
 									testID="bg-rematch"
@@ -186,7 +191,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 							) : null}
 							{!winner && match.isMyTurn && turn.dice.length === 0 ? (
 								<Button
-									label={copy.game.roll}
+									label={copy.board.rollButton}
 									onPress={() => {
 										haptics.valueEntered();
 										void match.roll();
@@ -197,7 +202,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 							) : null}
 							{!winner && match.isMyTurn && turn.dice.length > 0 ? (
 								<Button
-									label={copy.game.endTurn}
+									label={copy.board.endTurnButton}
 									variant={
 										hint === "turnDone" || hint === "noMoves"
 											? "primary"
@@ -210,10 +215,14 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 							) : null}
 						</TurnPanel>
 					)}
-					<Notice message={match.failed ? copy.online.couldNotMove : null} />
+					<Notice
+						message={match.failed ? t.common.errors.somethingWentWrong : null}
+					/>
 					{match.myColor ? (
 						<AppText variant="caption">
-							{fmt(copy.online.you, { color: copy.colors[match.myColor] })}
+							{fmt(copy.waitingRoom.youArePlaying, {
+								color: colorLabel(copy, match.myColor),
+							})}
 						</AppText>
 					) : null}
 					<OptionsPanel

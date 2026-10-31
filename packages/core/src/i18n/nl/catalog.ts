@@ -1,4 +1,4 @@
-import type { GameType } from "#/lib/games/catalog";
+import type { GameType } from "../../games";
 import type { CatalogText } from "../en/catalog";
 
 export const catalog = {

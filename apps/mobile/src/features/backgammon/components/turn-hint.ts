@@ -1,6 +1,6 @@
 /**
- * What the player whose turn it is should do next, as a message key in
- * `t.backgammon.game`.
+ * What the player whose turn it is should do next. `TURN_HINT_MESSAGE` maps
+ * each hint to its message key in `t.games.backgammon.board`.
  */
 import {
 	type BackgammonMoveSource,
@@ -17,6 +17,15 @@ export type TurnHint =
 	| "enterFromBar"
 	| "pickTarget"
 	| "pickChecker";
+
+export const TURN_HINT_MESSAGE = {
+	rollPrompt: "statusRollToBegin",
+	turnDone: "statusNoMovesLeft",
+	noMoves: "hintNoMoves",
+	enterFromBar: "hintEnterFromBar",
+	pickTarget: "hintPickTarget",
+	pickChecker: "hintPickChecker",
+} as const satisfies Record<TurnHint, string>;
 
 export function turnHint(
 	state: BackgammonTurnState,

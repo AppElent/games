@@ -29,7 +29,7 @@ export function PlacementForm({
 	onSubmit: (answer: Answer) => void;
 }) {
 	const { t } = useI18n();
-	const copy = t.hitster.stage;
+	const copy = t.games.hitster.stage;
 	const [dropIndex, setDropIndex] = useState<number>();
 	const [artist, setArtist] = useState("");
 	const [title, setTitle] = useState("");
@@ -40,7 +40,7 @@ export function PlacementForm({
 
 	return (
 		<View style={styles.form}>
-			<AppText variant="secondary">{copy.placementHelp}</AppText>
+			<AppText variant="secondary">{copy.placementInstructions}</AppText>
 			<TimelineList
 				cards={cards}
 				selectedDrop={dropIndex}
@@ -51,7 +51,9 @@ export function PlacementForm({
 				<>
 					<TextField
 						label={
-							config.needsArtistTitle ? copy.artistRequired : copy.artistBonus
+							config.needsArtistTitle
+								? copy.artistLabelRequired
+								: copy.artistLabelBonus
 						}
 						value={artist}
 						onChangeText={setArtist}
@@ -62,7 +64,9 @@ export function PlacementForm({
 					/>
 					<TextField
 						label={
-							config.needsArtistTitle ? copy.titleRequired : copy.titleBonus
+							config.needsArtistTitle
+								? copy.titleLabelRequired
+								: copy.titleLabelBonus
 						}
 						value={title}
 						onChangeText={setTitle}
@@ -74,7 +78,7 @@ export function PlacementForm({
 			) : null}
 			{config.needsYear ? (
 				<TextField
-					label={copy.yearRequired}
+					label={copy.exactYearLabel}
 					value={year}
 					onChangeText={setYear}
 					placeholder={copy.yearPlaceholder}
@@ -84,7 +88,7 @@ export function PlacementForm({
 				/>
 			) : null}
 			<Button
-				label={forSteal ? copy.lockSteal : copy.lock}
+				label={forSteal ? copy.stealSubmit : copy.lockPlacement}
 				disabled={dropIndex === undefined}
 				busy={busy}
 				onPress={() => {

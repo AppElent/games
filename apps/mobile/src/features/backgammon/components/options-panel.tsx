@@ -10,6 +10,13 @@ import type { BackgammonOptions } from "../local/local-match";
 
 type Key = keyof BackgammonOptions;
 
+const OPTION_MESSAGE = {
+	showNumbers: "optionShowNumbers",
+	autoRoll: "optionAutoRoll",
+	autoSwitchTurn: "optionAutoSwitchTurn",
+	autoCombine: "optionAutoCombine",
+} as const satisfies Record<Key, string>;
+
 export function OptionsPanel({
 	options,
 	keys,
@@ -21,20 +28,20 @@ export function OptionsPanel({
 }) {
 	const { t } = useI18n();
 	const tokens = useTokens();
-	const copy = t.backgammon.game;
+	const copy = t.games.backgammon.board;
 	return (
 		<View style={styles.list}>
-			<AppText variant="label">{copy.options.toUpperCase()}</AppText>
+			<AppText variant="label">{copy.optionsHeading.toUpperCase()}</AppText>
 			{keys.map((key) => (
 				<View key={key} style={styles.row}>
 					<AppText variant="secondary" tone="default" style={styles.grow}>
-						{copy[key]}
+						{copy[OPTION_MESSAGE[key]]}
 					</AppText>
 					<Switch
 						value={options[key]}
 						onValueChange={(value) => onChange(key, value)}
 						trackColor={{ true: tokens.accent, false: tokens.surface2 }}
-						accessibilityLabel={copy[key]}
+						accessibilityLabel={copy[OPTION_MESSAGE[key]]}
 						testID={`bg-option-${key}`}
 					/>
 				</View>

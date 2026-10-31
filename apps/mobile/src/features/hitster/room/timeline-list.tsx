@@ -30,7 +30,7 @@ export function TimelineList({
 	testID?: string;
 }) {
 	const { t } = useI18n();
-	const copy = t.hitster.stage;
+	const copy = t.games.hitster.bits.timeline;
 	const styles = useThemedStyles(createStyles);
 	const tokens = useTokens();
 
@@ -41,7 +41,7 @@ export function TimelineList({
 			<Pressable
 				accessibilityRole="radio"
 				accessibilityState={{ selected }}
-				accessibilityLabel={fmt(copy.placeHereLabel, { position: index + 1 })}
+				accessibilityLabel={fmt(copy.placeHere, { position: index + 1 })}
 				onPress={() => onSelectDrop(index)}
 				testID={`hitster-slot-${index}`}
 				style={({ pressed }) => [
@@ -60,7 +60,7 @@ export function TimelineList({
 					variant="caption"
 					style={{ color: selected ? tokens.onAccent : tokens.accent }}
 				>
-					{selected ? copy.selectedSpot : copy.placeHere}
+					{selected ? copy.selectedSpot : copy.placeHereShort}
 				</AppText>
 			</Pressable>
 		);

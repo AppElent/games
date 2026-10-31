@@ -6,7 +6,7 @@ export default function SudokuRoute() {
 	const { t } = useI18n();
 	return (
 		<>
-			<Stack.Screen options={{ title: t.sudoku.title }} />
+			<Stack.Screen options={{ title: t.catalog.sudoku.title }} />
 			<SudokuHomeScreen />
 		</>
 	);

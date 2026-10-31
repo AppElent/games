@@ -3,6 +3,7 @@
  * token in an invite link (`arcadeclub://join?token=…`). A game the app
  * cannot play yet points to the web instead.
  */
+import type { GameType } from "@games/core/games";
 import {
 	formatJoinCode,
 	isJoinCodeLike,
@@ -28,7 +29,7 @@ type Props = { shareToken?: string; initialCode?: string };
 export function JoinScreen({ shareToken, initialCode }: Props) {
 	const router = useRouter();
 	const { t } = useI18n();
-	const copy = t.join;
+	const copy = t.common.joinPanel;
 	const identity = usePlayerIdentity();
 	const { join, busy, failed } = useJoinSession();
 	const [code, setCode] = useState(
@@ -66,9 +67,9 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 	}
 
 	const gameName = unsupported
-		? (t.play.otherGames[
-				unsupported.gameType as keyof typeof t.play.otherGames
-			] ?? unsupported.gameType)
+		? unsupported.gameType in t.catalog
+			? t.catalog[unsupported.gameType as GameType].title
+			: unsupported.gameType
 		: "";
 
 	return (
@@ -83,7 +84,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 			)}
 			{shareToken ? null : (
 				<TextField
-					label={copy.code}
+					label={t.common.session.roomCode}
 					value={code}
 					onChangeText={(next) => setCode(formatJoinCode(next).slice(0, 9))}
 					placeholder={copy.codePlaceholder}
@@ -97,7 +98,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 				/>
 			)}
 			<TextField
-				label={copy.name}
+				label={copy.displayName}
 				value={name}
 				onChangeText={setName}
 				maxLength={32}
@@ -106,7 +107,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 				onSubmitEditing={submit}
 				testID="join-name"
 			/>
-			<Notice message={failed ? copy.error : null} />
+			<Notice message={failed ? copy.joinError : null} />
 			{unsupported ? (
 				<Card>
 					<AppText variant="secondary" tone="default">

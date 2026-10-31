@@ -13,13 +13,13 @@ import { AppText } from "../../../ui/text";
 
 export function PausedOverlay({ onResume }: { onResume: () => void }) {
 	const { t } = useI18n();
-	const copy = t.sudoku.game;
+	const copy = t.games.sudoku.game;
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	return (
 		<Pressable
 			accessibilityRole="button"
-			accessibilityLabel={`${copy.paused}. ${copy.resume}`}
+			accessibilityLabel={`${t.common.gameShell.paused}. ${t.common.gameShell.resume}`}
 			onPress={onResume}
 			style={styles.overlay}
 			testID="sudoku-resume"
@@ -30,7 +30,7 @@ export function PausedOverlay({ onResume }: { onResume: () => void }) {
 				size={48}
 				color={tokens.accent}
 			/>
-			<AppText variant="heading">{copy.paused}</AppText>
+			<AppText variant="heading">{t.common.gameShell.paused}</AppText>
 			<AppText variant="secondary" style={styles.center}>
 				{copy.pausedBody}
 			</AppText>

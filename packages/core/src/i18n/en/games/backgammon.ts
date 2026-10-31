@@ -3,6 +3,15 @@
  * English prose, and is never routed through message keys. */
 export const backgammon = {
 	board: {
+		selected: "Selected",
+		target: "Move here",
+		bearOff: "Bear off",
+		dice: "Dice: {dice}",
+		diceUsed: "used",
+		hintPickChecker: "Tap a checker to move.",
+		hintPickTarget: "Tap a highlighted point.",
+		hintEnterFromBar: "Enter your checker from the bar first.",
+		hintNoMoves: "No moves left with these dice.",
 		optionShowNumbers: "Show point numbers",
 		optionAutoRoll: "Auto-roll",
 		optionAutoSwitchTurn: "Auto end turn",
@@ -51,6 +60,12 @@ export const backgammon = {
 		pointLabel: "point {number}",
 	},
 	waitingRoom: {
+		youWon: "You won!",
+		onlineTitle: "Online match",
+		waitingHeading: "Waiting for your opponent",
+		sendInvite: "Send invite",
+		noInviteLink:
+			"Invite links need the web address configured. Ask your opponent to join from the web app instead.",
 		joinBeforeRolling: "Join this challenge before rolling",
 		rollError: "Could not roll dice",
 		moveError: "Could not move",
@@ -80,14 +95,17 @@ export const backgammon = {
 		bothSeatsClaimed: "Both seats are claimed — you are watching.",
 	},
 	newGame: {
+		continueLocal: "Continue game",
+		confirmNewTitle: "Start a new game?",
+		confirmNewBody: "The game on this device will be replaced.",
 		heading: "Start a match",
 		localMatchHeading: "Local match",
 		localMatchDescription:
-			"Two players on this device. Nothing leaves your browser — the game is saved locally so you can pick it up later.",
+			"Two players on this device. The game is saved on this device so you can pick it up later.",
 		playOnDevice: "Play on this device",
 		onlineChallengeHeading: "Online challenge",
 		onlineChallengeDescription:
-			"Create a challenge link. The other player scans the QR code or opens the link and automatically claims the black seat.",
+			"Create a challenge link and send it. Your opponent opens it in the app or a browser and takes the black seat.",
 		createChallengeError: "Could not create challenge",
 		creatingChallenge: "Creating challenge...",
 		createChallengeLink: "Create challenge link",

@@ -19,14 +19,14 @@ export function Scoreboard({
 	shared: boolean;
 }) {
 	const { t, locale } = useI18n();
-	const copy = t.hitster.scoreboard;
+	const copy = t.games.hitster.bits.scoreboard;
 	const tokens = useTokens();
 	if (shared) {
 		return (
 			<View style={styles.list}>
-				<AppText variant="label">{copy.team.toUpperCase()}</AppText>
+				<AppText variant="label">{copy.teamProgress.toUpperCase()}</AppText>
 				<AppText variant="body">
-					{fmt(copy.progress, {
+					{fmt(copy.cardsProgress, {
 						cards: state.timelines[0]?.cardIds.length ?? 0,
 						target: state.targetCards,
 					})}
@@ -40,7 +40,9 @@ export function Scoreboard({
 	return (
 		<View style={styles.list}>
 			<AppText variant="label">
-				{fmt(copy.heading, { target: state.targetCards }).toUpperCase()}
+				{fmt(copy.standingsHeading, {
+					target: state.targetCards,
+				}).toUpperCase()}
 			</AppText>
 			{rows.map((row) => {
 				const winner = row.participantId === state.winnerParticipantId;
@@ -53,12 +55,12 @@ export function Scoreboard({
 							{participantName(
 								bundle,
 								row.participantId,
-								t.hitster.fallback.player,
+								t.games.hitster.bits.participantFallbackPlayer,
 							)}
 							{winner ? ` · ${copy.winner}` : ""}
 						</AppText>
 						<AppText variant="secondary">
-							{plural(locale, row.cardIds.length, copy.cards)}
+							{plural(locale, row.cardIds.length, copy.cardsCount)}
 						</AppText>
 					</View>
 				);

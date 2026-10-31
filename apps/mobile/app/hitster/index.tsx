@@ -6,7 +6,7 @@ export default function HitsterRoute() {
 	const { t } = useI18n();
 	return (
 		<>
-			<Stack.Screen options={{ title: t.hitster.title }} />
+			<Stack.Screen options={{ title: t.catalog.hitster.title }} />
 			<HitsterSetupScreen />
 		</>
 	);

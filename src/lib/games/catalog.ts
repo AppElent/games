@@ -1,3 +1,4 @@
+import type { AuthPolicy, GameType, JoinMode } from "@games/core/games";
 import {
 	Brain,
 	ChartNoAxesColumnIncreasing,
@@ -12,20 +13,8 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 
-export type GameType =
-	| "live-quiz"
-	| "backgammon"
-	| "sudoku"
-	| "chess"
-	| "hitster"
-	| "word-links"
-	| "connect-four"
-	| "signal-words"
-	| "bluff-dice"
-	| "squad-surge";
+export type { AuthPolicy, GameType, JoinMode };
 
-export type JoinMode = "room" | "challenge" | "solo";
-export type AuthPolicy = "guestAllowed" | "signedInRequired" | "hostChoice";
 export type GameAvailability = "playable" | "coming-soon";
 
 export type GameCatalogItem = {

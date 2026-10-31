@@ -29,7 +29,7 @@ import { useHitsterRoom } from "./use-hitster-room";
 export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 	useKeepAwake();
 	const { t, locale } = useI18n();
-	const copy = t.hitster;
+	const copy = t.games.hitster;
 	const tokens = useTokens();
 	const room = useHitsterRoom(sessionId);
 	const [stealOpen, setStealOpen] = useState(false);
@@ -51,13 +51,13 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 		if (phase === "reveal" || phase === "finished") haptics.gameWon();
 	}, [phase]);
 
-	const header = <Stack.Screen options={{ title: copy.room.title }} />;
+	const header = <Stack.Screen options={{ title: copy.session.roomTitle }} />;
 
 	if (room.loading) {
 		return (
 			<>
 				{header}
-				<CenteredState loading message={t.common.states.loading} />
+				<CenteredState loading message={t.common.errors.loading} />
 			</>
 		);
 	}
@@ -65,7 +65,7 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 		return (
 			<>
 				{header}
-				<CenteredState title={t.common.session.notFound} />
+				<CenteredState title={t.common.session.unavailable} />
 			</>
 		);
 	}
@@ -73,7 +73,7 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 		return (
 			<>
 				{header}
-				<CenteredState title={copy.room.notSeated} />
+				<CenteredState title={t.common.session.notSeated} />
 			</>
 		);
 	}
@@ -84,7 +84,7 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 		return (
 			<>
 				{header}
-				<CenteredState loading message={copy.room.waitingForHost} />
+				<CenteredState loading message={copy.stage.statusWaitingForHost} />
 			</>
 		);
 	}
@@ -95,7 +95,7 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 	const activeName = participantName(
 		bundle,
 		view.activeParticipantId,
-		copy.fallback.player,
+		copy.bits.participantFallbackPlayer,
 	);
 	const myCards = view.myTimeline
 		? timelineCards(live, view.myTimeline.cardIds)
@@ -105,15 +105,18 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 		live.phase === "lobby"
 			? modeLabel
 			: live.phase === "nowPlaying"
-				? `${fmt(copy.room.round, { round: live.roundNumber })} · ${fmt(copy.room.turnOf, { name: activeName })}`
+				? fmt(copy.stage.statusNowPlaying, {
+						round: live.roundNumber,
+						name: activeName,
+					})
 				: live.phase === "reveal"
-					? fmt(copy.room.revealed, { round: live.roundNumber })
-					: copy.room.gameOver;
+					? fmt(copy.stage.statusRevealed, { round: live.roundNumber })
+					: copy.stage.statusGameOver;
 
 	const tokenLine = config.shared
-		? plural(locale, live.coopTokens ?? 0, copy.room.teamTokens)
+		? plural(locale, live.coopTokens ?? 0, copy.bits.tokens.teamCount)
 		: config.tokenCap > 0 && view.isPlaying
-			? plural(locale, view.myTokens, copy.room.tokens)
+			? plural(locale, view.myTokens, copy.bits.tokens.count)
 			: null;
 
 	return (
@@ -127,7 +130,7 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 					<AppText variant="caption">
 						{[
 							remaining !== null
-								? fmt(copy.room.remaining, { count: remaining })
+								? fmt(copy.stage.remainingSeconds, { count: remaining })
 								: null,
 							tokenLine,
 						]
@@ -162,7 +165,7 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 						{view.isActive ? (
 							<View style={styles.section}>
 								<AppText variant="heading" accessibilityRole="header">
-									{copy.stage.yourTurn}
+									{copy.stage.yourTurnHeading}
 								</AppText>
 								{live.pendingGuess ? (
 									<>
@@ -170,7 +173,7 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 											{copy.stage.placementLocked}
 										</AppText>
 										<AppText variant="secondary">
-											{copy.stage.waitingForReveal}
+											{copy.stage.waitingForHostReveal}
 										</AppText>
 									</>
 								) : (
@@ -191,22 +194,24 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 								<AppText variant="secondary" tone="default">
 									{fmt(
 										live.pendingGuess
-											? copy.stage.listeningLocked
-											: copy.stage.listening,
+											? copy.stage.activePlacingSongLocked
+											: copy.stage.activePlacingSongListen,
 										{ name: activeName },
 									)}
 								</AppText>
 								{config.stealsEnabled && view.isPlaying ? (
 									view.hasClaimed ? (
 										<AppText variant="secondary">
-											{copy.stage.stealLocked}
+											{copy.stage.stealClaimLocked}
 										</AppText>
 									) : view.myTokens < 1 ? (
-										<AppText variant="caption">{copy.stage.noTokens}</AppText>
+										<AppText variant="caption">
+											{copy.stage.noTokensToSteal}
+										</AppText>
 									) : stealOpen ? (
 										<>
 											<AppText variant="heading">
-												{copy.stage.stealHeading}
+												{copy.stage.stealFormHeading}
 											</AppText>
 											<PlacementForm
 												cards={myCards}
@@ -220,14 +225,14 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 											/>
 											<Button
 												variant="plain"
-												label={copy.stage.cancelSteal}
+												label={t.common.actions.cancel}
 												onPress={() => setStealOpen(false)}
 											/>
 										</>
 									) : (
 										<Button
 											variant="secondary"
-											label={copy.stage.steal}
+											label={copy.stage.stealButton}
 											onPress={() => setStealOpen(true)}
 											testID="hitster-steal"
 										/>
@@ -264,7 +269,9 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 					</Card>
 				) : null}
 
-				<Notice message={room.failed ? copy.room.actionFailed : null} />
+				<Notice
+					message={room.failed ? t.common.errors.somethingWentWrong : null}
+				/>
 
 				{live.phase !== "lobby" &&
 				view.myTimeline &&
@@ -276,8 +283,8 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 								locale,
 								myCards.length,
 								config.shared
-									? copy.stage.teamTimeline
-									: copy.stage.yourTimeline,
+									? copy.stage.teamTimelineHeading
+									: copy.stage.yourTimelineHeading,
 							).toUpperCase()}
 						</AppText>
 						<TimelineList cards={myCards} testID="hitster-timeline" />

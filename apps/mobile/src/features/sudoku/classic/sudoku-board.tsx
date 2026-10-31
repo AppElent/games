@@ -244,7 +244,7 @@ const BoardCell = memo(function BoardCell({
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const { t } = useI18n();
-	const copy = t.sudoku.board;
+	const copy = t.games.sudoku.board;
 	const row = rowOf(cell);
 	const col = colOf(cell);
 

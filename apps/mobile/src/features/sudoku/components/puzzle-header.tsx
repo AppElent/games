@@ -20,7 +20,7 @@ export function PuzzleHeader({
 	onResume: () => void;
 }) {
 	const { t } = useI18n();
-	const copy = t.sudoku.game;
+	const copy = t.games.sudoku.game;
 	return (
 		<Stack.Screen
 			options={{
@@ -32,7 +32,11 @@ export function PuzzleHeader({
 								<Button
 									variant="plain"
 									compact
-									label={status === "active" ? copy.pause : copy.resume}
+									label={
+										status === "active"
+											? copy.pauseButton
+											: t.common.gameShell.resume
+									}
 									onPress={status === "active" ? onPause : onResume}
 									testID="sudoku-pause"
 								/>

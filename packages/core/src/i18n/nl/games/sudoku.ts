@@ -1,6 +1,13 @@
 import type { sudoku as enSudoku } from "../../en/games/sudoku";
 
 export const sudoku = {
+	saved: {
+		empty: "Puzzels die je start verschijnen hier, zodat je later verder kunt.",
+		solved: "Opgelost in {time}",
+		inProgress: "{time} gespeeld",
+		deleteTitle: "Deze puzzel verwijderen?",
+		deleteBody: "De voortgang wordt van dit apparaat verwijderd.",
+	},
 	difficulty: {
 		easy: "Makkelijk",
 		medium: "Gemiddeld",
@@ -13,9 +20,16 @@ export const sudoku = {
 		binary: "Binair",
 	},
 	board: {
-		cellLabel: "Rij {row} kolom {col}",
+		cellLabel: "Rij {row}, kolom {col}",
+		given: "gegeven",
+		empty: "leeg",
+		notes: "notities {digits}",
+		cage: "kooisom {sum}",
+		conflict: "conflict",
 	},
 	keypad: {
+		modeLabel: "Invoermodus",
+		digitLabel: "{digit}, nog {count}",
 		modeDigit: "Cijfer",
 		modeCorner: "Hoek",
 		modeCenter: "Midden",
@@ -27,6 +41,11 @@ export const sudoku = {
 		hint: "Hint",
 	},
 	game: {
+		timer: "Tijd {time}",
+		pausedBody: "Het raster is verborgen zolang de klok stilstaat.",
+		noHint: "Geen eenvoudige stap gevonden. Controleer je cijfers op fouten.",
+		restartTitle: "Deze puzzel opnieuw starten?",
+		restartBody: "Het raster wordt leeggemaakt. Je kunt nog ongedaan maken.",
 		renameTooltip: "Naam van deze puzzel wijzigen",
 		importedFallback: "Geïmporteerd",
 		scannedLabel: "gescand",
@@ -46,6 +65,7 @@ export const sudoku = {
 			"Toetsenbord: 1-9 cijfers · Shift+cijfer hoeknotitie · Ctrl+cijfer middennotitie · Spatie wisselt modus · Ctrl+Z/Y ongedaan maken/opnieuw doen · pijltjes bewegen",
 	},
 	binary: {
+		restartBody: "Het raster gaat terug naar de gegeven cijfers.",
 		dimensions: "Binair {size}×{size}",
 		restartConfirm: "Deze puzzel opnieuw starten?",
 		instructions:
@@ -104,9 +124,12 @@ export const sudoku = {
 		nameLabel: "Puzzelnaam (optioneel)",
 		namePlaceholder: "Automatisch genoemd naar niveau en tijd",
 		gameTypeLegend: "Spelvariant",
-		variantBlurbClassic: "Het vertrouwde 9×9-raster",
-		variantBlurbKiller: "Kooien moeten optellen tot hun som",
-		variantBlurbBinary: "Vul het raster met 0'en en 1'en",
+		variantBlurbs: {
+			classic: "Het vertrouwde 9×9-raster",
+			killer: "Kooien moeten optellen tot hun som",
+			binary: "Vul het raster met 0'en en 1'en",
+		},
+		offlineNote: "Puzzels worden op dit apparaat bewaard en werken offline.",
 		difficultyBlurbs: {
 			easy: {
 				classic: "Veel aanwijzingen, rustige start",

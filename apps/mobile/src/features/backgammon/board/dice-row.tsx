@@ -32,7 +32,7 @@ export function DiceRow({
 	size?: number;
 }) {
 	const { t } = useI18n();
-	const copy = t.backgammon.board;
+	const copy = t.games.backgammon.board;
 	if (dice.length === 0) return null;
 	const label = fmt(copy.dice, {
 		dice: dice

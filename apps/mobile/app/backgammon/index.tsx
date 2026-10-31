@@ -6,7 +6,7 @@ export default function BackgammonRoute() {
 	const { t } = useI18n();
 	return (
 		<>
-			<Stack.Screen options={{ title: t.backgammon.title }} />
+			<Stack.Screen options={{ title: t.catalog.backgammon.title }} />
 			<BackgammonHomeScreen />
 		</>
 	);

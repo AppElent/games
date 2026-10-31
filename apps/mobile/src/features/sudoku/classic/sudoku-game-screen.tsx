@@ -28,7 +28,7 @@ import { useSudokuGame } from "./use-sudoku-game";
 export function SudokuGameScreen({ save }: { save: GridSave }) {
 	const router = useRouter();
 	const { t } = useI18n();
-	const copy = t.sudoku;
+	const copy = t.games.sudoku;
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const insets = useSafeAreaInsets();
@@ -39,7 +39,11 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 	const confirmRestart = () =>
 		Alert.alert(copy.game.restartTitle, copy.game.restartBody, [
 			{ text: t.common.actions.cancel, style: "cancel" },
-			{ text: copy.game.restart, style: "destructive", onPress: game.restart },
+			{
+				text: t.common.gameShell.restart,
+				style: "destructive",
+				onPress: game.restart,
+			},
 		]);
 
 	const controls =
@@ -51,7 +55,7 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 							<AppText variant="label" style={{ color: tokens.orange }}>
 								{(game.hint && game.hintLevel >= 2
 									? game.hint.title
-									: copy.game.hintTitle
+									: copy.game.hintFallbackTitle
 								).toUpperCase()}
 							</AppText>
 							<Button
@@ -103,16 +107,16 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 							value={game.autoCleanup}
 							onValueChange={game.setAutoCleanup}
 							trackColor={{ true: tokens.accent, false: tokens.surface2 }}
-							accessibilityLabel={copy.game.autoCleanup}
+							accessibilityLabel={copy.game.autoCleanupLabel}
 						/>
 						<AppText variant="caption" style={styles.grow}>
-							{copy.game.autoCleanup}
+							{copy.game.autoCleanupLabel}
 						</AppText>
 					</View>
 					<Button
 						variant="plain"
 						compact
-						label={copy.game.restart}
+						label={t.common.gameShell.restart}
 						onPress={confirmRestart}
 					/>
 				</View>

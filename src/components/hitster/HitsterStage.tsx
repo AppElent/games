@@ -270,7 +270,9 @@ export function HitsterStage({
 			{state.phase === "lobby" ? (
 				<section className="space-y-4">
 					<h2 className="text-2xl font-bold tracking-tight text-[var(--club-text)]">
-						{fmt(stage.howItWorksHeading, { mode: config.label })}
+						{fmt(stage.howItWorksHeading, {
+							mode: messages.games.hitster.modes[state.mode].label,
+						})}
 					</h2>
 					<RulesPanel state={state} />
 				</section>

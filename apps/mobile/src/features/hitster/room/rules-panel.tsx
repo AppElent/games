@@ -13,31 +13,34 @@ export function RulesPanel({
 	target: number;
 }) {
 	const { t } = useI18n();
-	const copy = t.hitster.rules;
+	const copy = t.games.hitster.bits.rules;
 	const rules: Array<[string, string]> = [
-		[copy.listenHeading, copy.listenBody],
+		[copy.listenTogetherHeading, copy.listenTogetherBody],
 		[
-			copy.placeHeading,
-			config.shared ? copy.placeBodyShared : copy.placeBodySolo,
+			copy.placeInTimeHeading,
+			config.shared ? copy.placeInTimeBodyShared : copy.placeInTimeBodySolo,
 		],
 		[
-			copy.scoreHeading,
-			fmt(config.shared ? copy.scoreBodyShared : copy.scoreBodySolo, {
-				target,
-				tokens: config.startTokens,
-			}),
+			copy.revealScoreHeading,
+			fmt(
+				config.shared ? copy.revealScoreBodyShared : copy.revealScoreBodySolo,
+				{
+					target,
+					tokens: config.startTokens,
+				},
+			),
 		],
 	];
 	if (config.earnTokens) {
 		rules.push([
-			copy.tokensHeading,
-			fmt(copy.tokensBody, { cap: config.tokenCap }),
+			copy.earnTokensHeading,
+			fmt(copy.earnTokensBody, { cap: config.tokenCap }),
 		]);
 	}
 	if (config.needsArtistTitle) {
 		rules.push([
-			copy.claimHeading,
-			config.needsYear ? copy.claimBodyYear : copy.claimBodyNoYear,
+			copy.nameToClaimHeading,
+			config.needsYear ? copy.nameToClaimBodyYear : copy.nameToClaimBodyNoYear,
 		]);
 	}
 	return (

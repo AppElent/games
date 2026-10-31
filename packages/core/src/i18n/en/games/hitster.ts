@@ -1,17 +1,45 @@
+import type { HitsterMode } from "../../../hitster";
+
 /** Hitster (Music Timeline) UI chrome. Song titles, artist names, release
- * years and pack titles come from `hitster-packs.ts` content data and are
- * never routed through message keys. Per-mode labels/summaries (Instant
- * Party, Original, Pro, Expert, Cooperative, ...) live in `lib/games/hitster.ts`
- * config and are out of scope for this dictionary — they render untranslated. */
+ * years and pack titles are content data and never routed through message keys. */
 export const hitster = {
+	modes: {
+		instant: {
+			label: "Instant Party",
+			summary: "Place the song in the right spot. First to the target wins.",
+		},
+		original: {
+			label: "Original",
+			summary:
+				"Place it in time. Name artist and title for a bonus token. Tokens pay for steals.",
+		},
+		pro: {
+			label: "Pro",
+			summary:
+				"You only win the card with the right spot plus artist and title. No new tokens.",
+		},
+		expert: {
+			label: "Expert",
+			summary:
+				"The right spot plus the exact year, artist and title. No new tokens.",
+		},
+		coop: {
+			label: "Cooperative",
+			summary:
+				"One shared timeline and 5 team tokens. A wrong spot burns a token.",
+		},
+	} satisfies Record<HitsterMode, { label: string; summary: string }>,
 	musicTimelineKicker: "Music Timeline",
 	bits: {
 		participantFallbackTeam: "Team",
 		participantFallbackPlayer: "Player",
 		timeline: {
+			placeHereShort: "Place here",
+			selectedSpot: "Selected spot",
 			placeHere: "Place here (position {position})",
 		},
 		tokens: {
+			teamCount: { one: "{count} team token", other: "{count} team tokens" },
 			count: { one: "{count} token", other: "{count} tokens" },
 		},
 		scoreboard: {
@@ -64,6 +92,9 @@ export const hitster = {
 		},
 	},
 	hostView: {
+		shareCode: "Share code",
+		needPlayers: "At least two players are needed (one for Cooperative).",
+		hideTrack: "Hide the track",
 		kicker: "Music Timeline · host",
 		roomHeading: "{label} room",
 		packSummaryWithTracks:
@@ -86,6 +117,11 @@ export const hitster = {
 		actionFailed: "Action failed",
 	},
 	setupForm: {
+		packTracks: { one: "{count} track", other: "{count} tracks" },
+		timerSecondsShort: "{count}s",
+		playbackNote:
+			"You play each song yourself, for example on Spotify. The app shows you which one; it does not stream audio.",
+		joinInstead: "Have a code? Join a room",
 		gameModeLabel: "Game mode",
 		songPackLabel: "Song pack",
 		packOption: {
@@ -136,7 +172,7 @@ export const hitster = {
 			other: "Your timeline · {count} cards",
 		},
 		placementInstructions:
-			"Pick the spot where the mystery song belongs. Years grow from left to right.",
+			"Pick the spot where the mystery song belongs. The oldest song comes first.",
 		artistLabelRequired: "Artist (required to win)",
 		artistLabelBonus: "Artist (bonus token)",
 		titleLabelRequired: "Title (required to win)",
@@ -155,11 +191,12 @@ export const hitster = {
 			"Pick a mode and a song pack, invite players with a code, and place mystery songs in the right spot of the timeline.",
 	},
 	session: {
+		roomTitle: "Music room",
 		loadingRoom: "Loading room...",
 		roomNotFound: "Room not found.",
 		hostSessionExpired: "Host session expired. Create a new room.",
 		loadingGame: "Loading game...",
 		gameNotFound: "Game not found.",
-		joinFirst: "Join this room with its code from the home page first.",
+		joinFirst: "Join this room with its code first.",
 	},
 };

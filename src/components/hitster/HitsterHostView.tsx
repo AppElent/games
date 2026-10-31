@@ -46,7 +46,11 @@ export function HitsterHostView({
 							{hostView.kicker}
 						</p>
 						<h1 className="text-3xl font-bold tracking-tight text-[var(--club-text)]">
-							{fmt(hostView.roomHeading, { label: config?.label ?? "Hitster" })}
+							{fmt(hostView.roomHeading, {
+								label: state
+									? messages.games.hitster.modes[state.mode].label
+									: messages.catalog.hitster.title,
+							})}
 						</h1>
 						{state && pack ? (
 							<p className="mt-1 text-sm text-[var(--club-soft)]">

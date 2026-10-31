@@ -6,6 +6,13 @@
  * Mounted outside Clerk and Convex: language belongs to the phone, not the
  * account, and has to apply to sign-in and offline states too.
  */
+
+import {
+	LOCALES,
+	type Locale,
+	type Messages,
+	messages,
+} from "@games/core/messages";
 import { getLocales } from "expo-localization";
 import {
 	createContext,
@@ -21,16 +28,11 @@ import {
 	writePreference,
 } from "../prefs/local-preference";
 import { resolveLocale } from "./core";
-import { en, type Messages } from "./messages/en";
-import { nl } from "./messages/nl";
 
 export { fmt, plural } from "./core";
-export type { Messages };
+export type { Locale, Messages };
 
-export const SUPPORTED_LOCALES = ["en", "nl"] as const;
-export type Locale = (typeof SUPPORTED_LOCALES)[number];
-
-const DICTIONARIES: Record<Locale, Messages> = { en, nl };
+export const SUPPORTED_LOCALES = LOCALES;
 const DATE_LOCALE: Record<Locale, string> = { en: "en-GB", nl: "nl-NL" };
 
 /** The BCP 47 tag used for date formatting, so screens never branch on locale. */
@@ -73,7 +75,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	const value = useMemo(
-		() => ({ locale, t: DICTIONARIES[locale], setLocale }),
+		() => ({ locale, t: messages[locale], setLocale }),
 		[locale, setLocale],
 	);
 

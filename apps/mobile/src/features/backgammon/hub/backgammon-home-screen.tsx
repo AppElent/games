@@ -34,7 +34,7 @@ function hasMatchInProgress() {
 export function BackgammonHomeScreen() {
 	const router = useRouter();
 	const { t } = useI18n();
-	const copy = t.backgammon;
+	const copy = t.games.backgammon;
 	const hosting = useHostSession();
 	const createState = useMutation(api.backgammon.createState);
 	const [inProgress, setInProgress] = useState(false);
@@ -51,10 +51,10 @@ export function BackgammonHomeScreen() {
 			router.push("/backgammon/local");
 			return;
 		}
-		Alert.alert(copy.hub.newLocalTitle, copy.hub.newLocalBody, [
+		Alert.alert(copy.newGame.confirmNewTitle, copy.newGame.confirmNewBody, [
 			{ text: t.common.actions.cancel, style: "cancel" },
 			{
-				text: copy.hub.newLocal,
+				text: t.common.endScreen.newGame,
 				style: "destructive",
 				onPress: () => {
 					clearLocalMatch();
@@ -66,7 +66,11 @@ export function BackgammonHomeScreen() {
 
 	const createChallenge = async () => {
 		const session = await hosting.host(
-			{ gameType: "backgammon", joinMode: "challenge", title: copy.title },
+			{
+				gameType: "backgammon",
+				joinMode: "challenge",
+				title: t.catalog.backgammon.title,
+			},
 			(created) =>
 				createState({
 					sessionId: created.sessionId,
@@ -86,19 +90,21 @@ export function BackgammonHomeScreen() {
 			<Card>
 				<View style={styles.section}>
 					<AppText variant="heading" accessibilityRole="header">
-						{copy.hub.localHeading}
+						{copy.newGame.localMatchHeading}
 					</AppText>
-					<AppText variant="secondary">{copy.hub.localBody}</AppText>
+					<AppText variant="secondary">
+						{copy.newGame.localMatchDescription}
+					</AppText>
 					{inProgress ? (
 						<Button
-							label={copy.hub.continueLocal}
+							label={copy.newGame.continueLocal}
 							onPress={() => router.push("/backgammon/local")}
 							testID="bg-continue-local"
 						/>
 					) : null}
 					<Button
 						variant={inProgress ? "secondary" : "primary"}
-						label={copy.hub.newLocal}
+						label={t.common.endScreen.newGame}
 						onPress={startLocal}
 						testID="bg-new-local"
 					/>
@@ -107,12 +113,14 @@ export function BackgammonHomeScreen() {
 			<Card>
 				<View style={styles.section}>
 					<AppText variant="heading" accessibilityRole="header">
-						{copy.hub.onlineHeading}
+						{copy.newGame.onlineChallengeHeading}
 					</AppText>
-					<AppText variant="secondary">{copy.hub.onlineBody}</AppText>
+					<AppText variant="secondary">
+						{copy.newGame.onlineChallengeDescription}
+					</AppText>
 					{hosting.isSignedIn ? (
 						<Button
-							label={copy.hub.createChallenge}
+							label={copy.newGame.createChallengeLink}
 							onPress={createChallenge}
 							busy={hosting.busy}
 							disabled={!hosting.canHost}
@@ -121,7 +129,9 @@ export function BackgammonHomeScreen() {
 					) : (
 						<HostGate />
 					)}
-					<Notice message={hosting.failed ? copy.hub.couldNotCreate : null} />
+					<Notice
+						message={hosting.failed ? copy.newGame.createChallengeError : null}
+					/>
 				</View>
 			</Card>
 		</Screen>

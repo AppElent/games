@@ -1,6 +1,17 @@
 import type { common as enCommon } from "../en/common";
 
 export const common = {
+	tabs: { play: "Spelen", join: "Meedoen", profile: "Profiel" },
+	time: {
+		justNow: "Zojuist",
+		minutesAgo: {
+			one: "{count} minuut geleden",
+			other: "{count} minuten geleden",
+		},
+		hoursAgo: { one: "{count} uur geleden", other: "{count} uur geleden" },
+		daysAgo: { one: "{count} dag geleden", other: "{count} dagen geleden" },
+	},
+	appName: "Arcade Club",
 	header: {
 		games: "Spellen",
 		join: "Meedoen",
@@ -27,6 +38,12 @@ export const common = {
 			"Alles draait rechtstreeks in de browser — niets te installeren. Maak een kamercode of deellink aan en spelers doen direct mee op hun eigen apparaat, ingelogd of als gast.",
 	},
 	actions: {
+		undo: "Ongedaan maken",
+		redo: "Opnieuw doen",
+		continue: "Doorgaan",
+		done: "Klaar",
+		share: "Delen",
+		signIn: "Inloggen",
 		start: "Start",
 		cancel: "Annuleren",
 		close: "Sluiten",
@@ -40,6 +57,13 @@ export const common = {
 		leave: "Verlaten",
 	},
 	session: {
+		you: "Jij",
+		unavailable: "Dit spel is niet meer beschikbaar.",
+		notSeated:
+			"Dit toestel zit niet in dit spel. Doe opnieuw mee met de code of uitnodigingslink.",
+		shareInvite: "Doe mee met mijn {game}-spel op Arcade Club: {link}",
+		shareCode:
+			"Doe mee met mijn {game}-spel op Arcade Club met kamercode {code}",
 		roomCode: "Kamercode",
 		shareLink: "Deellink",
 		waitingForPlayers: "Wachten op spelers…",
@@ -50,6 +74,7 @@ export const common = {
 		spectating: "Meekijken",
 	},
 	errors: {
+		offline: "Je bent offline. Online spellen hebben verbinding nodig.",
 		somethingWentWrong: "Er ging iets mis. Probeer het opnieuw.",
 		notFound: "Niet gevonden.",
 		loading: "Laden…",
@@ -101,6 +126,15 @@ export const common = {
 		renameError: "Kon naam niet wijzigen",
 	},
 	joinPanel: {
+		subtitle:
+			"Vul de kamercode van het scherm of de uitnodiging van de host in.",
+		codePlaceholder: "ABC 123",
+		submit: "Meedoen",
+		openOnWeb: "Openen op het web",
+		inviteTitle: "Je bent uitgenodigd",
+		inviteBody: "Doe mee met het spel waarvoor je bent uitgenodigd.",
+		unsupportedGame:
+			"Dit is een {game}-spel, dat nog niet in de app zit. Open de uitnodiging op het web om te spelen.",
 		title: "Doe mee aan een spel",
 		kicker: "Meedoen",
 		claimSeat: "Claim je plek",

@@ -1,4 +1,12 @@
 export const common = {
+	tabs: { play: "Play", join: "Join", profile: "Profile" },
+	time: {
+		justNow: "Just now",
+		minutesAgo: { one: "{count} minute ago", other: "{count} minutes ago" },
+		hoursAgo: { one: "{count} hour ago", other: "{count} hours ago" },
+		daysAgo: { one: "{count} day ago", other: "{count} days ago" },
+	},
+	appName: "Arcade Club",
 	header: {
 		games: "Games",
 		join: "Join",
@@ -25,6 +33,12 @@ export const common = {
 			"Everything runs right in the browser — no installs. Create a room code or a share link and players join instantly on their own device, signed in or as a guest.",
 	},
 	actions: {
+		undo: "Undo",
+		redo: "Redo",
+		continue: "Continue",
+		done: "Done",
+		share: "Share",
+		signIn: "Sign in",
 		start: "Start",
 		cancel: "Cancel",
 		close: "Close",
@@ -38,6 +52,12 @@ export const common = {
 		leave: "Leave",
 	},
 	session: {
+		you: "You",
+		unavailable: "This game is no longer available.",
+		notSeated:
+			"This device is not seated in this game. Join it again with the code or invite link.",
+		shareInvite: "Join my {game} game on Arcade Club: {link}",
+		shareCode: "Join my {game} game on Arcade Club with room code {code}",
 		roomCode: "Room code",
 		shareLink: "Share link",
 		waitingForPlayers: "Waiting for players…",
@@ -48,6 +68,7 @@ export const common = {
 		spectating: "Spectating",
 	},
 	errors: {
+		offline: "You're offline. Online games need a connection.",
 		somethingWentWrong: "Something went wrong. Please try again.",
 		notFound: "Not found.",
 		loading: "Loading…",
@@ -99,6 +120,14 @@ export const common = {
 		renameError: "Could not rename",
 	},
 	joinPanel: {
+		subtitle: "Enter the room code from the host's screen or invite.",
+		codePlaceholder: "ABC 123",
+		submit: "Join",
+		openOnWeb: "Open on the web",
+		inviteTitle: "You're invited",
+		inviteBody: "Join the game you were invited to.",
+		unsupportedGame:
+			"This is a {game} game, which isn't in the app yet. Open the invite on the web to play.",
 		title: "Join a game",
 		kicker: "Join game",
 		claimSeat: "Claim your seat",

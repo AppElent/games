@@ -18,41 +18,42 @@ export function RecapPanel({
 	state: HitsterState;
 }) {
 	const { t } = useI18n();
-	const copy = t.hitster.recap;
+	const copy = t.games.hitster.bits.recap;
 	const recap = state.lastRecap;
 	if (!recap) return null;
 	const [card] = timelineCards(state, [recap.cardId]);
 	const name = (id?: string) =>
-		participantName(bundle, id, t.hitster.fallback.player);
-	const result = (correct: boolean) => (correct ? copy.correct : copy.wrong);
+		participantName(bundle, id, t.games.hitster.bits.participantFallbackPlayer);
+	const result = (correct: boolean) =>
+		correct ? copy.correctWord : copy.wrongWord;
 	const lines = [
-		fmt(copy.placement, {
+		fmt(copy.placementLine, {
 			name: name(recap.activeParticipantId),
 			result: result(recap.placementCorrect),
 		}),
 		recap.artistCorrect !== undefined
-			? fmt(copy.artist, { result: result(recap.artistCorrect) })
+			? fmt(copy.artistLine, { result: result(recap.artistCorrect) })
 			: null,
 		recap.titleCorrect !== undefined
-			? fmt(copy.title, { result: result(recap.titleCorrect) })
+			? fmt(copy.titleLine, { result: result(recap.titleCorrect) })
 			: null,
 		recap.yearCorrect !== undefined
-			? fmt(copy.year, { result: result(recap.yearCorrect) })
+			? fmt(copy.yearLine, { result: result(recap.yearCorrect) })
 			: null,
 		recap.cardWonByTeam !== undefined
 			? recap.cardWonByTeam
-				? copy.teamKeeps
-				: copy.teamLoses
+				? copy.cardStaysTeam
+				: copy.cardDiscardedTeam
 			: recap.cardWonByParticipantId
-				? fmt(copy.wonBy, { name: name(recap.cardWonByParticipantId) })
-				: copy.nobody,
+				? fmt(copy.wonByName, { name: name(recap.cardWonByParticipantId) })
+				: copy.nobodyWins,
 		...recap.stealResults.map((steal) =>
-			fmt(copy.steal, {
+			fmt(copy.stealByLine, {
 				name: name(steal.participantId),
 				result: steal.wonCard
-					? copy.stealWon
+					? copy.stealWonCard
 					: steal.correct
-						? copy.stealLate
+						? copy.stealCorrectTooLate
 						: copy.stealMissed,
 			}),
 		),

@@ -1,14 +1,44 @@
 import type { hitster as enHitster } from "../../en/games/hitster";
 
 export const hitster = {
+	modes: {
+		instant: {
+			label: "Instant Party",
+			summary:
+				"Plaats het nummer op de juiste plek. Wie als eerste het doel haalt, wint.",
+		},
+		original: {
+			label: "Origineel",
+			summary:
+				"Plaats het in de tijd. Noem artiest en titel voor een bonusfiche. Met fiches kun je stelen.",
+		},
+		pro: {
+			label: "Pro",
+			summary:
+				"Je wint de kaart alleen met de juiste plek plus artiest en titel. Geen nieuwe fiches.",
+		},
+		expert: {
+			label: "Expert",
+			summary:
+				"De juiste plek plus het exacte jaar, de artiest en de titel. Geen nieuwe fiches.",
+		},
+		coop: {
+			label: "Coöperatief",
+			summary:
+				"Eén gedeelde tijdlijn en 5 teamfiches. Een verkeerde plek kost een fiche.",
+		},
+	},
 	musicTimelineKicker: "Muziektijdlijn",
 	bits: {
 		participantFallbackTeam: "Team",
 		participantFallbackPlayer: "Speler",
 		timeline: {
+			placeHereShort: "Hier plaatsen",
+			selectedSpot: "Gekozen plek",
 			placeHere: "Hier plaatsen (positie {position})",
 		},
 		tokens: {
+			teamCount: { one: "{count} teamfiche", other: "{count} teamfiches" },
 			count: { one: "{count} fiche", other: "{count} fiches" },
 		},
 		scoreboard: {
@@ -62,6 +92,9 @@ export const hitster = {
 		},
 	},
 	hostView: {
+		shareCode: "Code delen",
+		needPlayers: "Er zijn minstens twee spelers nodig (één voor Coöperatief).",
+		hideTrack: "Verberg het nummer",
 		kicker: "Muziektijdlijn · host",
 		roomHeading: "{label}-kamer",
 		packSummaryWithTracks:
@@ -87,6 +120,11 @@ export const hitster = {
 		actionFailed: "Actie mislukt",
 	},
 	setupForm: {
+		packTracks: { one: "{count} nummer", other: "{count} nummers" },
+		timerSecondsShort: "{count}s",
+		playbackNote:
+			"Je speelt elk nummer zelf af, bijvoorbeeld via Spotify. De app laat zien welk nummer; hij streamt zelf geen audio.",
+		joinInstead: "Heb je een code? Doe mee met een kamer",
 		gameModeLabel: "Spelmodus",
 		songPackLabel: "Nummerpack",
 		packOption: {
@@ -137,7 +175,7 @@ export const hitster = {
 			other: "Jouw tijdlijn · {count} kaarten",
 		},
 		placementInstructions:
-			"Kies de plek waar het mysterienummer hoort. Jaartallen lopen op van links naar rechts.",
+			"Kies de plek waar het mysterienummer hoort. Het oudste nummer staat vooraan.",
 		artistLabelRequired: "Artiest (verplicht om te winnen)",
 		artistLabelBonus: "Artiest (bonusfiche)",
 		titleLabelRequired: "Titel (verplicht om te winnen)",
@@ -156,11 +194,12 @@ export const hitster = {
 			"Kies een modus en een nummerpack, nodig spelers uit met een code en plaats mysterienummers op de juiste plek in de tijdlijn.",
 	},
 	session: {
+		roomTitle: "Muziekkamer",
 		loadingRoom: "Kamer laden...",
 		roomNotFound: "Kamer niet gevonden.",
 		hostSessionExpired: "Hostsessie verlopen. Maak een nieuwe kamer aan.",
 		loadingGame: "Spel laden...",
 		gameNotFound: "Spel niet gevonden.",
-		joinFirst: "Doe eerst mee aan deze kamer met de code van de startpagina.",
+		joinFirst: "Doe eerst mee aan deze kamer met de code.",
 	},
 } satisfies typeof enHitster;

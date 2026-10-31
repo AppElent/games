@@ -53,17 +53,23 @@ export function BackgammonBoard({
 	testID,
 }: Props) {
 	const { t, locale } = useI18n();
-	const copy = t.backgammon;
+	const copy = t.games.backgammon;
+	const colors = copy.localPlay;
 	const geometry = useMemo(() => boardGeometry(width), [width]);
 	const rows = boardRows(viewer);
 	const opponent: BackgammonColor = viewer === "white" ? "black" : "white";
 
 	const describe = (point: BackgammonPoint) => {
-		const name = fmt(copy.board.point, { point: point.point });
 		if (!point.color || point.count === 0) {
-			return `${name}, ${copy.board.empty}`;
+			return fmt(copy.board.pointEmpty, { number: point.point });
 		}
-		return `${name}, ${copy.colors[point.color]}, ${plural(locale, point.count, copy.board.checkers)}`;
+		return fmt(copy.board.pointOccupied, {
+			number: point.point,
+			count: point.count,
+			color:
+				point.color === "white" ? copy.board.colorWhite : copy.board.colorBlack,
+			checkerWord: plural(locale, point.count, copy.board.checkerWord),
+		});
 	};
 
 	const { frame, unit, half, gap } = geometry;
@@ -130,7 +136,7 @@ export function BackgammonBoard({
 						},
 					]}
 					accessible
-					accessibilityLabel={`${copy.board.bar}: ${copy.colors.white} ${state.bar.white}, ${copy.colors.black} ${state.bar.black}`}
+					accessibilityLabel={`${copy.board.barLabel}: ${colors.colorWhite} ${state.bar.white}, ${colors.colorBlack} ${state.bar.black}`}
 					accessibilityState={{ selected: selected === "bar" }}
 					testID="bg-bar"
 				>
@@ -155,7 +161,7 @@ export function BackgammonBoard({
 				</View>
 				<Pressable
 					accessibilityRole="button"
-					accessibilityLabel={`${copy.board.off}: ${copy.colors.white} ${state.off.white}, ${copy.colors.black} ${state.off.black}`}
+					accessibilityLabel={`${copy.board.offLabel}: ${colors.colorWhite} ${state.off.white}, ${colors.colorBlack} ${state.off.black}`}
 					accessibilityHint={highlights.off ? copy.board.bearOff : undefined}
 					onPress={onOffPress}
 					disabled={!highlights.off}

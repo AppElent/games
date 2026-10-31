@@ -16,8 +16,9 @@ import { metrics, spacing, type Tokens, useThemedStyles } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { BackgammonBoard } from "../board/backgammon-board";
 import { useBoardSelection } from "../board/use-board-selection";
+import { colorLabel } from "../components/color-label";
 import { OptionsPanel } from "../components/options-panel";
-import { turnHint } from "../components/turn-hint";
+import { TURN_HINT_MESSAGE, turnHint } from "../components/turn-hint";
 import { TurnPanel } from "../components/turn-panel";
 import { useBoardWidth } from "../components/use-board-width";
 import { useLocalMatch } from "./use-local-match";
@@ -31,7 +32,7 @@ const OPTION_KEYS = [
 
 export function LocalGameScreen() {
 	const { t } = useI18n();
-	const copy = t.backgammon;
+	const copy = t.games.backgammon;
 	const styles = useThemedStyles(createStyles);
 	const insets = useSafeAreaInsets();
 	const { match, dispatch, restart } = useLocalMatch();
@@ -55,26 +56,32 @@ export function LocalGameScreen() {
 	}, [winner]);
 
 	const confirmRestart = () =>
-		Alert.alert(copy.hub.newLocalTitle, copy.hub.newLocalBody, [
+		Alert.alert(copy.newGame.confirmNewTitle, copy.newGame.confirmNewBody, [
 			{ text: t.common.actions.cancel, style: "cancel" },
-			{ text: copy.hub.newLocal, style: "destructive", onPress: restart },
+			{
+				text: t.common.endScreen.newGame,
+				style: "destructive",
+				onPress: restart,
+			},
 		]);
 
 	const hint = turnHint(state, selection.selected);
 	const heading = winner
-		? fmt(copy.game.winner, { color: copy.colors[winner] })
-		: fmt(copy.game.toMove, { color: copy.colors[state.activeColor] });
+		? fmt(copy.waitingRoom.winsTheMatch, { name: colorLabel(copy, winner) })
+		: state.activeColor === "white"
+			? copy.board.whiteToMove
+			: copy.board.blackToMove;
 
 	return (
 		<>
 			<Stack.Screen
 				options={{
-					title: copy.title,
+					title: t.catalog.backgammon.title,
 					headerRight: () => (
 						<Button
 							variant="plain"
 							compact
-							label={copy.hub.newLocal}
+							label={t.common.endScreen.newGame}
 							onPress={confirmRestart}
 							testID="bg-new-game"
 						/>
@@ -105,15 +112,15 @@ export function LocalGameScreen() {
 					<TurnPanel
 						color={winner ?? state.activeColor}
 						heading={heading}
-						message={hint ? copy.game[hint] : null}
+						message={hint ? copy.board[TURN_HINT_MESSAGE[hint]] : null}
 						dice={state.dice}
 						used={state.used}
 					>
 						{winner ? (
-							<Button label={copy.hub.newLocal} onPress={restart} />
+							<Button label={t.common.endScreen.newGame} onPress={restart} />
 						) : state.dice.length === 0 ? (
 							<Button
-								label={copy.game.roll}
+								label={copy.board.rollButton}
 								onPress={() => {
 									haptics.valueEntered();
 									dispatch({ type: "roll" });
@@ -122,7 +129,7 @@ export function LocalGameScreen() {
 							/>
 						) : (
 							<Button
-								label={copy.game.endTurn}
+								label={copy.board.endTurnButton}
 								variant={
 									hint === "turnDone" || hint === "noMoves"
 										? "primary"
@@ -135,7 +142,7 @@ export function LocalGameScreen() {
 						<Button
 							variant="secondary"
 							compact
-							label={copy.game.undo}
+							label={t.common.actions.undo}
 							disabled={match.history.length === 0}
 							onPress={() => dispatch({ type: "undo" })}
 							testID="bg-undo"
@@ -143,7 +150,7 @@ export function LocalGameScreen() {
 						<Button
 							variant="secondary"
 							compact
-							label={copy.game.redo}
+							label={t.common.actions.redo}
 							disabled={match.future.length === 0}
 							onPress={() => dispatch({ type: "redo" })}
 							testID="bg-redo"
