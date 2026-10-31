@@ -37,6 +37,7 @@ import { publishableKey } from "../src/auth/config";
 import { AppConvexProvider } from "../src/convex/provider";
 import { AppQueryCacheProvider } from "../src/convex/query-cache";
 import { LocaleProvider } from "../src/i18n";
+import { sentryEnabled } from "../src/observability/init";
 import { useNavigationBreadcrumbs } from "../src/observability/navigation";
 import { reportError } from "../src/observability/report";
 import { AppearanceProvider, useAppearance, useTokens } from "../src/theme";
@@ -58,7 +59,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 	return <RouterErrorBoundary {...props} />;
 }
 
-export default Sentry.wrap(RootLayout);
+export default sentryEnabled ? Sentry.wrap(RootLayout) : RootLayout;
 
 function RootLayout() {
 	return (

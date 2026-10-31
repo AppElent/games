@@ -17,14 +17,17 @@ import {
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 
-if (
+/** Whether this bundle reports to Sentry; gate `Sentry.wrap` on it. */
+export const sentryEnabled = Boolean(
 	dsn &&
-	shouldInitSentry({
-		dsn,
-		dev: __DEV__,
-		debug: process.env.EXPO_PUBLIC_SENTRY_DEBUG,
-	})
-) {
+		shouldInitSentry({
+			dsn,
+			dev: __DEV__,
+			debug: process.env.EXPO_PUBLIC_SENTRY_DEBUG,
+		}),
+);
+
+if (dsn && sentryEnabled) {
 	Sentry.init(
 		buildSentryOptions({
 			dsn,
