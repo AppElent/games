@@ -37,6 +37,9 @@ type Props = {
 
 const STACK = Array.from({ length: MAX_STACK }, (_, index) => index);
 const SLABS = Array.from({ length: 15 }, (_, index) => index);
+// Board text sits in fixed geometry; the accessibility labels carry the
+// full information, so cap system text scaling here.
+const BOARD_TEXT_SCALE = 1.2;
 
 export function BackgammonBoard({
 	state,
@@ -263,6 +266,7 @@ function NumberRow({
 		<AppText
 			key={point}
 			variant="boardLabel"
+			maxFontSizeMultiplier={BOARD_TEXT_SCALE}
 			style={[
 				styles.number,
 				{ left: geometry.columnX(column), top: y, width: unit },
@@ -349,6 +353,7 @@ function Checker({
 			{label ? (
 				<AppText
 					variant="checkerCount"
+					maxFontSizeMultiplier={BOARD_TEXT_SCALE}
 					style={{
 						color: white ? board.checkerWhiteInk : board.checkerBlackInk,
 					}}
