@@ -2,7 +2,7 @@ import type {
 	BackgammonColor,
 	BackgammonMoveDestination,
 	BackgammonMoveSource,
-} from "#/lib/games/backgammon";
+} from "@games/core/backgammon";
 import type { Messages } from "#/lib/i18n";
 import { fmt, useI18n } from "#/lib/i18n";
 

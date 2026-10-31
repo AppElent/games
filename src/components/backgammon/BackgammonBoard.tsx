@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from "react";
 import {
 	availableDieIndexes,
 	type BackgammonColor,
@@ -9,7 +8,8 @@ import {
 	canMoveNow,
 	getMoveHighlights,
 	planBackgammonMove,
-} from "#/lib/games/backgammon";
+} from "@games/core/backgammon";
+import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 
 /**

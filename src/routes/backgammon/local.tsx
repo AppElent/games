@@ -1,3 +1,12 @@
+import {
+	applyBackgammonPlan,
+	type BackgammonMovePlan,
+	type BackgammonTurnState,
+	createInitialBackgammonState,
+	getBackgammonWinner,
+	rollBackgammonDice,
+	switchBackgammonColor,
+} from "@games/core/backgammon";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -7,15 +16,6 @@ import {
 } from "#/components/backgammon/BackgammonBoard";
 import { FitScale, RotateHint } from "#/components/games/FitScale";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
-import {
-	applyBackgammonPlan,
-	type BackgammonMovePlan,
-	type BackgammonTurnState,
-	createInitialBackgammonState,
-	getBackgammonWinner,
-	rollBackgammonDice,
-	switchBackgammonColor,
-} from "#/lib/games/backgammon";
 import {
 	clearLocalBackgammonGame,
 	DEFAULT_LOCAL_BACKGAMMON_OPTIONS,

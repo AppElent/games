@@ -1,9 +1,9 @@
+import { getHitsterModeConfig, type HitsterMode } from "@games/core/hitster";
+import { getHitsterPack } from "@games/core/hitster-packs";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { getUserErrorMessage } from "#/lib/games/errors";
-import { getHitsterModeConfig, type HitsterMode } from "#/lib/games/hitster";
-import { getHitsterPack } from "#/lib/games/hitsterPacks";
 import { formatJoinCode } from "#/lib/games/sessions";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";

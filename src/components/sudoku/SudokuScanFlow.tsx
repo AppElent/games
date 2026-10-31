@@ -1,9 +1,9 @@
+import { digitsInMask } from "@games/core/sudoku";
 import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
-import { digitsInMask } from "#/lib/games/sudoku";
 import {
 	autoSessionTitle,
 	rememberLocalSudokuSession,

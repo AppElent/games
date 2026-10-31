@@ -1,11 +1,8 @@
-import { useMutation } from "convex/react";
-import { Pause, Play, RotateCcw, Timer } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
 	SudokuAction,
 	SudokuHistory,
 	SudokuInputMode,
-} from "#/lib/games/sudoku-board";
+} from "@games/core/sudoku-board";
 import {
 	applyAction,
 	boardConflicts,
@@ -17,13 +14,16 @@ import {
 	isBoardComplete,
 	redo,
 	undo,
-} from "#/lib/games/sudoku-board";
-import type { SudokuHint } from "#/lib/games/sudoku-hints";
-import { findHint, hintTextForLevel } from "#/lib/games/sudoku-hints";
+} from "@games/core/sudoku-board";
+import type { SudokuHint } from "@games/core/sudoku-hints";
+import { findHint, hintTextForLevel } from "@games/core/sudoku-hints";
 import {
 	findKillerConflicts,
 	type KillerCage,
-} from "#/lib/games/sudoku-killer";
+} from "@games/core/sudoku-killer";
+import { useMutation } from "convex/react";
+import { Pause, Play, RotateCcw, Timer } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { renameLocalSudokuSession } from "#/lib/games/sudoku-local";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";

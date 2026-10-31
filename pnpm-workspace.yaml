@@ -1,3 +1,7 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
 # Supply-chain hardening: default-deny install/build lifecycle scripts,
 # only allow packages that genuinely compile a native binary at install time.
 allowBuilds:

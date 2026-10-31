@@ -1,5 +1,5 @@
 /** Hitster (Music Timeline) UI chrome. Song titles, artist names, release
- * years and pack titles come from `hitsterPacks.ts` content data and are
+ * years and pack titles come from `hitster-packs.ts` content data and are
  * never routed through message keys. Per-mode labels/summaries (Instant
  * Party, Original, Pro, Expert, Cooperative, ...) live in `lib/games/hitster.ts`
  * config and are out of scope for this dictionary — they render untranslated. */

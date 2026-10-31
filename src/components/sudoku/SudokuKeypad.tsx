@@ -1,5 +1,5 @@
+import type { SudokuInputMode } from "@games/core/sudoku-board";
 import { Eraser, Lightbulb, Palette, Pencil, Redo2, Undo2 } from "lucide-react";
-import type { SudokuInputMode } from "#/lib/games/sudoku-board";
 import { fmt, useMessages } from "#/lib/i18n";
 import { SUDOKU_COLOR_SWATCHES } from "./SudokuBoard";
 

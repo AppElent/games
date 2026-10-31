@@ -11,12 +11,12 @@ import {
 	matchesHitsterTitle,
 	shuffleHitsterDeck,
 	validateHitsterPlacement,
-} from "../src/lib/games/hitster";
+} from "@games/core/hitster";
 import {
 	buildSpotifySearchUrl,
 	getHitsterCard,
 	getPlayableHitsterCards,
-} from "../src/lib/games/hitsterPacks";
+} from "@games/core/hitster-packs";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";

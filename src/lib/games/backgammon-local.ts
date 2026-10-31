@@ -1,5 +1,5 @@
+import type { BackgammonTurnState } from "@games/core/backgammon";
 import type { BackgammonBoardOptions } from "#/components/backgammon/BackgammonBoard";
-import type { BackgammonTurnState } from "./backgammon";
 
 /**
  * Local (same device) backgammon matches live entirely in localStorage:

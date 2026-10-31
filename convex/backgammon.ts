@@ -9,7 +9,7 @@ import {
 	type BackgammonColor,
 	type BackgammonMoveDestination,
 	type BackgammonMoveSource,
-} from "../src/lib/games/backgammon";
+} from "@games/core/backgammon";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";

@@ -1,7 +1,7 @@
+import { getHitsterModeConfig, type HitsterMode } from "@games/core/hitster";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { getUserErrorMessage } from "#/lib/games/errors";
-import { getHitsterModeConfig, type HitsterMode } from "#/lib/games/hitster";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";

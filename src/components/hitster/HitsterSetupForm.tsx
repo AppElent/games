@@ -1,16 +1,16 @@
-import { useMutation } from "convex/react";
-import { useState } from "react";
-import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { getUserErrorMessage } from "#/lib/games/errors";
 import {
 	getHitsterModeConfig,
 	HITSTER_MODES,
 	type HitsterMode,
-} from "#/lib/games/hitster";
+} from "@games/core/hitster";
 import {
 	getPlayableHitsterCards,
 	listHitsterPacks,
-} from "#/lib/games/hitsterPacks";
+} from "@games/core/hitster-packs";
+import { useMutation } from "convex/react";
+import { useState } from "react";
+import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
+import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";

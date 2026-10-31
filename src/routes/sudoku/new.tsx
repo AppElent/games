@@ -1,17 +1,17 @@
+import {
+	binaryGridToString,
+	generateBinaryPuzzle,
+} from "@games/core/binary-puzzle";
+import type { SudokuDifficulty } from "@games/core/sudoku";
+import { generatePuzzle, gridToString } from "@games/core/sudoku";
+import { generateKillerPuzzle } from "@games/core/sudoku-killer";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Camera, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
-import {
-	binaryGridToString,
-	generateBinaryPuzzle,
-} from "#/lib/games/binary-puzzle";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
-import type { SudokuDifficulty } from "#/lib/games/sudoku";
-import { generatePuzzle, gridToString } from "#/lib/games/sudoku";
-import { generateKillerPuzzle } from "#/lib/games/sudoku-killer";
 import type { LocalSudokuSession } from "#/lib/games/sudoku-local";
 import {
 	autoSessionTitle,

@@ -17,7 +17,7 @@ import {
 	getHitsterCard,
 	getPlayableHitsterCards,
 	listHitsterPacks,
-} from "../hitsterPacks";
+} from "../hitster-packs";
 
 const allCorrect = {
 	placementCorrect: true,

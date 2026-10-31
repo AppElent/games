@@ -1,3 +1,13 @@
+import {
+	applyBackgammonPlan,
+	type BackgammonColor,
+	type BackgammonMoveDestination,
+	type BackgammonMovePlan,
+	type BackgammonMoveSource,
+	type BackgammonPoint,
+	type BackgammonTurnState,
+	computeUsedFlags,
+} from "@games/core/backgammon";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import {
@@ -12,16 +22,6 @@ import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import {
-	applyBackgammonPlan,
-	type BackgammonColor,
-	type BackgammonMoveDestination,
-	type BackgammonMovePlan,
-	type BackgammonMoveSource,
-	type BackgammonPoint,
-	type BackgammonTurnState,
-	computeUsedFlags,
-} from "#/lib/games/backgammon";
 import { getUserErrorMessage } from "#/lib/games/errors";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";

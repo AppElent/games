@@ -36,6 +36,7 @@
     "@clerk/clerk-react": "^5.61.6",
     "@cloudflare/vite-plugin": "^1.26.0",
     "@convex-dev/react-query": "0.1.0",
+    "@games/core": "workspace:*",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/ai": "^0.38.0",

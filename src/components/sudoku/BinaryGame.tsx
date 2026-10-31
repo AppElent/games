@@ -1,11 +1,11 @@
-import { useMutation } from "convex/react";
-import { Pause, Play, RotateCcw, Timer, Undo2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	binaryDigitLabel,
 	findBinaryConflicts,
 	isBinarySolved,
-} from "#/lib/games/binary-puzzle";
+} from "@games/core/binary-puzzle";
+import { useMutation } from "convex/react";
+import { Pause, Play, RotateCcw, Timer, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
