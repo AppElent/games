@@ -1,0 +1,52 @@
+export const common = {
+	appName: "Arcade Club",
+	actions: {
+		cancel: "Cancel",
+		close: "Close",
+		continue: "Continue",
+		delete: "Delete",
+		done: "Done",
+		retry: "Try again",
+		share: "Share",
+		copy: "Copy",
+		copied: "Copied",
+		start: "Start",
+		leave: "Leave",
+		rematch: "Rematch",
+		newGame: "New game",
+		signIn: "Sign in",
+	},
+	session: {
+		roomCode: "Room code",
+		host: "Host",
+		you: "You",
+		guest: "Guest",
+		players: { one: "{count} player", other: "{count} players" },
+		waitingForPlayers: "Waiting for players…",
+		shareInvite: "Join my {game} game on Arcade Club: {link}",
+		shareCode: "Join my {game} game on Arcade Club with room code {code}",
+		notFound: "This game is no longer available.",
+		notSeated:
+			"This device is not seated in this game. Join it again with the code or invite link.",
+	},
+	tabs: {
+		play: "Play",
+		join: "Join",
+		profile: "Profile",
+	},
+	states: {
+		loading: "Loading…",
+		offline: "You're offline. Online games need a connection.",
+		somethingWentWrong: "Something went wrong. Please try again.",
+	},
+	hostGate: {
+		heading: "Sign in to host",
+		body: "Hosting an online game needs an account. Your friends can join with a code or link without one.",
+	},
+	time: {
+		justNow: "Just now",
+		minutesAgo: { one: "{count} minute ago", other: "{count} minutes ago" },
+		hoursAgo: { one: "{count} hour ago", other: "{count} hours ago" },
+		daysAgo: { one: "{count} day ago", other: "{count} days ago" },
+	},
+};
