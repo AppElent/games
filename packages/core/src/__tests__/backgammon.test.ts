@@ -10,6 +10,7 @@ import {
 	getBackgammonPoint,
 	getBackgammonWinner,
 	getMoveHighlights,
+	hasLegalBackgammonMove,
 	planBackgammonMove,
 	rollBackgammonDice,
 	switchBackgammonColor,
@@ -190,6 +191,38 @@ describe("backgammon engine", () => {
 		).toThrow("Choose a point with your checker");
 		// caller state untouched
 		expect(countBackgammonCheckers(state, "white")).toBe(15);
+	});
+
+	it("knows when the active player has no legal move left", () => {
+		const opening = createInitialBackgammonState();
+		expect(hasLegalBackgammonMove(opening)).toBe(false);
+		expect(hasLegalBackgammonMove(withDice(opening, [3, 1]))).toBe(true);
+		expect(
+			hasLegalBackgammonMove(withDice(opening, [3, 1], [true, true])),
+		).toBe(false);
+
+		// White on the bar facing a closed black home board cannot enter.
+		const blocked = withDice(
+			{
+				...opening,
+				points: opening.points.map((point) =>
+					point.point >= 19
+						? { point: point.point, color: "black" as const, count: 2 }
+						: { point: point.point, count: 0 },
+				),
+				bar: { white: 1, black: 0 },
+			},
+			[6, 5],
+		);
+		expect(hasLegalBackgammonMove(blocked)).toBe(false);
+		expect(
+			hasLegalBackgammonMove({
+				...blocked,
+				points: blocked.points.map((point) =>
+					point.point === 20 ? { point: 20, count: 0 } : point,
+				),
+			}),
+		).toBe(true);
 	});
 
 	it("detects the winner", () => {

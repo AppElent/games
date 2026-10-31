@@ -76,6 +76,31 @@ export const markerColors = [
 	"rgba(244, 114, 182, 0.42)",
 ] as const;
 
+/**
+ * The backgammon board: wood, felt and checkers, transcribed from the web
+ * board. A physical board looks the same in light and dark.
+ */
+export const backgammonColors = {
+	frame: "#3a2313",
+	bar: "#2b190e",
+	felt: "#b98d55",
+	pointLight: "#e7d2a4",
+	pointDark: "#a54c38",
+	label: "rgba(255, 244, 224, 0.7)",
+	checkerWhite: "#f3e6c4",
+	checkerWhiteEdge: "#b09863",
+	checkerWhiteInk: "#3a2a12",
+	checkerBlack: "#2a2620",
+	checkerBlackEdge: "#000000",
+	checkerBlackInk: "#f2e6cc",
+	selected: "#f59e0b",
+	target: "rgba(120, 220, 170, 0.85)",
+	targetFill: "rgba(120, 220, 170, 0.28)",
+	die: "#fdf6e6",
+	dieEdge: "#b7a179",
+	pip: "#1c1207",
+} as const;
+
 export const spacing = {
 	xxs: 2,
 	xs: 4,
@@ -134,6 +159,8 @@ export const type = {
 	cellNote: { fontSize: 9, fontWeight: "600" },
 	cellCenterNote: { fontSize: 10, fontWeight: "700" },
 	keypad: { fontSize: 24, fontWeight: "600" },
+	boardLabel: { fontSize: 9, fontWeight: "700" },
+	checkerCount: { fontSize: 11, fontWeight: "800" },
 } as const;
 
 function dynamic(dark: string, light: string): ColorValue {

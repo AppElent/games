@@ -437,6 +437,27 @@ export function applyBackgammonMove(
 	return { state: next, usedDie: plan.steps[0].die };
 }
 
+/**
+ * Whether the active player can still use any remaining die. When this is
+ * false after a roll, the only legal action is to end the turn.
+ */
+export function hasLegalBackgammonMove(state: BackgammonTurnState) {
+	if (!canMoveNow(state)) {
+		return false;
+	}
+	const color = state.activeColor;
+	const sources: BackgammonMoveSource[] =
+		state.bar[color] > 0
+			? ["bar"]
+			: state.points
+					.filter((point) => point.color === color && point.count > 0)
+					.map((point) => point.point);
+	return sources.some((source) => {
+		const highlights = getMoveHighlights(state, source, false);
+		return highlights.off || highlights.points.size > 0;
+	});
+}
+
 export function getBackgammonWinner(
 	off: BackgammonCounters,
 ): BackgammonColor | null {

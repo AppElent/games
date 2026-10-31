@@ -37,6 +37,11 @@ export function onlineSessionHref(
 	}
 }
 
+/** Whether invites can carry a web link (the web origin is configured). */
+export function hasWebOrigin() {
+	return Boolean(WEB_ORIGIN);
+}
+
 export function webJoinUrl(
 	invite: { token: string } | { code: string },
 ): string | null {

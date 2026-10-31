@@ -8,6 +8,7 @@ export {
 } from "./appearance";
 export type { Tokens } from "./tokens";
 export {
+	backgammonColors,
 	chrome,
 	darkColors,
 	lightColors,

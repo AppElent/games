@@ -31,6 +31,9 @@ import { AppearanceProvider, useAppearance, useTokens } from "../src/theme";
 
 SplashScreen.preventAutoHideAsync();
 
+/** Deep links into a modal or game still get the tabs beneath them. */
+export const unstable_settings = { anchor: "(tabs)" };
+
 export default function RootLayout() {
 	return (
 		<AppearanceProvider>
