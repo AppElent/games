@@ -5,7 +5,6 @@ interface __BaseEnv_Env {
 	VITE_CLERK_PUBLISHABLE_KEY: string;
 	CONVEX_DEPLOYMENT: string;
 	VITE_CONVEX_URL: string;
-	ANTHROPIC_API_KEY: string;
 	VITE_CONVEX_SITE_URL: string;
 }
 declare namespace Cloudflare {
@@ -13,7 +12,6 @@ declare namespace Cloudflare {
 		VITE_CLERK_PUBLISHABLE_KEY: string;
 		CONVEX_DEPLOYMENT: string;
 		VITE_CONVEX_URL: string;
-		ANTHROPIC_API_KEY: string;
 		VITE_CONVEX_SITE_URL: string;
 	}
 	interface Env extends __BaseEnv_Env {}
@@ -23,7 +21,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "VITE_CLERK_PUBLISHABLE_KEY" | "CONVEX_DEPLOYMENT" | "VITE_CONVEX_URL" | "ANTHROPIC_API_KEY" | "VITE_CONVEX_SITE_URL">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "VITE_CLERK_PUBLISHABLE_KEY" | "CONVEX_DEPLOYMENT" | "VITE_CONVEX_URL" | "VITE_CONVEX_SITE_URL">> {}
 }
 
 // Begin runtime types

@@ -1,12 +1,12 @@
+import {
+	parseQuizQuestionsTsv,
+	type QuizQuestionDraft,
+} from "@games/core/quiz";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { ClipboardPaste, Plus, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { getUserErrorMessage } from "#/lib/games/errors";
-import {
-	parseQuizQuestionsTsv,
-	type QuizQuestionDraft,
-} from "#/lib/games/quiz";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";

@@ -1,3 +1,4 @@
+import { calculateAnswerScore, isCorrectAnswer } from "@games/core/quiz";
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
@@ -46,39 +47,6 @@ const SAMPLE_QUESTIONS = [
 		points: 1000,
 	},
 ];
-
-function isCorrectAnswer(selected: string[], correct: string[]) {
-	if (selected.length !== correct.length) {
-		return false;
-	}
-	const selectedSet = new Set(selected);
-	return correct.every((choiceId) => selectedSet.has(choiceId));
-}
-
-function calculateAnswerScore({
-	correct,
-	basePoints,
-	answeredInMs,
-	questionDurationMs,
-}: {
-	correct: boolean;
-	basePoints: number;
-	answeredInMs?: number;
-	questionDurationMs?: number;
-}) {
-	if (!correct) {
-		return 0;
-	}
-	if (!answeredInMs || !questionDurationMs || questionDurationMs <= 0) {
-		return basePoints;
-	}
-	const remainingRatio = Math.max(
-		0,
-		Math.min(1, (questionDurationMs - answeredInMs) / questionDurationMs),
-	);
-	const speedBonusRatio = Math.min(1, remainingRatio / 0.75) * 0.25;
-	return Math.round(basePoints + basePoints * speedBonusRatio);
-}
 
 export const ensureSampleSet = mutation({
 	args: {},

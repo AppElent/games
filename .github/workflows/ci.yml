@@ -1,6 +1,6 @@
 name: CI
 on:
-  push: { branches: [master] }
+  push: { branches: [main] }
   pull_request:
 concurrency:
   group: ci-${{ github.ref }}
@@ -24,5 +24,5 @@ jobs:
       - run: pnpm test
       # Build catches bundling/plugin/SSR-compile breakage that typecheck + tests
       # miss. preview.yml only builds on pull_request, so without this a build-only
-      # failure could land green on a direct push to master.
+      # failure could land green on a direct push to main.
       - run: pnpm build
