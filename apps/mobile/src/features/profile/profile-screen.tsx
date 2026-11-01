@@ -5,6 +5,7 @@
 import { useAuth, useUser } from "@clerk/expo";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
+import * as Updates from "expo-updates";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { fmt, type Locale, SUPPORTED_LOCALES, useI18n } from "../../i18n";
@@ -118,8 +119,19 @@ export function ProfileScreen() {
 						testID="profile-report-problem"
 					/>
 				) : null}
-				<AppText variant="caption">
+				<AppText variant="caption" selectable>
 					{t.common.appName} · {fmt(copy.version, { version })}
+					{Updates.isEnabled && Updates.channel
+						? `\n${fmt(
+								Updates.isEmbeddedLaunch || !Updates.updateId
+									? copy.runningBuild
+									: copy.runningUpdate,
+								{
+									channel: Updates.channel,
+									id: Updates.updateId?.slice(0, 8) ?? "",
+								},
+							)}`
+						: null}
 				</AppText>
 			</Section>
 		</Screen>

@@ -15,4 +15,6 @@ export const profile = {
 	languages: { en: "English", nl: "Nederlands" },
 	about: "About",
 	version: "Version {version}",
+	runningBuild: "{channel} · as built",
+	runningUpdate: "{channel} · update {id}",
 };

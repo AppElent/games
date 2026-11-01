@@ -17,4 +17,6 @@ export const profile = {
 	languages: { en: "English", nl: "Nederlands" },
 	about: "Over",
 	version: "Versie {version}",
+	runningBuild: "{channel} · zoals gebouwd",
+	runningUpdate: "{channel} · update {id}",
 } satisfies typeof en;
