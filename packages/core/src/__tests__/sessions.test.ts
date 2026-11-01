@@ -27,6 +27,9 @@ describe("session helpers", () => {
 	it("creates stable guest display names from ids", () => {
 		expect(getGuestDisplayName("guest_0001")).toBe("Player 001");
 		expect(getGuestDisplayName("guest_9876")).toBe("Player 876");
+		expect(getGuestDisplayName("guest_9876", "Speler {number}")).toBe(
+			"Speler 876",
+		);
 	});
 
 	it("builds share urls without duplicate slashes", () => {

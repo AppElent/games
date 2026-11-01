@@ -5,15 +5,17 @@
  * preference store (the web keeps the same shape in localStorage), so a guest
  * who reopens the app reclaims the same participant row and seat. The display
  * name is a phone-local preference: a signed-in player defaults to their
- * Clerk first name, a guest to "Player 123".
+ * Clerk first name, a guest to "Player 123" in the player's language.
  */
 
 import {
 	createGuestIdentity,
+	getGuestDisplayName,
 	type LocalGuestIdentity,
 } from "@arcadeclub/core/sessions";
 import { useUser } from "@clerk/expo";
 import { useCallback, useState } from "react";
+import { useI18n } from "../../i18n";
 import {
 	PREFERENCE_KEYS,
 	readPreference,
@@ -47,11 +49,14 @@ export function readGuestIdentity(): LocalGuestIdentity {
 
 export function usePlayerIdentity() {
 	const { user } = useUser();
+	const { t } = useI18n();
 	const [guest] = useState(readGuestIdentity);
 	const [savedName, setSavedName] = useState(() =>
 		readPreference(PREFERENCE_KEYS.displayName),
 	);
-	const defaultName = user?.firstName?.trim() || guest.displayName;
+	const defaultName =
+		user?.firstName?.trim() ||
+		getGuestDisplayName(guest.id, t.common.session.guestName);
 	const displayName = savedName?.trim() || defaultName;
 
 	const setDisplayName = useCallback((next: string) => {

@@ -21,9 +21,13 @@ export function isJoinCodeLike(value: string) {
 	return normalized.length >= 4 && normalized.length <= 8;
 }
 
-export function getGuestDisplayName(guestId: string) {
+/** "Player 123" from a guest id; pass the localized `{number}` template to translate it. */
+export function getGuestDisplayName(
+	guestId: string,
+	template = "Player {number}",
+) {
 	const digits = guestId.replace(/\D/g, "").slice(-3).padStart(3, "0");
-	return `Player ${digits}`;
+	return template.replace("{number}", digits);
 }
 
 /** Web Crypto when the runtime has it (browsers, Node, Hermes with a polyfill). */

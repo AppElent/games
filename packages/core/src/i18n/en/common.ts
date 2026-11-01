@@ -79,6 +79,7 @@ export const common = {
 		waitingForPlayers: "Waiting for players…",
 		players: { one: "{count} player", other: "{count} players" },
 		guest: "Guest",
+		guestName: "Player {number}",
 		host: "Host",
 		yourTurn: "Your turn",
 		spectating: "Spectating",
