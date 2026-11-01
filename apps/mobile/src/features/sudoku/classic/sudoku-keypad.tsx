@@ -191,7 +191,8 @@ function Action({
 			]}
 		>
 			<Icon ios={icon[0]} android={icon[1]} size={22} color={tokens.accent} />
-			<AppText variant="caption" numberOfLines={1}>
+			{/* Two lines so longer labels ("Ongedaan maken") wrap instead of truncating. */}
+			<AppText variant="caption" numberOfLines={2} style={styles.actionLabel}>
 				{label}
 			</AppText>
 		</Pressable>
@@ -223,10 +224,12 @@ const createStyles = (colors: Tokens) =>
 			flex: 1,
 			minHeight: 52,
 			alignItems: "center",
-			justifyContent: "center",
+			// Top-aligned so icons stay level when one label wraps.
+			justifyContent: "flex-start",
 			gap: spacing.xxs,
 			borderRadius: radius.sm,
 		},
+		actionLabel: { textAlign: "center" },
 		pressed: {
 			backgroundColor: colors.surfacePressed,
 			opacity: opacity.pressed,
