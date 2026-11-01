@@ -25,7 +25,7 @@ pnpm run check             # biome check (lint + format check)
 pnpm run lint:fix          # biome check --write
 pnpm run build
 pnpm run deploy:dev        # convex dev --once && build:development && wrangler deploy --env dev
-pnpm run deploy:prod       # convex deploy && build && wrangler deploy (= `pnpm run deploy`)
+pnpm run deploy:prod       # production from this machine, values from Infisical (= `pnpm run deploy`); CI does this on merge
 ```
 
 `check`, `typecheck` and `test` also cover `packages/core` and `apps/mobile` (Jest).
@@ -64,7 +64,7 @@ See `.cursorrules` for the full validator (`v`) reference and an example schema 
 - `.claude/skills/verify/SKILL.md` is the one exception: it's project-specific (route → module map) and has no source-of-truth counterpart.
 - `.claude/commands/babysit.md` — standing PR-babysitting policy (CI fixes, review comments, status checklist).
 - `.claude/hooks/session-start.mjs` — SessionStart hook: runs `pnpm install` once per fresh container, logs the current branch.
-- `.github/workflows/ci.yml` — the quality gate on `main` (`check`, `typecheck`, `test`, `build`); `.github/workflows/preview.yml` — per-PR Convex + Cloudflare Worker preview, secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CONVEX_DEPLOY_KEY`, `SENTRY_AUTH_TOKEN` and variables `PREVIEW_CLERK_PUBLISHABLE_KEY`, `VITE_SENTRY_DSN`, all written by `pnpm env:apply preview` except `CONVEX_DEPLOY_KEY`. PR previews start from an empty Convex backend, which needs no seed: the only reference data, the sample quiz, is created on demand by `quiz.ensureSampleSet`.
+- `.github/workflows/ci.yml` — the quality gate on `main` (`check`, `typecheck`, `test`, `build`); the `main` ruleset requires its `check` job and a PR for every change; `.github/workflows/deploy.yml` — a push to `main` (or "Run workflow") deploys production Convex then the `games` Worker, using the `production` GitHub Environment written by `pnpm env:apply production`; `.github/workflows/preview.yml` — per-PR Convex + Cloudflare Worker preview, secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CONVEX_DEPLOY_KEY`, `SENTRY_AUTH_TOKEN` and variables `PREVIEW_CLERK_PUBLISHABLE_KEY`, `VITE_SENTRY_DSN`, all written by `pnpm env:apply preview` except `CONVEX_DEPLOY_KEY`. PR previews start from an empty Convex backend, which needs no seed: the only reference data, the sample quiz, is created on demand by `quiz.ensureSampleSet`.
 - `AGENTS.md` mirrors `CLAUDE.md` for Codex parity.
 - `appelent.json` records this app's opted-in Appelent features (`baseline`, `auth`, `i18n`) — see the managed block below.
 

@@ -48,8 +48,16 @@ Some placements are produced by tools, not copied from Infisical:
 - `EXPO_PUBLIC_CONVEX_URL` in `apps/mobile/.env.local` is set by hand: the dev
   deployment for a phone, or a local backend a simulator can reach (see
   [mobile.md](mobile.md)).
-- The preview workflow gets `VITE_CONVEX_URL` from `convex deploy`, and uses the
-  existing `CONVEX_DEPLOY_KEY` GitHub secret.
+- The preview and deploy workflows get `VITE_CONVEX_URL` from `convex deploy`. The
+  preview workflow uses the existing repo-level `CONVEX_DEPLOY_KEY` secret.
+
+`pnpm env:apply production` writes the deploy workflow's values into the `production`
+GitHub Environment: `CONVEX_DEPLOY_KEY` (a `prod:` key for `chatty-ram-217`, from
+Infisical `prod` `/arcade-club` `convex-deploy-key`), `CLOUDFLARE_*`,
+`SENTRY_AUTH_TOKEN` and the public `VITE_*` values. The workflow refuses any key
+without the `prod:` prefix, since a missing Environment secret would otherwise fall
+back to the repo-level preview key. `pnpm deploy:prod` runs the same
+`deploy:production` script locally with those values from Infisical.
 
 `pnpm env:apply preview` writes the preview workflow's GitHub values: secrets for
 `SENTRY_AUTH_TOKEN` and `CLOUDFLARE_*`, and repo variables for the public values. The

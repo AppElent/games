@@ -74,7 +74,8 @@ export function destinationFor(
 				case "dev":
 					return { kind: "file", path: ".env.development.local" };
 				case "production":
-					return { kind: "file", path: ".env.production.local" };
+					// The deploy workflow builds production in CI.
+					return { kind: "github", scope: "production" };
 			}
 			break;
 		case "local-tooling":
@@ -106,9 +107,14 @@ export function destinationFor(
 			}
 			break;
 		case "workflow":
-			return environment === "preview"
-				? { kind: "github", scope: "repo" }
-				: null;
+			switch (environment) {
+				case "preview":
+					return { kind: "github", scope: "repo" };
+				case "production":
+					return { kind: "github", scope: "production" };
+				default:
+					return null;
+			}
 		case "expo-build":
 		case "eas-tooling":
 			switch (environment) {
@@ -196,7 +202,10 @@ export const ENTRIES = [
 		optional: true,
 		lands: {
 			"local-tooling": { name: "SENTRY_AUTH_TOKEN", environments: ["local"] },
-			workflow: { name: "SENTRY_AUTH_TOKEN", environments: ["preview"] },
+			workflow: {
+				name: "SENTRY_AUTH_TOKEN",
+				environments: ["preview", "production"],
+			},
 			"eas-tooling": {
 				name: "SENTRY_AUTH_TOKEN",
 				environments: ["local", "preview", "dev", "production"],
@@ -247,6 +256,7 @@ export const ENTRIES = [
 				suppliedIn: {
 					local: "`convex dev` writes the selected deployment to .env.local",
 					preview: "convex deploy --cmd-url-env-var-name CONVEX_URL",
+					production: "convex deploy --cmd-url-env-var-name CONVEX_URL",
 				},
 			},
 			"expo-build": {
@@ -280,12 +290,13 @@ export const ENTRIES = [
 	{
 		key: "convexDeployKey",
 		infisicalKey: "convex-deploy-key",
-		description: "Convex preview deploy key used by the preview workflow.",
+		description:
+			"Convex deploy key scoping every `convex` command in CI to one deployment; its prefix (`preview:` / `prod:`) picks the target.",
 		secret: true,
 		lands: {
 			workflow: {
 				name: "CONVEX_DEPLOY_KEY",
-				environments: ["preview"],
+				environments: ["preview", "production"],
 				suppliedIn: {
 					preview: "the existing preview deploy key for eric-jansen:games in GitHub secrets",
 				},
@@ -349,24 +360,24 @@ export const ENTRIES = [
 	{
 		key: "cloudflareApiToken",
 		infisicalKey: "cloudflare-account-token",
-		description: "Cloudflare token used by preview CI to deploy and remove Workers.",
+		description: "Cloudflare token used by CI to deploy and remove Workers.",
 		secret: true,
 		lands: {
 			workflow: {
 				name: "CLOUDFLARE_API_TOKEN",
-				environments: ["preview"],
+				environments: ["preview", "production"],
 			},
 		},
 	},
 	{
 		key: "cloudflareAccountId",
 		infisicalKey: "cloudflare-account-id",
-		description: "Cloudflare account identifier used by preview CI.",
+		description: "Cloudflare account identifier used by CI.",
 		secret: true,
 		lands: {
 			workflow: {
 				name: "CLOUDFLARE_ACCOUNT_ID",
-				environments: ["preview"],
+				environments: ["preview", "production"],
 			},
 		},
 	},

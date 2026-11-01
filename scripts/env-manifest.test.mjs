@@ -73,8 +73,8 @@ describe("Arcade Club environment routing", () => {
 			path: ".env.development.local",
 		});
 		expect(destinationFor("vite-build", "production")).toEqual({
-			kind: "file",
-			path: ".env.production.local",
+			kind: "github",
+			scope: "production",
 		});
 		expect(destinationFor("expo-local", "local")).toEqual({
 			kind: "file",
@@ -165,6 +165,10 @@ describe("Arcade Club environment routing", () => {
 				...(environment === "preview" ? [expect.objectContaining({
 					name: "SENTRY_AUTH_TOKEN", consumer: "workflow",
 					destination: { kind: "github", scope: "repo" },
+				})] : []),
+				...(environment === "production" ? [expect.objectContaining({
+					name: "SENTRY_AUTH_TOKEN", consumer: "workflow",
+					destination: { kind: "github", scope: "production" },
 				})] : []),
 				expect.objectContaining({
 					name: "SENTRY_AUTH_TOKEN",
