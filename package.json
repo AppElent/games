@@ -33,15 +33,18 @@
     "env:plan": "node scripts/env.mjs plan",
     "env:apply": "node scripts/env.mjs apply",
     "env:generate": "node scripts/env.mjs generate",
-    "env:exec": "node scripts/env.mjs exec"
+    "env:exec": "node scripts/env.mjs exec",
+    "sentry:convex": "node scripts/convex-sentry.mjs"
   },
   "dependencies": {
     "@appelent/auth": "^0.1.0",
     "@appelent/i18n": "^0.1.0",
+    "@arcadeclub/core": "workspace:*",
     "@clerk/clerk-react": "^5.61.6",
     "@cloudflare/vite-plugin": "^1.26.0",
     "@convex-dev/react-query": "0.1.0",
-    "@arcadeclub/core": "workspace:*",
+    "@sentry/cloudflare": "11.8.0",
+    "@sentry/react": "11.8.0",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
@@ -72,6 +75,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
+    "@sentry/node": "11.8.0",
+    "@sentry/vite-plugin": "11.8.0",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-event-client": "latest",
     "@tanstack/devtools-vite": "latest",

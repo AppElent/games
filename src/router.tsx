@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { getContext } from "./integrations/tanstack-query/root-provider";
@@ -15,6 +16,15 @@ export function getRouter() {
 	});
 
 	setupRouterSsrQueryIntegration({ router, queryClient: context.queryClient });
+
+	if (!router.isServer) {
+		// The route template (`/hitster/$sessionId`), never the ids in it.
+		const tagScreen = () => {
+			Sentry.setTag("screen", router.state.matches.at(-1)?.routeId || "/");
+		};
+		router.subscribe("onResolved", tagScreen);
+		tagScreen();
+	}
 
 	return router;
 }

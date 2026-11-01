@@ -7,6 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 TanStack Start (file-based routing, SSR, Vite) + Convex (real-time backend) + Clerk (auth, JWT-bridged to Convex) + Cloudflare Workers (deploy). Tailwind v4, Biome (not ESLint/Prettier), Vitest. Package manager is **pnpm** — never npm or yarn.
 
 - Wrangler app name: `games` (prod), `games-dev` (dev environment).
+- Environment variables: `env.manifest.ts` routes every value from Infisical (`/` then `/arcade-club`) to `.env*` files, EAS, Convex and GitHub — see `docs/runbooks/environment.md`. Don't hand-set EAS or GitHub values.
+- Sentry: one project `appelent/arcadeclub` for mobile, browser, Worker (`src/server.ts`) and Convex, split by the `app` tag — see `docs/runbooks/sentry.md`.
 - Auth UI comes from the shared `@appelent/auth` package (private GitHub Packages registry) — custom Clerk-backed sign-in/sign-up/account UI, theme sync, and the dev-only test-login button. Don't hand-roll Clerk UI components; use this package's exports instead.
 
 ## Commands

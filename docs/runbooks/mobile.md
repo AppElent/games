@@ -77,8 +77,10 @@ pnpm exec convex run --identity "$ID" sessions:create \
 
 ## Error reporting
 
-Sentry project `appelent/arcadeclub`, set up in `src/observability/`. Preview and
-production builds report errors only, with no user data and no URL query strings. The
+Sentry project `appelent/arcadeclub` (shared with web and Convex, see
+[sentry.md](sentry.md)), set up in `src/observability/`. Preview and production builds
+report errors and player feedback only, with no user data and no URL query strings.
+Profile's **Report a problem** row or a shake opens the feedback form. The
 environment is the EAS Update channel. Development bundles do not report, and
 `Sentry.wrap` is skipped, unless `EXPO_PUBLIC_SENTRY_DEBUG=1`.
 
