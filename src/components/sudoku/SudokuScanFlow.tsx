@@ -1,4 +1,4 @@
-import { digitsInMask } from "@games/core/sudoku";
+import { digitsInMask } from "@arcadeclub/core/sudoku";
 import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";

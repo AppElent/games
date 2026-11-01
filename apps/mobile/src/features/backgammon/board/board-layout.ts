@@ -5,7 +5,7 @@
  * tray on the right. The viewer's home board is always bottom right, so
  * Black's board is White's with the rows swapped.
  */
-import type { BackgammonColor } from "@games/core/backgammon";
+import type { BackgammonColor } from "@arcadeclub/core/backgammon";
 import { type as typeRamp } from "../../../theme/tokens";
 
 /** Point numbers per row, left to right, as seen by `viewer`. */

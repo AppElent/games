@@ -1,5 +1,5 @@
 /** Before the start: the room code to share, who has joined, the rules. */
-import type { HitsterModeConfig } from "@games/core/hitster";
+import type { HitsterModeConfig } from "@arcadeclub/core/hitster";
 import { StyleSheet, View } from "react-native";
 import { fmt, plural, useI18n } from "../../../i18n";
 import { spacing } from "../../../theme";

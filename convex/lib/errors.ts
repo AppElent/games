@@ -3,7 +3,7 @@ import {
 	type GameErrorData,
 	type GameErrorParams,
 	GameRuleError,
-} from "@games/core/errors";
+} from "@arcadeclub/core/errors";
 import { ConvexError } from "convex/values";
 
 /**

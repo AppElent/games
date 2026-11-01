@@ -33,7 +33,7 @@ the guide gets updated.
 | Backend | `convex` + `ConvexProviderWithClerk`; generated API re-exported from `src/convex/api.ts`; `convex-helpers` retention query cache, enforced with Biome `noRestrictedImports` |
 | UI | `StyleSheet` + `useTokens()`/`useThemedStyles()`, `@expo/ui` controls, `NativeTabs`, `expo-symbols`, `expo-haptics` behind a semantic wrapper, Reanimated + Gesture Handler where boards need it |
 | Prefs | `expo-sqlite/kv-store` (appearance, locale, guest identity, solo-game saves) |
-| i18n | App-owned runtime copied from developer-tools `i18n/examples/{core,native}`; en + nl; message catalogs shared from `@games/core` |
+| i18n | App-owned runtime copied from developer-tools `i18n/examples/{core,native}`; en + nl; message catalogs shared from `@arcadeclub/core` |
 | Observability | `@sentry/react-native` wired, no-op without `EXPO_PUBLIC_SENTRY_DSN` |
 | Tests | Jest + jest-expo + React Native Testing Library (mobile); Vitest (core, web, convex) |
 | Quality | Biome (root config extended to `apps/mobile`), `tsc`, `scripts/check-mobile-architecture.mjs` from the structure standard |
@@ -42,19 +42,19 @@ the guide gets updated.
 ## Repository layout
 
 ```text
-apps/mobile/            @games/mobile (Expo)
+apps/mobile/            @arcadeclub/mobile (Expo)
   app/                  routes only
   src/features/<game>/  screens, boards, hooks per game
   src/ui/               generic primitives (never import features)
   src/{auth,convex,i18n,theme,prefs,feedback,observability,test-support}
-packages/core/          @games/core: pure game rules, catalog data, message catalogs
+packages/core/          @arcadeclub/core: pure game rules, catalog data, message catalogs
 src/                    web app (unchanged location)
 convex/                 shared backend
 ```
 
 `packages/core` receives the pure files from `src/lib/games/*` (rules, generators, packs,
 `sessions` helpers without `window`, catalog data without lucide icons) and the en/nl
-message trees. Web, Convex and mobile import `@games/core/<subpath>`. Web keeps its
+message trees. Web, Convex and mobile import `@arcadeclub/core/<subpath>`. Web keeps its
 adapters (localStorage, DOM, icons, scan image pipeline). Existing Vitest suites move
 with the code.
 
@@ -136,7 +136,7 @@ board text scaling) and the docs: `apps/mobile/CODING_STANDARDS.md`,
 
 Where this changed from the plan:
 
-- Web and mobile share one en/nl catalog (`@games/core/messages`). Server and
+- Web and mobile share one en/nl catalog (`@arcadeclub/core/messages`). Server and
   rule errors carry a message key (`serverErrors.*`), not English text.
 - Sentry reports errors from preview and production builds
   (`appelent/arcadeclub-mobile`); see the runbook.

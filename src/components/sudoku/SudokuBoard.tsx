@@ -1,7 +1,7 @@
-import { colOf, digitsInMask, rowOf } from "@games/core/sudoku";
-import type { SudokuBoardState } from "@games/core/sudoku-board";
-import { effectiveGrid } from "@games/core/sudoku-board";
-import type { KillerCage } from "@games/core/sudoku-killer";
+import { colOf, digitsInMask, rowOf } from "@arcadeclub/core/sudoku";
+import type { SudokuBoardState } from "@arcadeclub/core/sudoku-board";
+import { effectiveGrid } from "@arcadeclub/core/sudoku-board";
+import type { KillerCage } from "@arcadeclub/core/sudoku-killer";
 import { useMemo } from "react";
 import { fmt, useMessages } from "#/lib/i18n";
 

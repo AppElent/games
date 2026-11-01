@@ -9,7 +9,7 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
 - `app/` holds routes only; each route renders one screen from
   `src/features/<game-or-area>/<subject>/`. `src/ui/` holds generic primitives
   and never imports a feature.
-- `@games/core` owns game rules (Sudoku, Backgammon, Hitster packs and modes).
+- `@arcadeclub/core` owns game rules (Sudoku, Backgammon, Hitster packs and modes).
   Mobile adds only UI state around them, for example
   `src/features/backgammon/local/local-match.ts` (a pure reducer; callers
   pre-roll dice so it stays deterministic).
@@ -34,6 +34,6 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
 
 `pnpm run check` at the root runs Biome and `scripts/check-mobile-structure.mjs`
 (feature filenames, UI-to-feature imports, literal font sizes). Root
-`pnpm run typecheck` and `pnpm test` include `@games/core` and `@games/mobile`.
+`pnpm run typecheck` and `pnpm test` include `@arcadeclub/core` and `@arcadeclub/mobile`.
 Typed routes come from `.expo/types/router.d.ts`. `expo start` regenerates it,
 and typecheck also passes without it, as in CI.

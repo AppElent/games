@@ -6,9 +6,12 @@
  * Board glyphs do not follow Dynamic Type (`allowFontScaling={false}`): a
  * digit is sized to its cell, and the cell is sized to the screen.
  */
-import { colOf, digitsInMask, rowOf } from "@games/core/sudoku";
-import { effectiveGrid, type SudokuBoardState } from "@games/core/sudoku-board";
-import type { KillerCage } from "@games/core/sudoku-killer";
+import { colOf, digitsInMask, rowOf } from "@arcadeclub/core/sudoku";
+import {
+	effectiveGrid,
+	type SudokuBoardState,
+} from "@arcadeclub/core/sudoku-board";
+import type { KillerCage } from "@arcadeclub/core/sudoku-killer";
 import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import Svg, { Line } from "react-native-svg";

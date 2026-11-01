@@ -1,8 +1,8 @@
-import { HITSTER_MODES, type HitsterMode } from "@games/core/hitster";
+import { HITSTER_MODES, type HitsterMode } from "@arcadeclub/core/hitster";
 import {
 	getPlayableHitsterCards,
 	listHitsterPacks,
-} from "@games/core/hitster-packs";
+} from "@arcadeclub/core/hitster-packs";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";

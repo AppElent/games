@@ -13,7 +13,7 @@ import {
 	type BackgammonTurnState,
 	computeUsedFlags,
 	getBackgammonWinner,
-} from "@games/core/backgammon";
+} from "@arcadeclub/core/backgammon";
 import { useMutation } from "convex/react";
 import { useCallback, useMemo, useState } from "react";
 import { api, type Id } from "../../../convex/api";

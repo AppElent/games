@@ -1,4 +1,4 @@
-import { gameErrorMessage } from "@games/core/errors";
+import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { useCallback } from "react";
 import { useMessages } from "#/lib/i18n";
 

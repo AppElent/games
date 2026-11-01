@@ -3,13 +3,13 @@
  * token in an invite link (`arcadeclub://join?token=…`). A game the app
  * cannot play yet points to the web instead.
  */
-import { gameErrorMessage } from "@games/core/errors";
-import type { GameType } from "@games/core/games";
+import { gameErrorMessage } from "@arcadeclub/core/errors";
+import type { GameType } from "@arcadeclub/core/games";
 import {
 	formatJoinCode,
 	isJoinCodeLike,
 	normalizeJoinCode,
-} from "@games/core/sessions";
+} from "@arcadeclub/core/sessions";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Linking } from "react-native";

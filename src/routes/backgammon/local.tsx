@@ -6,7 +6,7 @@ import {
 	getBackgammonWinner,
 	rollBackgammonDice,
 	switchBackgammonColor,
-} from "@games/core/backgammon";
+} from "@arcadeclub/core/backgammon";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {

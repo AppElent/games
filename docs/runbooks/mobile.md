@@ -88,5 +88,5 @@ a `SENTRY_AUTH_TOKEN` EAS secret (`eas env:create --name SENTRY_AUTH_TOKEN
 
 ## Checks
 
-The root `pnpm run check`, `pnpm run typecheck` and `pnpm test` cover web, `@games/core`
-and `@games/mobile`; CI runs the same commands.
+The root `pnpm run check`, `pnpm run typecheck` and `pnpm test` cover web, `@arcadeclub/core`
+and `@arcadeclub/mobile`; CI runs the same commands.

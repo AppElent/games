@@ -1,7 +1,7 @@
 import {
 	parseQuizQuestionsTsv,
 	type QuizQuestionDraft,
-} from "@games/core/quiz";
+} from "@arcadeclub/core/quiz";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { ClipboardPaste, Plus, Save, Trash2 } from "lucide-react";

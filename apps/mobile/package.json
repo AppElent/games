@@ -1,11 +1,11 @@
 {
-  "name": "@games/mobile",
+  "name": "@arcadeclub/mobile",
   "version": "0.1.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@clerk/expo": "^4.14.4",
     "@expo/ui": "~58.0.0",
-    "@games/core": "workspace:*",
+    "@arcadeclub/core": "workspace:*",
     "@sentry/react-native": "~8.28.0",
     "convex": "^1.42.0",
     "convex-helpers": "^0.1.129",

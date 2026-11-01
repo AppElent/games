@@ -1,12 +1,12 @@
 /**
  * One binary puzzle in play. Entries cycle empty → 0 → 1 → empty (encoded
- * 0 → 1 → 2, see `@games/core/binary-puzzle`); givens never change.
+ * 0 → 1 → 2, see `@arcadeclub/core/binary-puzzle`); givens never change.
  */
 import {
 	findBinaryConflicts,
 	isBinarySolved,
 	parseBinaryGrid,
-} from "@games/core/binary-puzzle";
+} from "@arcadeclub/core/binary-puzzle";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
 import { useGameClock } from "../components/use-game-clock";

@@ -1,4 +1,4 @@
-import { GameRuleError } from "@games/core/errors";
+import { GameRuleError } from "@arcadeclub/core/errors";
 export type ConnectFourColor = "red" | "yellow";
 export type ConnectFourCell = ConnectFourColor | "empty";
 

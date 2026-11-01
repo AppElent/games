@@ -3,12 +3,12 @@
  * room friends join with its code. Hosting needs an account; joining a room
  * goes through the Join tab.
  */
-import { gameErrorMessage } from "@games/core/errors";
-import { HITSTER_MODES, type HitsterMode } from "@games/core/hitster";
+import { gameErrorMessage } from "@arcadeclub/core/errors";
+import { HITSTER_MODES, type HitsterMode } from "@arcadeclub/core/hitster";
 import {
 	getPlayableHitsterCards,
 	listHitsterPacks,
-} from "@games/core/hitster-packs";
+} from "@arcadeclub/core/hitster-packs";
 import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
 import { type ReactNode, useState } from "react";

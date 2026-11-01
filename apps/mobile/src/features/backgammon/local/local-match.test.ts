@@ -1,4 +1,4 @@
-import { planBackgammonMove } from "@games/core/backgammon";
+import { planBackgammonMove } from "@arcadeclub/core/backgammon";
 import {
 	DEFAULT_BACKGAMMON_OPTIONS,
 	type LocalMatch,

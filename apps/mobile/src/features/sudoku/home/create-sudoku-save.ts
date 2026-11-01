@@ -6,14 +6,17 @@
 import {
 	binaryGridToString,
 	generateBinaryPuzzle,
-} from "@games/core/binary-puzzle";
+} from "@arcadeclub/core/binary-puzzle";
 import {
 	generatePuzzle,
 	gridToString,
 	type SudokuDifficulty,
-} from "@games/core/sudoku";
-import { createBoardState, serializeBoard } from "@games/core/sudoku-board";
-import { generateKillerPuzzle } from "@games/core/sudoku-killer";
+} from "@arcadeclub/core/sudoku";
+import {
+	createBoardState,
+	serializeBoard,
+} from "@arcadeclub/core/sudoku-board";
+import { generateKillerPuzzle } from "@arcadeclub/core/sudoku-killer";
 import {
 	newSaveId,
 	type SudokuSave,

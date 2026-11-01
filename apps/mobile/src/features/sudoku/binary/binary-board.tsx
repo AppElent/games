@@ -1,5 +1,5 @@
 /** The N×N binary grid. A tap cycles a cell; givens are drawn solid. */
-import { binaryDigitLabel } from "@games/core/binary-puzzle";
+import { binaryDigitLabel } from "@arcadeclub/core/binary-puzzle";
 import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";

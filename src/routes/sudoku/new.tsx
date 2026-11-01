@@ -1,10 +1,10 @@
 import {
 	binaryGridToString,
 	generateBinaryPuzzle,
-} from "@games/core/binary-puzzle";
-import type { SudokuDifficulty } from "@games/core/sudoku";
-import { generatePuzzle, gridToString } from "@games/core/sudoku";
-import { generateKillerPuzzle } from "@games/core/sudoku-killer";
+} from "@arcadeclub/core/binary-puzzle";
+import type { SudokuDifficulty } from "@arcadeclub/core/sudoku";
+import { generatePuzzle, gridToString } from "@arcadeclub/core/sudoku";
+import { generateKillerPuzzle } from "@arcadeclub/core/sudoku-killer";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Camera, X } from "lucide-react";

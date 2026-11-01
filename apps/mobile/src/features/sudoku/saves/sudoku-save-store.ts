@@ -6,10 +6,10 @@
  * the game screens save on every move rather than debouncing. When the list
  * outgrows `LIMIT`, solved puzzles are dropped before unfinished ones.
  */
-import type { BinaryDifficulty } from "@games/core/binary-puzzle";
-import type { SudokuDifficulty } from "@games/core/sudoku";
-import type { SerializedSudokuBoard } from "@games/core/sudoku-board";
-import type { KillerCage } from "@games/core/sudoku-killer";
+import type { BinaryDifficulty } from "@arcadeclub/core/binary-puzzle";
+import type { SudokuDifficulty } from "@arcadeclub/core/sudoku";
+import type { SerializedSudokuBoard } from "@arcadeclub/core/sudoku-board";
+import type { KillerCage } from "@arcadeclub/core/sudoku-killer";
 import Storage from "expo-sqlite/kv-store";
 
 export type SudokuVariant = "classic" | "killer" | "binary";

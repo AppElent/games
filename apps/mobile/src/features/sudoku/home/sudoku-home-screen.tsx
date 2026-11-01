@@ -2,7 +2,10 @@
  * Sudoku hub: pick a game type and a difficulty to start, or pick up a
  * puzzle saved on this phone.
  */
-import { SUDOKU_DIFFICULTIES, type SudokuDifficulty } from "@games/core/sudoku";
+import {
+	SUDOKU_DIFFICULTIES,
+	type SudokuDifficulty,
+} from "@arcadeclub/core/sudoku";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {

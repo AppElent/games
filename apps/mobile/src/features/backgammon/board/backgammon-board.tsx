@@ -9,7 +9,7 @@ import type {
 	BackgammonMoveSource,
 	BackgammonPoint,
 	BackgammonTurnState,
-} from "@games/core/backgammon";
+} from "@arcadeclub/core/backgammon";
 import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Svg, { Polygon, Rect } from "react-native-svg";

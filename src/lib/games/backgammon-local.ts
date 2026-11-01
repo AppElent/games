@@ -1,4 +1,4 @@
-import type { BackgammonTurnState } from "@games/core/backgammon";
+import type { BackgammonTurnState } from "@arcadeclub/core/backgammon";
 import type { BackgammonBoardOptions } from "#/components/backgammon/BackgammonBoard";
 
 /**

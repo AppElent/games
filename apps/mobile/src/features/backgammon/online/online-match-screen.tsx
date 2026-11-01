@@ -9,8 +9,8 @@ import {
 	type BackgammonMovePlan,
 	createInitialBackgammonState,
 	getBackgammonWinner,
-} from "@games/core/backgammon";
-import { gameErrorMessage } from "@games/core/errors";
+} from "@arcadeclub/core/backgammon";
+import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";

@@ -8,7 +8,7 @@ import {
 	canMoveNow,
 	getBackgammonWinner,
 	hasLegalBackgammonMove,
-} from "@games/core/backgammon";
+} from "@arcadeclub/core/backgammon";
 
 export type TurnHint =
 	| "rollPrompt"

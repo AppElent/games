@@ -1,4 +1,4 @@
-/** Player-facing text for keyed server and rule errors (`@games/core/errors`). */
+/** Player-facing text for keyed server and rule errors (`@arcadeclub/core/errors`). */
 export const serverErrors = {
 	signInRequired: "Sign in required.",
 	signInToHost: "Sign in to host a game.",

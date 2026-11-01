@@ -4,7 +4,7 @@ import {
 	type Locale,
 	type Messages,
 	messages,
-} from "@games/core/messages";
+} from "@arcadeclub/core/messages";
 
 export { fmt, plural } from "@appelent/i18n";
 export type { Locale, Messages };

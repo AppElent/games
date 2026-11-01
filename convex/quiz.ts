@@ -1,4 +1,4 @@
-import { calculateAnswerScore, isCorrectAnswer } from "@games/core/quiz";
+import { calculateAnswerScore, isCorrectAnswer } from "@arcadeclub/core/quiz";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";

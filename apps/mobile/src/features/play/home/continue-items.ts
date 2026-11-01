@@ -2,7 +2,7 @@
  * Everything this phone can resume, newest first: online seats from the seat
  * store, local Sudoku saves and the pass-and-play backgammon match.
  */
-import { getBackgammonWinner } from "@games/core/backgammon";
+import { getBackgammonWinner } from "@arcadeclub/core/backgammon";
 import type { Href } from "expo-router";
 import { readLocalMatch } from "../../backgammon/local/local-match-store";
 import {

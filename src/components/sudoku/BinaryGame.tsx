@@ -2,7 +2,7 @@ import {
 	binaryDigitLabel,
 	findBinaryConflicts,
 	isBinarySolved,
-} from "@games/core/binary-puzzle";
+} from "@arcadeclub/core/binary-puzzle";
 import { useMutation } from "convex/react";
 import { Pause, Play, RotateCcw, Timer, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

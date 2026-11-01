@@ -2,7 +2,7 @@
  * The pass-and-play match as React state, saved to the phone after every
  * change. Dice are rolled here, outside the pure transitions.
  */
-import { rollBackgammonDice } from "@games/core/backgammon";
+import { rollBackgammonDice } from "@arcadeclub/core/backgammon";
 import { useCallback, useEffect, useState } from "react";
 import {
 	type LocalMatch,

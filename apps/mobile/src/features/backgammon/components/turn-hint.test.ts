@@ -1,4 +1,4 @@
-import { createInitialBackgammonState } from "@games/core/backgammon";
+import { createInitialBackgammonState } from "@arcadeclub/core/backgammon";
 import { turnHint } from "./turn-hint";
 
 const opening = createInitialBackgammonState();

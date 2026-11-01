@@ -1,4 +1,4 @@
-import { listHitsterPacks } from "@games/core/hitster-packs";
+import { listHitsterPacks } from "@arcadeclub/core/hitster-packs";
 import {
 	type HitsterBundle,
 	roomView,

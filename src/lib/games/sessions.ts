@@ -1,9 +1,9 @@
 import {
 	createGuestIdentity,
 	type LocalGuestIdentity,
-} from "@games/core/sessions";
+} from "@arcadeclub/core/sessions";
 
-export * from "@games/core/sessions";
+export * from "@arcadeclub/core/sessions";
 
 const GUEST_KEY = "arcade-club.guest";
 

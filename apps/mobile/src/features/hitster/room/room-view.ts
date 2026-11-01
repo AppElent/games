@@ -3,8 +3,14 @@
  * it is, and the cards on the relevant timeline. Pure, so the screen stays a
  * thin renderer and the rules for "my timeline" live in one place.
  */
-import { getHitsterModeConfig, type HitsterMode } from "@games/core/hitster";
-import { getHitsterCard, type HitsterCard } from "@games/core/hitster-packs";
+import {
+	getHitsterModeConfig,
+	type HitsterMode,
+} from "@arcadeclub/core/hitster";
+import {
+	getHitsterCard,
+	type HitsterCard,
+} from "@arcadeclub/core/hitster-packs";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "../../../convex/api";
 

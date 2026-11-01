@@ -12,7 +12,7 @@ import {
 	canMoveNow,
 	getMoveHighlights,
 	planBackgammonMove,
-} from "@games/core/backgammon";
+} from "@arcadeclub/core/backgammon";
 import { useEffect, useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
 

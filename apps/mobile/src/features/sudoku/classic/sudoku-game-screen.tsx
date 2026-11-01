@@ -1,7 +1,7 @@
 /**
  * A Classic or Killer puzzle in play.
  */
-import { hintTextForLevel } from "@games/core/sudoku-hints";
+import { hintTextForLevel } from "@arcadeclub/core/sudoku-hints";
 import { useRouter } from "expo-router";
 import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

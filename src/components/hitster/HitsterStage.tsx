@@ -1,4 +1,7 @@
-import { getHitsterModeConfig, type HitsterMode } from "@games/core/hitster";
+import {
+	getHitsterModeConfig,
+	type HitsterMode,
+} from "@arcadeclub/core/hitster";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { useErrorMessage } from "#/lib/games/errors";

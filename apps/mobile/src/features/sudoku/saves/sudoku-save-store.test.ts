@@ -1,4 +1,7 @@
-import { createBoardState, serializeBoard } from "@games/core/sudoku-board";
+import {
+	createBoardState,
+	serializeBoard,
+} from "@arcadeclub/core/sudoku-board";
 import {
 	deleteSudokuSave,
 	type GridSave,

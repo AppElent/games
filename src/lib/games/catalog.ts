@@ -1,4 +1,4 @@
-import type { AuthPolicy, GameType, JoinMode } from "@games/core/games";
+import type { AuthPolicy, GameType, JoinMode } from "@arcadeclub/core/games";
 import {
 	Brain,
 	ChartNoAxesColumnIncreasing,

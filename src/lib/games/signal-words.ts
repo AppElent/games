@@ -1,4 +1,4 @@
-import { type GameErrorCode, GameRuleError } from "@games/core/errors";
+import { type GameErrorCode, GameRuleError } from "@arcadeclub/core/errors";
 export type SignalTeam = "red" | "blue";
 export type SignalCardRole = "red" | "blue" | "neutral" | "trap";
 export type SignalPhase = "clue" | "guess" | "finished";

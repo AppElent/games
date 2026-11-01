@@ -8,7 +8,7 @@ import {
 	canMoveNow,
 	getMoveHighlights,
 	planBackgammonMove,
-} from "@games/core/backgammon";
+} from "@arcadeclub/core/backgammon";
 import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 

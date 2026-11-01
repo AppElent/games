@@ -5,7 +5,7 @@
 import {
 	type BackgammonMovePlan,
 	getBackgammonWinner,
-} from "@games/core/backgammon";
+} from "@arcadeclub/core/backgammon";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";

@@ -2,7 +2,7 @@
  * Whose turn it is, the dice, what to do next and the turn's actions. Sits
  * under the board in both local and online play.
  */
-import type { BackgammonColor } from "@games/core/backgammon";
+import type { BackgammonColor } from "@arcadeclub/core/backgammon";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import {

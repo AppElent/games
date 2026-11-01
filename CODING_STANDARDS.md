@@ -50,7 +50,7 @@ Project decisions below select implementations and explain deviations from share
 | --- | --- |
 | `src/`, `convex/` | TanStack Start web app and the shared Convex backend (root, to keep deployment wiring) |
 | `apps/mobile/` | Expo app (Arcade Club); read [mobile standards](apps/mobile/CODING_STANDARDS.md) before native changes |
-| `packages/core/` | `@games/core`: pure game rules and pack data shared by web, Convex and mobile |
+| `packages/core/` | `@arcadeclub/core`: pure game rules and pack data shared by web, Convex and mobile |
 
 Run the root checks for every change: they cover all three. Mobile run and device
 verification facts live in the [mobile runbook](docs/runbooks/mobile.md).

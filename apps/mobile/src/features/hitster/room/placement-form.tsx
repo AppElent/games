@@ -3,8 +3,8 @@
  * mode asks for, lock it in. A steal uses the same form on the stealer's own
  * timeline, without the bonus fields.
  */
-import type { HitsterModeConfig } from "@games/core/hitster";
-import type { HitsterCard } from "@games/core/hitster-packs";
+import type { HitsterModeConfig } from "@arcadeclub/core/hitster";
+import type { HitsterCard } from "@arcadeclub/core/hitster-packs";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useI18n } from "../../../i18n";

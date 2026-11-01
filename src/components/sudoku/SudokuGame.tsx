@@ -2,7 +2,7 @@ import type {
 	SudokuAction,
 	SudokuHistory,
 	SudokuInputMode,
-} from "@games/core/sudoku-board";
+} from "@arcadeclub/core/sudoku-board";
 import {
 	applyAction,
 	boardConflicts,
@@ -14,13 +14,13 @@ import {
 	isBoardComplete,
 	redo,
 	undo,
-} from "@games/core/sudoku-board";
-import type { SudokuHint } from "@games/core/sudoku-hints";
-import { findHint, hintTextForLevel } from "@games/core/sudoku-hints";
+} from "@arcadeclub/core/sudoku-board";
+import type { SudokuHint } from "@arcadeclub/core/sudoku-hints";
+import { findHint, hintTextForLevel } from "@arcadeclub/core/sudoku-hints";
 import {
 	findKillerConflicts,
 	type KillerCage,
-} from "@games/core/sudoku-killer";
+} from "@arcadeclub/core/sudoku-killer";
 import { useMutation } from "convex/react";
 import { Pause, Play, RotateCcw, Timer } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

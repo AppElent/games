@@ -8,8 +8,8 @@
  * than right after the first `node_modules/`.
  */
 const mustTransform = [
+	"@arcadeclub",
 	"@expo",
-	"@games",
 	"@react-native",
 	"@react-navigation",
 	"@testing-library",

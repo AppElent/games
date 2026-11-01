@@ -2,12 +2,12 @@ import { v } from "convex/values";
 import {
 	findBinaryConflicts,
 	isBinarySolved,
-} from "@games/core/binary-puzzle";
+} from "@arcadeclub/core/binary-puzzle";
 import {
 	findKillerConflicts,
 	type KillerCage,
 	validateKillerCages,
-} from "@games/core/sudoku-killer";
+} from "@arcadeclub/core/sudoku-killer";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";

@@ -1,5 +1,8 @@
-import { getHitsterModeConfig, type HitsterMode } from "@games/core/hitster";
-import { getHitsterPack } from "@games/core/hitster-packs";
+import {
+	getHitsterModeConfig,
+	type HitsterMode,
+} from "@arcadeclub/core/hitster";
+import { getHitsterPack } from "@arcadeclub/core/hitster-packs";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { ParticipantList } from "#/components/games/ParticipantList";

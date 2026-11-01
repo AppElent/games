@@ -12,7 +12,7 @@ import {
 	createInitialBackgammonState,
 	getBackgammonWinner,
 	switchBackgammonColor,
-} from "@games/core/backgammon";
+} from "@arcadeclub/core/backgammon";
 
 export type BackgammonOptions = {
 	showNumbers: boolean;

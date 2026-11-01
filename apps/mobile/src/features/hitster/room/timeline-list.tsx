@@ -2,7 +2,7 @@
  * A timeline as a vertical list, oldest first. When placing, a "place here"
  * slot sits before, between and after the cards; the chosen slot is marked.
  */
-import type { HitsterCard } from "@games/core/hitster-packs";
+import type { HitsterCard } from "@arcadeclub/core/hitster-packs";
 import { Fragment } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";

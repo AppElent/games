@@ -1,4 +1,4 @@
-import type { BackgammonColor } from "@games/core/backgammon";
+import type { BackgammonColor } from "@arcadeclub/core/backgammon";
 import type { Messages } from "../../../i18n";
 
 /** "White"/"Black" as a standalone word (headings, "You are playing …"). */

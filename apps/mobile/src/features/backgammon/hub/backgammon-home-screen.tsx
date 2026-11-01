@@ -3,8 +3,8 @@
  * or create an online challenge to send to a friend.
  */
 
-import { getBackgammonWinner } from "@games/core/backgammon";
-import { gameErrorMessage } from "@games/core/errors";
+import { getBackgammonWinner } from "@arcadeclub/core/backgammon";
+import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { useMutation } from "convex/react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";

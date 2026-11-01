@@ -3,7 +3,7 @@
  * the edit actions. Digits show how many are still to place; a finished
  * digit dims but stays pressable so it can be toggled off again.
  */
-import type { SudokuInputMode } from "@games/core/sudoku-board";
+import type { SudokuInputMode } from "@arcadeclub/core/sudoku-board";
 import { Pressable, StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
 import {

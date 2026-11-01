@@ -3,7 +3,7 @@
  * bundle. The host also gets the DJ panel; every player sees their own
  * timeline (the team's in co-op).
  */
-import { gameErrorMessage } from "@games/core/errors";
+import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { useKeepAwake } from "expo-keep-awake";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";

@@ -7,11 +7,12 @@
  * name is a phone-local preference: a signed-in player defaults to their
  * Clerk first name, a guest to "Player 123".
  */
-import { useUser } from "@clerk/expo";
+
 import {
 	createGuestIdentity,
 	type LocalGuestIdentity,
-} from "@games/core/sessions";
+} from "@arcadeclub/core/sessions";
+import { useUser } from "@clerk/expo";
 import { useCallback, useState } from "react";
 import {
 	PREFERENCE_KEYS,

@@ -12,7 +12,7 @@ import {
 	type Locale,
 	type Messages,
 	messages,
-} from "@games/core/messages";
+} from "@arcadeclub/core/messages";
 import { getLocales } from "expo-localization";
 import {
 	createContext,

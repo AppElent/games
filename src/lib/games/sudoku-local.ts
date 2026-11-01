@@ -1,4 +1,4 @@
-import type { SudokuDifficulty } from "@games/core/sudoku";
+import type { SudokuDifficulty } from "@arcadeclub/core/sudoku";
 
 /**
  * Local index of the user's Sudoku sessions so guests (and signed-in

@@ -1,5 +1,5 @@
 /** How the chosen mode plays, shown in the lobby. */
-import type { HitsterModeConfig } from "@games/core/hitster";
+import type { HitsterModeConfig } from "@arcadeclub/core/hitster";
 import { StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
 import { spacing } from "../../../theme";

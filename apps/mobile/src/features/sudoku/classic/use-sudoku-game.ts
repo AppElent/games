@@ -17,9 +17,9 @@ import {
 	type SudokuInputMode,
 	serializeBoard,
 	undo,
-} from "@games/core/sudoku-board";
-import { findHint, type SudokuHint } from "@games/core/sudoku-hints";
-import { findKillerConflicts } from "@games/core/sudoku-killer";
+} from "@arcadeclub/core/sudoku-board";
+import { findHint, type SudokuHint } from "@arcadeclub/core/sudoku-hints";
+import { findKillerConflicts } from "@arcadeclub/core/sudoku-killer";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
 import { useGameClock } from "../components/use-game-clock";

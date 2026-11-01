@@ -7,7 +7,7 @@ import {
 	type BackgammonPoint,
 	type BackgammonTurnState,
 	computeUsedFlags,
-} from "@games/core/backgammon";
+} from "@arcadeclub/core/backgammon";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import {

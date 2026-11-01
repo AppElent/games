@@ -42,7 +42,7 @@ The frontend mirrors this: `src/lib/games/catalog.ts` is the single source of tr
 
 ### Mobile app (`apps/mobile`, `packages/core`)
 
-pnpm workspace: `apps/mobile` is the Expo app **Arcade Club** (`com.appelent.arcadeclub`, scheme `arcadeclub`) with Sudoku (local), Backgammon (local pass-and-play + online challenge) and Hitster (online room). Other games are web-only and not listed in the app. `packages/core` (`@games/core`) holds the pure rules shared by web, Convex and mobile. Mobile is just another Convex client: it calls the same functions, stores its seats and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=` links. Before native changes read `apps/mobile/CODING_STANDARDS.md` / `DESIGN_SYSTEM.md`; to run or verify it on a device, see `docs/runbooks/mobile.md`.
+pnpm workspace: `apps/mobile` is the Expo app **Arcade Club** (`com.appelent.arcadeclub`, scheme `arcadeclub`) with Sudoku (local), Backgammon (local pass-and-play + online challenge) and Hitster (online room). Other games are web-only and not listed in the app. `packages/core` (`@arcadeclub/core`) holds the pure rules shared by web, Convex and mobile. Mobile is just another Convex client: it calls the same functions, stores its seats and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=` links. Before native changes read `apps/mobile/CODING_STANDARDS.md` / `DESIGN_SYSTEM.md`; to run or verify it on a device, see `docs/runbooks/mobile.md`.
 
 ### Auth wiring
 
