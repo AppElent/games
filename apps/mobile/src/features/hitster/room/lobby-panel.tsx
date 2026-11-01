@@ -1,4 +1,7 @@
-/** Before the start: the room code to share, who has joined, the rules. */
+/**
+ * Before the start: the room code to share, who has joined, the rules. Until
+ * the host has picked a mode (`config` null) it shows only the code and players.
+ */
 import type { HitsterModeConfig } from "@arcadeclub/core/hitster";
 import { StyleSheet, View } from "react-native";
 import { fmt, plural, useI18n } from "../../../i18n";
@@ -19,8 +22,8 @@ export function LobbyPanel({
 	onStart,
 }: {
 	bundle: HitsterBundle;
-	config: HitsterModeConfig;
-	modeLabel: string;
+	config: HitsterModeConfig | null;
+	modeLabel: string | null;
 	isHost: boolean;
 	busy: boolean;
 	onStart: () => void;
@@ -30,7 +33,7 @@ export function LobbyPanel({
 	const players = bundle.participants.filter(
 		(participant) => participant.role !== "watcher" && !participant.kickedAt,
 	);
-	const enough = players.length >= (config.shared ? 1 : 2);
+	const enough = players.length >= (config?.shared ? 1 : 2);
 	const code = bundle.session.joinCode;
 	return (
 		<>
@@ -67,7 +70,7 @@ export function LobbyPanel({
 					))}
 				</View>
 			</Card>
-			{isHost ? (
+			{isHost && config ? (
 				<>
 					{enough ? null : (
 						<AppText variant="caption">{copy.needPlayers}</AppText>
@@ -85,17 +88,21 @@ export function LobbyPanel({
 					{t.games.hitster.stage.statusWaitingForHost}
 				</AppText>
 			)}
-			<Card>
-				<View style={styles.section}>
-					<AppText variant="heading" accessibilityRole="header">
-						{fmt(t.games.hitster.stage.howItWorksHeading, { mode: modeLabel })}
-					</AppText>
-					<RulesPanel
-						config={config}
-						target={bundle.state?.targetCards ?? 10}
-					/>
-				</View>
-			</Card>
+			{config && modeLabel ? (
+				<Card>
+					<View style={styles.section}>
+						<AppText variant="heading" accessibilityRole="header">
+							{fmt(t.games.hitster.stage.howItWorksHeading, {
+								mode: modeLabel,
+							})}
+						</AppText>
+						<RulesPanel
+							config={config}
+							target={bundle.state?.targetCards ?? 10}
+						/>
+					</View>
+				</Card>
+			) : null}
 		</>
 	);
 }

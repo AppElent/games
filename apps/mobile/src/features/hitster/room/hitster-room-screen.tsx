@@ -85,7 +85,16 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 		return (
 			<>
 				{header}
-				<CenteredState loading message={copy.stage.statusWaitingForHost} />
+				<Screen>
+					<LobbyPanel
+						bundle={bundle}
+						config={null}
+						modeLabel={null}
+						isHost={view.isHost}
+						busy={room.busy}
+						onStart={() => void room.start()}
+					/>
+				</Screen>
 			</>
 		);
 	}
