@@ -37,6 +37,22 @@ export const common = {
 		howItWorks:
 			"Alles draait rechtstreeks in de browser — niets te installeren. Maak een kamercode of deellink aan en spelers doen direct mee op hun eigen apparaat, ingelogd of als gast.",
 	},
+	feedback: {
+		report: "Probleem melden",
+		description:
+			"Beschrijf wat er gebeurde. Een screenshot is optioneel; haal persoonlijke gegevens weg voordat je verstuurt.",
+		message: "Wat ging er mis?",
+		placeholder: "Wat gebeurde er, en wat verwachtte je?",
+		submit: "Melding versturen",
+		cancel: "Annuleren",
+		add: "Screenshot toevoegen",
+		take: "Screenshot maken",
+		remove: "Screenshot verwijderen",
+		attachmentError:
+			"Kies een PNG-, JPEG- of WebP-afbeelding kleiner dan 5 MB.",
+		error: "Je melding kon niet worden verstuurd. Probeer het opnieuw.",
+		success: "Bedankt voor je melding!",
+	},
 	actions: {
 		undo: "Ongedaan maken",
 		redo: "Opnieuw doen",

@@ -3,7 +3,8 @@
  * without the SDK. `init.ts` is the only caller that touches the SDK.
  * Policy: docs/runbooks/mobile.md#error-reporting.
  */
-import type { Breadcrumb, ErrorEvent } from "@sentry/react-native";
+import type { Messages } from "@arcadeclub/core/messages";
+import type { Breadcrumb, ErrorEvent, Event } from "@sentry/react-native";
 
 export type SentryEnvironment = "development" | "preview" | "production";
 
@@ -44,6 +45,58 @@ export function sanitizeEvent(event: ErrorEvent): ErrorEvent {
 }
 
 /**
+ * Feedback skips `beforeSend`, so a registered event processor gives the
+ * report the same treatment: no user, no contact fields, no query string.
+ * Other events pass through to the error hooks untouched.
+ */
+export function sanitizeFeedbackEvent<T extends Event>(event: T): T {
+	if (event.type !== "feedback") return event;
+	const feedback = event.contexts?.feedback as
+		| { url?: string; contact_email?: string; name?: string }
+		| undefined;
+	if (feedback) {
+		delete feedback.contact_email;
+		delete feedback.name;
+		if (feedback.url) feedback.url = stripQuery(feedback.url) as string;
+	}
+	const { user: _user, request: _request, ...rest } = event;
+	return rest as T;
+}
+
+/**
+ * The feedback form: no name or email field, an optional screenshot the
+ * player takes themselves, and opened by a shake or the Profile row.
+ */
+export const FEEDBACK_OPTIONS = {
+	enableShakeToReport: true,
+	showName: false,
+	showEmail: false,
+	isNameRequired: false,
+	isEmailRequired: false,
+	enableScreenshot: false,
+	enableTakeScreenshot: true,
+} as const;
+
+/** The form's labels in the player's language. */
+export function feedbackLabels(text: Messages["common"]["feedback"]) {
+	return {
+		formTitle: text.report,
+		messageLabel: text.message,
+		messagePlaceholder: text.placeholder,
+		submitButtonLabel: text.submit,
+		cancelButtonLabel: text.cancel,
+		addScreenshotButtonLabel: text.add,
+		captureScreenshotButtonLabel: text.take,
+		removeScreenshotButtonLabel: text.remove,
+		errorTitle: text.report,
+		formError: text.error,
+		genericError: text.error,
+		captureScreenshotError: text.error,
+		successMessageText: text.success,
+	};
+}
+
+/**
  * Navigation and network breadcrumbs keep their shape without addresses'
  * query strings; console breadcrumbs keep the message but not its
  * arguments, which can hold player names or room codes.
@@ -62,8 +115,9 @@ export function sanitizeBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb | null {
 }
 
 /**
- * Errors only: tracing, profiling, replay, sessions and screenshots are off
- * because nothing here needs them and they would cost quota.
+ * Errors and player feedback only: tracing, profiling, replay, sessions and
+ * automatic screenshots are off because nothing here needs them and they
+ * would cost quota.
  */
 export function buildSentryOptions(config: {
 	dsn: string;

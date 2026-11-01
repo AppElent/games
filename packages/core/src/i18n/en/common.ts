@@ -32,6 +32,21 @@ export const common = {
 		howItWorks:
 			"Everything runs right in the browser — no installs. Create a room code or a share link and players join instantly on their own device, signed in or as a guest.",
 	},
+	feedback: {
+		report: "Report a problem",
+		description:
+			"Describe what happened. A screenshot is optional; remove any personal information before sending.",
+		message: "What happened?",
+		placeholder: "What happened, and what did you expect?",
+		submit: "Send report",
+		cancel: "Cancel",
+		add: "Add screenshot",
+		take: "Take screenshot",
+		remove: "Remove screenshot",
+		attachmentError: "Choose a PNG, JPEG or WebP image under 5 MB.",
+		error: "Could not send your report. Please try again.",
+		success: "Thanks for your report!",
+	},
 	actions: {
 		undo: "Undo",
 		redo: "Redo",

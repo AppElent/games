@@ -36,8 +36,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { publishableKey } from "../src/auth/config";
 import { AppConvexProvider } from "../src/convex/provider";
 import { AppQueryCacheProvider } from "../src/convex/query-cache";
-import { LocaleProvider } from "../src/i18n";
-import { sentryEnabled } from "../src/observability/init";
+import { LocaleProvider, useI18n } from "../src/i18n";
+import { sentryEnabled, setFeedbackLocale } from "../src/observability/init";
 import { useNavigationBreadcrumbs } from "../src/observability/navigation";
 import { reportError } from "../src/observability/report";
 import { AppearanceProvider, useAppearance, useTokens } from "../src/theme";
@@ -105,6 +105,7 @@ function ThemedRoot() {
 	return (
 		<GestureHandlerRootView style={window}>
 			<LocaleProvider>
+				<FeedbackLocale />
 				<ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
 					<AppConvexProvider>
 						<ScopedQueryCache>
@@ -122,6 +123,13 @@ function ThemedRoot() {
 			</LocaleProvider>
 		</GestureHandlerRootView>
 	);
+}
+
+/** The shake-to-report form follows the app's language. */
+function FeedbackLocale() {
+	const { locale } = useI18n();
+	useEffect(() => setFeedbackLocale(locale), [locale]);
+	return null;
 }
 
 /** A sign-in or sign-out drops every retained subscription. */

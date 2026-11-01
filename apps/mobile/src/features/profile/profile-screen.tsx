@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { fmt, type Locale, SUPPORTED_LOCALES, useI18n } from "../../i18n";
+import { openFeedbackForm, sentryEnabled } from "../../observability/init";
 import { type AppearancePreference, spacing, useAppearance } from "../../theme";
 import { Button } from "../../ui/button";
 import { Card } from "../../ui/card";
@@ -109,6 +110,14 @@ export function ProfileScreen() {
 				/>
 			</Section>
 			<Section title={copy.about}>
+				{sentryEnabled ? (
+					<Button
+						variant="secondary"
+						label={t.common.feedback.report}
+						onPress={openFeedbackForm}
+						testID="profile-report-problem"
+					/>
+				) : null}
 				<AppText variant="caption">
 					{t.common.appName} · {fmt(copy.version, { version })}
 				</AppText>

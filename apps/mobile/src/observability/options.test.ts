@@ -1,10 +1,14 @@
-import type { ErrorEvent } from "@sentry/react-native";
+import { messages } from "@arcadeclub/core/messages";
+import type { ErrorEvent, Event } from "@sentry/react-native";
 import {
 	buildSentryOptions,
 	environmentFromChannel,
+	FEEDBACK_OPTIONS,
+	feedbackLabels,
 	routeName,
 	sanitizeBreadcrumb,
 	sanitizeEvent,
+	sanitizeFeedbackEvent,
 	shouldInitSentry,
 } from "./options";
 
@@ -67,5 +71,49 @@ describe("privacy", () => {
 
 	it("names routes by pattern", () => {
 		expect(routeName(["hitster", "[sessionId]"])).toBe("/hitster/[sessionId]");
+	});
+});
+
+describe("feedback", () => {
+	it("asks for no name or email and only a self-taken screenshot", () => {
+		expect(FEEDBACK_OPTIONS).toMatchObject({
+			enableShakeToReport: true,
+			showName: false,
+			showEmail: false,
+			enableTakeScreenshot: true,
+		});
+	});
+
+	it("labels the form in the player's language", () => {
+		expect(feedbackLabels(messages.nl.common.feedback)).toMatchObject({
+			formTitle: "Probleem melden",
+			removeScreenshotButtonLabel: "Screenshot verwijderen",
+		});
+	});
+
+	it("drops contact details, the user and the query from a report", () => {
+		const event = {
+			type: "feedback",
+			user: { id: "user_1", email: "a@b.nl" },
+			contexts: {
+				feedback: {
+					message: "The board froze",
+					url: "arcadeclub://hitster/abc?token=secret",
+					contact_email: "a@b.nl",
+					name: "Ann",
+				},
+			},
+		} as unknown as Event;
+		const result = sanitizeFeedbackEvent(event);
+		expect(result.user).toBeUndefined();
+		expect(result.contexts?.feedback).toEqual({
+			message: "The board froze",
+			url: "arcadeclub://hitster/abc",
+		});
+	});
+
+	it("leaves error events to beforeSend", () => {
+		const event = { message: "x", user: { id: "1" } } as Event;
+		expect(sanitizeFeedbackEvent(event)).toBe(event);
 	});
 });
