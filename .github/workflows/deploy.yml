@@ -1,9 +1,9 @@
 name: Deploy
 
-# A merge to main ships production: Convex functions and schema first, then
-# the Worker built against them. "Run workflow" redeploys main by hand. The
-# main ruleset only accepts PRs whose `check` passed, so this does not re-run
-# the checks. Mobile is separate: builds and OTA updates go through EAS.
+# A merge to main ships production: the CI checks again (admins can bypass
+# the ruleset), then Convex functions and schema, then the Worker built against
+# them. "Run workflow" redeploys main by hand. Mobile is separate: builds and
+# OTA updates go through EAS.
 on:
   push:
     branches: [main]
@@ -15,7 +15,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+    permissions: { contents: read }
+
   deploy:
+    needs: checks
     runs-on: ubuntu-latest
     # Every value below is scoped to the `production` GitHub Environment and
     # written there by `pnpm env:apply production`.

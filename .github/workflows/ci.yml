@@ -1,9 +1,10 @@
 name: CI
+# Pull requests run it directly; on main, deploy.yml calls it before shipping.
 on:
-  push: { branches: [main] }
   pull_request:
+  workflow_call:
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref }}-${{ github.event_name }}
   # A new push supersedes a PR run; every run on main finishes.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
@@ -22,6 +23,5 @@ jobs:
       - run: pnpm run typecheck
       - run: pnpm test
       # Build catches bundling/plugin/SSR-compile breakage that typecheck + tests
-      # miss. preview.yml only builds on pull_request, so without this a build-only
-      # failure could land green on a direct push to main.
+      # miss; preview.yml builds only for labelled PRs.
       - run: pnpm build
