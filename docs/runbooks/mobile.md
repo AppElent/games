@@ -23,7 +23,7 @@ project: `@appelent/arcadeclub` (id in `app.json`).
 
 | Variable | Value |
 | --- | --- |
-| `EXPO_PUBLIC_CONVEX_URL` | Same deployment as the web app (`VITE_CONVEX_URL`) |
+| `EXPO_PUBLIC_CONVEX_URL` | The dev deployment (`https://zany-parakeet-507.eu-west-1.convex.cloud`, as in the EAS `development` environment), or a local backend the device can reach |
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Same Clerk instance as the web app; its Native API must be enabled |
 | `EXPO_PUBLIC_WEB_ORIGIN` | Web origin for share links. Unset: invites share the room code only and challenge links are hidden |
 | `EXPO_PUBLIC_TEST_USER_EMAIL` / `_PASSWORD` | Optional, `pk_test_` only: prefill sign-in |
@@ -43,6 +43,9 @@ With a local Convex backend (`EXPO_PUBLIC_CONVEX_URL=http://127.0.0.1:3210`), an
 Android emulator needs `adb reverse tcp:3210 tcp:3210` (and the Metro port) after
 every emulator restart.
 
+A phone can't reach `127.0.0.1`, so on a physical device use the dev deployment. The
+bundle reads `EXPO_PUBLIC_*` from `apps/mobile/.env.local`; shell overrides don't apply.
+
 Rebuild the dev client after adding a native module (any new `expo-*` package with
 native code). JS-only changes reload through Metro.
 
@@ -53,6 +56,12 @@ from the build's artifact:
 cd apps/mobile
 pnpm exec eas build --platform ios --profile development-simulator
 ```
+
+For a phone, the `development` profile builds an Android APK or an ad-hoc iOS build
+for the devices registered with `eas device:create`. The first iOS build must run
+interactively so EAS can sign in to Apple and create the provisioning profile; add
+`--non-interactive` after that. Open the installed app, then connect it to
+`pnpm exec expo start --dev-client` on the same network.
 
 ## Verify on a device
 

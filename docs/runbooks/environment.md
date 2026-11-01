@@ -41,8 +41,9 @@ Some placements are produced by tools, not copied from Infisical:
 
 - `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` in the root `.env.local` come from
   `pnpm exec convex dev`.
-- `EXPO_PUBLIC_CONVEX_URL` in `apps/mobile/.env.local` is set by hand to the local
-  backend address the device can reach (see [mobile.md](mobile.md)).
+- `EXPO_PUBLIC_CONVEX_URL` in `apps/mobile/.env.local` is set by hand: the dev
+  deployment for a phone, or a local backend a simulator can reach (see
+  [mobile.md](mobile.md)).
 - The preview workflow gets `VITE_CONVEX_URL` from `convex deploy`, and uses the
   existing `CONVEX_DEPLOY_KEY` GitHub secret.
 
