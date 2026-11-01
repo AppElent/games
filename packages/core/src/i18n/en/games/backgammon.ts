@@ -92,6 +92,7 @@ export const backgammon = {
 		rematchError: "Could not start rematch",
 		rematchLabel: "Rematch (colors swap)",
 		youArePlaying: "You are playing {color}.",
+		youArePlayingAgainst: "You are playing {color} against {name}.",
 		bothSeatsClaimed: "Both seats are claimed — you are watching.",
 	},
 	newGame: {

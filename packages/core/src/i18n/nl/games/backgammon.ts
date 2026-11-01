@@ -94,6 +94,7 @@ export const backgammon = {
 		rematchError: "Kon rematch niet starten",
 		rematchLabel: "Rematch (kleuren wisselen)",
 		youArePlaying: "Jij speelt {color}.",
+		youArePlayingAgainst: "Jij speelt {color} tegen {name}.",
 		bothSeatsClaimed: "Beide plekken zijn bezet — jij kijkt mee.",
 	},
 	newGame: {

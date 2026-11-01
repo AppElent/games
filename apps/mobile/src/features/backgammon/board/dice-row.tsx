@@ -94,7 +94,7 @@ function Die({
 }
 
 const styles = StyleSheet.create({
-	row: { flexDirection: "row", gap: spacing.sm, justifyContent: "center" },
+	row: { flexDirection: "row", gap: spacing.sm },
 	die: {
 		flexDirection: "row",
 		flexWrap: "wrap",

@@ -31,6 +31,9 @@ export function TurnPanel({
 	children?: ReactNode;
 }) {
 	const styles = useThemedStyles(createStyles);
+	// Doubles give four dice; beside the heading they would squeeze it onto two lines.
+	const diceOwnRow = dice.length > 2;
+	const diceRow = <DiceRow dice={dice} used={used} size={32} />;
 	return (
 		<View style={styles.panel}>
 			<View style={styles.head}>
@@ -49,8 +52,9 @@ export function TurnPanel({
 				>
 					{heading}
 				</AppText>
-				<DiceRow dice={dice} used={used} size={32} />
+				{diceOwnRow ? null : diceRow}
 			</View>
+			{diceOwnRow ? diceRow : null}
 			{message ? (
 				<AppText variant="secondary" accessibilityLiveRegion="polite">
 					{message}

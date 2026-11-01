@@ -97,8 +97,9 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 	const viewer: BackgammonColor = match.myColor ?? "white";
 	const opponentId =
 		viewer === "white" ? state.blackParticipantId : state.whiteParticipantId;
+	const opponentSeatName = match.nameOf(opponentId);
 	const opponentName =
-		match.nameOf(opponentId) ??
+		opponentSeatName ??
 		colorLabel(copy, viewer === "white" ? "black" : "white");
 	const activeName =
 		match.nameOf(
@@ -229,10 +230,15 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 						}
 					/>
 					{match.myColor ? (
-						<AppText variant="caption">
-							{fmt(copy.waitingRoom.youArePlaying, {
-								color: colorLabel(copy, match.myColor),
-							})}
+						<AppText variant="caption" style={styles.inset}>
+							{opponentSeatName
+								? fmt(copy.waitingRoom.youArePlayingAgainst, {
+										color: colorLabel(copy, match.myColor),
+										name: opponentSeatName,
+									})
+								: fmt(copy.waitingRoom.youArePlaying, {
+										color: colorLabel(copy, match.myColor),
+									})}
 						</AppText>
 					) : null}
 					<OptionsPanel
@@ -265,4 +271,6 @@ const createStyles = (colors: Tokens) =>
 		},
 		side: { gap: spacing.lg },
 		section: { gap: spacing.md },
+		/** Lines up with the text inside the cards above and below. */
+		inset: { paddingHorizontal: spacing.lg },
 	});

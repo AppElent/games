@@ -5,6 +5,7 @@
 import { StyleSheet, Switch, View } from "react-native";
 import { useI18n } from "../../../i18n";
 import { metrics, spacing, useTokens } from "../../../theme";
+import { Card } from "../../../ui/card";
 import { AppText } from "../../../ui/text";
 import type { BackgammonOptions } from "../local/local-match";
 
@@ -30,7 +31,7 @@ export function OptionsPanel({
 	const tokens = useTokens();
 	const copy = t.games.backgammon.board;
 	return (
-		<View style={styles.list}>
+		<Card>
 			<AppText variant="label">{copy.optionsHeading.toUpperCase()}</AppText>
 			{keys.map((key) => (
 				<View key={key} style={styles.row}>
@@ -46,12 +47,11 @@ export function OptionsPanel({
 					/>
 				</View>
 			))}
-		</View>
+		</Card>
 	);
 }
 
 const styles = StyleSheet.create({
-	list: { gap: spacing.sm },
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
