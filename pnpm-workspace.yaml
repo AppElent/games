@@ -25,6 +25,10 @@ allowBuilds:
 # (autolinking paths are part of the native fingerprint).
 virtualStoreDirMaxLength: 60
 
+# `pnpm run` must not install first: EAS runs `eas-build-pre-install` before
+# any install, and that hook is what authenticates the @appelent registry.
+verifyDepsBeforeRun: false
+
 minimumReleaseAge: 4320 # 3 days — blocks the worm/account-takeover window
 minimumReleaseAgeExclude:
   - "@appelent/*" # our own registry, always trusted
