@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when adding, routing, or checking environment variables and secrets.
-version: 2.1.0
+version: 2.2.0
 applies_to: [all]
 ---
 
@@ -11,6 +11,16 @@ applies_to: [all]
 Environment values come from one manifest and secret store and land only in their declared destinations.
 
 ## Rules
+
+### Environment tiers
+
+- **Required:** three Infisical environments, shared by every app: `dev`, `staging`, `prod`. `ENV_CONFIG.source.environments` maps local and dev to `dev`, preview to `staging`, and production to `prod`.
+- **Required:** `staging` carries production auth (the production Clerk publishable key and issuer) at `/`. Its app folder holds copies of the production backend URL, web origin and monitoring values that the installed preview app needs.
+- **Default:** previews use production auth, so testers sign in with their real accounts. The installed mobile preview app also uses the production backend and web origin; it is the owner's daily driver on real data. Web PR previews keep their own per-PR backend (a Convex preview deployment whose preview default `CLERK_JWT_ISSUER_DOMAIN` is the production issuer).
+- **Required:** test-user credentials land only in local and dev, which use the development auth instance. Never route them to preview or production.
+- Because the mobile preview app talks to the production backend, it sees backend changes only after a production deploy. Keep client changes compatible with the deployed functions, or ship them together.
+
+### Routing
 
 Read the nonsecret Infisical project reference from .infisical.json. Source values are captured as JSON in memory for explicit environment/folders; later folders override earlier ones. There is no intermediate secret export file and no infisical run wrapper. Authenticate the provider CLIs separately.
 
@@ -42,6 +52,8 @@ The app owns env.manifest.ts, its environment/consumer names, placement function
 The loader executes trusted app code after Node's built-in TypeScript type stripping. This is not a sandbox or static inspection. Keep the manifest self-contained, use explicit type-only imports, and use erasable types rather than enums, parameter properties, namespaces, or compiler-specific transforms. No-environment check validates the manifest and placeholder-only .env.example without credentials. check-project.mjs does not execute the manifest.
 
 ## Verify
+
+After `apply preview`, the preview destinations (GitHub variables, EAS `preview` environment) hold a production publishable key (`pk_live_` prefix) and the mobile preview holds the production backend URL; local and dev hold `pk_test_`. Plans show names only, so check the public values in the destination. Moving an existing app's preview from `dev` to `staging`: create the app folder in `staging`, copy the production values the preview app needs, update `ENV_CONFIG`, drop preview from test-user landings, then `plan` and `apply preview`. Rebuild the installed preview app; EAS updates cannot change values baked into an existing build.
 
 Replace the old thin @appelent/dev/env wrapper with the distributed env.mjs and lib directory; existing pnpm env:* aliases can stay. Preserve the manifest, source ordering, names, .env.example, ownership state, and ignore rules. Change implicit type imports to import type if the Node loader rejects them. Test `generate --dry-run`, check, plan, and a selected local apply before replacing live provider flows. `exec` is additive; existing commands are unchanged. Projects that export secrets into a shell before a local tool can switch to `exec`. Toolkit tests use synthetic sources/providers; live credentials and deployment acceptance remain project tasks.
 

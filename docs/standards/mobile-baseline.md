@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing an Expo Router app, its native configuration, or release boundaries.
-version: 2.2.0
+version: 2.4.0
 applies_to: [mobile]
 ---
 
@@ -24,13 +24,17 @@ Share domain logic through a workspace module when there are real callers. Keep 
 
 ### Build and release boundaries
 
-The development profile enables a development client and internal distribution; preview creates an internal build; production uses remote version ownership. Review and adapt those choices before the first EAS build. Add profile-specific environment/channel mappings explicitly. Keep existing release profiles intact.
+The development profile enables a development client and internal distribution; preview creates an internal build; production uses remote version ownership. Review and adapt those choices before the first EAS build. Which profile goes onto which phone, when TestFlight is worth it, and the EAS build pitfalls are in [mobile distribution](mobile-distribution.md). Add profile-specific environment/channel mappings explicitly. Keep existing release profiles intact.
 
 For pnpm builds across Windows/macOS, keep the same virtual-store path-length policy: native autolinking paths can affect Expo fingerprints even with identical package versions.
 
+**Default:** add the [fingerprint config](mobile-baseline/templates/fingerprint.config.js) to the mobile target. It keeps Expo's `balanced` preset but leaves `package.json` scripts out of the fingerprint: they never reach the binary, and editing one would otherwise cut every installed build off from updates. Add a root `.easignore` when the workspace holds local-only files (caches, exports, signing files) that must not be uploaded; it replaces `.gitignore` for uploads, so repeat the ignores that matter.
+
 Native dependency, config-plugin, entitlement, or runtime changes require a compatible binary. The [OTA guard example](mobile-baseline/examples/ota-guard.ts) compares resolved runtime evidence, profile, environment, and channel. It does not query EAS and a fingerprint policy string is not a resolved runtime fingerprint. No update command is generated automatically. Store submission, signing, production rollout, and device acceptance remain separate tasks.
 
-Publish every over-the-air update with an explicit environment (`eas update --environment <name>`, paired with its channel). `EXPO_PUBLIC_*` values are inlined into the bundle at publish time by textual substitution of `process.env.EXPO_PUBLIC_NAME`, so a bare publish bakes in the publishing machine's local env file and points production devices at development backends. Static dot access at every call site is load-bearing: dynamic or destructured reads are not substituted.
+Publish over-the-air updates only through the [publish wrapper](mobile-baseline/templates/publish-update.mjs), run through `env:exec` so the Sentry token never lands in a file. It derives everything that must match the installed build from the channel: `APP_VARIANT` (when the app config picks bundle ID, scheme or icon from it, a bare `eas update` resolves to the development variant, whose runtime fingerprint no preview or production build has, and nothing reports the mismatch), `--environment`, and the source-map upload from the exact `dist/` just published. Before publishing it checks that a finished build on the channel has this checkout's runtime fingerprint (computed by [fingerprint.mjs](mobile-baseline/templates/fingerprint.mjs), which matches what EAS records), and refuses when none does, because no installed app would load the update; `--without-build` overrides that for publishing ahead of a build. Production refuses to publish without the token; `--upload-only` retries a failed upload without publishing again. Every update carries an explicit environment (`eas update --environment <name>`, paired with its channel). `EXPO_PUBLIC_*` values are inlined into the bundle at publish time by textual substitution of `process.env.EXPO_PUBLIC_NAME`, so a bare publish bakes in the publishing machine's local env file and points production devices at development backends. Static dot access at every call site is load-bearing: dynamic or destructured reads are not substituted.
+
+**Default:** add the [mobile runtime workflow](mobile-baseline/templates/mobile-runtime.yml). On every PR that touches the mobile target, the lockfile or patches, it compares the runtime fingerprint of base and head per variant and platform, and comments whether the PR needs new builds after merging or can ship as an update. It is informational and never fails a PR. Both checkouts need their own install, because native modules are fingerprinted from `node_modules`.
 
 ### CI builds
 
@@ -72,6 +76,8 @@ The plugin registers automatically; open the Device Hub URL printed by Metro (un
 ## Migration
 
 Replace mobile.foundation recipe configuration with this focused setup and app-owned wiring. Keep existing identities and workspace modules. The historical mobile.release guard is retained as an example, without freezing the old SDK version table. Runtime package removal and live app migration are separate from installing this guide.
+
+2.4.0: apps that publish with a raw `eas update` or their own script copy the publish wrapper and `fingerprint.mjs`, set its Sentry org and project, add `mobile:update:<channel>` scripts through `env:exec`, and update their runbook. Adding the fingerprint config changes the runtime fingerprint once, so rebuild installed preview and production builds before relying on OTA updates.
 
 ## Exceptions
 

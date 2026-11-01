@@ -2,8 +2,9 @@ name: Deploy
 
 # A merge to main ships production: the CI checks again (admins can bypass
 # the ruleset), then Convex functions and schema, then the Worker built against
-# them. "Run workflow" redeploys main by hand. Mobile is separate: builds and
-# OTA updates go through EAS.
+# them. "Run workflow" redeploys main by hand. Then the preview app's
+# over-the-air update, whose builds call the production backend. Builds stay
+# separate (mobile-build.yml).
 on:
   push:
     branches: [main]
@@ -61,3 +62,40 @@ jobs:
       # deploy:production script, which local `pnpm deploy:prod` runs too.
       - name: Deploy Convex, build, deploy Worker
         run: pnpm run deploy:production
+
+      # The Cloudflare plugin picks the Worker at build time (CLOUDFLARE_ENV);
+      # fail if the build targeted anything but production.
+      - name: Check deployed Worker
+        run: |
+          name=$(jq -r .name dist/server/wrangler.json)
+          if [ "$name" != games ]; then
+            echo "::error::Built Worker is $name, expected games."
+            exit 1
+          fi
+
+  # Publishes the merged JavaScript to the preview channel once its backend is
+  # live, only when an installed build can load it; otherwise the run summary
+  # says a rebuild is due. See apps/mobile/scripts/ci-publish-update.mjs.
+  mobile-update:
+    needs: deploy
+    runs-on: ubuntu-latest
+    # Moves the mobile-update/preview tag after publishing.
+    permissions: { contents: write }
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Check Expo token
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::No EXPO_TOKEN secret. Store it in Infisical as expo-token, then run pnpm env:apply preview --only github."
+            exit 1
+          fi
+      - name: Publish preview update
+        run: node apps/mobile/scripts/ci-publish-update.mjs preview

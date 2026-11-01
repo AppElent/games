@@ -16,10 +16,12 @@ import {
 	useThemedStyles,
 	useTokens,
 } from "../../../theme";
+import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
 import { Icon } from "../../../ui/icon";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
+import { useAppUpdate } from "../../../updates/use-app-update";
 import {
 	type ContinueItem,
 	listContinueItems,
@@ -73,6 +75,7 @@ export function PlayHomeScreen() {
 	const stacked = useAccessibilityTextSize();
 	const [items, setItems] = useState<ContinueItem[]>([]);
 	const statuses = useOnlineStatuses(items);
+	const update = useAppUpdate();
 	const visible = items
 		.filter((item) => statuses[item.id] !== null)
 		.slice(0, CONTINUE_LIMIT);
@@ -121,6 +124,20 @@ export function PlayHomeScreen() {
 
 	return (
 		<Screen inTabs>
+			{update.ready ? (
+				<View style={styles.update} accessibilityLiveRegion="polite">
+					<AppText variant="secondary" tone="default" style={styles.text}>
+						{t.play.updateReady}
+					</AppText>
+					<Button
+						label={t.play.restart}
+						onPress={update.restart}
+						variant="secondary"
+						compact
+						testID="play-update-restart"
+					/>
+				</View>
+			) : null}
 			<AppText variant="secondary">{t.play.subtitle}</AppText>
 			<View style={styles.list}>
 				{GAMES.map((game) => {
@@ -239,8 +256,18 @@ export function PlayHomeScreen() {
 	);
 }
 
-const createStyles = (_colors: Tokens) =>
+const createStyles = (colors: Tokens) =>
 	StyleSheet.create({
+		update: {
+			flexDirection: "row",
+			flexWrap: "wrap",
+			alignItems: "center",
+			gap: spacing.md,
+			borderRadius: radius.md,
+			paddingHorizontal: spacing.lg,
+			paddingVertical: spacing.md,
+			backgroundColor: colors.accentDim,
+		},
 		list: { gap: spacing.md },
 		row: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
 		stacked: { flexDirection: "column", alignItems: "flex-start" },

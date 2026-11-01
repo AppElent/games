@@ -20,6 +20,7 @@ Read only what the task needs; never preload every standard.
 | Dependabot or automated dependency PRs | [Dependency updates](docs/standards/dependency-updates.md) |
 | Web app stack, UI states, or browser capabilities | [Web baseline](docs/standards/web-baseline.md) |
 | Expo setup, native configuration, builds, or releases | [Mobile baseline](docs/standards/mobile-baseline.md) |
+| Getting a build onto a phone, TestFlight, or OTA updates | [Mobile distribution](docs/standards/mobile-distribution.md) |
 | Verification | [Verification](docs/standards/verification.md), then the project's check commands |
 | Environment variables and secrets | [Environments](docs/standards/environments.md) |
 | Worktrees and isolated backends | [Workspaces](docs/standards/workspaces.md) |
@@ -29,6 +30,7 @@ Read only what the task needs; never preload every standard.
 | Error reporting and source maps | [Sentry monitoring](docs/standards/sentry-monitoring.md) |
 | In-app problem reports | [Issue reporting](docs/standards/issue-reporting.md) |
 | Pull-request previews | [Previews](docs/standards/previews.md) |
+| Staging or production deploys, deploy workflows, or branch rules | [Deployments](docs/standards/deployments.md) |
 | Web manifest, installability, or service worker | [PWA](docs/standards/pwa.md) |
 | Application CLI or browser login for it | [App CLI](docs/standards/app-cli.md) |
 | MCP server or tools | [MCP](docs/standards/mcp.md) |
@@ -54,3 +56,16 @@ Project decisions below select implementations and explain deviations from share
 
 Run the root checks for every change: they cover all three. Mobile run and device
 verification facts live in the [mobile runbook](docs/runbooks/mobile.md).
+
+## Project decisions
+
+| Rule | Scope | Replacement | Reason |
+| --- | --- | --- | --- |
+| Auth web examples ([auth](docs/standards/auth.md)) | `src/lib/auth` | Clerk Core 3 (`@clerk/react`): the signal API with `finalize()`, `<Show when>`. Foundry's port is the reference. | The standard's web examples are still on deprecated `@clerk/clerk-react` 5. Drop this row once they move to Core 3. |
+| React version | Web and mobile | Web pins the exact React that the Expo SDK requires on mobile (19.3.0); bump both with the Expo SDK. | One React in the workspace. Dependabot already leaves `react`/`react-dom` to Expo upgrades. |
+| CI update publish ([mobile distribution](docs/standards/mobile-distribution.md)) | `preview` channel | `deploy.yml` publishes after the production deploy. Production updates stay manual (`pnpm mobile:update:production`). | Preview is the daily driver and calls the production backend. |
+
+### Deferred
+
+- **Restart prompt acceptance ([mobile distribution](docs/standards/mobile-distribution.md#verify)):** covered by typecheck and a unit test of the resume-check policy. Seeing the prompt needs an installed preview build that downloads an update; check it after the next CI publish.
+- **Staging tier ([deployments](docs/standards/deployments.md)):** not adopted. A merge to `main` deploys production, which the standard allows when there is no staging. Add staging when a release needs a gate before production.

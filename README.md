@@ -53,7 +53,7 @@ pnpm run build
 Deploys to Cloudflare Workers (`games` in prod, `games-dev` for the dev environment) via Wrangler:
 
 ```bash
-pnpm run deploy:dev    # wrangler deploy --env dev
+pnpm run deploy:dev    # builds and deploys the games-dev Worker
 pnpm run deploy:prod   # convex deploy && build && wrangler deploy
 ```
 
