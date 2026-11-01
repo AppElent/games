@@ -36,8 +36,12 @@ jobs:
       # Native modules are fingerprinted from node_modules, so both sides
       # need their own install. The second one comes from the pnpm store.
       - run: pnpm install --frozen-lockfile
-      - run: pnpm install --frozen-lockfile --prefer-offline
-        working-directory: .base
+      # A base without the app needs no install; fingerprint.mjs says so.
+      - name: Install base
+        run: |
+          if [ -f .base/apps/mobile/package.json ]; then
+            cd .base && pnpm install --frozen-lockfile --prefer-offline
+          fi
 
       - name: Compare fingerprints
         run: |
