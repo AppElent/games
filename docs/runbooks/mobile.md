@@ -73,6 +73,22 @@ To install the preview app next to the dev app on an iPhone, build `preview-inte
 runs against production Clerk and Convex, so it only sees Convex changes once they're
 deployed to production.
 
+### TestFlight
+
+The first release runs interactively, so EAS can sign in to Apple, create the App
+Store Connect app for `com.appelent.arcadeclub`, the distribution certificate and an
+App Store Connect API key:
+
+```bash
+cd apps/mobile
+pnpm exec eas build --platform ios --profile production --auto-submit
+```
+
+Then record the app's Apple ID (App Store Connect → App Information) as
+`submit.production.ios.ascAppId` in `eas.json`, so later releases can run with
+`--non-interactive`. Production builds use production Clerk and Convex: deploy the
+backend first (see [deploy.yml](../../.github/workflows/deploy.yml)).
+
 ### CI builds
 
 The **Mobile Build** workflow runs `eas build --local` on a GitHub runner, so it spends

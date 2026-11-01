@@ -17,14 +17,15 @@ import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
-import { spacing, useThemedStyles } from "../../../theme";
+import { radius, spacing, useThemedStyles } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
 import { CenteredState } from "../../../ui/centered-state";
 import { Notice } from "../../../ui/notice";
+import { QrCode } from "../../../ui/qr-code";
 import { AppText } from "../../../ui/text";
 import { shareInvite } from "../../sessions/host/share-invite";
-import { hasWebOrigin } from "../../sessions/session-links";
+import { hasWebOrigin, webJoinUrl } from "../../sessions/session-links";
 import { BackgammonBoard } from "../board/backgammon-board";
 import { useBoardSelection } from "../board/use-board-selection";
 import { BoardScreen } from "../components/board-screen";
@@ -118,7 +119,10 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 			: fmt(copy.waitingRoom.waitingForPlayerToPlay, { name: activeName });
 
 	const hint = match.isMyTurn ? turnHint(turn, selection.selected) : null;
-	const canInvite = Boolean(session.shareToken) && hasWebOrigin();
+	const inviteUrl =
+		session.shareToken && hasWebOrigin()
+			? webJoinUrl({ token: session.shareToken })
+			: null;
 
 	return (
 		<BoardScreen
@@ -146,16 +150,25 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 						<AppText variant="secondary">
 							{copy.waitingRoom.shareToClaimBlackSeat}
 						</AppText>
-						{canInvite ? (
-							<Button
-								label={copy.waitingRoom.sendInvite}
-								onPress={() =>
-									void shareInvite(t, t.catalog.backgammon.title, {
-										token: session.shareToken,
-									})
-								}
-								testID="bg-share-invite"
-							/>
+						{inviteUrl ? (
+							<>
+								<View style={styles.qr}>
+									<QrCode
+										value={inviteUrl}
+										size={160}
+										accessibilityLabel={t.common.joinPanel.scanQrLabel}
+									/>
+								</View>
+								<Button
+									label={copy.waitingRoom.sendInvite}
+									onPress={() =>
+										void shareInvite(t, t.catalog.backgammon.title, {
+											token: session.shareToken,
+										})
+									}
+									testID="bg-share-invite"
+								/>
+							</>
 						) : (
 							<Notice tone="info" message={copy.waitingRoom.noInviteLink} />
 						)}
@@ -241,6 +254,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 const createStyles = () =>
 	StyleSheet.create({
 		section: { gap: spacing.md },
+		qr: { alignSelf: "center", borderRadius: radius.sm, overflow: "hidden" },
 		/** Lines up with the text inside the cards above and below. */
 		inset: { paddingHorizontal: spacing.lg },
 	});

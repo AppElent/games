@@ -5,11 +5,13 @@
 import type { HitsterModeConfig } from "@arcadeclub/core/hitster";
 import { StyleSheet, View } from "react-native";
 import { fmt, plural, useI18n } from "../../../i18n";
-import { spacing } from "../../../theme";
+import { radius, spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
+import { QrCode } from "../../../ui/qr-code";
 import { AppText } from "../../../ui/text";
 import { shareInvite } from "../../sessions/host/share-invite";
+import { webJoinUrl } from "../../sessions/session-links";
 import type { HitsterBundle } from "./room-view";
 import { RulesPanel } from "./rules-panel";
 
@@ -46,6 +48,13 @@ export function LobbyPanel({
 						<AppText variant="code" selectable testID="hitster-room-code">
 							{code}
 						</AppText>
+						<View style={styles.qr}>
+							<QrCode
+								value={webJoinUrl({ code }) ?? code}
+								size={176}
+								accessibilityLabel={t.common.joinPanel.scanQrLabel}
+							/>
+						</View>
 						<Button
 							variant="secondary"
 							label={copy.shareCode}
@@ -109,4 +118,5 @@ export function LobbyPanel({
 
 const styles = StyleSheet.create({
 	section: { gap: spacing.sm },
+	qr: { alignSelf: "center", borderRadius: radius.sm, overflow: "hidden" },
 });

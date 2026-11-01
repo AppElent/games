@@ -158,6 +158,7 @@ export const common = {
 		scanInvalid: "That QR code isn't a game invite.",
 		cameraDenied: "Allow camera access in Settings to scan invite QR codes.",
 		openSettings: "Open Settings",
+		scanQrLabel: "QR code to join this game",
 	},
 	gameDetail: {
 		notFound: "Game not found.",

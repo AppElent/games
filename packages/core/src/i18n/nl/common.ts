@@ -167,6 +167,7 @@ export const common = {
 		cameraDenied:
 			"Geef in Instellingen toegang tot de camera om QR-codes te scannen.",
 		openSettings: "Instellingen openen",
+		scanQrLabel: "QR-code om mee te doen aan dit spel",
 	},
 	gameDetail: {
 		notFound: "Spel niet gevonden.",
