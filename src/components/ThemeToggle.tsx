@@ -1,10 +1,10 @@
+import { useEffect, useState } from "react";
 import {
 	applyThemeMode,
 	getInitialMode,
 	setThemeMode,
 	type ThemeMode,
-} from "@appelent/auth";
-import { useEffect, useState } from "react";
+} from "#/lib/auth";
 
 export default function ThemeToggle() {
 	const [mode, setMode] = useState<ThemeMode>("auto");

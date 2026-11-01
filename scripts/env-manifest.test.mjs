@@ -133,11 +133,10 @@ describe("Arcade Club environment routing", () => {
 			).toBe(false);
 		}
 		expect(byKey("convexDeployKey")?.optional).toBeUndefined();
-		expect(byKey("nodeAuthToken")?.optional).toBeUndefined();
 	});
 
 	it("gives every logical value a unique evidenced source name", () => {
-		expect(ENTRIES).toHaveLength(13);
+		expect(ENTRIES).toHaveLength(12);
 		const sourceNames = ENTRIES.map((entry) => entry.infisicalKey);
 		expect(new Set(sourceNames).size).toBe(sourceNames.length);
 		expect(sourceNames).not.toEqual(
@@ -148,18 +147,6 @@ describe("Arcade Club environment routing", () => {
 				"CLOUDFLARE_ENV",
 			]),
 		);
-	});
-
-	it("keeps install and upload tokens out of client bundles", () => {
-		for (const environment of ENVIRONMENTS) {
-			const token = placementsFor(environment).filter(
-				(placement) => placement.entry.key === "nodeAuthToken",
-			);
-			expect(token.every((placement) => placement.entry.secret)).toBe(true);
-			expect(token.map((placement) => placement.consumer)).toEqual(
-				environment === "preview" ? ["workflow", "eas-tooling"] : ["eas-tooling"],
-			);
-		}
 	});
 
 	it("keeps Sentry upload credentials out of client bundles", () => {

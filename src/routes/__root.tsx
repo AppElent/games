@@ -1,4 +1,3 @@
-import { THEME_INIT_SCRIPT, ThemeSync } from "@appelent/auth";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -9,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useEffect } from "react";
+import { THEME_INIT_SCRIPT, ThemeSync } from "#/lib/auth";
 import "#/lib/router-static-data";
 import { type Locale, LocaleProvider, readClientLocale } from "#/lib/i18n";
 import { LanguageSync } from "#/lib/i18n/LanguageSync";

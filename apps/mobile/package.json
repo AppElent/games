@@ -60,8 +60,7 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
-    "eas-build-pre-install": "node ../../scripts/npm-auth.mjs"
+    "test": "jest"
   },
   "private": true
 }

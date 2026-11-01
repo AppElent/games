@@ -1,5 +1,5 @@
-import { AuthConfigProvider } from "@appelent/auth";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { AuthConfigProvider } from "#/lib/auth";
 import { authConfig } from "../../lib/auth-config";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;

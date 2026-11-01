@@ -37,8 +37,6 @@
     "sentry:convex": "node scripts/convex-sentry.mjs"
   },
   "dependencies": {
-    "@appelent/auth": "^0.1.0",
-    "@appelent/i18n": "^0.1.0",
     "@arcadeclub/core": "workspace:*",
     "@clerk/clerk-react": "^5.61.6",
     "@cloudflare/vite-plugin": "^1.26.0",
@@ -89,7 +87,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^10.0.3",
-    "jsdom": "^28.1.0",
+    "jsdom": "^29.1.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
     "vitest": "^4.1.5",

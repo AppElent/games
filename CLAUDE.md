@@ -9,7 +9,7 @@ TanStack Start (file-based routing, SSR, Vite) + Convex (real-time backend) + Cl
 - Wrangler app name: `games` (prod), `games-dev` (dev environment).
 - Environment variables: `env.manifest.ts` routes every value from Infisical (`/` then `/arcade-club`) to `.env*` files, EAS, Convex and GitHub — see `docs/runbooks/environment.md`. Don't hand-set EAS or GitHub values.
 - Sentry: one project `appelent/arcadeclub` for mobile, browser, Worker (`src/server.ts`) and Convex, split by the `app` tag — see `docs/runbooks/sentry.md`.
-- Auth UI comes from the shared `@appelent/auth` package (private GitHub Packages registry) — custom Clerk-backed sign-in/sign-up/account UI, theme sync, and the dev-only test-login button. Don't hand-roll Clerk UI components; use this package's exports instead.
+- Auth UI is app-owned in `src/lib/auth` (copied from the shared auth standard, `docs/standards/auth.md`): Clerk-backed sign-in/sign-up/account UI, theme sync, and the dev-only test-login button. Reuse its exports instead of Clerk's prebuilt UI components. i18n runtime is app-owned too, in `src/lib/i18n`.
 
 ## Commands
 
@@ -50,8 +50,8 @@ pnpm workspace: `apps/mobile` is the Expo app **Arcade Club** (`com.appelent.arc
 
 - `src/integrations/clerk/provider.tsx`: `ClerkProvider` wraps `AuthConfigProvider` (config in `src/lib/auth-config.ts` — app name, route paths for sign-in/sign-up/forgot-password/account, `afterAuth` redirect).
 - `src/integrations/convex/provider.tsx`: **must** use `ConvexProviderWithClerk` (from `convex/react-clerk`) with Clerk's `useAuth`, not a bare `ConvexProvider` — otherwise the JWT never reaches Convex.
-- `src/routes/{sign-in,sign-up,forgot-password,account}.tsx` are thin wrappers around `@appelent/auth`'s `AuthCard` + form components; `src/components/Header.tsx` uses the package's `HeaderUser`. Don't rebuild these with Clerk's own `<SignInButton>`/`<UserButton>` — that's the pattern this migration moved away from.
-- Theme (light/dark/auto) is driven by `@appelent/auth`'s `getInitialMode`/`applyThemeMode`/`setThemeMode` + `ThemeSync` (reconciles with Clerk `unsafeMetadata` on sign-in) + the `THEME_INIT_SCRIPT` inline pre-paint script in `src/routes/__root.tsx`. Don't reintroduce a second local copy of this logic.
+- `src/routes/{sign-in,sign-up,forgot-password,account}.tsx` are thin wrappers around `#/lib/auth`'s `AuthCard` + form components; `src/components/Header.tsx` uses its `HeaderUser`. Don't rebuild these with Clerk's own `<SignInButton>`/`<UserButton>`.
+- Theme (light/dark/auto) is driven by `#/lib/auth`'s `getInitialMode`/`applyThemeMode`/`setThemeMode` + `ThemeSync` (reconciles with Clerk `unsafeMetadata` on sign-in) + the `THEME_INIT_SCRIPT` inline pre-paint script in `src/routes/__root.tsx`. Don't reintroduce a second local copy of this logic.
 
 ### Convex conventions
 
@@ -63,8 +63,8 @@ See `.cursorrules` for the full validator (`v`) reference and an example schema 
 - `.claude/commands/upgrade-deps.md` and `.claude/commands/review-session.md` are project-local copies of the global `~/.claude/commands/custom-upgrade-deps.md`/`custom-review-session.md` templates — the global copies remain the source of truth for those two. `upgrade-deps.md`'s content duplicates the `.claude/skills/upgrade-deps` skill; keep them in sync if either changes.
 - `.claude/skills/verify/SKILL.md` is the one exception: it's project-specific (route → module map) and has no source-of-truth counterpart.
 - `.claude/commands/babysit.md` — standing PR-babysitting policy (CI fixes, review comments, status checklist).
-- `.claude/hooks/session-start.mjs` — SessionStart hook: writes the GitHub Packages token into `~/.npmrc` when `NODE_AUTH_TOKEN` is set, runs `pnpm install` once per fresh container, logs the current branch.
-- `.github/workflows/ci.yml` — the quality gate on `main` (`check`, `typecheck`, `test`, `build`); `.github/workflows/preview.yml` — per-PR Convex + Cloudflare Worker preview, secrets already configured (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CONVEX_DEPLOY_KEY`, `NODE_AUTH_TOKEN`, `PREVIEW_CLERK_PUBLISHABLE_KEY`). `preview.yml` has no `--preview-run` seed step yet (no `convex/seed.ts`) — PR previews deploy against an empty Convex backend.
+- `.claude/hooks/session-start.mjs` — SessionStart hook: runs `pnpm install` once per fresh container, logs the current branch.
+- `.github/workflows/ci.yml` — the quality gate on `main` (`check`, `typecheck`, `test`, `build`); `.github/workflows/preview.yml` — per-PR Convex + Cloudflare Worker preview, secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CONVEX_DEPLOY_KEY`, `SENTRY_AUTH_TOKEN` and variables `PREVIEW_CLERK_PUBLISHABLE_KEY`, `VITE_SENTRY_DSN`, all written by `pnpm env:apply preview` except `CONVEX_DEPLOY_KEY`. `preview.yml` has no `--preview-run` seed step yet (no `convex/seed.ts`) — PR previews deploy against an empty Convex backend.
 - `AGENTS.md` mirrors `CLAUDE.md` for Codex parity.
 - `appelent.json` records this app's opted-in Appelent features (`baseline`, `auth`, `i18n`) — see the managed block below.
 

@@ -1,7 +1,7 @@
-import { ProfilePanel } from "@appelent/auth";
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { ProfilePanel } from "#/lib/auth";
 import { ReportProblem } from "../components/ReportProblem";
 import { authConfig } from "../lib/auth-config";
 

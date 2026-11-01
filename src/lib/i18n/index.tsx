@@ -1,12 +1,12 @@
-import { createI18n } from "@appelent/i18n";
 import {
 	LOCALES,
 	type Locale,
 	type Messages,
 	messages,
 } from "@arcadeclub/core/messages";
+import { createI18n } from "./react";
 
-export { fmt, plural } from "@appelent/i18n";
+export { fmt, plural } from "./core";
 export type { Locale, Messages };
 
 export const SUPPORTED_LOCALES = LOCALES;

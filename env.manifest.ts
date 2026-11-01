@@ -347,19 +347,6 @@ export const ENTRIES = [
 		},
 	},
 	{
-		key: "nodeAuthToken",
-		infisicalKey: "node-auth-token",
-		description: "GitHub Packages token for installing the private @appelent packages.",
-		secret: true,
-		lands: {
-			workflow: { name: "NODE_AUTH_TOKEN", environments: ["preview"] },
-			"eas-tooling": {
-				name: "NODE_AUTH_TOKEN",
-				environments: ["local", "preview", "dev", "production"],
-			},
-		},
-	},
-	{
 		key: "cloudflareApiToken",
 		infisicalKey: "cloudflare-account-token",
 		description: "Cloudflare token used by preview CI to deploy and remove Workers.",
