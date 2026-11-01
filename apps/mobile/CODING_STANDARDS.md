@@ -33,7 +33,8 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
 ## Review and enforcement
 
 `pnpm run check` at the root runs Biome and `scripts/check-mobile-structure.mjs`
-(feature filenames, UI-to-feature imports, literal font sizes). Root
+(feature filenames, UI-to-feature imports, literal font sizes, and UI text
+outside the `src/i18n` catalog). Root
 `pnpm run typecheck` and `pnpm test` include `@arcadeclub/core` and `@arcadeclub/mobile`.
 Typed routes come from `.expo/types/router.d.ts`. `expo start` regenerates it,
 and typecheck also passes without it, as in CI.

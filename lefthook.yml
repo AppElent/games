@@ -1,0 +1,7 @@
+# Pre-commit: Biome on staged files only. Bypass with `git commit --no-verify`
+# or `LEFTHOOK=0 git commit`. CI runs the full gate either way.
+pre-commit:
+  commands:
+    biome:
+      glob: "*.{js,jsx,ts,tsx,mjs,cjs,json,jsonc,css}"
+      run: pnpm exec biome check --staged --no-errors-on-unmatched
