@@ -10,7 +10,7 @@
 // are fingerprinted from node_modules.
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const appRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -62,7 +62,11 @@ function changedSources(before, after) {
 }
 
 function diff(baseRepo) {
-	const baseApp = join(resolve(baseRepo), "apps/mobile");
+	const repoRoot = spawnSync("git", ["rev-parse", "--show-toplevel"], {
+		cwd: appRoot,
+		encoding: "utf8",
+	}).stdout.trim();
+	const baseApp = join(resolve(baseRepo), relative(repoRoot, appRoot));
 	if (!existsSync(join(baseApp, "package.json"))) {
 		return "### Mobile runtime\n\nThe base branch has no mobile app yet; every build is new.";
 	}
