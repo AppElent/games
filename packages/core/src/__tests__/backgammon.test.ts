@@ -4,6 +4,7 @@ import {
 	applyBackgammonPlan,
 	type BackgammonTurnState,
 	canBearOff,
+	canEndBackgammonTurn,
 	computeUsedFlags,
 	countBackgammonCheckers,
 	createInitialBackgammonState,
@@ -223,6 +224,31 @@ describe("backgammon engine", () => {
 				),
 			}),
 		).toBe(true);
+	});
+
+	it("allows ending the turn only once no die can be played", () => {
+		const opening = createInitialBackgammonState();
+		expect(canEndBackgammonTurn(opening)).toBe(false);
+		expect(canEndBackgammonTurn(withDice(opening, [3, 1]))).toBe(false);
+		expect(canEndBackgammonTurn(withDice(opening, [3, 1], [true, false]))).toBe(
+			false,
+		);
+		expect(canEndBackgammonTurn(withDice(opening, [3, 1], [true, true]))).toBe(
+			true,
+		);
+		const blocked = withDice(
+			{
+				...opening,
+				points: opening.points.map((point) =>
+					point.point >= 19
+						? { point: point.point, color: "black" as const, count: 2 }
+						: { point: point.point, count: 0 },
+				),
+				bar: { white: 1, black: 0 },
+			},
+			[6, 5],
+		);
+		expect(canEndBackgammonTurn(blocked)).toBe(true);
 	});
 
 	it("detects the winner", () => {

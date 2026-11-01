@@ -459,6 +459,14 @@ export function hasLegalBackgammonMove(state: BackgammonTurnState) {
 	});
 }
 
+/**
+ * Whether the active player may end the turn: after rolling, once every die
+ * is used or no remaining die can be played.
+ */
+export function canEndBackgammonTurn(state: BackgammonTurnState) {
+	return state.dice.length > 0 && !hasLegalBackgammonMove(state);
+}
+
 export function getBackgammonWinner(
 	off: BackgammonCounters,
 ): BackgammonColor | null {

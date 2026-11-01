@@ -6,6 +6,7 @@ import {
 	type BackgammonMoveSource,
 	type BackgammonPoint,
 	type BackgammonTurnState,
+	canEndBackgammonTurn,
 	computeUsedFlags,
 } from "@arcadeclub/core/backgammon";
 import { useMutation } from "convex/react";
@@ -284,7 +285,7 @@ export function BackgammonWaitingRoom({
 							state={turnState}
 							interactive={myTurn}
 							canRoll={myTurn && turnState.dice.length === 0}
-							canEndTurn={myTurn && turnState.dice.length > 0}
+							canEndTurn={myTurn && canEndBackgammonTurn(turnState)}
 							options={options}
 							optionKeys={["showNumbers", "autoSwitchTurn", "autoCombine"]}
 							onToggleOption={handleToggleOption}

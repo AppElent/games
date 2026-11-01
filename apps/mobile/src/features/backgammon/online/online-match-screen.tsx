@@ -7,6 +7,7 @@
 import {
 	type BackgammonColor,
 	type BackgammonMovePlan,
+	canEndBackgammonTurn,
 	createInitialBackgammonState,
 	getBackgammonWinner,
 } from "@arcadeclub/core/backgammon";
@@ -203,14 +204,9 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 									testID="bg-roll"
 								/>
 							) : null}
-							{!winner && match.isMyTurn && turn.dice.length > 0 ? (
+							{!winner && match.isMyTurn && canEndBackgammonTurn(turn) ? (
 								<Button
 									label={copy.board.endTurnButton}
-									variant={
-										hint === "turnDone" || hint === "noMoves"
-											? "primary"
-											: "secondary"
-									}
 									onPress={() => void match.endTurn()}
 									busy={match.busy}
 									testID="bg-end-turn"

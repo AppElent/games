@@ -4,6 +4,7 @@
  */
 import {
 	type BackgammonMovePlan,
+	canEndBackgammonTurn,
 	getBackgammonWinner,
 } from "@arcadeclub/core/backgammon";
 import { Stack } from "expo-router";
@@ -125,18 +126,13 @@ export function LocalGameScreen() {
 								}}
 								testID="bg-roll"
 							/>
-						) : (
+						) : canEndBackgammonTurn(state) ? (
 							<Button
 								label={copy.board.endTurnButton}
-								variant={
-									hint === "turnDone" || hint === "noMoves"
-										? "primary"
-										: "secondary"
-								}
 								onPress={() => dispatch({ type: "endTurn" })}
 								testID="bg-end-turn"
 							/>
-						)}
+						) : null}
 						<Button
 							variant="secondary"
 							compact

@@ -41,6 +41,7 @@ export const serverErrors = {
 	noDrawOffer: "There is no draw offer to respond to.",
 	rollBeforeMoving: "Roll before moving.",
 	rollBeforeEndingTurn: "Roll before ending your turn.",
+	movesRemaining: "You still have a move to play.",
 	endTurnBeforeRolling: "End your turn before rolling again.",
 	enterFromBarFirst: "Enter from the bar first.",
 	choosePointWithChecker: "Choose a point with your checker.",

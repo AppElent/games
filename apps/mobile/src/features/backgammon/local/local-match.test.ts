@@ -60,15 +60,18 @@ describe("local backgammon match", () => {
 		expect(redone.future).toHaveLength(0);
 	});
 
-	it("ends a turn only after rolling", () => {
+	it("ends a turn only once no die can be played", () => {
 		const match = newLocalMatch();
 		expect(reduceLocalMatch(match, { type: "endTurn" }, [], 1)).toBe(match);
-		const ended = reduceLocalMatch(
-			rolled(match, [6, 6]),
-			{ type: "endTurn" },
-			[],
-			2,
+		const playable = rolled(match, [6, 6]);
+		expect(reduceLocalMatch(playable, { type: "endTurn" }, [], 2)).toBe(
+			playable,
 		);
+		const spent = {
+			...playable,
+			state: { ...playable.state, used: [true, true, true, true] },
+		};
+		const ended = reduceLocalMatch(spent, { type: "endTurn" }, [], 3);
 		expect(ended.state.activeColor).toBe("black");
 	});
 

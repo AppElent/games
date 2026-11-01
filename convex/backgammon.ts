@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import {
 	applyBackgammonMove,
+	canEndBackgammonTurn,
 	computeUsedFlags,
 	createInitialBackgammonState,
 	getBackgammonWinner,
@@ -9,6 +10,7 @@ import {
 	type BackgammonColor,
 	type BackgammonMoveDestination,
 	type BackgammonMoveSource,
+	type BackgammonTurnState,
 } from "@arcadeclub/core/backgammon";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -45,6 +47,17 @@ function getParticipantColor(
 		return "black";
 	}
 	throw gameError("notYourTurn");
+}
+
+function toTurnState(state: Doc<"backgammonGameStates">): BackgammonTurnState {
+	return {
+		points: state.points,
+		bar: state.bar,
+		off: state.off,
+		activeColor: state.activeColor,
+		dice: state.dice,
+		used: computeUsedFlags(state.dice, state.usedDice),
+	};
 }
 
 function requireActiveParticipant(
@@ -149,21 +162,11 @@ export const applyMove = mutation({
 		const now = Date.now();
 		let result: ReturnType<typeof applyBackgammonMove>;
 		try {
-			result = applyBackgammonMove(
-			{
-				points: state.points,
-				bar: state.bar,
-				off: state.off,
-				activeColor: state.activeColor,
-				dice: state.dice,
-				used: computeUsedFlags(state.dice, state.usedDice),
-			},
-			{
+			result = applyBackgammonMove(toTurnState(state), {
 				color,
 				from: args.from as BackgammonMoveSource,
 				to: args.to as BackgammonMoveDestination,
-			},
-		);
+			});
 		} catch (caught) {
 			throw toGameError(caught);
 		}
@@ -211,6 +214,9 @@ export const endTurn = mutation({
 		const color = requireActiveParticipant(state, args.participantId);
 		if (state.dice.length === 0) {
 			throw gameError("rollBeforeEndingTurn");
+		}
+		if (!canEndBackgammonTurn(toTurnState(state))) {
+			throw gameError("movesRemaining");
 		}
 		const now = Date.now();
 		await ctx.db.patch(state._id, {

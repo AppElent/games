@@ -2,6 +2,7 @@ import {
 	applyBackgammonPlan,
 	type BackgammonMovePlan,
 	type BackgammonTurnState,
+	canEndBackgammonTurn,
 	createInitialBackgammonState,
 	getBackgammonWinner,
 	rollBackgammonDice,
@@ -99,7 +100,7 @@ function BackgammonLocalPage() {
 	}
 
 	function handleEndTurn() {
-		if (!state) {
+		if (!state || !canEndBackgammonTurn(state)) {
 			return;
 		}
 		const next = switchBackgammonColor(state.activeColor);
@@ -199,7 +200,7 @@ function BackgammonLocalPage() {
 							state={state}
 							interactive={!winner}
 							canRoll={!winner && state.dice.length === 0 && !options.autoRoll}
-							canEndTurn={!winner && state.dice.length > 0}
+							canEndTurn={!winner && canEndBackgammonTurn(state)}
 							options={options}
 							optionKeys={[
 								"showNumbers",

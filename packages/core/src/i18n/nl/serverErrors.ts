@@ -42,6 +42,7 @@ export const serverErrors = {
 	noDrawOffer: "Er is geen remiseaanbod om op te reageren.",
 	rollBeforeMoving: "Gooi eerst de dobbelstenen.",
 	rollBeforeEndingTurn: "Gooi eerst voordat je je beurt beëindigt.",
+	movesRemaining: "Je kunt nog een zet doen.",
 	endTurnBeforeRolling: "Beëindig je beurt voordat je opnieuw gooit.",
 	enterFromBarFirst: "Breng eerst je schijf van de bar in het spel.",
 	choosePointWithChecker: "Kies een punt met een schijf van jou.",

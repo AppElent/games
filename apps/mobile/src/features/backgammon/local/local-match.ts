@@ -9,6 +9,7 @@ import {
 	applyBackgammonPlan,
 	type BackgammonMovePlan,
 	type BackgammonTurnState,
+	canEndBackgammonTurn,
 	createInitialBackgammonState,
 	getBackgammonWinner,
 	switchBackgammonColor,
@@ -94,7 +95,7 @@ export function reduceLocalMatch(
 			if (finished || state.dice.length > 0) return match;
 			return touch({ state: withDice(state, dice) });
 		case "endTurn":
-			if (finished || state.dice.length === 0) return match;
+			if (finished || !canEndBackgammonTurn(state)) return match;
 			return touch({ state: passTurn(state, options, dice) });
 		case "move": {
 			if (finished) return match;
