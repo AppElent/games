@@ -6,6 +6,9 @@
 		"runtimeVersion": {
 			"policy": "fingerprint"
 		},
+		"updates": {
+			"url": "https://u.expo.dev/ae39f52d-eb78-433a-91ba-c379d2324511"
+		},
 		"orientation": "portrait",
 		"userInterfaceStyle": "automatic",
 		"backgroundColor": "#080a12",

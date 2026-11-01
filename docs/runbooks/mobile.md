@@ -63,6 +63,16 @@ interactively so EAS can sign in to Apple and create the provisioning profile; a
 `--non-interactive` after that. Open the installed app, then connect it to
 `pnpm exec expo start --dev-client` on the same network.
 
+To install the preview app next to the dev app on an iPhone, build `preview-internal`
+(ad-hoc, `com.appelent.arcadeclub.preview`) and open the build page on the phone. Ship
+JS-only changes to installed preview builds without rebuilding:
+
+```bash
+pnpm exec eas update --channel preview --environment preview --message "…"
+```
+
+Builds pick up an update on their next cold start, when the runtime fingerprint matches.
+
 ## Verify on a device
 
 Claim a simulator/emulator through `~/.agents/bin/sim`, then drive it with
