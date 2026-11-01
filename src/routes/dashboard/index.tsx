@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
+import { Show } from "@clerk/react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import {
@@ -24,7 +24,7 @@ function DashboardPage() {
 	const messages = useMessages();
 	return (
 		<>
-			<SignedIn>
+			<Show when="signed-in">
 				<main className="club-wrap py-10">
 					<p className="club-kicker mb-2">{messages.common.dashboard.kicker}</p>
 					<h1 className="club-title mb-2 text-4xl font-bold text-[var(--club-text)]">
@@ -53,10 +53,10 @@ function DashboardPage() {
 					<RecentGames />
 					<GameCatalog />
 				</main>
-			</SignedIn>
-			<SignedOut>
+			</Show>
+			<Show when="signed-out">
 				<RedirectToSignIn />
-			</SignedOut>
+			</Show>
 		</>
 	);
 }

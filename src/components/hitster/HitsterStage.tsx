@@ -1,7 +1,10 @@
+import {
+	getHitsterModeConfig,
+	type HitsterMode,
+} from "@arcadeclub/core/hitster";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
-import { getUserErrorMessage } from "#/lib/games/errors";
-import { getHitsterModeConfig, type HitsterMode } from "#/lib/games/hitster";
+import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -122,6 +125,7 @@ function PlacementForm({
 	participantId: Id<"sessionParticipants">;
 	forSteal: boolean;
 }) {
+	const errorMessage = useErrorMessage();
 	const { messages } = useI18n();
 	const stage = messages.games.hitster.stage;
 	const state = bundle.state as HitsterState;
@@ -186,7 +190,7 @@ function PlacementForm({
 							await submitGuess(payload);
 						}
 					} catch (caught) {
-						setError(getUserErrorMessage(caught, stage.submitError));
+						setError(errorMessage(caught, stage.submitError));
 					} finally {
 						setBusy(false);
 					}
@@ -270,7 +274,9 @@ export function HitsterStage({
 			{state.phase === "lobby" ? (
 				<section className="space-y-4">
 					<h2 className="text-2xl font-bold tracking-tight text-[var(--club-text)]">
-						{fmt(stage.howItWorksHeading, { mode: config.label })}
+						{fmt(stage.howItWorksHeading, {
+							mode: messages.games.hitster.modes[state.mode].label,
+						})}
 					</h2>
 					<RulesPanel state={state} />
 				</section>

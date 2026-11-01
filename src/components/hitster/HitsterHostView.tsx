@@ -1,9 +1,12 @@
+import {
+	getHitsterModeConfig,
+	type HitsterMode,
+} from "@arcadeclub/core/hitster";
+import { getHitsterPack } from "@arcadeclub/core/hitster-packs";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { ParticipantList } from "#/components/games/ParticipantList";
-import { getUserErrorMessage } from "#/lib/games/errors";
-import { getHitsterModeConfig, type HitsterMode } from "#/lib/games/hitster";
-import { getHitsterPack } from "#/lib/games/hitsterPacks";
+import { useErrorMessage } from "#/lib/games/errors";
 import { formatJoinCode } from "#/lib/games/sessions";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -18,6 +21,7 @@ export function HitsterHostView({
 	bundle: HitsterBundle;
 	participantId: Id<"sessionParticipants">;
 }) {
+	const errorMessage = useErrorMessage();
 	const { locale, messages } = useI18n();
 	const hostView = messages.games.hitster.hostView;
 	const start = useMutation(api.hitster.start);
@@ -33,7 +37,7 @@ export function HitsterHostView({
 		try {
 			await action();
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, hostView.actionFailed));
+			setError(errorMessage(caught, hostView.actionFailed));
 		}
 	};
 
@@ -46,7 +50,11 @@ export function HitsterHostView({
 							{hostView.kicker}
 						</p>
 						<h1 className="text-3xl font-bold tracking-tight text-[var(--club-text)]">
-							{fmt(hostView.roomHeading, { label: config?.label ?? "Hitster" })}
+							{fmt(hostView.roomHeading, {
+								label: state
+									? messages.games.hitster.modes[state.mode].label
+									: messages.catalog.hitster.title,
+							})}
 						</h1>
 						{state && pack ? (
 							<p className="mt-1 text-sm text-[var(--club-soft)]">

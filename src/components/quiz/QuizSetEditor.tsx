@@ -1,12 +1,12 @@
+import {
+	parseQuizQuestionsTsv,
+	type QuizQuestionDraft,
+} from "@arcadeclub/core/quiz";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { ClipboardPaste, Plus, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { getUserErrorMessage } from "#/lib/games/errors";
-import {
-	parseQuizQuestionsTsv,
-	type QuizQuestionDraft,
-} from "#/lib/games/quiz";
+import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -42,6 +42,7 @@ export function QuizSetEditor({
 	initialDescription?: string;
 	initialQuestions?: QuizQuestionDraft[];
 }) {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const navigate = useNavigate();
 	const createSet = useMutation(api.quiz.createSet);
@@ -118,9 +119,7 @@ export function QuizSetEditor({
 			}
 			await navigate({ to: "/quiz/sets" });
 		} catch (caught) {
-			setError(
-				getUserErrorMessage(caught, messages.games.quiz.setEditor.saveError),
-			);
+			setError(errorMessage(caught, messages.games.quiz.setEditor.saveError));
 		} finally {
 			setBusy(false);
 		}

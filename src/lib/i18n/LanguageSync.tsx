@@ -1,4 +1,4 @@
-import { createLanguageSync } from "@appelent/i18n/clerk-sync";
+import { createLanguageSync } from "./clerk-sync";
 import { hasExplicitLocaleChoice, SUPPORTED_LOCALES, useI18n } from "./index";
 
 export const LanguageSync = createLanguageSync({

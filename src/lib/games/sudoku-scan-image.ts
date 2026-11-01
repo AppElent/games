@@ -3,7 +3,7 @@
  * correction, cell segmentation, ink analysis, and OCR via tesseract.js.
  * Pure recognition-result handling lives in sudoku-scan.ts.
  */
-import { digitMask } from "./sudoku";
+import { digitMask } from "@arcadeclub/core/sudoku";
 import type { ScanCell } from "./sudoku-scan";
 import { emptyScanCell, emptyScanResult } from "./sudoku-scan";
 

@@ -1,0 +1,101 @@
+name: Deploy
+
+# A merge to main ships production: the CI checks again (admins can bypass
+# the ruleset), then Convex functions and schema, then the Worker built against
+# them. "Run workflow" redeploys main by hand. Then the preview app's
+# over-the-air update, whose builds call the production backend. Builds stay
+# separate (mobile-build.yml).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never cancel a deploy mid-flight; queue behind the previous one instead.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+    permissions: { contents: read }
+
+  deploy:
+    needs: checks
+    runs-on: ubuntu-latest
+    # Every value below is scoped to the `production` GitHub Environment and
+    # written there by `pnpm env:apply production`.
+    environment: production
+    permissions: { contents: read }
+    env:
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
+      VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+    steps:
+      - name: Guard production ref
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Production deploys run from main only (got ${GITHUB_REF})."
+          exit 1
+
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      # Fails before anything ships when the environment is half configured.
+      # An Environment without its own CONVEX_DEPLOY_KEY silently inherits the
+      # repo-level preview key, so insist on a production key explicitly.
+      - name: Check environment
+        run: |
+          case "$CONVEX_DEPLOY_KEY" in
+            prod:*) ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY in the production Environment is missing or not a production key."; exit 1 ;;
+          esac
+          node scripts/env.mjs check production --ci
+
+      # The deploy key alone picks the production deployment; see the
+      # deploy:production script, which local `pnpm deploy:prod` runs too.
+      - name: Deploy Convex, build, deploy Worker
+        run: pnpm run deploy:production
+
+      # The Cloudflare plugin picks the Worker at build time (CLOUDFLARE_ENV);
+      # fail if the build targeted anything but production.
+      - name: Check deployed Worker
+        run: |
+          name=$(jq -r .name dist/server/wrangler.json)
+          if [ "$name" != games ]; then
+            echo "::error::Built Worker is $name, expected games."
+            exit 1
+          fi
+
+  # Publishes the merged JavaScript to the preview channel once its backend is
+  # live, only when an installed build can load it; otherwise the run summary
+  # says a rebuild is due. See apps/mobile/scripts/ci-publish-update.mjs.
+  mobile-update:
+    needs: deploy
+    runs-on: ubuntu-latest
+    # Moves the mobile-update/preview tag after publishing.
+    permissions: { contents: write }
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Check Expo token
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::No EXPO_TOKEN secret. Store it in Infisical as expo-token, then run pnpm env:apply preview --only github."
+            exit 1
+          fi
+      - name: Publish preview update
+        run: node apps/mobile/scripts/ci-publish-update.mjs preview

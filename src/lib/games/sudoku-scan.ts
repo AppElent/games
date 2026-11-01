@@ -1,13 +1,13 @@
-import type { SudokuGrid } from "./sudoku";
+import type { SudokuGrid } from "@arcadeclub/core/sudoku";
 import {
 	countSolutions,
 	digitMask,
 	emptyGrid,
 	findConflicts,
 	SUDOKU_CELL_COUNT,
-} from "./sudoku";
-import type { SudokuBoardState } from "./sudoku-board";
-import { createBoardState } from "./sudoku-board";
+} from "@arcadeclub/core/sudoku";
+import type { SudokuBoardState } from "@arcadeclub/core/sudoku-board";
+import { createBoardState } from "@arcadeclub/core/sudoku-board";
 
 export type ScanCellType =
 	| "given"

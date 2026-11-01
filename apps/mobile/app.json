@@ -1,0 +1,97 @@
+{
+	"expo": {
+		"slug": "arcadeclub",
+		"owner": "appelent",
+		"version": "1.0.0",
+		"runtimeVersion": {
+			"policy": "fingerprint"
+		},
+		"updates": {
+			"url": "https://u.expo.dev/ae39f52d-eb78-433a-91ba-c379d2324511"
+		},
+		"orientation": "default",
+		"userInterfaceStyle": "automatic",
+		"backgroundColor": "#080a12",
+		"ios": {
+			"supportsTablet": true,
+			"infoPlist": {
+				"CFBundleAllowMixedLocalizations": true,
+				"ITSAppUsesNonExemptEncryption": false
+			}
+		},
+		"android": {
+			"adaptiveIcon": {
+				"backgroundColor": "#080a12"
+			},
+			"backgroundColor": "#080a12",
+			"predictiveBackGestureEnabled": false,
+			"blockedPermissions": [
+				"android.permission.RECORD_AUDIO",
+				"android.permission.READ_EXTERNAL_STORAGE",
+				"android.permission.WRITE_EXTERNAL_STORAGE"
+			]
+		},
+		"plugins": [
+			"expo-router",
+			"@clerk/expo",
+			[
+				"expo-screen-orientation",
+				{
+					"initialOrientation": "PORTRAIT_UP"
+				}
+			],
+			[
+				"expo-secure-store",
+				{
+					"faceIDPermission": false
+				}
+			],
+			[
+				"expo-localization",
+				{
+					"supportedLocales": [
+						"en",
+						"nl"
+					]
+				}
+			],
+			"expo-sqlite",
+			[
+				"expo-camera",
+				{
+					"cameraPermission": "Arcade Club uses the camera to scan game invite QR codes.",
+					"microphonePermission": false,
+					"recordAudioAndroid": false
+				}
+			],
+			[
+				"@sentry/react-native/expo",
+				{
+					"url": "https://sentry.io/",
+					"organization": "appelent",
+					"project": "arcadeclub"
+				}
+			],
+			"expo-web-browser",
+			[
+				"expo-splash-screen",
+				{
+					"image": "./assets/splash-icon.png",
+					"imageWidth": 120,
+					"backgroundColor": "#f8fafc",
+					"dark": {
+						"backgroundColor": "#080a12"
+					}
+				}
+			]
+		],
+		"experiments": {
+			"typedRoutes": true
+		},
+		"extra": {
+			"eas": {
+				"projectId": "ae39f52d-eb78-433a-91ba-c379d2324511"
+			}
+		}
+	}
+}

@@ -1,12 +1,15 @@
-import { createI18n } from "@appelent/i18n";
-import { en, type Messages } from "./messages/en";
-import { nl } from "./messages/nl";
+import {
+	LOCALES,
+	type Locale,
+	type Messages,
+	messages,
+} from "@arcadeclub/core/messages";
+import { createI18n } from "./react";
 
-export { fmt, plural } from "@appelent/i18n";
-export type { Messages };
+export { fmt, plural } from "./core";
+export type { Locale, Messages };
 
-export const SUPPORTED_LOCALES = ["en", "nl"] as const;
-export type Locale = (typeof SUPPORTED_LOCALES)[number];
+export const SUPPORTED_LOCALES = LOCALES;
 
 export const {
 	LocaleProvider,
@@ -17,5 +20,5 @@ export const {
 } = createI18n<Locale, Messages>({
 	locales: SUPPORTED_LOCALES,
 	fallback: "en",
-	messages: { en, nl },
+	messages,
 });

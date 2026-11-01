@@ -1,4 +1,3 @@
-import { THEME_INIT_SCRIPT, ThemeSync } from "@appelent/auth";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -9,10 +8,12 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useEffect } from "react";
+import { THEME_INIT_SCRIPT, ThemeSync } from "#/lib/auth";
 import "#/lib/router-static-data";
 import { type Locale, LocaleProvider, readClientLocale } from "#/lib/i18n";
 import { LanguageSync } from "#/lib/i18n/LanguageSync";
 import { getSsrLocale } from "#/lib/i18n/server";
+import { SentryUser } from "#/lib/observability/user";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import ClerkProvider from "../integrations/clerk/provider";
@@ -86,8 +87,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	});
 
 	useEffect(() => {
-		if (typeof window === "undefined" || !("serviceWorker" in navigator))
-			return;
+		// `pnpm build` generates /sw.js; the dev server has none.
+		if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
 		navigator.serviceWorker.register("/sw.js").catch(() => {
 			// non-fatal: app still works without offline/installable support
 		});
@@ -105,6 +106,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					<ClerkProvider>
 						<ConvexProvider>
 							<ThemeSync />
+							<SentryUser />
 							<LanguageSync />
 							{!isFullscreen && <Header />}
 							{children}

@@ -10,6 +10,6 @@ export default defineConfig({
 	},
 	test: {
 		environment: "node",
-		exclude: [...configDefaults.exclude, "**/.claude/**", "**/node_modules_OLD/**", "**/node_modules.*/**"],
+		exclude: [...configDefaults.exclude, "**/.claude/**", "**/node_modules_OLD/**", "**/node_modules.*/**", "apps/**"],
 	},
 });

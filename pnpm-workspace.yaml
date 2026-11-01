@@ -1,3 +1,7 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
 # Supply-chain hardening: default-deny install/build lifecycle scripts,
 # only allow packages that genuinely compile a native binary at install time.
 allowBuilds:
@@ -9,6 +13,17 @@ allowBuilds:
   '@google/genai': false
   protobufjs: false
   tesseract.js: false # postinstall only prints a banner; dist ships prebuilt
+  browser-tabs-lock: false # @clerk/expo transitive; postinstall is a banner
+  core-js: false # postinstall only prints a funding banner
+  node-datachannel: true # expo-device-hub: native binary for Android streaming
+  "@parcel/watcher": false # eas-cli transitive; ships prebuilt binaries
+  dtrace-provider: false # eas-cli transitive optional native probe
+  unrs-resolver: false # jest transitive; ships prebuilt binaries
+  "@sentry/cli": true # downloads the sentry-cli binary for native source-map and debug-symbol uploads
+
+# Keeps Expo fingerprints identical across macOS and Windows checkouts
+# (autolinking paths are part of the native fingerprint).
+virtualStoreDirMaxLength: 60
 
 minimumReleaseAge: 4320 # 3 days — blocks the worm/account-takeover window
 minimumReleaseAgeExclude:
@@ -22,4 +37,11 @@ overrides:
   # GHSA-vmh5-mc38-953g, GHSA-vxpw-j846-p89q, GHSA-35p6-xmwp-9g52, GHSA-g8m3-5g58-fq7m
   # — undici TLS/SSRF/DoS/cookie issues below 7.28.0, pulled in transitively by
   # wrangler/miniflare and jsdom.
-  undici: ">=7.28.0"
+  undici: "^7.28.0"
+  # convex lists the deprecated @clerk/clerk-react as an optional peer next to
+  # @clerk/react, and pnpm auto-installs optional peers. The web app is on
+  # @clerk/react (Clerk Core 3), so keep the old package out of the graph.
+  "convex>@clerk/clerk-react": "-"
+
+patchedDependencies:
+  expo-symbols@58.0.4: patches/expo-symbols@58.0.4.patch

@@ -1,28 +1,27 @@
 name: CI
+# Pull requests run it directly; on main, deploy.yml calls it before shipping.
 on:
-  push: { branches: [master] }
   pull_request:
+  workflow_call:
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  # A new push supersedes a PR run; every run on main finishes.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   check:
     runs-on: ubuntu-latest
-    permissions: { contents: read, packages: read }
+    permissions: { contents: read }
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
-      - name: Configure GitHub Packages auth
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check
+      # Manifest and .env.example only; needs no Infisical access.
+      - run: pnpm run env:check
       - run: pnpm run typecheck
       - run: pnpm test
       # Build catches bundling/plugin/SSR-compile breakage that typecheck + tests
-      # miss. preview.yml only builds on pull_request, so without this a build-only
-      # failure could land green on a direct push to master.
+      # miss; preview.yml builds only for labelled PRs.
       - run: pnpm build

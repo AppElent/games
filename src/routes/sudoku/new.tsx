@@ -1,17 +1,17 @@
+import {
+	binaryGridToString,
+	generateBinaryPuzzle,
+} from "@arcadeclub/core/binary-puzzle";
+import type { SudokuDifficulty } from "@arcadeclub/core/sudoku";
+import { generatePuzzle, gridToString } from "@arcadeclub/core/sudoku";
+import { generateKillerPuzzle } from "@arcadeclub/core/sudoku-killer";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Camera, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
-import {
-	binaryGridToString,
-	generateBinaryPuzzle,
-} from "#/lib/games/binary-puzzle";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
-import type { SudokuDifficulty } from "#/lib/games/sudoku";
-import { generatePuzzle, gridToString } from "#/lib/games/sudoku";
-import { generateKillerPuzzle } from "#/lib/games/sudoku-killer";
 import type { LocalSudokuSession } from "#/lib/games/sudoku-local";
 import {
 	autoSessionTitle,
@@ -30,23 +30,24 @@ export const Route = createFileRoute("/sudoku/new")({
 type SudokuVariant = "classic" | "killer" | "binary";
 
 function SudokuNewPage() {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
 	const VARIANTS: { id: SudokuVariant; label: string; blurb: string }[] = [
 		{
 			id: "classic",
 			label: sudoku.variant.classic,
-			blurb: sudoku.newGame.variantBlurbClassic,
+			blurb: sudoku.newGame.variantBlurbs.classic,
 		},
 		{
 			id: "killer",
 			label: sudoku.variant.killer,
-			blurb: sudoku.newGame.variantBlurbKiller,
+			blurb: sudoku.newGame.variantBlurbs.killer,
 		},
 		{
 			id: "binary",
 			label: sudoku.variant.binary,
-			blurb: sudoku.newGame.variantBlurbBinary,
+			blurb: sudoku.newGame.variantBlurbs.binary,
 		},
 	];
 	const DIFFICULTIES: {
@@ -144,7 +145,7 @@ function SudokuNewPage() {
 			});
 			window.location.href = `/sudoku/${result.sessionId}`;
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, sudoku.newGame.couldNotStart));
+			setError(errorMessage(caught, sudoku.newGame.couldNotStart));
 			setBusy(null);
 		}
 	};

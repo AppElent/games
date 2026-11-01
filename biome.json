@@ -13,16 +13,27 @@
 			"**/index.html",
 			"**/vite.config.ts",
 			"!**/src/routeTree.gen.ts",
+			"apps/mobile/app/**/*",
+			"apps/mobile/*.ts",
+			"apps/mobile/*.js",
 			"!**/src/styles.css",
 			"!**/.claude",
-			"!**/*wsl.localhost*"
+			"!**/*wsl.localhost*",
+			"!**/.expo",
+			"!apps/mobile/expo-env.d.ts"
 		]
 	},
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "tab"
 	},
-	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -33,5 +44,31 @@
 		"formatter": {
 			"quoteStyle": "double"
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["apps/mobile/**", "!apps/mobile/src/convex/query-cache.tsx"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"paths": {
+									"convex/react": {
+										"importNames": [
+											"useQuery",
+											"useQueries",
+											"usePaginatedQuery"
+										],
+										"message": "Import query hooks from src/convex/query-cache (retention cache, see docs/standards/convex-query-caching.md)."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	]
 }

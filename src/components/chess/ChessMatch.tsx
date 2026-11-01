@@ -17,7 +17,7 @@ import {
 	isInCheck,
 	isPromotionMove,
 } from "#/lib/games/chess";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -79,6 +79,7 @@ export function ChessMatch({
 	bundle: Bundle;
 	shareUrl: string;
 }) {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const chess = messages.games.chess;
 	const applyMove = useMutation(api.chess.applyMove);
@@ -191,7 +192,7 @@ export function ChessMatch({
 		try {
 			await action();
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, fallback));
+			setError(errorMessage(caught, fallback));
 		}
 	}
 

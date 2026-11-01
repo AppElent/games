@@ -3,7 +3,7 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/signal-words/new")({
 });
 
 function SignalWordsNewPage() {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const signalWords = messages.games.signalWords;
 	const createSession = useMutation(api.sessions.create);
@@ -45,9 +46,7 @@ function SignalWordsNewPage() {
 			);
 			window.location.href = `/signal-words/${result.sessionId}`;
 		} catch (caught) {
-			setError(
-				getUserErrorMessage(caught, signalWords.newGame.createRoomError),
-			);
+			setError(errorMessage(caught, signalWords.newGame.createRoomError));
 			setBusy(false);
 		}
 	}

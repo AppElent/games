@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import {
 	applyConnectFourDrop,
 	createConnectFourBoard,
@@ -10,18 +10,19 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { completeSession, reopenSession } from "./lib/completion";
+import { gameError, toGameError } from "./lib/errors";
 
 async function getState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
 	const session = await ctx.db.get(sessionId);
 	if (!session || session.gameType !== "connect-four") {
-		throw new ConvexError("Connect Four game not found");
+		throw gameError("gameNotFound");
 	}
 	const state = await ctx.db
 		.query("connectFourStates")
 		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
 		.unique();
 	if (!state) {
-		throw new ConvexError("Connect Four game not found");
+		throw gameError("gameNotFound");
 	}
 	return { session, state };
 }
@@ -36,7 +37,7 @@ function getParticipantColor(
 	if (state.yellowParticipantId === participantId) {
 		return "yellow";
 	}
-	throw new ConvexError("You are not seated in this game");
+	throw gameError("notSeated");
 }
 
 async function finishGame(
@@ -73,7 +74,7 @@ export const createState = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "connect-four") {
-			throw new ConvexError("Connect Four session not found");
+			throw gameError("sessionNotFound");
 		}
 		const existing = await ctx.db
 			.query("connectFourStates")
@@ -105,22 +106,20 @@ export const drop = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getState(ctx, args.sessionId);
 		if (state.phase === "finished") {
-			throw new ConvexError("This game is already finished");
+			throw gameError("gameAlreadyFinished");
 		}
 		if (!state.redParticipantId || !state.yellowParticipantId) {
-			throw new ConvexError("Waiting for an opponent");
+			throw gameError("waitingForOpponent");
 		}
 		const color = getParticipantColor(state, args.participantId);
 		if (state.activeColor !== color) {
-			throw new ConvexError("It is not your turn");
+			throw gameError("notYourTurn");
 		}
 		let next: ReturnType<typeof applyConnectFourDrop>;
 		try {
 			next = applyConnectFourDrop(state.board, color, args.column);
 		} catch (caught) {
-			throw new ConvexError(
-				caught instanceof Error ? caught.message : "Invalid move",
-			);
+			throw toGameError(caught);
 		}
 		const now = Date.now();
 		const winner = getConnectFourWinner(next.board);
@@ -156,7 +155,7 @@ export const resign = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getState(ctx, args.sessionId);
 		if (state.phase === "finished") {
-			throw new ConvexError("This game is already finished");
+			throw gameError("gameAlreadyFinished");
 		}
 		const color = getParticipantColor(state, args.participantId);
 		await finishGame(
@@ -177,7 +176,7 @@ export const rematch = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getState(ctx, args.sessionId);
 		if (state.phase !== "finished") {
-			throw new ConvexError("The current game is not finished");
+			throw gameError("currentGameNotFinished");
 		}
 		getParticipantColor(state, args.participantId);
 		const now = Date.now();

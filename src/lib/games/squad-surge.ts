@@ -1,4 +1,4 @@
-import { mulberry32, type SudokuRng } from "./sudoku";
+import { mulberry32, type SudokuRng } from "@arcadeclub/core/sudoku";
 
 export { mulberry32 };
 

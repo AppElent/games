@@ -1,3 +1,13 @@
+import {
+	applyBackgammonPlan,
+	type BackgammonMovePlan,
+	type BackgammonTurnState,
+	canEndBackgammonTurn,
+	createInitialBackgammonState,
+	getBackgammonWinner,
+	rollBackgammonDice,
+	switchBackgammonColor,
+} from "@arcadeclub/core/backgammon";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -7,15 +17,6 @@ import {
 } from "#/components/backgammon/BackgammonBoard";
 import { FitScale, RotateHint } from "#/components/games/FitScale";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
-import {
-	applyBackgammonPlan,
-	type BackgammonMovePlan,
-	type BackgammonTurnState,
-	createInitialBackgammonState,
-	getBackgammonWinner,
-	rollBackgammonDice,
-	switchBackgammonColor,
-} from "#/lib/games/backgammon";
 import {
 	clearLocalBackgammonGame,
 	DEFAULT_LOCAL_BACKGAMMON_OPTIONS,
@@ -99,7 +100,7 @@ function BackgammonLocalPage() {
 	}
 
 	function handleEndTurn() {
-		if (!state) {
+		if (!state || !canEndBackgammonTurn(state)) {
 			return;
 		}
 		const next = switchBackgammonColor(state.activeColor);
@@ -199,7 +200,7 @@ function BackgammonLocalPage() {
 							state={state}
 							interactive={!winner}
 							canRoll={!winner && state.dice.length === 0 && !options.autoRoll}
-							canEndTurn={!winner && state.dice.length > 0}
+							canEndTurn={!winner && canEndBackgammonTurn(state)}
 							options={options}
 							optionKeys={[
 								"showNumbers",

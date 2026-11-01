@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import type { SignalCardRole, SignalTeam } from "#/lib/games/signal-words";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -60,6 +60,7 @@ export function SignalWordsRoom({
 	bundle: Bundle;
 	joinUrl: string;
 }) {
+	const errorMessage = useErrorMessage();
 	const { messages, locale } = useI18n();
 	const signalWords = messages.games.signalWords;
 	const joinTeam = useMutation(api.signalWords.joinTeam);
@@ -107,7 +108,7 @@ export function SignalWordsRoom({
 		try {
 			await action();
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, fallback));
+			setError(errorMessage(caught, fallback));
 		}
 	}
 

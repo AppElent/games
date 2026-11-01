@@ -1,3 +1,4 @@
+import { type GameErrorCode, GameRuleError } from "@arcadeclub/core/errors";
 export type SignalTeam = "red" | "blue";
 export type SignalCardRole = "red" | "blue" | "neutral" | "trap";
 export type SignalPhase = "clue" | "guess" | "finished";
@@ -87,6 +88,13 @@ export type SignalClueError =
 	| "invalidCount"
 	| "matchesBoardWord";
 
+const CLUE_ERROR_CODES = {
+	emptyClue: "clueEmpty",
+	multiWordClue: "clueMultiWord",
+	invalidCount: "clueInvalidCount",
+	matchesBoardWord: "clueMatchesBoardWord",
+} as const satisfies Record<SignalClueError, GameErrorCode>;
+
 export function validateSignalClue(
 	state: SignalGameState,
 	clue: string,
@@ -116,11 +124,11 @@ export function applySignalClue(
 	count: number,
 ): SignalGameState {
 	if (state.phase !== "clue") {
-		throw new Error("Not expecting a clue right now");
+		throw new GameRuleError("notExpectingClue");
 	}
 	const error = validateSignalClue(state, clue, count);
 	if (error) {
-		throw new Error(`Invalid clue: ${error}`);
+		throw new GameRuleError(CLUE_ERROR_CODES[error]);
 	}
 	return {
 		...state,
@@ -163,17 +171,17 @@ export function applySignalGuess(
 	cardIndex: number,
 ): { state: SignalGameState; result: SignalGuessResult } {
 	if (state.phase !== "guess") {
-		throw new Error("Not expecting a guess right now");
+		throw new GameRuleError("notExpectingGuess");
 	}
 	if (
 		!Number.isInteger(cardIndex) ||
 		cardIndex < 0 ||
 		cardIndex >= SIGNAL_BOARD_SIZE
 	) {
-		throw new Error("Invalid card");
+		throw new GameRuleError("invalidCard");
 	}
 	if (state.revealed[cardIndex]) {
-		throw new Error("That card is already revealed");
+		throw new GameRuleError("cardAlreadyRevealed");
 	}
 	const revealed = state.revealed.map((flag, index) =>
 		index === cardIndex ? true : flag,
@@ -234,7 +242,7 @@ export function applySignalGuess(
 
 export function applySignalPass(state: SignalGameState): SignalGameState {
 	if (state.phase !== "guess") {
-		throw new Error("You can only pass during a guess phase");
+		throw new GameRuleError("passOnlyDuringGuess");
 	}
 	return endTurn(state);
 }

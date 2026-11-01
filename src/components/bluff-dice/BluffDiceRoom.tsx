@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
 import { describeBluffClaim } from "#/lib/games/bluff-dice";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -62,6 +62,7 @@ export function BluffDiceRoom({
 	bundle: Bundle;
 	joinUrl: string;
 }) {
+	const errorMessage = useErrorMessage();
 	const { messages, locale } = useI18n();
 	const bluffDice = messages.games.bluffDice;
 	const start = useMutation(api.bluffDice.start);
@@ -95,7 +96,7 @@ export function BluffDiceRoom({
 		try {
 			await action();
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, fallback));
+			setError(errorMessage(caught, fallback));
 		}
 	}
 

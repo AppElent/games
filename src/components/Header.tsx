@@ -1,6 +1,6 @@
-import { HeaderUser } from "@appelent/auth";
 import { Link } from "@tanstack/react-router";
 import { Gamepad2 } from "lucide-react";
+import { HeaderUser } from "#/lib/auth";
 import { useMessages } from "#/lib/i18n";
 import LanguageToggle from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";

@@ -1,0 +1,63 @@
+export const auth = {
+	signIn: {
+		title: "Sign in",
+		subtitle: "Host online games and keep your name across devices.",
+		email: "Email",
+		password: "Password",
+		submit: "Sign in",
+		emailCode: "Email me a sign-in code",
+		emailFirst: "Enter your email first.",
+		forgotPassword: "Forgot password?",
+		noAccount: "New here?",
+		createAccount: "Create an account",
+		devNote: "Test account prefilled (development instance).",
+		unsupportedStep:
+			"Sign-in needs another step this app doesn't support yet. Use the web app instead.",
+	},
+	signInCode: {
+		title: "Check your email",
+		body: "We sent a 6-digit code to {email}.",
+		code: "Code",
+		submit: "Sign in",
+		resend: "Send a new code",
+		resent: "A new code is on its way.",
+		differentEmail: "Use a different email",
+	},
+	signUp: {
+		title: "Create an account",
+		subtitle:
+			"Pick an email and password. You can play as a guest without one.",
+		firstName: "First name",
+		submit: "Create account",
+		haveAccount: "Already have an account?",
+	},
+	verifyEmail: {
+		title: "Verify your email",
+		body: "Enter the 6-digit code we sent to {email}.",
+		submit: "Verify",
+	},
+	reset: {
+		title: "Reset password",
+		body: "We'll email you a code to choose a new password.",
+		sendCode: "Send code",
+		codeBody: "Enter the code we sent to {email} and choose a new password.",
+		newPassword: "New password",
+		submit: "Set password",
+	},
+	errors: {
+		generic: "Something went wrong. Please try again.",
+		identifierNotFound: "No account found with that email.",
+		passwordIncorrect: "That password is not right.",
+		identifierExists: "An account with that email already exists.",
+		emailInvalid: "Enter a valid email address.",
+		required: "This field is required.",
+		passwordTooShort: "That password is too short.",
+		passwordPwned:
+			"That password has appeared in a data breach. Choose another.",
+		passwordDoesNotMeetRequirements: "That password is not strong enough.",
+		codeIncorrect: "That code is not right.",
+		codeExpired: "That code has expired. Send a new one.",
+		tooManyRequests: "Too many attempts. Try again in a moment.",
+		network: "Network error. Check your connection and try again.",
+	},
+};

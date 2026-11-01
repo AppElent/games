@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -17,6 +17,7 @@ export function QuizSetupForm() {
 }
 
 function QuizSetupFormInner() {
+	const errorMessage = useErrorMessage();
 	const { messages, locale } = useI18n();
 	const createSession = useMutation(api.sessions.create);
 	const ensureSampleSet = useMutation(api.quiz.ensureSampleSet);
@@ -129,7 +130,7 @@ function QuizSetupFormInner() {
 						window.location.href = `/quiz/${result.sessionId}/host`;
 					} catch (caught) {
 						setError(
-							getUserErrorMessage(
+							errorMessage(
 								caught,
 								messages.games.quiz.setupForm.createRoomError,
 							),

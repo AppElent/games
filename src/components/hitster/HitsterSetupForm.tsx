@@ -1,16 +1,12 @@
-import { useMutation } from "convex/react";
-import { useState } from "react";
-import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { getUserErrorMessage } from "#/lib/games/errors";
-import {
-	getHitsterModeConfig,
-	HITSTER_MODES,
-	type HitsterMode,
-} from "#/lib/games/hitster";
+import { HITSTER_MODES, type HitsterMode } from "@arcadeclub/core/hitster";
 import {
 	getPlayableHitsterCards,
 	listHitsterPacks,
-} from "#/lib/games/hitsterPacks";
+} from "@arcadeclub/core/hitster-packs";
+import { useMutation } from "convex/react";
+import { useState } from "react";
+import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -27,6 +23,7 @@ export function HitsterSetupForm() {
 }
 
 function HitsterSetupFormInner() {
+	const errorMessage = useErrorMessage();
 	const { locale, messages } = useI18n();
 	const setupForm = messages.games.hitster.setupForm;
 	const createSession = useMutation(api.sessions.create);
@@ -56,7 +53,7 @@ function HitsterSetupFormInner() {
 					>
 						{HITSTER_MODES.map((entry) => (
 							<option key={entry} value={entry}>
-								{getHitsterModeConfig(entry).label}
+								{messages.games.hitster.modes[entry].label}
 							</option>
 						))}
 					</select>
@@ -111,9 +108,9 @@ function HitsterSetupFormInner() {
 
 			<div className="rounded-2xl border border-[var(--club-line)] bg-[var(--club-panel-strong)] p-4 text-sm text-[var(--club-muted)]">
 				<p className="font-semibold text-[var(--club-text)]">
-					{getHitsterModeConfig(mode).label}
+					{messages.games.hitster.modes[mode].label}
 				</p>
-				<p className="mt-1">{getHitsterModeConfig(mode).summary}</p>
+				<p className="mt-1">{messages.games.hitster.modes[mode].summary}</p>
 				<p className="mt-2 text-[var(--club-soft)]">
 					{plural(locale, playableCount, setupForm.playableTracksInfo)}
 				</p>
@@ -152,7 +149,7 @@ function HitsterSetupFormInner() {
 						);
 						window.location.href = `/hitster/${result.sessionId}/host`;
 					} catch (caught) {
-						setError(getUserErrorMessage(caught, setupForm.createRoomError));
+						setError(errorMessage(caught, setupForm.createRoomError));
 					} finally {
 						setBusy(false);
 					}

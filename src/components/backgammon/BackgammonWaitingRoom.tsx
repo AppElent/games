@@ -1,3 +1,14 @@
+import {
+	applyBackgammonPlan,
+	type BackgammonColor,
+	type BackgammonMoveDestination,
+	type BackgammonMovePlan,
+	type BackgammonMoveSource,
+	type BackgammonPoint,
+	type BackgammonTurnState,
+	canEndBackgammonTurn,
+	computeUsedFlags,
+} from "@arcadeclub/core/backgammon";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import {
@@ -12,17 +23,7 @@ import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import {
-	applyBackgammonPlan,
-	type BackgammonColor,
-	type BackgammonMoveDestination,
-	type BackgammonMovePlan,
-	type BackgammonMoveSource,
-	type BackgammonPoint,
-	type BackgammonTurnState,
-	computeUsedFlags,
-} from "#/lib/games/backgammon";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -73,6 +74,7 @@ export function BackgammonWaitingRoom({
 	bundle: Bundle;
 	shareUrl: string;
 }) {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const backgammon = messages.games.backgammon;
 	const rollDice = useMutation(api.backgammon.rollDice);
@@ -142,7 +144,7 @@ export function BackgammonWaitingRoom({
 				participantId: participantId as Id<"sessionParticipants">,
 			});
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, backgammon.waitingRoom.rollError));
+			setError(errorMessage(caught, backgammon.waitingRoom.rollError));
 		}
 	}
 
@@ -169,7 +171,7 @@ export function BackgammonWaitingRoom({
 				});
 			}
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, backgammon.waitingRoom.moveError));
+			setError(errorMessage(caught, backgammon.waitingRoom.moveError));
 		}
 	}
 
@@ -185,9 +187,7 @@ export function BackgammonWaitingRoom({
 				participantId: participantId as Id<"sessionParticipants">,
 			});
 		} catch (caught) {
-			setError(
-				getUserErrorMessage(caught, backgammon.waitingRoom.endTurnError),
-			);
+			setError(errorMessage(caught, backgammon.waitingRoom.endTurnError));
 		}
 	}
 
@@ -285,7 +285,7 @@ export function BackgammonWaitingRoom({
 							state={turnState}
 							interactive={myTurn}
 							canRoll={myTurn && turnState.dice.length === 0}
-							canEndTurn={myTurn && turnState.dice.length > 0}
+							canEndTurn={myTurn && canEndBackgammonTurn(turnState)}
 							options={options}
 							optionKeys={["showNumbers", "autoSwitchTurn", "autoCombine"]}
 							onToggleOption={handleToggleOption}
@@ -347,7 +347,7 @@ export function BackgammonWaitingRoom({
 														participantId as Id<"sessionParticipants">,
 												}).catch((caught) =>
 													setError(
-														getUserErrorMessage(
+														errorMessage(
 															caught,
 															backgammon.waitingRoom.rematchError,
 														),

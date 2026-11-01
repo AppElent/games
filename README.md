@@ -23,12 +23,7 @@ Arcade Club is a real-time games web app built with TanStack Start, Clerk, and C
 This project uses [pnpm](https://pnpm.io) — never npm or yarn.
 
 1. Copy `.env.example` to `.env.local` and fill in the values (Clerk publishable key, Convex deployment/URL — see `.cta.json` or run `pnpm exec convex dev` to provision one).
-2. `@appelent/auth` is installed from a private GitHub Packages registry. Add a token with `read:packages` scope to your **user-level** `~/.npmrc` (never the project's committed `.npmrc`, which only maps the registry):
-   ```
-   //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-   ```
-   with `NODE_AUTH_TOKEN` exported in your shell before running install.
-3. `pnpm install`
+2. `pnpm install`
 
 ## Development
 
@@ -58,7 +53,7 @@ pnpm run build
 Deploys to Cloudflare Workers (`games` in prod, `games-dev` for the dev environment) via Wrangler:
 
 ```bash
-pnpm run deploy:dev    # wrangler deploy --env dev
+pnpm run deploy:dev    # builds and deploys the games-dev Worker
 pnpm run deploy:prod   # convex deploy && build && wrangler deploy
 ```
 

@@ -9,7 +9,7 @@ Local-first: use the Claude Preview browser tools (`preview_start` against `.cla
 
 ## Auth note
 
-The sign-in screen shows a "▶ Dev: log in as test user" button (from `@appelent/auth`'s `TestLoginButton`) whenever `VITE_CLERK_PUBLISHABLE_KEY` is a `pk_test_...` key **and** `VITE_TEST_USER_EMAIL`/`VITE_TEST_USER_PASSWORD` are set in `.env.local`. Use it to get past the login wall when verifying auth-gated flows — don't assume those pages are unreachable for automated verification. If the button isn't showing, check `.env.local` for those two vars before concluding the app can't be tested logged-in.
+The sign-in screen shows a "▶ Dev: log in as test user" button (`src/lib/auth`'s `TestLoginButton`) whenever `VITE_CLERK_PUBLISHABLE_KEY` is a `pk_test_...` key **and** `VITE_TEST_USER_EMAIL`/`VITE_TEST_USER_PASSWORD` are set in `.env.local`. Use it to get past the login wall when verifying auth-gated flows — don't assume those pages are unreachable for automated verification. If the button isn't showing, check `.env.local` for those two vars before concluding the app can't be tested logged-in.
 
 ## Route → module map
 
@@ -31,6 +31,6 @@ Session model: every game is a `gameSessions` row (`gameType` discriminator) + a
 | `/bluff-dice/*` | `src/routes/bluff-dice/*` |
 | `/word-links/*` | `src/routes/word-links/*` (local-only, no Convex session) |
 | `/squad-surge/*` | `src/routes/squad-surge/*` (local-only, no Convex session) |
-| `/sign-in`, `/sign-up`, `/forgot-password`, `/account` | thin `@appelent/auth` wrappers, see `CLAUDE.md` Auth wiring |
+| `/sign-in`, `/sign-up`, `/forgot-password`, `/account` | thin `#/lib/auth` wrappers, see `CLAUDE.md` Auth wiring |
 
 All game routes set `staticData: { fullscreen: true }` and render inside `FullscreenGameShell`/`FullscreenGamePage`/`FitScale` (`src/components/games/`) — if a change affects layout, check it in both fullscreen and the pause-menu state.

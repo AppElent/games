@@ -1,6 +1,12 @@
+import {
+	getHitsterModeConfig,
+	type HitsterMode,
+} from "@arcadeclub/core/hitster";
+import {
+	getHitsterCard,
+	type HitsterCard,
+} from "@arcadeclub/core/hitster-packs";
 import type { FunctionReturnType } from "convex/server";
-import { getHitsterModeConfig, type HitsterMode } from "#/lib/games/hitster";
-import { getHitsterCard, type HitsterCard } from "#/lib/games/hitsterPacks";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import type { api } from "../../../convex/_generated/api";
 

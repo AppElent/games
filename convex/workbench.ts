@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import {
 	type ContentDraftKind,
 	getDraftGameType,
@@ -6,6 +6,7 @@ import {
 } from "../src/lib/games/content-drafts";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
+import { gameError } from "./lib/errors";
 
 const draftKindValidator = v.union(
 	v.literal("word-links-puzzle"),
@@ -47,7 +48,7 @@ export const updateDraft = mutation({
 		const ownerUserId = await requireUserId(ctx);
 		const draft = await ctx.db.get(args.draftId);
 		if (!draft || draft.ownerUserId !== ownerUserId) {
-			throw new ConvexError("Draft not found");
+			throw gameError("draftNotFound");
 		}
 		const validationErrors = validateContentDraft(
 			draft.kind as ContentDraftKind,
@@ -71,7 +72,7 @@ export const approveDraft = mutation({
 		const ownerUserId = await requireUserId(ctx);
 		const draft = await ctx.db.get(args.draftId);
 		if (!draft || draft.ownerUserId !== ownerUserId) {
-			throw new ConvexError("Draft not found");
+			throw gameError("draftNotFound");
 		}
 		// Re-validate at approval time so stale rows can never slip through.
 		const errors = validateContentDraft(
@@ -84,7 +85,7 @@ export const approveDraft = mutation({
 					error.path ? `${error.path}: ${error.message}` : error.message,
 				),
 			});
-			throw new ConvexError("Draft has validation errors — fix them first");
+			throw gameError("draftInvalid");
 		}
 		await ctx.db.patch(args.draftId, {
 			status: "approved",
@@ -125,7 +126,7 @@ export const rejectDraft = mutation({
 		const ownerUserId = await requireUserId(ctx);
 		const draft = await ctx.db.get(args.draftId);
 		if (!draft || draft.ownerUserId !== ownerUserId) {
-			throw new ConvexError("Draft not found");
+			throw gameError("draftNotFound");
 		}
 		await ctx.db.patch(args.draftId, {
 			status: "rejected",
@@ -140,7 +141,7 @@ export const deleteDraft = mutation({
 		const ownerUserId = await requireUserId(ctx);
 		const draft = await ctx.db.get(args.draftId);
 		if (!draft || draft.ownerUserId !== ownerUserId) {
-			throw new ConvexError("Draft not found");
+			throw gameError("draftNotFound");
 		}
 		await ctx.db.delete(args.draftId);
 	},

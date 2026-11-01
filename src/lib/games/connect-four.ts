@@ -1,3 +1,4 @@
+import { GameRuleError } from "@arcadeclub/core/errors";
 export type ConnectFourColor = "red" | "yellow";
 export type ConnectFourCell = ConnectFourColor | "empty";
 
@@ -31,7 +32,7 @@ export function applyConnectFourDrop(
 	col: number,
 ): { board: ConnectFourBoard; row: number } {
 	if (!Number.isInteger(col) || col < 0 || col >= CONNECT_FOUR_COLS) {
-		throw new Error("Invalid column");
+		throw new GameRuleError("invalidColumn");
 	}
 	for (let row = CONNECT_FOUR_ROWS - 1; row >= 0; row -= 1) {
 		if (getCell(board, row, col) === "empty") {
@@ -40,7 +41,7 @@ export function applyConnectFourDrop(
 			return { board: next, row };
 		}
 	}
-	throw new Error("That column is full");
+	throw new GameRuleError("columnFull");
 }
 
 const DIRECTIONS = [

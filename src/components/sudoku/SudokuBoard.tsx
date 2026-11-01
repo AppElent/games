@@ -1,8 +1,8 @@
+import { colOf, digitsInMask, rowOf } from "@arcadeclub/core/sudoku";
+import type { SudokuBoardState } from "@arcadeclub/core/sudoku-board";
+import { effectiveGrid } from "@arcadeclub/core/sudoku-board";
+import type { KillerCage } from "@arcadeclub/core/sudoku-killer";
 import { useMemo } from "react";
-import { colOf, digitsInMask, rowOf } from "#/lib/games/sudoku";
-import type { SudokuBoardState } from "#/lib/games/sudoku-board";
-import { effectiveGrid } from "#/lib/games/sudoku-board";
-import type { KillerCage } from "#/lib/games/sudoku-killer";
 import { fmt, useMessages } from "#/lib/i18n";
 
 export const SUDOKU_COLOR_CLASSES = [

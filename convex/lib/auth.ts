@@ -1,4 +1,4 @@
-import { ConvexError } from "convex/values";
+import { gameError } from "./errors";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 type Ctx = MutationCtx | QueryCtx;
@@ -11,7 +11,7 @@ export async function getOptionalUserId(ctx: Ctx) {
 export async function requireUserId(ctx: Ctx) {
 	const userId = await getOptionalUserId(ctx);
 	if (!userId) {
-		throw new ConvexError("Sign in required");
+		throw gameError("signInRequired");
 	}
 	return userId;
 }

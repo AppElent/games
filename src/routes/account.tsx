@@ -1,7 +1,8 @@
-import { ProfilePanel } from "@appelent/auth";
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
+import { Show } from "@clerk/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { ProfilePanel } from "#/lib/auth";
+import { ReportProblem } from "../components/ReportProblem";
 import { authConfig } from "../lib/auth-config";
 
 export const Route = createFileRoute("/account")({
@@ -11,14 +12,15 @@ export const Route = createFileRoute("/account")({
 function AccountPage() {
 	return (
 		<>
-			<SignedIn>
+			<Show when="signed-in">
 				<main className="club-wrap py-10">
 					<ProfilePanel />
+					<ReportProblem />
 				</main>
-			</SignedIn>
-			<SignedOut>
+			</Show>
+			<Show when="signed-out">
 				<RedirectToSignIn />
-			</SignedOut>
+			</Show>
 		</>
 	);
 }

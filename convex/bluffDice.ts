@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import {
 	BLUFF_MAX_PLAYERS,
 	BLUFF_MIN_PLAYERS,
@@ -14,18 +14,19 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { completeSession, reopenSession } from "./lib/completion";
+import { gameError } from "./lib/errors";
 
 async function getState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
 	const session = await ctx.db.get(sessionId);
 	if (!session || session.gameType !== "bluff-dice") {
-		throw new ConvexError("Bluff Dice game not found");
+		throw gameError("gameNotFound");
 	}
 	const state = await ctx.db
 		.query("bluffDiceStates")
 		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
 		.unique();
 	if (!state) {
-		throw new ConvexError("Bluff Dice game not found");
+		throw gameError("gameNotFound");
 	}
 	return { session, state };
 }
@@ -41,7 +42,7 @@ async function requireParticipant(
 		participant.sessionId !== sessionId ||
 		participant.kickedAt
 	) {
-		throw new ConvexError("You are not part of this game");
+		throw gameError("notInGame");
 	}
 	return participant;
 }
@@ -51,10 +52,10 @@ function requireActive(
 	participantId: Id<"sessionParticipants">,
 ) {
 	if (state.phase !== "claim") {
-		throw new ConvexError("No active round");
+		throw gameError("noActiveRound");
 	}
 	if (state.turnOrder[state.activeIndex] !== participantId) {
-		throw new ConvexError("It is not your turn");
+		throw gameError("notYourTurn");
 	}
 }
 
@@ -66,7 +67,7 @@ export const createState = mutation({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (!session || session.gameType !== "bluff-dice") {
-			throw new ConvexError("Bluff Dice session not found");
+			throw gameError("sessionNotFound");
 		}
 		const existing = await ctx.db
 			.query("bluffDiceStates")
@@ -98,10 +99,10 @@ export const start = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getState(ctx, args.sessionId);
 		if (state.phase !== "lobby") {
-			throw new ConvexError("The game has already started");
+			throw gameError("gameAlreadyStarted");
 		}
 		if (session.hostParticipantId !== args.participantId) {
-			throw new ConvexError("Only the host can start the game");
+			throw gameError("hostOnlyStart");
 		}
 		const participants = await ctx.db
 			.query("sessionParticipants")
@@ -111,10 +112,10 @@ export const start = mutation({
 			(participant) => participant.role !== "watcher",
 		);
 		if (players.length < BLUFF_MIN_PLAYERS) {
-			throw new ConvexError("Need at least 2 players");
+			throw gameError("needTwoPlayers");
 		}
 		if (players.length > BLUFF_MAX_PLAYERS) {
-			throw new ConvexError("Bluff Dice supports up to 8 players");
+			throw gameError("bluffDiceMaxPlayers");
 		}
 		const now = Date.now();
 		await ctx.db.patch(state._id, {
@@ -155,11 +156,11 @@ export const submitClaim = mutation({
 		);
 		const claim = { quantity: args.quantity, face: args.face };
 		if (!isValidBluffClaim(claim, totalDice)) {
-			throw new ConvexError("That claim is not possible");
+			throw gameError("claimImpossible");
 		}
 		const previous = state.claimHistory.at(-1);
 		if (previous && !isClaimHigher(previous, claim)) {
-			throw new ConvexError("Your claim must outrank the previous claim");
+			throw gameError("claimMustOutrank");
 		}
 		const diceCounts = state.turnOrder.map(
 			(participantId) =>
@@ -187,7 +188,7 @@ export const challenge = mutation({
 		requireActive(state, args.participantId);
 		const claim = state.claimHistory.at(-1);
 		if (!claim) {
-			throw new ConvexError("There is no claim to challenge");
+			throw gameError("noClaimToChallenge");
 		}
 		const outcome = resolveBluffChallenge(
 			state.hands.map((hand) => hand.values),
@@ -254,10 +255,10 @@ export const rematch = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getState(ctx, args.sessionId);
 		if (state.phase !== "finished") {
-			throw new ConvexError("The current game is not finished");
+			throw gameError("currentGameNotFinished");
 		}
 		if (session.hostParticipantId !== args.participantId) {
-			throw new ConvexError("Only the host can start a rematch");
+			throw gameError("hostOnlyRematch");
 		}
 		const now = Date.now();
 		await ctx.db.patch(state._id, {

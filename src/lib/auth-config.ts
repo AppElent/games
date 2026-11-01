@@ -1,4 +1,4 @@
-import type { AuthConfig } from "@appelent/auth";
+import type { AuthConfig } from "#/lib/auth";
 
 export const authConfig: AuthConfig = {
 	appName: "Arcade Club",

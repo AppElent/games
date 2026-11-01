@@ -1,7 +1,7 @@
 import { useMutation } from "convex/react";
 import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -37,6 +37,7 @@ export function QuizPlayerView({
 	bundle: QuizBundle;
 	participantId?: string;
 }) {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const submitAnswer = useMutation(api.quiz.submitAnswer);
 	const [pendingChoice, setPendingChoice] = useState("");
@@ -124,7 +125,7 @@ export function QuizPlayerView({
 									});
 								} catch (caught) {
 									setError(
-										getUserErrorMessage(
+										errorMessage(
 											caught,
 											messages.games.quiz.playerView.submitError,
 										),

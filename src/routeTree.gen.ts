@@ -9,76 +9,56 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignUpRouteImport } from './routes/sign-up'
-import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as JoinRouteImport } from './routes/join'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as AccountRouteImport } from './routes/account'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as WorkbenchIndexRouteImport } from './routes/workbench/index'
-import { Route as WordLinksIndexRouteImport } from './routes/word-links/index'
-import { Route as SudokuIndexRouteImport } from './routes/sudoku/index'
-import { Route as SquadSurgeIndexRouteImport } from './routes/squad-surge/index'
-import { Route as SignalWordsIndexRouteImport } from './routes/signal-words/index'
-import { Route as QuizIndexRouteImport } from './routes/quiz/index'
-import { Route as HitsterIndexRouteImport } from './routes/hitster/index'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as ConnectFourIndexRouteImport } from './routes/connect-four/index'
-import { Route as ChessIndexRouteImport } from './routes/chess/index'
-import { Route as BluffDiceIndexRouteImport } from './routes/bluff-dice/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as JoinRouteImport } from './routes/join'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as BackgammonIndexRouteImport } from './routes/backgammon/index'
-import { Route as WordLinksPuzzleIdRouteImport } from './routes/word-links/$puzzleId'
-import { Route as SudokuScanRouteImport } from './routes/sudoku/scan'
-import { Route as SudokuNewRouteImport } from './routes/sudoku/new'
-import { Route as SudokuSessionIdRouteImport } from './routes/sudoku/$sessionId'
-import { Route as SquadSurgePlayRouteImport } from './routes/squad-surge/play'
-import { Route as SignalWordsNewRouteImport } from './routes/signal-words/new'
-import { Route as SignalWordsSessionIdRouteImport } from './routes/signal-words/$sessionId'
-import { Route as QuizNewRouteImport } from './routes/quiz/new'
-import { Route as HitsterNewRouteImport } from './routes/hitster/new'
-import { Route as GamesGameTypeRouteImport } from './routes/games/$gameType'
-import { Route as ConnectFourNewRouteImport } from './routes/connect-four/new'
-import { Route as ConnectFourSessionIdRouteImport } from './routes/connect-four/$sessionId'
-import { Route as ChessNewRouteImport } from './routes/chess/new'
-import { Route as ChessSessionIdRouteImport } from './routes/chess/$sessionId'
-import { Route as BluffDiceNewRouteImport } from './routes/bluff-dice/new'
-import { Route as BluffDiceSessionIdRouteImport } from './routes/bluff-dice/$sessionId'
-import { Route as BackgammonNewRouteImport } from './routes/backgammon/new'
-import { Route as BackgammonLocalRouteImport } from './routes/backgammon/local'
 import { Route as BackgammonSessionIdRouteImport } from './routes/backgammon/$sessionId'
-import { Route as QuizSetsIndexRouteImport } from './routes/quiz/sets/index'
-import { Route as QuizSetsNewRouteImport } from './routes/quiz/sets/new'
-import { Route as QuizSetsQuizSetIdRouteImport } from './routes/quiz/sets/$quizSetId'
-import { Route as QuizSessionIdPlayRouteImport } from './routes/quiz/$sessionId/play'
-import { Route as QuizSessionIdHostRouteImport } from './routes/quiz/$sessionId/host'
-import { Route as HitsterSessionIdPlayRouteImport } from './routes/hitster/$sessionId/play'
-import { Route as HitsterSessionIdHostRouteImport } from './routes/hitster/$sessionId/host'
+import { Route as BackgammonLocalRouteImport } from './routes/backgammon/local'
+import { Route as BackgammonNewRouteImport } from './routes/backgammon/new'
+import { Route as BluffDiceIndexRouteImport } from './routes/bluff-dice/index'
+import { Route as BluffDiceSessionIdRouteImport } from './routes/bluff-dice/$sessionId'
+import { Route as BluffDiceNewRouteImport } from './routes/bluff-dice/new'
+import { Route as ChessIndexRouteImport } from './routes/chess/index'
+import { Route as ChessSessionIdRouteImport } from './routes/chess/$sessionId'
+import { Route as ChessNewRouteImport } from './routes/chess/new'
+import { Route as ConnectFourIndexRouteImport } from './routes/connect-four/index'
+import { Route as ConnectFourSessionIdRouteImport } from './routes/connect-four/$sessionId'
+import { Route as ConnectFourNewRouteImport } from './routes/connect-four/new'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as GamesGameTypeRouteImport } from './routes/games/$gameType'
+import { Route as HitsterIndexRouteImport } from './routes/hitster/index'
+import { Route as HitsterNewRouteImport } from './routes/hitster/new'
+import { Route as QuizIndexRouteImport } from './routes/quiz/index'
+import { Route as QuizNewRouteImport } from './routes/quiz/new'
+import { Route as SignalWordsIndexRouteImport } from './routes/signal-words/index'
+import { Route as SignalWordsSessionIdRouteImport } from './routes/signal-words/$sessionId'
+import { Route as SignalWordsNewRouteImport } from './routes/signal-words/new'
+import { Route as SquadSurgeIndexRouteImport } from './routes/squad-surge/index'
+import { Route as SquadSurgePlayRouteImport } from './routes/squad-surge/play'
+import { Route as SudokuIndexRouteImport } from './routes/sudoku/index'
+import { Route as SudokuSessionIdRouteImport } from './routes/sudoku/$sessionId'
+import { Route as SudokuNewRouteImport } from './routes/sudoku/new'
+import { Route as SudokuScanRouteImport } from './routes/sudoku/scan'
+import { Route as WordLinksIndexRouteImport } from './routes/word-links/index'
+import { Route as WordLinksPuzzleIdRouteImport } from './routes/word-links/$puzzleId'
+import { Route as WorkbenchIndexRouteImport } from './routes/workbench/index'
 import { Route as DashboardResultsSessionIdRouteImport } from './routes/dashboard/results.$sessionId'
+import { Route as HitsterSessionIdHostRouteImport } from './routes/hitster/$sessionId/host'
+import { Route as HitsterSessionIdPlayRouteImport } from './routes/hitster/$sessionId/play'
+import { Route as QuizSessionIdHostRouteImport } from './routes/quiz/$sessionId/host'
+import { Route as QuizSessionIdPlayRouteImport } from './routes/quiz/$sessionId/play'
+import { Route as QuizSetsIndexRouteImport } from './routes/quiz/sets/index'
+import { Route as QuizSetsQuizSetIdRouteImport } from './routes/quiz/sets/$quizSetId'
+import { Route as QuizSetsNewRouteImport } from './routes/quiz/sets/new'
 
-const SignUpRoute = SignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignInRoute = SignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JoinRoute = JoinRouteImport.update({
-  id: '/join',
-  path: '/join',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AccountRoute = AccountRouteImport.update({
-  id: '/account',
-  path: '/account',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -86,64 +66,29 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorkbenchIndexRoute = WorkbenchIndexRouteImport.update({
-  id: '/workbench/',
-  path: '/workbench/',
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WordLinksIndexRoute = WordLinksIndexRouteImport.update({
-  id: '/word-links/',
-  path: '/word-links/',
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SudokuIndexRoute = SudokuIndexRouteImport.update({
-  id: '/sudoku/',
-  path: '/sudoku/',
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SquadSurgeIndexRoute = SquadSurgeIndexRouteImport.update({
-  id: '/squad-surge/',
-  path: '/squad-surge/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignalWordsIndexRoute = SignalWordsIndexRouteImport.update({
-  id: '/signal-words/',
-  path: '/signal-words/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuizIndexRoute = QuizIndexRouteImport.update({
-  id: '/quiz/',
-  path: '/quiz/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HitsterIndexRoute = HitsterIndexRouteImport.update({
-  id: '/hitster/',
-  path: '/hitster/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/dashboard/',
-  path: '/dashboard/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConnectFourIndexRoute = ConnectFourIndexRouteImport.update({
-  id: '/connect-four/',
-  path: '/connect-four/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChessIndexRoute = ChessIndexRouteImport.update({
-  id: '/chess/',
-  path: '/chess/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BluffDiceIndexRoute = BluffDiceIndexRouteImport.update({
-  id: '/bluff-dice/',
-  path: '/bluff-dice/',
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BackgammonIndexRoute = BackgammonIndexRouteImport.update({
@@ -151,89 +96,9 @@ const BackgammonIndexRoute = BackgammonIndexRouteImport.update({
   path: '/backgammon/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WordLinksPuzzleIdRoute = WordLinksPuzzleIdRouteImport.update({
-  id: '/word-links/$puzzleId',
-  path: '/word-links/$puzzleId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SudokuScanRoute = SudokuScanRouteImport.update({
-  id: '/sudoku/scan',
-  path: '/sudoku/scan',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SudokuNewRoute = SudokuNewRouteImport.update({
-  id: '/sudoku/new',
-  path: '/sudoku/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SudokuSessionIdRoute = SudokuSessionIdRouteImport.update({
-  id: '/sudoku/$sessionId',
-  path: '/sudoku/$sessionId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SquadSurgePlayRoute = SquadSurgePlayRouteImport.update({
-  id: '/squad-surge/play',
-  path: '/squad-surge/play',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignalWordsNewRoute = SignalWordsNewRouteImport.update({
-  id: '/signal-words/new',
-  path: '/signal-words/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignalWordsSessionIdRoute = SignalWordsSessionIdRouteImport.update({
-  id: '/signal-words/$sessionId',
-  path: '/signal-words/$sessionId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuizNewRoute = QuizNewRouteImport.update({
-  id: '/quiz/new',
-  path: '/quiz/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HitsterNewRoute = HitsterNewRouteImport.update({
-  id: '/hitster/new',
-  path: '/hitster/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GamesGameTypeRoute = GamesGameTypeRouteImport.update({
-  id: '/games/$gameType',
-  path: '/games/$gameType',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConnectFourNewRoute = ConnectFourNewRouteImport.update({
-  id: '/connect-four/new',
-  path: '/connect-four/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConnectFourSessionIdRoute = ConnectFourSessionIdRouteImport.update({
-  id: '/connect-four/$sessionId',
-  path: '/connect-four/$sessionId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChessNewRoute = ChessNewRouteImport.update({
-  id: '/chess/new',
-  path: '/chess/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChessSessionIdRoute = ChessSessionIdRouteImport.update({
-  id: '/chess/$sessionId',
-  path: '/chess/$sessionId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BluffDiceNewRoute = BluffDiceNewRouteImport.update({
-  id: '/bluff-dice/new',
-  path: '/bluff-dice/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BluffDiceSessionIdRoute = BluffDiceSessionIdRouteImport.update({
-  id: '/bluff-dice/$sessionId',
-  path: '/bluff-dice/$sessionId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BackgammonNewRoute = BackgammonNewRouteImport.update({
-  id: '/backgammon/new',
-  path: '/backgammon/new',
+const BackgammonSessionIdRoute = BackgammonSessionIdRouteImport.update({
+  id: '/backgammon/$sessionId',
+  path: '/backgammon/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BackgammonLocalRoute = BackgammonLocalRouteImport.update({
@@ -241,44 +106,144 @@ const BackgammonLocalRoute = BackgammonLocalRouteImport.update({
   path: '/backgammon/local',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BackgammonSessionIdRoute = BackgammonSessionIdRouteImport.update({
-  id: '/backgammon/$sessionId',
-  path: '/backgammon/$sessionId',
+const BackgammonNewRoute = BackgammonNewRouteImport.update({
+  id: '/backgammon/new',
+  path: '/backgammon/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuizSetsIndexRoute = QuizSetsIndexRouteImport.update({
-  id: '/quiz/sets/',
-  path: '/quiz/sets/',
+const BluffDiceIndexRoute = BluffDiceIndexRouteImport.update({
+  id: '/bluff-dice/',
+  path: '/bluff-dice/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuizSetsNewRoute = QuizSetsNewRouteImport.update({
-  id: '/quiz/sets/new',
-  path: '/quiz/sets/new',
+const BluffDiceSessionIdRoute = BluffDiceSessionIdRouteImport.update({
+  id: '/bluff-dice/$sessionId',
+  path: '/bluff-dice/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuizSetsQuizSetIdRoute = QuizSetsQuizSetIdRouteImport.update({
-  id: '/quiz/sets/$quizSetId',
-  path: '/quiz/sets/$quizSetId',
+const BluffDiceNewRoute = BluffDiceNewRouteImport.update({
+  id: '/bluff-dice/new',
+  path: '/bluff-dice/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuizSessionIdPlayRoute = QuizSessionIdPlayRouteImport.update({
-  id: '/quiz/$sessionId/play',
-  path: '/quiz/$sessionId/play',
+const ChessIndexRoute = ChessIndexRouteImport.update({
+  id: '/chess/',
+  path: '/chess/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuizSessionIdHostRoute = QuizSessionIdHostRouteImport.update({
-  id: '/quiz/$sessionId/host',
-  path: '/quiz/$sessionId/host',
+const ChessSessionIdRoute = ChessSessionIdRouteImport.update({
+  id: '/chess/$sessionId',
+  path: '/chess/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HitsterSessionIdPlayRoute = HitsterSessionIdPlayRouteImport.update({
-  id: '/hitster/$sessionId/play',
-  path: '/hitster/$sessionId/play',
+const ChessNewRoute = ChessNewRouteImport.update({
+  id: '/chess/new',
+  path: '/chess/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HitsterSessionIdHostRoute = HitsterSessionIdHostRouteImport.update({
-  id: '/hitster/$sessionId/host',
-  path: '/hitster/$sessionId/host',
+const ConnectFourIndexRoute = ConnectFourIndexRouteImport.update({
+  id: '/connect-four/',
+  path: '/connect-four/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectFourSessionIdRoute = ConnectFourSessionIdRouteImport.update({
+  id: '/connect-four/$sessionId',
+  path: '/connect-four/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectFourNewRoute = ConnectFourNewRouteImport.update({
+  id: '/connect-four/new',
+  path: '/connect-four/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesGameTypeRoute = GamesGameTypeRouteImport.update({
+  id: '/games/$gameType',
+  path: '/games/$gameType',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HitsterIndexRoute = HitsterIndexRouteImport.update({
+  id: '/hitster/',
+  path: '/hitster/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HitsterNewRoute = HitsterNewRouteImport.update({
+  id: '/hitster/new',
+  path: '/hitster/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizIndexRoute = QuizIndexRouteImport.update({
+  id: '/quiz/',
+  path: '/quiz/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizNewRoute = QuizNewRouteImport.update({
+  id: '/quiz/new',
+  path: '/quiz/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignalWordsIndexRoute = SignalWordsIndexRouteImport.update({
+  id: '/signal-words/',
+  path: '/signal-words/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignalWordsSessionIdRoute = SignalWordsSessionIdRouteImport.update({
+  id: '/signal-words/$sessionId',
+  path: '/signal-words/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignalWordsNewRoute = SignalWordsNewRouteImport.update({
+  id: '/signal-words/new',
+  path: '/signal-words/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SquadSurgeIndexRoute = SquadSurgeIndexRouteImport.update({
+  id: '/squad-surge/',
+  path: '/squad-surge/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SquadSurgePlayRoute = SquadSurgePlayRouteImport.update({
+  id: '/squad-surge/play',
+  path: '/squad-surge/play',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SudokuIndexRoute = SudokuIndexRouteImport.update({
+  id: '/sudoku/',
+  path: '/sudoku/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SudokuSessionIdRoute = SudokuSessionIdRouteImport.update({
+  id: '/sudoku/$sessionId',
+  path: '/sudoku/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SudokuNewRoute = SudokuNewRouteImport.update({
+  id: '/sudoku/new',
+  path: '/sudoku/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SudokuScanRoute = SudokuScanRouteImport.update({
+  id: '/sudoku/scan',
+  path: '/sudoku/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WordLinksIndexRoute = WordLinksIndexRouteImport.update({
+  id: '/word-links/',
+  path: '/word-links/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WordLinksPuzzleIdRoute = WordLinksPuzzleIdRouteImport.update({
+  id: '/word-links/$puzzleId',
+  path: '/word-links/$puzzleId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkbenchIndexRoute = WorkbenchIndexRouteImport.update({
+  id: '/workbench/',
+  path: '/workbench/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardResultsSessionIdRoute =
@@ -287,6 +252,41 @@ const DashboardResultsSessionIdRoute =
     path: '/dashboard/results/$sessionId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const HitsterSessionIdHostRoute = HitsterSessionIdHostRouteImport.update({
+  id: '/hitster/$sessionId/host',
+  path: '/hitster/$sessionId/host',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HitsterSessionIdPlayRoute = HitsterSessionIdPlayRouteImport.update({
+  id: '/hitster/$sessionId/play',
+  path: '/hitster/$sessionId/play',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizSessionIdHostRoute = QuizSessionIdHostRouteImport.update({
+  id: '/quiz/$sessionId/host',
+  path: '/quiz/$sessionId/host',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizSessionIdPlayRoute = QuizSessionIdPlayRouteImport.update({
+  id: '/quiz/$sessionId/play',
+  path: '/quiz/$sessionId/play',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizSetsIndexRoute = QuizSetsIndexRouteImport.update({
+  id: '/quiz/sets/',
+  path: '/quiz/sets/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizSetsQuizSetIdRoute = QuizSetsQuizSetIdRouteImport.update({
+  id: '/quiz/sets/$quizSetId',
+  path: '/quiz/sets/$quizSetId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizSetsNewRoute = QuizSetsNewRouteImport.update({
+  id: '/quiz/sets/new',
+  path: '/quiz/sets/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -631,39 +631,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sign-up': {
-      id: '/sign-up'
-      path: '/sign-up'
-      fullPath: '/sign-up'
-      preLoaderRoute: typeof SignUpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sign-in': {
-      id: '/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof SignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/join': {
-      id: '/join'
-      path: '/join'
-      fullPath: '/join'
-      preLoaderRoute: typeof JoinRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/account': {
-      id: '/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof AccountRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -673,88 +645,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/workbench/': {
-      id: '/workbench/'
-      path: '/workbench'
-      fullPath: '/workbench/'
-      preLoaderRoute: typeof WorkbenchIndexRouteImport
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/word-links/': {
-      id: '/word-links/'
-      path: '/word-links'
-      fullPath: '/word-links/'
-      preLoaderRoute: typeof WordLinksIndexRouteImport
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sudoku/': {
-      id: '/sudoku/'
-      path: '/sudoku'
-      fullPath: '/sudoku/'
-      preLoaderRoute: typeof SudokuIndexRouteImport
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/squad-surge/': {
-      id: '/squad-surge/'
-      path: '/squad-surge'
-      fullPath: '/squad-surge/'
-      preLoaderRoute: typeof SquadSurgeIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signal-words/': {
-      id: '/signal-words/'
-      path: '/signal-words'
-      fullPath: '/signal-words/'
-      preLoaderRoute: typeof SignalWordsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quiz/': {
-      id: '/quiz/'
-      path: '/quiz'
-      fullPath: '/quiz/'
-      preLoaderRoute: typeof QuizIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hitster/': {
-      id: '/hitster/'
-      path: '/hitster'
-      fullPath: '/hitster/'
-      preLoaderRoute: typeof HitsterIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/': {
-      id: '/dashboard/'
-      path: '/dashboard'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/connect-four/': {
-      id: '/connect-four/'
-      path: '/connect-four'
-      fullPath: '/connect-four/'
-      preLoaderRoute: typeof ConnectFourIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chess/': {
-      id: '/chess/'
-      path: '/chess'
-      fullPath: '/chess/'
-      preLoaderRoute: typeof ChessIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bluff-dice/': {
-      id: '/bluff-dice/'
-      path: '/bluff-dice'
-      fullPath: '/bluff-dice/'
-      preLoaderRoute: typeof BluffDiceIndexRouteImport
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/backgammon/': {
@@ -764,123 +687,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BackgammonIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/word-links/$puzzleId': {
-      id: '/word-links/$puzzleId'
-      path: '/word-links/$puzzleId'
-      fullPath: '/word-links/$puzzleId'
-      preLoaderRoute: typeof WordLinksPuzzleIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sudoku/scan': {
-      id: '/sudoku/scan'
-      path: '/sudoku/scan'
-      fullPath: '/sudoku/scan'
-      preLoaderRoute: typeof SudokuScanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sudoku/new': {
-      id: '/sudoku/new'
-      path: '/sudoku/new'
-      fullPath: '/sudoku/new'
-      preLoaderRoute: typeof SudokuNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sudoku/$sessionId': {
-      id: '/sudoku/$sessionId'
-      path: '/sudoku/$sessionId'
-      fullPath: '/sudoku/$sessionId'
-      preLoaderRoute: typeof SudokuSessionIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/squad-surge/play': {
-      id: '/squad-surge/play'
-      path: '/squad-surge/play'
-      fullPath: '/squad-surge/play'
-      preLoaderRoute: typeof SquadSurgePlayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signal-words/new': {
-      id: '/signal-words/new'
-      path: '/signal-words/new'
-      fullPath: '/signal-words/new'
-      preLoaderRoute: typeof SignalWordsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signal-words/$sessionId': {
-      id: '/signal-words/$sessionId'
-      path: '/signal-words/$sessionId'
-      fullPath: '/signal-words/$sessionId'
-      preLoaderRoute: typeof SignalWordsSessionIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quiz/new': {
-      id: '/quiz/new'
-      path: '/quiz/new'
-      fullPath: '/quiz/new'
-      preLoaderRoute: typeof QuizNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hitster/new': {
-      id: '/hitster/new'
-      path: '/hitster/new'
-      fullPath: '/hitster/new'
-      preLoaderRoute: typeof HitsterNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/games/$gameType': {
-      id: '/games/$gameType'
-      path: '/games/$gameType'
-      fullPath: '/games/$gameType'
-      preLoaderRoute: typeof GamesGameTypeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/connect-four/new': {
-      id: '/connect-four/new'
-      path: '/connect-four/new'
-      fullPath: '/connect-four/new'
-      preLoaderRoute: typeof ConnectFourNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/connect-four/$sessionId': {
-      id: '/connect-four/$sessionId'
-      path: '/connect-four/$sessionId'
-      fullPath: '/connect-four/$sessionId'
-      preLoaderRoute: typeof ConnectFourSessionIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chess/new': {
-      id: '/chess/new'
-      path: '/chess/new'
-      fullPath: '/chess/new'
-      preLoaderRoute: typeof ChessNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chess/$sessionId': {
-      id: '/chess/$sessionId'
-      path: '/chess/$sessionId'
-      fullPath: '/chess/$sessionId'
-      preLoaderRoute: typeof ChessSessionIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bluff-dice/new': {
-      id: '/bluff-dice/new'
-      path: '/bluff-dice/new'
-      fullPath: '/bluff-dice/new'
-      preLoaderRoute: typeof BluffDiceNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bluff-dice/$sessionId': {
-      id: '/bluff-dice/$sessionId'
-      path: '/bluff-dice/$sessionId'
-      fullPath: '/bluff-dice/$sessionId'
-      preLoaderRoute: typeof BluffDiceSessionIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/backgammon/new': {
-      id: '/backgammon/new'
-      path: '/backgammon/new'
-      fullPath: '/backgammon/new'
-      preLoaderRoute: typeof BackgammonNewRouteImport
+    '/backgammon/$sessionId': {
+      id: '/backgammon/$sessionId'
+      path: '/backgammon/$sessionId'
+      fullPath: '/backgammon/$sessionId'
+      preLoaderRoute: typeof BackgammonSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/backgammon/local': {
@@ -890,53 +701,207 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BackgammonLocalRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/backgammon/$sessionId': {
-      id: '/backgammon/$sessionId'
-      path: '/backgammon/$sessionId'
-      fullPath: '/backgammon/$sessionId'
-      preLoaderRoute: typeof BackgammonSessionIdRouteImport
+    '/backgammon/new': {
+      id: '/backgammon/new'
+      path: '/backgammon/new'
+      fullPath: '/backgammon/new'
+      preLoaderRoute: typeof BackgammonNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quiz/sets/': {
-      id: '/quiz/sets/'
-      path: '/quiz/sets'
-      fullPath: '/quiz/sets/'
-      preLoaderRoute: typeof QuizSetsIndexRouteImport
+    '/bluff-dice/': {
+      id: '/bluff-dice/'
+      path: '/bluff-dice'
+      fullPath: '/bluff-dice/'
+      preLoaderRoute: typeof BluffDiceIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quiz/sets/new': {
-      id: '/quiz/sets/new'
-      path: '/quiz/sets/new'
-      fullPath: '/quiz/sets/new'
-      preLoaderRoute: typeof QuizSetsNewRouteImport
+    '/bluff-dice/$sessionId': {
+      id: '/bluff-dice/$sessionId'
+      path: '/bluff-dice/$sessionId'
+      fullPath: '/bluff-dice/$sessionId'
+      preLoaderRoute: typeof BluffDiceSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quiz/sets/$quizSetId': {
-      id: '/quiz/sets/$quizSetId'
-      path: '/quiz/sets/$quizSetId'
-      fullPath: '/quiz/sets/$quizSetId'
-      preLoaderRoute: typeof QuizSetsQuizSetIdRouteImport
+    '/bluff-dice/new': {
+      id: '/bluff-dice/new'
+      path: '/bluff-dice/new'
+      fullPath: '/bluff-dice/new'
+      preLoaderRoute: typeof BluffDiceNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quiz/$sessionId/play': {
-      id: '/quiz/$sessionId/play'
-      path: '/quiz/$sessionId/play'
-      fullPath: '/quiz/$sessionId/play'
-      preLoaderRoute: typeof QuizSessionIdPlayRouteImport
+    '/chess/': {
+      id: '/chess/'
+      path: '/chess'
+      fullPath: '/chess/'
+      preLoaderRoute: typeof ChessIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quiz/$sessionId/host': {
-      id: '/quiz/$sessionId/host'
-      path: '/quiz/$sessionId/host'
-      fullPath: '/quiz/$sessionId/host'
-      preLoaderRoute: typeof QuizSessionIdHostRouteImport
+    '/chess/$sessionId': {
+      id: '/chess/$sessionId'
+      path: '/chess/$sessionId'
+      fullPath: '/chess/$sessionId'
+      preLoaderRoute: typeof ChessSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/hitster/$sessionId/play': {
-      id: '/hitster/$sessionId/play'
-      path: '/hitster/$sessionId/play'
-      fullPath: '/hitster/$sessionId/play'
-      preLoaderRoute: typeof HitsterSessionIdPlayRouteImport
+    '/chess/new': {
+      id: '/chess/new'
+      path: '/chess/new'
+      fullPath: '/chess/new'
+      preLoaderRoute: typeof ChessNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect-four/': {
+      id: '/connect-four/'
+      path: '/connect-four'
+      fullPath: '/connect-four/'
+      preLoaderRoute: typeof ConnectFourIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect-four/$sessionId': {
+      id: '/connect-four/$sessionId'
+      path: '/connect-four/$sessionId'
+      fullPath: '/connect-four/$sessionId'
+      preLoaderRoute: typeof ConnectFourSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect-four/new': {
+      id: '/connect-four/new'
+      path: '/connect-four/new'
+      fullPath: '/connect-four/new'
+      preLoaderRoute: typeof ConnectFourNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/$gameType': {
+      id: '/games/$gameType'
+      path: '/games/$gameType'
+      fullPath: '/games/$gameType'
+      preLoaderRoute: typeof GamesGameTypeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hitster/': {
+      id: '/hitster/'
+      path: '/hitster'
+      fullPath: '/hitster/'
+      preLoaderRoute: typeof HitsterIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hitster/new': {
+      id: '/hitster/new'
+      path: '/hitster/new'
+      fullPath: '/hitster/new'
+      preLoaderRoute: typeof HitsterNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz/': {
+      id: '/quiz/'
+      path: '/quiz'
+      fullPath: '/quiz/'
+      preLoaderRoute: typeof QuizIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz/new': {
+      id: '/quiz/new'
+      path: '/quiz/new'
+      fullPath: '/quiz/new'
+      preLoaderRoute: typeof QuizNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signal-words/': {
+      id: '/signal-words/'
+      path: '/signal-words'
+      fullPath: '/signal-words/'
+      preLoaderRoute: typeof SignalWordsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signal-words/$sessionId': {
+      id: '/signal-words/$sessionId'
+      path: '/signal-words/$sessionId'
+      fullPath: '/signal-words/$sessionId'
+      preLoaderRoute: typeof SignalWordsSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signal-words/new': {
+      id: '/signal-words/new'
+      path: '/signal-words/new'
+      fullPath: '/signal-words/new'
+      preLoaderRoute: typeof SignalWordsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/squad-surge/': {
+      id: '/squad-surge/'
+      path: '/squad-surge'
+      fullPath: '/squad-surge/'
+      preLoaderRoute: typeof SquadSurgeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/squad-surge/play': {
+      id: '/squad-surge/play'
+      path: '/squad-surge/play'
+      fullPath: '/squad-surge/play'
+      preLoaderRoute: typeof SquadSurgePlayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sudoku/': {
+      id: '/sudoku/'
+      path: '/sudoku'
+      fullPath: '/sudoku/'
+      preLoaderRoute: typeof SudokuIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sudoku/$sessionId': {
+      id: '/sudoku/$sessionId'
+      path: '/sudoku/$sessionId'
+      fullPath: '/sudoku/$sessionId'
+      preLoaderRoute: typeof SudokuSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sudoku/new': {
+      id: '/sudoku/new'
+      path: '/sudoku/new'
+      fullPath: '/sudoku/new'
+      preLoaderRoute: typeof SudokuNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sudoku/scan': {
+      id: '/sudoku/scan'
+      path: '/sudoku/scan'
+      fullPath: '/sudoku/scan'
+      preLoaderRoute: typeof SudokuScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/word-links/': {
+      id: '/word-links/'
+      path: '/word-links'
+      fullPath: '/word-links/'
+      preLoaderRoute: typeof WordLinksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/word-links/$puzzleId': {
+      id: '/word-links/$puzzleId'
+      path: '/word-links/$puzzleId'
+      fullPath: '/word-links/$puzzleId'
+      preLoaderRoute: typeof WordLinksPuzzleIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workbench/': {
+      id: '/workbench/'
+      path: '/workbench'
+      fullPath: '/workbench/'
+      preLoaderRoute: typeof WorkbenchIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/results/$sessionId': {
+      id: '/dashboard/results/$sessionId'
+      path: '/dashboard/results/$sessionId'
+      fullPath: '/dashboard/results/$sessionId'
+      preLoaderRoute: typeof DashboardResultsSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hitster/$sessionId/host': {
@@ -946,11 +911,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HitsterSessionIdHostRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/results/$sessionId': {
-      id: '/dashboard/results/$sessionId'
-      path: '/dashboard/results/$sessionId'
-      fullPath: '/dashboard/results/$sessionId'
-      preLoaderRoute: typeof DashboardResultsSessionIdRouteImport
+    '/hitster/$sessionId/play': {
+      id: '/hitster/$sessionId/play'
+      path: '/hitster/$sessionId/play'
+      fullPath: '/hitster/$sessionId/play'
+      preLoaderRoute: typeof HitsterSessionIdPlayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz/$sessionId/host': {
+      id: '/quiz/$sessionId/host'
+      path: '/quiz/$sessionId/host'
+      fullPath: '/quiz/$sessionId/host'
+      preLoaderRoute: typeof QuizSessionIdHostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz/$sessionId/play': {
+      id: '/quiz/$sessionId/play'
+      path: '/quiz/$sessionId/play'
+      fullPath: '/quiz/$sessionId/play'
+      preLoaderRoute: typeof QuizSessionIdPlayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz/sets/': {
+      id: '/quiz/sets/'
+      path: '/quiz/sets'
+      fullPath: '/quiz/sets/'
+      preLoaderRoute: typeof QuizSetsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz/sets/$quizSetId': {
+      id: '/quiz/sets/$quizSetId'
+      path: '/quiz/sets/$quizSetId'
+      fullPath: '/quiz/sets/$quizSetId'
+      preLoaderRoute: typeof QuizSetsQuizSetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz/sets/new': {
+      id: '/quiz/sets/new'
+      path: '/quiz/sets/new'
+      fullPath: '/quiz/sets/new'
+      preLoaderRoute: typeof QuizSetsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
   }

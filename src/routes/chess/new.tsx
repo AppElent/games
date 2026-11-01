@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
 import { CHESS_TIME_CONTROLS, type ChessTimeControl } from "#/lib/games/chess";
-import { getUserErrorMessage } from "#/lib/games/errors";
+import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/chess/new")({
 type HostColor = "white" | "black" | "random";
 
 function ChessNewPage() {
+	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const chess = messages.games.chess;
 	const createSession = useMutation(api.sessions.create);
@@ -52,7 +53,7 @@ function ChessNewPage() {
 			);
 			window.location.href = `/chess/${result.sessionId}`;
 		} catch (caught) {
-			setError(getUserErrorMessage(caught, chess.newGame.createChallengeError));
+			setError(errorMessage(caught, chess.newGame.createChallengeError));
 			setBusy(false);
 		}
 	}

@@ -1,0 +1,239 @@
+/** Sudoku + binary-puzzle copy, including the hint templates that
+ * `describeHint` in sudoku-hints.ts fills. */
+export const sudoku = {
+	hints: {
+		cell: "R{row}C{col}",
+		row: "row {n}",
+		column: "column {n}",
+		box: "box {n}",
+		pair: "pair",
+		triple: "triple",
+		mistake: {
+			title: "Mistake",
+			nudge:
+				"Something on the board doesn't add up. Take another look at {unit}.",
+			direction: "One of your digits is wrong: check {cell}.",
+			explanation:
+				"The {digit} in {cell} doesn't belong there. Erase it, then ask for the next step.",
+		},
+		nakedSingle: {
+			title: "Naked single",
+			nudge: "Take a close look at {cell}. How many digits can still go there?",
+			direction:
+				"There is a naked single in {unit}: a cell where every digit but one is ruled out.",
+			explanation:
+				"{cell} has only one candidate left: {digit}. Every other digit already appears in its row, column or box, so {digit} goes there.",
+		},
+		hiddenSingle: {
+			title: "Hidden single",
+			nudge: "Scan {unit}: one digit has only a single place left there.",
+			direction:
+				"There is a hidden single for {digit} in {unit}. Cross-hatch to find the only cell that can take it.",
+			explanation:
+				"Within {unit}, {digit} can only go in {cell}: every other cell already sees a {digit} in its row, column or box.",
+			crossHatch:
+				" Cross-hatching the box (scanning the rows and columns through it) shows this.",
+		},
+		pointing: {
+			title: "Pointing {set}",
+			nudge:
+				"Look at where {digit} can go inside {box}. Notice anything about the shape?",
+			direction:
+				"There is a pointing {set} in {box}: all its {digit} candidates lie in {line}, which limits the rest of that line.",
+			explanation:
+				"In {box}, {digit} is confined to {cells}, all in {line}. Wherever it lands, {line} gets its {digit} from this box, so {digit} can be removed from {eliminated}.",
+		},
+		boxLine: {
+			title: "Box-line reduction",
+			nudge:
+				"Check where {digit} can go in {line}. The options cluster together.",
+			direction:
+				"Box-line reduction in {line}: its {digit} candidates all sit in {box}.",
+			explanation:
+				"In {line}, {digit} can only go in {cells}, all inside {box}. The box must take its {digit} from that line, so {digit} can be removed from {eliminated}.",
+		},
+		nakedSet: {
+			title: "Naked {set}",
+			nudge:
+				"Compare the candidates in {unit}. Some cells share exactly the same few digits.",
+			direction:
+				"There is a naked {set} in {unit}: {size} cells that allow only the same {size} digits.",
+			explanation:
+				"In {unit}, the cells {cells} allow only {digits}. Those digits must fill exactly those cells, so they can be removed from every other cell in {unit}.",
+		},
+		hiddenSet: {
+			title: "Hidden {set}",
+			nudge:
+				"In {unit}, track where {digits} can still go. The options overlap.",
+			direction:
+				"There is a hidden {set} in {unit}: {digits} fit only in the same {size} cells.",
+			explanation:
+				"In {unit}, {digits} can only go in {cells}. Those cells are reserved for them, so every other candidate can be removed from them.",
+		},
+		snyder: {
+			title: "Snyder notation",
+			nudge: "Worth annotating: in {box}, one digit is down to two places.",
+			direction:
+				"Use Snyder notation in {box}: mark the two possible cells for {digit} with corner notes.",
+			explanation:
+				"In {box}, {digit} can only go in {cells}. Mark both with a corner note {digit}. When one is ruled out later, the other is certain.",
+		},
+	},
+	saved: {
+		empty: "Puzzles you start appear here so you can pick them up later.",
+		solved: "Solved in {time}",
+		inProgress: "{time} played",
+		deleteTitle: "Delete this puzzle?",
+		deleteBody: "Its progress is removed from this device.",
+	},
+	difficulty: {
+		easy: "Easy",
+		medium: "Medium",
+		hard: "Hard",
+		expert: "Expert",
+	},
+	variant: {
+		classic: "Classic",
+		killer: "Killer",
+		binary: "Binary",
+	},
+	board: {
+		cellLabel: "Row {row}, column {col}",
+		given: "given",
+		empty: "empty",
+		notes: "notes {digits}",
+		cage: "cage sum {sum}",
+		conflict: "conflict",
+	},
+	keypad: {
+		modeLabel: "Entry mode",
+		digitLabel: "{digit}, {count} left",
+		modeDigit: "Digit",
+		modeCorner: "Corner",
+		modeCenter: "Center",
+		modeColor: "Color",
+		colorAriaLabel: "Color {number}",
+		undo: "Undo",
+		redo: "Redo",
+		erase: "Erase",
+		hint: "Hint",
+	},
+	game: {
+		timer: "Time {time}",
+		pausedBody: "The board is hidden while the clock is stopped.",
+		noHint: "No simple step found. Check your digits for mistakes.",
+		restartTitle: "Restart this puzzle?",
+		restartBody: "The grid is cleared. You can still undo.",
+		renameTooltip: "Rename this puzzle",
+		importedFallback: "Imported",
+		scannedLabel: "scanned",
+		solvedTitle: "Solved! 🎉",
+		completedIn: "Completed in {time}.",
+		startAnotherPuzzle: "Start another puzzle",
+		pausedOverlay: "Paused — tap to resume",
+		pauseButton: "Pause",
+		hintFallbackTitle: "Hint",
+		dismissHint: "Dismiss",
+		tellMeMore: "Tell me more",
+		autoCleanupLabel: "Auto-remove notes when a digit is placed",
+		restartConfirm:
+			"Restart this puzzle? Your progress is kept in undo history.",
+		keyboardHelp:
+			"Keyboard: 1-9 digits · Shift+digit corner note · Ctrl+digit center note · Space cycles mode · Ctrl+Z/Y undo/redo · arrows move",
+	},
+	binary: {
+		restartBody: "The grid goes back to its givens.",
+		dimensions: "Binary {size}×{size}",
+		restartConfirm: "Restart this puzzle?",
+		instructions:
+			"Tap a cell to cycle 0 → 1 → empty. No three alike in a row, equal 0s and 1s per line, no duplicate lines.",
+		remainingCells: {
+			one: "{count} cell to go",
+			other: "{count} cells to go",
+		},
+	},
+	scan: {
+		pageHeading: "Scan a paper puzzle",
+		couldNotReadImage: "Could not read the image",
+		recognitionFailed: "Recognition failed",
+		preparingImage: "Preparing image...",
+		readingCells: "Reading cells {done}/{total}...",
+		correctedGridAlt: "Corrected sudoku grid",
+		uploadInstructions:
+			"Photograph or upload a printed sudoku — including one you already started solving on paper. You will verify the recognized grid before playing.",
+		takePhoto: "Take a photo",
+		uploadImage: "Upload an image",
+		dragCorners: "Drag the four handles onto the corners of the sudoku grid.",
+		uploadedImageAlt: "Uploaded sudoku",
+		readGrid: "Read this grid",
+		scannedImageLabel: "Scanned image",
+		recognizedGridLabel: "Recognized grid — tap a cell to correct it",
+		lowConfidenceHighlighted: {
+			one: "{count} low-confidence cell highlighted in amber.",
+			other: "{count} low-confidence cells highlighted in amber.",
+		},
+		allConfident:
+			"All recognitions look confident — still, double-check before starting.",
+		cellLabel: "Cell R{row}C{col}",
+		lowConfidenceBadge: "low confidence",
+		cellTypeGiven: "Given",
+		cellTypeUserDigit: "Your digit",
+		cellTypeCornerNotes: "Corner notes",
+		cellTypeCenterNotes: "Center notes",
+		cellTypeEmpty: "Empty",
+		clearCell: "Clear cell",
+		previewLabel: "Preview — exactly how the puzzle will start",
+		multipleSolutionsWarning:
+			"The givens allow more than one solution. You can still play, but consider double-checking for missed digits.",
+		uniqueSolution: "Looks good: the givens define a unique solution.",
+		startOver: "Start over",
+		creatingPuzzle: "Creating puzzle...",
+		confirmAndPlay: "Confirm and play",
+		couldNotCreateSession: "Could not create session",
+	},
+	newGame: {
+		heading: "Start a puzzle",
+		intro:
+			"Pick a difficulty and play solo. Your progress saves automatically, and you can keep several puzzles going at once.",
+		nameLabel: "Puzzle name (optional)",
+		namePlaceholder: "Auto-named by level and time",
+		gameTypeLegend: "Game type",
+		variantBlurbs: {
+			classic: "The familiar 9×9 grid",
+			killer: "Cages must add up to their sum",
+			binary: "Fill the grid with 0s and 1s",
+		},
+		offlineNote: "Puzzles are saved on this device and work offline.",
+		difficultyBlurbs: {
+			easy: {
+				classic: "Plenty of clues, gentle start",
+				killer: "Many givens, small cages",
+				binary: "6×6 grid, gentle start",
+			},
+			medium: {
+				classic: "Singles and simple pairs",
+				killer: "Fewer givens, lean on the sums",
+				binary: "8×8 grid",
+			},
+			hard: {
+				classic: "Pointing pairs and reductions",
+				killer: "A handful of givens",
+				binary: "10×10 grid",
+			},
+			expert: {
+				classic: "Sparse clues, deep scanning",
+				killer: "Cages only — no givens",
+				binary: "10×10, sparse clues",
+			},
+		},
+		generating: "Generating...",
+		scanInstead: "Scan a paper puzzle instead",
+		yourPuzzles: "Your puzzles",
+		removeFromList: "Remove {title} from this list",
+		couldNotStart: "Could not start the puzzle",
+	},
+	session: {
+		loadingPuzzle: "Loading puzzle...",
+		puzzleNotFound: "Puzzle not found.",
+	},
+};
