@@ -5,6 +5,16 @@ export const play = {
 	continue: "Verder spelen",
 	onlineGame: "Online spel",
 	savedGame: "Opgeslagen spel",
+	inLobby: "In de wachtkamer",
+	inProgress: "Bezig",
+	withPlayers: "Met {names}",
+	code: "Code {code}",
+	remove: "Verwijderen",
+	removeOnlineTitle: "Uit Verder spelen halen?",
+	removeOnlineBody:
+		"Het spel zelf gaat door. Je kunt opnieuw meedoen met de code.",
+	removeSavedTitle: "Dit opgeslagen spel verwijderen?",
+	removeSavedBody: "Je voortgang in dit spel gaat verloren.",
 	taglines: {
 		sudoku: "Klassiek, Killer en Binair. Werkt offline.",
 		backgammon: "Samen op deze telefoon, of daag een vriend uit.",

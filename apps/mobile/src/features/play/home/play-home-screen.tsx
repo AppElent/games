@@ -4,8 +4,9 @@
  */
 import { type Href, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { useI18n } from "../../../i18n";
+import { Alert, StyleSheet, View } from "react-native";
+import { haptics } from "../../../feedback/haptics";
+import { fmt, useI18n } from "../../../i18n";
 import { relativeTime } from "../../../i18n/relative-time";
 import {
 	radius,
@@ -19,7 +20,12 @@ import { Card } from "../../../ui/card";
 import { Icon } from "../../../ui/icon";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
-import { type ContinueItem, listContinueItems } from "./continue-items";
+import {
+	type ContinueItem,
+	listContinueItems,
+	removeContinueItem,
+} from "./continue-items";
+import { type OnlineStatus, useOnlineStatuses } from "./online-status";
 
 type GameEntry = {
 	key: "sudoku" | "backgammon" | "hitster";
@@ -57,6 +63,8 @@ const GAMES: readonly GameEntry[] = [
 	},
 ];
 
+const CONTINUE_LIMIT = 5;
+
 export function PlayHomeScreen() {
 	const router = useRouter();
 	const { t, locale } = useI18n();
@@ -64,12 +72,52 @@ export function PlayHomeScreen() {
 	const styles = useThemedStyles(createStyles);
 	const stacked = useAccessibilityTextSize();
 	const [items, setItems] = useState<ContinueItem[]>([]);
+	const statuses = useOnlineStatuses(items);
+	const visible = items
+		.filter((item) => statuses[item.id] !== null)
+		.slice(0, CONTINUE_LIMIT);
 
 	useFocusEffect(
 		useCallback(() => {
 			setItems(listContinueItems());
 		}, []),
 	);
+
+	const remove = (item: ContinueItem) => {
+		const online = item.source.kind === "online";
+		haptics.selectionChanged();
+		Alert.alert(
+			online ? t.play.removeOnlineTitle : t.play.removeSavedTitle,
+			online ? t.play.removeOnlineBody : t.play.removeSavedBody,
+			[
+				{ text: t.common.actions.cancel, style: "cancel" },
+				{
+					text: t.play.remove,
+					style: "destructive",
+					onPress: () => {
+						removeContinueItem(item.source);
+						setItems(listContinueItems());
+					},
+				},
+			],
+		);
+	};
+
+	const detail = (item: ContinueItem, status: OnlineStatus | undefined) => {
+		if (item.source.kind !== "online") {
+			return `${t.play.savedGame} · ${relativeTime(t, locale, item.updatedAt)}`;
+		}
+		if (!status) return t.play.onlineGame;
+		// A lobby is identified by its code, a running game by who is in it.
+		if (status.phase === "lobby") {
+			return status.joinCode
+				? `${t.play.inLobby} · ${fmt(t.play.code, { code: status.joinCode })}`
+				: t.play.inLobby;
+		}
+		return status.others.length > 0
+			? `${t.play.inProgress} · ${fmt(t.play.withPlayers, { names: status.others.join(", ") })}`
+			: t.play.inProgress;
+	};
 
 	return (
 		<Screen inTabs>
@@ -117,23 +165,57 @@ export function PlayHomeScreen() {
 					);
 				})}
 			</View>
-			{items.length > 0 ? (
+			{visible.length > 0 ? (
 				<View style={styles.list}>
 					<AppText variant="label" accessibilityRole="header">
 						{t.play.continue.toUpperCase()}
 					</AppText>
-					{items.map((item) => {
-						const detail = `${item.kind === "online" ? t.play.onlineGame : t.play.savedGame} · ${relativeTime(t, locale, item.updatedAt)}`;
+					{visible.map((item) => {
+						const game = GAMES.find((entry) => entry.key === item.gameType);
+						const title = t.catalog[item.gameType].title;
+						const text = detail(item, statuses[item.id] ?? undefined);
 						return (
 							<Card
 								key={item.id}
 								onPress={() => router.push(item.href)}
-								accessibilityLabel={`${t.catalog[item.gameType].title}, ${detail}`}
+								onLongPress={() => remove(item)}
+								accessibilityLabel={`${title}, ${text}`}
+								accessibilityActions={[
+									{
+										name: "remove",
+										label: t.play.remove,
+										onAction: () => remove(item),
+									},
+								]}
+								testID={`continue-${item.id}`}
 							>
-								<AppText variant="body">
-									{t.catalog[item.gameType].title}
-								</AppText>
-								<AppText variant="caption">{detail}</AppText>
+								<View style={styles.row}>
+									{game ? (
+										<View
+											style={[
+												styles.smallBadge,
+												{ backgroundColor: tokens[game.tintDim] },
+											]}
+										>
+											<Icon
+												ios={game.icon}
+												android={game.androidIcon}
+												size={18}
+												color={tokens[game.tint]}
+											/>
+										</View>
+									) : null}
+									<View style={styles.text}>
+										<AppText variant="body">{title}</AppText>
+										<AppText variant="caption">{text}</AppText>
+									</View>
+									<Icon
+										ios="chevron.right"
+										android="chevron_right"
+										size={16}
+										color={tokens.textFaint}
+									/>
+								</View>
 							</Card>
 						);
 					})}
@@ -152,6 +234,13 @@ const createStyles = (_colors: Tokens) =>
 			width: 52,
 			height: 52,
 			borderRadius: radius.md,
+			alignItems: "center",
+			justifyContent: "center",
+		},
+		smallBadge: {
+			width: 36,
+			height: 36,
+			borderRadius: radius.sm,
 			alignItems: "center",
 			justifyContent: "center",
 		},

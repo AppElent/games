@@ -1,6 +1,7 @@
 /** A raised surface for grouping content; pressable when given `onPress`. */
 import type { ReactNode } from "react";
 import {
+	type AccessibilityActionInfo,
 	Pressable,
 	type StyleProp,
 	StyleSheet,
@@ -12,6 +13,9 @@ import { radius, spacing, type Tokens, useThemedStyles } from "../theme";
 type Props = {
 	children: ReactNode;
 	onPress?: () => void;
+	onLongPress?: () => void;
+	/** Extra VoiceOver/TalkBack actions, such as the long-press action. */
+	accessibilityActions?: (AccessibilityActionInfo & { onAction: () => void })[];
 	accessibilityLabel?: string;
 	accessibilityHint?: string;
 	style?: StyleProp<ViewStyle>;
@@ -21,6 +25,8 @@ type Props = {
 export function Card({
 	children,
 	onPress,
+	onLongPress,
+	accessibilityActions,
 	accessibilityLabel,
 	accessibilityHint,
 	style,
@@ -40,6 +46,16 @@ export function Card({
 			accessibilityLabel={accessibilityLabel}
 			accessibilityHint={accessibilityHint}
 			onPress={onPress}
+			onLongPress={onLongPress}
+			accessibilityActions={accessibilityActions?.map(({ name, label }) => ({
+				name,
+				label,
+			}))}
+			onAccessibilityAction={(event) =>
+				accessibilityActions
+					?.find((action) => action.name === event.nativeEvent.actionName)
+					?.onAction()
+			}
 			testID={testID}
 			style={({ pressed }) => [styles.card, pressed && styles.pressed, style]}
 		>
