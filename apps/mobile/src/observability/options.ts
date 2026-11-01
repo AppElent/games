@@ -5,6 +5,7 @@
  */
 import type { Messages } from "@arcadeclub/core/messages";
 import type { Breadcrumb, ErrorEvent, Event } from "@sentry/react-native";
+import type { Tokens } from "../theme/tokens";
 
 export type SentryEnvironment = "development" | "preview" | "production";
 
@@ -77,6 +78,17 @@ export const FEEDBACK_OPTIONS = {
 	enableTakeScreenshot: true,
 	showBranding: false,
 } as const;
+
+/** The form in the app's colors instead of Sentry's purple. */
+export function feedbackTheme(colors: Tokens) {
+	return {
+		background: colors.bg,
+		foreground: colors.text,
+		accentBackground: colors.accent,
+		accentForeground: colors.onAccent,
+		border: colors.border,
+	};
+}
 
 /** The form's labels in the player's language. */
 export function feedbackLabels(text: Messages["common"]["feedback"]) {

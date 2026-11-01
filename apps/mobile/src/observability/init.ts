@@ -10,11 +10,13 @@
 import { type Locale, messages } from "@arcadeclub/core/messages";
 import * as Sentry from "@sentry/react-native";
 import * as Updates from "expo-updates";
+import { darkColors, lightColors } from "../theme/tokens";
 import {
 	buildSentryOptions,
 	environmentFromChannel,
 	FEEDBACK_OPTIONS,
 	feedbackLabels,
+	feedbackTheme,
 	sanitizeFeedbackEvent,
 	shouldInitSentry,
 } from "./options";
@@ -34,6 +36,8 @@ export const sentryEnabled = Boolean(
 const feedback = Sentry.feedbackIntegration({
 	...FEEDBACK_OPTIONS,
 	...feedbackLabels(messages.en.common.feedback),
+	themeLight: feedbackTheme(lightColors),
+	themeDark: feedbackTheme(darkColors),
 });
 
 /** Keeps the feedback form in the language the app is showing. */
