@@ -21,7 +21,7 @@ describe("Arcade Club environment routing", () => {
 		expect(ENV_CONFIG.source.paths).toEqual(["/", "/arcade-club"]);
 		expect(ENV_CONFIG.source.environments).toEqual({
 			local: "dev",
-			preview: "dev",
+			preview: "staging",
 			dev: "dev",
 			production: "prod",
 		});
