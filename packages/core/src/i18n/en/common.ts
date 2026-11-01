@@ -37,6 +37,7 @@ export const common = {
 		description:
 			"Describe what happened. A screenshot is optional; remove any personal information before sending.",
 		message: "What happened?",
+		required: "(required)",
 		placeholder: "What happened, and what did you expect?",
 		submit: "Send report",
 		cancel: "Cancel",

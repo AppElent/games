@@ -75,6 +75,7 @@ export const FEEDBACK_OPTIONS = {
 	isEmailRequired: false,
 	enableScreenshot: false,
 	enableTakeScreenshot: true,
+	showBranding: false,
 } as const;
 
 /** The form's labels in the player's language. */
@@ -82,6 +83,7 @@ export function feedbackLabels(text: Messages["common"]["feedback"]) {
 	return {
 		formTitle: text.report,
 		messageLabel: text.message,
+		isRequiredLabel: text.required,
 		messagePlaceholder: text.placeholder,
 		submitButtonLabel: text.submit,
 		cancelButtonLabel: text.cancel,

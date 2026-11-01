@@ -42,6 +42,7 @@ export const common = {
 		description:
 			"Beschrijf wat er gebeurde. Een screenshot is optioneel; haal persoonlijke gegevens weg voordat je verstuurt.",
 		message: "Wat ging er mis?",
+		required: "(verplicht)",
 		placeholder: "Wat gebeurde er, en wat verwachtte je?",
 		submit: "Melding versturen",
 		cancel: "Annuleren",

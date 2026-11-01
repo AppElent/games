@@ -81,6 +81,7 @@ describe("feedback", () => {
 			showName: false,
 			showEmail: false,
 			enableTakeScreenshot: true,
+			showBranding: false,
 		});
 	});
 
@@ -88,6 +89,7 @@ describe("feedback", () => {
 		expect(feedbackLabels(messages.nl.common.feedback)).toMatchObject({
 			formTitle: "Probleem melden",
 			removeScreenshotButtonLabel: "Screenshot verwijderen",
+			isRequiredLabel: "(verplicht)",
 		});
 	});
 
