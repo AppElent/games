@@ -77,14 +77,16 @@ pnpm exec convex run --identity "$ID" sessions:create \
 
 ## Error reporting
 
-Sentry project `appelent/arcadeclub-mobile`, set up in `src/observability/`. Preview and
+Sentry project `appelent/arcadeclub`, set up in `src/observability/`. Preview and
 production builds report errors only, with no user data and no URL query strings. The
 environment is the EAS Update channel. Development bundles do not report, and
 `Sentry.wrap` is skipped, unless `EXPO_PUBLIC_SENTRY_DEBUG=1`.
 
-EAS builds upload source maps through the `@sentry/react-native/expo` plugin. That needs
-a `SENTRY_AUTH_TOKEN` EAS secret (`eas env:create --name SENTRY_AUTH_TOKEN
---visibility secret`). Never put it in `EXPO_PUBLIC_*` or a tracked file.
+EAS builds upload source maps through the `@sentry/react-native/expo` plugin, using the
+`SENTRY_AUTH_TOKEN` secret in the EAS environment. That and every public build value
+come from Infisical through [`env.manifest.ts`](../../env.manifest.ts); see
+[environment.md](environment.md). Never put the token in `EXPO_PUBLIC_*` or a tracked
+file.
 
 ## Checks
 

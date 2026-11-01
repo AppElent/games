@@ -139,7 +139,7 @@ Where this changed from the plan:
 - Web and mobile share one en/nl catalog (`@arcadeclub/core/messages`). Server and
   rule errors carry a message key (`serverErrors.*`), not English text.
 - Sentry reports errors from preview and production builds
-  (`appelent/arcadeclub-mobile`); see the runbook.
+  (`appelent/arcadeclub`); see the runbook.
 - The structure check is `scripts/check-mobile-structure.mjs`, run from `pnpm run check`.
 - CI needed no new jobs: the root `check`/`typecheck`/`test` already include mobile.
   Label-triggered EAS builds are not added. The EAS project `@appelent/arcadeclub` is linked.

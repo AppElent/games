@@ -29,3 +29,7 @@ docs/.generated
 # stray WSL-path directory (accidental worktree copy)
 *wsl.localhost*/
 review-notes/
+
+# Appelent env engine ledger and lock
+.appelent/env-state.json
+.appelent/env.lock/
