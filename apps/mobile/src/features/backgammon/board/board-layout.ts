@@ -68,3 +68,19 @@ export function boardGeometry(width: number, fontScale = 1) {
 }
 
 export type BoardGeometry = ReturnType<typeof boardGeometry>;
+
+/** The widest board, up to `maxWidth`, whose height fits in `maxHeight`. */
+export function fitBoardWidth(
+	maxWidth: number,
+	maxHeight: number,
+	fontScale = 1,
+) {
+	let low = 0;
+	let high = Math.floor(maxWidth);
+	while (low < high) {
+		const mid = Math.ceil((low + high) / 2);
+		if (boardGeometry(mid, fontScale).height <= maxHeight) low = mid;
+		else high = mid - 1;
+	}
+	return low;
+}

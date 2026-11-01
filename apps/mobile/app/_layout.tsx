@@ -26,6 +26,7 @@ import {
 	Stack,
 	ThemeProvider,
 } from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
@@ -43,6 +44,13 @@ import { reportError } from "../src/observability/report";
 import { AppearanceProvider, useAppearance, useTokens } from "../src/theme";
 
 SplashScreen.preventAutoHideAsync();
+// Portrait everywhere; only the backgammon board unlocks it (BoardScreen).
+// iOS starts portrait from the config plugin, Android from this call.
+ScreenOrientation.lockAsync(
+	ScreenOrientation.OrientationLock.PORTRAIT_UP,
+).catch(() => {
+	// Resizable windows (iPad, iPhone Mirroring) may refuse a lock.
+});
 
 /** Deep links into a modal or game still get the tabs beneath them. */
 export const unstable_settings = { anchor: "(tabs)" };

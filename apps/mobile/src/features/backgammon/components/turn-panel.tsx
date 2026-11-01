@@ -1,9 +1,9 @@
 /**
  * Whose turn it is, the dice, what to do next and the turn's actions. Sits
- * under the board in both local and online play.
+ * under the board in portrait and beside it in landscape.
  */
 import type { BackgammonColor } from "@arcadeclub/core/backgammon";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
 	backgammonColors as board,
@@ -14,6 +14,8 @@ import {
 } from "../../../theme";
 import { AppText } from "../../../ui/text";
 import { DiceRow } from "../board/dice-row";
+
+const NARROW_WIDTH = 300;
 
 export function TurnPanel({
 	color,
@@ -31,11 +33,17 @@ export function TurnPanel({
 	children?: ReactNode;
 }) {
 	const styles = useThemedStyles(createStyles);
-	// Doubles give four dice; beside the heading they would squeeze it onto two lines.
-	const diceOwnRow = dice.length > 2;
+	const [narrow, setNarrow] = useState(false);
+	// Beside the heading, doubles (or any dice in a narrow column) would squeeze it onto two lines.
+	const diceOwnRow = dice.length > 2 || (narrow && dice.length > 0);
 	const diceRow = <DiceRow dice={dice} used={used} size={32} />;
 	return (
-		<View style={styles.panel}>
+		<View
+			style={styles.panel}
+			onLayout={(event) =>
+				setNarrow(event.nativeEvent.layout.width < NARROW_WIDTH)
+			}
+		>
 			<View style={styles.head}>
 				<View
 					style={[

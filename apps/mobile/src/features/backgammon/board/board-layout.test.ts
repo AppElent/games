@@ -1,4 +1,9 @@
-import { boardGeometry, boardRows, boardText } from "./board-layout";
+import {
+	boardGeometry,
+	boardRows,
+	boardText,
+	fitBoardWidth,
+} from "./board-layout";
 
 describe("board layout", () => {
 	it("puts the viewer's home board bottom right", () => {
@@ -37,5 +42,12 @@ describe("board layout", () => {
 		const huge = boardText(unit, 3.5);
 		expect(huge.label).toBeLessThanOrEqual(unit * 0.78);
 		expect(huge.count).toBeLessThanOrEqual(unit * 0.5);
+	});
+
+	it("fits the widest board into a height", () => {
+		const width = fitBoardWidth(1000, 350, 1);
+		expect(boardGeometry(width).height).toBeLessThanOrEqual(350);
+		expect(boardGeometry(width + 1).height).toBeGreaterThan(350);
+		expect(fitBoardWidth(300, 1000)).toBe(300);
 	});
 });
