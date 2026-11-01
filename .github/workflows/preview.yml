@@ -46,8 +46,8 @@ jobs:
       # $CONVEX_URL inside --cmd, then runs the build (bridge CONVEX_URL ->
       # VITE_CONVEX_URL since the app reads the Vite-prefixed var at build
       # time). VITE_SENTRY_ENVIRONMENT tags browser reports as preview, like the
-      # Worker's environment_name. No seed function exists yet, so --preview-run
-      # is omitted.
+      # Worker's environment_name. No --preview-run seed: the games need no
+      # reference data (quiz.ensureSampleSet creates the sample quiz on demand).
       - name: Convex preview deploy + build
         run: |
           pnpm exec convex deploy \
