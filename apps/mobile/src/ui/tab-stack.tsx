@@ -6,6 +6,10 @@ import { Stack } from "expo-router";
 import { Platform } from "react-native";
 import { useTokens } from "../theme";
 
+/** iOS 26+ draws its own scroll-edge glass under the header; a blur on top doubles it. */
+const NEEDS_HEADER_BLUR =
+	Platform.OS === "ios" && Number.parseInt(String(Platform.Version), 10) < 26;
+
 export function TabStack({ title }: { title: string }) {
 	const colors = useTokens();
 	return (
@@ -18,7 +22,9 @@ export function TabStack({ title }: { title: string }) {
 					? {
 							headerLargeTitle: true,
 							headerTransparent: true,
-							headerBlurEffect: "systemChromeMaterial",
+							headerBlurEffect: NEEDS_HEADER_BLUR
+								? "systemChromeMaterial"
+								: undefined,
 							headerLargeStyle: { backgroundColor: "transparent" },
 							headerLargeTitleStyle: { color: colors.text },
 							headerTitleStyle: { color: colors.text },
