@@ -87,8 +87,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	});
 
 	useEffect(() => {
-		if (typeof window === "undefined" || !("serviceWorker" in navigator))
-			return;
+		// `pnpm build` generates /sw.js; the dev server has none.
+		if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
 		navigator.serviceWorker.register("/sw.js").catch(() => {
 			// non-fatal: app still works without offline/installable support
 		});
