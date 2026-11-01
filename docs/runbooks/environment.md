@@ -50,8 +50,8 @@ Some placements are produced by tools, not copied from Infisical:
 `pnpm env:apply preview` writes the preview workflow's GitHub values: secrets for
 `SENTRY_AUTH_TOKEN` and `CLOUDFLARE_*`, and repo variables for the public values. The
 Clerk key keeps its workflow name, `PREVIEW_CLERK_PUBLISHABLE_KEY`. The test-user
-email and password (`VITE_TEST_USER_*`, for the PR preview's test-login button) are
-public client values (Vite and Metro inline them) and never land in production.
+email and password are public client values (Vite and Metro inline them) and land only
+in local and dev builds.
 
 Existing hand-written `.env.local` files stay untouched; apply refuses to overwrite a
 file without the generated marker. The engine records only variable names in

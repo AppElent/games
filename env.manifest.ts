@@ -301,11 +301,11 @@ export const ENTRIES = [
 		lands: {
 			"vite-build": {
 				name: "VITE_TEST_USER_EMAIL",
-				environments: ["local", "preview", "dev"],
+				environments: ["local", "dev"],
 			},
 			"expo-build": {
 				name: "EXPO_PUBLIC_TEST_USER_EMAIL",
-				environments: ["local", "preview", "dev"],
+				environments: ["local", "dev"],
 			},
 			"expo-local": {
 				name: "EXPO_PUBLIC_TEST_USER_EMAIL",
@@ -322,11 +322,11 @@ export const ENTRIES = [
 		lands: {
 			"vite-build": {
 				name: "VITE_TEST_USER_PASSWORD",
-				environments: ["local", "preview", "dev"],
+				environments: ["local", "dev"],
 			},
 			"expo-build": {
 				name: "EXPO_PUBLIC_TEST_USER_PASSWORD",
-				environments: ["local", "preview", "dev"],
+				environments: ["local", "dev"],
 			},
 			"expo-local": {
 				name: "EXPO_PUBLIC_TEST_USER_PASSWORD",
