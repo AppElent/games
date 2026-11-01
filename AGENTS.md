@@ -26,6 +26,8 @@ pnpm run test:watch       # vitest
 pnpm exec vitest run <path>   # run a single test file
 pnpm run check             # biome check (lint + format check)
 pnpm run lint:fix          # biome check --write
+# pre-commit (lefthook, installed by pnpm install) runs biome check --staged;
+# bypass with git commit --no-verify or LEFTHOOK=0
 pnpm run build
 pnpm run deploy:dev        # convex dev --once, build the games-dev Worker (CLOUDFLARE_ENV=dev), wrangler deploy
 pnpm run deploy:prod       # production from this machine, values from Infisical (= `pnpm run deploy`); CI does this on merge
@@ -67,4 +69,4 @@ Validators and system fields: <https://docs.convex.dev/database/types>. Use `def
 - `.claude/hooks/session-start.mjs` — SessionStart hook: runs `pnpm install` once per fresh container, logs the current branch.
 - `.github/workflows/ci.yml` — the quality gate (`check`, `typecheck`, `test`, `build`) on PRs; the `main` ruleset requires its `check` job and a PR for every change; `.github/workflows/deploy.yml` — a push to `main` (or "Run workflow") reruns CI, then deploys production Convex and the `games` Worker, using the `production` GitHub Environment written by `pnpm env:apply production`, then publishes the preview app's OTA update when an installed build can load it (`apps/mobile/scripts/ci-publish-update.mjs`, needs repo secret `EXPO_TOKEN`); `.github/workflows/preview.yml` — per-PR Convex + Cloudflare Worker preview, secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CONVEX_DEPLOY_KEY`, `SENTRY_AUTH_TOKEN` and variables `PREVIEW_CLERK_PUBLISHABLE_KEY`, `VITE_SENTRY_DSN`, all written by `pnpm env:apply preview` except `CONVEX_DEPLOY_KEY`. PR previews start from an empty Convex backend, which needs no seed: the only reference data, the sample quiz, is created on demand by `quiz.ensureSampleSet`.
 - `.github/workflows/mobile-runtime.yml` comments on each mobile PR whether it changes the runtime fingerprint; `mobile-build.yml` + `eas-local-build.yml` build the app on a runner (`eas build --local`) for PRs labelled `build:ios`/`build:android` or a manual run — see `docs/runbooks/mobile.md`.
-- `appelent.json` holds the workspace policy that `node scripts/workspace.mjs` reads (see `docs/standards/workspaces.md`) and the opted-in feature list.
+- `appelent.json` holds the workspace policy that `node scripts/workspace.mjs` reads (see `docs/standards/workspaces.md`).

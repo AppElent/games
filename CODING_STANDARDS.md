@@ -17,6 +17,7 @@ Read only what the task needs; never preload every standard.
 | --- | --- |
 | Adding, moving, or naming native files | [Mobile structure](docs/standards/mobile-structure.md) |
 | Repository, package manager, formatter, types, tests, CI, or toolkit sync | [Baseline](docs/standards/baseline.md) |
+| Top-level folders, workspace packages, or shared code between web, Convex, and mobile | [Repository layout](docs/standards/repo-layout.md) |
 | Dependabot or automated dependency PRs | [Dependency updates](docs/standards/dependency-updates.md) |
 | Web app stack, UI states, or browser capabilities | [Web baseline](docs/standards/web-baseline.md) |
 | Expo setup, native configuration, builds, or releases | [Mobile baseline](docs/standards/mobile-baseline.md) |
@@ -25,6 +26,7 @@ Read only what the task needs; never preload every standard.
 | Environment variables and secrets | [Environments](docs/standards/environments.md) |
 | Worktrees and isolated backends | [Workspaces](docs/standards/workspaces.md) |
 | Authentication | [Auth](docs/standards/auth.md) |
+| Convex functions, schema, migrations, seeds, tests, or account deletion and export | [Convex backend](docs/standards/convex.md) |
 | Convex query reads, subscription retention, or local read caches | [Convex query caching](docs/standards/convex-query-caching.md) |
 | Localization | [i18n](docs/standards/i18n.md) |
 | Error reporting and source maps | [Sentry monitoring](docs/standards/sentry-monitoring.md) |
@@ -61,8 +63,11 @@ verification facts live in the [mobile runbook](docs/runbooks/mobile.md).
 
 | Rule | Scope | Replacement | Reason |
 | --- | --- | --- | --- |
-| Auth web examples ([auth](docs/standards/auth.md)) | `src/lib/auth` | Clerk Core 3 (`@clerk/react`): the signal API with `finalize()`, `<Show when>`. Foundry's port is the reference. | The standard's web examples are still on deprecated `@clerk/clerk-react` 5. Drop this row once they move to Core 3. |
+| Auth web examples ([auth](docs/standards/auth.md)) | `src/lib/auth` | Clerk Core 3 (`@clerk/react`): the signal API with `finalize()`, `<Show when>`. Foundry's port is the reference. | The standard's `auth/examples/web` files still import deprecated `@clerk/clerk-react` 5 (only the i18n example has moved). Drop this row once they move to Core 3. |
 | React version | Web and mobile | Web pins the exact React that the Expo SDK requires on mobile (19.3.0); bump both with the Expo SDK. | One React in the workspace. Dependabot already leaves `react`/`react-dom` to Expo upgrades. |
+| Biome fragment ([baseline](docs/standards/baseline.md)) | `apps/mobile` | No `noReactNativeRawText`; `scripts/check-mobile-structure.mjs` reports literal UI text instead. The query-hook import ban covers all of `apps/mobile`, tests included, except `query-cache.tsx`. | Biome 2.4.5 has no such rule. Enable it with the next Biome upgrade. |
+| CI template ([baseline](docs/standards/baseline.md)) | `.github/workflows/ci.yml` | Job `check`, triggered by `pull_request` and `workflow_call` instead of `push`; one `typecheck` and one `test` step, Node `22`. | The `main` ruleset requires `check`; `deploy.yml` reruns CI on main before shipping; root scripts already filter into core and mobile. |
+| Cooldown exemption ([baseline](docs/standards/baseline.md)) | `pnpm-workspace.yaml` | `@appelent/*` is permanently exempt from `minimumReleaseAge`, without a date. | Our own registry packages. |
 | CI update publish ([mobile distribution](docs/standards/mobile-distribution.md)) | `preview` channel | `deploy.yml` publishes after the production deploy. Production updates stay manual (`pnpm mobile:update:production`). | Preview is the daily driver and calls the production backend. |
 
 ### Deferred

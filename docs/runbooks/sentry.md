@@ -46,7 +46,11 @@ pnpm sentry:convex --prod
 pnpm sentry:convex --deployment zany-parakeet-507
 ```
 
-It needs Convex CLI auth and an always-on host, which isn't provisioned yet. It replays
-the last 100 entries on restart and deduplicates by a stable event id; it has no
-durable queue. Run one reader per deployment, and stop it if you adopt managed
+The script is the toolkit's forwarder
+([sentry-monitoring setup](../standards/sentry-monitoring/setup.md)), copied unchanged.
+Set `SENTRY_CONVEX_DSN` to the public project DSN (the same value as `VITE_SENTRY_DSN`,
+Infisical `sentry-dsn`); the `app` tag defaults to `arcadeclub-convex` from the package
+name. It needs Convex CLI auth and an always-on host, which isn't provisioned yet. It
+replays the last 100 entries on restart, skips failures Convex will retry, and
+deduplicates by a stable event id; it has no durable queue. Run one reader per deployment, and stop it if you adopt managed
 reporting.
