@@ -17,6 +17,11 @@ version: 1.0.0
 `apps/mobile/app.config.ts` maps the variant; `eas.json` sets it per profile. EAS
 project: `@appelent/arcadeclub` (id in `app.json`).
 
+Preview and development builds carry a blue PREVIEW or orange DEV label on the
+icon. After changing `assets/icon.png` or `assets/adaptive-icon.png`, regenerate
+the labelled copies with `swift apps/mobile/scripts/badge-icons.swift` (macOS).
+Icon changes need a new build; an EAS Update can't change the home-screen icon.
+
 ## Environment
 
 `apps/mobile/.env.local` (template: `apps/mobile/.env.example`):
