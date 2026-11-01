@@ -92,6 +92,7 @@ describe("Arcade Club environment routing", () => {
 				"CONVEX_DEPLOY_KEY",
 				"CLOUDFLARE_API_TOKEN",
 				"CLOUDFLARE_ACCOUNT_ID",
+				"EXPO_TOKEN",
 			]),
 		);
 	});
@@ -136,7 +137,7 @@ describe("Arcade Club environment routing", () => {
 	});
 
 	it("gives every logical value a unique evidenced source name", () => {
-		expect(ENTRIES).toHaveLength(12);
+		expect(ENTRIES).toHaveLength(13);
 		const sourceNames = ENTRIES.map((entry) => entry.infisicalKey);
 		expect(new Set(sourceNames).size).toBe(sourceNames.length);
 		expect(sourceNames).not.toEqual(

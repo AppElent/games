@@ -73,6 +73,17 @@ To install the preview app next to the dev app on an iPhone, build `preview-inte
 runs against production Clerk and Convex, so it only sees Convex changes once they're
 deployed to production.
 
+### CI builds
+
+The **Mobile Build** workflow runs `eas build --local` on a GitHub runner, so it spends
+no EAS Build credits. Add the `build:ios` or `build:android` label to a PR to build the
+`development` profile on every push while the label stays, or start it from the Actions
+tab with a platform and profile (`development` or `preview-internal`). The `.ipa`/`.apk`
+is a workflow artifact for 14 days. It uses the `EXPO_TOKEN` repo secret (Infisical
+`expo-token`, written by `pnpm env:apply preview --only github`) and skips the Sentry
+source-map upload; builds you ship stay on EAS cloud builds. For an iPhone, an EAS cloud
+build is still the easiest install: its build page has an install QR code.
+
 ### Over-the-air updates
 
 Ship JS-only changes to installed builds without rebuilding:

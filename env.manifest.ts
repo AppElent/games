@@ -370,6 +370,17 @@ export const ENTRIES = [
 		},
 	},
 	{
+		key: "expoToken",
+		infisicalKey: "expo-token",
+		description:
+			"Expo access token for `eas build --local` in the opt-in Mobile Build workflow (expo.dev → Access tokens).",
+		optional: true,
+		secret: true,
+		lands: {
+			workflow: { name: "EXPO_TOKEN", environments: ["preview"] },
+		},
+	},
+	{
 		key: "cloudflareAccountId",
 		infisicalKey: "cloudflare-account-id",
 		description: "Cloudflare account identifier used by CI.",
