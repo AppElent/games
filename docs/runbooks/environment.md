@@ -9,7 +9,7 @@ The app has four environments:
 | Environment | Web | Convex | EAS |
 | --- | --- | --- | --- |
 | `local` | `pnpm dev`, `.env.local` | local backend (`convex dev`) | `development` |
-| `preview` | Worker `games-pr-<n>` | `eric-jansen:games` preview | `preview` |
+| `preview` | Worker `games-pr-<n>` | `eric-jansen:games` preview (web); `chatty-ram-217` (iOS app) | `preview` |
 | `dev` | Worker `games-dev` | `zany-parakeet-507` | `development` |
 | `production` | Worker `games` | `chatty-ram-217` | `production` |
 
@@ -17,9 +17,13 @@ The app has four environments:
 
 Values live in the shared Infisical project (`.infisical.json` holds only its id). The
 lookup order is `/`, then `/arcade-club`; a value in the app folder overrides the root.
-`local`, `preview` and `dev` read the Infisical `dev` environment, `production` reads
-`prod`. `/arcade-club` holds the app's own values: `sentry-dsn`, `sentry-auth-token`,
-`convex-url` and `web-origin`.
+`local` and `dev` read the Infisical `dev` environment, `preview` reads `staging` and
+`production` reads `prod`, as in the other Appelent apps. `staging` carries the production
+Clerk instance, so PR web previews and the preview iOS app sign in against prod Clerk;
+the iOS app also talks to the production Convex deployment and web origin
+(`staging /arcade-club` holds the prod values), while each web preview gets its own
+Convex preview deployment. `/arcade-club` holds the app's own values: `sentry-dsn`,
+`sentry-auth-token`, `convex-url` and `web-origin`.
 
 Static commands need no Infisical login:
 

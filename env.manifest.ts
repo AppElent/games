@@ -12,7 +12,7 @@ export const ENV_CONFIG = {
 	source: {
 		environments: {
 			local: "dev",
-			preview: "dev",
+			preview: "staging",
 			dev: "dev",
 			production: "prod",
 		},

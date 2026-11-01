@@ -64,7 +64,9 @@ interactively so EAS can sign in to Apple and create the provisioning profile; a
 `pnpm exec expo start --dev-client` on the same network.
 
 To install the preview app next to the dev app on an iPhone, build `preview-internal`
-(ad-hoc, `com.appelent.arcadeclub.preview`) and open the build page on the phone. Ship
+(ad-hoc, `com.appelent.arcadeclub.preview`) and open the build page on the phone. It
+runs against production Clerk and Convex, so it only sees Convex changes once they're
+deployed to production. Ship
 JS-only changes to installed preview builds without rebuilding:
 
 ```bash
