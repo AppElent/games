@@ -2,6 +2,8 @@
  * One Classic or Killer puzzle in play: board history, entry mode, hint,
  * clock and status, written back to the save store on every change.
  */
+
+import { parseGrid } from "@arcadeclub/core/sudoku";
 import {
 	applyAction,
 	boardConflicts,
@@ -58,6 +60,7 @@ export function useSudokuGame(save: GridSave) {
 
 	const board = history.current;
 	const cages = save.cages;
+	const solution = useMemo(() => parseGrid(save.solution), [save.solution]);
 
 	const persist = useCallback(() => {
 		writeSudokuSave({
@@ -203,11 +206,14 @@ export function useSudokuGame(save: GridSave) {
 			setHintLevel((level) => (level < 3 ? ((level + 1) as 2 | 3) : level));
 			return;
 		}
-		const found = findHint(effectiveGrid(history.current));
+		const found = findHint(effectiveGrid(history.current), {
+			solution,
+			givens: history.current.givens,
+		});
 		setHint(found);
 		setHintLevel(1);
 		setNoHint(!found);
-	}, [hint, history]);
+	}, [hint, history, solution]);
 
 	const hintCells = useMemo(() => {
 		if (!hint || hintLevel === 1) return undefined;

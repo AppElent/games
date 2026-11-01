@@ -1,3 +1,4 @@
+import type { sudoku as sudokuCopy } from "./i18n/en/games/sudoku";
 import type { SudokuGrid } from "./sudoku";
 import {
 	boxOf,
@@ -5,6 +6,7 @@ import {
 	computeCandidates,
 	digitMask,
 	digitsInMask,
+	findConflicts,
 	maskHasDigit,
 	maskSize,
 	rowOf,
@@ -15,9 +17,27 @@ import {
 
 export type HintTechniqueLevel = "beginner" | "intermediate" | "advanced";
 
+type UnitKind = "row" | "column" | "box";
+type HintUnit = { kind: UnitKind; index: number };
+
+/**
+ * What a hint is about. `describeHint` turns it into localized text; the
+ * engine itself has no prose.
+ */
+export type HintTechnique =
+	| "mistake"
+	| "naked-single"
+	| "hidden-single"
+	| "pointing"
+	| "box-line-reduction"
+	| "naked-pair"
+	| "naked-triple"
+	| "hidden-pair"
+	| "hidden-triple"
+	| "snyder-pair";
+
 export type SudokuHint = {
-	technique: string;
-	title: string;
+	technique: HintTechnique;
 	level: HintTechniqueLevel;
 	/** Cells the technique reasons about. */
 	cells: number[];
@@ -27,12 +47,10 @@ export type SudokuHint = {
 	eliminations: { cell: number; digits: number[] }[];
 	/** Direct placements the technique justifies. */
 	placements: { cell: number; digit: number }[];
-	/** Level 1: subtle nudge — where to look, no technique named. */
-	nudge: string;
-	/** Level 2: names the technique and the region. */
-	direction: string;
-	/** Level 3: full explanation with explicit cells/candidates. */
-	explanation: string;
+	/** The region the text names; `line` and `box` for the box/line techniques. */
+	unit?: HintUnit;
+	line?: HintUnit;
+	box?: number;
 };
 
 export type TechniqueDetector = {
@@ -42,23 +60,7 @@ export type TechniqueDetector = {
 	detect: (grid: SudokuGrid, candidates: number[]) => SudokuHint | null;
 };
 
-function cellName(cell: number) {
-	return `R${rowOf(cell) + 1}C${colOf(cell) + 1}`;
-}
-
-function listCells(cells: number[]) {
-	return cells.map(cellName).join(", ");
-}
-
-function listDigits(digits: number[]) {
-	return digits.join(", ");
-}
-
-type UnitRef = {
-	kind: "row" | "column" | "box";
-	index: number;
-	cells: readonly number[];
-};
+type UnitRef = HintUnit & { cells: readonly number[] };
 
 function allUnits(): UnitRef[] {
 	const units: UnitRef[] = [];
@@ -68,10 +70,6 @@ function allUnits(): UnitRef[] {
 		units.push({ kind: "box", index: i, cells: SUDOKU_BOXES[i] });
 	}
 	return units;
-}
-
-function unitName(unit: UnitRef) {
-	return `${unit.kind} ${unit.index + 1}`;
 }
 
 // --- detectors ---
@@ -88,15 +86,12 @@ const nakedSingle: TechniqueDetector = {
 			const digit = digitsInMask(candidates[cell])[0];
 			return {
 				technique: "naked-single",
-				title: "Naked single",
 				level: "beginner",
 				cells: [cell],
 				candidateDigits: [digit],
 				eliminations: [],
 				placements: [{ cell, digit }],
-				nudge: `Take a close look at ${cellName(cell)} — how many digits can still go there?`,
-				direction: `There is a naked single in row ${rowOf(cell) + 1}: a cell where every digit but one is ruled out.`,
-				explanation: `${cellName(cell)} has only one remaining candidate: ${digit}. Every other digit already appears in its row, column, or box, so ${digit} must go there.`,
+				unit: { kind: "row", index: rowOf(cell) },
 			};
 		}
 		return null;
@@ -120,21 +115,14 @@ const hiddenSingle: TechniqueDetector = {
 				if (maskSize(candidates[cell]) === 1) {
 					continue; // covered by naked single
 				}
-				const crossHatch =
-					unit.kind === "box"
-						? " Cross-hatching the box (scanning the rows and columns that pass through it) shows this."
-						: "";
 				return {
 					technique: "hidden-single",
-					title: "Hidden single",
 					level: "beginner",
 					cells: [cell],
 					candidateDigits: [digit],
 					eliminations: [],
 					placements: [{ cell, digit }],
-					nudge: `Scan ${unitName(unit)} — one digit has only a single home left there.`,
-					direction: `There is a hidden single for ${digit} in ${unitName(unit)}. Cross-hatch to find the only cell that can take it.`,
-					explanation: `Within ${unitName(unit)}, the digit ${digit} can only be placed in ${cellName(cell)} — every other cell is blocked by an existing ${digit} in its row, column, or box.${crossHatch}`,
+					unit: { kind: unit.kind, index: unit.index },
 				};
 			}
 		}
@@ -162,9 +150,6 @@ function findPointing(
 			const line = sameRow
 				? SUDOKU_ROWS[rowOf(spots[0])]
 				: SUDOKU_COLS[colOf(spots[0])];
-			const lineLabel = sameRow
-				? `row ${rowOf(spots[0]) + 1}`
-				: `column ${colOf(spots[0]) + 1}`;
 			const eliminations = line
 				.filter(
 					(cell) =>
@@ -176,18 +161,17 @@ function findPointing(
 			if (eliminations.length === 0) {
 				continue;
 			}
-			const kind = spots.length === 2 ? "pair" : "triple";
 			return {
 				technique: "pointing",
-				title: `Pointing ${kind}`,
 				level: "intermediate",
 				cells: spots,
 				candidateDigits: [digit],
 				eliminations,
 				placements: [],
-				nudge: `Look at where ${digit} can go inside box ${box + 1} — notice anything about the shape?`,
-				direction: `Box ${box + 1} has a pointing ${kind}: all its ${digit} candidates share ${lineLabel}, which constrains the rest of that line.`,
-				explanation: `In box ${box + 1}, the digit ${digit} is confined to ${listCells(spots)}, all in ${lineLabel}. Wherever it lands, ${lineLabel} gets its ${digit} from this box — so ${digit} can be removed from ${listCells(eliminations.map((e) => e.cell))}.`,
+				line: sameRow
+					? { kind: "row", index: rowOf(spots[0]) }
+					: { kind: "column", index: colOf(spots[0]) },
+				box,
 			};
 		}
 	}
@@ -236,15 +220,13 @@ const boxLineReduction: TechniqueDetector = {
 				}
 				return {
 					technique: "box-line-reduction",
-					title: "Box-line reduction",
 					level: "intermediate",
 					cells: spots,
 					candidateDigits: [digit],
 					eliminations,
 					placements: [],
-					nudge: `Check where ${digit} can go in ${unitName(line)} — the options cluster together.`,
-					direction: `${unitName(line)} allows box-line reduction: its ${digit} candidates all sit in box ${box + 1}.`,
-					explanation: `In ${unitName(line)}, the digit ${digit} can only go in ${listCells(spots)}, all inside box ${box + 1}. The box must take its ${digit} from that line, so ${digit} can be removed from ${listCells(eliminations.map((e) => e.cell))}.`,
+					line: { kind: line.kind, index: line.index },
+					box,
 				};
 			}
 		}
@@ -295,15 +277,12 @@ function findNakedSet(
 			}
 			return {
 				technique: `naked-${label}`,
-				title: `Naked ${label}`,
 				level: "intermediate",
 				cells: combo,
 				candidateDigits: digits,
 				eliminations,
 				placements: [],
-				nudge: `Compare the candidate lists in ${unitName(unit)} — some cells share exactly the same few digits.`,
-				direction: `${unitName(unit)} contains a naked ${label}: ${size} cells that only allow the same ${size} digits.`,
-				explanation: `In ${unitName(unit)}, the cells ${listCells(combo)} only allow the digits ${listDigits(digits)}. Those digits must occupy exactly those cells, so they can be removed from every other cell in the ${unit.kind}.`,
+				unit: { kind: unit.kind, index: unit.index },
 			};
 		}
 	}
@@ -349,15 +328,12 @@ function findHiddenSet(
 			}
 			return {
 				technique: `hidden-${label}`,
-				title: `Hidden ${label}`,
 				level: "intermediate",
 				cells,
 				candidateDigits: combo,
 				eliminations,
 				placements: [],
-				nudge: `In ${unitName(unit)}, track where ${listDigits(combo)} can still go — the options overlap.`,
-				direction: `${unitName(unit)} hides a ${label}: the digits ${listDigits(combo)} fit only in the same ${size} cells.`,
-				explanation: `In ${unitName(unit)}, the digits ${listDigits(combo)} can only be placed in ${listCells(cells)}. Those cells are reserved for them, so all other candidates can be removed from those cells.`,
+				unit: { kind: unit.kind, index: unit.index },
 			};
 		}
 	}
@@ -412,15 +388,12 @@ const snyderSuggestion: TechniqueDetector = {
 				}
 				return {
 					technique: "snyder-pair",
-					title: "Snyder notation",
 					level: "beginner",
 					cells: spots,
 					candidateDigits: [digit],
 					eliminations: [],
 					placements: [],
-					nudge: `Box ${box + 1} is worth annotating — one digit is down to two spots.`,
-					direction: `Use Snyder notation in box ${box + 1}: mark the two possible cells for ${digit} with corner notes.`,
-					explanation: `In box ${box + 1}, the digit ${digit} can only go in ${listCells(spots)}. Mark both with a corner note ${digit} — when one is ruled out later, the other becomes a certain placement.`,
+					box,
 				};
 			}
 		}
@@ -444,12 +417,51 @@ export const SUDOKU_TECHNIQUES: readonly TechniqueDetector[] = [
 	snyderSuggestion,
 ];
 
+/**
+ * A digit the player placed that is wrong: one that differs from the
+ * solution when it is known, else one that clashes with another digit.
+ * Every technique assumes a correct grid, so this comes first.
+ */
+function findMistake(
+	grid: SudokuGrid,
+	{ solution, givens }: HintOptions,
+): SudokuHint | null {
+	const placed = (cell: number) => grid[cell] !== 0 && !givens?.[cell];
+	const wrong = solution
+		? grid.findIndex((value, cell) => placed(cell) && value !== solution[cell])
+		: [...findConflicts(grid)].sort((a, b) => a - b).find(placed);
+	if (wrong === undefined || wrong < 0) {
+		return null;
+	}
+	return {
+		technique: "mistake",
+		level: "beginner",
+		cells: [wrong],
+		candidateDigits: [grid[wrong]],
+		eliminations: [],
+		placements: [],
+		unit: { kind: "row", index: rowOf(wrong) },
+	};
+}
+
+export type HintOptions = {
+	/** The solved grid, when the client has it. */
+	solution?: SudokuGrid;
+	/** Non-zero for the puzzle's own digits, which are never the mistake. */
+	givens?: SudokuGrid;
+	detectors?: readonly TechniqueDetector[];
+};
+
 export function findHint(
 	grid: SudokuGrid,
-	detectors: readonly TechniqueDetector[] = SUDOKU_TECHNIQUES,
+	options: HintOptions = {},
 ): SudokuHint | null {
+	const mistake = findMistake(grid, options);
+	if (mistake) {
+		return mistake;
+	}
 	const candidates = computeCandidates(grid);
-	for (const detector of detectors) {
+	for (const detector of options.detectors ?? SUDOKU_TECHNIQUES) {
 		const hint = detector.detect(grid, candidates);
 		if (hint) {
 			return hint;
@@ -458,12 +470,74 @@ export function findHint(
 	return null;
 }
 
-export function hintTextForLevel(hint: SudokuHint, level: 1 | 2 | 3) {
-	if (level === 1) {
-		return hint.nudge;
+export type SudokuHintCopy = typeof sudokuCopy.hints;
+
+/** Fill {name} placeholders. */
+function fill(template: string, values: Record<string, string | number>) {
+	return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+		key in values ? String(values[key]) : match,
+	);
+}
+
+/**
+ * A hint's title and the text for a level: 1 says where to look, 2 names the
+ * technique and region, 3 explains it cell by cell.
+ */
+export function describeHint(
+	hint: SudokuHint,
+	level: 1 | 2 | 3,
+	copy: SudokuHintCopy,
+) {
+	const cell = (index: number) =>
+		fill(copy.cell, { row: rowOf(index) + 1, col: colOf(index) + 1 });
+	const unit = (ref: HintUnit) => fill(copy[ref.kind], { n: ref.index + 1 });
+	const size = hint.technique === "mistake" ? 1 : hint.cells.length;
+	const values = {
+		cell: cell(hint.cells[0]),
+		cells: hint.cells.map(cell).join(", "),
+		digit: hint.candidateDigits[0],
+		digits: hint.candidateDigits.join(", "),
+		eliminated: hint.eliminations.map((entry) => cell(entry.cell)).join(", "),
+		unit: hint.unit ? unit(hint.unit) : "",
+		line: hint.line ? unit(hint.line) : "",
+		box: hint.box === undefined ? "" : unit({ kind: "box", index: hint.box }),
+		set: size === 2 ? copy.pair : copy.triple,
+		size,
+	};
+	const text = techniqueCopy(hint, copy);
+	const body =
+		level === 1 ? text.nudge : level === 2 ? text.direction : text.explanation;
+	const crossHatch =
+		level === 3 &&
+		hint.technique === "hidden-single" &&
+		hint.unit?.kind === "box"
+			? copy.hiddenSingle.crossHatch
+			: "";
+	return {
+		title: fill(text.title, values),
+		text: fill(body, values) + crossHatch,
+	};
+}
+
+function techniqueCopy(hint: SudokuHint, copy: SudokuHintCopy) {
+	switch (hint.technique) {
+		case "mistake":
+			return copy.mistake;
+		case "naked-single":
+			return copy.nakedSingle;
+		case "hidden-single":
+			return copy.hiddenSingle;
+		case "pointing":
+			return copy.pointing;
+		case "box-line-reduction":
+			return copy.boxLine;
+		case "naked-pair":
+		case "naked-triple":
+			return copy.nakedSet;
+		case "hidden-pair":
+		case "hidden-triple":
+			return copy.hiddenSet;
+		case "snyder-pair":
+			return copy.snyder;
 	}
-	if (level === 2) {
-		return hint.direction;
-	}
-	return hint.explanation;
 }

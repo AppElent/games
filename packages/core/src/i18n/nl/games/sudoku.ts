@@ -1,6 +1,83 @@
 import type { sudoku as enSudoku } from "../../en/games/sudoku";
 
 export const sudoku = {
+	hints: {
+		cell: "R{row}K{col}",
+		row: "rij {n}",
+		column: "kolom {n}",
+		box: "blok {n}",
+		pair: "paar",
+		triple: "drietal",
+		mistake: {
+			title: "Fout",
+			nudge: "Er klopt iets niet op het bord. Kijk nog eens naar {unit}.",
+			direction: "Een van je cijfers is fout: controleer {cell}.",
+			explanation:
+				"De {digit} in {cell} hoort daar niet. Wis hem en vraag dan om de volgende stap.",
+		},
+		nakedSingle: {
+			title: "Naakte single",
+			nudge: "Kijk goed naar {cell}. Hoeveel cijfers kunnen daar nog?",
+			direction:
+				"Er is een naakte single in {unit}: een vakje waar alle cijfers op één na zijn uitgesloten.",
+			explanation:
+				"In {cell} kan nog maar één cijfer: {digit}. Alle andere cijfers staan al in de rij, de kolom of het blok, dus daar komt een {digit}.",
+		},
+		hiddenSingle: {
+			title: "Verborgen single",
+			nudge: "Bekijk {unit}: één cijfer heeft daar nog maar één plek.",
+			direction:
+				"Er is een verborgen single voor {digit} in {unit}. Streep rijen en kolommen weg om het enige vakje te vinden.",
+			explanation:
+				"Binnen {unit} kan de {digit} alleen in {cell}: elk ander vakje ziet al een {digit} in zijn rij, kolom of blok.",
+			crossHatch:
+				" Dat zie je door de rijen en kolommen die door het blok lopen weg te strepen.",
+		},
+		pointing: {
+			title: "Wijzend {set}",
+			nudge: "Kijk waar de {digit} in {box} kan. Valt je iets op aan de vorm?",
+			direction:
+				"Er is een wijzend {set} in {box}: alle kandidaten voor {digit} liggen in {line}, en dat beperkt de rest van die lijn.",
+			explanation:
+				"In {box} kan de {digit} alleen in {cells}, allemaal in {line}. Waar hij ook komt, {line} krijgt zijn {digit} uit dit blok, dus de {digit} valt af in {eliminated}.",
+		},
+		boxLine: {
+			title: "Blok-lijnreductie",
+			nudge:
+				"Kijk waar de {digit} in {line} kan. De mogelijkheden liggen dicht bij elkaar.",
+			direction:
+				"Blok-lijnreductie in {line}: alle kandidaten voor {digit} liggen in {box}.",
+			explanation:
+				"In {line} kan de {digit} alleen in {cells}, allemaal binnen {box}. Het blok moet zijn {digit} dus uit die lijn halen, en de {digit} valt af in {eliminated}.",
+		},
+		nakedSet: {
+			title: "Naakt {set}",
+			nudge:
+				"Vergelijk de kandidaten in {unit}. Sommige vakjes delen precies dezelfde paar cijfers.",
+			direction:
+				"Er is een naakt {set} in {unit}: {size} vakjes die alleen dezelfde {size} cijfers toelaten.",
+			explanation:
+				"In {unit} laten de vakjes {cells} alleen {digits} toe. Die cijfers moeten precies in die vakjes, dus ze vallen af in alle andere vakjes van {unit}.",
+		},
+		hiddenSet: {
+			title: "Verborgen {set}",
+			nudge:
+				"Volg in {unit} waar {digits} nog kunnen. De mogelijkheden overlappen.",
+			direction:
+				"Er is een verborgen {set} in {unit}: {digits} passen alleen in dezelfde {size} vakjes.",
+			explanation:
+				"In {unit} kunnen {digits} alleen in {cells}. Die vakjes zijn voor hen gereserveerd, dus alle andere kandidaten vallen daar af.",
+		},
+		snyder: {
+			title: "Snyder-notatie",
+			nudge:
+				"Het loont om aantekeningen te maken: in {box} heeft één cijfer nog maar twee plekken.",
+			direction:
+				"Gebruik Snyder-notatie in {box}: zet een hoeknotitie {digit} in de twee vakjes waar hij kan.",
+			explanation:
+				"In {box} kan de {digit} alleen in {cells}. Zet in allebei een hoeknotitie {digit}. Valt er later één af, dan weet je de andere zeker.",
+		},
+	},
 	saved: {
 		empty: "Puzzels die je start verschijnen hier, zodat je later verder kunt.",
 		solved: "Opgelost in {time}",

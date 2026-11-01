@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { sudoku as en } from "../i18n/en/games/sudoku";
+import { sudoku as nl } from "../i18n/nl/games/sudoku";
 import {
 	cellAt,
 	emptyGrid,
@@ -6,14 +8,14 @@ import {
 	mulberry32,
 	parseGrid,
 } from "../sudoku";
-import { findHint, hintTextForLevel, SUDOKU_TECHNIQUES } from "../sudoku-hints";
+import { describeHint, findHint, SUDOKU_TECHNIQUES } from "../sudoku-hints";
 
 function detectorsById(id: string) {
 	const detector = SUDOKU_TECHNIQUES.find((technique) => technique.id === id);
 	if (!detector) {
 		throw new Error(`Unknown technique ${id}`);
 	}
-	return [detector];
+	return { detectors: [detector] };
 }
 
 const KNOWN_PUZZLE =
@@ -40,7 +42,9 @@ describe("sudoku hints", () => {
 		const hint = findHint(grid, detectorsById("hidden-single"));
 		expect(hint?.technique).toBe("hidden-single");
 		expect(hint?.placements).toEqual([{ cell: cellAt(2, 2), digit: 1 }]);
-		expect(hint?.explanation).toContain("Cross-hatching");
+		expect(hint && describeHint(hint, 3, en.hints).text).toContain(
+			"Cross-hatching the box",
+		);
 	});
 
 	it("finds a pointing triple with eliminations outside the box", () => {
@@ -128,21 +132,47 @@ describe("sudoku hints", () => {
 		expect(hint?.placements).toEqual([]);
 	});
 
-	it("returns structured hints with three explanation levels", () => {
-		const grid = parseGrid(KNOWN_PUZZLE);
-		const hint = findHint(grid);
+	it("describes a hint at three levels in each language", () => {
+		const hint = findHint(parseGrid(KNOWN_PUZZLE));
 		expect(hint).not.toBeNull();
 		if (!hint) {
 			return;
 		}
-		expect(hint.title.length).toBeGreaterThan(0);
-		expect(hint.cells.length).toBeGreaterThan(0);
-		expect(hint.candidateDigits.length).toBeGreaterThan(0);
-		expect(hintTextForLevel(hint, 1)).toBe(hint.nudge);
-		expect(hintTextForLevel(hint, 2)).toBe(hint.direction);
-		expect(hintTextForLevel(hint, 3)).toBe(hint.explanation);
-		// Level 1 stays a nudge: it never names the exact digit placement.
-		expect(hint.nudge).not.toBe(hint.explanation);
+		for (const copy of [en.hints, nl.hints]) {
+			const levels = ([1, 2, 3] as const).map(
+				(level) => describeHint(hint, level, copy).text,
+			);
+			expect(new Set(levels).size).toBe(3);
+			for (const text of levels) {
+				expect(text).not.toMatch(/\{\w+\}/);
+			}
+		}
+		expect(describeHint(hint, 3, nl.hints).text).toMatch(/R\dK\d/);
+	});
+
+	it("points out a wrong digit before any technique", () => {
+		const puzzle = generatePuzzle("easy", mulberry32(5));
+		const grid = [...puzzle.givens];
+		const cell = grid.indexOf(0);
+		grid[cell] = (puzzle.solution[cell] % 9) + 1;
+		const hint = findHint(grid, {
+			solution: puzzle.solution,
+			givens: puzzle.givens,
+		});
+		expect(hint?.technique).toBe("mistake");
+		expect(hint?.cells).toEqual([cell]);
+	});
+
+	it("without the solution, blames a placed digit that clashes, not a given", () => {
+		const grid = emptyGrid();
+		const givens = emptyGrid();
+		givens[cellAt(0, 0)] = 1;
+		grid[cellAt(0, 0)] = 1;
+		grid[cellAt(0, 5)] = 1;
+		const hint = findHint(grid, { givens });
+		expect(hint?.technique).toBe("mistake");
+		expect(hint?.cells).toEqual([cellAt(0, 5)]);
+		expect(hint && describeHint(hint, 2, en.hints).text).toContain("R1C6");
 	});
 
 	it("hints on a real puzzle agree with the actual solution", () => {

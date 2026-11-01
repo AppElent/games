@@ -16,7 +16,7 @@ import {
 	undo,
 } from "@arcadeclub/core/sudoku-board";
 import type { SudokuHint } from "@arcadeclub/core/sudoku-hints";
-import { findHint, hintTextForLevel } from "@arcadeclub/core/sudoku-hints";
+import { describeHint, findHint } from "@arcadeclub/core/sudoku-hints";
 import {
 	findKillerConflicts,
 	type KillerCage,
@@ -262,7 +262,9 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 				return current;
 			}
 			setHintLevel(1);
-			return findHint(effectiveGrid(history.current));
+			return findHint(effectiveGrid(history.current), {
+				givens: history.current.givens,
+			});
 		});
 	}, [history]);
 
@@ -490,7 +492,9 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 					<div className="w-full rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
 						<div className="flex items-center justify-between gap-2">
 							<p className="font-bold">
-								{hintLevel >= 2 ? hint.title : sudoku.game.hintFallbackTitle}
+								{hintLevel >= 2
+									? describeHint(hint, hintLevel, sudoku.hints).title
+									: sudoku.game.hintFallbackTitle}
 							</p>
 							<button
 								type="button"
@@ -500,7 +504,9 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 								{sudoku.game.dismissHint}
 							</button>
 						</div>
-						<p className="mt-1">{hintTextForLevel(hint, hintLevel)}</p>
+						<p className="mt-1">
+							{describeHint(hint, hintLevel, sudoku.hints).text}
+						</p>
 						{hintLevel < 3 ? (
 							<button
 								type="button"

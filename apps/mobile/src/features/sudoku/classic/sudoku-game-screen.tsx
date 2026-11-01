@@ -1,7 +1,7 @@
 /**
  * A Classic or Killer puzzle in play.
  */
-import { hintTextForLevel } from "@arcadeclub/core/sudoku-hints";
+import { describeHint } from "@arcadeclub/core/sudoku-hints";
 import { useRouter } from "expo-router";
 import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -54,7 +54,7 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 						<View style={styles.hintHead}>
 							<AppText variant="label" style={{ color: tokens.orange }}>
 								{(game.hint && game.hintLevel >= 2
-									? game.hint.title
+									? describeHint(game.hint, game.hintLevel, copy.hints).title
 									: copy.game.hintFallbackTitle
 								).toUpperCase()}
 							</AppText>
@@ -68,7 +68,7 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 						{game.hint ? (
 							<>
 								<AppText variant="secondary" tone="default">
-									{hintTextForLevel(game.hint, game.hintLevel)}
+									{describeHint(game.hint, game.hintLevel, copy.hints).text}
 								</AppText>
 								{game.hintLevel < 3 ? (
 									<Button
