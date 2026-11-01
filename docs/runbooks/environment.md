@@ -46,9 +46,11 @@ Some placements are produced by tools, not copied from Infisical:
 - The preview workflow gets `VITE_CONVEX_URL` from `convex deploy`, and uses the
   existing `CONVEX_DEPLOY_KEY` GitHub secret.
 
-The preview workflow keeps its existing secret names, including
-`PREVIEW_CLERK_PUBLISHABLE_KEY`. The test-user email and password are public client
-values (Vite and Metro inline them) and never land in production.
+`pnpm env:apply preview` writes the preview workflow's GitHub values: secrets for
+`SENTRY_AUTH_TOKEN` and `CLOUDFLARE_*`, and repo variables for the public values. The
+Clerk key keeps its workflow name, `PREVIEW_CLERK_PUBLISHABLE_KEY`. The test-user
+email and password are public client values (Vite and Metro inline them) and never land
+in production.
 
 Existing hand-written `.env.local` files stay untouched; apply refuses to overwrite a
 file without the generated marker. The engine records only variable names in
