@@ -16,10 +16,26 @@ if (!CONVEX_URL) {
 	);
 }
 
+/**
+ * The client logs every failed call with console.error, which in development
+ * opens the red overlay. A keyed game error (a wrong room code, an illegal
+ * move) is expected and already shown to the player, so it is a warning.
+ */
+const logger = {
+	logVerbose: () => {},
+	log: console.log,
+	warn: console.warn,
+	error: (...args: unknown[]) =>
+		(String(args[0]).includes("ConvexError") ? console.warn : console.error)(
+			...args,
+		),
+};
+
 // unsavedChangesWarning installs a beforeunload handler via `window`, which
 // does not exist on this runtime.
 const convex = new ConvexReactClient(CONVEX_URL, {
 	unsavedChangesWarning: false,
+	logger,
 });
 
 export function AppConvexProvider({ children }: { children: ReactNode }) {
