@@ -149,7 +149,13 @@ export function PlayHomeScreen() {
 									/>
 								</View>
 								<View style={styles.text}>
-									<AppText variant="heading">{title}</AppText>
+									<AppText
+										variant="heading"
+										numberOfLines={1}
+										adjustsFontSizeToFit
+									>
+										{title}
+									</AppText>
 									<AppText variant="secondary">{tagline}</AppText>
 								</View>
 								{stacked ? null : (
@@ -189,7 +195,7 @@ export function PlayHomeScreen() {
 								]}
 								testID={`continue-${item.id}`}
 							>
-								<View style={styles.row}>
+								<View style={[styles.row, stacked && styles.stacked]}>
 									{game ? (
 										<View
 											style={[
@@ -206,15 +212,23 @@ export function PlayHomeScreen() {
 										</View>
 									) : null}
 									<View style={styles.text}>
-										<AppText variant="body">{title}</AppText>
+										<AppText
+											variant="body"
+											numberOfLines={1}
+											adjustsFontSizeToFit
+										>
+											{title}
+										</AppText>
 										<AppText variant="caption">{text}</AppText>
 									</View>
-									<Icon
-										ios="chevron.right"
-										android="chevron_right"
-										size={16}
-										color={tokens.textFaint}
-									/>
+									{stacked ? null : (
+										<Icon
+											ios="chevron.right"
+											android="chevron_right"
+											size={16}
+											color={tokens.textFaint}
+										/>
+									)}
 								</View>
 							</Card>
 						);
