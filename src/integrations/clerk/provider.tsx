@@ -1,4 +1,4 @@
-import { ClerkProvider } from "@clerk/clerk-react";
+import { ClerkProvider } from "@clerk/react";
 import { AuthConfigProvider } from "#/lib/auth";
 import { authConfig } from "../../lib/auth-config";
 

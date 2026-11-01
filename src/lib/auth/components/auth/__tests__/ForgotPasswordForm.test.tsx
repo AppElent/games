@@ -2,16 +2,18 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const create = vi.fn();
-const attemptFirstFactor = vi.fn();
-const setActive = vi.fn();
-vi.mock("@clerk/clerk-react", () => ({
-	useSignIn: () => ({
-		isLoaded: true,
-		signIn: { create, attemptFirstFactor },
-		setActive,
-	}),
-}));
+const ok = { error: null };
+const signIn = {
+	status: null as string | null,
+	create: vi.fn(),
+	finalize: vi.fn(),
+	resetPasswordEmailCode: {
+		sendCode: vi.fn(),
+		verifyCode: vi.fn(),
+		submitPassword: vi.fn(),
+	},
+};
+vi.mock("@clerk/react", () => ({ useSignIn: () => ({ signIn }) }));
 
 import { AuthConfigProvider } from "../AuthConfigProvider";
 import { ForgotPasswordForm } from "../ForgotPasswordForm";
@@ -27,15 +29,26 @@ function renderForm(onSuccess = vi.fn()) {
 describe("ForgotPasswordForm", () => {
 	afterEach(() => {
 		cleanup();
-		for (const m of [create, attemptFirstFactor, setActive]) m.mockReset();
+		signIn.status = null;
+		for (const m of [
+			signIn.create,
+			signIn.finalize,
+			...Object.values(signIn.resetPasswordEmailCode),
+		])
+			m.mockReset();
 	});
 
 	it("requests a reset code then sets a new password", async () => {
-		create.mockResolvedValue({});
-		attemptFirstFactor.mockResolvedValue({
-			status: "complete",
-			createdSessionId: "s1",
-		});
+		signIn.create.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.sendCode.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.verifyCode.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.submitPassword.mockImplementation(
+			async () => {
+				signIn.status = "complete";
+				return ok;
+			},
+		);
+		signIn.finalize.mockResolvedValue(ok);
 		const onSuccess = vi.fn();
 		renderForm(onSuccess);
 
@@ -44,11 +57,9 @@ describe("ForgotPasswordForm", () => {
 		});
 		fireEvent.click(screen.getByRole("button", { name: /send code/i }));
 		await vi.waitFor(() =>
-			expect(create).toHaveBeenCalledWith({
-				strategy: "reset_password_email_code",
-				identifier: "a@b.com",
-			}),
+			expect(signIn.resetPasswordEmailCode.sendCode).toHaveBeenCalled(),
 		);
+		expect(signIn.create).toHaveBeenCalledWith({ identifier: "a@b.com" });
 
 		fireEvent.change(await screen.findByLabelText(/code/i), {
 			target: { value: "123456" },
@@ -57,9 +68,13 @@ describe("ForgotPasswordForm", () => {
 			target: { value: "newpw123!" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: /reset password/i }));
-		await vi.waitFor(() =>
-			expect(setActive).toHaveBeenCalledWith({ session: "s1" }),
-		);
+		await vi.waitFor(() => expect(signIn.finalize).toHaveBeenCalled());
+		expect(signIn.resetPasswordEmailCode.verifyCode).toHaveBeenCalledWith({
+			code: "123456",
+		});
+		expect(signIn.resetPasswordEmailCode.submitPassword).toHaveBeenCalledWith({
+			password: "newpw123!",
+		});
 		expect(onSuccess).toHaveBeenCalled();
 	});
 });

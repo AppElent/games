@@ -7,6 +7,7 @@ settings:
 overrides:
   ws: '>=8.21.0'
   undici: ^7.28.0
+  convex>@clerk/clerk-react: '-'
 
 patchedDependencies:
   expo-symbols@58.0.4: c8359f42a2c6d48d5aa33eedd0bab94e0af341846ddf4982bf43b5d5ee04defe
@@ -18,15 +19,15 @@ importers:
       '@arcadeclub/core':
         specifier: workspace:*
         version: link:packages/core
-      '@clerk/clerk-react':
-        specifier: ^5.61.6
-        version: 5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@clerk/react':
+        specifier: ^6.18.3
+        version: 6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@cloudflare/vite-plugin':
         specifier: ^1.26.0
         version: 1.42.3(vite@8.1.0(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.6.0))(workerd@1.20260625.1)(wrangler@4.105.0)
       '@convex-dev/react-query':
         specifier: 0.1.0
-        version: 0.1.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.0))(convex@1.42.0(@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))
+        version: 0.1.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.0))(convex@1.42.0(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))
       '@sentry/cloudflare':
         specifier: 11.8.0
         version: 11.8.0(vite@8.1.0(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.6.0))(wrangler@4.105.0)
@@ -74,7 +75,7 @@ importers:
         version: 2.1.1
       convex:
         specifier: ^1.32.0
-        version: 1.42.0(@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
+        version: 1.42.0(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.3.0)
@@ -180,10 +181,10 @@ importers:
         version: 8.28.0(@babel/core@7.29.7)(@expo/config-types@58.0.3)(@expo/config@58.0.8(typescript@6.0.3))(@expo/env@2.5.3)(dotenv@17.4.2)(expo-router@58.0.27)(expo-updates@58.0.19(expo-dev-client@58.0.17(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)))(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(expo@58.0.20)(metro-config@0.87.2)(metro-resolver@0.87.2)(metro@0.87.2)(open@8.4.2)(promise@8.3.0)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(rollup@4.62.2)
       convex:
         specifier: ^1.42.0
-        version: 1.42.0(@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
+        version: 1.42.0(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
       convex-helpers:
         specifier: ^0.1.129
-        version: 0.1.129(@standard-schema/spec@1.1.0)(convex@1.42.0(@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.7)
+        version: 0.1.129(@standard-schema/spec@1.1.0)(convex@1.42.0(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.7)
       expo:
         specifier: ~58.0.0
         version: 58.0.20(@babel/core@7.29.7)(@expo/dom-webview@58.0.2)(@expo/metro-runtime@58.0.15)(expo-router@58.0.27)(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
@@ -1145,14 +1146,6 @@ packages:
     resolution: {integrity: sha512-4b7kBnxJVs3MtsFntUzF7lFZGlde1Xg2S8aSrJpt0bFaAy0/1aKhdXVXu98eoQakrxVWtGl/9VHwXtzYBfG+4g==}
     engines: {node: '>=20.9.0'}
 
-  '@clerk/clerk-react@5.61.8':
-    resolution: {integrity: sha512-n+k3q3xeyDkIPGTVA1J4Pd0+6MbS9Ia04qNlecOztTHwFfcirO5hy4TpOXrpGnO+GzYBuUMp7pYc3//ybMdEfg==}
-    engines: {node: '>=18.17.0'}
-    deprecated: 'This package is no longer supported. Please use @clerk/react instead. See the upgrade guide for more info: https://clerk.com/docs/guides/development/upgrading/upgrade-guides/core-3'
-    peerDependencies:
-      react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-      react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-
   '@clerk/expo@4.14.4':
     resolution: {integrity: sha512-GNSsXjy4kfPXxrVHxtnlJkNg8W32jLFFyVXRLYi1HzHG4yhbt9c+wrGsTSZU7bPbT7BJq+6REEJv415DLgtWOQ==}
     engines: {node: '>=20.9.0'}
@@ -1204,18 +1197,6 @@ packages:
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-
-  '@clerk/shared@3.47.7':
-    resolution: {integrity: sha512-9Yv4MJFEaC7BzV0whxa4txQ4SoMu/3j1LBnI85EBykb5CcfXxIKvNX/9sjMUUySHlTOjsj7XZa5i3W5Dx02K/Q==}
-    engines: {node: '>=18.17.0'}
-    peerDependencies:
-      react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-      react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
 
   '@clerk/shared@4.43.0':
     resolution: {integrity: sha512-EtFANpM+o5pt4zeTh1ww+oYk8qg53Plofl5jA67gi1HYVxsiVvkKmfPU0BFAf54vOcTyzvpZxRvffEGTI0hsiw==}
@@ -5359,7 +5340,7 @@ packages:
     hasBin: true
     peerDependencies:
       '@auth0/auth0-react': ^2.0.1
-      '@clerk/clerk-react': ^4.12.8 || ^5.0.0
+      '@clerk/clerk-react': '*'
       '@clerk/react': ^6.4.3
       react: ^18.0.0 || ^19.0.0-0 || ^19.0.0
     peerDependenciesMeta:
@@ -5436,9 +5417,6 @@ packages:
   cssstyle@4.6.0:
     resolution: {integrity: sha512-2z+rWdzbbSZv6/rhtvzvqeZQHrBaqgogqt85sqFNbabZOuFbCVFb8kPeEtZjiKkbrm395irpNKiYeFeLiQnFPg==}
     engines: {node: '>=18'}
-
-  csstype@3.1.3:
-    resolution: {integrity: sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==}
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
@@ -6995,10 +6973,6 @@ packages:
   join-component@1.1.0:
     resolution: {integrity: sha512-bF7vcQxbODoGK1imE2P9GS9aw4zD0Sd+Hni68IMZLj7zRnquH7dXUmMw9hDI5S/Jzt7q+IyTXN0rSg2GI0IKhQ==}
 
-  js-cookie@3.0.7:
-    resolution: {integrity: sha512-z/wZZgDrkNV1eA0ULjM/F9/50Ya8fbzgKneSpoPsXSGd0KnpdtHfOZWK+GcwLk+EZbS4F9RBhU+K2RgzuDaItw==}
-    engines: {node: '>=20'}
-
   js-cookie@3.0.8:
     resolution: {integrity: sha512-yeJd4aNAdYZQjaon2bpD/Gb0B/omw7HQOsynXXcOiWVCacbBcPlgn8S/d1X6blFSaHao7ozqtW7NZW19xpCtIw==}
 
@@ -8542,9 +8516,6 @@ packages:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
     engines: {node: '>= 0.8'}
 
-  std-env@3.10.0:
-    resolution: {integrity: sha512-5GS12FdOZNliM5mAOxFRg7Ir0pWz8MdpYm6AY6VPkGpbA7ZzmbzNcBJQ0GPvvyWgcY7QAhCgf9Uy89I03faLkg==}
-
   std-env@4.1.0:
     resolution: {integrity: sha512-Rq7ybcX2RuC55r9oaPVEW7/xu3tj8u4GeBYHBWCychFtzMIr86A7e3PPEBPT37sHStKX3+TiX/Fr/ACmJLVlLQ==}
 
@@ -8669,11 +8640,6 @@ packages:
   supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
-
-  swr@2.3.4:
-    resolution: {integrity: sha512-bYd2lrhc+VarcpkgWclcUi92wYCpOgMws9Sd1hG1ntAu0NEy+14CbotuFjshBU2kt9rYj9TSmDcybpxpeTU1fg==}
-    peerDependencies:
-      react: ^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
@@ -10525,13 +10491,6 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
-    dependencies:
-      '@clerk/shared': 3.47.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      react: 19.3.0
-      react-dom: 19.3.0(react@19.3.0)
-      tslib: 2.8.1
-
   '@clerk/expo@4.14.4(@types/react@19.3.0)(expo-auth-session@58.0.15(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3))(expo-constants@58.0.13)(expo-crypto@58.0.7(expo@58.0.20))(expo-secure-store@58.0.2(expo@58.0.20))(expo-web-browser@58.0.7(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)))(expo@58.0.20)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3)(use-sync-external-store@1.6.0(react@19.3.0))(zod@4.6.7)':
     dependencies:
       '@clerk/clerk-js': 6.42.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(use-sync-external-store@1.6.0(react@19.3.0))(zod@4.6.7)
@@ -10566,18 +10525,6 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       tslib: 2.8.1
-
-  '@clerk/shared@3.47.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
-    dependencies:
-      csstype: 3.1.3
-      dequal: 2.0.3
-      glob-to-regexp: 0.4.1
-      js-cookie: 3.0.7
-      std-env: 3.10.0
-      swr: 2.3.4(react@19.3.0)
-    optionalDependencies:
-      react: 19.3.0
-      react-dom: 19.3.0(react@19.3.0)
 
   '@clerk/shared@4.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
@@ -10639,10 +10586,10 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@convex-dev/react-query@0.1.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.0))(convex@1.42.0(@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))':
+  '@convex-dev/react-query@0.1.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.0))(convex@1.42.0(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))':
     dependencies:
       '@tanstack/react-query': 5.105.0(@types/react@19.3.0)(react@19.3.0)
-      convex: 1.42.0(@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
+      convex: 1.42.0(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
 
   '@corvu/utils@0.4.2(solid-js@1.9.17)':
     dependencies:
@@ -14862,22 +14809,21 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  convex-helpers@0.1.129(@standard-schema/spec@1.1.0)(convex@1.42.0(@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.7):
+  convex-helpers@0.1.129(@standard-schema/spec@1.1.0)(convex@1.42.0(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.7):
     dependencies:
-      convex: 1.42.0(@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
+      convex: 1.42.0(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
     optionalDependencies:
       '@standard-schema/spec': 1.1.0
       react: 19.3.0
       typescript: 6.0.3
       zod: 4.6.7
 
-  convex@1.42.0(@clerk/clerk-react@5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0):
+  convex@1.42.0(@clerk/react@6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0):
     dependencies:
       esbuild: 0.27.0
       prettier: 3.9.10
       ws: 8.21.0
     optionalDependencies:
-      '@clerk/clerk-react': 5.61.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@clerk/react': 6.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react: 19.3.0
     transitivePeerDependencies:
@@ -14946,8 +14892,6 @@ snapshots:
     dependencies:
       '@asamuzakjp/css-color': 3.2.0
       rrweb-cssom: 0.8.0
-
-  csstype@3.1.3: {}
 
   csstype@3.2.3: {}
 
@@ -16998,8 +16942,6 @@ snapshots:
 
   join-component@1.1.0: {}
 
-  js-cookie@3.0.7: {}
-
   js-cookie@3.0.8: {}
 
   js-tokens@4.0.0: {}
@@ -18844,8 +18786,6 @@ snapshots:
 
   statuses@2.0.2: {}
 
-  std-env@3.10.0: {}
-
   std-env@4.1.0: {}
 
   stop-iteration-iterator@1.1.0:
@@ -18999,12 +18939,6 @@ snapshots:
       supports-color: 7.2.0
 
   supports-preserve-symlinks-flag@1.0.0: {}
-
-  swr@2.3.4(react@19.3.0):
-    dependencies:
-      dequal: 2.0.3
-      react: 19.3.0
-      use-sync-external-store: 1.6.0(react@19.3.0)
 
   symbol-tree@3.2.4: {}
 

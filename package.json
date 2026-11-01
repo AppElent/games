@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@arcadeclub/core": "workspace:*",
-    "@clerk/clerk-react": "^5.61.6",
+    "@clerk/react": "^6.18.3",
     "@cloudflare/vite-plugin": "^1.26.0",
     "@convex-dev/react-query": "0.1.0",
     "@sentry/cloudflare": "11.8.0",

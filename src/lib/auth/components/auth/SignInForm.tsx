@@ -1,14 +1,15 @@
-import { useSignIn } from "@clerk/clerk-react";
+import { useSignIn } from "@clerk/react";
 import { useState } from "react";
 import { AuthButton } from "./AuthButton";
 import { useAuthConfig } from "./AuthConfigProvider";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
+import { orThrow } from "./clerkResult";
 import { TestLoginButton } from "./TestLoginButton";
 import { clerkErrorMessage } from "./types";
 
 export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
-	const { isLoaded, signIn, setActive } = useSignIn();
+	const { signIn } = useSignIn();
 	const config = useAuthConfig();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -17,15 +18,12 @@ export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
-		if (!isLoaded) {
-			return;
-		}
 		setError(null);
 		setLoading(true);
 		try {
-			const result = await signIn.create({ identifier: email, password });
-			if (result.status === "complete") {
-				await setActive({ session: result.createdSessionId });
+			await orThrow(signIn.password({ identifier: email, password }));
+			if (signIn.status === "complete") {
+				await orThrow(signIn.finalize());
 				onSuccess();
 			} else {
 				setError("Additional verification is required.");
