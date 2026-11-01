@@ -6,6 +6,10 @@
 //   pnpm mobile:update:production --message "…"
 //   pnpm mobile:update:production --upload-only   (retry the maps upload only)
 //
+// It first checks that a finished build on the channel has this checkout's
+// runtime fingerprint, since no other build would ever load the update.
+// `--without-build` skips that, for publishing ahead of a build.
+//
 // The channel decides three things that must match the installed build:
 // - APP_VARIANT: app.config.ts picks the bundle ID and scheme from it, and
 //   the runtime fingerprint includes them. Without it the update resolves to
@@ -18,21 +22,21 @@
 // Production refuses to publish without SENTRY_AUTH_TOKEN. Preview publishes
 // without it and says so, so the pipeline can be tried without the token.
 import { spawnSync } from "node:child_process";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { appRoot, fingerprint, PLATFORMS } from "./fingerprint.mjs";
 
-const appRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CHANNELS = ["preview", "production"];
 
 const [channel, ...rest] = process.argv.slice(2);
 if (!CHANNELS.includes(channel)) {
 	console.error(
-		`Usage: publish-update.mjs <${CHANNELS.join("|")}> [--upload-only] [eas update args]`,
+		`Usage: publish-update.mjs <${CHANNELS.join("|")}> [--upload-only] [--without-build] [eas update args]`,
 	);
 	process.exit(1);
 }
+const OWN_FLAGS = ["--upload-only", "--without-build"];
 const uploadOnly = rest.includes("--upload-only");
-const easArgs = rest.filter((arg) => arg !== "--upload-only");
+const withoutBuild = rest.includes("--without-build");
+const easArgs = rest.filter((arg) => !OWN_FLAGS.includes(arg));
 const upload = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
 if (!upload) {
@@ -66,6 +70,53 @@ function run(command, args) {
 			);
 		}
 		process.exit(result.status || 1);
+	}
+}
+
+/** Whether a finished build on this channel and platform has `runtime`. */
+function hasBuild(platform, runtime) {
+	const result = spawnSync(
+		"pnpm",
+		[
+			"exec",
+			"eas",
+			"build:list",
+			"--channel",
+			channel,
+			"--platform",
+			platform,
+			"--runtime-version",
+			runtime,
+			"--status",
+			"finished",
+			"--limit",
+			"1",
+			"--json",
+			"--non-interactive",
+		],
+		{ cwd: appRoot, env, encoding: "utf8" },
+	);
+	if (result.status !== 0) {
+		console.error(result.stderr);
+		process.exit(result.status || 1);
+	}
+	return JSON.parse(result.stdout).length > 0;
+}
+
+if (!uploadOnly && !withoutBuild) {
+	const found = PLATFORMS.map((platform) => {
+		const runtime = fingerprint(channel, platform).hash;
+		const ok = hasBuild(platform, runtime);
+		console.log(
+			`${platform}: runtime ${runtime.slice(0, 12)}, ${ok ? "a build has it" : "no build has it"}`,
+		);
+		return ok;
+	});
+	if (!found.some(Boolean)) {
+		console.error(
+			`No finished ${channel} build has this runtime, so no installed app would load the update. Build first (native code or config changed), or pass --without-build to publish anyway.`,
+		);
+		process.exit(1);
 	}
 }
 

@@ -84,13 +84,16 @@ pnpm mobile:update:production --message "…"
 
 `apps/mobile/scripts/publish-update.mjs` sets `APP_VARIANT` and `--environment` from
 the channel, so the update's runtime matches that channel's builds, and uploads the
-source maps. The root scripts add `SENTRY_AUTH_TOKEN` from Infisical through
+source maps. It refuses when no finished build on the channel has this checkout's
+runtime, since nothing would load the update; `--without-build` overrides that. The root scripts add `SENTRY_AUTH_TOKEN` from Infisical through
 `env:exec`. Production refuses to publish without it. If only the upload failed,
 retry with `--upload-only`; don't publish again. A bare `eas update` resolves to the
 development variant, so no preview or production build would ever load it.
 
 Builds pick up an update on their next cold start, when the runtime fingerprint
-matches. `apps/mobile/fingerprint.config.js` leaves `package.json` scripts out of the
+matches. `node apps/mobile/scripts/fingerprint.mjs` prints this checkout's runtime per
+variant (the same value EAS shows on a build), and the **Mobile runtime** check
+comments on each PR whether it changes it. `apps/mobile/fingerprint.config.js` leaves `package.json` scripts out of the
 fingerprint, so editing one doesn't cut installed builds off from updates. Native
 changes (a new native module, `app.json` plugins, icons) still need a new build.
 
