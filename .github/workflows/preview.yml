@@ -41,13 +41,15 @@ jobs:
       # Convex provisions/refreshes preview backend pr-<N>, exposes its URL as
       # $CONVEX_URL inside --cmd, then runs the build (bridge CONVEX_URL ->
       # VITE_CONVEX_URL since the app reads the Vite-prefixed var at build
-      # time). No seed function exists yet, so --preview-run is omitted.
+      # time). VITE_SENTRY_ENVIRONMENT tags browser reports as preview, like the
+      # Worker's environment_name. No seed function exists yet, so --preview-run
+      # is omitted.
       - name: Convex preview deploy + build
         run: |
           pnpm exec convex deploy \
             --preview-create pr-${{ github.event.pull_request.number }} \
             --cmd-url-env-var-name CONVEX_URL \
-            --cmd 'VITE_CONVEX_URL=$CONVEX_URL VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY pnpm build'
+            --cmd 'VITE_CONVEX_URL=$CONVEX_URL VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY VITE_SENTRY_ENVIRONMENT=preview pnpm build'
 
       - name: Deploy Worker (per-PR)
         id: deploy

@@ -27,7 +27,7 @@ project: `@appelent/arcadeclub` (id in `app.json`).
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Same Clerk instance as the web app; its Native API must be enabled |
 | `EXPO_PUBLIC_WEB_ORIGIN` | Web origin for share links. Unset: invites share the room code only and challenge links are hidden |
 | `EXPO_PUBLIC_TEST_USER_EMAIL` / `_PASSWORD` | Optional, `pk_test_` only: prefill sign-in |
-| `EXPO_PUBLIC_SENTRY_DSN` | Optional locally; set per EAS profile in `eas.json` |
+| `EXPO_PUBLIC_SENTRY_DSN` | Optional locally; EAS builds get it from the EAS environment (`pnpm env:apply`, see [environment.md](environment.md)) |
 | `EXPO_PUBLIC_SENTRY_DEBUG` | `1` to report from a development bundle |
 
 ## Run locally
@@ -45,6 +45,14 @@ every emulator restart.
 
 Rebuild the dev client after adding a native module (any new `expo-*` package with
 native code). JS-only changes reload through Metro.
+
+Without Xcode, build the iOS simulator dev client on EAS and install the `.app`
+from the build's artifact:
+
+```bash
+cd apps/mobile
+pnpm exec eas build --platform ios --profile development-simulator
+```
 
 ## Verify on a device
 
