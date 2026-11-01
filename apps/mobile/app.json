@@ -49,10 +49,21 @@
 			[
 				"expo-localization",
 				{
-					"supportedLocales": ["en", "nl"]
+					"supportedLocales": [
+						"en",
+						"nl"
+					]
 				}
 			],
 			"expo-sqlite",
+			[
+				"expo-camera",
+				{
+					"cameraPermission": "Arcade Club uses the camera to scan game invite QR codes.",
+					"microphonePermission": false,
+					"recordAudioAndroid": false
+				}
+			],
 			[
 				"@sentry/react-native/expo",
 				{

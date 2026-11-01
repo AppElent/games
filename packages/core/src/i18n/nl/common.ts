@@ -161,6 +161,12 @@ export const common = {
 		playerNamePlaceholder: "Spelernaam",
 		inviteNotice: "Deze uitnodigingslink voegt je toe aan het spel.",
 		joinError: "Kon niet meedoen aan het spel",
+		scan: "QR-code scannen",
+		scanHint: "Richt de camera op de QR-code op het scherm van de host.",
+		scanInvalid: "Die QR-code is geen uitnodiging voor een spel.",
+		cameraDenied:
+			"Geef in Instellingen toegang tot de camera om QR-codes te scannen.",
+		openSettings: "Instellingen openen",
 	},
 	gameDetail: {
 		notFound: "Spel niet gevonden.",

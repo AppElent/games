@@ -52,3 +52,41 @@ export function buildShareUrl(origin: string, token: string) {
 	const base = origin.replace(/\/$/, "");
 	return `${base}/join?token=${encodeURIComponent(token)}`;
 }
+
+export type Invite = { token: string } | { code: string };
+
+function queryParam(query: string, name: string) {
+	for (const pair of query.split("&")) {
+		const [key, value = ""] = pair.split("=");
+		if (key !== name) continue;
+		try {
+			return decodeURIComponent(value.replace(/\+/g, " "));
+		} catch {
+			return null;
+		}
+	}
+	return null;
+}
+
+/**
+ * The invite in a scanned QR code or pasted text: a `/join?token=` or
+ * `/join?code=` link (web origin or any app scheme), or a bare room code.
+ * `null` for anything else.
+ */
+export function parseInvite(text: string): Invite | null {
+	const value = text.trim();
+	if (value.includes("://")) {
+		const [before, after = ""] = value.split("?", 2);
+		if (!/(^|\/)join\/?$/i.test(before)) return null;
+		const query = after.split("#", 1)[0];
+		const token = queryParam(query, "token");
+		if (token) return { token };
+		const code = queryParam(query, "code");
+		return code && isJoinCodeLike(code)
+			? { code: normalizeJoinCode(code) }
+			: null;
+	}
+	return /^[a-z0-9 -]+$/i.test(value) && isJoinCodeLike(value)
+		? { code: normalizeJoinCode(value) }
+		: null;
+}

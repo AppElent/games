@@ -179,6 +179,7 @@ function RootNavigator({ windowReady }: { windowReady: boolean }) {
 				name="(auth)"
 				options={{ headerShown: false, presentation: "modal" }}
 			/>
+			<Stack.Screen name="scan" options={{ presentation: "modal" }} />
 		</Stack>
 	);
 }

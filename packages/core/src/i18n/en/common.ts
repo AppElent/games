@@ -153,6 +153,11 @@ export const common = {
 		playerNamePlaceholder: "Player name",
 		inviteNotice: "This invite link will add you to the game.",
 		joinError: "Could not join game",
+		scan: "Scan QR code",
+		scanHint: "Point the camera at the QR code on the host's screen.",
+		scanInvalid: "That QR code isn't a game invite.",
+		cameraDenied: "Allow camera access in Settings to scan invite QR codes.",
+		openSettings: "Open Settings",
 	},
 	gameDetail: {
 		notFound: "Game not found.",

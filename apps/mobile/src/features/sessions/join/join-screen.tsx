@@ -1,7 +1,7 @@
 /**
- * Join an online game: by room code typed from the host's screen, or by the
- * token in an invite link (`arcadeclub://join?token=…`). A game the app
- * cannot play yet points to the web instead.
+ * Join an online game: by room code typed from the host's screen, a scanned
+ * invite QR code, or the token in an invite link (`arcadeclub://join?token=…`).
+ * A game the app cannot play yet points to the web instead.
  */
 import { gameErrorMessage } from "@arcadeclub/core/errors";
 import type { GameType } from "@arcadeclub/core/games";
@@ -12,11 +12,13 @@ import {
 } from "@arcadeclub/core/sessions";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Linking } from "react-native";
+import { Linking, Platform } from "react-native";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
+import { useTokens } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
+import { Icon } from "../../../ui/icon";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
@@ -31,6 +33,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 	const router = useRouter();
 	const { t } = useI18n();
 	const copy = t.common.joinPanel;
+	const colors = useTokens();
 	const identity = usePlayerIdentity();
 	const { join, busy, error } = useJoinSession();
 	const [code, setCode] = useState(
@@ -96,6 +99,21 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 					onSubmitEditing={submit}
 					style={{ letterSpacing: 4 }}
 					testID="join-code"
+				/>
+			)}
+			{shareToken || Platform.OS === "web" ? null : (
+				<Button
+					variant="secondary"
+					label={copy.scan}
+					icon={
+						<Icon
+							ios="qrcode.viewfinder"
+							android="qr_code_scanner"
+							color={colors.accent}
+						/>
+					}
+					onPress={() => router.push("/scan")}
+					testID="join-scan"
 				/>
 			)}
 			<TextField

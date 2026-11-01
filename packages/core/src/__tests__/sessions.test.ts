@@ -5,6 +5,7 @@ import {
 	getGuestDisplayName,
 	isJoinCodeLike,
 	normalizeJoinCode,
+	parseInvite,
 } from "../sessions";
 
 describe("session helpers", () => {
@@ -36,5 +37,26 @@ describe("session helpers", () => {
 		expect(buildShareUrl("https://games.test/", "share_abc")).toBe(
 			"https://games.test/join?token=share_abc",
 		);
+	});
+
+	it("reads invites from QR codes and links", () => {
+		expect(parseInvite("https://games.example/join?token=ab%2Fc")).toEqual({
+			token: "ab/c",
+		});
+		expect(parseInvite("arcadeclub-dev://join?code=abc-123")).toEqual({
+			code: "ABC123",
+		});
+		expect(
+			parseInvite("https://games.example/join/?code=ABC123&token=t1#x"),
+		).toEqual({ token: "t1" });
+		expect(parseInvite(" abc 123 ")).toEqual({ code: "ABC123" });
+	});
+
+	it("rejects QR codes that are not invites", () => {
+		expect(parseInvite("https://example.com/?code=ABC123")).toBeNull();
+		expect(parseInvite("https://games.example/join?code=X")).toBeNull();
+		expect(parseInvite("https://games.example/join")).toBeNull();
+		expect(parseInvite("WIFI:S:home;T:WPA;P:secret;;")).toBeNull();
+		expect(parseInvite("hello world, long text")).toBeNull();
 	});
 });
