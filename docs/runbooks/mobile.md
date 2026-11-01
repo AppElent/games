@@ -71,14 +71,28 @@ interactively so EAS can sign in to Apple and create the provisioning profile; a
 To install the preview app next to the dev app on an iPhone, build `preview-internal`
 (ad-hoc, `com.appelent.arcadeclub.preview`) and open the build page on the phone. It
 runs against production Clerk and Convex, so it only sees Convex changes once they're
-deployed to production. Ship
-JS-only changes to installed preview builds without rebuilding:
+deployed to production.
+
+### Over-the-air updates
+
+Ship JS-only changes to installed builds without rebuilding:
 
 ```bash
-pnpm exec eas update --channel preview --environment preview --message "…"
+pnpm mobile:update:preview --message "…"
+pnpm mobile:update:production --message "…"
 ```
 
-Builds pick up an update on their next cold start, when the runtime fingerprint matches.
+`apps/mobile/scripts/publish-update.mjs` sets `APP_VARIANT` and `--environment` from
+the channel, so the update's runtime matches that channel's builds, and uploads the
+source maps. The root scripts add `SENTRY_AUTH_TOKEN` from Infisical through
+`env:exec`. Production refuses to publish without it. If only the upload failed,
+retry with `--upload-only`; don't publish again. A bare `eas update` resolves to the
+development variant, so no preview or production build would ever load it.
+
+Builds pick up an update on their next cold start, when the runtime fingerprint
+matches. `apps/mobile/fingerprint.config.js` leaves `package.json` scripts out of the
+fingerprint, so editing one doesn't cut installed builds off from updates. Native
+changes (a new native module, `app.json` plugins, icons) still need a new build.
 
 ## Verify on a device
 
