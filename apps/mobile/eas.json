@@ -14,7 +14,8 @@
 				"buildType": "apk"
 			},
 			"env": {
-				"APP_VARIANT": "development"
+				"APP_VARIANT": "development",
+				"SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
 			}
 		},
 		"development-simulator": {
@@ -28,7 +29,8 @@
 			"channel": "preview",
 			"environment": "preview",
 			"env": {
-				"APP_VARIANT": "preview"
+				"APP_VARIANT": "preview",
+				"SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
 			}
 		},
 		"preview-internal": {
@@ -43,7 +45,8 @@
 			"channel": "production",
 			"environment": "production",
 			"env": {
-				"APP_VARIANT": "production"
+				"APP_VARIANT": "production",
+				"SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
 			}
 		}
 	},
