@@ -33,10 +33,17 @@ export function useBoardSelection({
 	const color = state.activeColor;
 	const movable = interactive && canMoveNow(state);
 	const onBar = state.bar[color] > 0;
+	const ownsPoint = (point: number) => {
+		const target = state.points[point - 1];
+		return target?.color === color && target.count > 0;
+	};
+	// An undo can empty the picked point without changing the turn key.
+	const stillPicked =
+		picked === "bar" || (picked != null && ownsPoint(picked)) ? picked : null;
 	const selected: BackgammonMoveSource | null = movable
 		? onBar
 			? "bar"
-			: picked
+			: stillPicked
 		: null;
 
 	// A new roll or a new player starts without a pick.
@@ -61,11 +68,6 @@ export function useBoardSelection({
 		setPicked(null);
 		onPlan(plan);
 		return true;
-	};
-
-	const ownsPoint = (point: number) => {
-		const target = state.points[point - 1];
-		return target?.color === color && target.count > 0;
 	};
 
 	const tapPoint = (point: number) => {

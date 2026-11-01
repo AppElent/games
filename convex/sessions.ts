@@ -136,6 +136,41 @@ export const create = mutation({
 	},
 });
 
+/**
+ * The game behind an invite, without joining it, so a client can turn away a
+ * game it cannot play before claiming a seat. Null when the invite is not open.
+ */
+export const inviteGameType = query({
+	args: {
+		joinCode: v.optional(v.string()),
+		shareToken: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const { joinCode, shareToken } = args;
+		let session: Doc<"gameSessions"> | null = null;
+		if (shareToken) {
+			session = await ctx.db
+				.query("gameSessions")
+				.withIndex("by_shareToken", (q) => q.eq("shareToken", shareToken))
+				.unique();
+		} else if (joinCode) {
+			const normalized = joinCode.replace(/[^a-z0-9]/gi, "").toUpperCase();
+			session = await ctx.db
+				.query("gameSessions")
+				.withIndex("by_joinCode", (q) => q.eq("joinCode", normalized))
+				.unique();
+		}
+		if (
+			!session ||
+			session.status === "completed" ||
+			session.status === "cancelled"
+		) {
+			return null;
+		}
+		return session.gameType;
+	},
+});
+
 export const joinByCode = mutation({
 	args: {
 		joinCode: v.string(),

@@ -10,9 +10,11 @@ import {
 	isJoinCodeLike,
 	normalizeJoinCode,
 } from "@arcadeclub/core/sessions";
+import { useConvex } from "convex/react";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Linking, Platform } from "react-native";
+import { api } from "../../../convex/api";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
 import { useTokens } from "../../../theme";
@@ -31,6 +33,7 @@ type Props = { shareToken?: string; initialCode?: string };
 
 export function JoinScreen({ shareToken, initialCode }: Props) {
 	const router = useRouter();
+	const convex = useConvex();
 	const { t } = useI18n();
 	const copy = t.common.joinPanel;
 	const colors = useTokens();
@@ -53,6 +56,20 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 		const invite = shareToken
 			? { token: shareToken }
 			: { code: normalizeJoinCode(code) };
+		// Check the game first: joining claims a seat, and the web would then
+		// join again under its own guest identity.
+		const gameType = await convex
+			.query(
+				api.sessions.inviteGameType,
+				"token" in invite
+					? { shareToken: invite.token }
+					: { joinCode: invite.code },
+			)
+			.catch(() => null);
+		if (gameType && !onlineSessionHref(gameType, "")) {
+			setUnsupported({ gameType, url: webJoinUrl(invite) });
+			return;
+		}
 		const result = await join(invite, name);
 		if (!result) {
 			haptics.actionFailed();
