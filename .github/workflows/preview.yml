@@ -20,6 +20,9 @@ jobs:
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.PREVIEW_CLERK_PUBLISHABLE_KEY }}
       VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+      # The sign-in page's test-login button (pk_test_ keys only).
+      VITE_TEST_USER_EMAIL: ${{ vars.VITE_TEST_USER_EMAIL }}
+      VITE_TEST_USER_PASSWORD: ${{ vars.VITE_TEST_USER_PASSWORD }}
       # Uploads source maps; the Vite Sentry plugin is disabled without it.
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     steps:

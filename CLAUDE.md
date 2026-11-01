@@ -64,7 +64,7 @@ See `.cursorrules` for the full validator (`v`) reference and an example schema 
 - `.claude/skills/verify/SKILL.md` is the one exception: it's project-specific (route → module map) and has no source-of-truth counterpart.
 - `.claude/commands/babysit.md` — standing PR-babysitting policy (CI fixes, review comments, status checklist).
 - `.claude/hooks/session-start.mjs` — SessionStart hook: runs `pnpm install` once per fresh container, logs the current branch.
-- `.github/workflows/ci.yml` — the quality gate on `main` (`check`, `typecheck`, `test`, `build`); `.github/workflows/preview.yml` — per-PR Convex + Cloudflare Worker preview, secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CONVEX_DEPLOY_KEY`, `SENTRY_AUTH_TOKEN` and variables `PREVIEW_CLERK_PUBLISHABLE_KEY`, `VITE_SENTRY_DSN`, all written by `pnpm env:apply preview` except `CONVEX_DEPLOY_KEY`. `preview.yml` has no `--preview-run` seed step yet (no `convex/seed.ts`) — PR previews deploy against an empty Convex backend.
+- `.github/workflows/ci.yml` — the quality gate on `main` (`check`, `typecheck`, `test`, `build`); `.github/workflows/preview.yml` — per-PR Convex + Cloudflare Worker preview, secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CONVEX_DEPLOY_KEY`, `SENTRY_AUTH_TOKEN` and variables `PREVIEW_CLERK_PUBLISHABLE_KEY`, `VITE_SENTRY_DSN`, `VITE_TEST_USER_EMAIL`/`_PASSWORD`, all written by `pnpm env:apply preview` except `CONVEX_DEPLOY_KEY`. `preview.yml` has no `--preview-run` seed step yet (no `convex/seed.ts`) — PR previews deploy against an empty Convex backend.
 - `AGENTS.md` mirrors `CLAUDE.md` for Codex parity.
 - `appelent.json` records this app's opted-in Appelent features (`baseline`, `auth`, `i18n`) — see the managed block below.
 
