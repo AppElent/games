@@ -5,8 +5,8 @@
  */
 import type { HitsterModeConfig } from "@arcadeclub/core/hitster";
 import type { HitsterCard } from "@arcadeclub/core/hitster-packs";
-import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useRef, useState } from "react";
+import { StyleSheet, type TextInputInstance, View } from "react-native";
 import { useI18n } from "../../../i18n";
 import { spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
@@ -34,6 +34,8 @@ export function PlacementForm({
 	const [artist, setArtist] = useState("");
 	const [title, setTitle] = useState("");
 	const [year, setYear] = useState("");
+	const titleRef = useRef<TextInputInstance>(null);
+	const yearRef = useRef<TextInputInstance>(null);
 	const askArtistTitle =
 		config.needsArtistTitle || (!forSteal && config.earnTokens);
 	const parsedYear = Number.parseInt(year.trim(), 10);
@@ -60,9 +62,12 @@ export function PlacementForm({
 						placeholder={copy.artistPlaceholder}
 						autoCorrect={false}
 						returnKeyType="next"
+						submitBehavior="submit"
+						onSubmitEditing={() => titleRef.current?.focus()}
 						testID="hitster-artist"
 					/>
 					<TextField
+						ref={titleRef}
 						label={
 							config.needsArtistTitle
 								? copy.titleLabelRequired
@@ -72,12 +77,16 @@ export function PlacementForm({
 						onChangeText={setTitle}
 						placeholder={copy.titlePlaceholder}
 						autoCorrect={false}
+						returnKeyType={config.needsYear ? "next" : "done"}
+						submitBehavior={config.needsYear ? "submit" : "blurAndSubmit"}
+						onSubmitEditing={() => yearRef.current?.focus()}
 						testID="hitster-title"
 					/>
 				</>
 			) : null}
 			{config.needsYear ? (
 				<TextField
+					ref={yearRef}
 					label={copy.exactYearLabel}
 					value={year}
 					onChangeText={setYear}
