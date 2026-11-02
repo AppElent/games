@@ -7,7 +7,7 @@
     "@clerk/expo": "^4.14.4",
     "@expo/ui": "~58.0.0",
     "@sentry/react-native": "~8.28.0",
-    "convex": "^1.42.0",
+    "convex": "^1.48.0",
     "convex-helpers": "^0.1.129",
     "expo": "~58.0.0",
     "expo-auth-session": "~58.0.15",
