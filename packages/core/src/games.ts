@@ -9,7 +9,8 @@ export type GameType =
 	| "connect-four"
 	| "signal-words"
 	| "bluff-dice"
-	| "squad-surge";
+	| "squad-surge"
+	| "card-games";
 
 export type JoinMode = "room" | "challenge" | "solo";
 export type AuthPolicy = "guestAllowed" | "signedInRequired" | "hostChoice";

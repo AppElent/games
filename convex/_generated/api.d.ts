@@ -10,13 +10,16 @@
 
 import type * as backgammon from "../backgammon.js";
 import type * as bluffDice from "../bluffDice.js";
+import type * as cardGames from "../cardGames.js";
 import type * as chess from "../chess.js";
 import type * as connectFour from "../connectFour.js";
 import type * as hitster from "../hitster.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_cardSeats from "../lib/cardSeats.js";
 import type * as lib_codes from "../lib/codes.js";
 import type * as lib_completion from "../lib/completion.js";
 import type * as lib_errors from "../lib/errors.js";
+import type * as lib_hostedSession from "../lib/hostedSession.js";
 import type * as quiz from "../quiz.js";
 import type * as sessions from "../sessions.js";
 import type * as signalWords from "../signalWords.js";
@@ -32,13 +35,16 @@ import type {
 declare const fullApi: ApiFromModules<{
   backgammon: typeof backgammon;
   bluffDice: typeof bluffDice;
+  cardGames: typeof cardGames;
   chess: typeof chess;
   connectFour: typeof connectFour;
   hitster: typeof hitster;
   "lib/auth": typeof lib_auth;
+  "lib/cardSeats": typeof lib_cardSeats;
   "lib/codes": typeof lib_codes;
   "lib/completion": typeof lib_completion;
   "lib/errors": typeof lib_errors;
+  "lib/hostedSession": typeof lib_hostedSession;
   quiz: typeof quiz;
   sessions: typeof sessions;
   signalWords: typeof signalWords;

@@ -152,6 +152,7 @@ export const common = {
 		displayName: "Display name",
 		playerNamePlaceholder: "Player name",
 		inviteNotice: "This invite link will add you to the game.",
+		watchOnly: "Only watch, don't play",
 		joinError: "Could not join game",
 		scan: "Scan QR code",
 		scanHint: "Point the camera at the QR code on the host's screen.",

@@ -23,6 +23,8 @@ import { Route as BackgammonNewRouteImport } from './routes/backgammon/new'
 import { Route as BluffDiceIndexRouteImport } from './routes/bluff-dice/index'
 import { Route as BluffDiceSessionIdRouteImport } from './routes/bluff-dice/$sessionId'
 import { Route as BluffDiceNewRouteImport } from './routes/bluff-dice/new'
+import { Route as CardsIndexRouteImport } from './routes/cards/index'
+import { Route as CardsGameIdRouteImport } from './routes/cards/$gameId'
 import { Route as ChessIndexRouteImport } from './routes/chess/index'
 import { Route as ChessSessionIdRouteImport } from './routes/chess/$sessionId'
 import { Route as ChessNewRouteImport } from './routes/chess/new'
@@ -47,6 +49,7 @@ import { Route as SudokuScanRouteImport } from './routes/sudoku/scan'
 import { Route as WordLinksIndexRouteImport } from './routes/word-links/index'
 import { Route as WordLinksPuzzleIdRouteImport } from './routes/word-links/$puzzleId'
 import { Route as WorkbenchIndexRouteImport } from './routes/workbench/index'
+import { Route as CardsTableSessionIdRouteImport } from './routes/cards/table.$sessionId'
 import { Route as DashboardResultsSessionIdRouteImport } from './routes/dashboard/results.$sessionId'
 import { Route as HitsterSessionIdHostRouteImport } from './routes/hitster/$sessionId/host'
 import { Route as HitsterSessionIdPlayRouteImport } from './routes/hitster/$sessionId/play'
@@ -124,6 +127,16 @@ const BluffDiceSessionIdRoute = BluffDiceSessionIdRouteImport.update({
 const BluffDiceNewRoute = BluffDiceNewRouteImport.update({
   id: '/bluff-dice/new',
   path: '/bluff-dice/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CardsIndexRoute = CardsIndexRouteImport.update({
+  id: '/cards/',
+  path: '/cards/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CardsGameIdRoute = CardsGameIdRouteImport.update({
+  id: '/cards/$gameId',
+  path: '/cards/$gameId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChessIndexRoute = ChessIndexRouteImport.update({
@@ -246,6 +259,11 @@ const WorkbenchIndexRoute = WorkbenchIndexRouteImport.update({
   path: '/workbench/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CardsTableSessionIdRoute = CardsTableSessionIdRouteImport.update({
+  id: '/cards/table/$sessionId',
+  path: '/cards/table/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardResultsSessionIdRoute =
   DashboardResultsSessionIdRouteImport.update({
     id: '/dashboard/results/$sessionId',
@@ -301,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/backgammon/new': typeof BackgammonNewRoute
   '/bluff-dice/$sessionId': typeof BluffDiceSessionIdRoute
   '/bluff-dice/new': typeof BluffDiceNewRoute
+  '/cards/$gameId': typeof CardsGameIdRoute
   '/chess/$sessionId': typeof ChessSessionIdRoute
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
@@ -317,6 +336,7 @@ export interface FileRoutesByFullPath {
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/backgammon/': typeof BackgammonIndexRoute
   '/bluff-dice/': typeof BluffDiceIndexRoute
+  '/cards/': typeof CardsIndexRoute
   '/chess/': typeof ChessIndexRoute
   '/connect-four/': typeof ConnectFourIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -327,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/sudoku/': typeof SudokuIndexRoute
   '/word-links/': typeof WordLinksIndexRoute
   '/workbench/': typeof WorkbenchIndexRoute
+  '/cards/table/$sessionId': typeof CardsTableSessionIdRoute
   '/dashboard/results/$sessionId': typeof DashboardResultsSessionIdRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -349,6 +370,7 @@ export interface FileRoutesByTo {
   '/backgammon/new': typeof BackgammonNewRoute
   '/bluff-dice/$sessionId': typeof BluffDiceSessionIdRoute
   '/bluff-dice/new': typeof BluffDiceNewRoute
+  '/cards/$gameId': typeof CardsGameIdRoute
   '/chess/$sessionId': typeof ChessSessionIdRoute
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
@@ -365,6 +387,7 @@ export interface FileRoutesByTo {
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/backgammon': typeof BackgammonIndexRoute
   '/bluff-dice': typeof BluffDiceIndexRoute
+  '/cards': typeof CardsIndexRoute
   '/chess': typeof ChessIndexRoute
   '/connect-four': typeof ConnectFourIndexRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -375,6 +398,7 @@ export interface FileRoutesByTo {
   '/sudoku': typeof SudokuIndexRoute
   '/word-links': typeof WordLinksIndexRoute
   '/workbench': typeof WorkbenchIndexRoute
+  '/cards/table/$sessionId': typeof CardsTableSessionIdRoute
   '/dashboard/results/$sessionId': typeof DashboardResultsSessionIdRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -398,6 +422,7 @@ export interface FileRoutesById {
   '/backgammon/new': typeof BackgammonNewRoute
   '/bluff-dice/$sessionId': typeof BluffDiceSessionIdRoute
   '/bluff-dice/new': typeof BluffDiceNewRoute
+  '/cards/$gameId': typeof CardsGameIdRoute
   '/chess/$sessionId': typeof ChessSessionIdRoute
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
@@ -414,6 +439,7 @@ export interface FileRoutesById {
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/backgammon/': typeof BackgammonIndexRoute
   '/bluff-dice/': typeof BluffDiceIndexRoute
+  '/cards/': typeof CardsIndexRoute
   '/chess/': typeof ChessIndexRoute
   '/connect-four/': typeof ConnectFourIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -424,6 +450,7 @@ export interface FileRoutesById {
   '/sudoku/': typeof SudokuIndexRoute
   '/word-links/': typeof WordLinksIndexRoute
   '/workbench/': typeof WorkbenchIndexRoute
+  '/cards/table/$sessionId': typeof CardsTableSessionIdRoute
   '/dashboard/results/$sessionId': typeof DashboardResultsSessionIdRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
@@ -448,6 +475,7 @@ export interface FileRouteTypes {
     | '/backgammon/new'
     | '/bluff-dice/$sessionId'
     | '/bluff-dice/new'
+    | '/cards/$gameId'
     | '/chess/$sessionId'
     | '/chess/new'
     | '/connect-four/$sessionId'
@@ -464,6 +492,7 @@ export interface FileRouteTypes {
     | '/word-links/$puzzleId'
     | '/backgammon/'
     | '/bluff-dice/'
+    | '/cards/'
     | '/chess/'
     | '/connect-four/'
     | '/dashboard/'
@@ -474,6 +503,7 @@ export interface FileRouteTypes {
     | '/sudoku/'
     | '/word-links/'
     | '/workbench/'
+    | '/cards/table/$sessionId'
     | '/dashboard/results/$sessionId'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -496,6 +526,7 @@ export interface FileRouteTypes {
     | '/backgammon/new'
     | '/bluff-dice/$sessionId'
     | '/bluff-dice/new'
+    | '/cards/$gameId'
     | '/chess/$sessionId'
     | '/chess/new'
     | '/connect-four/$sessionId'
@@ -512,6 +543,7 @@ export interface FileRouteTypes {
     | '/word-links/$puzzleId'
     | '/backgammon'
     | '/bluff-dice'
+    | '/cards'
     | '/chess'
     | '/connect-four'
     | '/dashboard'
@@ -522,6 +554,7 @@ export interface FileRouteTypes {
     | '/sudoku'
     | '/word-links'
     | '/workbench'
+    | '/cards/table/$sessionId'
     | '/dashboard/results/$sessionId'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -544,6 +577,7 @@ export interface FileRouteTypes {
     | '/backgammon/new'
     | '/bluff-dice/$sessionId'
     | '/bluff-dice/new'
+    | '/cards/$gameId'
     | '/chess/$sessionId'
     | '/chess/new'
     | '/connect-four/$sessionId'
@@ -560,6 +594,7 @@ export interface FileRouteTypes {
     | '/word-links/$puzzleId'
     | '/backgammon/'
     | '/bluff-dice/'
+    | '/cards/'
     | '/chess/'
     | '/connect-four/'
     | '/dashboard/'
@@ -570,6 +605,7 @@ export interface FileRouteTypes {
     | '/sudoku/'
     | '/word-links/'
     | '/workbench/'
+    | '/cards/table/$sessionId'
     | '/dashboard/results/$sessionId'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
@@ -593,6 +629,7 @@ export interface RootRouteChildren {
   BackgammonNewRoute: typeof BackgammonNewRoute
   BluffDiceSessionIdRoute: typeof BluffDiceSessionIdRoute
   BluffDiceNewRoute: typeof BluffDiceNewRoute
+  CardsGameIdRoute: typeof CardsGameIdRoute
   ChessSessionIdRoute: typeof ChessSessionIdRoute
   ChessNewRoute: typeof ChessNewRoute
   ConnectFourSessionIdRoute: typeof ConnectFourSessionIdRoute
@@ -609,6 +646,7 @@ export interface RootRouteChildren {
   WordLinksPuzzleIdRoute: typeof WordLinksPuzzleIdRoute
   BackgammonIndexRoute: typeof BackgammonIndexRoute
   BluffDiceIndexRoute: typeof BluffDiceIndexRoute
+  CardsIndexRoute: typeof CardsIndexRoute
   ChessIndexRoute: typeof ChessIndexRoute
   ConnectFourIndexRoute: typeof ConnectFourIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -619,6 +657,7 @@ export interface RootRouteChildren {
   SudokuIndexRoute: typeof SudokuIndexRoute
   WordLinksIndexRoute: typeof WordLinksIndexRoute
   WorkbenchIndexRoute: typeof WorkbenchIndexRoute
+  CardsTableSessionIdRoute: typeof CardsTableSessionIdRoute
   DashboardResultsSessionIdRoute: typeof DashboardResultsSessionIdRoute
   HitsterSessionIdHostRoute: typeof HitsterSessionIdHostRoute
   HitsterSessionIdPlayRoute: typeof HitsterSessionIdPlayRoute
@@ -727,6 +766,20 @@ declare module '@tanstack/react-router' {
       path: '/bluff-dice/new'
       fullPath: '/bluff-dice/new'
       preLoaderRoute: typeof BluffDiceNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cards/': {
+      id: '/cards/'
+      path: '/cards'
+      fullPath: '/cards/'
+      preLoaderRoute: typeof CardsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cards/$gameId': {
+      id: '/cards/$gameId'
+      path: '/cards/$gameId'
+      fullPath: '/cards/$gameId'
+      preLoaderRoute: typeof CardsGameIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chess/': {
@@ -897,6 +950,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkbenchIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cards/table/$sessionId': {
+      id: '/cards/table/$sessionId'
+      path: '/cards/table/$sessionId'
+      fullPath: '/cards/table/$sessionId'
+      preLoaderRoute: typeof CardsTableSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/results/$sessionId': {
       id: '/dashboard/results/$sessionId'
       path: '/dashboard/results/$sessionId'
@@ -969,6 +1029,7 @@ const rootRouteChildren: RootRouteChildren = {
   BackgammonNewRoute: BackgammonNewRoute,
   BluffDiceSessionIdRoute: BluffDiceSessionIdRoute,
   BluffDiceNewRoute: BluffDiceNewRoute,
+  CardsGameIdRoute: CardsGameIdRoute,
   ChessSessionIdRoute: ChessSessionIdRoute,
   ChessNewRoute: ChessNewRoute,
   ConnectFourSessionIdRoute: ConnectFourSessionIdRoute,
@@ -985,6 +1046,7 @@ const rootRouteChildren: RootRouteChildren = {
   WordLinksPuzzleIdRoute: WordLinksPuzzleIdRoute,
   BackgammonIndexRoute: BackgammonIndexRoute,
   BluffDiceIndexRoute: BluffDiceIndexRoute,
+  CardsIndexRoute: CardsIndexRoute,
   ChessIndexRoute: ChessIndexRoute,
   ConnectFourIndexRoute: ConnectFourIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
@@ -995,6 +1057,7 @@ const rootRouteChildren: RootRouteChildren = {
   SudokuIndexRoute: SudokuIndexRoute,
   WordLinksIndexRoute: WordLinksIndexRoute,
   WorkbenchIndexRoute: WorkbenchIndexRoute,
+  CardsTableSessionIdRoute: CardsTableSessionIdRoute,
   DashboardResultsSessionIdRoute: DashboardResultsSessionIdRoute,
   HitsterSessionIdHostRoute: HitsterSessionIdHostRoute,
   HitsterSessionIdPlayRoute: HitsterSessionIdPlayRoute,

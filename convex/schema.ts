@@ -12,7 +12,18 @@ export const gameTypeValidator = v.union(
 	v.literal("signal-words"),
 	v.literal("bluff-dice"),
 	v.literal("squad-surge"),
+	v.literal("card-games"),
 );
+
+export const cardSeatValidator = v.object({
+	/** Empty for computer players, who only have a `botIndex`. */
+	participantId: v.optional(v.id("sessionParticipants")),
+	/** Proves a human owns this seat. Never returned by a query. */
+	secret: v.optional(v.string()),
+	botIndex: v.optional(v.number()),
+	/** The computer plays this seat: always for bots, on request for humans. */
+	autopilot: v.boolean(),
+});
 
 export const bluffPhaseValidator = v.union(
 	v.literal("lobby"),
@@ -488,6 +499,25 @@ export default defineSchema({
 		guessesLeft: v.optional(v.number()),
 		winnerTeam: v.optional(signalTeamValidator),
 		trapHitBy: v.optional(signalTeamValidator),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	}).index("by_session", ["sessionId"]),
+
+	cardGameStates: defineTable({
+		sessionId: v.id("gameSessions"),
+		// A key of CARD_GAMES, checked in code so that a new game is config only.
+		gameId: v.string(),
+		options: v.array(v.string()),
+		seats: v.array(cardSeatValidator),
+		status: v.union(
+			v.literal("lobby"),
+			v.literal("playing"),
+			v.literal("finished"),
+		),
+		// Engine state, including every hand: read it only through viewCardGame.
+		// Its shape belongs to the rule family, so Convex cannot validate it here.
+		game: v.optional(v.any()),
+		version: v.number(),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	}).index("by_session", ["sessionId"]),

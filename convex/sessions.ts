@@ -8,7 +8,8 @@ import {
 	joinModeValidator,
 } from "./schema";
 import { getOptionalUserId, requireUserId } from "./lib/auth";
-import { makeJoinCode, makeShareToken } from "./lib/codes";
+import { claimSeatOnJoin } from "./lib/cardSeats";
+import { createHostedSession } from "./lib/hostedSession";
 import { gameError } from "./lib/errors";
 
 /** Finds this identity's existing participant row inside one session. */
@@ -67,6 +68,11 @@ async function requireHost(
 	if (session.hostParticipantId !== hostParticipantId) {
 		throw gameError("hostOnly");
 	}
+	// The host's participant id is public, so a signed-in host must prove it.
+	const host = await ctx.db.get(hostParticipantId);
+	if (host?.userId && host.userId !== (await getOptionalUserId(ctx))) {
+		throw gameError("hostOnly");
+	}
 	return session;
 }
 
@@ -80,59 +86,12 @@ export const create = mutation({
 		guestId: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getOptionalUserId(ctx);
-		if (args.authPolicy === "signedInRequired" && !userId) {
-			throw gameError("signInToHost");
+		// A card table needs its host's seat secret from the first moment, so it
+		// is created in one step by `cardGames.createTable`.
+		if (args.gameType === "card-games") {
+			throw gameError("gameUnavailable");
 		}
-		// Hosting a multiplayer session always requires an account; only solo
-		// sessions (sudoku) can be created as a guest.
-		if (args.joinMode !== "solo" && !userId) {
-			throw gameError("signInToHost");
-		}
-
-		let joinCode: string | undefined;
-		if (args.joinMode === "room") {
-			for (let attempt = 0; attempt < 8; attempt += 1) {
-				const candidate = makeJoinCode();
-				const existing = await ctx.db
-					.query("gameSessions")
-					.withIndex("by_joinCode", (q) => q.eq("joinCode", candidate))
-					.unique();
-				if (!existing) {
-					joinCode = candidate;
-					break;
-				}
-			}
-			if (!joinCode) {
-				throw gameError("joinCodeFailed");
-			}
-		}
-
-		const sessionId = await ctx.db.insert("gameSessions", {
-			gameType: args.gameType,
-			status: "lobby",
-			joinMode: args.joinMode,
-			authPolicy: args.authPolicy,
-			title: args.title,
-			hostUserId: userId,
-			joinCode,
-			shareToken: args.joinMode === "challenge" ? makeShareToken() : undefined,
-		});
-
-		const participantId = await ctx.db.insert("sessionParticipants", {
-			sessionId,
-			userId,
-			guestId: userId ? undefined : args.guestId,
-			displayName: args.displayName,
-			role: "host",
-			seat: "host",
-			connected: true,
-			lastSeen: Date.now(),
-		});
-
-		await ctx.db.patch(sessionId, { hostParticipantId: participantId });
-
-		return { sessionId, participantId, joinCode };
+		return await createHostedSession(ctx, args);
 	},
 });
 
@@ -177,6 +136,7 @@ export const joinByCode = mutation({
 		displayName: v.string(),
 		guestId: v.optional(v.string()),
 		asSpectator: v.optional(v.boolean()),
+		seatSecret: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const normalized = args.joinCode.replace(/[^a-z0-9]/gi, "").toUpperCase();
@@ -204,6 +164,9 @@ export const joinByCode = mutation({
 				sessionId: session._id,
 				participantId: existing._id,
 				gameType: session.gameType,
+				seatClaimed:
+					!args.asSpectator &&
+					(await claimSeatOnJoin(ctx, session, existing._id, args.seatSecret)),
 			};
 		}
 
@@ -216,8 +179,16 @@ export const joinByCode = mutation({
 			connected: true,
 			lastSeen: Date.now(),
 		});
+		const seatClaimed =
+			!args.asSpectator &&
+			(await claimSeatOnJoin(ctx, session, participantId, args.seatSecret));
 
-		return { sessionId: session._id, participantId, gameType: session.gameType };
+		return {
+			sessionId: session._id,
+			participantId,
+			gameType: session.gameType,
+			seatClaimed,
+		};
 	},
 });
 

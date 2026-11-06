@@ -2,6 +2,7 @@ import { useUser } from "@clerk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
+import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
 import { useErrorMessage } from "#/lib/games/errors";
 import {
 	getOrCreateGuestIdentity,
@@ -55,19 +56,21 @@ function JoinPage() {
 					event.preventDefault();
 					setError("");
 					const guest = getOrCreateGuestIdentity();
+					const seatSecret = newCardSeatSecret();
 					try {
 						const result = joiningByLink
 							? await joinByToken({
 									shareToken: search.token ?? "",
-									displayName: name || guest.displayName,
+									displayName: name.trim() || guest.displayName,
 									guestId: guest.id,
 									asSpectator,
 								})
 							: await joinByCode({
 									joinCode: normalizeJoinCode(code),
-									displayName: name || guest.displayName,
+									displayName: name.trim() || guest.displayName,
 									guestId: guest.id,
 									asSpectator,
+									seatSecret,
 								});
 						if (result.gameType === "live-quiz") {
 							window.sessionStorage.setItem(
@@ -89,6 +92,15 @@ function JoinPage() {
 								result.participantId,
 							);
 							window.location.href = `/backgammon/${result.sessionId}`;
+						}
+						if (result.gameType === "card-games") {
+							rememberCardSeat(
+								result.sessionId,
+								result.participantId,
+								seatSecret,
+								"seatClaimed" in result && result.seatClaimed === true,
+							);
+							window.location.href = `/cards/table/${result.sessionId}`;
 						}
 						if (result.gameType === "bluff-dice") {
 							window.sessionStorage.setItem(
@@ -170,7 +182,7 @@ function JoinPage() {
 						onChange={(event) => setAsSpectator(event.target.checked)}
 						className="h-4 w-4 rounded border-[var(--club-line)]"
 					/>
-					{messages.common.session.spectating} only (watch, don't play)
+					{messages.common.joinPanel.watchOnly}
 				</label>
 				{error ? (
 					<p className="mb-4 text-sm text-[var(--club-orange)]">{error}</p>

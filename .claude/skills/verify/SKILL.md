@@ -29,6 +29,7 @@ Session model: every game is a `gameSessions` row (`gameType` discriminator) + a
 | `/connect-four/*` | `src/routes/connect-four/*` |
 | `/signal-words/*` | `src/routes/signal-words/*` |
 | `/bluff-dice/*` | `src/routes/bluff-dice/*` |
+| `/cards`, `/cards/$gameId`, `/cards/table/$sessionId` | `src/routes/cards/*`, `src/components/cards/*`, `convex/cardGames.ts`, `packages/core/src/cards/*` |
 | `/word-links/*` | `src/routes/word-links/*` (local-only, no Convex session) |
 | `/squad-surge/*` | `src/routes/squad-surge/*` (local-only, no Convex session) |
 | `/sign-in`, `/sign-up`, `/forgot-password`, `/account` | thin `#/lib/auth` wrappers, see `CLAUDE.md` Auth wiring |
