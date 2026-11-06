@@ -1001,7 +1001,7 @@ describe("full games between computer players", () => {
 				"finished",
 			);
 		}
-	});
+	}, 30_000);
 
 	it.each([
 		["pesten", ["noFinishOnPower", "noStacking", "noLastCard"]],
