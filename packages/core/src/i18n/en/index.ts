@@ -3,6 +3,7 @@ import { catalog } from "./catalog";
 import { common } from "./common";
 import { backgammon } from "./games/backgammon";
 import { bluffDice } from "./games/bluffDice";
+import { cards } from "./games/cards";
 import { chess } from "./games/chess";
 import { connectFour } from "./games/connectFour";
 import { hitster } from "./games/hitster";
@@ -33,6 +34,7 @@ export const en = {
 		signalWords,
 		bluffDice,
 		squadSurge,
+		cards,
 	},
 };
 

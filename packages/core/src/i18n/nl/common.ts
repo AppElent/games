@@ -160,6 +160,7 @@ export const common = {
 		displayName: "Weergavenaam",
 		playerNamePlaceholder: "Spelernaam",
 		inviteNotice: "Deze uitnodigingslink voegt je toe aan het spel.",
+		watchOnly: "Alleen kijken, niet meespelen",
 		joinError: "Kon niet meedoen aan het spel",
 		scan: "QR-code scannen",
 		scanHint: "Richt de camera op de QR-code op het scherm van de host.",

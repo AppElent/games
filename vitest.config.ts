@@ -9,7 +9,31 @@ export default defineConfig({
 		},
 	},
 	test: {
-		environment: "node",
-		exclude: [...configDefaults.exclude, "**/.claude/**", "**/node_modules_OLD/**", "**/node_modules.*/**", "apps/**"],
+		projects: [
+			{
+				extends: true,
+				test: {
+					name: "web",
+					environment: "node",
+					exclude: [
+						...configDefaults.exclude,
+						"**/.claude/**",
+						"**/node_modules_OLD/**",
+						"**/node_modules.*/**",
+						"apps/**",
+						"convex/**/*.test.ts",
+					],
+				},
+			},
+			{
+				extends: true,
+				test: {
+					name: "convex",
+					include: ["convex/**/*.test.ts"],
+					environment: "edge-runtime",
+					server: { deps: { inline: ["convex-test"] } },
+				},
+			},
+		],
 	},
 });

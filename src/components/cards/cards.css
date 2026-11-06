@@ -1,0 +1,1596 @@
+/* The card room: a printed felt, real card proportions, and motion that stops
+   when the visitor asks for less of it. Everything sizes from --card-w. */
+
+.cards-felt {
+	--felt-a: #7f2230;
+	--felt-b: #551421;
+	--felt-c: #260810;
+	--gold: #e6c06a;
+	--gold-soft: rgba(230, 192, 106, 0.32);
+	--ivory: #f8f2e2;
+	--ivory-muted: rgba(248, 242, 226, 0.72);
+	position: absolute;
+	inset: 0;
+	isolation: isolate;
+	overflow: hidden;
+	color: var(--ivory);
+	background: radial-gradient(
+		120% 85% at 50% 40%,
+		var(--felt-a),
+		var(--felt-b) 58%,
+		var(--felt-c) 100%
+	);
+}
+
+.cards-felt[data-felt="bottle"] {
+	--felt-a: #1e7053;
+	--felt-b: #0f4c38;
+	--felt-c: #05221a;
+}
+
+.cards-felt[data-felt="midnight"] {
+	--felt-a: #27407d;
+	--felt-b: #172a58;
+	--felt-c: #0a1229;
+}
+
+/* Woven nap, then the vignette a lamp over the table leaves. */
+.cards-felt::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	opacity: 0.2;
+	mix-blend-mode: overlay;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.cards-felt::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	box-shadow: inset 0 0 min(22vw, 200px) rgba(0, 0, 0, 0.5);
+}
+
+/* A ring printed on the cloth around the middle of the table, and the game's name. */
+.table-center::before {
+	content: "";
+	position: absolute;
+	inset: 0.4rem 3%;
+	z-index: -1;
+	border: 1.5px solid rgba(230, 192, 106, 0.16);
+	border-radius: 50%;
+	box-shadow: 0 0 0 7px rgba(230, 192, 106, 0.04);
+	pointer-events: none;
+}
+
+.felt-name {
+	display: none;
+	position: absolute;
+	inset: auto 0 9%;
+	z-index: -1;
+	text-align: center;
+	font-family: var(--font-display);
+	font-size: clamp(1.5rem, 6vw, 3.5rem);
+	font-weight: 700;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: rgba(0, 0, 0, 0.14);
+	white-space: nowrap;
+	pointer-events: none;
+}
+
+/* Cards */
+.pc {
+	display: block;
+	flex: none;
+	width: var(--card-w, 72px);
+	aspect-ratio: 100 / 140;
+	overflow: hidden;
+	border-radius: calc(var(--card-w, 72px) * 0.075);
+	background: #fbf7ec;
+	box-shadow:
+		0 1px 1px rgba(0, 0, 0, 0.35),
+		0 6px 14px -4px rgba(0, 0, 0, 0.55);
+}
+
+.pc svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* Page screens: hub, setup, lobby */
+.cards-page {
+	height: 100%;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	touch-action: pan-y;
+}
+
+.cards-page-inner {
+	margin-inline: auto;
+	width: 100%;
+	max-width: 56rem;
+	padding: 0.75rem 1rem 2.5rem;
+}
+
+.cards-panel {
+	border: 1px solid var(--gold-soft);
+	border-radius: 1rem;
+	background: rgba(12, 8, 10, 0.5);
+	box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.8);
+	backdrop-filter: blur(6px);
+}
+
+.cards-kicker {
+	font-family: var(--font-display);
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--gold);
+}
+
+.cards-title {
+	font-family: var(--font-display);
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	color: var(--ivory);
+	text-wrap: balance;
+}
+
+.cards-crumbs {
+	display: flex;
+	align-items: center;
+	min-height: 2.75rem;
+	padding-left: 4.1rem;
+	font-size: 0.875rem;
+	min-width: 0;
+}
+
+.cards-crumbs ol {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.cards-crumbs li {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	min-width: 0;
+	white-space: nowrap;
+}
+
+.cards-crumbs a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 2.75rem;
+	color: var(--ivory-muted);
+	text-decoration: none;
+}
+
+.cards-crumbs a:hover {
+	color: var(--ivory);
+	text-decoration: underline;
+}
+
+.cards-crumbs [aria-current="page"] {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-weight: 700;
+	color: var(--ivory);
+}
+
+.cards-crumbs li + li::before {
+	content: "/";
+	color: var(--gold-soft);
+}
+
+/* Short on room, a trail of three or more keeps the parent and the current step. */
+@media (max-width: 480px), (max-height: 480px) {
+	.cards-crumbs li:first-child:not(:nth-last-child(2)) {
+		display: none;
+	}
+
+	.cards-crumbs li:first-child:not(:nth-last-child(2)) + li::before {
+		content: none;
+	}
+}
+
+.btn-gold,
+.btn-ghost {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	min-height: 2.75rem;
+	padding: 0.5rem 1.15rem;
+	border-radius: 0.7rem;
+	font-weight: 700;
+	line-height: 1.15;
+	text-decoration: none;
+	transition:
+		transform 0.12s ease,
+		background-color 0.12s ease,
+		box-shadow 0.12s ease;
+}
+
+.btn-gold {
+	color: #231704;
+	background: linear-gradient(180deg, #f2d486, #d9a94a);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.5),
+		0 6px 14px -6px rgba(0, 0, 0, 0.7);
+}
+
+.btn-ghost {
+	color: var(--ivory);
+	border: 1px solid rgba(248, 242, 226, 0.28);
+	background: rgba(0, 0, 0, 0.26);
+}
+
+/* Touch screens keep :hover after a tap, so it only means something with a pointer. */
+@media (hover: hover) {
+	.btn-gold:hover:not(:disabled) {
+		background: linear-gradient(180deg, #f8e0a0, #e2b65b);
+	}
+
+	.btn-ghost:hover:not(:disabled) {
+		background: rgba(0, 0, 0, 0.42);
+	}
+
+	.hand-card[data-legal="true"]:hover {
+		--lift: -16;
+	}
+}
+
+.btn-gold:active:not(:disabled),
+.btn-ghost:active:not(:disabled) {
+	transform: translateY(1px);
+}
+
+.btn-gold:disabled,
+.btn-ghost:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.cards-felt :focus-visible,
+.sheet :focus-visible {
+	outline: 3px solid var(--gold, #e6c06a);
+	outline-offset: 2px;
+}
+
+/* Focused by the code or the browser on opening, never as something to press. */
+.cards-felt .end-panel h2:focus-visible,
+.sheet .sheet-body:focus-visible {
+	outline: none;
+}
+
+/* Hub tiles */
+.game-tile {
+	--card-w: clamp(62px, 15vw, 88px);
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: auto auto 1fr auto;
+	gap: 0.25rem;
+	height: 100%;
+	overflow: hidden;
+	border: 1px solid var(--gold-soft);
+	border-radius: 1.1rem;
+	padding: 1.15rem 1.25rem;
+	color: var(--ivory);
+	text-decoration: none;
+	background: radial-gradient(
+		120% 130% at 85% 30%,
+		var(--felt-a),
+		var(--felt-b) 62%,
+		var(--felt-c)
+	);
+	box-shadow: 0 18px 34px -22px #000;
+	transition:
+		transform 0.18s ease,
+		border-color 0.18s ease;
+}
+
+.game-tile[data-felt="bottle"] {
+	--felt-a: #1e7053;
+	--felt-b: #0f4c38;
+	--felt-c: #05221a;
+}
+
+.game-tile[data-felt="oxblood"] {
+	--felt-a: #8c2636;
+	--felt-b: #5a1623;
+	--felt-c: #2a0a12;
+}
+
+.game-tile[data-felt="midnight"] {
+	--felt-a: #27407d;
+	--felt-b: #172a58;
+	--felt-c: #0a1229;
+}
+
+.game-tile:hover {
+	transform: translateY(-2px);
+	border-color: var(--gold);
+}
+
+.tile-fan {
+	position: absolute;
+	right: 0.5rem;
+	bottom: -1.9rem;
+	display: flex;
+	pointer-events: none;
+}
+
+/* As tall as the fan shows above the tile's edge, so the words stay clear of it. */
+.tile-foot {
+	display: inline-flex;
+	align-items: flex-end;
+	gap: 0.375rem;
+	min-height: calc(var(--card-w) * 1.4 - 1.9rem + 0.5rem);
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	font-weight: 700;
+}
+
+.tile-foot svg {
+	margin-bottom: 0.125rem;
+}
+
+.tile-fan .pc {
+	margin-left: calc(var(--card-w) * -0.68);
+	transform-origin: 50% 120%;
+	transform: rotate(calc((var(--i) - var(--mid)) * 11deg));
+	transition: transform 0.22s ease;
+}
+
+.game-tile:hover .tile-fan .pc {
+	transform: rotate(calc((var(--i) - var(--mid)) * 15deg));
+}
+
+/* Setup controls */
+.mode-option {
+	position: relative;
+	display: block;
+	border: 1px solid rgba(248, 242, 226, 0.2);
+	border-radius: 0.8rem;
+	padding: 0.8rem 0.9rem;
+	background: rgba(0, 0, 0, 0.22);
+	cursor: pointer;
+}
+
+.mode-option:has(input:checked) {
+	border-color: var(--gold);
+	background: rgba(230, 192, 106, 0.13);
+	box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+.mode-option:has(input:focus-visible) {
+	outline: 3px solid var(--gold);
+	outline-offset: 2px;
+}
+
+.stepper-btn {
+	display: grid;
+	place-items: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	border-radius: 999px;
+	border: 1px solid rgba(248, 242, 226, 0.3);
+	background: rgba(0, 0, 0, 0.26);
+	color: var(--ivory);
+}
+
+.stepper-btn:disabled {
+	opacity: 0.35;
+}
+
+.rule-switch {
+	display: flex;
+	align-items: center;
+	gap: 0.9rem;
+	width: 100%;
+	min-height: 3rem;
+	padding: 0.55rem 0;
+	text-align: left;
+}
+
+.rule-switch-track {
+	flex: none;
+	width: 2.75rem;
+	height: 1.6rem;
+	margin-left: auto;
+	padding: 0.15rem;
+	border-radius: 999px;
+	background: rgba(248, 242, 226, 0.2);
+	transition: background-color 0.15s ease;
+}
+
+.rule-switch-track::before {
+	content: "";
+	display: block;
+	width: 1.3rem;
+	height: 1.3rem;
+	border-radius: 50%;
+	background: #fff;
+	transition: transform 0.15s ease;
+}
+
+.rule-switch[aria-checked="true"] .rule-switch-track {
+	background: var(--gold);
+}
+
+.rule-switch[aria-checked="true"] .rule-switch-track::before {
+	transform: translateX(1.15rem);
+}
+
+/* The table */
+.table-grid {
+	--seat-size: clamp(2.25rem, 7.5vh, 3.75rem);
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+	height: 100%;
+}
+
+.seat-row,
+.table-center,
+.table-status,
+.hand-wrap {
+	width: 100%;
+	max-width: 76rem;
+	margin-inline: auto;
+}
+
+.table-top {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.75rem 0.75rem 0 0;
+	min-height: 3.5rem;
+}
+
+.table-top-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin-left: auto;
+	flex: none;
+}
+
+.icon-chip {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	min-width: 2.75rem;
+	min-height: 2.75rem;
+	padding: 0 0.7rem;
+	border-radius: 0.75rem;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	background: rgba(8, 10, 18, 0.55);
+	color: var(--ivory);
+	font-size: 0.875rem;
+	font-weight: 600;
+	backdrop-filter: blur(6px);
+}
+
+.icon-chip span {
+	display: none;
+}
+
+@media (min-width: 768px) and (min-height: 481px) {
+	.icon-chip span {
+		display: inline;
+	}
+}
+
+.seat-row {
+	position: relative;
+	z-index: 2;
+	display: grid;
+	grid-template-columns: repeat(var(--seats), minmax(0, 8.5rem));
+	justify-content: center;
+	gap: 0.15rem;
+	margin-block: 0;
+	padding: 0.45rem 0.4rem 0;
+	list-style: none;
+}
+
+/* A full table on a phone: the seats share the width instead of overlapping. */
+.seat-row[data-dense="true"] {
+	--seat-size: min(
+		clamp(2.25rem, 7.5vh, 3.75rem),
+		calc((100vw - 1rem) / var(--seats) - 0.3rem)
+	);
+}
+
+.seat {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	min-width: 0;
+	transform: translateY(calc(var(--arc) * 1.1rem));
+	transition: transform 0.3s ease;
+}
+
+.seat-disc {
+	position: relative;
+	width: var(--seat-size);
+	height: var(--seat-size);
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	font-family: var(--font-display);
+	font-size: calc(var(--seat-size) * 0.4);
+	font-weight: 700;
+	color: var(--ivory);
+	isolation: isolate;
+}
+
+/* The disc itself, so the fan stays behind it even while the seat animates. */
+.seat-disc::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: 50%;
+	background: linear-gradient(150deg, var(--seat-a), var(--seat-b));
+	box-shadow:
+		0 0 0 2px rgba(0, 0, 0, 0.35),
+		0 6px 12px -4px rgba(0, 0, 0, 0.6);
+	transition: box-shadow 0.2s ease;
+}
+
+.seat[data-active="true"] .seat-disc::after {
+	box-shadow:
+		0 0 0 3px var(--gold),
+		0 0 22px 4px rgba(230, 192, 106, 0.6);
+	animation: seat-glow 1.6s ease-in-out infinite;
+}
+
+.seat[data-offline="true"] .seat-disc {
+	filter: grayscale(0.85) brightness(0.7);
+}
+
+.seat[data-flash="true"] .seat-disc {
+	animation: seat-bump 0.45s ease;
+}
+
+@keyframes seat-glow {
+	50% {
+		box-shadow:
+			0 0 0 3px var(--gold),
+			0 0 32px 8px rgba(230, 192, 106, 0.78);
+	}
+}
+
+@keyframes seat-bump {
+	30% {
+		transform: scale(1.14) rotate(-6deg);
+	}
+	60% {
+		transform: scale(0.96) rotate(5deg);
+	}
+}
+
+.seat-count {
+	position: absolute;
+	right: -0.4rem;
+	bottom: -0.25rem;
+	min-width: 1.4rem;
+	height: 1.4rem;
+	padding: 0 0.28rem;
+	display: grid;
+	place-items: center;
+	border-radius: 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 800;
+	font-family: var(--font-sans);
+	color: #1e1505;
+	background: var(--ivory);
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+	font-variant-numeric: tabular-nums;
+}
+
+/* The opponent's cards, fanned out from behind the disc. */
+.seat-fan {
+	position: absolute;
+	left: 50%;
+	top: -12%;
+	z-index: -1;
+	display: flex;
+	translate: -50% 0;
+	--card-w: calc(var(--seat-size) * 0.46);
+}
+
+.seat-row[data-dense="true"] .seat-fan {
+	display: none;
+}
+
+.seat-fan-card {
+	margin-left: calc(var(--card-w) * -0.82);
+	transform-origin: 50% 130%;
+	transform: rotate(calc((var(--i) - (var(--fan) - 1) / 2) * 15deg));
+}
+
+.seat-fan-card .pc {
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.seat-manage {
+	display: grid;
+	place-items: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	margin-block: -0.5rem;
+	border-radius: 0.5rem;
+	color: var(--ivory-muted);
+}
+
+.seat-spectating {
+	position: absolute;
+	right: 0.75rem;
+	bottom: 0.75rem;
+	padding: 0.25rem 0.6rem;
+	border-radius: 0.5rem;
+	font-size: 0.75rem;
+	background: rgba(0, 0, 0, 0.45);
+}
+
+.seat-spectating a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 2.75rem;
+	margin-left: 0.5rem;
+	color: var(--gold);
+	font-weight: 600;
+	text-decoration: underline;
+}
+
+.seat-name {
+	max-width: 100%;
+	margin-top: 0.3rem;
+	padding-inline: 0.1rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.seat-note {
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.6875rem;
+	line-height: 1.2;
+	color: var(--ivory-muted);
+}
+
+/* Floats over the felt so a chance to catch someone doesn't move the table. */
+.catch-btn {
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	z-index: 5;
+	width: max-content;
+	translate: -50% 0.2rem;
+	min-height: 2.75rem;
+	padding: 0.15rem 0.65rem;
+	border-radius: 0.65rem;
+	font-size: 0.75rem;
+	font-weight: 800;
+	line-height: 1.1;
+	color: #2c0c00;
+	background: #ffb35a;
+	box-shadow: 0 0 0 0 rgba(255, 179, 90, 0.8);
+	animation: chip-pulse 1s ease-in-out infinite;
+}
+
+.seat:first-child .catch-btn {
+	left: 0;
+	translate: 0 0.2rem;
+}
+
+.seat:last-child:not(:first-child) .catch-btn {
+	right: 0;
+	left: auto;
+	translate: 0 0.2rem;
+}
+
+@keyframes chip-pulse {
+	70% {
+		box-shadow: 0 0 0 11px rgba(255, 179, 90, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 0 rgba(255, 179, 90, 0);
+	}
+}
+
+.table-center {
+	position: relative;
+	container-type: size;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	min-height: 0;
+	padding: 1.2rem 0.5rem 0.25rem;
+}
+
+/* The printed name only where the piles leave it room. */
+@container (min-height: 25rem) {
+	.felt-name {
+		display: block;
+	}
+}
+
+/* Stock and discard */
+.piles {
+	--card-w: clamp(50px, min(26vw, 17vh), 122px);
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: clamp(2.25rem, 7vw, 4rem);
+}
+
+.pile {
+	position: relative;
+	display: block;
+	width: var(--card-w);
+	aspect-ratio: 100 / 140;
+	border-radius: calc(var(--card-w) * 0.075);
+}
+
+.pile > .pc,
+.pile-card {
+	position: absolute;
+	inset: 0;
+}
+
+.pile-stock .pc:nth-child(1) {
+	transform: translate(-3px, 3px);
+}
+
+.pile-stock .pc:nth-child(2) {
+	transform: translate(-1.5px, 1.5px);
+}
+
+button.pile {
+	cursor: pointer;
+}
+
+button.pile:disabled {
+	cursor: default;
+}
+
+/* A glow that follows the card, tilt included. */
+.pile[data-pulse="true"] {
+	filter: drop-shadow(0 0 3px var(--gold)) drop-shadow(0 0 9px var(--gold-soft));
+	animation: pile-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pile-pulse {
+	50% {
+		filter: drop-shadow(0 0 7px var(--gold))
+			drop-shadow(0 0 20px rgba(230, 192, 106, 0.6));
+	}
+}
+
+.pile-empty {
+	position: absolute;
+	inset: 0;
+	border: 2px dashed rgba(248, 242, 226, 0.3);
+	border-radius: inherit;
+}
+
+.pile-count {
+	position: absolute;
+	left: 50%;
+	bottom: -1.3rem;
+	transform: translateX(-50%);
+	white-space: nowrap;
+	font-size: 0.6875rem;
+	color: var(--ivory-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.pile[data-landing="true"] > .pile-card:last-of-type {
+	visibility: hidden;
+}
+
+/* Which way play goes, between the two piles. */
+.direction-mark {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	z-index: 1;
+	display: grid;
+	place-items: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	margin: -0.875rem 0 0 -0.875rem;
+	border-radius: 50%;
+	color: var(--gold);
+	background: rgba(8, 6, 8, 0.55);
+	box-shadow: 0 0 0 1px var(--gold-soft);
+	animation: flag-pop 0.3s ease;
+}
+
+.direction-mark svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.table-flags {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	min-height: 1.9rem;
+	margin-top: 1.45rem;
+}
+
+.flag {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	min-height: 1.75rem;
+	padding: 0.15rem 0.65rem;
+	border-radius: 999px;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	color: #231704;
+	background: var(--ivory);
+	box-shadow: 0 3px 8px -2px rgba(0, 0, 0, 0.5);
+}
+
+.flag svg {
+	width: 0.85rem;
+	height: 0.85rem;
+}
+
+.flag[data-tone="red"] {
+	color: #b81f2d;
+}
+
+.flag[data-tone="danger"] {
+	color: #fff;
+	background: #c32a2a;
+	animation: flag-pop 0.3s ease;
+}
+
+@keyframes flag-pop {
+	0% {
+		transform: scale(0.6);
+	}
+	70% {
+		transform: scale(1.12);
+	}
+}
+
+/* Status and actions */
+.table-status {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.15rem;
+	padding: 0.2rem 0.75rem 0;
+	text-align: center;
+}
+
+.status-line {
+	font-family: var(--font-display);
+	font-size: clamp(1rem, 2.6vh, 1.25rem);
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.status-line[data-mine="true"] {
+	color: var(--gold);
+}
+
+.status-hint {
+	font-size: 0.8125rem;
+	line-height: 1.25;
+	color: var(--ivory-muted);
+	min-height: 1.05rem;
+}
+
+.ticker {
+	max-width: 100%;
+	font-size: 0.75rem;
+	line-height: 1.25;
+	color: var(--ivory-muted);
+	min-height: 1rem;
+	font-style: italic;
+}
+
+.table-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	min-height: 2.75rem;
+	margin-top: 0.3rem;
+}
+
+.table-actions .btn-gold,
+.table-actions .btn-ghost {
+	font-size: 0.875rem;
+	padding-inline: 0.85rem;
+}
+
+.btn-ghost.toggle-chip[aria-pressed="true"],
+.btn-ghost.toggle-chip[aria-pressed="true"]:hover:not(:disabled) {
+	border-color: var(--gold);
+	color: #231704;
+	background: var(--gold);
+}
+
+.call-pulse {
+	animation: chip-pulse 1s ease-in-out infinite;
+}
+
+.error-toast {
+	position: absolute;
+	left: 50%;
+	bottom: calc(var(--hand-card, 90px) * 1.4 + 3.25rem);
+	transform: translateX(-50%);
+	z-index: 30;
+	width: max-content;
+	max-width: calc(100% - 2rem);
+	padding: 0.5rem 0.9rem;
+	border-radius: 0.65rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: #fff;
+	background: #8f1f1f;
+	box-shadow: 0 8px 20px -8px #000;
+}
+
+/* The hand */
+.hand-wrap {
+	--card-w: clamp(52px, min(19.5vw, 15.5vh), 108px);
+	position: relative;
+	padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 480px) {
+	.hand-wrap[data-many="true"] {
+		--card-w: clamp(52px, min(18vw, 13vh), 80px);
+	}
+}
+
+.hand {
+	display: flex;
+	padding: 2.1rem clamp(0.9rem, 3vw, 2.25rem) 0.35rem;
+	overflow-x: auto;
+	overflow-y: hidden;
+	touch-action: pan-x;
+	scrollbar-width: none;
+	margin: 0;
+	list-style: none;
+}
+
+/* Too many cards to fan: the edges fade to say there are more to swipe to. */
+.hand[data-scrolls="true"] {
+	mask-image: linear-gradient(
+		90deg,
+		transparent,
+		#000 1.25rem,
+		#000 calc(100% - 1.25rem),
+		transparent
+	);
+}
+
+.hand::-webkit-scrollbar {
+	display: none;
+}
+
+.hand-card {
+	position: relative;
+	flex: none;
+	display: block;
+	margin-left: var(--overlap, 0);
+	border-radius: calc(var(--card-w) * 0.075);
+	transform: translateY(calc(var(--lift, 0) * 1px + var(--dip, 0) * 1px))
+		rotate(var(--tilt, 0deg));
+	transform-origin: 50% 100%;
+	transition:
+		transform 0.14s ease,
+		margin-left 0.2s ease,
+		filter 0.15s ease;
+}
+
+.hand li:first-child .hand-card {
+	margin-left: auto;
+}
+
+.hand li:last-child .hand-card {
+	margin-right: auto;
+}
+
+.hand-card[aria-disabled="true"] {
+	cursor: default;
+}
+
+.hand-card[data-dim="true"] .pc {
+	filter: brightness(0.8) sepia(0.14);
+}
+
+.hand-card[data-legal="true"] {
+	--lift: -7;
+	cursor: pointer;
+}
+
+.hand-card[data-legal="true"] .pc {
+	box-shadow:
+		0 0 0 1.5px var(--gold),
+		0 0 14px 1px rgba(230, 192, 106, 0.5),
+		0 8px 14px -4px rgba(0, 0, 0, 0.6);
+}
+
+.hand-card:focus-visible {
+	--lift: -16;
+}
+
+.hand-card[data-selected="true"] {
+	--lift: -20;
+	cursor: pointer;
+}
+
+.hand-card[data-selected="true"] .pc {
+	box-shadow:
+		0 0 0 2.5px var(--gold),
+		0 12px 18px -6px rgba(0, 0, 0, 0.7);
+}
+
+.hand-card[data-new="true"]:not([data-selected="true"]) .pc {
+	box-shadow:
+		0 0 0 2.5px #7ee8d0,
+		0 0 16px 2px rgba(126, 232, 208, 0.55);
+}
+
+.hand-card[data-shake="true"] {
+	animation: card-no 0.28s ease;
+}
+
+@keyframes card-no {
+	25% {
+		translate: -4px 0;
+	}
+	75% {
+		translate: 4px 0;
+	}
+}
+
+/* Rummy: the middle of the table */
+.rummy-board {
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr);
+	gap: 0.35rem;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+}
+
+.rummy-board:has(.meld-empty) {
+	grid-template-rows: auto auto;
+	align-content: center;
+	gap: 1.5rem;
+}
+
+.rummy-board .piles {
+	--card-w: clamp(44px, min(17vw, 11vh), 92px);
+	gap: 1.1rem;
+	margin-bottom: 1.1rem;
+}
+
+/* Once melds are down they get the room. */
+.rummy-board:has(.meld) .piles {
+	--card-w: clamp(36px, min(12vw, 8vh), 74px);
+	gap: 0.8rem;
+	margin-bottom: 0.9rem;
+}
+
+/* Piles beside the melds, inside the printed ring. A bare table on a wide screen
+   keeps its piles in the middle, as on a phone. */
+@media (min-width: 900px) {
+	.rummy-board:has(.meld) {
+		grid-template-columns: auto minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr);
+		align-content: stretch;
+		gap: 1.5rem;
+		padding-inline: 8%;
+	}
+
+	.rummy-board:has(.meld) .meld-area {
+		align-content: safe center;
+	}
+
+	.rummy-board:has(.meld) .piles {
+		--card-w: clamp(40px, 11vh, 98px);
+		margin-bottom: 0;
+		align-self: center;
+	}
+}
+
+@media (max-height: 480px) {
+	.rummy-board,
+	.rummy-board:has(.meld),
+	.rummy-board:has(.meld-empty) {
+		grid-template-columns: auto minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr);
+		align-content: stretch;
+		gap: 1.5rem;
+		padding-inline: 1rem;
+	}
+
+	.rummy-board .meld-area {
+		align-content: safe center;
+	}
+
+	.rummy-board .piles,
+	.rummy-board:has(.meld) .piles {
+		--card-w: clamp(40px, 11vh, 98px);
+		margin-bottom: 0;
+		align-self: center;
+	}
+}
+
+.meld-area {
+	--card-w: clamp(34px, min(10.5vw, 7.5vh), 62px);
+	display: flex;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	justify-content: center;
+	gap: 0.55rem 0.8rem;
+	min-height: 0;
+	overflow-y: auto;
+	touch-action: pan-y;
+	padding: 0.35rem 0.35rem 0.9rem;
+	border-radius: 0.75rem;
+	/* A row cut by the edge reads as more below, not as a clipped table. */
+	mask-image: linear-gradient(#000 calc(100% - 0.9rem), transparent);
+}
+
+/* Short screens give the bar with no buttons in it to the melds. */
+@media (max-height: 700px) {
+	.table-grid:has(.rummy-board .meld) .table-actions:empty,
+	.table-grid:has(.rummy-board .meld) .status-hint:empty {
+		min-height: 0;
+		margin-top: 0;
+	}
+
+	.rummy-board:has(.meld) .pile-count,
+	.table-grid:has(.staged) .meld-empty {
+		display: none;
+	}
+}
+
+.meld-empty {
+	align-self: center;
+	margin: auto;
+	font-size: 0.8125rem;
+	text-align: center;
+	color: var(--ivory-muted);
+}
+
+.meld {
+	display: flex;
+	padding: 0.2rem;
+	border-radius: 0.6rem;
+	border: 1.5px solid transparent;
+}
+
+.meld .pc {
+	margin-left: calc(var(--card-w) * -0.54);
+}
+
+.meld .pc:first-child {
+	margin-left: 0;
+}
+
+/* Short screens fit more melds by showing less of each covered card. */
+@media (max-height: 700px) {
+	.meld-area .meld .pc:not(:first-child) {
+		margin-left: calc(var(--card-w) * -0.62);
+	}
+}
+
+button.meld[data-target="true"] {
+	border-color: var(--gold);
+	background: rgba(230, 192, 106, 0.16);
+	animation: chip-pulse 1.2s ease-in-out infinite;
+	cursor: pointer;
+}
+
+.staged {
+	--card-w: clamp(32px, 9.5vw, 54px);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3rem 0.65rem;
+	padding: 0.15rem 0.4rem;
+}
+
+.opening-meter {
+	position: relative;
+	width: min(14rem, 62vw);
+	height: 0.35rem;
+	border-radius: 99px;
+	background: rgba(248, 242, 226, 0.22);
+	overflow: hidden;
+}
+
+.opening-meter i {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--gold);
+	transition: width 0.25s ease;
+}
+
+/* Sheets */
+.sheet {
+	margin: auto auto 0;
+	width: 100%;
+	max-width: 34rem;
+	max-height: 92dvh;
+	padding: 0;
+	border: 1px solid rgba(230, 192, 106, 0.35);
+	border-bottom: 0;
+	border-radius: 1.25rem 1.25rem 0 0;
+	color: #f8f2e2;
+	background: #171216;
+	box-shadow: 0 -24px 60px -20px #000;
+	overflow: hidden;
+}
+
+@media (min-width: 640px) {
+	.sheet {
+		margin: auto;
+		border-bottom: 1px solid rgba(230, 192, 106, 0.35);
+		border-radius: 1.25rem;
+	}
+}
+
+.sheet[open] {
+	display: flex;
+	flex-direction: column;
+	animation: sheet-in 0.22s ease;
+}
+
+.sheet::backdrop {
+	background: rgba(4, 3, 6, 0.65);
+	backdrop-filter: blur(2px);
+}
+
+@keyframes sheet-in {
+	from {
+		opacity: 0;
+		transform: translateY(18px);
+	}
+}
+
+.sheet-head {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.75rem 0.75rem 0.75rem 1.25rem;
+	border-bottom: 1px solid rgba(248, 242, 226, 0.1);
+}
+
+.sheet-body {
+	padding: 1rem 1.25rem 1.5rem;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	touch-action: pan-y;
+	--card-w: 44px;
+	--gold: #e6c06a;
+	--ivory: #f8f2e2;
+	--ivory-muted: rgba(248, 242, 226, 0.72);
+	--gold-soft: rgba(230, 192, 106, 0.32);
+}
+
+/* The way forward stays in view however long the sheet gets, on its own footer
+   so nothing shows beneath it. Margins undo the padding of .sheet-body. */
+.sheet-foot {
+	position: sticky;
+	bottom: -1.5rem;
+	margin: 1rem -1.25rem -1.5rem;
+	padding: 0.75rem 1.25rem max(1rem, env(safe-area-inset-bottom));
+	border-top: 1px solid rgba(248, 242, 226, 0.14);
+	background: #171216;
+}
+
+.suit-choice {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.9rem 0.25rem;
+	border-radius: 0.9rem;
+	background: #fbf7ec;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	transition: transform 0.12s ease;
+}
+
+.suit-choice:hover {
+	transform: translateY(-3px);
+}
+
+.suit-choice svg {
+	width: 2.2rem;
+	height: 2.2rem;
+}
+
+.score-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.875rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.score-table th,
+.score-table td {
+	padding: 0.4rem 0.45rem;
+	text-align: right;
+	border-bottom: 1px solid rgba(248, 242, 226, 0.1);
+	white-space: nowrap;
+}
+
+.score-table th:first-child,
+.score-table td:first-child {
+	text-align: left;
+	max-width: 9rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.score-table thead th {
+	font-size: 0.75rem;
+	color: rgba(248, 242, 226, 0.65);
+	font-weight: 600;
+}
+
+/* The win */
+.end-backdrop {
+	position: fixed;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	max-height: none;
+	border: 0;
+	display: grid;
+	color: var(--ivory);
+	place-items: center;
+	padding: 1rem;
+	overflow-y: auto;
+	touch-action: pan-y;
+	background: rgba(6, 4, 6, 0.62);
+	backdrop-filter: blur(3px);
+}
+
+.end-backdrop::backdrop {
+	background: transparent;
+}
+
+.end-panel {
+	position: relative;
+	width: min(100%, 30rem);
+	background: #17110f;
+	padding: 1.5rem 1.25rem;
+	text-align: center;
+	animation: sheet-in 0.3s ease;
+}
+
+/* In reach however long the final table gets. The offset undoes the dialog's padding. */
+.end-actions {
+	position: sticky;
+	bottom: -1rem;
+	padding-block: 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+	background: #17110f;
+}
+
+.cascade {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.cascade span {
+	position: absolute;
+	top: -2.5rem;
+	left: var(--x);
+	width: var(--s);
+	height: var(--s);
+	color: var(--c);
+	opacity: 0.9;
+	animation: cascade-fall var(--d) linear var(--w) infinite;
+}
+
+@keyframes cascade-fall {
+	to {
+		transform: translateY(110vh) rotate(var(--r));
+	}
+}
+
+/* Flights */
+.flight-layer {
+	position: absolute;
+	inset: 0;
+	z-index: 15;
+	pointer-events: none;
+}
+
+.flight {
+	position: absolute;
+	will-change: transform;
+}
+
+/* Landscape phones: seats move up into the header row and the status line
+   shares one row with its buttons, so the cards keep the height. */
+@media (max-height: 480px) {
+	.table-grid {
+		--seat-size: 1.9rem;
+	}
+
+	.table-top {
+		padding-top: 0.5rem;
+		min-height: 3rem;
+	}
+
+	/* Up in the header's band, where only the seats themselves may take a tap. */
+	.seat-row {
+		margin-top: -2.9rem;
+		padding: 0 7rem 0 12.5rem;
+		pointer-events: none;
+	}
+
+	.seat-row[data-dense="true"] {
+		--seat-size: 1.9rem;
+	}
+
+	.table-grid[data-extra-controls="true"] .seat-row {
+		padding-right: 10rem;
+	}
+
+	.seat {
+		pointer-events: auto;
+	}
+
+	.seat-fan {
+		display: none;
+	}
+
+	.seat-count {
+		right: -0.3rem;
+		bottom: -0.2rem;
+		min-width: 0.95rem;
+		height: 0.95rem;
+		padding: 0 0.15rem;
+		border-radius: 0.3rem;
+		font-size: 0.625rem;
+	}
+
+	.seat-row .seat {
+		transform: none;
+	}
+
+	.seat-name {
+		margin-top: 0.1rem;
+		font-size: 0.6875rem;
+	}
+
+	.seat-note,
+	.ticker,
+	.pile-count,
+	.table-center::before {
+		display: none;
+	}
+
+	.table-center {
+		padding: 0.35rem 0.5rem 0;
+	}
+
+	.piles {
+		--card-w: clamp(44px, 25vh, 80px);
+	}
+
+	.table-flags {
+		margin-top: 0;
+		min-height: 0;
+	}
+
+	.table-status {
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: center;
+		column-gap: 0.75rem;
+		padding-top: 0;
+	}
+
+	.table-actions {
+		margin-top: 0;
+	}
+
+	.hand {
+		padding-top: 1.5rem;
+	}
+
+	/* The hand hangs below the felt, which must not let the felt be scrolled. */
+	.cards-felt {
+		overflow: clip;
+	}
+
+	/* With the fan's arc this stays inside the padding, so the card isn't cut off. */
+	.hand-card[data-selected="true"],
+	.hand-card:focus-visible {
+		--lift: -10;
+	}
+
+	/* The bottoms of the cards hang off the screen: the corners say enough. */
+	.hand-wrap {
+		--card-w: clamp(44px, 20vh, 72px);
+		margin-bottom: -2rem;
+		padding-bottom: 0;
+	}
+
+	.staged {
+		--card-w: 28px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.seat[data-active="true"] .seat-disc::after,
+	.seat-disc::after,
+	.seat[data-flash="true"] .seat-disc,
+	.pile[data-pulse="true"],
+	.direction-mark,
+	.catch-btn,
+	.call-pulse,
+	.flag[data-tone="danger"],
+	.hand .hand-card,
+	.hand-card[data-shake="true"],
+	.sheet[open],
+	.end-panel,
+	button.meld[data-target="true"] {
+		animation: none;
+		transition: none;
+	}
+
+	.cascade {
+		display: none;
+	}
+
+	/* The shake is the only answer to a card that can't be played. */
+	.hand-card[data-shake="true"] .pc {
+		outline: 2px solid #ffb35a;
+	}
+}

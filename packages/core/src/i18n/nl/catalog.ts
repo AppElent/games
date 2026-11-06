@@ -82,4 +82,12 @@ export const catalog = {
 		primaryAction: "Squad inzetten",
 		stats: "Solo",
 	},
+	"card-games": {
+		title: "Kaartclub",
+		tagline: "Pesten, Jokeren en meer",
+		description:
+			"Klassieke Nederlandse kaartspellen aan één tafel. Speel meteen tegen de computer of nodig vrienden uit met een kamercode.",
+		primaryAction: "Kies een spel",
+		stats: "2-8 spelers",
+	},
 } satisfies Record<GameType, CatalogText>;
