@@ -22,5 +22,6 @@ export const play = {
 		sudoku: "Klassiek, Killer en Binair. Werkt offline.",
 		backgammon: "Samen op deze telefoon, of daag een vriend uit.",
 		hitster: "Zet nummers op je tijdlijn. Host een feestkamer.",
+		"card-games": "Pesten en Jokeren, tegen de computer of vrienden.",
 	},
 } satisfies typeof en;
