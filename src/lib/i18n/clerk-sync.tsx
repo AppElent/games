@@ -1,6 +1,6 @@
+import { isLocale } from "@arcadeclub/core/i18n/format";
 import { useUser } from "@clerk/react";
 import { useEffect } from "react";
-import { isLocale } from "./core";
 import type { I18nValue } from "./react";
 
 export type LanguageSyncDeps<L extends string, M> = {

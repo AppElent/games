@@ -1,11 +1,10 @@
 import { Chess } from "chess.js";
-
-export type ChessColor = "white" | "black";
+import type { ChessColor, ChessPromotion, ChessTimeControl } from "./enums";
 
 type ChessMoveInput = {
 	from: string;
 	to: string;
-	promotion?: "q" | "r" | "b" | "n";
+	promotion?: ChessPromotion;
 };
 
 export type ChessGameResult =
@@ -27,8 +26,6 @@ type ChessMoveOutcome = {
 
 export const CHESS_INITIAL_FEN =
 	"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-export type ChessTimeControl = "untimed" | "10+0";
 
 export const CHESS_TIME_CONTROLS: Record<
 	ChessTimeControl,
@@ -116,6 +113,11 @@ export function isPromotionMove(fen: string, from: string, to: string) {
 
 export function isInCheck(fen: string) {
 	return new Chess(fen).inCheck();
+}
+
+/** The position as rows of squares, rank 8 first. */
+export function getChessBoard(fen: string) {
+	return new Chess(fen).board();
 }
 
 export type ChessClockState = {

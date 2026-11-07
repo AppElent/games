@@ -1,3 +1,11 @@
+import {
+	CONNECT_FOUR_COLS,
+	CONNECT_FOUR_ROWS,
+	type ConnectFourCell,
+	type ConnectFourColor,
+	getCell,
+	isColumnFull,
+} from "@arcadeclub/core/connect-four";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { FitScale } from "#/components/games/FitScale";
@@ -7,14 +15,6 @@ import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import {
-	CONNECT_FOUR_COLS,
-	CONNECT_FOUR_ROWS,
-	type ConnectFourCell,
-	type ConnectFourColor,
-	getCell,
-	isColumnFull,
-} from "#/lib/games/connect-four";
 import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";

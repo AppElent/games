@@ -1,4 +1,4 @@
-import type { SudokuRng } from "./sudoku";
+import { type Rng, shuffle } from "./random";
 
 /**
  * Binary puzzle (Binairo / Takuzu). Cells hold 0s and 1s:
@@ -226,7 +226,7 @@ export function countBinarySolutions(
 	return found.count;
 }
 
-function generateSolvedBinaryGrid(size: number, rng: SudokuRng): BinaryGrid {
+function generateSolvedBinaryGrid(size: number, rng: Rng): BinaryGrid {
 	const grid = emptyBinaryGrid(size);
 	const solve = (): boolean => {
 		const cell = grid.indexOf(0);
@@ -259,7 +259,7 @@ type GeneratedBinaryPuzzle = {
 
 export function generateBinaryPuzzle(
 	difficulty: BinaryDifficulty,
-	rng: SudokuRng = Math.random,
+	rng: Rng = Math.random,
 ): GeneratedBinaryPuzzle {
 	const size = BINARY_SIZES[difficulty];
 	const solution = generateSolvedBinaryGrid(size, rng);
@@ -269,11 +269,7 @@ export function generateBinaryPuzzle(
 	let clueCount = total;
 
 	const order = Array.from({ length: total }, (_, i) => i);
-	for (let i = order.length - 1; i > 0; i -= 1) {
-		const j = Math.floor(rng() * (i + 1));
-		[order[i], order[j]] = [order[j], order[i]];
-	}
-	for (const cell of order) {
+	for (const cell of shuffle(order, rng)) {
 		if (clueCount <= target) {
 			break;
 		}

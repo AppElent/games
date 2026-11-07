@@ -4,6 +4,7 @@
  * differs between games in the family (Jokeren, Rummy 500) is `RummyRules` data.
  */
 import { GameRuleError } from "../errors";
+import { type Rng, shuffle } from "../random";
 import {
 	buildDeck,
 	type CardId,
@@ -13,10 +14,8 @@ import {
 	isJoker,
 	parseCard,
 	RANKS,
-	type Random,
 	type Rank,
 	removeCard,
-	shuffle,
 } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
 import {
@@ -107,7 +106,7 @@ export type RummyView = {
 export function createRummy(
 	rules: RummyRules,
 	seats: number,
-	random: Random,
+	random: Rng,
 	dealer = seats - 1,
 	carried?: Pick<RummyState, "round" | "scores" | "nextSeq" | "events">,
 ): RummyState {
@@ -289,7 +288,7 @@ export function applyRummy(
 	previous: RummyState,
 	seat: number,
 	action: RummyAction,
-	random: Random,
+	random: Rng,
 ): RummyState {
 	const state = clone(previous);
 	switch (action.type) {

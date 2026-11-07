@@ -1,8 +1,8 @@
+import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { ConnectFourMatch } from "#/components/connect-four/ConnectFourMatch";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
-import { buildShareUrl } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -34,7 +34,9 @@ function ConnectFourSessionPage() {
 	}
 
 	const shareUrl = bundle.session.shareToken
-		? buildShareUrl(window.location.origin, bundle.session.shareToken)
+		? buildInviteUrl(window.location.origin, {
+				token: bundle.session.shareToken,
+			})
 		: window.location.href;
 
 	return <ConnectFourMatch bundle={bundle} shareUrl={shareUrl} />;

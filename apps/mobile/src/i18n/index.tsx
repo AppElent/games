@@ -7,6 +7,7 @@
  * account, and has to apply to sign-in and offline states too.
  */
 
+import { DEFAULT_LOCALE, resolveLocale } from "@arcadeclub/core/i18n/format";
 import {
 	LOCALES,
 	type Locale,
@@ -27,9 +28,8 @@ import {
 	readPreference,
 	writePreference,
 } from "../prefs/local-preference";
-import { resolveLocale } from "./core";
 
-export { fmt, plural } from "./core";
+export { fmt, plural } from "@arcadeclub/core/i18n/format";
 export type { Locale, Messages };
 
 export const SUPPORTED_LOCALES = LOCALES;
@@ -51,7 +51,7 @@ function initialLocale(): Locale {
 	}
 	return resolveLocale(
 		SUPPORTED_LOCALES,
-		"en",
+		DEFAULT_LOCALE,
 		readPreference(PREFERENCE_KEYS.locale) ?? undefined,
 		device,
 	);

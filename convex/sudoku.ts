@@ -8,6 +8,7 @@ import {
 	type KillerCage,
 	validateKillerCages,
 } from "@arcadeclub/core/sudoku-killer";
+import type { SudokuVariant } from "@arcadeclub/core/sudoku";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -19,8 +20,6 @@ import {
 	sudokuVariantValidator,
 } from "./schema";
 import { gameError } from "./lib/errors";
-
-type SudokuVariant = "classic" | "killer" | "binary";
 
 const BINARY_SIZES = [6, 8, 10, 12];
 

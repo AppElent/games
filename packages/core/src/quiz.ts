@@ -1,9 +1,11 @@
-export type QuizPhase =
-	| "lobby"
-	| "question"
-	| "reveal"
-	| "scoreboard"
-	| "finished";
+export const QUIZ_PHASES = [
+	"lobby",
+	"question",
+	"reveal",
+	"scoreboard",
+	"finished",
+] as const;
+export type QuizPhase = (typeof QUIZ_PHASES)[number];
 
 export type QuizQuestionDraft = {
 	id: string;

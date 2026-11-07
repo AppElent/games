@@ -1,3 +1,6 @@
+/** The locale used when nothing better is known. */
+export const DEFAULT_LOCALE = "en";
+
 export function isLocale<L extends string>(
 	locales: readonly L[],
 	value: unknown,

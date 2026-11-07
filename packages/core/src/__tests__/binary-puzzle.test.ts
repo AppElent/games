@@ -8,7 +8,7 @@ import {
 	isBinarySolved,
 	parseBinaryGrid,
 } from "../binary-puzzle";
-import { mulberry32 } from "../sudoku";
+import { mulberry32 } from "../random";
 
 describe("findBinaryConflicts", () => {
 	it("flags three identical digits in a row", () => {

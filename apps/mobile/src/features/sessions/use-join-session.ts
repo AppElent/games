@@ -6,12 +6,14 @@
  * Waits for Convex to hold the Clerk token when someone is signed in, so a
  * signed-in player is joined as their account rather than as a guest.
  */
+import type { GameType } from "@arcadeclub/core/games";
+import type { Invite } from "@arcadeclub/core/sessions";
 import { useAuth } from "@clerk/expo";
 import { useConvexAuth, useMutation } from "convex/react";
 import { useCallback, useState } from "react";
 import { api } from "../../convex/api";
 import { usePlayerIdentity } from "../players/use-player-identity";
-import { type GameType, rememberSeat } from "./session-seats";
+import { rememberSeat } from "./session-seats";
 
 export type JoinResult = {
 	sessionId: string;
@@ -30,10 +32,7 @@ export function useJoinSession() {
 	const authPending = Boolean(isSignedIn) && !convexAuth.isAuthenticated;
 
 	const join = useCallback(
-		async (
-			invite: { code: string } | { token: string },
-			displayName: string,
-		): Promise<JoinResult | null> => {
+		async (invite: Invite, displayName: string): Promise<JoinResult | null> => {
 			setBusy(true);
 			setError(null);
 			try {

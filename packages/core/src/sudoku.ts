@@ -1,16 +1,23 @@
-export type SudokuDifficulty = "easy" | "medium" | "hard" | "expert";
+import { type Rng, shuffle } from "./random";
+
+export const SUDOKU_DIFFICULTIES = [
+	"easy",
+	"medium",
+	"hard",
+	"expert",
+] as const;
+export type SudokuDifficulty = (typeof SUDOKU_DIFFICULTIES)[number];
+
+export const SUDOKU_VARIANTS = ["classic", "killer", "binary"] as const;
+export type SudokuVariant = (typeof SUDOKU_VARIANTS)[number];
+
+export const SUDOKU_SOURCES = ["generated", "scan"] as const;
+export const SUDOKU_STATUSES = ["active", "paused", "completed"] as const;
 
 /** 81 cells, row-major. 0 = empty, 1-9 = digit. */
 export type SudokuGrid = number[];
 
 export const SUDOKU_CELL_COUNT = 81;
-export const SUDOKU_DIFFICULTIES: readonly SudokuDifficulty[] = [
-	"easy",
-	"medium",
-	"hard",
-	"expert",
-];
-
 const CLUE_TARGETS: Record<SudokuDifficulty, number> = {
 	easy: 40,
 	medium: 34,
@@ -230,30 +237,7 @@ export function countSolutions(grid: SudokuGrid, limit = 2) {
 
 // --- generation ---
 
-export type SudokuRng = () => number;
-
-/** Deterministic RNG for reproducible tests. */
-export function mulberry32(seed: number): SudokuRng {
-	let state = seed >>> 0;
-	return () => {
-		state = (state + 0x6d2b79f5) >>> 0;
-		let t = state;
-		t = Math.imul(t ^ (t >>> 15), t | 1);
-		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-	};
-}
-
-function shuffled<T>(items: readonly T[], rng: SudokuRng) {
-	const copy = [...items];
-	for (let i = copy.length - 1; i > 0; i -= 1) {
-		const j = Math.floor(rng() * (i + 1));
-		[copy[i], copy[j]] = [copy[j], copy[i]];
-	}
-	return copy;
-}
-
-export function generateSolvedGrid(rng: SudokuRng = Math.random): SudokuGrid {
+export function generateSolvedGrid(rng: Rng = Math.random): SudokuGrid {
 	const grid = emptyGrid();
 	const fill = (index: number): boolean => {
 		if (index === SUDOKU_CELL_COUNT) {
@@ -267,7 +251,7 @@ export function generateSolvedGrid(rng: SudokuRng = Math.random): SudokuGrid {
 		if (size === 0) {
 			return false;
 		}
-		for (const digit of shuffled(digitsInMask(candidates[cell]), rng)) {
+		for (const digit of shuffle(digitsInMask(candidates[cell]), rng)) {
 			grid[cell] = digit;
 			if (fill(index + 1)) {
 				return true;
@@ -289,7 +273,7 @@ type GeneratedPuzzle = {
 
 export function generatePuzzle(
 	difficulty: SudokuDifficulty,
-	rng: SudokuRng = Math.random,
+	rng: Rng = Math.random,
 ): GeneratedPuzzle {
 	const solution = generateSolvedGrid(rng);
 	const givens = [...solution];
@@ -297,7 +281,7 @@ export function generatePuzzle(
 	let clueCount = SUDOKU_CELL_COUNT;
 
 	// Remove symmetric pairs while the puzzle keeps a unique solution.
-	const order = shuffled(
+	const order = shuffle(
 		Array.from({ length: 41 }, (_, i) => i),
 		rng,
 	);
@@ -325,7 +309,7 @@ export function generatePuzzle(
 	// Second pass: single-cell removals to get closer to the target for
 	// harder levels where symmetric removal stalls early.
 	if (clueCount > target) {
-		for (const cell of shuffled(
+		for (const cell of shuffle(
 			Array.from({ length: SUDOKU_CELL_COUNT }, (_, i) => i),
 			rng,
 		)) {

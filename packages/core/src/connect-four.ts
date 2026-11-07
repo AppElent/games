@@ -1,6 +1,17 @@
-import { GameRuleError } from "@arcadeclub/core/errors";
-export type ConnectFourColor = "red" | "yellow";
-export type ConnectFourCell = ConnectFourColor | "empty";
+import { GameRuleError } from "./errors";
+
+export const CONNECT_FOUR_COLORS = ["red", "yellow"] as const;
+export type ConnectFourColor = (typeof CONNECT_FOUR_COLORS)[number];
+
+export const CONNECT_FOUR_CELLS = ["red", "yellow", "empty"] as const;
+export type ConnectFourCell = (typeof CONNECT_FOUR_CELLS)[number];
+
+export const CONNECT_FOUR_PHASES = ["waiting", "active", "finished"] as const;
+export const CONNECT_FOUR_OUTCOMES = [
+	"connect",
+	"draw",
+	"resignation",
+] as const;
 
 export const CONNECT_FOUR_COLS = 7;
 export const CONNECT_FOUR_ROWS = 6;

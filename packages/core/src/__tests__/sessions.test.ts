@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-	buildShareUrl,
+	buildInviteUrl,
+	createGuestIdentity,
 	formatJoinCode,
 	getGuestDisplayName,
 	isJoinCodeLike,
@@ -26,15 +27,37 @@ describe("session helpers", () => {
 	});
 
 	it("creates stable guest display names from ids", () => {
-		expect(getGuestDisplayName("guest_0001")).toBe("Player 001");
-		expect(getGuestDisplayName("guest_9876")).toBe("Player 876");
+		expect(getGuestDisplayName("guest_0001", "Player {number}")).toBe(
+			"Player 001",
+		);
+		expect(getGuestDisplayName("guest_9876", "Player {number}")).toBe(
+			"Player 876",
+		);
 		expect(getGuestDisplayName("guest_9876", "Speler {number}")).toBe(
 			"Speler 876",
 		);
 	});
 
+	it("gives a new guest a name from the template it is passed", () => {
+		const guest = createGuestIdentity("Speler {number}", 123);
+		expect(guest.displayName).toBe(
+			getGuestDisplayName(guest.id, "Speler {number}"),
+		);
+		expect(guest.createdAt).toBe(123);
+	});
+
+	it("builds invite urls for room codes and same-site links", () => {
+		expect(buildInviteUrl("https://games.test", { code: "ABC123" })).toBe(
+			"https://games.test/join?code=ABC123",
+		);
+		expect(buildInviteUrl("", { code: "ABC123" })).toBe("/join?code=ABC123");
+		expect(buildInviteUrl("https://games.test", { token: "a/b" })).toBe(
+			"https://games.test/join?token=a%2Fb",
+		);
+	});
+
 	it("builds share urls without duplicate slashes", () => {
-		expect(buildShareUrl("https://games.test/", "share_abc")).toBe(
+		expect(buildInviteUrl("https://games.test/", { token: "share_abc" })).toBe(
 			"https://games.test/join?token=share_abc",
 		);
 	});

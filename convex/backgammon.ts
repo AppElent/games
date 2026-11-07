@@ -8,8 +8,6 @@ import {
 	rollBackgammonDice,
 	switchBackgammonColor,
 	type BackgammonColor,
-	type BackgammonMoveDestination,
-	type BackgammonMoveSource,
 	type BackgammonTurnState,
 } from "@arcadeclub/core/backgammon";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -164,8 +162,8 @@ export const applyMove = mutation({
 		try {
 			result = applyBackgammonMove(toTurnState(state), {
 				color,
-				from: args.from as BackgammonMoveSource,
-				to: args.to as BackgammonMoveDestination,
+				from: args.from,
+				to: args.to,
 			});
 		} catch (caught) {
 			throw toGameError(caught);

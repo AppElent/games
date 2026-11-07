@@ -6,10 +6,8 @@
  * keeps it in sessionStorage). Persisting it here is what lets the app
  * reopen an online game after a restart without joining again.
  */
+import type { GameType } from "@arcadeclub/core/games";
 import Storage from "expo-sqlite/kv-store";
-import type { Doc } from "../../convex/api";
-
-export type GameType = Doc<"gameSessions">["gameType"];
 
 const KEY = "arcade:seats";
 const LIMIT = 20;

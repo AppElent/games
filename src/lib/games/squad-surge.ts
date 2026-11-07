@@ -1,4 +1,4 @@
-import { mulberry32, type SudokuRng } from "@arcadeclub/core/sudoku";
+import { mulberry32, type Rng } from "@arcadeclub/core/random";
 
 /** Forward speed in track units per second. */
 export const SPEED = 14;
@@ -99,7 +99,7 @@ export function resolveWave(army: number, strength: number): number {
 	return Math.max(0, army - strength);
 }
 
-function makeGatePair(rng: SudokuRng, difficulty: number): [Gate, Gate] {
+function makeGatePair(rng: Rng, difficulty: number): [Gate, Gate] {
 	const goodSide: 0 | 1 = rng() < 0.5 ? 0 : 1;
 	const good: Gate =
 		rng() < 0.35

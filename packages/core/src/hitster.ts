@@ -1,6 +1,21 @@
-export type HitsterMode = "instant" | "original" | "pro" | "expert" | "coop";
+export const HITSTER_MODES = [
+	"instant",
+	"original",
+	"pro",
+	"expert",
+	"coop",
+] as const;
+export type HitsterMode = (typeof HITSTER_MODES)[number];
 
-export type HitsterPlaybackMode = "hostDevice" | "preview";
+export const HITSTER_PLAYBACK_MODES = ["hostDevice", "preview"] as const;
+export type HitsterPlaybackMode = (typeof HITSTER_PLAYBACK_MODES)[number];
+
+export const HITSTER_PHASES = [
+	"lobby",
+	"nowPlaying",
+	"reveal",
+	"finished",
+] as const;
 
 export type HitsterModeConfig = {
 	startTokens: number;
@@ -63,8 +78,6 @@ const MODE_CONFIGS: Record<HitsterMode, HitsterModeConfig> = {
 		shared: true,
 	},
 };
-
-export const HITSTER_MODES = Object.keys(MODE_CONFIGS) as HitsterMode[];
 
 export function getHitsterModeConfig(mode: HitsterMode): HitsterModeConfig {
 	return MODE_CONFIGS[mode];
@@ -231,16 +244,4 @@ export function getHitsterCoopOutcome({
 		return "lost";
 	}
 	return "ongoing";
-}
-
-export function shuffleHitsterDeck<T>(
-	items: readonly T[],
-	random: () => number = Math.random,
-): T[] {
-	const result = [...items];
-	for (let i = result.length - 1; i > 0; i -= 1) {
-		const j = Math.floor(random() * (i + 1));
-		[result[i], result[j]] = [result[j], result[i]];
-	}
-	return result;
 }

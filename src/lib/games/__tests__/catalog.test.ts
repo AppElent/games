@@ -1,3 +1,4 @@
+import { GAME_TYPES } from "@arcadeclub/core/games";
 import { messages } from "@arcadeclub/core/messages";
 import { describe, expect, it } from "vitest";
 import { getGameByType, getLocalizedGame, getVisibleGames } from "../catalog";
@@ -5,16 +6,7 @@ import { getGameByType, getLocalizedGame, getVisibleGames } from "../catalog";
 describe("game catalog", () => {
 	it("lists the core games", () => {
 		const visibleTypes = getVisibleGames().map((game) => game.type);
-		for (const type of [
-			"live-quiz",
-			"backgammon",
-			"sudoku",
-			"chess",
-			"hitster",
-			"word-links",
-		]) {
-			expect(visibleTypes).toContain(type);
-		}
+		expect(visibleTypes).toEqual([...GAME_TYPES]);
 	});
 
 	it("uses room mode for quiz and challenge mode for backgammon", () => {

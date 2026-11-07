@@ -1,3 +1,4 @@
+import { isLocale, resolveLocale } from "@arcadeclub/core/i18n/format";
 import {
 	createContext,
 	useCallback,
@@ -5,7 +6,6 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { isLocale, resolveLocale } from "./core";
 
 export type I18nConfig<L extends string, M> = {
 	locales: readonly L[];

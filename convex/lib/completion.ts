@@ -1,7 +1,7 @@
+import type { CompletedReason } from "@arcadeclub/core/sessions";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 
-export type CompletedReason = "finished" | "cancelled" | "abandoned";
 
 /**
  * Marks a session terminal and records the analytics metadata every game

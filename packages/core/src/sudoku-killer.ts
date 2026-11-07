@@ -1,3 +1,4 @@
+import { type Rng, shuffle } from "./random";
 import {
 	colOf,
 	digitMask,
@@ -11,7 +12,6 @@ import {
 	SUDOKU_PEERS,
 	type SudokuDifficulty,
 	type SudokuGrid,
-	type SudokuRng,
 } from "./sudoku";
 
 /** A killer cage: contiguous cells whose digits are distinct and sum to `sum`. */
@@ -36,17 +36,8 @@ function orthogonalNeighbors(cell: number): number[] {
 	return neighbors;
 }
 
-function shuffled<T>(items: readonly T[], rng: SudokuRng) {
-	const copy = [...items];
-	for (let i = copy.length - 1; i > 0; i -= 1) {
-		const j = Math.floor(rng() * (i + 1));
-		[copy[i], copy[j]] = [copy[j], copy[i]];
-	}
-	return copy;
-}
-
 /** Weighted cage size: mostly 2-3 cells, occasionally larger. */
-function pickCageSize(rng: SudokuRng) {
+function pickCageSize(rng: Rng) {
 	const roll = rng();
 	if (roll < 0.32) return 2;
 	if (roll < 0.68) return 3;
@@ -60,11 +51,11 @@ function pickCageSize(rng: SudokuRng) {
  */
 export function generateKillerCages(
 	solution: SudokuGrid,
-	rng: SudokuRng = Math.random,
+	rng: Rng = Math.random,
 ): KillerCage[] {
 	const cageIndex = new Array<number>(SUDOKU_CELL_COUNT).fill(-1);
 	const cages: number[][] = [];
-	for (const start of shuffled(
+	for (const start of shuffle(
 		Array.from({ length: SUDOKU_CELL_COUNT }, (_, i) => i),
 		rng,
 	)) {
@@ -253,14 +244,14 @@ type GeneratedKillerPuzzle = {
 
 export function generateKillerPuzzle(
 	difficulty: SudokuDifficulty,
-	rng: SudokuRng = Math.random,
+	rng: Rng = Math.random,
 ): GeneratedKillerPuzzle {
 	const solution = generateSolvedGrid(rng);
 	const cages = generateKillerCages(solution, rng);
 	const givens = [...solution];
 	const target = KILLER_CLUE_TARGETS[difficulty];
 	let clueCount = SUDOKU_CELL_COUNT;
-	for (const cell of shuffled(
+	for (const cell of shuffle(
 		Array.from({ length: SUDOKU_CELL_COUNT }, (_, i) => i),
 		rng,
 	)) {

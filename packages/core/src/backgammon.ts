@@ -1,5 +1,17 @@
 import { GameRuleError } from "./errors";
-export type BackgammonColor = "white" | "black";
+import type { Rng } from "./random";
+
+export const BACKGAMMON_COLORS = ["white", "black"] as const;
+export type BackgammonColor = (typeof BACKGAMMON_COLORS)[number];
+
+export const BACKGAMMON_PHASES = [
+	"waiting",
+	"ready",
+	"active",
+	"finished",
+] as const;
+export const BACKGAMMON_MOVE_TYPES = ["roll", "move", "endTurn"] as const;
+
 export type BackgammonMoveSource = number | "bar";
 export type BackgammonMoveDestination = number | "off";
 
@@ -94,7 +106,7 @@ export function rollBackgammonDice(random = Math.random) {
 	return first === second ? [first, first, first, first] : [first, second];
 }
 
-function rollBackgammonDie(random: () => number) {
+function rollBackgammonDie(random: Rng) {
 	return Math.min(6, Math.floor(random() * 6) + 1);
 }
 

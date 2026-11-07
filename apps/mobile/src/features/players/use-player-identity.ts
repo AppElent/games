@@ -8,6 +8,7 @@
  * Clerk first name, a guest to "Player 123" in the player's language.
  */
 
+import { messages } from "@arcadeclub/core/messages";
 import {
 	createGuestIdentity,
 	getGuestDisplayName,
@@ -42,7 +43,7 @@ export function readGuestIdentity(): LocalGuestIdentity {
 			// Corrupt value: replaced below.
 		}
 	}
-	const identity = createGuestIdentity();
+	const identity = createGuestIdentity(messages.en.common.session.guestName);
 	writePreference(PREFERENCE_KEYS.guest, JSON.stringify(identity));
 	return identity;
 }

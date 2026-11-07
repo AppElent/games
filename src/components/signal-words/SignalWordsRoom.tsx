@@ -1,9 +1,9 @@
+import type { SignalCardRole, SignalTeam } from "@arcadeclub/core/signal-words";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
 import { useErrorMessage } from "#/lib/games/errors";
-import type { SignalCardRole, SignalTeam } from "#/lib/games/signal-words";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";

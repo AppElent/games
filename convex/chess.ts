@@ -5,15 +5,19 @@ import {
 	CHESS_TIME_CONTROLS,
 	hasFlagFallen,
 	tickClockAfterMove,
+} from "@arcadeclub/chess/chess";
+import {
+	CHESS_COLORS,
+	CHESS_PROMOTIONS,
 	type ChessColor,
-	type ChessTimeControl,
-} from "../src/lib/games/chess";
+} from "@arcadeclub/chess/enums";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { completeSession, reopenSession } from "./lib/completion";
 import { chessTimeControlValidator } from "./schema";
 import { gameError } from "./lib/errors";
+import { literals } from "./lib/validators";
 
 async function getChessState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
 	const session = await ctx.db.get(sessionId);
@@ -90,11 +94,7 @@ export const createState = mutation({
 		sessionId: v.id("gameSessions"),
 		hostParticipantId: v.id("sessionParticipants"),
 		timeControl: chessTimeControlValidator,
-		hostColor: v.union(
-			v.literal("white"),
-			v.literal("black"),
-			v.literal("random"),
-		),
+		hostColor: literals([...CHESS_COLORS, "random"]),
 	},
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
@@ -117,7 +117,7 @@ export const createState = mutation({
 		await ctx.db.patch(args.hostParticipantId, { seat: hostColor });
 		const now = Date.now();
 		const initialSeconds =
-			CHESS_TIME_CONTROLS[args.timeControl as ChessTimeControl].initialSeconds;
+			CHESS_TIME_CONTROLS[args.timeControl].initialSeconds;
 		return await ctx.db.insert("chessGameStates", {
 			sessionId: args.sessionId,
 			phase: "waiting",
@@ -143,9 +143,7 @@ export const applyMove = mutation({
 		participantId: v.id("sessionParticipants"),
 		from: v.string(),
 		to: v.string(),
-		promotion: v.optional(
-			v.union(v.literal("q"), v.literal("r"), v.literal("b"), v.literal("n")),
-		),
+		promotion: v.optional(literals(CHESS_PROMOTIONS)),
 	},
 	handler: async (ctx, args) => {
 		const { session, state } = await getChessState(ctx, args.sessionId);
@@ -336,7 +334,7 @@ export const rematch = mutation({
 		getParticipantColor(state, args.participantId);
 		const now = Date.now();
 		const initialSeconds =
-			CHESS_TIME_CONTROLS[state.timeControl as ChessTimeControl]
+			CHESS_TIME_CONTROLS[state.timeControl]
 				.initialSeconds;
 		// Swap colors for the rematch.
 		const white = state.blackParticipantId;

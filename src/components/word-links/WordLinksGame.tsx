@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { shuffle } from "@arcadeclub/core/random";
 import {
 	buildWordLinkShareText,
 	createWordLinkAttempt,
 	getSolvedTerms,
-	shuffleTerms,
 	sortGroupsByDifficulty,
 	submitWordLinkGuess,
 	type WordLinkAttempt,
 	type WordLinkDifficulty,
 	type WordLinkPuzzle,
-} from "#/lib/games/word-links";
+} from "@arcadeclub/core/word-links";
+import { useEffect, useState } from "react";
 import {
 	loadWordLinkAttempt,
 	recordDailyResult,
@@ -208,7 +208,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 						</button>
 						<button
 							type="button"
-							onClick={() => setOrder((current) => shuffleTerms(current))}
+							onClick={() => setOrder((current) => shuffle(current))}
 							className="min-h-11 rounded-md border border-white/20 bg-white/10 px-5 py-2 font-bold text-white"
 						>
 							{wordLinks.game.shuffle}

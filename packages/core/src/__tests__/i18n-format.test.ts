@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmt, isLocale, plural, resolveLocale } from "../core";
+import { fmt, isLocale, plural, resolveLocale } from "../i18n/format";
 
 const LOCALES = ["en", "nl"] as const;
 

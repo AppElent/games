@@ -1,8 +1,5 @@
-import {
-	digitsInMask,
-	generatePuzzle,
-	mulberry32,
-} from "@arcadeclub/core/sudoku";
+import { mulberry32 } from "@arcadeclub/core/random";
+import { digitsInMask, generatePuzzle } from "@arcadeclub/core/sudoku";
 import { describe, expect, it } from "vitest";
 import type { ScanCell } from "../sudoku-scan";
 import {

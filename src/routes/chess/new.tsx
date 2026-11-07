@@ -1,9 +1,10 @@
+import { CHESS_TIME_CONTROLS } from "@arcadeclub/chess/chess";
+import type { ChessTimeControl } from "@arcadeclub/chess/enums";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { CHESS_TIME_CONTROLS, type ChessTimeControl } from "#/lib/games/chess";
 import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";

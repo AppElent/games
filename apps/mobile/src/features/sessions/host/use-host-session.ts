@@ -3,12 +3,13 @@
  * account to host anything but solo play, so callers gate on `canHost`
  * (signed in and the Clerk token already on the Convex client).
  */
+import type { GameType } from "@arcadeclub/core/games";
 import { useAuth } from "@clerk/expo";
 import { useConvexAuth, useMutation } from "convex/react";
 import { useCallback, useState } from "react";
 import { api, type Id } from "../../../convex/api";
 import { usePlayerIdentity } from "../../players/use-player-identity";
-import { type GameType, rememberSeat } from "../session-seats";
+import { rememberSeat } from "../session-seats";
 
 export type HostedSession = {
 	sessionId: Id<"gameSessions">;

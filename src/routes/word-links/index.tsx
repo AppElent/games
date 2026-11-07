@@ -1,13 +1,13 @@
+import { getDailyPuzzleId } from "@arcadeclub/core/word-links";
+import {
+	getWordLinkPuzzleById,
+	WORD_LINK_PUZZLES,
+} from "@arcadeclub/core/word-links-puzzles";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { WordLinksGame } from "#/components/word-links/WordLinksGame";
-import { getDailyPuzzleId } from "#/lib/games/word-links";
 import { loadWordLinkStreak } from "#/lib/games/word-links-local";
-import {
-	getWordLinkPuzzleById,
-	WORD_LINK_PUZZLES,
-} from "#/lib/games/word-links-puzzles";
 import { fmt, useMessages } from "#/lib/i18n";
 
 export const Route = createFileRoute("/word-links/")({

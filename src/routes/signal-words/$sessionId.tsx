@@ -1,3 +1,4 @@
+import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
@@ -41,7 +42,7 @@ function SignalWordsSessionPage() {
 	}
 
 	const joinUrl = bundle.session.joinCode
-		? `${window.location.origin}/join?code=${bundle.session.joinCode}`
+		? buildInviteUrl(window.location.origin, { code: bundle.session.joinCode })
 		: window.location.href;
 
 	return (

@@ -6,8 +6,9 @@
  * The web origin is configuration (`EXPO_PUBLIC_WEB_ORIGIN`); without it,
  * invites fall back to the room code alone.
  */
+import type { GameType } from "@arcadeclub/core/games";
+import { buildInviteUrl, type Invite } from "@arcadeclub/core/sessions";
 import type { Href } from "expo-router";
-import type { GameType } from "./session-seats";
 
 const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_ORIGIN?.replace(/\/+$/, "");
 
@@ -42,13 +43,6 @@ export function hasWebOrigin() {
 	return Boolean(WEB_ORIGIN);
 }
 
-export function webJoinUrl(
-	invite: { token: string } | { code: string },
-): string | null {
-	if (!WEB_ORIGIN) return null;
-	const query =
-		"token" in invite
-			? `token=${encodeURIComponent(invite.token)}`
-			: `code=${encodeURIComponent(invite.code)}`;
-	return `${WEB_ORIGIN}/join?${query}`;
+export function webJoinUrl(invite: Invite): string | null {
+	return WEB_ORIGIN ? buildInviteUrl(WEB_ORIGIN, invite) : null;
 }

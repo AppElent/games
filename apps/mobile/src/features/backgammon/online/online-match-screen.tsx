@@ -119,10 +119,9 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 			: fmt(copy.waitingRoom.waitingForPlayerToPlay, { name: activeName });
 
 	const hint = match.isMyTurn ? turnHint(turn, selection.selected) : null;
-	const inviteUrl =
-		session.shareToken && hasWebOrigin()
-			? webJoinUrl({ token: session.shareToken })
-			: null;
+	const invite =
+		session.shareToken && hasWebOrigin() ? { token: session.shareToken } : null;
+	const inviteUrl = invite && webJoinUrl(invite);
 
 	return (
 		<BoardScreen
@@ -150,7 +149,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 						<AppText variant="secondary">
 							{copy.waitingRoom.shareToClaimBlackSeat}
 						</AppText>
-						{inviteUrl ? (
+						{invite && inviteUrl ? (
 							<>
 								<View style={styles.qr}>
 									<QrCode
@@ -162,9 +161,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 								<Button
 									label={copy.waitingRoom.sendInvite}
 									onPress={() =>
-										void shareInvite(t, t.catalog.backgammon.title, {
-											token: session.shareToken,
-										})
+										void shareInvite(t, t.catalog.backgammon.title, invite)
 									}
 									testID="bg-share-invite"
 								/>

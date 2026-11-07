@@ -311,15 +311,3 @@ export function getDailyPuzzleId(
 	const epochDay = Math.floor(date.getTime() / 86_400_000);
 	return puzzles[epochDay % puzzles.length].id;
 }
-
-export function shuffleTerms(
-	terms: readonly string[],
-	random: () => number = Math.random,
-) {
-	const copy = [...terms];
-	for (let index = copy.length - 1; index > 0; index -= 1) {
-		const swap = Math.floor(random() * (index + 1));
-		[copy[index], copy[swap]] = [copy[swap], copy[index]];
-	}
-	return copy;
-}

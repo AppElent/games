@@ -1,18 +1,14 @@
-import type { GameType } from "./catalog";
+import type { GameType } from "./games";
 import { validateWordLinkPuzzle, type WordLinkPuzzle } from "./word-links";
 
-export type ContentDraftKind =
-	| "word-links-puzzle"
-	| "signal-words-pack"
-	| "quiz-set";
-
-type ContentValidationError = { path: string; message: string };
-
-export const CONTENT_DRAFT_KINDS: readonly ContentDraftKind[] = [
+export const CONTENT_DRAFT_KINDS = [
 	"word-links-puzzle",
 	"signal-words-pack",
 	"quiz-set",
-];
+] as const;
+export type ContentDraftKind = (typeof CONTENT_DRAFT_KINDS)[number];
+
+type ContentValidationError = { path: string; message: string };
 
 export function getDraftGameType(kind: ContentDraftKind): GameType {
 	switch (kind) {

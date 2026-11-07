@@ -1,4 +1,13 @@
-import { Chess } from "chess.js";
+import {
+	type ChessGameResult,
+	formatClockMs,
+	getChessBoard,
+	getLegalMoves,
+	getRemainingMs,
+	isInCheck,
+	isPromotionMove,
+} from "@arcadeclub/chess/chess";
+import type { ChessColor } from "@arcadeclub/chess/enums";
 import { useMutation } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
 import { FitScale } from "#/components/games/FitScale";
@@ -8,15 +17,6 @@ import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import {
-	type ChessColor,
-	type ChessGameResult,
-	formatClockMs,
-	getLegalMoves,
-	getRemainingMs,
-	isInCheck,
-	isPromotionMove,
-} from "#/lib/games/chess";
 import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -128,7 +128,7 @@ export function ChessMatch({
 		!finished;
 
 	const board = useMemo(
-		() => (state ? new Chess(state.fen).board() : null),
+		() => (state ? getChessBoard(state.fen) : null),
 		[state],
 	);
 	const legalTargets = useMemo(

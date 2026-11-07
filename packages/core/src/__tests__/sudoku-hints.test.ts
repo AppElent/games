@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { sudoku as en } from "../i18n/en/games/sudoku";
 import { sudoku as nl } from "../i18n/nl/games/sudoku";
+import { mulberry32 } from "../random";
 import {
 	computeCandidates,
 	emptyGrid,
 	generatePuzzle,
-	mulberry32,
 	parseGrid,
 } from "../sudoku";
 import { describeHint, findHint, SUDOKU_TECHNIQUES } from "../sudoku-hints";

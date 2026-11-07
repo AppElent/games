@@ -5,11 +5,9 @@ import {
 	getHitsterCoopOutcome,
 	getHitsterModeConfig,
 	type HitsterAnswerFlags,
-	type HitsterMode,
 	hitsterStealRequirementMet,
 	matchesHitsterArtist,
 	matchesHitsterTitle,
-	shuffleHitsterDeck,
 	validateHitsterPlacement,
 } from "@arcadeclub/core/hitster";
 import {
@@ -17,6 +15,7 @@ import {
 	getHitsterCard,
 	getPlayableHitsterCards,
 } from "@arcadeclub/core/hitster-packs";
+import { shuffle } from "@arcadeclub/core/random";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -80,7 +79,7 @@ function findTimeline(
 	state: Doc<"hitsterGameStates">,
 	participantId: Id<"sessionParticipants">,
 ) {
-	const shared = getHitsterModeConfig(state.mode as HitsterMode).shared;
+	const shared = getHitsterModeConfig(state.mode).shared;
 	const timeline = shared
 		? state.timelines[0]
 		: state.timelines.find((entry) => entry.participantId === participantId);
@@ -188,7 +187,7 @@ export const start = mutation({
 		if (!state || state.phase !== "lobby") {
 			throw gameError("gameNotReady");
 		}
-		const config = getHitsterModeConfig(state.mode as HitsterMode);
+		const config = getHitsterModeConfig(state.mode);
 		const participants = await ctx.db
 			.query("sessionParticipants")
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
@@ -201,7 +200,7 @@ export const start = mutation({
 		}
 
 		const playable = getPlayableHitsterCards(state.packId, state.playbackMode);
-		const deck = shuffleHitsterDeck(playable.map((card) => card.id));
+		const deck = shuffle(playable.map((card) => card.id));
 		const turnOrder = players.map((player) => player._id);
 
 		// Deal one revealed start card per timeline, then draw the first
@@ -294,7 +293,7 @@ export const submitSteal = mutation({
 		if (!state || state.phase !== "nowPlaying") {
 			throw gameError("stealsClosed");
 		}
-		const config = getHitsterModeConfig(state.mode as HitsterMode);
+		const config = getHitsterModeConfig(state.mode);
 		if (!config.stealsEnabled) {
 			throw gameError("stealsUnavailable");
 		}
@@ -355,7 +354,7 @@ export const reveal = mutation({
 		if (!state || state.phase !== "nowPlaying" || !state.currentCardId) {
 			throw gameError("nothingToReveal");
 		}
-		const mode = state.mode as HitsterMode;
+		const mode = state.mode;
 		const config = getHitsterModeConfig(mode);
 		const cardId = state.currentCardId;
 		const activeParticipantId = state.turnOrder[state.activeIndex];
@@ -529,7 +528,7 @@ export const nextRound = mutation({
 		const now = Date.now();
 		if (!currentCardId) {
 			// Deck exhausted: longest timeline wins (competitive) or coop loses.
-			const config = getHitsterModeConfig(state.mode as HitsterMode);
+			const config = getHitsterModeConfig(state.mode);
 			const leader = config.shared
 				? undefined
 				: [...state.timelines].sort(

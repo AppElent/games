@@ -6,8 +6,8 @@ import {
 	createSignalGameState,
 	generateSignalBoard,
 	type SignalGameState,
-} from "../src/lib/games/signal-words";
-import { SIGNAL_WORDS_DEFAULT_PACK } from "../src/lib/games/signal-words-packs";
+} from "@arcadeclub/core/signal-words";
+import { SIGNAL_WORDS_DEFAULT_PACK } from "@arcadeclub/core/signal-words-packs";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -88,9 +88,10 @@ async function patchGameState(
 			.query("sessionParticipants")
 			.withIndex("by_session", (q) => q.eq("sessionId", state.sessionId))
 			.collect();
-		const winners = next.winnerTeam
+		const { winnerTeam } = next;
+		const winners = winnerTeam
 			? participants
-					.filter((participant) => participant.seat?.startsWith(next.winnerTeam as string))
+					.filter((participant) => participant.seat?.startsWith(winnerTeam))
 					.map((participant) => participant._id)
 			: [];
 		await completeSession(ctx, state.sessionId, {

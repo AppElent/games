@@ -1,34 +1,28 @@
 import { v } from "convex/values";
 import {
-	type ContentDraftKind,
 	getDraftGameType,
 	validateContentDraft,
-} from "../src/lib/games/content-drafts";
+} from "@arcadeclub/core/content-drafts";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
 import { gameError } from "./lib/errors";
-
-const draftKindValidator = v.union(
-	v.literal("word-links-puzzle"),
-	v.literal("signal-words-pack"),
-	v.literal("quiz-set"),
-);
+import { contentDraftKindValidator } from "./schema";
 
 export const createDraft = mutation({
 	args: {
-		kind: draftKindValidator,
+		kind: contentDraftKindValidator,
 		title: v.string(),
 		payload: v.string(),
 	},
 	handler: async (ctx, args) => {
 		const ownerUserId = await requireUserId(ctx);
 		const validationErrors = validateContentDraft(
-			args.kind as ContentDraftKind,
+			args.kind,
 			args.payload,
 		).map((error) => (error.path ? `${error.path}: ${error.message}` : error.message));
 		return await ctx.db.insert("contentDrafts", {
 			ownerUserId,
-			gameType: getDraftGameType(args.kind as ContentDraftKind),
+			gameType: getDraftGameType(args.kind),
 			kind: args.kind,
 			title: args.title.trim() || "Untitled draft",
 			payload: args.payload,
@@ -51,7 +45,7 @@ export const updateDraft = mutation({
 			throw gameError("draftNotFound");
 		}
 		const validationErrors = validateContentDraft(
-			draft.kind as ContentDraftKind,
+			draft.kind,
 			args.payload,
 		).map((error) => (error.path ? `${error.path}: ${error.message}` : error.message));
 		await ctx.db.patch(args.draftId, {
@@ -76,7 +70,7 @@ export const approveDraft = mutation({
 		}
 		// Re-validate at approval time so stale rows can never slip through.
 		const errors = validateContentDraft(
-			draft.kind as ContentDraftKind,
+			draft.kind,
 			draft.payload,
 		);
 		if (errors.length > 0) {
@@ -161,7 +155,7 @@ export const listMine = query({
 
 /** Approved signal-words packs available for play (future game wiring). */
 export const listApproved = query({
-	args: { kind: draftKindValidator },
+	args: { kind: contentDraftKindValidator },
 	handler: async (ctx, args) => {
 		const drafts = await ctx.db
 			.query("contentDrafts")

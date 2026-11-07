@@ -1,12 +1,12 @@
+import {
+	CONTENT_DRAFT_KINDS,
+	type ContentDraftKind,
+} from "@arcadeclub/core/content-drafts";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Check, FlaskConical, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { HostGate } from "#/components/games/HostGate";
-import {
-	CONTENT_DRAFT_KINDS,
-	type ContentDraftKind,
-} from "#/lib/games/content-drafts";
 import { useErrorMessage } from "#/lib/games/errors";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";

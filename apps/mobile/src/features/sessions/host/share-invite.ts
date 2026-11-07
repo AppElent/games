@@ -3,23 +3,16 @@
  * web origin is configured, otherwise the room code alone. Returns false
  * when there was nothing to share.
  */
+import type { Invite } from "@arcadeclub/core/sessions";
 import { Share } from "react-native";
 import { fmt, type Messages } from "../../../i18n";
 import { webJoinUrl } from "../session-links";
 
-export async function shareInvite(
-	t: Messages,
-	game: string,
-	invite: { token?: string; code?: string },
-) {
-	const link = invite.token
-		? webJoinUrl({ token: invite.token })
-		: invite.code
-			? webJoinUrl({ code: invite.code })
-			: null;
+export async function shareInvite(t: Messages, game: string, invite: Invite) {
+	const link = webJoinUrl(invite);
 	const message = link
 		? fmt(t.common.session.shareInvite, { game, link })
-		: invite.code
+		: "code" in invite
 			? fmt(t.common.session.shareCode, { game, code: invite.code })
 			: null;
 	if (!message) return false;

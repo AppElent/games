@@ -1,8 +1,8 @@
+import { describeBluffClaim } from "@arcadeclub/core/bluff-dice";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import { describeBluffClaim } from "#/lib/games/bluff-dice";
 import { useErrorMessage } from "#/lib/games/errors";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";

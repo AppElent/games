@@ -3,11 +3,11 @@ import {
 	type HitsterMode,
 } from "@arcadeclub/core/hitster";
 import { getHitsterPack } from "@arcadeclub/core/hitster-packs";
+import { formatJoinCode } from "@arcadeclub/core/sessions";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { useErrorMessage } from "#/lib/games/errors";
-import { formatJoinCode } from "#/lib/games/sessions";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";

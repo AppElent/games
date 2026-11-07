@@ -1,4 +1,5 @@
 import type { sudoku as sudokuCopy } from "./i18n/en/games/sudoku";
+import { fmt } from "./i18n/format";
 import type { SudokuGrid } from "./sudoku";
 import {
 	boxOf,
@@ -468,13 +469,6 @@ export function findHint(
 
 type SudokuHintCopy = typeof sudokuCopy.hints;
 
-/** Fill {name} placeholders. */
-function fill(template: string, values: Record<string, string | number>) {
-	return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-		key in values ? String(values[key]) : match,
-	);
-}
-
 /**
  * A hint's title and the text for a level: 1 says where to look, 2 names the
  * technique and region, 3 explains it cell by cell.
@@ -485,8 +479,8 @@ export function describeHint(
 	copy: SudokuHintCopy,
 ) {
 	const cell = (index: number) =>
-		fill(copy.cell, { row: rowOf(index) + 1, col: colOf(index) + 1 });
-	const unit = (ref: HintUnit) => fill(copy[ref.kind], { n: ref.index + 1 });
+		fmt(copy.cell, { row: rowOf(index) + 1, col: colOf(index) + 1 });
+	const unit = (ref: HintUnit) => fmt(copy[ref.kind], { n: ref.index + 1 });
 	const size = hint.technique === "mistake" ? 1 : hint.cells.length;
 	const values = {
 		cell: cell(hint.cells[0]),
@@ -510,8 +504,8 @@ export function describeHint(
 			? copy.hiddenSingle.crossHatch
 			: "";
 	return {
-		title: fill(text.title, values),
-		text: fill(body, values) + crossHatch,
+		title: fmt(text.title, values),
+		text: fmt(body, values) + crossHatch,
 	};
 }
 

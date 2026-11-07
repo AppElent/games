@@ -4,6 +4,7 @@ import {
 	SEAT_SILENT_AFTER_MS,
 } from "@arcadeclub/core/cards/engine";
 import type { CardEvent } from "@arcadeclub/core/cards/events";
+import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { Bot, MoreHorizontal, ScrollText } from "lucide-react";
 import {
 	type CSSProperties,
@@ -602,7 +603,7 @@ export function TableFrame({
 					<p className="seat-spectating">
 						{cards.table.spectating}
 						{table.session.joinCode ? (
-							<a href={`/join?code=${table.session.joinCode}`}>
+							<a href={buildInviteUrl("", { code: table.session.joinCode })}>
 								{cards.table.rejoin}
 							</a>
 						) : null}

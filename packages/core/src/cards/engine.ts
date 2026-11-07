@@ -6,7 +6,7 @@
  * family module and a table component, not a new backend.
  */
 import { GameRuleError } from "../errors";
-import type { Random } from "./deck";
+import type { Rng } from "../random";
 import { jokeren } from "./games/jokeren";
 import { pesten } from "./games/pesten";
 import {
@@ -113,7 +113,7 @@ export function createCardGame(
 	game: CardGameDefinition,
 	options: readonly string[],
 	seats: number,
-	random: Random = Math.random,
+	random: Rng = Math.random,
 	starter = 0,
 ): CardGameState {
 	if (seats < game.players.min || seats > game.players.max) {
@@ -143,7 +143,7 @@ export function applyCardAction(
 	state: CardGameState,
 	seat: number,
 	action: CardAction,
-	random: Random = Math.random,
+	random: Rng = Math.random,
 ): CardGameState {
 	if (game.family === "shedding") {
 		if (!SHEDDING_ACTIONS.includes(action.type)) {
@@ -186,7 +186,7 @@ export function botMove(
 	options: readonly string[],
 	state: CardGameState,
 	bots: readonly number[],
-	random: Random = Math.random,
+	random: Rng = Math.random,
 ): BotMove<CardAction> | null {
 	return game.family === "shedding"
 		? botSheddingMove(

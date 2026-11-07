@@ -1,3 +1,21 @@
+import { fmt } from "./i18n/format";
+
+export const SESSION_STATUSES = [
+	"lobby",
+	"active",
+	"completed",
+	"cancelled",
+] as const;
+
+export const COMPLETED_REASONS = [
+	"finished",
+	"cancelled",
+	"abandoned",
+] as const;
+export type CompletedReason = (typeof COMPLETED_REASONS)[number];
+
+export const PARTICIPANT_ROLES = ["host", "player", "watcher"] as const;
+
 export type LocalGuestIdentity = {
 	id: string;
 	displayName: string;
@@ -21,20 +39,20 @@ export function isJoinCodeLike(value: string) {
 	return normalized.length >= 4 && normalized.length <= 8;
 }
 
-/** "Player 123" from a guest id; pass the localized `{number}` template to translate it. */
-export function getGuestDisplayName(
-	guestId: string,
-	template = "Player {number}",
-) {
+/** A guest's name from their id, in the given `common.session.guestName` template. */
+export function getGuestDisplayName(guestId: string, template: string) {
 	const digits = guestId.replace(/\D/g, "").slice(-3).padStart(3, "0");
-	return template.replace("{number}", digits);
+	return fmt(template, { number: digits });
 }
 
 /** Web Crypto when the runtime has it (browsers, Node, Hermes with a polyfill). */
 const runtimeCrypto = (globalThis as { crypto?: { randomUUID?: () => string } })
 	.crypto;
 
-export function createGuestIdentity(now = Date.now()): LocalGuestIdentity {
+export function createGuestIdentity(
+	nameTemplate: string,
+	now = Date.now(),
+): LocalGuestIdentity {
 	const suffix = runtimeCrypto?.randomUUID
 		? runtimeCrypto.randomUUID().slice(0, 8)
 		: Math.floor(Math.random() * 1_000_000)
@@ -43,17 +61,22 @@ export function createGuestIdentity(now = Date.now()): LocalGuestIdentity {
 	const id = `guest_${suffix}`;
 	return {
 		id,
-		displayName: getGuestDisplayName(id),
+		displayName: getGuestDisplayName(id, nameTemplate),
 		createdAt: now,
 	};
 }
 
-export function buildShareUrl(origin: string, token: string) {
-	const base = origin.replace(/\/$/, "");
-	return `${base}/join?token=${encodeURIComponent(token)}`;
-}
-
 export type Invite = { token: string } | { code: string };
+
+/** The `/join` link for an invite. Pass `""` as origin for a same-site link. */
+export function buildInviteUrl(origin: string, invite: Invite) {
+	const base = origin.replace(/\/+$/, "");
+	const query =
+		"token" in invite
+			? `token=${encodeURIComponent(invite.token)}`
+			: `code=${encodeURIComponent(invite.code)}`;
+	return `${base}/join?${query}`;
+}
 
 function queryParam(query: string, name: string) {
 	for (const pair of query.split("&")) {

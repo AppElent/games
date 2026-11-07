@@ -1,16 +1,5 @@
-import { mulberry32 } from "@arcadeclub/core/sudoku";
 import { describe, expect, it } from "vitest";
 import { applyGate, generateLevel, resolveWave } from "../squad-surge";
-
-describe("mulberry32", () => {
-	it("returns identical sequences for identical seeds", () => {
-		const a = mulberry32(1234);
-		const b = mulberry32(1234);
-		for (let i = 0; i < 20; i += 1) {
-			expect(a()).toBe(b());
-		}
-	});
-});
 
 describe("generateLevel", () => {
 	it("is deterministic for the same seed and difficulty", () => {

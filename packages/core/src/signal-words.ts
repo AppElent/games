@@ -1,7 +1,15 @@
-import { type GameErrorCode, GameRuleError } from "@arcadeclub/core/errors";
-export type SignalTeam = "red" | "blue";
-export type SignalCardRole = "red" | "blue" | "neutral" | "trap";
-type SignalPhase = "clue" | "guess" | "finished";
+import { type GameErrorCode, GameRuleError } from "./errors";
+import { type Rng, shuffle } from "./random";
+
+export const SIGNAL_TEAMS = ["red", "blue"] as const;
+export type SignalTeam = (typeof SIGNAL_TEAMS)[number];
+
+export const SIGNAL_CARD_ROLES = ["red", "blue", "neutral", "trap"] as const;
+export type SignalCardRole = (typeof SIGNAL_CARD_ROLES)[number];
+
+/** Phases a stored game can be in; rules run from `clue` on, never in `lobby`. */
+export const SIGNAL_PHASES = ["lobby", "clue", "guess", "finished"] as const;
+type SignalPhase = Exclude<(typeof SIGNAL_PHASES)[number], "lobby">;
 
 export const SIGNAL_BOARD_SIZE = 25;
 const SIGNAL_STARTING_CARDS = 9;
@@ -35,22 +43,13 @@ export function otherTeam(team: SignalTeam): SignalTeam {
 	return team === "red" ? "blue" : "red";
 }
 
-function shuffle<T>(items: readonly T[], random: () => number) {
-	const copy = [...items];
-	for (let index = copy.length - 1; index > 0; index -= 1) {
-		const swap = Math.floor(random() * (index + 1));
-		[copy[index], copy[swap]] = [copy[swap], copy[index]];
-	}
-	return copy;
-}
-
 /**
  * Build a 25-card board from a word pack: 9 for the starting team,
  * 8 for the other team, 7 decoys, 1 trap tile.
  */
 export function generateSignalBoard(
 	pack: readonly string[],
-	random: () => number = Math.random,
+	random: Rng = Math.random,
 ): SignalBoard {
 	const unique = [...new Set(pack.map((word) => word.trim().toUpperCase()))];
 	if (unique.length < SIGNAL_BOARD_SIZE) {

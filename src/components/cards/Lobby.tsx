@@ -2,6 +2,7 @@ import type {
 	CardGameDefinition,
 	CardGameId,
 } from "@arcadeclub/core/cards/engine";
+import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { Bot, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
@@ -32,7 +33,7 @@ export function Lobby({
 	const url =
 		typeof window === "undefined"
 			? ""
-			: `${window.location.origin}/join?code=${code}`;
+			: buildInviteUrl(window.location.origin, { code });
 
 	return (
 		<CardsPage
@@ -49,7 +50,7 @@ export function Lobby({
 			{table.you === null && canAdd ? (
 				<div className="cards-panel mb-4 flex flex-wrap items-center gap-3 p-4">
 					<p className="min-w-0 flex-1 text-sm">{cards.lobby.joinPrompt}</p>
-					<a href={`/join?code=${code}`} className="btn-gold">
+					<a href={buildInviteUrl("", { code })} className="btn-gold">
 						{cards.lobby.joinButton}
 					</a>
 				</div>

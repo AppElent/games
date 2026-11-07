@@ -1,13 +1,11 @@
+import { normalizeJoinCode } from "@arcadeclub/core/sessions";
 import { useUser } from "@clerk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
 import { useErrorMessage } from "#/lib/games/errors";
-import {
-	getOrCreateGuestIdentity,
-	normalizeJoinCode,
-} from "#/lib/games/sessions";
+import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../convex/_generated/api";
 

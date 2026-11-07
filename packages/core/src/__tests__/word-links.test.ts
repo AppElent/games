@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { shuffle } from "../random";
 import {
 	buildWordLinkShareText,
 	createWordLinkAttempt,
 	getDailyPuzzleId,
 	getSolvedTerms,
-	shuffleTerms,
 	sortGroupsByDifficulty,
 	submitWordLinkGuess,
 	validateWordLinkPuzzle,
@@ -345,9 +345,9 @@ describe("daily + helpers", () => {
 		const sequence = [0.1, 0.5, 0.9, 0.2, 0.7, 0.3];
 		let index = 0;
 		const random = () => sequence[index++ % sequence.length];
-		const a = shuffleTerms(TEST_PUZZLE.terms, random);
+		const a = shuffle(TEST_PUZZLE.terms, random);
 		index = 0;
-		const b = shuffleTerms(TEST_PUZZLE.terms, random);
+		const b = shuffle(TEST_PUZZLE.terms, random);
 		expect(a).toEqual(b);
 		expect([...a].sort()).toEqual([...TEST_PUZZLE.terms].sort());
 	});

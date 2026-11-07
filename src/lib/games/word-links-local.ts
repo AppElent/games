@@ -1,4 +1,4 @@
-import type { WordLinkAttempt } from "./word-links";
+import type { WordLinkAttempt } from "@arcadeclub/core/word-links";
 
 const ATTEMPTS_KEY = "arcade-club.word-links.attempts";
 const STREAK_KEY = "arcade-club.word-links.streak";

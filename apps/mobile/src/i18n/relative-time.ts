@@ -1,4 +1,4 @@
-import { fmt, plural } from "./core";
+import { fmt, plural } from "@arcadeclub/core/i18n/format";
 import type { Locale, Messages } from "./index";
 
 const MINUTE = 60_000;

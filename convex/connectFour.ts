@@ -5,7 +5,7 @@ import {
 	getConnectFourWinner,
 	switchConnectFourColor,
 	type ConnectFourColor,
-} from "../src/lib/games/connect-four";
+} from "@arcadeclub/core/connect-four";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";

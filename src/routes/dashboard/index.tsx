@@ -1,3 +1,4 @@
+import type { GameType } from "@arcadeclub/core/games";
 import { Show } from "@clerk/react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
@@ -9,11 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { GameCatalog } from "#/components/games/GameCatalog";
-import {
-	type GameType,
-	getGameByType,
-	getLocalizedGame,
-} from "#/lib/games/catalog";
+import { getGameByType, getLocalizedGame } from "#/lib/games/catalog";
 import { buildGameStats } from "#/lib/games/results";
 import { fmt, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";

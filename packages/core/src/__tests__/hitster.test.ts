@@ -10,7 +10,6 @@ import {
 	matchesHitsterTitle,
 	normalizeHitsterAnswer,
 	resolveHitsterSteals,
-	shuffleHitsterDeck,
 	validateHitsterPlacement,
 } from "../hitster";
 import {
@@ -18,6 +17,7 @@ import {
 	getPlayableHitsterCards,
 	listHitsterPacks,
 } from "../hitster-packs";
+import { shuffle } from "../random";
 
 const allCorrect = {
 	placementCorrect: true,
@@ -258,7 +258,7 @@ describe("packs", () => {
 
 describe("deck shuffle", () => {
 	it("keeps all items and honours the injected rng", () => {
-		const deck = shuffleHitsterDeck([1, 2, 3, 4], () => 0);
+		const deck = shuffle([1, 2, 3, 4], () => 0);
 		expect([...deck].sort()).toEqual([1, 2, 3, 4]);
 		expect(HITSTER_MODES).toContain("coop");
 	});

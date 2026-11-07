@@ -4,6 +4,7 @@
  * Mau-Mau, Crazy Eights) is `SheddingRules` data.
  */
 import { GameRuleError } from "../errors";
+import { type Rng, shuffle } from "../random";
 import {
 	buildDeck,
 	type CardId,
@@ -12,12 +13,10 @@ import {
 	drawCards,
 	isJoker,
 	parseCard,
-	type Random,
 	type Rank,
 	removeCard,
 	SUITS,
 	type Suit,
-	shuffle,
 } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
 
@@ -169,12 +168,7 @@ function moveTurn(state: SheddingState, steps = 1) {
 	state.drawnCard = null;
 }
 
-function draw(
-	state: SheddingState,
-	seat: number,
-	count: number,
-	random: Random,
-) {
+function draw(state: SheddingState, seat: number, count: number, random: Rng) {
 	const { drawn, reshuffled } = drawCards(state, count, random);
 	if (reshuffled) {
 		pushEvent(state, { type: "reshuffle" });
@@ -213,7 +207,7 @@ function finishIfDeadlocked(rules: SheddingRules, state: SheddingState) {
 export function createShedding(
 	rules: SheddingRules,
 	seats: number,
-	random: Random,
+	random: Rng,
 	starter = 0,
 ): SheddingState {
 	const decks = rules.decks.find((entry) => seats >= entry.from)?.decks ?? 1;
@@ -253,7 +247,7 @@ function applyPlay(
 	state: SheddingState,
 	seat: number,
 	action: Extract<SheddingAction, { type: "play" }>,
-	random: Random,
+	random: Rng,
 ) {
 	if (state.drawnCard && action.card !== state.drawnCard) {
 		throw new GameRuleError("cardsOnlyDrawnCard");
@@ -341,7 +335,7 @@ function applyDraw(
 	rules: SheddingRules,
 	state: SheddingState,
 	seat: number,
-	random: Random,
+	random: Rng,
 ) {
 	if (state.drawnCard) {
 		throw new GameRuleError("cardsAlreadyDrew");
@@ -381,7 +375,7 @@ export function applyShedding(
 	previous: SheddingState,
 	seat: number,
 	action: SheddingAction,
-	random: Random,
+	random: Rng,
 ): SheddingState {
 	const state = clone(previous);
 	if (state.phase !== "playing") {
@@ -518,7 +512,7 @@ export function botSheddingMove(
 	rules: SheddingRules,
 	state: SheddingState,
 	bots: readonly number[],
-	random: Random,
+	random: Rng,
 ): BotMove<SheddingAction> | null {
 	if (state.phase !== "playing") {
 		return null;

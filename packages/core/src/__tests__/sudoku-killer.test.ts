@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { mulberry32 } from "../random";
 import {
 	findConflicts,
 	generateSolvedGrid,
-	mulberry32,
 	SUDOKU_CELL_COUNT,
 } from "../sudoku";
 import {

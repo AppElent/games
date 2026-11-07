@@ -44,7 +44,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 	);
 	const [name, setName] = useState(identity.displayName);
 	const [unsupported, setUnsupported] = useState<{
-		gameType: string;
+		gameType: GameType;
 		url: string | null;
 	} | null>(null);
 
@@ -89,7 +89,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 
 	const gameName = unsupported
 		? unsupported.gameType in t.catalog
-			? t.catalog[unsupported.gameType as GameType].title
+			? t.catalog[unsupported.gameType].title
 			: unsupported.gameType
 		: "";
 

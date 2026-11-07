@@ -1,7 +1,7 @@
+import { getWordLinkPuzzleById } from "@arcadeclub/core/word-links-puzzles";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { WordLinksGame } from "#/components/word-links/WordLinksGame";
-import { getWordLinkPuzzleById } from "#/lib/games/word-links-puzzles";
 import { useMessages } from "#/lib/i18n";
 
 export const Route = createFileRoute("/word-links/$puzzleId")({
