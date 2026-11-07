@@ -11,6 +11,10 @@ import {
 	createInitialBackgammonState,
 	getBackgammonWinner,
 } from "@arcadeclub/core/backgammon";
+import {
+	DEFAULT_ONLINE_OPTIONS,
+	type OnlineOptions,
+} from "@arcadeclub/core/backgammon-local";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
@@ -33,10 +37,6 @@ import { colorLabel } from "../components/color-label";
 import { OptionsPanel } from "../components/options-panel";
 import { TURN_HINT_MESSAGE, turnHint } from "../components/turn-hint";
 import { TurnPanel } from "../components/turn-panel";
-import {
-	type BackgammonOptions,
-	DEFAULT_BACKGAMMON_OPTIONS,
-} from "../local/local-match";
 import { useOnlineMatch } from "./use-online-match";
 
 const OPTION_KEYS = ["showNumbers", "autoSwitchTurn", "autoCombine"] as const;
@@ -48,9 +48,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 	const { t } = useI18n();
 	const copy = t.games.backgammon;
 	const styles = useThemedStyles(createStyles);
-	const [options, setOptions] = useState<BackgammonOptions>(
-		DEFAULT_BACKGAMMON_OPTIONS,
-	);
+	const [options, setOptions] = useState<OnlineOptions>(DEFAULT_ONLINE_OPTIONS);
 	const match = useOnlineMatch(sessionId, options.autoSwitchTurn);
 	const turn = match.turn;
 	const winner = turn ? getBackgammonWinner(turn.off) : null;

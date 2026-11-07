@@ -1,7 +1,10 @@
 import { colOf, digitsInMask, rowOf } from "@arcadeclub/core/sudoku";
 import type { SudokuBoardState } from "@arcadeclub/core/sudoku-board";
 import { effectiveGrid } from "@arcadeclub/core/sudoku-board";
-import type { KillerCage } from "@arcadeclub/core/sudoku-killer";
+import {
+	type KillerCage,
+	killerCageLayout,
+} from "@arcadeclub/core/sudoku-killer";
 import { useMemo } from "react";
 import { fmt, useMessages } from "#/lib/i18n";
 
@@ -51,13 +54,6 @@ type SudokuBoardProps = {
 	cages?: KillerCage[];
 };
 
-type CageInfo = {
-	/** Cage index per cell, -1 when uncaged. */
-	byCell: number[];
-	/** Sum label for the cage's top-left-most cell. */
-	sumAt: Map<number, number>;
-};
-
 export function SudokuBoard({
 	board,
 	selectedCell,
@@ -71,20 +67,7 @@ export function SudokuBoard({
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
 	const grid = effectiveGrid(board);
-	const cageInfo = useMemo<CageInfo | null>(() => {
-		if (!cages || cages.length === 0) {
-			return null;
-		}
-		const byCell = new Array<number>(81).fill(-1);
-		const sumAt = new Map<number, number>();
-		cages.forEach((cage, index) => {
-			for (const cell of cage.cells) {
-				byCell[cell] = index;
-			}
-			sumAt.set(Math.min(...cage.cells), cage.sum);
-		});
-		return { byCell, sumAt };
-	}, [cages]);
+	const cageInfo = useMemo(() => killerCageLayout(cages), [cages]);
 	const selectedDigit =
 		selectedCell !== null && grid[selectedCell] !== 0 ? grid[selectedCell] : 0;
 	const selRow = selectedCell !== null ? rowOf(selectedCell) : -1;
@@ -139,15 +122,7 @@ export function SudokuBoard({
 								? "bg-slate-200 dark:bg-slate-700/40"
 								: "";
 
-				const cage = cageInfo ? cageInfo.byCell[cell] : -1;
-				const cageEdges = cageInfo
-					? {
-							top: row === 0 || cageInfo.byCell[cell - 9] !== cage,
-							bottom: row === 8 || cageInfo.byCell[cell + 9] !== cage,
-							left: col === 0 || cageInfo.byCell[cell - 1] !== cage,
-							right: col === 8 || cageInfo.byCell[cell + 1] !== cage,
-						}
-					: null;
+				const cageEdges = cageInfo ? cageInfo.edges[cell] : null;
 				const cageSum = cageInfo?.sumAt.get(cell);
 
 				return (

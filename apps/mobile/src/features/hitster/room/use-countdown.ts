@@ -1,3 +1,4 @@
+import { hitsterSecondsLeft } from "@arcadeclub/core/hitster";
 import { useEffect, useState } from "react";
 
 /** Seconds left on the turn timer, or null when the round is untimed. */
@@ -15,5 +16,5 @@ export function useCountdown(
 		return () => clearInterval(interval);
 	}, [active]);
 	if (!active || !seconds || !startedAt) return null;
-	return Math.max(0, seconds - Math.floor((now - startedAt) / 1000));
+	return hitsterSecondsLeft(seconds, startedAt, now);
 }

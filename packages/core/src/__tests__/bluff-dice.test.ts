@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+	bluffDiceCounts,
 	describeBluffClaim,
 	getBluffWinnerIndex,
 	isClaimHigher,
 	isValidBluffClaim,
 	nextActiveIndex,
 	resolveBluffChallenge,
+	resolveBluffRound,
 	rollBluffDice,
 } from "../bluff-dice";
 
@@ -106,5 +108,66 @@ describe("turn order and winner", () => {
 
 	it("describes claims", () => {
 		expect(describeBluffClaim({ quantity: 3, face: 5 })).toBe("at least 3 × 5");
+	});
+});
+
+describe("bluffDiceCounts", () => {
+	it("follows turn order and counts a missing hand as zero", () => {
+		expect(
+			bluffDiceCounts(
+				["a", "b", "c"],
+				[
+					{ participantId: "b", values: [1, 2] },
+					{ participantId: "a", values: [3] },
+				],
+			),
+		).toEqual([1, 2, 0]);
+	});
+});
+
+describe("resolveBluffRound", () => {
+	const hands = [
+		{ participantId: "a", values: [2, 2] },
+		{ participantId: "b", values: [3, 4] },
+	];
+	const state = { hands, turnOrder: ["a", "b"], roundNumber: 4 };
+	const fixedRandom = () => 0;
+
+	it("takes a die from a claimant who overclaimed and lets them start", () => {
+		const claim = { quantity: 3, face: 2, byParticipantId: "a" };
+		const next = resolveBluffRound(state, claim, "b", fixedRandom);
+		expect(next.phase).toBe("claim");
+		expect(next.hands.map((hand) => hand.values.length)).toEqual([1, 2]);
+		expect(next.activeIndex).toBe(0);
+		expect(next.roundNumber).toBe(5);
+		expect(next.claimHistory).toEqual([]);
+		expect(next.winnerParticipantId).toBeUndefined();
+		expect(next.lastReveal).toEqual({
+			claim,
+			challengerParticipantId: "b",
+			actualCount: 2,
+			loserParticipantId: "a",
+			hands,
+		});
+	});
+
+	it("takes a die from a challenger when the claim holds", () => {
+		const claim = { quantity: 2, face: 2, byParticipantId: "a" };
+		const next = resolveBluffRound(state, claim, "b", fixedRandom);
+		expect(next.lastReveal.loserParticipantId).toBe("b");
+		expect(next.hands.map((hand) => hand.values.length)).toEqual([2, 1]);
+		expect(next.activeIndex).toBe(1);
+	});
+
+	it("finishes when the loser gives up their last die", () => {
+		const next = resolveBluffRound(
+			{ ...state, hands: [{ participantId: "a", values: [2] }, hands[1]] },
+			{ quantity: 3, face: 2, byParticipantId: "a" },
+			"b",
+			fixedRandom,
+		);
+		expect(next.phase).toBe("finished");
+		expect(next.winnerParticipantId).toBe("b");
+		expect(next.activeIndex).toBe(1);
 	});
 });

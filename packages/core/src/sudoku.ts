@@ -1,12 +1,13 @@
+import {
+	digitsFromString,
+	PUZZLE_DIFFICULTIES,
+	type PuzzleDifficulty,
+	removeClues,
+} from "./puzzle";
 import { type Rng, shuffle } from "./random";
 
-export const SUDOKU_DIFFICULTIES = [
-	"easy",
-	"medium",
-	"hard",
-	"expert",
-] as const;
-export type SudokuDifficulty = (typeof SUDOKU_DIFFICULTIES)[number];
+export const SUDOKU_DIFFICULTIES = PUZZLE_DIFFICULTIES;
+export type SudokuDifficulty = PuzzleDifficulty;
 
 export const SUDOKU_VARIANTS = ["classic", "killer", "binary"] as const;
 export type SudokuVariant = (typeof SUDOKU_VARIANTS)[number];
@@ -129,11 +130,7 @@ export function parseGrid(text: string): SudokuGrid {
 	if (chars.length !== SUDOKU_CELL_COUNT) {
 		throw new Error(`Expected 81 cells, got ${chars.length}`);
 	}
-	return [...chars].map((ch) => (ch === "." || ch === "0" ? 0 : Number(ch)));
-}
-
-export function gridToString(grid: SudokuGrid) {
-	return grid.map((value) => (value === 0 ? "0" : String(value))).join("");
+	return digitsFromString(chars.replace(/\./g, "0"));
 }
 
 // --- validation ---
@@ -155,12 +152,12 @@ export function findConflicts(grid: SudokuGrid): Set<number> {
 	return conflicts;
 }
 
-function isGridFull(grid: SudokuGrid) {
-	return grid.every((value) => value !== 0);
+export function isGridSolved(grid: SudokuGrid) {
+	return grid.every((value) => value !== 0) && findConflicts(grid).size === 0;
 }
 
-export function isGridSolved(grid: SudokuGrid) {
-	return isGridFull(grid) && findConflicts(grid).size === 0;
+export function allCells() {
+	return Array.from({ length: SUDOKU_CELL_COUNT }, (_, cell) => cell);
 }
 
 /** Candidate bitmask per cell; 0 for filled cells. */
@@ -206,8 +203,16 @@ function findBestCell(grid: SudokuGrid, candidates: number[]) {
 	return { cell: best, size: bestSize };
 }
 
-function search(grid: SudokuGrid, limit: number, found: { count: number }) {
-	const candidates = computeCandidates(grid);
+/** Candidate bitmask per cell for a grid; variants narrow the classic rules. */
+type CandidatesFn = (grid: SudokuGrid) => number[];
+
+function search(
+	grid: SudokuGrid,
+	candidatesOf: CandidatesFn,
+	limit: number,
+	found: { count: number },
+) {
+	const candidates = candidatesOf(grid);
 	const { cell, size } = findBestCell(grid, candidates);
 	if (cell === -1) {
 		found.count += 1;
@@ -218,7 +223,7 @@ function search(grid: SudokuGrid, limit: number, found: { count: number }) {
 	}
 	for (const digit of digitsInMask(candidates[cell])) {
 		grid[cell] = digit;
-		search(grid, limit, found);
+		search(grid, candidatesOf, limit, found);
 		grid[cell] = 0;
 		if (found.count >= limit) {
 			return;
@@ -226,12 +231,16 @@ function search(grid: SudokuGrid, limit: number, found: { count: number }) {
 	}
 }
 
-export function countSolutions(grid: SudokuGrid, limit = 2) {
+export function countSolutions(
+	grid: SudokuGrid,
+	limit = 2,
+	candidatesOf: CandidatesFn = computeCandidates,
+) {
 	if (findConflicts(grid).size > 0) {
 		return 0;
 	}
 	const found = { count: 0 };
-	search([...grid], limit, found);
+	search([...grid], candidatesOf, limit, found);
 	return found.count;
 }
 
@@ -306,28 +315,21 @@ export function generatePuzzle(
 		}
 	}
 
+	if (clueCount <= target) {
+		return { givens, solution, difficulty, clueCount };
+	}
 	// Second pass: single-cell removals to get closer to the target for
 	// harder levels where symmetric removal stalls early.
-	if (clueCount > target) {
-		for (const cell of shuffle(
-			Array.from({ length: SUDOKU_CELL_COUNT }, (_, i) => i),
-			rng,
-		)) {
-			if (clueCount <= target) {
-				break;
-			}
-			if (givens[cell] === 0) {
-				continue;
-			}
-			const saved = givens[cell];
-			givens[cell] = 0;
-			if (countSolutions(givens, 2) === 1) {
-				clueCount -= 1;
-			} else {
-				givens[cell] = saved;
-			}
-		}
-	}
-
-	return { givens, solution, difficulty, clueCount };
+	const singles = removeClues(
+		givens,
+		shuffle(allCells(), rng),
+		target,
+		(grid) => countSolutions(grid, 2) === 1,
+	);
+	return {
+		givens: singles.givens,
+		solution,
+		difficulty,
+		clueCount: singles.clueCount,
+	};
 }

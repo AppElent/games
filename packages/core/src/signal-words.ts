@@ -4,6 +4,22 @@ import { type Rng, shuffle } from "./random";
 export const SIGNAL_TEAMS = ["red", "blue"] as const;
 export type SignalTeam = (typeof SIGNAL_TEAMS)[number];
 
+/** A participant's seat: their team, with this suffix when they give the clues. */
+export function signalSeat(team: SignalTeam, clueGiver: boolean) {
+	return clueGiver ? (`${team}-clue` as const) : team;
+}
+
+export function signalSeatTeam(seat: string | undefined) {
+	return SIGNAL_TEAMS.find(
+		(team) =>
+			seat === signalSeat(team, false) || seat === signalSeat(team, true),
+	);
+}
+
+export function isSignalClueGiver(seat: string | undefined) {
+	return SIGNAL_TEAMS.some((team) => seat === signalSeat(team, true));
+}
+
 export const SIGNAL_CARD_ROLES = ["red", "blue", "neutral", "trap"] as const;
 export type SignalCardRole = (typeof SIGNAL_CARD_ROLES)[number];
 

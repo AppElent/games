@@ -1,6 +1,9 @@
 import {
 	getHitsterModeConfig,
 	type HitsterMode,
+	hitsterAsksArtistTitle,
+	hitsterSecondsLeft,
+	hitsterTimelineFor,
 } from "@arcadeclub/core/hitster";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
@@ -37,10 +40,7 @@ function useCountdown(state: HitsterState) {
 	if (!active || !state.turnTimerSeconds || !state.roundStartedAt) {
 		return null;
 	}
-	return Math.max(
-		0,
-		state.turnTimerSeconds - Math.floor((now - state.roundStartedAt) / 1000),
-	);
+	return hitsterSecondsLeft(state.turnTimerSeconds, state.roundStartedAt, now);
 }
 
 function AnswerInputs({
@@ -65,8 +65,7 @@ function AnswerInputs({
 	const { messages } = useI18n();
 	const stage = messages.games.hitster.stage;
 	const config = getHitsterModeConfig(mode);
-	const showArtistTitle =
-		config.needsArtistTitle || (!forSteal && config.earnTokens);
+	const showArtistTitle = hitsterAsksArtistTitle(config, forSteal);
 	if (!showArtistTitle && !config.needsYear) {
 		return null;
 	}
@@ -138,10 +137,7 @@ function PlacementForm({
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
 
-	const config = getHitsterModeConfig(state.mode as HitsterMode);
-	const timeline = config.shared
-		? state.timelines[0]
-		: state.timelines.find((entry) => entry.participantId === participantId);
+	const timeline = hitsterTimelineFor(state, participantId);
 	const cards = timeline ? resolveTimelineCards(state, timeline.cardIds) : [];
 
 	return (
@@ -231,9 +227,7 @@ export function HitsterStage({
 	const myTokens =
 		state.tokens.find((entry) => entry.participantId === participantId)
 			?.tokens ?? 0;
-	const myTimeline = config.shared
-		? state.timelines[0]
-		: state.timelines.find((entry) => entry.participantId === participantId);
+	const myTimeline = hitsterTimelineFor(state, participantId);
 	const myClaim = state.stealClaims.some(
 		(claim) => claim.participantId === participantId,
 	);

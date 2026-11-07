@@ -8,7 +8,9 @@ import {
 	type BackgammonTurnState,
 	canEndBackgammonTurn,
 	computeUsedFlags,
+	isTurnSpent,
 } from "@arcadeclub/core/backgammon";
+import { DEFAULT_ONLINE_OPTIONS } from "@arcadeclub/core/backgammon-local";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import {
@@ -84,11 +86,9 @@ export function BackgammonWaitingRoom({
 	const [participantId, setParticipantId] = useState<string>();
 	const [error, setError] = useState("");
 	const [showInfo, setShowInfo] = useState(false);
-	const [options, setOptions] = useState<BackgammonBoardOptions>({
-		showNumbers: true,
-		autoSwitchTurn: true,
-		autoCombine: true,
-	});
+	const [options, setOptions] = useState<BackgammonBoardOptions>(
+		DEFAULT_ONLINE_OPTIONS,
+	);
 
 	useEffect(() => {
 		setParticipantId(
@@ -163,7 +163,7 @@ export function BackgammonWaitingRoom({
 			}
 			// End the turn automatically once every die is spent.
 			const after = applyBackgammonPlan(turnState, plan);
-			if (options.autoSwitchTurn && after.used.every(Boolean)) {
+			if (options.autoSwitchTurn && isTurnSpent(after)) {
 				await endTurn({
 					sessionId: bundle.session._id,
 					participantId: participantId as Id<"sessionParticipants">,

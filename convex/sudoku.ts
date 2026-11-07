@@ -1,14 +1,24 @@
 import { v } from "convex/values";
 import {
+	BINARY_ACCEPTED_SIZES,
 	findBinaryConflicts,
 	isBinarySolved,
 } from "@arcadeclub/core/binary-puzzle";
+import { digitsFromString } from "@arcadeclub/core/puzzle";
+import {
+	FULL_MASK,
+	findConflicts,
+	isGridSolved,
+	SUDOKU_CELL_COUNT,
+	type SudokuVariant,
+} from "@arcadeclub/core/sudoku";
+import { effectiveGrid } from "@arcadeclub/core/sudoku-board";
 import {
 	findKillerConflicts,
+	isKillerSolved,
 	type KillerCage,
 	validateKillerCages,
 } from "@arcadeclub/core/sudoku-killer";
-import type { SudokuVariant } from "@arcadeclub/core/sudoku";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -21,18 +31,19 @@ import {
 } from "./schema";
 import { gameError } from "./lib/errors";
 
-const BINARY_SIZES = [6, 8, 10, 12];
-
 /** Cell count and digit alphabet for a state's variant. */
 function gridSpec(variant: SudokuVariant, size?: number) {
 	if (variant === "binary") {
 		const side = size ?? 0;
-		if (!BINARY_SIZES.includes(side)) {
+		if (!BINARY_ACCEPTED_SIZES.includes(side)) {
 			throw gameError("invalidBinarySize");
 		}
 		return { cells: side * side, re: new RegExp(`^[0-2]{${side * side}}$`) };
 	}
-	return { cells: 81, re: /^[0-9]{81}$/ };
+	return {
+		cells: SUDOKU_CELL_COUNT,
+		re: new RegExp(`^[0-9]{${SUDOKU_CELL_COUNT}}$`),
+	};
 }
 
 function assertGridString(
@@ -47,59 +58,19 @@ function assertGridString(
 function assertMaskArray(values: number[], cells: number) {
 	if (
 		values.length !== cells ||
-		values.some((mask) => !Number.isInteger(mask) || mask < 0 || mask > 0x1ff)
+		values.some(
+			(mask) => !Number.isInteger(mask) || mask < 0 || mask > FULL_MASK,
+		)
 	) {
 		throw gameError("invalidPuzzleData");
 	}
 }
 
-function gridToArray(grid: string) {
-	return [...grid].map(Number);
-}
-
-/** Row/column/box duplicate check on an 81-char digit string. */
-function hasConflicts(grid: string) {
-	for (let unit = 0; unit < 27; unit += 1) {
-		const seen = new Set<string>();
-		for (let i = 0; i < 9; i += 1) {
-			let cell: number;
-			if (unit < 9) {
-				cell = unit * 9 + i;
-			} else if (unit < 18) {
-				cell = i * 9 + (unit - 9);
-			} else {
-				const box = unit - 18;
-				const row = Math.floor(box / 3) * 3 + Math.floor(i / 3);
-				const col = (box % 3) * 3 + (i % 3);
-				cell = row * 9 + col;
-			}
-			const value = grid[cell];
-			if (value === "0") {
-				continue;
-			}
-			if (seen.has(value)) {
-				return true;
-			}
-			seen.add(value);
-		}
-	}
-	return false;
-}
-
 function mergedGrid(givens: string, digits: string) {
-	let merged = "";
-	for (let cell = 0; cell < 81; cell += 1) {
-		merged += givens[cell] !== "0" ? givens[cell] : digits[cell];
-	}
-	return merged;
-}
-
-function mergedGridAny(givens: string, digits: string) {
-	let merged = "";
-	for (let cell = 0; cell < givens.length; cell += 1) {
-		merged += givens[cell] !== "0" ? givens[cell] : digits[cell];
-	}
-	return merged;
+	return effectiveGrid({
+		givens: digitsFromString(givens),
+		digits: digitsFromString(digits),
+	});
 }
 
 function isSolved(state: {
@@ -107,24 +78,17 @@ function isSolved(state: {
 	givens: string;
 	cages?: KillerCage[];
 	size?: number;
-	digits?: string;
+	digits: string;
 }) {
-	const variant = state.variant ?? "classic";
-	const digits = state.digits ?? "";
-	if (variant === "binary") {
-		const merged = mergedGridAny(state.givens, digits);
-		return isBinarySolved(gridToArray(merged), state.size ?? 0);
+	const merged = mergedGrid(state.givens, state.digits);
+	switch (state.variant ?? "classic") {
+		case "binary":
+			return isBinarySolved(merged, state.size ?? 0);
+		case "killer":
+			return isKillerSolved(merged, state.cages ?? []);
+		case "classic":
+			return isGridSolved(merged);
 	}
-	const merged = mergedGrid(state.givens, digits);
-	if (merged.includes("0") || hasConflicts(merged)) {
-		return false;
-	}
-	if (variant === "killer") {
-		return (
-			findKillerConflicts(gridToArray(merged), state.cages ?? []).size === 0
-		);
-	}
-	return true;
 }
 
 async function getStateForSession(
@@ -189,19 +153,13 @@ export const createState = mutation({
 		if (args.solution) {
 			assertGridString(args.solution, spec);
 		}
-		if (variant === "binary") {
-			if (
-				findBinaryConflicts(
-					gridToArray(mergedGridAny(args.givens, digits)),
-					args.size ?? 0,
-				).size > 0
-			) {
-				throw gameError("puzzleConflictingDigits");
-			}
-		} else {
-			if (hasConflicts(mergedGrid(args.givens, digits))) {
-				throw gameError("puzzleConflictingDigits");
-			}
+		const merged = mergedGrid(args.givens, digits);
+		const conflicts =
+			variant === "binary"
+				? findBinaryConflicts(merged, args.size ?? 0)
+				: findConflicts(merged);
+		if (conflicts.size > 0) {
+			throw gameError("puzzleConflictingDigits");
 		}
 		if (variant === "killer") {
 			if (!args.cages || !validateKillerCages(args.cages)) {
@@ -209,7 +167,7 @@ export const createState = mutation({
 			}
 			if (
 				args.solution &&
-				findKillerConflicts(gridToArray(args.solution), args.cages).size > 0
+				findKillerConflicts(digitsFromString(args.solution), args.cages).size > 0
 			) {
 				throw gameError("cagesUnsatisfied");
 			}

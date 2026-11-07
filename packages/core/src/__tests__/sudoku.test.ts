@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { digitsToString } from "../puzzle";
 import { mulberry32 } from "../random";
 import {
 	computeCandidates,
@@ -7,7 +8,6 @@ import {
 	emptyGrid,
 	findConflicts,
 	generatePuzzle,
-	gridToString,
 	isGridSolved,
 	parseGrid,
 	SUDOKU_CELL_COUNT,
@@ -38,7 +38,7 @@ describe("sudoku rules", () => {
 		expect(grid).toHaveLength(SUDOKU_CELL_COUNT);
 		expect(grid[0]).toBe(5);
 		expect(grid[2]).toBe(0);
-		expect(gridToString(grid)).toBe(KNOWN_PUZZLE);
+		expect(digitsToString(grid)).toBe(KNOWN_PUZZLE);
 	});
 
 	it("finds row, column, and box conflicts", () => {

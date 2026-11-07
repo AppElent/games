@@ -10,7 +10,6 @@ import {
 	type CardId,
 	clone,
 	deal,
-	drawCards,
 	isJoker,
 	parseCard,
 	type Rank,
@@ -19,6 +18,7 @@ import {
 	type Suit,
 } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
+import { type BotMove, drawWithReshuffle, publicTable } from "./table";
 
 export type CardPower =
 	/** Next player draws `amount` unless they can stack. */
@@ -86,6 +86,15 @@ export type SheddingAction =
 	| { type: "pass" }
 	| { type: "callLast" }
 	| { type: "catch"; target: number };
+
+/** Keyed by action type, so a new action cannot be left out. */
+export const SHEDDING_ACTIONS: Record<SheddingAction["type"], true> = {
+	play: true,
+	draw: true,
+	pass: true,
+	callLast: true,
+	catch: true,
+};
 
 export type SheddingView = {
 	family: "shedding";
@@ -169,10 +178,7 @@ function moveTurn(state: SheddingState, steps = 1) {
 }
 
 function draw(state: SheddingState, seat: number, count: number, random: Rng) {
-	const { drawn, reshuffled } = drawCards(state, count, random);
-	if (reshuffled) {
-		pushEvent(state, { type: "reshuffle" });
-	}
+	const drawn = drawWithReshuffle(state, count, random);
 	state.hands[seat].push(...drawn);
 	return drawn;
 }
@@ -240,6 +246,11 @@ export function createShedding(
 	};
 	pushEvent(state, { type: "deal", round: 1 });
 	return state;
+}
+
+/** Who leads the rematch: the next seat along. */
+export function nextSheddingStarter(state: SheddingState) {
+	return (state.starter + 1) % state.hands.length;
 }
 
 function applyPlay(
@@ -450,13 +461,11 @@ export function viewShedding(
 		turn: state.turn,
 		direction: state.direction,
 		top: state.discard[state.discard.length - 1],
-		underTop: state.discard.slice(-4, -1),
-		stockCount: state.stock.length,
+		...publicTable(state),
 		activeSuit: state.activeSuit,
 		openTable: state.openTable,
 		pendingDraw: state.pendingDraw,
 		mustContinue: state.mustContinue,
-		handCounts: state.hands.map((cards) => cards.length),
 		hand,
 		legal,
 		drawnCard: isTurn ? state.drawnCard : null,
@@ -471,13 +480,6 @@ export function viewShedding(
 		events: state.events,
 	};
 }
-
-export type BotMove<Action> = {
-	seat: number;
-	action: Action;
-	/** A new turn, the rest of a turn already under way, or a reply to someone else. */
-	pace: "turn" | "followUp" | "reaction";
-};
 
 function chooseSuitFor(hand: CardId[], excluding: CardId): Suit {
 	const counts = new Map<Suit, number>();

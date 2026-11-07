@@ -3,11 +3,11 @@ import {
 	BLUFF_MAX_PLAYERS,
 	BLUFF_MIN_PLAYERS,
 	BLUFF_STARTING_DICE,
-	getBluffWinnerIndex,
+	bluffDiceCounts,
 	isClaimHigher,
 	isValidBluffClaim,
 	nextActiveIndex,
-	resolveBluffChallenge,
+	resolveBluffRound,
 	rollBluffDice,
 } from "@arcadeclub/core/bluff-dice";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -162,11 +162,7 @@ export const submitClaim = mutation({
 		if (previous && !isClaimHigher(previous, claim)) {
 			throw gameError("claimMustOutrank");
 		}
-		const diceCounts = state.turnOrder.map(
-			(participantId) =>
-				state.hands.find((hand) => hand.participantId === participantId)
-					?.values.length ?? 0,
-		);
+		const diceCounts = bluffDiceCounts(state.turnOrder, state.hands);
 		await ctx.db.patch(state._id, {
 			claimHistory: [
 				...state.claimHistory,
@@ -190,58 +186,13 @@ export const challenge = mutation({
 		if (!claim) {
 			throw gameError("noClaimToChallenge");
 		}
-		const outcome = resolveBluffChallenge(
-			state.hands.map((hand) => hand.values),
-			claim,
-		);
-		const loserParticipantId =
-			outcome.loser === "claimant" ? claim.byParticipantId : args.participantId;
-
-		// Loser loses one die; re-roll everyone for the next round.
-		const nextHands = state.hands.map((hand) => {
-			const count =
-				hand.participantId === loserParticipantId
-					? hand.values.length - 1
-					: hand.values.length;
-			return {
-				participantId: hand.participantId,
-				values: rollBluffDice(Math.max(0, count)),
-			};
-		});
-		const diceCounts = state.turnOrder.map(
-			(participantId) =>
-				nextHands.find((hand) => hand.participantId === participantId)?.values
-					.length ?? 0,
-		);
-		const winnerIndex = getBluffWinnerIndex(diceCounts);
-		const loserIndex = state.turnOrder.indexOf(loserParticipantId);
-		// The loser starts the next round, unless they were eliminated.
-		const nextIndex =
-			diceCounts[loserIndex] > 0
-				? loserIndex
-				: nextActiveIndex(diceCounts, loserIndex);
+		const round = resolveBluffRound(state, claim, args.participantId);
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase: winnerIndex === undefined ? "claim" : "finished",
-			hands: nextHands,
-			activeIndex: nextIndex,
-			roundNumber: state.roundNumber + 1,
-			claimHistory: [],
-			lastReveal: {
-				claim,
-				challengerParticipantId: args.participantId,
-				actualCount: outcome.actualCount,
-				loserParticipantId,
-				hands: state.hands,
-			},
-			winnerParticipantId:
-				winnerIndex === undefined ? undefined : state.turnOrder[winnerIndex],
-			updatedAt: now,
-		});
-		if (winnerIndex !== undefined) {
+		await ctx.db.patch(state._id, { ...round, updatedAt: now });
+		if (round.winnerParticipantId !== undefined) {
 			await completeSession(ctx, args.sessionId, {
 				endedAt: now,
-				winnerParticipantIds: [state.turnOrder[winnerIndex]],
+				winnerParticipantIds: [round.winnerParticipantId],
 			});
 		}
 	},

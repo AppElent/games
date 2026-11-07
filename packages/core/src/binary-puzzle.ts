@@ -1,3 +1,4 @@
+import { digitsFromString, type PuzzleDifficulty, removeClues } from "./puzzle";
 import { type Rng, shuffle } from "./random";
 
 /**
@@ -11,7 +12,7 @@ import { type Rng, shuffle } from "./random";
  */
 type BinaryGrid = number[];
 
-export type BinaryDifficulty = "easy" | "medium" | "hard" | "expert";
+export type BinaryDifficulty = PuzzleDifficulty;
 
 export const BINARY_SIZES: Record<BinaryDifficulty, number> = {
 	easy: 6,
@@ -19,6 +20,12 @@ export const BINARY_SIZES: Record<BinaryDifficulty, number> = {
 	hard: 10,
 	expert: 10,
 };
+
+/**
+ * Board sides a stored game may have. Wider than what `BINARY_SIZES` generates:
+ * nothing generates 12, but the server has always accepted it.
+ */
+export const BINARY_ACCEPTED_SIZES: readonly number[] = [6, 8, 10, 12];
 
 /** Fraction of cells kept as givens. */
 const CLUE_FRACTIONS: Record<BinaryDifficulty, number> = {
@@ -263,36 +270,24 @@ export function generateBinaryPuzzle(
 ): GeneratedBinaryPuzzle {
 	const size = BINARY_SIZES[difficulty];
 	const solution = generateSolvedBinaryGrid(size, rng);
-	const givens = [...solution];
 	const total = size * size;
-	const target = Math.round(total * CLUE_FRACTIONS[difficulty]);
-	let clueCount = total;
-
-	const order = Array.from({ length: total }, (_, i) => i);
-	for (const cell of shuffle(order, rng)) {
-		if (clueCount <= target) {
-			break;
-		}
-		const saved = givens[cell];
-		givens[cell] = 0;
-		if (countBinarySolutions(givens, size, 2) === 1) {
-			clueCount -= 1;
-		} else {
-			givens[cell] = saved;
-		}
-	}
+	const { givens, clueCount } = removeClues(
+		solution,
+		shuffle(
+			Array.from({ length: total }, (_, i) => i),
+			rng,
+		),
+		Math.round(total * CLUE_FRACTIONS[difficulty]),
+		(grid) => countBinarySolutions(grid, size, 2) === 1,
+	);
 	return { size, givens, solution, difficulty, clueCount };
 }
 
-// --- serialization (shared with the Convex sudoku module) ---
-
-export function binaryGridToString(grid: BinaryGrid) {
-	return grid.join("");
-}
+// --- serialization ---
 
 export function parseBinaryGrid(text: string, size: number): BinaryGrid {
 	if (!new RegExp(`^[0-2]{${size * size}}$`).test(text)) {
 		throw new Error("Invalid binary grid");
 	}
-	return [...text].map(Number);
+	return digitsFromString(text);
 }

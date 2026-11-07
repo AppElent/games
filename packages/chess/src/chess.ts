@@ -1,3 +1,4 @@
+import { GameRuleError } from "@arcadeclub/core/errors";
 import { Chess } from "chess.js";
 import type { ChessColor, ChessPromotion, ChessTimeControl } from "./enums";
 
@@ -35,6 +36,17 @@ export const CHESS_TIME_CONTROLS: Record<
 	"10+0": { label: "10 minutes", initialSeconds: 600 },
 };
 
+export function switchChessColor(color: ChessColor): ChessColor {
+	return color === "white" ? "black" : "white";
+}
+
+/** Both clocks at the start of a game; unset for an untimed one. */
+export function initialClock(timeControl: ChessTimeControl) {
+	const { initialSeconds } = CHESS_TIME_CONTROLS[timeControl];
+	const ms = initialSeconds ? initialSeconds * 1000 : undefined;
+	return { remainingWhiteMs: ms, remainingBlackMs: ms };
+}
+
 function detectDraw(game: Chess): ChessGameResult | undefined {
 	if (game.isStalemate()) {
 		return { outcome: "stalemate" };
@@ -52,8 +64,8 @@ function detectDraw(game: Chess): ChessGameResult | undefined {
 }
 
 /**
- * Validate and apply a move against a FEN. Throws an Error with a
- * user-safe message when the move is illegal; the FEN is never modified.
+ * Validate and apply a move against a FEN. Throws a `GameRuleError` when the
+ * move is illegal; the FEN is never modified.
  */
 export function applyChessMove(
 	fen: string,
@@ -68,7 +80,7 @@ export function applyChessMove(
 			promotion: move.promotion,
 		}).san;
 	} catch {
-		throw new Error("Illegal move");
+		throw new GameRuleError("illegalMove");
 	}
 	let result: ChessGameResult | undefined;
 	if (game.isCheckmate()) {

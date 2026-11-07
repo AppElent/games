@@ -12,7 +12,6 @@ import {
 	createHistory,
 	deserializeBoard,
 	effectiveGrid,
-	isBoardComplete,
 	redo,
 	type SudokuAction,
 	type SudokuHistory,
@@ -21,7 +20,10 @@ import {
 	undo,
 } from "@arcadeclub/core/sudoku-board";
 import { findHint, type SudokuHint } from "@arcadeclub/core/sudoku-hints";
-import { findKillerConflicts } from "@arcadeclub/core/sudoku-killer";
+import {
+	boardConflictsWithCages,
+	isBoardSolved,
+} from "@arcadeclub/core/sudoku-killer";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
 import { useGameClock } from "../components/use-game-clock";
@@ -93,15 +95,10 @@ export function useSudokuGame(save: GridSave) {
 		}
 	}, [elapsed, status, persist]);
 
-	const conflicts = useMemo(() => {
-		const merged = boardConflicts(board);
-		if (cages) {
-			for (const cell of findKillerConflicts(effectiveGrid(board), cages)) {
-				merged.add(cell);
-			}
-		}
-		return merged;
-	}, [board, cages]);
+	const conflicts = useMemo(
+		() => boardConflictsWithCages(board, cages),
+		[board, cages],
+	);
 
 	const digitCounts = useMemo(() => {
 		const counts = new Array<number>(10).fill(0);
@@ -110,10 +107,7 @@ export function useSudokuGame(save: GridSave) {
 	}, [board]);
 
 	const solved = useCallback(
-		(next: SudokuHistory) =>
-			isBoardComplete(next.current) &&
-			(!cages ||
-				findKillerConflicts(effectiveGrid(next.current), cages).size === 0),
+		(next: SudokuHistory) => isBoardSolved(next.current, cages),
 		[cages],
 	);
 

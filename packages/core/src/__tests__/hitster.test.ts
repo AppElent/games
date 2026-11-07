@@ -144,16 +144,22 @@ describe("token cap", () => {
 
 describe("steal claims", () => {
 	it("only apply when the active player missed", () => {
-		expect(
-			resolveHitsterSteals("original", true, [
-				{ participantId: "p2", submittedAt: 1, flags: allCorrect },
-			]),
-		).toBeUndefined();
+		const judged = resolveHitsterSteals(
+			"original",
+			true,
+			[{ participantId: "p2", submittedAt: 1, flags: allCorrect }],
+			(claim) => claim.flags,
+		);
+		expect(judged.map(({ correct, wonCard }) => [correct, wonCard])).toEqual([
+			[true, false],
+		]);
 	});
 
 	it("earliest qualifying claim wins", () => {
-		expect(
-			resolveHitsterSteals("original", false, [
+		const judged = resolveHitsterSteals(
+			"original",
+			false,
+			[
 				{
 					participantId: "late",
 					submittedAt: 20,
@@ -165,8 +171,20 @@ describe("steal claims", () => {
 					flags: { ...allCorrect, placementCorrect: false },
 				},
 				{ participantId: "early", submittedAt: 10, flags: allCorrect },
+			],
+			(claim) => claim.flags,
+		);
+		expect(
+			judged.map(({ claim, correct, wonCard }) => [
+				claim.participantId,
+				correct,
+				wonCard,
 			]),
-		).toBe("early");
+		).toEqual([
+			["wrong", false, false],
+			["early", true, true],
+			["late", true, false],
+		]);
 	});
 
 	it("pro steals require artist and title, expert also the year", () => {

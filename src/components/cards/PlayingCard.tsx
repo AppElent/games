@@ -1,5 +1,6 @@
 import {
 	type CardId,
+	cardCopy,
 	parseCard,
 	type Rank,
 	type Suit,
@@ -488,7 +489,7 @@ export const PlayingCard = memo(function PlayingCard({
 							strokeWidth=".7"
 						/>
 						{parsed.joker ? (
-							<JokerFace red={Number(card?.split("#")[1]) % 2 === 1} />
+							<JokerFace red={card !== null && cardCopy(card) % 2 === 1} />
 						) : (
 							<Face card={parsed} glyph={glyphs[parsed.rank] ?? parsed.rank} />
 						)}

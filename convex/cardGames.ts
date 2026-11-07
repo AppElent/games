@@ -10,7 +10,8 @@ import {
 	SEAT_SILENT_AFTER_MS,
 	nextStarter,
 } from "@arcadeclub/core/cards/engine";
-import { v } from "convex/values";
+import { SUITS } from "@arcadeclub/core/cards/deck";
+import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -20,6 +21,7 @@ import { requireSeatSecret } from "./lib/cardSeats";
 import { completeSession, reopenSession } from "./lib/completion";
 import { createHostedSession } from "./lib/hostedSession";
 import { gameError, toGameError } from "./lib/errors";
+import { literals } from "./lib/validators";
 
 /**
  * One backend for every card game: the game id selects a definition from
@@ -38,18 +40,11 @@ const TURN_PACE_MS = { min: 1000, spread: 500 };
 const FOLLOW_UP_PACE_MS = 450;
 const REACTION_PACE_MS = 2400;
 
-const suit = v.union(
-	v.literal("S"),
-	v.literal("H"),
-	v.literal("D"),
-	v.literal("C"),
-);
-
-export const cardActionValidator = v.union(
+const cardActionValidator = v.union(
 	v.object({
 		type: v.literal("play"),
 		card: v.string(),
-		suit: v.optional(suit),
+		suit: v.optional(literals(SUITS)),
 		callLast: v.optional(v.boolean()),
 	}),
 	v.object({ type: v.literal("draw") }),
@@ -71,6 +66,14 @@ export const cardActionValidator = v.union(
 	v.object({ type: v.literal("discard"), card: v.string() }),
 	v.object({ type: v.literal("nextRound") }),
 );
+
+// Arguments are a validator and core is dependency-free, so this cannot be
+// derived. It fails typecheck as soon as the two disagree, either way round.
+true satisfies [Infer<typeof cardActionValidator>] extends [CardAction]
+	? [CardAction] extends [Infer<typeof cardActionValidator>]
+		? true
+		: false
+	: false;
 
 const credential = {
 	sessionId: v.id("gameSessions"),
@@ -458,7 +461,7 @@ export const act = mutation({
 				table.options,
 				table.game as CardGameState,
 				seat,
-				args.action as CardAction,
+				args.action,
 			);
 			await commit(ctx, table, game);
 		} catch (caught) {

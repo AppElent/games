@@ -3,6 +3,7 @@ import {
 	findBinaryConflicts,
 	isBinarySolved,
 } from "@arcadeclub/core/binary-puzzle";
+import { digitsToString, type PuzzleDifficulty } from "@arcadeclub/core/puzzle";
 import { useMutation } from "convex/react";
 import { Pause, Play, RotateCcw, Timer, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,7 +16,7 @@ type BinaryStateDoc = {
 	digits: string;
 	size?: number;
 	status: "active" | "paused" | "completed";
-	difficulty?: "easy" | "medium" | "hard" | "expert";
+	difficulty?: PuzzleDifficulty;
 	elapsedSeconds: number;
 	lastResumedAt?: number;
 };
@@ -93,7 +94,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 				}
 				saveProgress({
 					sessionId,
-					digits: nextEntries.join(""),
+					digits: digitsToString(nextEntries),
 					cornerNotes: new Array(cellCount).fill(0),
 					centerNotes: new Array(cellCount).fill(0),
 					colors: new Array(cellCount).fill(0),
@@ -124,7 +125,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 				setStatus("completed");
 				complete({
 					sessionId,
-					digits: next.join(""),
+					digits: digitsToString(next),
 					elapsedSeconds: elapsedRef.current,
 				}).catch(() => undefined);
 			}

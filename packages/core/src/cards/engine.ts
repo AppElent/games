@@ -12,24 +12,28 @@ import { pesten } from "./games/pesten";
 import {
 	applyRummy,
 	botRummyMove,
-	createRummy,
+	nextRummyStarter,
+	RUMMY_ACTIONS,
 	type RummyAction,
 	type RummyRules,
 	type RummyState,
 	type RummyView,
+	startRummy,
 	viewRummy,
 } from "./rummy";
 import {
 	applyShedding,
-	type BotMove,
 	botSheddingMove,
 	createShedding,
+	nextSheddingStarter,
+	SHEDDING_ACTIONS,
 	type SheddingAction,
 	type SheddingRules,
 	type SheddingState,
 	type SheddingView,
 	viewShedding,
 } from "./shedding";
+import type { BotMove } from "./table";
 
 export type FeltColor = "oxblood" | "bottle" | "midnight";
 
@@ -99,16 +103,81 @@ function rulesOf<R>(
 	return rules;
 }
 
-const SHEDDING_ACTIONS = ["play", "draw", "pass", "callLast", "catch"];
-const RUMMY_ACTIONS = [
-	"drawStock",
-	"takeDiscard",
-	"layDown",
-	"discard",
-	"nextRound",
-];
+function rulesFor(game: CardGameDefinition, options: readonly string[]) {
+	return rulesOf<SheddingRules | RummyRules>(game, options);
+}
 
-/** One contract per family; the casts stay here because the game id picks the family. */
+type FamilyTypes = {
+	shedding: {
+		rules: SheddingRules;
+		state: SheddingState;
+		action: SheddingAction;
+		view: SheddingView;
+	};
+	rummy: {
+		rules: RummyRules;
+		state: RummyState;
+		action: RummyAction;
+		view: RummyView;
+	};
+};
+
+type Family = keyof FamilyTypes;
+
+/** Everything the engine asks of a rule family. */
+type FamilyModule<F extends Family> = {
+	actions: Record<FamilyTypes[F]["action"]["type"], true>;
+	create: (
+		rules: FamilyTypes[F]["rules"],
+		seats: number,
+		random: Rng,
+		starter: number,
+	) => FamilyTypes[F]["state"];
+	nextStarter: (state: FamilyTypes[F]["state"]) => number;
+	apply: (
+		rules: FamilyTypes[F]["rules"],
+		state: FamilyTypes[F]["state"],
+		seat: number,
+		action: FamilyTypes[F]["action"],
+		random: Rng,
+	) => FamilyTypes[F]["state"];
+	view: (
+		rules: FamilyTypes[F]["rules"],
+		state: FamilyTypes[F]["state"],
+		seat: number | null,
+	) => FamilyTypes[F]["view"];
+	bot: (
+		rules: FamilyTypes[F]["rules"],
+		state: FamilyTypes[F]["state"],
+		bots: readonly number[],
+		random: Rng,
+	) => BotMove<FamilyTypes[F]["action"]> | null;
+};
+
+const FAMILIES: { [F in Family]: FamilyModule<F> } = {
+	shedding: {
+		actions: SHEDDING_ACTIONS,
+		create: createShedding,
+		nextStarter: nextSheddingStarter,
+		apply: applyShedding,
+		view: viewShedding,
+		bot: botSheddingMove,
+	},
+	rummy: {
+		actions: RUMMY_ACTIONS,
+		create: startRummy,
+		nextStarter: nextRummyStarter,
+		apply: applyRummy,
+		view: viewRummy,
+		bot: botRummyMove,
+	},
+};
+
+/** The one cast: a game id picks the family, and its state and actions belong to that family. */
+function familyOf(family: Family) {
+	return FAMILIES[family] as unknown as FamilyModule<Family>;
+}
+
 export function createCardGame(
 	game: CardGameDefinition,
 	options: readonly string[],
@@ -119,22 +188,17 @@ export function createCardGame(
 	if (seats < game.players.min || seats > game.players.max) {
 		throw new GameRuleError("notEnoughPlayers");
 	}
-	return game.family === "shedding"
-		? createShedding(rulesOf(game, options), seats, random, starter)
-		: createRummy(
-				rulesOf(game, options),
-				seats,
-				random,
-				(starter + seats - 1) % seats,
-			);
+	return familyOf(game.family).create(
+		rulesFor(game, options),
+		seats,
+		random,
+		starter,
+	);
 }
 
 /** Who leads the rematch: the next seat along, so the lead goes round the table. */
 export function nextStarter(state: CardGameState) {
-	const seats = state.hands.length;
-	return state.family === "shedding"
-		? (state.starter + 1) % seats
-		: (state.dealer + 2) % seats;
+	return familyOf(state.family).nextStarter(state);
 }
 
 export function applyCardAction(
@@ -145,28 +209,11 @@ export function applyCardAction(
 	action: CardAction,
 	random: Rng = Math.random,
 ): CardGameState {
-	if (game.family === "shedding") {
-		if (!SHEDDING_ACTIONS.includes(action.type)) {
-			throw new GameRuleError("cardsWrongAction");
-		}
-		return applyShedding(
-			rulesOf(game, options),
-			state as SheddingState,
-			seat,
-			action as SheddingAction,
-			random,
-		);
-	}
-	if (!RUMMY_ACTIONS.includes(action.type)) {
+	const family = familyOf(game.family);
+	if (!Object.keys(family.actions).includes(action.type)) {
 		throw new GameRuleError("cardsWrongAction");
 	}
-	return applyRummy(
-		rulesOf(game, options),
-		state as RummyState,
-		seat,
-		action as RummyAction,
-		random,
-	);
+	return family.apply(rulesFor(game, options), state, seat, action, random);
 }
 
 /** What one seat may see; `null` is a spectator. Never includes other hands. */
@@ -176,9 +223,7 @@ export function viewCardGame(
 	state: CardGameState,
 	seat: number | null,
 ): CardView {
-	return game.family === "shedding"
-		? viewShedding(rulesOf(game, options), state as SheddingState, seat)
-		: viewRummy(rulesOf(game, options), state as RummyState, seat);
+	return familyOf(game.family).view(rulesFor(game, options), state, seat);
 }
 
 export function botMove(
@@ -188,22 +233,25 @@ export function botMove(
 	bots: readonly number[],
 	random: Rng = Math.random,
 ): BotMove<CardAction> | null {
-	return game.family === "shedding"
-		? botSheddingMove(
-				rulesOf(game, options),
-				state as SheddingState,
-				bots,
-				random,
-			)
-		: botRummyMove(rulesOf(game, options), state as RummyState, bots);
+	return familyOf(game.family).bot(
+		rulesFor(game, options),
+		state,
+		bots,
+		random,
+	);
 }
+
+type ResolvedRules = {
+	[F in Family]: { family: F; rules: FamilyTypes[F]["rules"] };
+}[Family];
 
 /** Rules a client needs to render hints, without shipping any game logic twice. */
 export function resolvedRules(
 	game: CardGameDefinition,
 	options: readonly string[],
 ) {
-	return game.family === "shedding"
-		? { family: "shedding" as const, rules: rulesOf(game, options) }
-		: { family: "rummy" as const, rules: rulesOf(game, options) };
+	return {
+		family: game.family,
+		rules: rulesFor(game, options),
+	} as ResolvedRules;
 }

@@ -110,6 +110,11 @@ function rollBackgammonDie(random: Rng) {
 	return Math.min(6, Math.floor(random() * 6) + 1);
 }
 
+/** A fresh set of dice, none of them spent. */
+export function withBackgammonDice(state: BackgammonTurnState, dice: number[]) {
+	return { ...state, dice, used: dice.map(() => false) };
+}
+
 export function switchBackgammonColor(color: BackgammonColor): BackgammonColor {
 	return color === "white" ? "black" : "white";
 }
@@ -259,6 +264,50 @@ function stepDestinationOk(
 }
 
 /**
+ * Every way to move a checker off `from` with the remaining dice: single dice
+ * first, then two-die combinations when `autoCombine` is on.
+ */
+function* routesFrom(
+	state: BackgammonTurnState,
+	from: BackgammonMoveSource,
+	autoCombine: boolean,
+): Generator<BackgammonStep[]> {
+	const color = state.activeColor;
+	const indexes = availableDieIndexes(state);
+	for (const i of indexes) {
+		const die = state.dice[i];
+		const to = destinationFor(from, die, color);
+		if (stepDestinationOk(state, to, color)) {
+			yield [{ from, to, die, dieIndex: i }];
+		}
+	}
+	if (!autoCombine || indexes.length < 2) {
+		return;
+	}
+	for (const i of indexes) {
+		for (const j of indexes) {
+			if (i === j) {
+				continue;
+			}
+			const mid = destinationFor(from, state.dice[i], color);
+			if (mid === "off" || !isLandingOpen(state.points, mid, color)) {
+				continue;
+			}
+			const board = cloneBoard(state);
+			removeChecker(board, from, color);
+			addChecker(board, mid, color);
+			const to = destinationFor(mid, state.dice[j], color);
+			if (stepDestinationOk(board, to, color)) {
+				yield [
+					{ from, to: mid, die: state.dice[i], dieIndex: i },
+					{ from: mid, to, die: state.dice[j], dieIndex: j },
+				];
+			}
+		}
+	}
+}
+
+/**
  * Destinations reachable from `source` with the remaining dice. With
  * `autoCombine`, two-die combinations are included as well.
  */
@@ -272,43 +321,15 @@ export function getMoveHighlights(
 	if (source == null || !canMoveNow(state)) {
 		return { points, off };
 	}
-	const color = state.activeColor;
-	if (state.bar[color] > 0 && source !== "bar") {
+	if (state.bar[state.activeColor] > 0 && source !== "bar") {
 		return { points, off };
 	}
-	const indexes = availableDieIndexes(state);
-	for (const i of indexes) {
-		const dest = destinationFor(source, state.dice[i], color);
-		if (dest === "off") {
-			if (canBearOff(state.points, state.bar, color)) {
-				off = true;
-			}
-		} else if (isLandingOpen(state.points, dest, color)) {
-			points.add(dest);
-		}
-	}
-	if (autoCombine && indexes.length >= 2) {
-		for (const i of indexes) {
-			for (const j of indexes) {
-				if (i === j) {
-					continue;
-				}
-				const mid = destinationFor(source, state.dice[i], color);
-				if (mid === "off" || !isLandingOpen(state.points, mid, color)) {
-					continue;
-				}
-				const board = cloneBoard(state);
-				removeChecker(board, source, color);
-				addChecker(board, mid, color);
-				const final = destinationFor(mid, state.dice[j], color);
-				if (final === "off") {
-					if (canBearOff(board.points, board.bar, color)) {
-						off = true;
-					}
-				} else if (isLandingOpen(board.points, final, color)) {
-					points.add(final);
-				}
-			}
+	for (const steps of routesFrom(state, source, autoCombine)) {
+		const { to } = steps[steps.length - 1];
+		if (to === "off") {
+			off = true;
+		} else {
+			points.add(to);
 		}
 	}
 	return { points, off };
@@ -340,42 +361,9 @@ export function planBackgammonMove(
 	} else if (state.bar[color] <= 0) {
 		return null;
 	}
-	const indexes = availableDieIndexes(state);
-	for (const i of indexes) {
-		if (
-			destinationFor(from, state.dice[i], color) === to &&
-			stepDestinationOk(state, to, color)
-		) {
-			return {
-				steps: [{ from, to, die: state.dice[i], dieIndex: i }],
-			};
-		}
-	}
-	if (autoCombine && indexes.length >= 2) {
-		for (const i of indexes) {
-			for (const j of indexes) {
-				if (i === j) {
-					continue;
-				}
-				const mid = destinationFor(from, state.dice[i], color);
-				if (mid === "off" || !isLandingOpen(state.points, mid, color)) {
-					continue;
-				}
-				const board = cloneBoard(state);
-				removeChecker(board, from, color);
-				addChecker(board, mid, color);
-				if (
-					destinationFor(mid, state.dice[j], color) === to &&
-					stepDestinationOk(board, to, color)
-				) {
-					return {
-						steps: [
-							{ from, to: mid, die: state.dice[i], dieIndex: i },
-							{ from: mid, to, die: state.dice[j], dieIndex: j },
-						],
-					};
-				}
-			}
+	for (const steps of routesFrom(state, from, autoCombine)) {
+		if (steps[steps.length - 1].to === to) {
+			return { steps };
 		}
 	}
 	return null;
@@ -477,4 +465,13 @@ export function getBackgammonWinner(
 		return "black";
 	}
 	return null;
+}
+
+/** All dice are spent and the game goes on: only ending the turn is left. */
+export function isTurnSpent(state: BackgammonTurnState) {
+	return (
+		state.dice.length > 0 &&
+		state.used.every(Boolean) &&
+		getBackgammonWinner(state.off) === null
+	);
 }

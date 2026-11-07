@@ -1,9 +1,7 @@
-import {
-	binaryGridToString,
-	generateBinaryPuzzle,
-} from "@arcadeclub/core/binary-puzzle";
+import { generateBinaryPuzzle } from "@arcadeclub/core/binary-puzzle";
+import { digitsToString } from "@arcadeclub/core/puzzle";
 import type { SudokuDifficulty } from "@arcadeclub/core/sudoku";
-import { generatePuzzle, gridToString } from "@arcadeclub/core/sudoku";
+import { generatePuzzle } from "@arcadeclub/core/sudoku";
 import { generateKillerPuzzle } from "@arcadeclub/core/sudoku-killer";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
@@ -112,8 +110,8 @@ function SudokuNewPage() {
 					difficulty,
 					variant: "binary",
 					size: puzzle.size,
-					givens: binaryGridToString(puzzle.givens),
-					solution: binaryGridToString(puzzle.solution),
+					givens: digitsToString(puzzle.givens),
+					solution: digitsToString(puzzle.solution),
 				});
 			} else if (variant === "killer") {
 				const puzzle = generateKillerPuzzle(difficulty);
@@ -123,8 +121,8 @@ function SudokuNewPage() {
 					difficulty,
 					variant: "killer",
 					cages: puzzle.cages,
-					givens: gridToString(puzzle.givens),
-					solution: gridToString(puzzle.solution),
+					givens: digitsToString(puzzle.givens),
+					solution: digitsToString(puzzle.solution),
 				});
 			} else {
 				const puzzle = generatePuzzle(difficulty);
@@ -132,8 +130,8 @@ function SudokuNewPage() {
 					sessionId: result.sessionId,
 					source: "generated",
 					difficulty,
-					givens: gridToString(puzzle.givens),
-					solution: gridToString(puzzle.solution),
+					givens: digitsToString(puzzle.givens),
+					solution: digitsToString(puzzle.solution),
 				});
 			}
 			rememberLocalSudokuSession({

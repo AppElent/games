@@ -3,15 +3,9 @@
  * can take a noticeable moment for Killer and large binary grids, so callers
  * yield a frame first to let the busy state paint.
  */
-import {
-	binaryGridToString,
-	generateBinaryPuzzle,
-} from "@arcadeclub/core/binary-puzzle";
-import {
-	generatePuzzle,
-	gridToString,
-	type SudokuDifficulty,
-} from "@arcadeclub/core/sudoku";
+import { generateBinaryPuzzle } from "@arcadeclub/core/binary-puzzle";
+import { digitsToString } from "@arcadeclub/core/puzzle";
+import { generatePuzzle, type SudokuDifficulty } from "@arcadeclub/core/sudoku";
 import {
 	createBoardState,
 	serializeBoard,
@@ -42,9 +36,9 @@ export function createSudokuSave(
 			...base,
 			variant,
 			size: puzzle.size,
-			givens: binaryGridToString(puzzle.givens),
+			givens: digitsToString(puzzle.givens),
 			entries: "0".repeat(puzzle.size * puzzle.size),
-			solution: binaryGridToString(puzzle.solution),
+			solution: digitsToString(puzzle.solution),
 		};
 	}
 	const killer = variant === "killer" ? generateKillerPuzzle(difficulty) : null;
@@ -53,7 +47,7 @@ export function createSudokuSave(
 		...base,
 		variant,
 		board: serializeBoard(createBoardState(puzzle.givens)),
-		solution: gridToString(puzzle.solution),
+		solution: digitsToString(puzzle.solution),
 		cages: killer?.cages,
 		autoCleanup: true,
 	};

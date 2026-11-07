@@ -1,27 +1,24 @@
 import { v } from "convex/values";
 import {
-	applyHitsterTokenDelta,
-	evaluateHitsterRound,
-	getHitsterCoopOutcome,
 	getHitsterModeConfig,
-	type HitsterAnswerFlags,
-	hitsterStealRequirementMet,
-	matchesHitsterArtist,
-	matchesHitsterTitle,
-	validateHitsterPlacement,
+	HITSTER_SPARE_TRACKS,
+	HITSTER_TARGET_CARDS_RANGE,
+	hitsterMinPlayers,
+	hitsterTimelineFor,
 } from "@arcadeclub/core/hitster";
 import {
 	buildSpotifySearchUrl,
 	getHitsterCard,
 	getPlayableHitsterCards,
 } from "@arcadeclub/core/hitster-packs";
+import { resolveHitsterReveal } from "@arcadeclub/core/hitster-reveal";
 import { shuffle } from "@arcadeclub/core/random";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { completeSession } from "./lib/completion";
 import { hitsterModeValidator, hitsterPlaybackModeValidator } from "./schema";
-import { gameError } from "./lib/errors";
+import { gameError, toGameError } from "./lib/errors";
 
 type Ctx = MutationCtx | QueryCtx;
 
@@ -62,64 +59,15 @@ function requireHost(
 	}
 }
 
-function timelineYears(
-	packId: string,
-	cardIds: string[],
-): number[] {
-	return cardIds.map((cardId) => {
-		const card = getHitsterCard(packId, cardId);
-		if (!card) {
-			throw gameError("unknownTimelineCard");
-		}
-		return card.releaseYear;
-	});
-}
-
 function findTimeline(
 	state: Doc<"hitsterGameStates">,
 	participantId: Id<"sessionParticipants">,
 ) {
-	const shared = getHitsterModeConfig(state.mode).shared;
-	const timeline = shared
-		? state.timelines[0]
-		: state.timelines.find((entry) => entry.participantId === participantId);
+	const timeline = hitsterTimelineFor(state, participantId);
 	if (!timeline) {
 		throw gameError("timelineNotFound");
 	}
 	return timeline;
-}
-
-function evaluateAnswerFlags(
-	state: Doc<"hitsterGameStates">,
-	guess: {
-		participantId: Id<"sessionParticipants">;
-		dropIndex: number;
-		artistGuess?: string;
-		titleGuess?: string;
-		yearGuess?: number;
-	},
-	cardId: string,
-): HitsterAnswerFlags {
-	const card = getHitsterCard(state.packId, cardId);
-	if (!card) {
-		throw gameError("cardNotFound");
-	}
-	const timeline = findTimeline(state, guess.participantId);
-	const years = timelineYears(state.packId, timeline.cardIds);
-	return {
-		placementCorrect: validateHitsterPlacement(
-			years,
-			guess.dropIndex,
-			card.releaseYear,
-		),
-		artistCorrect: guess.artistGuess
-			? matchesHitsterArtist(guess.artistGuess, card.artistNames)
-			: false,
-		titleCorrect: guess.titleGuess
-			? matchesHitsterTitle(guess.titleGuess, card.title)
-			: false,
-		yearCorrect: guess.yearGuess === card.releaseYear,
-	};
 }
 
 export const setup = mutation({
@@ -140,10 +88,13 @@ export const setup = mutation({
 			throw gameError("gameAlreadyStarted");
 		}
 		const playable = getPlayableHitsterCards(args.packId, args.playbackMode);
-		if (playable.length < args.targetCards + 5) {
+		if (playable.length < args.targetCards + HITSTER_SPARE_TRACKS) {
 			throw gameError("notEnoughTracks");
 		}
-		if (args.targetCards < 3 || args.targetCards > 20) {
+		if (
+			args.targetCards < HITSTER_TARGET_CARDS_RANGE.min ||
+			args.targetCards > HITSTER_TARGET_CARDS_RANGE.max
+		) {
 			throw gameError("targetCardsRange");
 		}
 		const now = Date.now();
@@ -195,7 +146,7 @@ export const start = mutation({
 		const players = participants
 			.filter((participant) => participant.role !== "watcher")
 			.sort((a, b) => a._creationTime - b._creationTime);
-		if (players.length < (config.shared ? 1 : 2)) {
+		if (players.length < hitsterMinPlayers(config)) {
 			throw gameError("notEnoughPlayers");
 		}
 
@@ -354,158 +305,22 @@ export const reveal = mutation({
 		if (!state || state.phase !== "nowPlaying" || !state.currentCardId) {
 			throw gameError("nothingToReveal");
 		}
-		const mode = state.mode;
-		const config = getHitsterModeConfig(mode);
-		const cardId = state.currentCardId;
-		const activeParticipantId = state.turnOrder[state.activeIndex];
-		const guess = state.pendingGuess;
-
-		const flags: HitsterAnswerFlags = guess
-			? evaluateAnswerFlags(state, guess, cardId)
-			: {
-					placementCorrect: false,
-					artistCorrect: false,
-					titleCorrect: false,
-					yearCorrect: false,
-				};
-		const outcome = evaluateHitsterRound(mode, flags);
-
-		const timelines = state.timelines.map((entry) => ({
-			...entry,
-			cardIds: [...entry.cardIds],
-		}));
-		let tokens = state.tokens.map((entry) => ({ ...entry }));
-		let coopTokens = state.coopTokens;
-		const tokenChanges: Array<{
-			participantId?: Id<"sessionParticipants">;
-			delta: number;
-		}> = [];
-
-		const activeTimeline = config.shared
-			? timelines[0]
-			: timelines.find(
-					(entry) => entry.participantId === activeParticipantId,
-				);
-		if (!activeTimeline) {
-			throw gameError("timelineNotFound");
+		let revealed: ReturnType<
+			typeof resolveHitsterReveal<Id<"sessionParticipants">>
+		>;
+		try {
+			revealed = resolveHitsterReveal(state, state.currentCardId);
+		} catch (caught) {
+			throw toGameError(caught);
 		}
-
-		if (outcome.cardWon && guess) {
-			activeTimeline.cardIds.splice(guess.dropIndex, 0, cardId);
-		}
-		if (outcome.tokenDelta !== 0) {
-			tokens = tokens.map((entry) => {
-				if (entry.participantId !== activeParticipantId) {
-					return entry;
-				}
-				const next = applyHitsterTokenDelta(
-					entry.tokens,
-					outcome.tokenDelta,
-					config.tokenCap,
-				);
-				if (next !== entry.tokens) {
-					tokenChanges.push({
-						participantId: activeParticipantId,
-						delta: next - entry.tokens,
-					});
-				}
-				return { ...entry, tokens: next };
-			});
-		}
-		if (config.shared && !outcome.cardWon && coopTokens !== undefined) {
-			coopTokens = Math.max(0, coopTokens - 1);
-			tokenChanges.push({ participantId: undefined, delta: -1 });
-		}
-
-		// Steal claims already paid their token on submission; report the spend
-		// and resolve the card if the active player missed.
-		const stealResults: Array<{
-			participantId: Id<"sessionParticipants">;
-			correct: boolean;
-			wonCard: boolean;
-		}> = [];
-		let cardWonBy: Id<"sessionParticipants"> | undefined = outcome.cardWon
-			? activeParticipantId
-			: undefined;
-		if (config.stealsEnabled && state.stealClaims.length > 0) {
-			const sortedClaims = [...state.stealClaims].sort(
-				(a, b) => a.submittedAt - b.submittedAt,
-			);
-			let stolen = false;
-			for (const claim of sortedClaims) {
-				const claimFlags = evaluateAnswerFlags(state, claim, cardId);
-				const qualifies = hitsterStealRequirementMet(mode, claimFlags);
-				const wins = !outcome.cardWon && !stolen && qualifies;
-				if (wins) {
-					stolen = true;
-					cardWonBy = claim.participantId;
-					const claimTimeline = timelines.find(
-						(entry) => entry.participantId === claim.participantId,
-					);
-					claimTimeline?.cardIds.splice(claim.dropIndex, 0, cardId);
-				}
-				tokenChanges.push({ participantId: claim.participantId, delta: -1 });
-				stealResults.push({
-					participantId: claim.participantId,
-					correct: qualifies,
-					wonCard: wins,
-				});
-			}
-		}
-
-		const recap = {
-			roundNumber: state.roundNumber,
-			cardId,
-			activeParticipantId,
-			placementCorrect: flags.placementCorrect,
-			artistCorrect: guess?.artistGuess !== undefined ? flags.artistCorrect : undefined,
-			titleCorrect: guess?.titleGuess !== undefined ? flags.titleCorrect : undefined,
-			yearCorrect: guess?.yearGuess !== undefined ? flags.yearCorrect : undefined,
-			cardWonByParticipantId: config.shared ? undefined : cardWonBy,
-			cardWonByTeam: config.shared ? outcome.cardWon : undefined,
-			tokenChanges,
-			stealResults,
-		};
-
-		// Win / loss checks.
-		let phase: "reveal" | "finished" = "reveal";
-		let winnerParticipantId: Id<"sessionParticipants"> | undefined;
-		let coopResult: "won" | "lost" | undefined;
-		if (config.shared) {
-			const status = getHitsterCoopOutcome({
-				cardsOnTimeline: timelines[0].cardIds.length,
-				tokens: coopTokens ?? 0,
-				targetCards: state.targetCards,
-			});
-			if (status !== "ongoing") {
-				phase = "finished";
-				coopResult = status;
-			}
-		} else {
-			const winner = timelines.find(
-				(entry) => entry.cardIds.length >= state.targetCards,
-			);
-			if (winner?.participantId) {
-				phase = "finished";
-				winnerParticipantId = winner.participantId;
-			}
-		}
-
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase,
-			timelines,
-			tokens,
-			coopTokens,
-			lastRecap: recap,
-			winnerParticipantId,
-			coopResult,
-			updatedAt: now,
-		});
-		if (phase === "finished") {
+		await ctx.db.patch(state._id, { ...revealed, updatedAt: now });
+		if (revealed.phase === "finished") {
 			await completeSession(ctx, args.sessionId, {
 				endedAt: now,
-				winnerParticipantIds: winnerParticipantId ? [winnerParticipantId] : [],
+				winnerParticipantIds: revealed.winnerParticipantId
+					? [revealed.winnerParticipantId]
+					: [],
 			});
 		}
 	},

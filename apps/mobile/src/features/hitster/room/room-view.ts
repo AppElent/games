@@ -6,6 +6,7 @@
 import {
 	getHitsterModeConfig,
 	type HitsterMode,
+	hitsterTimelineFor,
 } from "@arcadeclub/core/hitster";
 import {
 	getHitsterCard,
@@ -35,9 +36,7 @@ export function timelineFor(
 	state: Pick<HitsterState, "mode" | "timelines">,
 	participantId: string | undefined,
 ) {
-	return getHitsterModeConfig(state.mode as HitsterMode).shared
-		? state.timelines[0]
-		: state.timelines.find((entry) => entry.participantId === participantId);
+	return hitsterTimelineFor(state, participantId);
 }
 
 export function timelineCards(

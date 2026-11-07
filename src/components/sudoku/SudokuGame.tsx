@@ -1,3 +1,4 @@
+import { digitsToString, type PuzzleDifficulty } from "@arcadeclub/core/puzzle";
 import type {
 	SudokuAction,
 	SudokuHistory,
@@ -5,20 +6,19 @@ import type {
 } from "@arcadeclub/core/sudoku-board";
 import {
 	applyAction,
-	boardConflicts,
 	canRedo,
 	canUndo,
 	createHistory,
 	deserializeBoard,
 	effectiveGrid,
-	isBoardComplete,
 	redo,
 	undo,
 } from "@arcadeclub/core/sudoku-board";
 import type { SudokuHint } from "@arcadeclub/core/sudoku-hints";
 import { describeHint, findHint } from "@arcadeclub/core/sudoku-hints";
 import {
-	findKillerConflicts,
+	boardConflictsWithCages,
+	isBoardSolved,
 	type KillerCage,
 } from "@arcadeclub/core/sudoku-killer";
 import { useMutation } from "convex/react";
@@ -38,7 +38,7 @@ type SudokuStateDoc = {
 	centerNotes: number[];
 	colors: number[];
 	status: "active" | "paused" | "completed";
-	difficulty?: "easy" | "medium" | "hard" | "expert";
+	difficulty?: PuzzleDifficulty;
 	source: "generated" | "scan";
 	variant?: "classic" | "killer" | "binary";
 	cages?: KillerCage[];
@@ -98,15 +98,10 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 
 	const board = history.current;
 	const cages = state.cages;
-	const conflicts = useMemo(() => {
-		const merged = boardConflicts(board);
-		if (cages) {
-			for (const cell of findKillerConflicts(effectiveGrid(board), cages)) {
-				merged.add(cell);
-			}
-		}
-		return merged;
-	}, [board, cages]);
+	const conflicts = useMemo(
+		() => boardConflictsWithCages(board, cages),
+		[board, cages],
+	);
 	const digitCounts = useMemo(() => {
 		const counts = new Array<number>(10).fill(0);
 		for (const value of effectiveGrid(board)) {
@@ -142,7 +137,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 				}
 				saveProgress({
 					sessionId,
-					digits: next.current.digits.join(""),
+					digits: digitsToString(next.current.digits),
 					cornerNotes: next.current.corner,
 					centerNotes: next.current.center,
 					colors: next.current.colors,
@@ -157,20 +152,14 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 
 	const finishIfComplete = useCallback(
 		(next: SudokuHistory) => {
-			if (!isBoardComplete(next.current)) {
-				return;
-			}
-			if (
-				cages &&
-				findKillerConflicts(effectiveGrid(next.current), cages).size > 0
-			) {
+			if (!isBoardSolved(next.current, cages)) {
 				return;
 			}
 			clearTimeout(saveTimeout.current);
 			setStatus("completed");
 			complete({
 				sessionId,
-				digits: next.current.digits.join(""),
+				digits: digitsToString(next.current.digits),
 				elapsedSeconds: elapsedRef.current,
 			}).catch(() => undefined);
 		},

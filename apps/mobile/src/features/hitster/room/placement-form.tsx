@@ -3,7 +3,10 @@
  * mode asks for, lock it in. A steal uses the same form on the stealer's own
  * timeline, without the bonus fields.
  */
-import type { HitsterModeConfig } from "@arcadeclub/core/hitster";
+import {
+	type HitsterModeConfig,
+	hitsterAsksArtistTitle,
+} from "@arcadeclub/core/hitster";
 import type { HitsterCard } from "@arcadeclub/core/hitster-packs";
 import { useRef, useState } from "react";
 import { StyleSheet, type TextInputInstance, View } from "react-native";
@@ -36,8 +39,7 @@ export function PlacementForm({
 	const [year, setYear] = useState("");
 	const titleRef = useRef<TextInputInstance>(null);
 	const yearRef = useRef<TextInputInstance>(null);
-	const askArtistTitle =
-		config.needsArtistTitle || (!forSteal && config.earnTokens);
+	const askArtistTitle = hitsterAsksArtistTitle(config, forSteal);
 	const parsedYear = Number.parseInt(year.trim(), 10);
 
 	return (

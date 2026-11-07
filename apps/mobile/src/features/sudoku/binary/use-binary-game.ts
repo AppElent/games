@@ -7,6 +7,7 @@ import {
 	isBinarySolved,
 	parseBinaryGrid,
 } from "@arcadeclub/core/binary-puzzle";
+import { digitsToString } from "@arcadeclub/core/puzzle";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
 import { useGameClock } from "../components/use-game-clock";
@@ -57,7 +58,7 @@ export function useBinaryGame(save: BinarySave) {
 	const persist = useCallback(() => {
 		writeSudokuSave({
 			...save,
-			entries: entries.join(""),
+			entries: digitsToString(entries),
 			status: statusRef.current,
 			elapsedSeconds: elapsedRef.current,
 			updatedAt: Date.now(),

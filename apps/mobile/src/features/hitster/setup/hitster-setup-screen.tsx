@@ -4,7 +4,13 @@
  * goes through the Join tab.
  */
 import { gameErrorMessage } from "@arcadeclub/core/errors";
-import { HITSTER_MODES, type HitsterMode } from "@arcadeclub/core/hitster";
+import {
+	HITSTER_MODES,
+	HITSTER_SETUP_DEFAULTS,
+	HITSTER_TARGET_OPTIONS,
+	HITSTER_TIMER_OPTIONS,
+	type HitsterMode,
+} from "@arcadeclub/core/hitster";
 import {
 	getPlayableHitsterCards,
 	listHitsterPacks,
@@ -27,8 +33,8 @@ import { HostGate } from "../../sessions/host/host-gate";
 import { useHostSession } from "../../sessions/host/use-host-session";
 import { onlineSessionHref } from "../../sessions/session-links";
 
-const TARGETS = ["5", "8", "10", "12", "15"] as const;
-const TIMERS = ["0", "30", "60", "90"] as const;
+const TARGETS = HITSTER_TARGET_OPTIONS.map(String);
+const TIMERS = HITSTER_TIMER_OPTIONS.map(String);
 
 export function HitsterSetupScreen() {
 	const router = useRouter();
@@ -36,10 +42,12 @@ export function HitsterSetupScreen() {
 	const copy = t.games.hitster;
 	const hosting = useHostSession();
 	const setup = useMutation(api.hitster.setup);
-	const [mode, setMode] = useState<HitsterMode>("original");
-	const [packId, setPackId] = useState("normal");
-	const [target, setTarget] = useState<(typeof TARGETS)[number]>("10");
-	const [timer, setTimer] = useState<(typeof TIMERS)[number]>("0");
+	const [mode, setMode] = useState<HitsterMode>(HITSTER_SETUP_DEFAULTS.mode);
+	const [packId, setPackId] = useState<string>(HITSTER_SETUP_DEFAULTS.packId);
+	const [target, setTarget] = useState(
+		String(HITSTER_SETUP_DEFAULTS.targetCards),
+	);
+	const [timer, setTimer] = useState(String(HITSTER_SETUP_DEFAULTS.timer));
 
 	const packs = listHitsterPacks();
 
@@ -54,7 +62,7 @@ export function HitsterSetupScreen() {
 					packId,
 					targetCards: Number(target),
 					turnTimerSeconds: timer === "0" ? undefined : Number(timer),
-					playbackMode: "hostDevice",
+					playbackMode: HITSTER_SETUP_DEFAULTS.playbackMode,
 				}),
 		);
 		if (!session) {
@@ -90,7 +98,10 @@ export function HitsterSetupScreen() {
 								label: pack.title,
 								detail: `${pack.description} ${plural(
 									locale,
-									getPlayableHitsterCards(pack.id, "hostDevice").length,
+									getPlayableHitsterCards(
+										pack.id,
+										HITSTER_SETUP_DEFAULTS.playbackMode,
+									).length,
 									copy.setupForm.packTracks,
 								)}`,
 							}))}

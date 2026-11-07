@@ -83,6 +83,52 @@ export function getHitsterModeConfig(mode: HitsterMode): HitsterModeConfig {
 	return MODE_CONFIGS[mode];
 }
 
+/** What a new-game form offers and starts on. */
+export const HITSTER_TARGET_OPTIONS = [5, 8, 10, 12, 15] as const;
+export const HITSTER_TIMER_OPTIONS = [0, 30, 60, 90] as const;
+export const HITSTER_SETUP_DEFAULTS = {
+	mode: "original",
+	packId: "normal",
+	targetCards: 10,
+	timer: 0,
+	playbackMode: "hostDevice",
+} as const;
+
+/** What the server accepts for cards to win. */
+export const HITSTER_TARGET_CARDS_RANGE = { min: 3, max: 20 };
+/** Tracks a pack must have beyond the target, for start cards and missed rounds. */
+export const HITSTER_SPARE_TRACKS = 5;
+
+export function hitsterMinPlayers(config: HitsterModeConfig) {
+	return config.shared ? 1 : 2;
+}
+
+/** Whether an answer form asks for artist and title. */
+export function hitsterAsksArtistTitle(
+	config: HitsterModeConfig,
+	forSteal: boolean,
+) {
+	return config.needsArtistTitle || (!forSteal && config.earnTokens);
+}
+
+export function hitsterSecondsLeft(
+	seconds: number,
+	startedAt: number,
+	now: number,
+) {
+	return Math.max(0, seconds - Math.floor((now - startedAt) / 1000));
+}
+
+/** The timeline a participant plays on: the shared one in co-op. */
+export function hitsterTimelineFor<T extends { participantId?: string }>(
+	state: { mode: HitsterMode; timelines: readonly T[] },
+	participantId: string | undefined,
+): T | undefined {
+	return getHitsterModeConfig(state.mode).shared
+		? state.timelines[0]
+		: state.timelines.find((entry) => entry.participantId === participantId);
+}
+
 /**
  * A drop at index i in a chronologically sorted list of years is correct when
  * the new year fits between its neighbours. Equal years are valid on either
@@ -157,21 +203,26 @@ type HitsterRoundOutcome = {
 	tokenDelta: number;
 };
 
+/** What a mode asks of an answer before it wins the card. */
+function meetsHitsterCardRequirement(
+	config: HitsterModeConfig,
+	flags: HitsterAnswerFlags,
+) {
+	return (
+		flags.placementCorrect &&
+		(!config.needsArtistTitle || (flags.artistCorrect && flags.titleCorrect)) &&
+		(!config.needsYear || flags.yearCorrect)
+	);
+}
+
 export function evaluateHitsterRound(
 	mode: HitsterMode,
 	flags: HitsterAnswerFlags,
 ): HitsterRoundOutcome {
 	const config = getHitsterModeConfig(mode);
-	let cardWon = flags.placementCorrect;
-	if (config.needsArtistTitle) {
-		cardWon = cardWon && flags.artistCorrect && flags.titleCorrect;
-	}
-	if (config.needsYear) {
-		cardWon = cardWon && flags.yearCorrect;
-	}
 	const tokenDelta =
 		config.earnTokens && flags.artistCorrect && flags.titleCorrect ? 1 : 0;
-	return { cardWon, tokenDelta };
+	return { cardWon: meetsHitsterCardRequirement(config, flags), tokenDelta };
 }
 
 export function applyHitsterTokenDelta(
@@ -188,42 +239,29 @@ export function hitsterStealRequirementMet(
 	flags: HitsterAnswerFlags,
 ): boolean {
 	const config = getHitsterModeConfig(mode);
-	if (!config.stealsEnabled) {
-		return false;
-	}
-	let met = flags.placementCorrect;
-	if (config.needsArtistTitle) {
-		met = met && flags.artistCorrect && flags.titleCorrect;
-	}
-	if (config.needsYear) {
-		met = met && flags.yearCorrect;
-	}
-	return met;
+	return config.stealsEnabled && meetsHitsterCardRequirement(config, flags);
 }
 
-type HitsterStealClaimEvaluation = {
-	participantId: string;
-	submittedAt: number;
-	flags: HitsterAnswerFlags;
-};
-
 /**
- * Steals only matter when the active player failed to win the card. The
- * earliest submitted claim that meets the mode requirement wins.
+ * Judges claims in the order they came in. Steals only matter when the active
+ * player failed to win the card: the earliest claim that meets the mode
+ * requirement wins, the rest stay judged but win nothing.
  */
-export function resolveHitsterSteals(
+export function resolveHitsterSteals<Claim extends { submittedAt: number }>(
 	mode: HitsterMode,
 	activeWonCard: boolean,
-	claims: HitsterStealClaimEvaluation[],
-): string | undefined {
-	if (activeWonCard) {
-		return undefined;
-	}
-	const sorted = [...claims].sort((a, b) => a.submittedAt - b.submittedAt);
-	const winner = sorted.find((claim) =>
-		hitsterStealRequirementMet(mode, claim.flags),
-	);
-	return winner?.participantId;
+	claims: readonly Claim[],
+	flagsOf: (claim: Claim) => HitsterAnswerFlags,
+) {
+	let stolen = false;
+	return [...claims]
+		.sort((a, b) => a.submittedAt - b.submittedAt)
+		.map((claim) => {
+			const correct = hitsterStealRequirementMet(mode, flagsOf(claim));
+			const wonCard = !activeWonCard && !stolen && correct;
+			stolen ||= wonCard;
+			return { claim, correct, wonCard };
+		});
 }
 
 type HitsterCoopOutcome = "won" | "lost" | "ongoing";

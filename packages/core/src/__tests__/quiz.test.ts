@@ -4,6 +4,7 @@ import {
 	getNextQuizPhase,
 	isCorrectAnswer,
 	parseQuizQuestionsTsv,
+	type QuizPhase,
 	summarizeScores,
 } from "../quiz";
 
@@ -43,18 +44,70 @@ describe("quiz logic", () => {
 				{ participantId: "p2", score: 300 },
 				{ participantId: "p1", score: 50 },
 			]),
-		).toEqual([
-			{ participantId: "p2", score: 300 },
-			{ participantId: "p1", score: 150 },
+		).toEqual({
+			ranking: [
+				{ participantId: "p2", score: 300 },
+				{ participantId: "p1", score: 150 },
+			],
+			winners: ["p2"],
+		});
+	});
+
+	it("shares a win on equal scores, in order of first answer", () => {
+		const { ranking, winners } = summarizeScores([
+			{ participantId: "p1", score: 100 },
+			{ participantId: "p2", score: 100 },
+			{ participantId: "p3", score: 50 },
 		]);
+		expect(ranking.map(({ participantId }) => participantId)).toEqual([
+			"p1",
+			"p2",
+			"p3",
+		]);
+		expect(winners).toEqual(["p1", "p2"]);
+	});
+
+	it("has no winner while the top score is zero", () => {
+		expect(
+			summarizeScores([{ participantId: "p1", score: 0 }]).winners,
+		).toEqual([]);
+		expect(summarizeScores([])).toEqual({ ranking: [], winners: [] });
 	});
 
 	it("moves quiz phases in host-controlled order", () => {
-		expect(getNextQuizPhase("lobby")).toBe("question");
-		expect(getNextQuizPhase("question")).toBe("reveal");
-		expect(getNextQuizPhase("reveal")).toBe("scoreboard");
-		expect(getNextQuizPhase("scoreboard")).toBe("question");
-		expect(getNextQuizPhase("finished")).toBe("finished");
+		const at = (phase: QuizPhase, currentQuestionIndex = 0) => ({
+			phase,
+			currentQuestionIndex,
+		});
+		expect(getNextQuizPhase(at("lobby"), 2, 9)).toEqual({
+			phase: "question",
+			questionStartedAt: 9,
+			showCorrectAnswer: false,
+		});
+		expect(getNextQuizPhase(at("question"), 2, 9)).toEqual({
+			phase: "reveal",
+			showCorrectAnswer: true,
+		});
+		expect(getNextQuizPhase(at("reveal"), 2, 9)).toEqual({
+			phase: "scoreboard",
+		});
+		expect(getNextQuizPhase(at("scoreboard"), 2, 9)).toEqual({
+			phase: "question",
+			currentQuestionIndex: 1,
+			questionStartedAt: 9,
+			showCorrectAnswer: false,
+		});
+		expect(getNextQuizPhase(at("finished"), 2, 9)).toBeNull();
+	});
+
+	it("finishes from the scoreboard after the last question", () => {
+		expect(
+			getNextQuizPhase({ phase: "scoreboard", currentQuestionIndex: 1 }, 2, 9),
+		).toEqual({
+			phase: "finished",
+			questionStartedAt: undefined,
+			showCorrectAnswer: true,
+		});
 	});
 
 	it("parses pasted TSV rows into questions", () => {

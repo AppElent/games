@@ -10,9 +10,10 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
   `src/features/<game-or-area>/<subject>/`. `src/ui/` holds generic primitives
   and never imports a feature.
 - `@arcadeclub/core` owns game rules (Sudoku, Backgammon, Hitster packs and modes).
-  Mobile adds only UI state around them, for example
-  `src/features/backgammon/local/local-match.ts` (a pure reducer; callers
-  pre-roll dice so it stays deterministic).
+  Mobile adds only UI state and storage around them, for example
+  `src/features/backgammon/local/use-local-match.ts` over the reducer in
+  `@arcadeclub/core/backgammon-local` (callers pre-roll dice so it stays
+  deterministic).
 - Online games call the existing Convex functions unchanged through
   `src/convex/api.ts`. A device's seat in an online session is stored by
   `src/features/sessions/session-seats.ts`. Every game screen resolves its

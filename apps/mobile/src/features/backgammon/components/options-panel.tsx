@@ -1,3 +1,4 @@
+import type { BackgammonOptions } from "@arcadeclub/core/backgammon-local";
 /**
  * Toggles for the board helpers. Local play offers all four; online play
  * leaves out auto-roll, since a roll is a server action.
@@ -7,7 +8,6 @@ import { useI18n } from "../../../i18n";
 import { metrics, spacing, useTokens } from "../../../theme";
 import { Card } from "../../../ui/card";
 import { AppText } from "../../../ui/text";
-import type { BackgammonOptions } from "../local/local-match";
 
 type Key = keyof BackgammonOptions;
 
@@ -18,14 +18,14 @@ const OPTION_MESSAGE = {
 	autoCombine: "optionAutoCombine",
 } as const satisfies Record<Key, string>;
 
-export function OptionsPanel({
+export function OptionsPanel<K extends Key>({
 	options,
 	keys,
 	onChange,
 }: {
-	options: BackgammonOptions;
-	keys: readonly Key[];
-	onChange: (key: Key, value: boolean) => void;
+	options: Pick<BackgammonOptions, K>;
+	keys: readonly K[];
+	onChange: (key: K, value: boolean) => void;
 }) {
 	const { t } = useI18n();
 	const tokens = useTokens();

@@ -11,7 +11,11 @@ import {
 	effectiveGrid,
 	type SudokuBoardState,
 } from "@arcadeclub/core/sudoku-board";
-import type { KillerCage } from "@arcadeclub/core/sudoku-killer";
+import {
+	type KillerCage,
+	type KillerCageLayout,
+	killerCageLayout,
+} from "@arcadeclub/core/sudoku-killer";
 import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import Svg, { Line } from "react-native-svg";
@@ -38,28 +42,14 @@ type Props = {
 const BOARD_BORDER = 2;
 const CELLS = Array.from({ length: 81 }, (_, index) => index);
 
-type CageInfo = { byCell: number[]; sumAt: Map<number, number> };
-
-function buildCageInfo(cages: KillerCage[] | undefined): CageInfo | null {
-	if (!cages || cages.length === 0) return null;
-	const byCell = new Array<number>(81).fill(-1);
-	const sumAt = new Map<number, number>();
-	cages.forEach((cage, index) => {
-		for (const cell of cage.cells) byCell[cell] = index;
-		sumAt.set(Math.min(...cage.cells), cage.sum);
-	});
-	return { byCell, sumAt };
-}
-
 /** Cage outline segments, inset from the cell edge so sums and lines don't collide. */
-function cageSegments(info: CageInfo, cell: number, inset: number) {
+function cageSegments(
+	{ top, bottom, left, right }: KillerCageLayout["edges"][number],
+	cell: number,
+	inset: number,
+) {
 	const row = rowOf(cell);
 	const col = colOf(cell);
-	const cage = info.byCell[cell];
-	const top = row === 0 || info.byCell[cell - 9] !== cage;
-	const bottom = row === 8 || info.byCell[cell + 9] !== cage;
-	const left = col === 0 || info.byCell[cell - 1] !== cage;
-	const right = col === 8 || info.byCell[cell + 1] !== cage;
 	const x0 = col + (left ? inset : 0);
 	const x1 = col + 1 - (right ? inset : 0);
 	const y0 = row + (top ? inset : 0);
@@ -87,7 +77,7 @@ export function SudokuBoard({
 	const grid = effectiveGrid(board);
 	const inner = size - BOARD_BORDER * 2;
 	const cell = inner / 9;
-	const cageInfo = useMemo(() => buildCageInfo(cages), [cages]);
+	const cageInfo = useMemo(() => killerCageLayout(cages), [cages]);
 
 	const selectedDigit =
 		selectedCell !== null && grid[selectedCell] !== 0 ? grid[selectedCell] : 0;
@@ -115,7 +105,7 @@ export function SudokuBoard({
 		if (!cageInfo) return [];
 		const inset = 0.08;
 		return Array.from({ length: 81 }, (_, index) =>
-			cageSegments(cageInfo, index, inset),
+			cageSegments(cageInfo.edges[index], index, inset),
 		).flat();
 	}, [cageInfo]);
 

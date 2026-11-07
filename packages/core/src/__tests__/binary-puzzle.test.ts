@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
 	BINARY_SIZES,
-	binaryGridToString,
 	countBinarySolutions,
 	findBinaryConflicts,
 	generateBinaryPuzzle,
 	isBinarySolved,
 	parseBinaryGrid,
 } from "../binary-puzzle";
+import { digitsToString } from "../puzzle";
 import { mulberry32 } from "../random";
 
 describe("findBinaryConflicts", () => {
@@ -99,7 +99,7 @@ describe("generateBinaryPuzzle", () => {
 describe("serialization", () => {
 	it("round-trips grids through strings", () => {
 		const puzzle = generateBinaryPuzzle("easy", mulberry32(1));
-		const text = binaryGridToString(puzzle.givens);
+		const text = digitsToString(puzzle.givens);
 		expect(text).toHaveLength(36);
 		expect(parseBinaryGrid(text, puzzle.size)).toEqual(puzzle.givens);
 	});

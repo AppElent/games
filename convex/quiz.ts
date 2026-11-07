@@ -1,6 +1,10 @@
-import { calculateAnswerScore, isCorrectAnswer } from "@arcadeclub/core/quiz";
+import {
+	calculateAnswerScore,
+	getNextQuizPhase,
+	isCorrectAnswer,
+	summarizeScores,
+} from "@arcadeclub/core/quiz";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
 import { completeSession } from "./lib/completion";
@@ -215,67 +219,28 @@ export const advancePhase = mutation({
 		}
 
 		const now = Date.now();
+		const next = getNextQuizPhase(quizState, quizSet.questions.length, now);
+		if (!next) {
+			return "finished";
+		}
+		await ctx.db.patch(quizState._id, next);
 		if (quizState.phase === "lobby") {
-			await ctx.db.patch(quizState._id, {
-				phase: "question",
-				questionStartedAt: now,
-				showCorrectAnswer: false,
-			});
 			await ctx.db.patch(args.sessionId, {
 				status: "active",
 				startedAt: now,
 			});
-			return "question";
 		}
-		if (quizState.phase === "question") {
-			await ctx.db.patch(quizState._id, {
-				phase: "reveal",
-				showCorrectAnswer: true,
+		if (next.phase === "finished") {
+			const answers = await ctx.db
+				.query("liveQuizAnswers")
+				.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+				.collect();
+			await completeSession(ctx, args.sessionId, {
+				endedAt: now,
+				winnerParticipantIds: summarizeScores(answers).winners,
 			});
-			return "reveal";
 		}
-		if (quizState.phase === "reveal") {
-			await ctx.db.patch(quizState._id, { phase: "scoreboard" });
-			return "scoreboard";
-		}
-		if (quizState.phase === "scoreboard") {
-			const nextQuestionIndex = quizState.currentQuestionIndex + 1;
-			if (nextQuestionIndex >= quizSet.questions.length) {
-				await ctx.db.patch(quizState._id, {
-					phase: "finished",
-					questionStartedAt: undefined,
-					showCorrectAnswer: true,
-				});
-				const answers = await ctx.db
-					.query("liveQuizAnswers")
-					.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-					.collect();
-				const totals = new Map<Id<"sessionParticipants">, number>();
-				for (const answer of answers) {
-					totals.set(
-						answer.participantId,
-						(totals.get(answer.participantId) ?? 0) + answer.score,
-					);
-				}
-				const topScore = Math.max(0, ...totals.values());
-				const winners = [...totals.entries()]
-					.filter(([, score]) => score === topScore && topScore > 0)
-					.map(([participantId]) => participantId);
-				await completeSession(ctx, args.sessionId, {
-					endedAt: now,
-					winnerParticipantIds: winners,
-				});
-				return "finished";
-			}
-			await ctx.db.patch(quizState._id, {
-				phase: "question",
-				currentQuestionIndex: nextQuestionIndex,
-				questionStartedAt: now,
-				showCorrectAnswer: false,
-			});
-			return "question";
-		}
-		return "finished";
+		return next.phase;
 	},
 });
 

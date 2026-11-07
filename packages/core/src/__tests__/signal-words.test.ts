@@ -5,10 +5,13 @@ import {
 	applySignalPass,
 	createSignalGameState,
 	generateSignalBoard,
+	isSignalClueGiver,
 	otherTeam,
 	SIGNAL_BOARD_SIZE,
 	type SignalCardRole,
 	type SignalGameState,
+	signalSeat,
+	signalSeatTeam,
 	validateSignalClue,
 } from "../signal-words";
 import { SIGNAL_WORDS_DEFAULT_PACK } from "../signal-words-packs";
@@ -239,5 +242,25 @@ describe("pass and counters", () => {
 			seededRandom(5),
 		);
 		expect(() => applySignalPass(createSignalGameState(board))).toThrow();
+	});
+});
+
+describe("signal seats", () => {
+	it("names a team's guesser and clue giver seats", () => {
+		expect(signalSeat("red", false)).toBe("red");
+		expect(signalSeat("blue", true)).toBe("blue-clue");
+	});
+
+	it("reads the team and role back from a seat", () => {
+		expect(signalSeatTeam("red")).toBe("red");
+		expect(signalSeatTeam("red-clue")).toBe("red");
+		expect(signalSeatTeam("blue")).toBe("blue");
+		expect(signalSeatTeam("blue-clue")).toBe("blue");
+		expect(signalSeatTeam("green")).toBeUndefined();
+		expect(signalSeatTeam(undefined)).toBeUndefined();
+		expect(isSignalClueGiver("red-clue")).toBe(true);
+		expect(isSignalClueGiver("blue-clue")).toBe(true);
+		expect(isSignalClueGiver("red")).toBe(false);
+		expect(isSignalClueGiver(undefined)).toBe(false);
 	});
 });

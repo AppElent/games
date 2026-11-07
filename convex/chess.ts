@@ -2,8 +2,9 @@ import { v } from "convex/values";
 import {
 	applyChessMove,
 	CHESS_INITIAL_FEN,
-	CHESS_TIME_CONTROLS,
 	hasFlagFallen,
+	initialClock,
+	switchChessColor,
 	tickClockAfterMove,
 } from "@arcadeclub/chess/chess";
 import {
@@ -16,7 +17,7 @@ import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { completeSession, reopenSession } from "./lib/completion";
 import { chessTimeControlValidator } from "./schema";
-import { gameError } from "./lib/errors";
+import { gameError, toGameError } from "./lib/errors";
 import { literals } from "./lib/validators";
 
 async function getChessState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
@@ -116,8 +117,6 @@ export const createState = mutation({
 				: args.hostColor;
 		await ctx.db.patch(args.hostParticipantId, { seat: hostColor });
 		const now = Date.now();
-		const initialSeconds =
-			CHESS_TIME_CONTROLS[args.timeControl].initialSeconds;
 		return await ctx.db.insert("chessGameStates", {
 			sessionId: args.sessionId,
 			phase: "waiting",
@@ -129,8 +128,7 @@ export const createState = mutation({
 			sanHistory: [],
 			activeColor: "white",
 			timeControl: args.timeControl,
-			remainingWhiteMs: initialSeconds ? initialSeconds * 1000 : undefined,
-			remainingBlackMs: initialSeconds ? initialSeconds * 1000 : undefined,
+			...initialClock(args.timeControl),
 			createdAt: now,
 			updatedAt: now,
 		});
@@ -165,7 +163,7 @@ export const applyMove = mutation({
 				ctx,
 				state,
 				"timeout",
-				color === "white" ? "black" : "white",
+				switchChessColor(color),
 				now,
 			);
 			throw gameError("timeRanOut");
@@ -178,8 +176,8 @@ export const applyMove = mutation({
 				to: args.to,
 				promotion: args.promotion,
 			});
-		} catch {
-			throw gameError("illegalMove");
+		} catch (caught) {
+			throw toGameError(caught);
 		}
 
 		if (clock) {
@@ -241,7 +239,7 @@ export const resign = mutation({
 			ctx,
 			state,
 			"resignation",
-			color === "white" ? "black" : "white",
+			switchChessColor(color),
 			Date.now(),
 		);
 	},
@@ -333,9 +331,7 @@ export const rematch = mutation({
 		}
 		getParticipantColor(state, args.participantId);
 		const now = Date.now();
-		const initialSeconds =
-			CHESS_TIME_CONTROLS[state.timeControl]
-				.initialSeconds;
+		const clock = initialClock(state.timeControl);
 		// Swap colors for the rematch.
 		const white = state.blackParticipantId;
 		const black = state.whiteParticipantId;
@@ -352,9 +348,8 @@ export const rematch = mutation({
 			fen: CHESS_INITIAL_FEN,
 			sanHistory: [],
 			activeColor: "white",
-			remainingWhiteMs: initialSeconds ? initialSeconds * 1000 : undefined,
-			remainingBlackMs: initialSeconds ? initialSeconds * 1000 : undefined,
-			turnStartedAt: initialSeconds ? now : undefined,
+			...clock,
+			turnStartedAt: clock.remainingWhiteMs === undefined ? undefined : now,
 			drawOfferBy: undefined,
 			resultOutcome: undefined,
 			resultWinner: undefined,

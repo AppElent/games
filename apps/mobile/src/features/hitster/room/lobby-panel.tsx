@@ -2,7 +2,10 @@
  * Before the start: the room code to share, who has joined, the rules. Until
  * the host has picked a mode (`config` null) it shows only the code and players.
  */
-import type { HitsterModeConfig } from "@arcadeclub/core/hitster";
+import {
+	type HitsterModeConfig,
+	hitsterMinPlayers,
+} from "@arcadeclub/core/hitster";
 import { StyleSheet, View } from "react-native";
 import { fmt, plural, useI18n } from "../../../i18n";
 import { radius, spacing } from "../../../theme";
@@ -35,7 +38,7 @@ export function LobbyPanel({
 	const players = bundle.participants.filter(
 		(participant) => participant.role !== "watcher" && !participant.kickedAt,
 	);
-	const enough = players.length >= (config?.shared ? 1 : 2);
+	const enough = players.length >= (config ? hitsterMinPlayers(config) : 2);
 	const code = bundle.session.joinCode;
 	return (
 		<>

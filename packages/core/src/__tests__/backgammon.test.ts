@@ -12,6 +12,7 @@ import {
 	getBackgammonWinner,
 	getMoveHighlights,
 	hasLegalBackgammonMove,
+	isTurnSpent,
 	planBackgammonMove,
 	rollBackgammonDice,
 	switchBackgammonColor,
@@ -271,5 +272,649 @@ describe("backgammon engine", () => {
 	it("switches active colors", () => {
 		expect(switchBackgammonColor("white")).toBe("black");
 		expect(switchBackgammonColor("black")).toBe("white");
+	});
+});
+
+/**
+ * Pinned from the code before the highlight and plan traversals were merged:
+ * what a source can reach, and which dice carry it there. `plans` lists steps
+ * as `[from, to, die, dieIndex]`.
+ */
+const TRAVERSAL_TABLE: TraversalCase[] = [
+	{
+		name: "opening roll",
+		spec: { dice: [3, 1] },
+		rows: [
+			{
+				source: 24,
+				combine: true,
+				points: [20, 21, 23],
+				off: false,
+				plans: {
+					"20": [
+						[24, 21, 3, 0],
+						[21, 20, 1, 1],
+					],
+					"21": [[24, 21, 3, 0]],
+					"23": [[24, 23, 1, 1]],
+				},
+			},
+			{
+				source: 24,
+				combine: false,
+				points: [21, 23],
+				off: false,
+				plans: { "21": [[24, 21, 3, 0]], "23": [[24, 23, 1, 1]] },
+			},
+			{
+				source: 13,
+				combine: true,
+				points: [9, 10],
+				off: false,
+				plans: {
+					"9": [
+						[13, 10, 3, 0],
+						[10, 9, 1, 1],
+					],
+					"10": [[13, 10, 3, 0]],
+				},
+			},
+			{
+				source: 13,
+				combine: false,
+				points: [10],
+				off: false,
+				plans: { "10": [[13, 10, 3, 0]] },
+			},
+			{
+				source: 8,
+				combine: true,
+				points: [4, 5, 7],
+				off: false,
+				plans: {
+					"4": [
+						[8, 5, 3, 0],
+						[5, 4, 1, 1],
+					],
+					"5": [[8, 5, 3, 0]],
+					"7": [[8, 7, 1, 1]],
+				},
+			},
+			{
+				source: 8,
+				combine: false,
+				points: [5, 7],
+				off: false,
+				plans: { "5": [[8, 5, 3, 0]], "7": [[8, 7, 1, 1]] },
+			},
+			{
+				source: 6,
+				combine: true,
+				points: [2, 3, 5],
+				off: false,
+				plans: {
+					"2": [
+						[6, 3, 3, 0],
+						[3, 2, 1, 1],
+					],
+					"3": [[6, 3, 3, 0]],
+					"5": [[6, 5, 1, 1]],
+				},
+			},
+			{
+				source: 6,
+				combine: false,
+				points: [3, 5],
+				off: false,
+				plans: { "3": [[6, 3, 3, 0]], "5": [[6, 5, 1, 1]] },
+			},
+		],
+	},
+	{
+		name: "opening roll for black",
+		spec: { dice: [6, 4], active: "black" },
+		rows: [
+			{
+				source: 1,
+				combine: true,
+				points: [5, 7, 11],
+				off: false,
+				plans: {
+					"5": [[1, 5, 4, 1]],
+					"7": [[1, 7, 6, 0]],
+					"11": [
+						[1, 7, 6, 0],
+						[7, 11, 4, 1],
+					],
+				},
+			},
+			{
+				source: 1,
+				combine: false,
+				points: [5, 7],
+				off: false,
+				plans: { "5": [[1, 5, 4, 1]], "7": [[1, 7, 6, 0]] },
+			},
+			{
+				source: 12,
+				combine: true,
+				points: [16, 18, 22],
+				off: false,
+				plans: {
+					"16": [[12, 16, 4, 1]],
+					"18": [[12, 18, 6, 0]],
+					"22": [
+						[12, 18, 6, 0],
+						[18, 22, 4, 1],
+					],
+				},
+			},
+			{
+				source: 12,
+				combine: false,
+				points: [16, 18],
+				off: false,
+				plans: { "16": [[12, 16, 4, 1]], "18": [[12, 18, 6, 0]] },
+			},
+			{
+				source: 17,
+				combine: true,
+				points: [21, 23],
+				off: false,
+				plans: { "21": [[17, 21, 4, 1]], "23": [[17, 23, 6, 0]] },
+			},
+			{
+				source: 17,
+				combine: false,
+				points: [21, 23],
+				off: false,
+				plans: { "21": [[17, 21, 4, 1]], "23": [[17, 23, 6, 0]] },
+			},
+			{
+				source: 19,
+				combine: true,
+				points: [23],
+				off: false,
+				plans: { "23": [[19, 23, 4, 1]] },
+			},
+			{
+				source: 19,
+				combine: false,
+				points: [23],
+				off: false,
+				plans: { "23": [[19, 23, 4, 1]] },
+			},
+		],
+	},
+	{
+		name: "doubles",
+		spec: { dice: [2, 2, 2, 2] },
+		rows: [
+			{
+				source: 13,
+				combine: true,
+				points: [9, 11],
+				off: false,
+				plans: {
+					"9": [
+						[13, 11, 2, 0],
+						[11, 9, 2, 1],
+					],
+					"11": [[13, 11, 2, 0]],
+				},
+			},
+			{
+				source: 13,
+				combine: false,
+				points: [11],
+				off: false,
+				plans: { "11": [[13, 11, 2, 0]] },
+			},
+			{
+				source: 6,
+				combine: true,
+				points: [2, 4],
+				off: false,
+				plans: {
+					"2": [
+						[6, 4, 2, 0],
+						[4, 2, 2, 1],
+					],
+					"4": [[6, 4, 2, 0]],
+				},
+			},
+			{
+				source: 6,
+				combine: false,
+				points: [4],
+				off: false,
+				plans: { "4": [[6, 4, 2, 0]] },
+			},
+		],
+	},
+	{
+		name: "one die already used",
+		spec: { dice: [5, 3], used: [true, false] },
+		rows: [
+			{
+				source: 13,
+				combine: true,
+				points: [10],
+				off: false,
+				plans: { "10": [[13, 10, 3, 1]] },
+			},
+			{
+				source: 13,
+				combine: false,
+				points: [10],
+				off: false,
+				plans: { "10": [[13, 10, 3, 1]] },
+			},
+			{
+				source: 8,
+				combine: true,
+				points: [5],
+				off: false,
+				plans: { "5": [[8, 5, 3, 1]] },
+			},
+			{
+				source: 8,
+				combine: false,
+				points: [5],
+				off: false,
+				plans: { "5": [[8, 5, 3, 1]] },
+			},
+		],
+	},
+	{
+		name: "first step blocked, other order open",
+		spec: {
+			points: { "8": ["white", 1], "10": ["black", 2], "13": ["white", 2] },
+			dice: [3, 5],
+		},
+		rows: [
+			{
+				source: 13,
+				combine: true,
+				points: [5, 8],
+				off: false,
+				plans: {
+					"5": [
+						[13, 8, 5, 1],
+						[8, 5, 3, 0],
+					],
+					"8": [[13, 8, 5, 1]],
+				},
+			},
+			{
+				source: 13,
+				combine: false,
+				points: [8],
+				off: false,
+				plans: { "8": [[13, 8, 5, 1]] },
+			},
+		],
+	},
+	{
+		name: "both steps blocked",
+		spec: {
+			points: {
+				"5": ["black", 2],
+				"8": ["black", 2],
+				"10": ["black", 2],
+				"13": ["white", 2],
+			},
+			dice: [3, 5],
+		},
+		rows: [
+			{ source: 13, combine: true, points: [], off: false, plans: {} },
+			{ source: 13, combine: false, points: [], off: false, plans: {} },
+		],
+	},
+	{
+		name: "second step lands on a blot",
+		spec: {
+			points: { "7": ["black", 1], "10": ["black", 1], "13": ["white", 2] },
+			dice: [3, 3, 3, 3],
+		},
+		rows: [
+			{
+				source: 13,
+				combine: true,
+				points: [7, 10],
+				off: false,
+				plans: {
+					"7": [
+						[13, 10, 3, 0],
+						[10, 7, 3, 1],
+					],
+					"10": [[13, 10, 3, 0]],
+				},
+			},
+			{
+				source: 13,
+				combine: false,
+				points: [10],
+				off: false,
+				plans: { "10": [[13, 10, 3, 0]] },
+			},
+		],
+	},
+	{
+		name: "bar must enter first",
+		spec: { bar: { white: 1 }, dice: [6, 2] },
+		rows: [
+			{
+				source: "bar",
+				combine: true,
+				points: [23],
+				off: false,
+				plans: { "23": [["bar", 23, 2, 1]] },
+			},
+			{
+				source: "bar",
+				combine: false,
+				points: [23],
+				off: false,
+				plans: { "23": [["bar", 23, 2, 1]] },
+			},
+			{ source: 13, combine: true, points: [], off: false, plans: {} },
+			{ source: 13, combine: false, points: [], off: false, plans: {} },
+		],
+	},
+	{
+		name: "bar entry blocked on one die",
+		spec: {
+			bar: { white: 1 },
+			points: { "13": ["white", 2], "19": ["black", 2] },
+			dice: [6, 2],
+		},
+		rows: [
+			{
+				source: "bar",
+				combine: true,
+				points: [17, 23],
+				off: false,
+				plans: {
+					"17": [
+						["bar", 23, 2, 1],
+						[23, 17, 6, 0],
+					],
+					"23": [["bar", 23, 2, 1]],
+				},
+			},
+			{
+				source: "bar",
+				combine: false,
+				points: [23],
+				off: false,
+				plans: { "23": [["bar", 23, 2, 1]] },
+			},
+		],
+	},
+	{
+		name: "bearing off",
+		spec: {
+			points: { "1": ["white", 1], "4": ["white", 3], "6": ["white", 2] },
+			off: { white: 9 },
+			dice: [6, 1],
+		},
+		rows: [
+			{
+				source: 6,
+				combine: true,
+				points: [5],
+				off: true,
+				plans: { "5": [[6, 5, 1, 1]], off: [[6, "off", 6, 0]] },
+			},
+			{
+				source: 6,
+				combine: false,
+				points: [5],
+				off: true,
+				plans: { "5": [[6, 5, 1, 1]], off: [[6, "off", 6, 0]] },
+			},
+			{
+				source: 4,
+				combine: true,
+				points: [3],
+				off: true,
+				plans: { "3": [[4, 3, 1, 1]], off: [[4, "off", 6, 0]] },
+			},
+			{
+				source: 4,
+				combine: false,
+				points: [3],
+				off: true,
+				plans: { "3": [[4, 3, 1, 1]], off: [[4, "off", 6, 0]] },
+			},
+			{
+				source: 1,
+				combine: true,
+				points: [],
+				off: true,
+				plans: { off: [[1, "off", 6, 0]] },
+			},
+			{
+				source: 1,
+				combine: false,
+				points: [],
+				off: true,
+				plans: { off: [[1, "off", 6, 0]] },
+			},
+		],
+	},
+	{
+		name: "bearing off with a straggler",
+		spec: { points: { "4": ["white", 3], "7": ["white", 1] }, dice: [6, 1] },
+		rows: [
+			{
+				source: 7,
+				combine: true,
+				points: [1, 6],
+				off: true,
+				plans: {
+					"1": [[7, 1, 6, 0]],
+					"6": [[7, 6, 1, 1]],
+					off: [
+						[7, 1, 6, 0],
+						[1, "off", 1, 1],
+					],
+				},
+			},
+			{
+				source: 7,
+				combine: false,
+				points: [1, 6],
+				off: false,
+				plans: { "1": [[7, 1, 6, 0]], "6": [[7, 6, 1, 1]] },
+			},
+			{
+				source: 4,
+				combine: true,
+				points: [3],
+				off: false,
+				plans: { "3": [[4, 3, 1, 1]] },
+			},
+			{
+				source: 4,
+				combine: false,
+				points: [3],
+				off: false,
+				plans: { "3": [[4, 3, 1, 1]] },
+			},
+		],
+	},
+	{
+		name: "second step bears off once the straggler is home",
+		spec: {
+			points: { "3": ["white", 2], "7": ["white", 1] },
+			off: { white: 12 },
+			dice: [1, 6],
+		},
+		rows: [
+			{
+				source: 7,
+				combine: true,
+				points: [1, 6],
+				off: true,
+				plans: {
+					"1": [[7, 1, 6, 1]],
+					"6": [[7, 6, 1, 0]],
+					off: [
+						[7, 6, 1, 0],
+						[6, "off", 6, 1],
+					],
+				},
+			},
+			{
+				source: 7,
+				combine: false,
+				points: [1, 6],
+				off: false,
+				plans: { "1": [[7, 1, 6, 1]], "6": [[7, 6, 1, 0]] },
+			},
+		],
+	},
+	{
+		name: "black bears off",
+		spec: {
+			active: "black",
+			points: { "20": ["black", 2], "24": ["black", 2] },
+			off: { black: 11 },
+			dice: [5, 1],
+		},
+		rows: [
+			{
+				source: 24,
+				combine: true,
+				points: [],
+				off: true,
+				plans: { off: [[24, "off", 5, 0]] },
+			},
+			{
+				source: 24,
+				combine: false,
+				points: [],
+				off: true,
+				plans: { off: [[24, "off", 5, 0]] },
+			},
+			{
+				source: 20,
+				combine: true,
+				points: [21],
+				off: true,
+				plans: { "21": [[20, 21, 1, 1]], off: [[20, "off", 5, 0]] },
+			},
+			{
+				source: 20,
+				combine: false,
+				points: [21],
+				off: true,
+				plans: { "21": [[20, 21, 1, 1]], off: [[20, "off", 5, 0]] },
+			},
+		],
+	},
+];
+
+type TraversalSpec = {
+	points?: Record<string, (BackgammonColor | number)[]>;
+	dice: number[];
+	used?: boolean[];
+	bar?: Partial<Record<BackgammonColor, number>>;
+	off?: Partial<Record<BackgammonColor, number>>;
+	active?: BackgammonColor;
+};
+
+type TraversalCase = {
+	name: string;
+	spec: TraversalSpec;
+	rows: Array<{
+		source: number | "bar";
+		combine: boolean;
+		points: number[];
+		off: boolean;
+		plans: Record<string, (number | string)[][]>;
+	}>;
+};
+
+function traversalState(spec: TraversalSpec): BackgammonTurnState {
+	const opening = createInitialBackgammonState().points;
+	return {
+		points: spec.points
+			? opening.map(({ point }) => {
+					const entry = spec.points?.[point];
+					return entry
+						? {
+								point,
+								color: entry[0] as BackgammonColor,
+								count: entry[1] as number,
+							}
+						: { point, count: 0 };
+				})
+			: opening,
+		bar: { white: 0, black: 0, ...spec.bar },
+		off: { white: 0, black: 0, ...spec.off },
+		activeColor: spec.active ?? "white",
+		dice: spec.dice,
+		used: spec.used ?? spec.dice.map(() => false),
+	};
+}
+
+describe("move traversal", () => {
+	const destinations = [
+		"off" as const,
+		...Array.from({ length: 24 }, (_, index) => index + 1),
+	];
+	for (const { name, spec, rows } of TRAVERSAL_TABLE) {
+		it(name, () => {
+			const state = traversalState(spec);
+			for (const { source, combine, points, off, plans } of rows) {
+				const highlights = getMoveHighlights(state, source, combine);
+				expect([...highlights.points].sort((a, b) => a - b)).toEqual(points);
+				expect(highlights.off).toBe(off);
+				for (const destination of destinations) {
+					const plan = planBackgammonMove(state, source, destination, combine);
+					expect(
+						plan?.steps.map((step) => [
+							step.from,
+							step.to,
+							step.die,
+							step.dieIndex,
+						]),
+					).toEqual(plans[String(destination)]);
+				}
+			}
+		});
+	}
+
+	it("throws for an unowned source once it looks at combined moves", () => {
+		const state = withDice(createInitialBackgammonState(), [3, 1]);
+		expect(() => getMoveHighlights(state, 7, true)).toThrow(
+			"choosePointWithChecker",
+		);
+		expect(getMoveHighlights(state, 7, false).points.size).toBeGreaterThan(0);
+		expect(planBackgammonMove(state, 7, 4, true)).toBeNull();
+	});
+});
+
+describe("isTurnSpent", () => {
+	const initial = createInitialBackgammonState();
+
+	it("is true once every rolled die is used", () => {
+		expect(isTurnSpent(withDice(initial, [3, 1], [true, true]))).toBe(true);
+		expect(isTurnSpent(withDice(initial, [3, 1], [true, false]))).toBe(false);
+	});
+
+	it("is false before rolling", () => {
+		expect(isTurnSpent(initial)).toBe(false);
+	});
+
+	it("is false after the winning move, so the game ends without a turn change", () => {
+		const won = {
+			...withDice(initial, [3, 1], [true, true]),
+			off: { white: 15, black: 0 },
+		};
+		expect(isTurnSpent(won)).toBe(false);
 	});
 });

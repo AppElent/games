@@ -1,4 +1,9 @@
-import type { SignalCardRole, SignalTeam } from "@arcadeclub/core/signal-words";
+import {
+	isSignalClueGiver,
+	type SignalCardRole,
+	type SignalTeam,
+	signalSeatTeam,
+} from "@arcadeclub/core/signal-words";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
@@ -84,13 +89,8 @@ export function SignalWordsRoom({
 		(participant) => participant._id === participantId,
 	);
 	const state = bundle.state;
-	const myTeam: SignalTeam | undefined =
-		me?.seat === "red" || me?.seat === "red-clue"
-			? "red"
-			: me?.seat === "blue" || me?.seat === "blue-clue"
-				? "blue"
-				: undefined;
-	const amClueGiver = me?.seat?.endsWith("-clue") ?? false;
+	const myTeam = signalSeatTeam(me?.seat);
+	const amClueGiver = isSignalClueGiver(me?.seat);
 	const isHost = bundle.session.hostParticipantId === participantId;
 
 	const key = useQuery(
@@ -165,8 +165,7 @@ export function SignalWordsRoom({
 
 	function teamMembers(team: SignalTeam) {
 		return bundle.participants.filter(
-			(participant) =>
-				participant.seat === team || participant.seat === `${team}-clue`,
+			(participant) => signalSeatTeam(participant.seat) === team,
 		);
 	}
 
@@ -218,7 +217,7 @@ export function SignalWordsRoom({
 											<span className="truncate">
 												{participant.displayName}
 											</span>
-											{participant.seat?.endsWith("-clue") ? (
+											{isSignalClueGiver(participant.seat) ? (
 												<span className="text-xs uppercase text-slate-300">
 													{signalWords.teams.clueGiverTag}
 												</span>

@@ -5,7 +5,10 @@ import {
 	applySignalPass,
 	createSignalGameState,
 	generateSignalBoard,
+	isSignalClueGiver,
 	type SignalGameState,
+	signalSeat,
+	signalSeatTeam,
 } from "@arcadeclub/core/signal-words";
 import { SIGNAL_WORDS_DEFAULT_PACK } from "@arcadeclub/core/signal-words-packs";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -44,10 +47,6 @@ async function requireParticipant(
 		throw gameError("notInGame");
 	}
 	return participant;
-}
-
-function isClueGiver(seat: string | undefined) {
-	return seat === "red-clue" || seat === "blue-clue";
 }
 
 function toGameState(state: Doc<"signalWordsStates">): SignalGameState {
@@ -91,7 +90,7 @@ async function patchGameState(
 		const { winnerTeam } = next;
 		const winners = winnerTeam
 			? participants
-					.filter((participant) => participant.seat?.startsWith(winnerTeam))
+					.filter((participant) => signalSeatTeam(participant.seat) === winnerTeam)
 					.map((participant) => participant._id)
 			: [];
 		await completeSession(ctx, state.sessionId, {
@@ -99,6 +98,27 @@ async function patchGameState(
 			winnerParticipantIds: winners,
 		});
 	}
+}
+
+/** A new board, with everything from the previous game cleared. */
+function freshBoardPatch(now: number) {
+	const gameState = createSignalGameState(
+		generateSignalBoard(SIGNAL_WORDS_DEFAULT_PACK),
+	);
+	return {
+		phase: "clue" as const,
+		words: gameState.words,
+		assignments: gameState.assignments,
+		revealed: gameState.revealed,
+		startingTeam: gameState.startingTeam,
+		currentTeam: gameState.currentTeam,
+		clueWord: undefined,
+		clueCount: undefined,
+		guessesLeft: undefined,
+		winnerTeam: undefined,
+		trapHitBy: undefined,
+		updatedAt: now,
+	};
 }
 
 export const createState = mutation({
@@ -146,7 +166,7 @@ export const joinTeam = mutation({
 			throw gameError("gameAlreadyStarted");
 		}
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		const seat = args.clueGiver ? `${args.team}-clue` : args.team;
+		const seat = signalSeat(args.team, args.clueGiver);
 		if (args.clueGiver) {
 			const participants = await ctx.db
 				.query("sessionParticipants")
@@ -183,32 +203,17 @@ export const start = mutation({
 			.collect();
 		for (const team of ["red", "blue"] as const) {
 			const clueGiver = participants.some(
-				(participant) => participant.seat === `${team}-clue`,
+				(participant) => participant.seat === signalSeat(team, true),
 			);
 			const guesser = participants.some(
-				(participant) => participant.seat === team,
+				(participant) => participant.seat === signalSeat(team, false),
 			);
 			if (!clueGiver || !guesser) {
 				throw gameError(team === "red" ? "redTeamNotReady" : "blueTeamNotReady");
 			}
 		}
-		const board = generateSignalBoard(SIGNAL_WORDS_DEFAULT_PACK);
-		const gameState = createSignalGameState(board);
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase: "clue",
-			words: gameState.words,
-			assignments: gameState.assignments,
-			revealed: gameState.revealed,
-			startingTeam: gameState.startingTeam,
-			currentTeam: gameState.currentTeam,
-			clueWord: undefined,
-			clueCount: undefined,
-			guessesLeft: undefined,
-			winnerTeam: undefined,
-			trapHitBy: undefined,
-			updatedAt: now,
-		});
+		await ctx.db.patch(state._id, freshBoardPatch(now));
 		await ctx.db.patch(args.sessionId, {
 			status: "active",
 			startedAt: session.startedAt ?? now,
@@ -234,7 +239,7 @@ export const submitClue = mutation({
 			args.sessionId,
 			args.participantId,
 		);
-		if (participant.seat !== `${state.currentTeam}-clue`) {
+		if (participant.seat !== signalSeat(state.currentTeam, true)) {
 			throw gameError("clueGiverOnly");
 		}
 		let next: SignalGameState;
@@ -316,23 +321,8 @@ export const rematch = mutation({
 		if (session.hostParticipantId !== args.participantId) {
 			throw gameError("hostOnlyRematch");
 		}
-		const board = generateSignalBoard(SIGNAL_WORDS_DEFAULT_PACK);
-		const gameState = createSignalGameState(board);
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase: "clue",
-			words: gameState.words,
-			assignments: gameState.assignments,
-			revealed: gameState.revealed,
-			startingTeam: gameState.startingTeam,
-			currentTeam: gameState.currentTeam,
-			clueWord: undefined,
-			clueCount: undefined,
-			guessesLeft: undefined,
-			winnerTeam: undefined,
-			trapHitBy: undefined,
-			updatedAt: now,
-		});
+		await ctx.db.patch(state._id, freshBoardPatch(now));
 		await reopenSession(ctx, args.sessionId);
 	},
 });
@@ -385,7 +375,7 @@ export const getKey = query({
 			args.sessionId,
 			args.participantId,
 		);
-		if (!isClueGiver(participant.seat)) {
+		if (!isSignalClueGiver(participant.seat)) {
 			return null;
 		}
 		const state = await ctx.db

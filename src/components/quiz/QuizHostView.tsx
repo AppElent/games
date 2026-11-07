@@ -1,3 +1,4 @@
+import { summarizeScores } from "@arcadeclub/core/quiz";
 import { formatJoinCode } from "@arcadeclub/core/sessions";
 import { useMutation } from "convex/react";
 import { ChevronRight, Eye, Trophy } from "lucide-react";
@@ -76,17 +77,10 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 		bundle.session.hostParticipantId === participantId;
 
 	const finished = state?.phase === "finished";
-	const totals = new Map<string, number>();
-	for (const answer of bundle.answers) {
-		totals.set(
-			answer.participantId,
-			(totals.get(answer.participantId) ?? 0) + answer.score,
-		);
-	}
-	const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]);
-	const winner = ranked.length
+	const leader = summarizeScores(bundle.answers).ranking[0];
+	const winner = leader
 		? bundle.participants.find(
-				(participant) => participant._id === ranked[0][0],
+				(participant) => participant._id === leader.participantId,
 			)
 		: undefined;
 	const phaseLabel = state ? messages.games.quiz.phase[state.phase] : "";
@@ -210,7 +204,7 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 						subtitle={
 							winner
 								? fmt(messages.games.quiz.hostView.pointsWon, {
-										points: ranked[0][1],
+										points: leader.score,
 									})
 								: messages.games.quiz.hostView.thanksForPlaying
 						}
@@ -218,7 +212,7 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 							winner
 								? fmt(messages.games.quiz.hostView.shareTextWinner, {
 										name: winner.displayName,
-										points: ranked[0][1],
+										points: leader.score,
 										count: playerCount,
 									})
 								: fmt(messages.games.quiz.hostView.shareTextNoWinner, {

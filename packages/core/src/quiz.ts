@@ -107,11 +107,6 @@ export function parseQuizQuestionsTsv(input: string): {
 	return { questions, errors };
 }
 
-type ScoredAnswer = {
-	participantId: string;
-	score: number;
-};
-
 export function isCorrectAnswer(selected: string[], correct: string[]) {
 	if (selected.length !== correct.length) {
 		return false;
@@ -145,31 +140,70 @@ export function calculateAnswerScore({
 	return Math.round(basePoints + basePoints * speedBonusRatio);
 }
 
-export function summarizeScores(answers: ScoredAnswer[]) {
-	const totals = new Map<string, number>();
+/**
+ * Totals per participant, highest first (ties in order of first answer), and
+ * who won: everyone on the top score, nobody when that score is zero. Only
+ * participants who answered appear.
+ */
+export function summarizeScores<P extends string>(
+	answers: readonly { participantId: P; score: number }[],
+) {
+	const totals = new Map<P, number>();
 	for (const answer of answers) {
 		totals.set(
 			answer.participantId,
 			(totals.get(answer.participantId) ?? 0) + answer.score,
 		);
 	}
-	return Array.from(totals, ([participantId, score]) => ({
+	const ranking = Array.from(totals, ([participantId, score]) => ({
 		participantId,
 		score,
 	})).sort((a, b) => b.score - a.score);
+	const topScore = Math.max(0, ranking[0]?.score ?? 0);
+	return {
+		ranking,
+		winners: ranking
+			.filter(({ score }) => score === topScore && topScore > 0)
+			.map(({ participantId }) => participantId),
+	};
 }
 
-export function getNextQuizPhase(phase: QuizPhase) {
-	switch (phase) {
+/**
+ * What changes when the host moves the quiz on, or `null` when it is over. The
+ * scoreboard after the last question leads to the end.
+ */
+export function getNextQuizPhase(
+	state: { phase: QuizPhase; currentQuestionIndex: number },
+	questionCount: number,
+	now: number,
+) {
+	switch (state.phase) {
 		case "lobby":
-			return "question";
+			return {
+				phase: "question" as const,
+				questionStartedAt: now,
+				showCorrectAnswer: false,
+			};
 		case "question":
-			return "reveal";
+			return { phase: "reveal" as const, showCorrectAnswer: true };
 		case "reveal":
-			return "scoreboard";
-		case "scoreboard":
-			return "question";
+			return { phase: "scoreboard" as const };
+		case "scoreboard": {
+			const nextQuestionIndex = state.currentQuestionIndex + 1;
+			return nextQuestionIndex >= questionCount
+				? {
+						phase: "finished" as const,
+						questionStartedAt: undefined,
+						showCorrectAnswer: true,
+					}
+				: {
+						phase: "question" as const,
+						currentQuestionIndex: nextQuestionIndex,
+						questionStartedAt: now,
+						showCorrectAnswer: false,
+					};
+		}
 		case "finished":
-			return "finished";
+			return null;
 	}
 }

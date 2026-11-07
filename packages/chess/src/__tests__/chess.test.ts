@@ -1,3 +1,4 @@
+import { GameRuleError } from "@arcadeclub/core/errors";
 import { describe, expect, it } from "vitest";
 import {
 	applyChessMove,
@@ -7,8 +8,10 @@ import {
 	getLegalMoves,
 	getRemainingMs,
 	hasFlagFallen,
+	initialClock,
 	isInCheck,
 	isPromotionMove,
+	switchChessColor,
 	tickClockAfterMove,
 } from "../chess";
 
@@ -26,13 +29,13 @@ describe("applyChessMove", () => {
 	it("rejects an illegal move without changing anything", () => {
 		expect(() =>
 			applyChessMove(CHESS_INITIAL_FEN, { from: "e2", to: "e5" }),
-		).toThrow("Illegal move");
+		).toThrow(new GameRuleError("illegalMove"));
 	});
 
 	it("rejects moving the opponent's piece", () => {
 		expect(() =>
 			applyChessMove(CHESS_INITIAL_FEN, { from: "e7", to: "e5" }),
-		).toThrow("Illegal move");
+		).toThrow(new GameRuleError("illegalMove"));
 	});
 
 	it("detects checkmate (fool's mate)", () => {
@@ -129,5 +132,28 @@ describe("clock", () => {
 		expect(formatClockMs(600_000)).toBe("10:00");
 		expect(formatClockMs(61_000)).toBe("1:01");
 		expect(formatClockMs(-5)).toBe("0:00");
+	});
+});
+
+describe("switchChessColor", () => {
+	it("gives the other color", () => {
+		expect(switchChessColor("white")).toBe("black");
+		expect(switchChessColor("black")).toBe("white");
+	});
+});
+
+describe("initialClock", () => {
+	it("starts both clocks from the time control", () => {
+		expect(initialClock("10+0")).toEqual({
+			remainingWhiteMs: 600_000,
+			remainingBlackMs: 600_000,
+		});
+	});
+
+	it("has no clock for an untimed game", () => {
+		expect(initialClock("untimed")).toEqual({
+			remainingWhiteMs: undefined,
+			remainingBlackMs: undefined,
+		});
 	});
 });

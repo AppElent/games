@@ -6,6 +6,7 @@ import {
 	type BackgammonMovePlan,
 	canEndBackgammonTurn,
 	getBackgammonWinner,
+	rollBackgammonDice,
 } from "@arcadeclub/core/backgammon";
 import { useEffect } from "react";
 import { Alert } from "react-native";
@@ -37,7 +38,7 @@ export function LocalGameScreen() {
 
 	const onPlan = (plan: BackgammonMovePlan) => {
 		haptics.moveMade();
-		dispatch({ type: "move", plan });
+		dispatch({ type: "move", plan, dice: rollBackgammonDice() });
 	};
 	const selection = useBoardSelection({
 		state,
@@ -103,14 +104,16 @@ export function LocalGameScreen() {
 						label={copy.board.rollButton}
 						onPress={() => {
 							haptics.valueEntered();
-							dispatch({ type: "roll" });
+							dispatch({ type: "roll", dice: rollBackgammonDice() });
 						}}
 						testID="bg-roll"
 					/>
 				) : canEndBackgammonTurn(state) ? (
 					<Button
 						label={copy.board.endTurnButton}
-						onPress={() => dispatch({ type: "endTurn" })}
+						onPress={() =>
+							dispatch({ type: "endTurn", dice: rollBackgammonDice() })
+						}
 						testID="bg-end-turn"
 					/>
 				) : null}
@@ -134,7 +137,14 @@ export function LocalGameScreen() {
 			<OptionsPanel
 				options={options}
 				keys={OPTION_KEYS}
-				onChange={(key, value) => dispatch({ type: "setOption", key, value })}
+				onChange={(key, value) =>
+					dispatch({
+						type: "setOption",
+						key,
+						value,
+						dice: rollBackgammonDice(),
+					})
+				}
 			/>
 		</BoardScreen>
 	);

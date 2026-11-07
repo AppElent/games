@@ -9,6 +9,10 @@ import {
 	getMoveHighlights,
 	planBackgammonMove,
 } from "@arcadeclub/core/backgammon";
+import type {
+	BackgammonOptions,
+	OnlineOptions,
+} from "@arcadeclub/core/backgammon-local";
 import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 
@@ -19,15 +23,10 @@ import { fmt, plural, useI18n } from "#/lib/i18n";
  * (mouse + touch) and combined two-die moves.
  */
 
-export type BackgammonBoardOptions = {
-	showNumbers: boolean;
-	/** Local play only; online games never offer it. */
-	autoRoll?: boolean;
-	autoSwitchTurn: boolean;
-	autoCombine: boolean;
-};
+/** Auto-roll is local play only; online games never offer it. */
+export type BackgammonBoardOptions = OnlineOptions & Partial<BackgammonOptions>;
 
-export type BackgammonOptionKey = keyof BackgammonBoardOptions;
+export type BackgammonOptionKey = keyof BackgammonOptions;
 
 type Props = {
 	state: BackgammonTurnState;

@@ -48,6 +48,16 @@ export function isJoker(id: CardId) {
 	return id.startsWith("JK");
 }
 
+/** The id without its deck index: two copies of a card share a face. */
+export function cardFace(id: CardId) {
+	return id.slice(0, id.indexOf("#"));
+}
+
+/** A card's deck index, or a joker's number. */
+export function cardCopy(id: CardId) {
+	return Number(id.slice(id.indexOf("#") + 1));
+}
+
 export function buildDeck(decks: number, jokers: number): CardId[] {
 	const cards: CardId[] = [];
 	for (let deck = 0; deck < decks; deck += 1) {

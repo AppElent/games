@@ -82,6 +82,82 @@ export function getBluffWinnerIndex(diceCounts: readonly number[]) {
 	return alive.length === 1 ? alive[0].index : undefined;
 }
 
+type BluffHand<P extends string> = { participantId: P; values: number[] };
+
+/** Dice left per seat in turn order; a seat without a hand counts as zero. */
+export function bluffDiceCounts<P extends string>(
+	turnOrder: readonly P[],
+	hands: readonly BluffHand<P>[],
+) {
+	return turnOrder.map(
+		(participantId) =>
+			hands.find((hand) => hand.participantId === participantId)?.values
+				.length ?? 0,
+	);
+}
+
+/**
+ * Ends a round on a challenge: the loser gives up a die, everyone re-rolls, and
+ * the loser starts the next round unless that eliminated them.
+ */
+export function resolveBluffRound<
+	P extends string,
+	Claim extends BluffClaim & { byParticipantId: P },
+>(
+	state: {
+		hands: BluffHand<P>[];
+		turnOrder: P[];
+		roundNumber: number;
+	},
+	claim: Claim,
+	challengerParticipantId: P,
+	random: Rng = Math.random,
+) {
+	const outcome = resolveBluffChallenge(
+		state.hands.map((hand) => hand.values),
+		claim,
+	);
+	const loserParticipantId =
+		outcome.loser === "claimant"
+			? claim.byParticipantId
+			: challengerParticipantId;
+	const hands = state.hands.map((hand) => ({
+		participantId: hand.participantId,
+		values: rollBluffDice(
+			Math.max(
+				0,
+				hand.participantId === loserParticipantId
+					? hand.values.length - 1
+					: hand.values.length,
+			),
+			random,
+		),
+	}));
+	const diceCounts = bluffDiceCounts(state.turnOrder, hands);
+	const winnerIndex = getBluffWinnerIndex(diceCounts);
+	const loserIndex = state.turnOrder.indexOf(loserParticipantId);
+	return {
+		phase:
+			winnerIndex === undefined ? ("claim" as const) : ("finished" as const),
+		hands,
+		activeIndex:
+			diceCounts[loserIndex] > 0
+				? loserIndex
+				: nextActiveIndex(diceCounts, loserIndex),
+		roundNumber: state.roundNumber + 1,
+		claimHistory: [] as Claim[],
+		lastReveal: {
+			claim,
+			challengerParticipantId,
+			actualCount: outcome.actualCount,
+			loserParticipantId,
+			hands: state.hands,
+		},
+		winnerParticipantId:
+			winnerIndex === undefined ? undefined : state.turnOrder[winnerIndex],
+	};
+}
+
 export function describeBluffClaim(claim: BluffClaim) {
 	return `at least ${claim.quantity} × ${claim.face}`;
 }

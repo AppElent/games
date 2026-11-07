@@ -1,3 +1,4 @@
+import { digitsToString } from "@arcadeclub/core/puzzle";
 import { digitsInMask } from "@arcadeclub/core/sudoku";
 import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
@@ -354,8 +355,8 @@ function VerifyStep({
 			await createState({
 				sessionId: result.sessionId,
 				source: "scan",
-				givens: board.givens.join(""),
-				digits: board.digits.join(""),
+				givens: digitsToString(board.givens),
+				digits: digitsToString(board.digits),
 				cornerNotes: board.corner,
 				centerNotes: board.center,
 			});

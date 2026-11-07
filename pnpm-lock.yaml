@@ -320,6 +320,9 @@ importers:
 
   packages/chess:
     dependencies:
+      '@arcadeclub/core':
+        specifier: workspace:*
+        version: link:../core
       chess.js:
         specifier: ^1.4.0
         version: 1.4.0

@@ -12,7 +12,7 @@ import {
 	type BackgammonMovePlan,
 	type BackgammonTurnState,
 	computeUsedFlags,
-	getBackgammonWinner,
+	isTurnSpent,
 } from "@arcadeclub/core/backgammon";
 import { useMutation } from "convex/react";
 import { useCallback, useMemo, useState } from "react";
@@ -102,11 +102,7 @@ export function useOnlineMatch(sessionId: string, autoSwitchTurn: boolean) {
 			for (const step of plan.steps) {
 				await applyMove({ ...seat, from: step.from, to: step.to });
 			}
-			if (
-				autoSwitchTurn &&
-				after.used.every(Boolean) &&
-				getBackgammonWinner(after.off) === null
-			) {
+			if (autoSwitchTurn && isTurnSpent(after)) {
 				await endTurnMutation(seat);
 			}
 		});
