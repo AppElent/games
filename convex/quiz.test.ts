@@ -4,18 +4,22 @@ import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
 	arrange,
+	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
+	HOSTED,
 	hostSession,
 	joinWithCode,
 	otherGameSession,
 	outsider,
 	type ParticipantId,
+	sessionCount,
 	type SessionId,
 	setup,
-	T0,
+	signedInHost,
 	type T,
+	T0,
 	useFixedClock,
 } from "./test.helpers";
 
@@ -572,5 +576,48 @@ describe("getBundle", () => {
 			"a",
 		]);
 		expect(answers[0].selectedChoiceIds).toEqual(["a"]);
+	});
+});
+
+describe("create", () => {
+	it("stores what sessions.create and createState store together", async () => {
+		const t = setup();
+		const twoStep = await newQuiz(t);
+		const { quizSetId } = twoStep;
+		const created = await signedInHost(t).mutation(api.quiz.create, { ...HOSTED, quizSetId });
+		expect(await createdRows(t, created.sessionId, "liveQuizStates")).toEqual(
+			await createdRows(t, twoStep.sessionId, "liveQuizStates"),
+		);
+	});
+
+	it("returns a code a guest can type, and no link", async () => {
+		const t = setup();
+		const quizSetId = await createSet(t);
+		const created = await signedInHost(t).mutation(api.quiz.create, { ...HOSTED, quizSetId });
+		expect(created.shareToken).toBeUndefined();
+		const joined = await joinWithCode(
+			t,
+			created.joinCode as string,
+			"guest_two",
+		);
+		expect(joined.sessionId).toBe(created.sessionId);
+	});
+
+	it("needs an account to host, and leaves nothing behind without one", async () => {
+		const t = setup();
+		const quizSetId = await createSet(t);
+		await expectCode(t.mutation(api.quiz.create, { ...HOSTED, quizSetId }), "signInToHost");
+		expect(await sessionCount(t)).toBe(0);
+	});
+
+	it("leaves no session behind when the quiz set is gone", async () => {
+		const t = setup();
+		const quizSetId = await createSet(t);
+		await t.run((ctx) => ctx.db.delete(quizSetId));
+		await expectCode(
+			signedInHost(t).mutation(api.quiz.create, { ...HOSTED, quizSetId }),
+			"quizSetNotFound",
+		);
+		expect(await sessionCount(t)).toBe(0);
 	});
 });

@@ -5,18 +5,22 @@ import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
 	arrange,
+	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
+	HOSTED,
 	hostSession,
 	joinWithCode,
 	otherGameSession,
 	outsider,
 	type ParticipantId,
+	sessionCount,
 	type SessionId,
 	setup,
-	T0,
+	signedInHost,
 	type T,
+	T0,
 	useFixedClock,
 } from "./test.helpers";
 
@@ -1087,5 +1091,74 @@ describe("getBundle", () => {
 		expect(revealed.state.pendingGuess).toEqual(full(hostId, 1));
 		expect(revealed.state.stealClaims).toEqual([full(guest, 0)]);
 		expect((await bundle(t, sessionId, hostId)).hostPlayback).toBeNull();
+	});
+});
+
+const ARGS = {
+	...HOSTED,
+	mode: "original",
+	packId: PACK,
+	targetCards: 5,
+	turnTimerSeconds: 30,
+	playbackMode: "hostDevice",
+} as const;
+
+describe("create", () => {
+	it("stores what sessions.create and createState store together", async () => {
+		const t = setup();
+		const twoStep = await newRoom(t);
+		const created = await signedInHost(t).mutation(api.hitster.create, ARGS);
+		expect(await createdRows(t, created.sessionId, "hitsterGameStates")).toEqual(
+			await createdRows(t, twoStep.sessionId, "hitsterGameStates"),
+		);
+	});
+
+	it("returns a code a guest can type, and no link", async () => {
+		const t = setup();
+		const created = await signedInHost(t).mutation(api.hitster.create, ARGS);
+		expect(created.shareToken).toBeUndefined();
+		const joined = await joinWithCode(
+			t,
+			created.joinCode as string,
+			"guest_two",
+		);
+		expect(joined.sessionId).toBe(created.sessionId);
+	});
+
+	it("needs an account to host, and leaves nothing behind without one", async () => {
+		const t = setup();
+		await expectCode(t.mutation(api.hitster.create, ARGS), "signInToHost");
+		expect(await sessionCount(t)).toBe(0);
+	});
+
+	it.each([
+		["targetCardsRange", 1],
+		["notEnoughTracks", 100_000],
+	] as const)("leaves no session behind on %s", async (code, targetCards) => {
+		const t = setup();
+		await expectCode(
+			signedInHost(t).mutation(api.hitster.create, { ...ARGS, targetCards }),
+			code,
+		);
+		expect(await sessionCount(t)).toBe(0);
+	});
+
+	it("takes no auth policy, because mobile's and web's act the same", async () => {
+		const t = setup();
+		const web = await hostSession(t, "hitster", "room", "hostChoice");
+		const mobile = await hostSession(t, "hitster", "room", "guestAllowed");
+		for (const { joinCode } of [web, mobile]) {
+			const joined = await joinWithCode(t, joinCode as string, "guest_anon");
+			expect(joined.participantId).toBeDefined();
+		}
+		await expectCode(
+			t.mutation(api.sessions.create, {
+				gameType: "hitster",
+				joinMode: "room",
+				authPolicy: "guestAllowed",
+				...HOSTED,
+			}),
+			"signInToHost",
+		);
 	});
 });

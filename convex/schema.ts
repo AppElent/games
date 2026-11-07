@@ -222,9 +222,7 @@ export default defineSchema({
 		locked: v.optional(v.boolean()),
 	})
 		.index("by_joinCode", ["joinCode"])
-		.index("by_shareToken", ["shareToken"])
-		.index("by_hostUser", ["hostUserId"])
-		.index("by_game_status", ["gameType", "status"]),
+		.index("by_shareToken", ["shareToken"]),
 
 	sessionParticipants: defineTable({
 		sessionId: v.id("gameSessions"),
@@ -238,9 +236,7 @@ export default defineSchema({
 		kickedAt: v.optional(v.number()),
 	})
 		.index("by_session", ["sessionId"])
-		.index("by_session_seat", ["sessionId", "seat"])
-		.index("by_user", ["userId"])
-		.index("by_guest", ["guestId"]),
+		.index("by_user", ["userId"]),
 
 	contentDrafts: defineTable({
 		ownerUserId: v.string(),
@@ -256,9 +252,7 @@ export default defineSchema({
 		),
 		validationErrors: v.array(v.string()),
 		reviewedAt: v.optional(v.number()),
-	})
-		.index("by_owner", ["ownerUserId"])
-		.index("by_status", ["status"]),
+	}).index("by_owner", ["ownerUserId"]),
 
 	quizSets: defineTable({
 		ownerUserId: v.optional(v.string()),
@@ -275,9 +269,7 @@ export default defineSchema({
 		currentQuestionIndex: v.number(),
 		questionStartedAt: v.optional(v.number()),
 		showCorrectAnswer: v.boolean(),
-	})
-		.index("by_session", ["sessionId"])
-		.index("by_quizSet", ["quizSetId"]),
+	}).index("by_session", ["sessionId"]),
 
 	liveQuizAnswers: defineTable({
 		sessionId: v.id("gameSessions"),
@@ -289,7 +281,6 @@ export default defineSchema({
 		answeredAt: v.number(),
 	})
 		.index("by_session", ["sessionId"])
-		.index("by_session_question", ["sessionId", "questionId"])
 		.index("by_participant", ["participantId"]),
 
 	backgammonGameStates: defineTable({
@@ -306,11 +297,7 @@ export default defineSchema({
 		winnerParticipantId: v.optional(v.id("sessionParticipants")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
-	})
-		.index("by_session", ["sessionId"])
-		.index("by_white", ["whiteParticipantId"])
-		.index("by_black", ["blackParticipantId"])
-		.index("by_phase", ["phase"]),
+	}).index("by_session", ["sessionId"]),
 
 	sudokuStates: defineTable({
 		sessionId: v.id("gameSessions"),
@@ -477,7 +464,5 @@ export default defineSchema({
 		to: v.optional(v.union(v.number(), v.literal("off"))),
 		dice: v.array(v.number()),
 		createdAt: v.number(),
-	})
-		.index("by_session", ["sessionId"])
-		.index("by_participant", ["participantId"]),
+	}).index("by_session", ["sessionId"]),
 });

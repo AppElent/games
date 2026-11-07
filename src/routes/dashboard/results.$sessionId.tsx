@@ -19,18 +19,23 @@ export const Route = createFileRoute("/dashboard/results/$sessionId")({
 function SessionResultsPage() {
 	const { sessionId } = Route.useParams();
 	const { messages, locale } = useI18n();
-	const results = useQuery(api.sessions.getResults, {
+	const bundle = useQuery(api.sessions.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 	});
+	const isQuizSession = bundle?.session.gameType === "live-quiz";
+	const quizBundle = useQuery(
+		api.quiz.getBundle,
+		isQuizSession ? { sessionId: sessionId as Id<"gameSessions"> } : "skip",
+	);
 
-	if (results === undefined) {
+	if (bundle === undefined || (isQuizSession && quizBundle === undefined)) {
 		return (
 			<main className="club-wrap py-10 text-slate-300">
 				{messages.common.results.loadingResults}
 			</main>
 		);
 	}
-	if (results === null) {
+	if (bundle === null) {
 		return (
 			<main className="club-wrap py-10 text-orange-200">
 				{messages.common.results.sessionNotFound}
@@ -38,8 +43,10 @@ function SessionResultsPage() {
 		);
 	}
 
-	const { session, participants, quizSet, answers } = results;
-	const isQuiz = session.gameType === "live-quiz" && quizSet;
+	const { session, participants } = bundle;
+	const quizSet = quizBundle?.quizSet ?? null;
+	const answers = quizBundle?.answers ?? [];
+	const isQuiz = isQuizSession && quizSet;
 	const scoreboard = buildScoreboard(participants, answers);
 	const questionStats = quizSet
 		? buildQuestionStats(answers, quizSet.questions)

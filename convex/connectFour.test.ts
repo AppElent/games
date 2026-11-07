@@ -3,20 +3,24 @@ import { api } from "./_generated/api";
 import {
 	advance,
 	arrange,
+	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
 	getDoc,
+	HOSTED,
 	hostSession,
 	joinWithCode,
 	joinWithToken,
 	otherGameSession,
 	type ParticipantId,
+	sessionCount,
 	type SessionId,
 	setup,
 	shareTokenOf,
-	T0,
+	signedInHost,
 	type T,
+	T0,
 	useFixedClock,
 } from "./test.helpers";
 
@@ -512,5 +516,35 @@ describe("getBundle", () => {
 		expect(
 			(await t.query(api.connectFour.getBundle, { sessionId }))?.state,
 		).toBeNull();
+	});
+});
+
+describe("create", () => {
+	it("stores what sessions.create and createState store together", async () => {
+		const t = setup();
+		const twoStep = await newMatch(t);
+		const created = await signedInHost(t).mutation(api.connectFour.create, HOSTED);
+		expect(await createdRows(t, created.sessionId, "connectFourStates")).toEqual(
+			await createdRows(t, twoStep.sessionId, "connectFourStates"),
+		);
+	});
+
+	it("returns a link a guest can follow, and no room code", async () => {
+		const t = setup();
+		const created = await signedInHost(t).mutation(api.connectFour.create, HOSTED);
+		expect(created.joinCode).toBeUndefined();
+		expect(created.shareToken).toBe(await shareTokenOf(t, created.sessionId));
+		const joined = await joinWithToken(
+			t,
+			created.shareToken as string,
+			"guest_two",
+		);
+		expect(joined.sessionId).toBe(created.sessionId);
+	});
+
+	it("needs an account to host, and leaves nothing behind without one", async () => {
+		const t = setup();
+		await expectCode(t.mutation(api.connectFour.create, HOSTED), "signInToHost");
+		expect(await sessionCount(t)).toBe(0);
 	});
 });

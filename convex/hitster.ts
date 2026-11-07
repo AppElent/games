@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { type ObjectType, v } from "convex/values";
 import {
 	getHitsterModeConfig,
 	HITSTER_SPARE_TRACKS,
@@ -14,49 +14,34 @@ import {
 import { resolveHitsterReveal } from "@arcadeclub/core/hitster-reveal";
 import { shuffle } from "@arcadeclub/core/random";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { completeSession } from "./lib/completion";
 import { hitsterModeValidator, hitsterPlaybackModeValidator } from "./schema";
-import { gameError, toGameError } from "./lib/errors";
+import { gameError, rules } from "./lib/errors";
+import {
+	createdSessionValidator,
+	createHostedSession,
+	hostedSessionArgs,
+} from "./lib/hostedSession";
+import {
+	findGameState,
+	finishSession,
+	listParticipants,
+	listPlayersIncludingKicked,
+	loadSession,
+	requireHostByParticipantId,
+	requireParticipant,
+	startSession,
+} from "./lib/gameSession";
 
-type Ctx = MutationCtx | QueryCtx;
-
-async function getSessionAndState(ctx: Ctx, sessionId: Id<"gameSessions">) {
-	const session = await ctx.db.get(sessionId);
-	if (!session || session.gameType !== "hitster") {
-		throw gameError("gameNotFound");
-	}
-	const state = await ctx.db
-		.query("hitsterGameStates")
-		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-		.unique();
-	return { session, state };
-}
-
-async function requireParticipant(
-	ctx: Ctx,
+/** Hitster's state may not exist yet: `setup` creates it, and callers word its absence. */
+async function getSessionAndState(
+	ctx: MutationCtx,
 	sessionId: Id<"gameSessions">,
-	participantId: Id<"sessionParticipants">,
 ) {
-	const participant = await ctx.db.get(participantId);
-	if (
-		!participant ||
-		participant.sessionId !== sessionId ||
-		participant.kickedAt
-	) {
-		throw gameError("notInGame");
-	}
-	return participant;
-}
-
-function requireHost(
-	session: Doc<"gameSessions">,
-	participantId: Id<"sessionParticipants">,
-) {
-	if (session.hostParticipantId !== participantId) {
-		throw gameError("hostOnly");
-	}
+	const session = await loadSession(ctx, "hitster", sessionId);
+	const state = await findGameState(ctx, "hitster", sessionId);
+	return { session, state };
 }
 
 function findTimeline(
@@ -70,59 +55,94 @@ function findTimeline(
 	return timeline;
 }
 
+const gameConfigArgs = {
+	mode: hitsterModeValidator,
+	packId: v.string(),
+	targetCards: v.number(),
+	turnTimerSeconds: v.optional(v.number()),
+	playbackMode: hitsterPlaybackModeValidator,
+};
+
+function checkedConfig(config: ObjectType<typeof gameConfigArgs>, now: number) {
+	const playable = getPlayableHitsterCards(config.packId, config.playbackMode);
+	if (playable.length < config.targetCards + HITSTER_SPARE_TRACKS) {
+		throw gameError("notEnoughTracks");
+	}
+	if (
+		config.targetCards < HITSTER_TARGET_CARDS_RANGE.min ||
+		config.targetCards > HITSTER_TARGET_CARDS_RANGE.max
+	) {
+		throw gameError("targetCardsRange");
+	}
+	return {
+		mode: config.mode,
+		packId: config.packId,
+		targetCards: config.targetCards,
+		turnTimerSeconds: config.turnTimerSeconds,
+		playbackMode: config.playbackMode,
+		updatedAt: now,
+	};
+}
+
+async function insertLobbyState(
+	ctx: MutationCtx,
+	sessionId: Id<"gameSessions">,
+	config: ReturnType<typeof checkedConfig>,
+) {
+	return await ctx.db.insert("hitsterGameStates", {
+		sessionId,
+		...config,
+		phase: "lobby",
+		deck: [],
+		roundNumber: 0,
+		turnOrder: [],
+		activeIndex: 0,
+		timelines: [],
+		tokens: [],
+		stealClaims: [],
+		createdAt: config.updatedAt,
+	});
+}
+
+export const create = mutation({
+	args: { ...hostedSessionArgs, ...gameConfigArgs },
+	returns: createdSessionValidator,
+	handler: async (ctx, args) => {
+		const hosted = await createHostedSession(ctx, {
+			...args,
+			gameType: "hitster",
+			joinMode: "room",
+			authPolicy: "hostChoice",
+		});
+		await insertLobbyState(
+			ctx,
+			hosted.sessionId,
+			checkedConfig(args, Date.now()),
+		);
+		return hosted;
+	},
+});
+
+// Installed mobile builds call this: remove once no installed build predates hitster.create.
 export const setup = mutation({
 	args: {
 		sessionId: v.id("gameSessions"),
 		participantId: v.id("sessionParticipants"),
-		mode: hitsterModeValidator,
-		packId: v.string(),
-		targetCards: v.number(),
-		turnTimerSeconds: v.optional(v.number()),
-		playbackMode: hitsterPlaybackModeValidator,
+		...gameConfigArgs,
 	},
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		requireHost(session, args.participantId);
+		requireHostByParticipantId(session, args.participantId);
 		if (session.status !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
-		const playable = getPlayableHitsterCards(args.packId, args.playbackMode);
-		if (playable.length < args.targetCards + HITSTER_SPARE_TRACKS) {
-			throw gameError("notEnoughTracks");
-		}
-		if (
-			args.targetCards < HITSTER_TARGET_CARDS_RANGE.min ||
-			args.targetCards > HITSTER_TARGET_CARDS_RANGE.max
-		) {
-			throw gameError("targetCardsRange");
-		}
-		const now = Date.now();
-		const fields = {
-			mode: args.mode,
-			packId: args.packId,
-			targetCards: args.targetCards,
-			turnTimerSeconds: args.turnTimerSeconds,
-			playbackMode: args.playbackMode,
-			updatedAt: now,
-		};
+		const config = checkedConfig(args, Date.now());
 		if (state) {
-			await ctx.db.patch(state._id, fields);
+			await ctx.db.patch(state._id, config);
 			return state._id;
 		}
-		return await ctx.db.insert("hitsterGameStates", {
-			sessionId: args.sessionId,
-			...fields,
-			phase: "lobby",
-			deck: [],
-			roundNumber: 0,
-			turnOrder: [],
-			activeIndex: 0,
-			timelines: [],
-			tokens: [],
-			stealClaims: [],
-			createdAt: now,
-		});
+		return await insertLobbyState(ctx, args.sessionId, config);
 	},
 });
 
@@ -134,18 +154,12 @@ export const start = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		requireHost(session, args.participantId);
+		requireHostByParticipantId(session, args.participantId);
 		if (!state || state.phase !== "lobby") {
 			throw gameError("gameNotReady");
 		}
 		const config = getHitsterModeConfig(state.mode);
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const players = participants
-			.filter((participant) => participant.role !== "watcher")
-			.sort((a, b) => a._creationTime - b._creationTime);
+		const players = await listPlayersIncludingKicked(ctx, args.sessionId);
 		if (players.length < hitsterMinPlayers(config)) {
 			throw gameError("notEnoughPlayers");
 		}
@@ -186,7 +200,7 @@ export const start = mutation({
 			lastRecap: undefined,
 			updatedAt: now,
 		});
-		await ctx.db.patch(args.sessionId, { status: "active", startedAt: now });
+		await startSession(ctx, session, now);
 	},
 });
 
@@ -301,27 +315,21 @@ export const reveal = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		requireHost(session, args.participantId);
+		requireHostByParticipantId(session, args.participantId);
 		if (!state || state.phase !== "nowPlaying" || !state.currentCardId) {
 			throw gameError("nothingToReveal");
 		}
-		let revealed: ReturnType<
-			typeof resolveHitsterReveal<Id<"sessionParticipants">>
-		>;
-		try {
-			revealed = resolveHitsterReveal(state, state.currentCardId);
-		} catch (caught) {
-			throw toGameError(caught);
-		}
+		const { currentCardId } = state;
+		const revealed = rules(() => resolveHitsterReveal(state, currentCardId));
 		const now = Date.now();
-		await ctx.db.patch(state._id, { ...revealed, updatedAt: now });
+		const patch = { ...revealed, updatedAt: now };
 		if (revealed.phase === "finished") {
-			await completeSession(ctx, args.sessionId, {
-				endedAt: now,
-				winnerParticipantIds: revealed.winnerParticipantId
-					? [revealed.winnerParticipantId]
-					: [],
+			await finishSession(ctx, state, patch, {
+				now,
+				winners: [revealed.winnerParticipantId],
 			});
+		} else {
+			await ctx.db.patch(state._id, patch);
 		}
 	},
 });
@@ -334,7 +342,7 @@ export const nextRound = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		requireHost(session, args.participantId);
+		requireHostByParticipantId(session, args.participantId);
 		if (!state || state.phase !== "reveal") {
 			throw gameError("finishRevealFirst");
 		}
@@ -349,20 +357,19 @@ export const nextRound = mutation({
 				: [...state.timelines].sort(
 						(a, b) => b.cardIds.length - a.cardIds.length,
 					)[0];
-			await ctx.db.patch(state._id, {
-				phase: "finished",
-				deck,
-				currentCardId: undefined,
-				winnerParticipantId: leader?.participantId,
-				coopResult: config.shared ? "lost" : undefined,
-				updatedAt: now,
-			});
-			await completeSession(ctx, args.sessionId, {
-				endedAt: now,
-				winnerParticipantIds: leader?.participantId
-					? [leader.participantId]
-					: [],
-			});
+			await finishSession(
+				ctx,
+				state,
+				{
+					phase: "finished",
+					deck,
+					currentCardId: undefined,
+					winnerParticipantId: leader?.participantId,
+					coopResult: config.shared ? "lost" : undefined,
+					updatedAt: now,
+				},
+				{ now, winners: [leader?.participantId] },
+			);
 			return;
 		}
 		await ctx.db.patch(state._id, {
@@ -389,14 +396,8 @@ export const getBundle = query({
 		if (!session) {
 			return null;
 		}
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const state = await ctx.db
-			.query("hitsterGameStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const participants = await listParticipants(ctx, args.sessionId);
+		const state = await findGameState(ctx, "hitster", args.sessionId);
 		if (!state) {
 			return { session, participants, state: null, hostPlayback: null };
 		}

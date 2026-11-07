@@ -24,6 +24,15 @@ export type T = ReturnType<typeof setup>;
 export type SessionId = Id<"gameSessions">;
 export type ParticipantId = Id<"sessionParticipants">;
 export type GameType = Doc<"gameSessions">["gameType"];
+type StateTable =
+	| "backgammonGameStates"
+	| "bluffDiceStates"
+	| "chessGameStates"
+	| "connectFourStates"
+	| "hitsterGameStates"
+	| "liveQuizStates"
+	| "signalWordsStates"
+	| "sudokuStates";
 
 /** Freezes the clock at `T0` for each test and undoes any `Math.random` mock. */
 export function useFixedClock() {
@@ -162,6 +171,54 @@ export async function hostSession(
 		hostId: created.participantId,
 		joinCode: created.joinCode,
 	};
+}
+
+/** The hosting arguments `hostSession` uses, so both creation flows can be compared. */
+export const HOSTED = {
+	title: "Game",
+	displayName: "Host",
+	guestId: "guest_host",
+};
+
+export function signedInHost(t: T) {
+	return t.withIdentity({ subject: HOST_USER });
+}
+
+/**
+ * Everything a creation flow left in the database, with the values that differ
+ * per session blanked, so a two-step session and a `create` compare equal.
+ */
+export async function createdRows(
+	t: T,
+	sessionId: SessionId,
+	stateTable: StateTable,
+) {
+	return await t.run(async (ctx) => {
+		const session = await ctx.db.get(sessionId);
+		const participants = await ctx.db
+			.query("sessionParticipants")
+			.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+			.collect();
+		const state = await ctx.db
+			.query(stateTable)
+			.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+			.unique();
+		const rows = JSON.stringify({
+			session: { ...fields(session), joinCode: "code", shareToken: "token" },
+			participants: participants.map(fields),
+			state: fields(state),
+		});
+		const blanked = participants.reduce(
+			(text, { _id }) => text.replaceAll(_id, "participant"),
+			rows.replaceAll(sessionId, "session"),
+		);
+		return JSON.parse(blanked) as unknown;
+	});
+}
+
+export async function sessionCount(t: T) {
+	const sessions = await t.run((ctx) => ctx.db.query("gameSessions").collect());
+	return sessions.length;
 }
 
 /** The share token a challenge host sends, read the way clients read it. */

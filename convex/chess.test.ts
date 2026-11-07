@@ -3,21 +3,25 @@ import { api } from "./_generated/api";
 import {
 	advance,
 	arrange,
+	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
 	fixRandom,
 	getDoc,
+	HOSTED,
 	hostSession,
 	joinWithCode,
 	joinWithToken,
 	otherGameSession,
 	type ParticipantId,
+	sessionCount,
 	type SessionId,
 	setup,
 	shareTokenOf,
-	T0,
+	signedInHost,
 	type T,
+	T0,
 	useFixedClock,
 } from "./test.helpers";
 
@@ -792,5 +796,72 @@ describe("getBundle", () => {
 		).resolves.toBeNull();
 		const { sessionId } = await hostSession(t, "chess", "challenge");
 		expect((await t.query(api.chess.getBundle, { sessionId }))?.state).toBeNull();
+	});
+});
+
+const ARGS = {
+	...HOSTED,
+	timeControl: "untimed",
+	hostColor: "white",
+} as const;
+
+describe("create", () => {
+	it("stores what sessions.create and createState store together", async () => {
+		const t = setup();
+		const twoStep = await newMatch(t);
+		const created = await signedInHost(t).mutation(api.chess.create, ARGS);
+		expect(await createdRows(t, created.sessionId, "chessGameStates")).toEqual(
+			await createdRows(t, twoStep.sessionId, "chessGameStates"),
+		);
+	});
+
+	it("returns a link a guest can follow, and no room code", async () => {
+		const t = setup();
+		const created = await signedInHost(t).mutation(api.chess.create, ARGS);
+		expect(created.joinCode).toBeUndefined();
+		expect(created.shareToken).toBe(await shareTokenOf(t, created.sessionId));
+		const joined = await joinWithToken(
+			t,
+			created.shareToken as string,
+			"guest_two",
+		);
+		expect(joined.sessionId).toBe(created.sessionId);
+	});
+
+	it("needs an account to host, and leaves nothing behind without one", async () => {
+		const t = setup();
+		await expectCode(t.mutation(api.chess.create, ARGS), "signInToHost");
+		expect(await sessionCount(t)).toBe(0);
+	});
+
+	it.each([
+		["white", 0.4],
+		["black", 0.6],
+	] as const)("resolves a random host color to %s", async (color, roll) => {
+		const t = setup();
+		fixRandom(roll);
+		const { sessionId, participantId } = await signedInHost(t).mutation(
+			api.chess.create,
+			{ ...ARGS, hostColor: "random" },
+		);
+		expect((await getDoc(t, participantId))?.seat).toBe(color);
+		const state = await t.query(api.chess.getBundle, { sessionId });
+		expect(state?.state?.[`${color}ParticipantId`]).toBe(participantId);
+	});
+
+	it("starts the clock settings the host chose, in the color they chose", async () => {
+		const t = setup();
+		const twoStep = await newMatch(t, {
+			timeControl: "10+0",
+			hostColor: "black",
+		});
+		const created = await signedInHost(t).mutation(api.chess.create, {
+			...HOSTED,
+			timeControl: "10+0",
+			hostColor: "black",
+		});
+		expect(await createdRows(t, created.sessionId, "chessGameStates")).toEqual(
+			await createdRows(t, twoStep.sessionId, "chessGameStates"),
+		);
 	});
 });

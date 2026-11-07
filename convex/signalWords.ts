@@ -12,42 +12,26 @@ import {
 } from "@arcadeclub/core/signal-words";
 import { SIGNAL_WORDS_DEFAULT_PACK } from "@arcadeclub/core/signal-words-packs";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { completeSession, reopenSession } from "./lib/completion";
 import { signalTeamValidator } from "./schema";
-import { gameError, toGameError } from "./lib/errors";
-
-async function getState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
-	const session = await ctx.db.get(sessionId);
-	if (!session || session.gameType !== "signal-words") {
-		throw gameError("gameNotFound");
-	}
-	const state = await ctx.db
-		.query("signalWordsStates")
-		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-		.unique();
-	if (!state) {
-		throw gameError("gameNotFound");
-	}
-	return { session, state };
-}
-
-async function requireParticipant(
-	ctx: MutationCtx | QueryCtx,
-	sessionId: Id<"gameSessions">,
-	participantId: Id<"sessionParticipants">,
-) {
-	const participant = await ctx.db.get(participantId);
-	if (
-		!participant ||
-		participant.sessionId !== sessionId ||
-		participant.kickedAt
-	) {
-		throw gameError("notInGame");
-	}
-	return participant;
-}
+import { gameError, rules } from "./lib/errors";
+import {
+	findGameState,
+	finishSession,
+	listParticipants,
+	loadGame,
+	loadSession,
+	reopenSession,
+	requireHostByParticipantId,
+	requireParticipant,
+	startSession,
+} from "./lib/gameSession";
+import {
+	createdSessionValidator,
+	createHostedSession,
+	hostedSessionArgs,
+} from "./lib/hostedSession";
 
 function toGameState(state: Doc<"signalWordsStates">): SignalGameState {
 	return {
@@ -71,7 +55,7 @@ async function patchGameState(
 	next: SignalGameState,
 	now: number,
 ) {
-	await ctx.db.patch(state._id, {
+	const patch = {
 		phase: next.phase,
 		revealed: next.revealed,
 		currentTeam: next.currentTeam,
@@ -81,23 +65,19 @@ async function patchGameState(
 		winnerTeam: next.winnerTeam,
 		trapHitBy: next.trapHitBy,
 		updatedAt: now,
-	});
-	if (next.phase === "finished") {
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", state.sessionId))
-			.collect();
-		const { winnerTeam } = next;
-		const winners = winnerTeam
-			? participants
-					.filter((participant) => signalSeatTeam(participant.seat) === winnerTeam)
-					.map((participant) => participant._id)
-			: [];
-		await completeSession(ctx, state.sessionId, {
-			endedAt: now,
-			winnerParticipantIds: winners,
-		});
+	};
+	if (next.phase !== "finished") {
+		await ctx.db.patch(state._id, patch);
+		return;
 	}
+	const participants = await listParticipants(ctx, state.sessionId);
+	const { winnerTeam } = next;
+	const winners = winnerTeam
+		? participants
+				.filter((participant) => signalSeatTeam(participant.seat) === winnerTeam)
+				.map((participant) => participant._id)
+		: [];
+	await finishSession(ctx, state, patch, { now, winners });
 }
 
 /** A new board, with everything from the previous game cleared. */
@@ -121,35 +101,49 @@ function freshBoardPatch(now: number) {
 	};
 }
 
+async function insertState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
+	const now = Date.now();
+	return await ctx.db.insert("signalWordsStates", {
+		sessionId,
+		phase: "lobby",
+		words: [],
+		assignments: [],
+		revealed: [],
+		startingTeam: "red",
+		currentTeam: "red",
+		createdAt: now,
+		updatedAt: now,
+	});
+}
+
+export const create = mutation({
+	args: hostedSessionArgs,
+	returns: createdSessionValidator,
+	handler: async (ctx, args) => {
+		const hosted = await createHostedSession(ctx, {
+			...args,
+			gameType: "signal-words",
+			joinMode: "room",
+			authPolicy: "guestAllowed",
+		});
+		await insertState(ctx, hosted.sessionId);
+		return hosted;
+	},
+});
+
+/** @deprecated Use signalWords.create. */
 export const createState = mutation({
 	args: {
 		sessionId: v.id("gameSessions"),
 		hostParticipantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session || session.gameType !== "signal-words") {
-			throw gameError("sessionNotFound");
-		}
-		const existing = await ctx.db
-			.query("signalWordsStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		await loadSession(ctx, "signal-words", args.sessionId, "sessionNotFound");
+		const existing = await findGameState(ctx, "signal-words", args.sessionId);
 		if (existing) {
 			return existing._id;
 		}
-		const now = Date.now();
-		return await ctx.db.insert("signalWordsStates", {
-			sessionId: args.sessionId,
-			phase: "lobby",
-			words: [],
-			assignments: [],
-			revealed: [],
-			startingTeam: "red",
-			currentTeam: "red",
-			createdAt: now,
-			updatedAt: now,
-		});
+		return await insertState(ctx, args.sessionId);
 	},
 });
 
@@ -161,17 +155,14 @@ export const joinTeam = mutation({
 		clueGiver: v.boolean(),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getState(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "signal-words", args.sessionId);
 		if (state.phase !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		const seat = signalSeat(args.team, args.clueGiver);
 		if (args.clueGiver) {
-			const participants = await ctx.db
-				.query("sessionParticipants")
-				.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-				.collect();
+			const participants = await listParticipants(ctx, args.sessionId);
 			const taken = participants.find(
 				(participant) =>
 					participant.seat === seat && participant._id !== args.participantId,
@@ -190,17 +181,12 @@ export const start = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await getState(ctx, args.sessionId);
+		const { session, state } = await loadGame(ctx, "signal-words", args.sessionId);
 		if (state.phase !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
-		if (session.hostParticipantId !== args.participantId) {
-			throw gameError("hostOnlyStart");
-		}
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
+		requireHostByParticipantId(session, args.participantId, "hostOnlyStart");
+		const participants = await listParticipants(ctx, args.sessionId);
 		for (const team of ["red", "blue"] as const) {
 			const clueGiver = participants.some(
 				(participant) => participant.seat === signalSeat(team, true),
@@ -214,11 +200,7 @@ export const start = mutation({
 		}
 		const now = Date.now();
 		await ctx.db.patch(state._id, freshBoardPatch(now));
-		await ctx.db.patch(args.sessionId, {
-			status: "active",
-			startedAt: session.startedAt ?? now,
-			endedAt: undefined,
-		});
+		await startSession(ctx, session, now);
 	},
 });
 
@@ -230,7 +212,7 @@ export const submitClue = mutation({
 		count: v.number(),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getState(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "signal-words", args.sessionId);
 		if (state.phase !== "clue") {
 			throw gameError("notExpectingClue");
 		}
@@ -242,12 +224,9 @@ export const submitClue = mutation({
 		if (participant.seat !== signalSeat(state.currentTeam, true)) {
 			throw gameError("clueGiverOnly");
 		}
-		let next: SignalGameState;
-		try {
-			next = applySignalClue(toGameState(state), args.clue, args.count);
-		} catch (caught) {
-			throw toGameError(caught);
-		}
+		const next = rules(() =>
+			applySignalClue(toGameState(state), args.clue, args.count),
+		);
 		await patchGameState(ctx, state, next, Date.now());
 	},
 });
@@ -259,7 +238,7 @@ export const submitGuess = mutation({
 		cardIndex: v.number(),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getState(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "signal-words", args.sessionId);
 		if (state.phase !== "guess") {
 			throw gameError("notExpectingGuess");
 		}
@@ -271,12 +250,9 @@ export const submitGuess = mutation({
 		if (participant.seat !== state.currentTeam) {
 			throw gameError("guessersOnlyPick");
 		}
-		let outcome: ReturnType<typeof applySignalGuess>;
-		try {
-			outcome = applySignalGuess(toGameState(state), args.cardIndex);
-		} catch (caught) {
-			throw toGameError(caught);
-		}
+		const outcome = rules(() =>
+			applySignalGuess(toGameState(state), args.cardIndex),
+		);
 		await patchGameState(ctx, state, outcome.state, Date.now());
 	},
 });
@@ -287,7 +263,7 @@ export const pass = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getState(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "signal-words", args.sessionId);
 		if (state.phase !== "guess") {
 			throw gameError("passOnlyDuringGuess");
 		}
@@ -302,7 +278,7 @@ export const pass = mutation({
 		await patchGameState(
 			ctx,
 			state,
-			applySignalPass(toGameState(state)),
+			rules(() => applySignalPass(toGameState(state))),
 			Date.now(),
 		);
 	},
@@ -314,13 +290,11 @@ export const rematch = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await getState(ctx, args.sessionId);
+		const { session, state } = await loadGame(ctx, "signal-words", args.sessionId);
 		if (state.phase !== "finished") {
 			throw gameError("currentGameNotFinished");
 		}
-		if (session.hostParticipantId !== args.participantId) {
-			throw gameError("hostOnlyRematch");
-		}
+		requireHostByParticipantId(session, args.participantId, "hostOnlyRematch");
 		const now = Date.now();
 		await ctx.db.patch(state._id, freshBoardPatch(now));
 		await reopenSession(ctx, args.sessionId);
@@ -338,14 +312,8 @@ export const getBundle = query({
 		if (!session) {
 			return null;
 		}
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const state = await ctx.db
-			.query("signalWordsStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const participants = await listParticipants(ctx, args.sessionId);
+		const state = await findGameState(ctx, "signal-words", args.sessionId);
 		if (!state) {
 			return { session, participants, state: null };
 		}
@@ -378,10 +346,7 @@ export const getKey = query({
 		if (!isSignalClueGiver(participant.seat)) {
 			return null;
 		}
-		const state = await ctx.db
-			.query("signalWordsStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const state = await findGameState(ctx, "signal-words", args.sessionId);
 		return state ? state.assignments : null;
 	},
 });

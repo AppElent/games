@@ -5,22 +5,26 @@ import {
 	advance,
 	alternateRandom,
 	arrange,
+	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
 	fixRandom,
 	getDoc,
 	HOST_USER,
+	HOSTED,
 	hostSession,
 	joinWithCode,
 	joinWithToken,
 	otherGameSession,
 	type ParticipantId,
+	sessionCount,
 	type SessionId,
 	setup,
 	shareTokenOf,
-	T0,
+	signedInHost,
 	type T,
+	T0,
 	useFixedClock,
 } from "./test.helpers";
 
@@ -806,5 +810,35 @@ describe("getBundle", () => {
 		const result = await t.query(api.backgammon.getBundle, { sessionId });
 		expect(result?.state).toBeNull();
 		expect(result?.moves).toEqual([]);
+	});
+});
+
+describe("create", () => {
+	it("stores what sessions.create and createState store together", async () => {
+		const t = setup();
+		const twoStep = await newMatch(t);
+		const created = await signedInHost(t).mutation(api.backgammon.create, HOSTED);
+		expect(await createdRows(t, created.sessionId, "backgammonGameStates")).toEqual(
+			await createdRows(t, twoStep.sessionId, "backgammonGameStates"),
+		);
+	});
+
+	it("returns a link a guest can follow, and no room code", async () => {
+		const t = setup();
+		const created = await signedInHost(t).mutation(api.backgammon.create, HOSTED);
+		expect(created.joinCode).toBeUndefined();
+		expect(created.shareToken).toBe(await shareTokenOf(t, created.sessionId));
+		const joined = await joinWithToken(
+			t,
+			created.shareToken as string,
+			"guest_two",
+		);
+		expect(joined.sessionId).toBe(created.sessionId);
+	});
+
+	it("needs an account to host, and leaves nothing behind without one", async () => {
+		const t = setup();
+		await expectCode(t.mutation(api.backgammon.create, HOSTED), "signInToHost");
+		expect(await sessionCount(t)).toBe(0);
 	});
 });

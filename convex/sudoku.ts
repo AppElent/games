@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { type ObjectType, v } from "convex/values";
 import {
 	BINARY_ACCEPTED_SIZES,
 	findBinaryConflicts,
@@ -19,10 +19,9 @@ import {
 	type KillerCage,
 	validateKillerCages,
 } from "@arcadeclub/core/sudoku-killer";
-import { mutation, query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { completeSession } from "./lib/completion";
+import { mutation, query } from "./_generated/server";
 import {
 	sudokuCageValidator,
 	sudokuDifficultyValidator,
@@ -30,6 +29,18 @@ import {
 	sudokuVariantValidator,
 } from "./schema";
 import { gameError } from "./lib/errors";
+import {
+	findGameState,
+	finishSession,
+	loadGame,
+	loadSession,
+	startSession,
+} from "./lib/gameSession";
+import {
+	createdSessionValidator,
+	createHostedSession,
+	hostedSessionArgs,
+} from "./lib/hostedSession";
 
 /** Cell count and digit alphabet for a state's variant. */
 function gridSpec(variant: SudokuVariant, size?: number) {
@@ -91,20 +102,6 @@ function isSolved(state: {
 	}
 }
 
-async function getStateForSession(
-	ctx: MutationCtx,
-	sessionId: Id<"gameSessions">,
-) {
-	const state = await ctx.db
-		.query("sudokuStates")
-		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-		.unique();
-	if (!state) {
-		throw gameError("gameNotFound");
-	}
-	return state;
-}
-
 function foldElapsed(state: {
 	elapsedSeconds: number;
 	lastResumedAt?: number;
@@ -118,91 +115,118 @@ function foldElapsed(state: {
 	);
 }
 
-export const createState = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		source: sudokuSourceValidator,
-		difficulty: v.optional(sudokuDifficultyValidator),
-		variant: v.optional(sudokuVariantValidator),
-		cages: v.optional(v.array(sudokuCageValidator)),
-		size: v.optional(v.number()),
-		givens: v.string(),
-		digits: v.optional(v.string()),
-		solution: v.optional(v.string()),
-		cornerNotes: v.optional(v.array(v.number())),
-		centerNotes: v.optional(v.array(v.number())),
-		autoCleanup: v.optional(v.boolean()),
-	},
-	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session || session.gameType !== "sudoku") {
-			throw gameError("sessionNotFound");
+const puzzleArgs = {
+	source: sudokuSourceValidator,
+	difficulty: v.optional(sudokuDifficultyValidator),
+	variant: v.optional(sudokuVariantValidator),
+	cages: v.optional(v.array(sudokuCageValidator)),
+	size: v.optional(v.number()),
+	givens: v.string(),
+	digits: v.optional(v.string()),
+	solution: v.optional(v.string()),
+	cornerNotes: v.optional(v.array(v.number())),
+	centerNotes: v.optional(v.array(v.number())),
+	autoCleanup: v.optional(v.boolean()),
+};
+
+/** A puzzle has no lobby, so storing it starts its session. */
+async function insertPuzzle(
+	ctx: MutationCtx,
+	session: Doc<"gameSessions">,
+	puzzle: ObjectType<typeof puzzleArgs>,
+) {
+	const variant = puzzle.variant ?? "classic";
+	const spec = gridSpec(variant, puzzle.size);
+	assertGridString(puzzle.givens, spec);
+	const digits = puzzle.digits ?? "0".repeat(spec.cells);
+	assertGridString(digits, spec);
+	if (puzzle.solution) {
+		assertGridString(puzzle.solution, spec);
+	}
+	const merged = mergedGrid(puzzle.givens, digits);
+	const conflicts =
+		variant === "binary"
+			? findBinaryConflicts(merged, puzzle.size ?? 0)
+			: findConflicts(merged);
+	if (conflicts.size > 0) {
+		throw gameError("puzzleConflictingDigits");
+	}
+	if (variant === "killer") {
+		if (!puzzle.cages || !validateKillerCages(puzzle.cages)) {
+			throw gameError("invalidKillerCages");
 		}
-		const existing = await ctx.db
-			.query("sudokuStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		if (
+			puzzle.solution &&
+			findKillerConflicts(digitsFromString(puzzle.solution), puzzle.cages)
+				.size > 0
+		) {
+			throw gameError("cagesUnsatisfied");
+		}
+	}
+	const cornerNotes = puzzle.cornerNotes ?? new Array(spec.cells).fill(0);
+	const centerNotes = puzzle.centerNotes ?? new Array(spec.cells).fill(0);
+	assertMaskArray(cornerNotes, spec.cells);
+	assertMaskArray(centerNotes, spec.cells);
+
+	const now = Date.now();
+	const stateId = await ctx.db.insert("sudokuStates", {
+		sessionId: session._id,
+		difficulty: puzzle.difficulty,
+		source: puzzle.source,
+		status: "active",
+		variant: puzzle.variant,
+		cages: variant === "killer" ? puzzle.cages : undefined,
+		size: variant === "binary" ? puzzle.size : undefined,
+		givens: puzzle.givens,
+		digits,
+		solution: puzzle.solution,
+		cornerNotes,
+		centerNotes,
+		colors: new Array(spec.cells).fill(0),
+		autoCleanup: puzzle.autoCleanup ?? false,
+		elapsedSeconds: 0,
+		lastResumedAt: now,
+		createdAt: now,
+		updatedAt: now,
+	});
+	await startSession(ctx, session, now);
+	return stateId;
+}
+
+export const create = mutation({
+	args: { ...hostedSessionArgs, ...puzzleArgs },
+	returns: createdSessionValidator,
+	handler: async (ctx, args) => {
+		const hosted = await createHostedSession(ctx, {
+			...args,
+			gameType: "sudoku",
+			joinMode: "solo",
+			authPolicy: "guestAllowed",
+		});
+		await insertPuzzle(
+			ctx,
+			await loadSession(ctx, "sudoku", hosted.sessionId),
+			args,
+		);
+		return hosted;
+	},
+});
+
+/** @deprecated Use sudoku.create. */
+export const createState = mutation({
+	args: { sessionId: v.id("gameSessions"), ...puzzleArgs },
+	handler: async (ctx, args) => {
+		const session = await loadSession(
+			ctx,
+			"sudoku",
+			args.sessionId,
+			"sessionNotFound",
+		);
+		const existing = await findGameState(ctx, "sudoku", args.sessionId);
 		if (existing) {
 			throw gameError("gameAlreadyExists");
 		}
-		const variant = args.variant ?? "classic";
-		const spec = gridSpec(variant, args.size);
-		assertGridString(args.givens, spec);
-		const digits = args.digits ?? "0".repeat(spec.cells);
-		assertGridString(digits, spec);
-		if (args.solution) {
-			assertGridString(args.solution, spec);
-		}
-		const merged = mergedGrid(args.givens, digits);
-		const conflicts =
-			variant === "binary"
-				? findBinaryConflicts(merged, args.size ?? 0)
-				: findConflicts(merged);
-		if (conflicts.size > 0) {
-			throw gameError("puzzleConflictingDigits");
-		}
-		if (variant === "killer") {
-			if (!args.cages || !validateKillerCages(args.cages)) {
-				throw gameError("invalidKillerCages");
-			}
-			if (
-				args.solution &&
-				findKillerConflicts(digitsFromString(args.solution), args.cages).size > 0
-			) {
-				throw gameError("cagesUnsatisfied");
-			}
-		}
-		const cornerNotes = args.cornerNotes ?? new Array(spec.cells).fill(0);
-		const centerNotes = args.centerNotes ?? new Array(spec.cells).fill(0);
-		assertMaskArray(cornerNotes, spec.cells);
-		assertMaskArray(centerNotes, spec.cells);
-
-		const now = Date.now();
-		const stateId = await ctx.db.insert("sudokuStates", {
-			sessionId: args.sessionId,
-			difficulty: args.difficulty,
-			source: args.source,
-			status: "active",
-			variant: args.variant,
-			cages: variant === "killer" ? args.cages : undefined,
-			size: variant === "binary" ? args.size : undefined,
-			givens: args.givens,
-			digits,
-			solution: args.solution,
-			cornerNotes,
-			centerNotes,
-			colors: new Array(spec.cells).fill(0),
-			autoCleanup: args.autoCleanup ?? false,
-			elapsedSeconds: 0,
-			lastResumedAt: now,
-			createdAt: now,
-			updatedAt: now,
-		});
-		await ctx.db.patch(args.sessionId, {
-			status: "active",
-			startedAt: now,
-		});
-		return { stateId };
+		return { stateId: await insertPuzzle(ctx, session, args) };
 	},
 });
 
@@ -213,10 +237,7 @@ export const getBundle = query({
 		if (!session) {
 			return null;
 		}
-		const state = await ctx.db
-			.query("sudokuStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const state = await findGameState(ctx, "sudoku", args.sessionId);
 		if (!state) {
 			return null;
 		}
@@ -237,7 +258,7 @@ export const saveProgress = mutation({
 		autoCleanup: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
-		const state = await getStateForSession(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "sudoku", args.sessionId);
 		if (state.status === "completed") {
 			return;
 		}
@@ -265,7 +286,7 @@ export const setPaused = mutation({
 		paused: v.boolean(),
 	},
 	handler: async (ctx, args) => {
-		const state = await getStateForSession(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "sudoku", args.sessionId);
 		if (state.status === "completed") {
 			return;
 		}
@@ -293,7 +314,7 @@ export const complete = mutation({
 		elapsedSeconds: v.number(),
 	},
 	handler: async (ctx, args) => {
-		const state = await getStateForSession(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "sudoku", args.sessionId);
 		if (state.status === "completed") {
 			return { completed: true };
 		}
@@ -305,14 +326,18 @@ export const complete = mutation({
 			throw gameError("gridNotSolved");
 		}
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			status: "completed",
-			digits: args.digits,
-			elapsedSeconds: args.elapsedSeconds,
-			lastResumedAt: undefined,
-			updatedAt: now,
-		});
-		await completeSession(ctx, args.sessionId, { endedAt: now });
+		await finishSession(
+			ctx,
+			state,
+			{
+				status: "completed",
+				digits: args.digits,
+				elapsedSeconds: args.elapsedSeconds,
+				lastResumedAt: undefined,
+				updatedAt: now,
+			},
+			{ now, winners: [] },
+		);
 		return { completed: true };
 	},
 });
@@ -323,10 +348,7 @@ export const rename = mutation({
 		title: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session || session.gameType !== "sudoku") {
-			throw gameError("sessionNotFound");
-		}
+		await loadSession(ctx, "sudoku", args.sessionId, "sessionNotFound");
 		const title = args.title.trim().slice(0, 80);
 		if (!title) {
 			throw gameError("titleEmpty");

@@ -3,14 +3,17 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
+	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
+	getDoc,
 	otherGameSession,
+	sessionCount,
 	type SessionId,
 	setup,
-	T0,
 	type T,
+	T0,
 	useFixedClock,
 } from "./test.helpers";
 
@@ -618,5 +621,49 @@ describe("rename", () => {
 				"sessionNotFound",
 			);
 		}
+	});
+});
+
+describe("create", () => {
+	const NAMES = { title: "Puzzle", displayName: "Solver", guestId: "guest_solver" };
+
+	it("stores what sessions.create and createState store together", async () => {
+		const t = setup();
+		const twoStep = await newPuzzle(t);
+		const { sessionId: _, ...puzzle } = createArgs(twoStep.sessionId);
+		const created = await t.mutation(api.sudoku.create, {
+			...NAMES,
+			...puzzle,
+		});
+		expect(await createdRows(t, created.sessionId, "sudokuStates")).toEqual(
+			await createdRows(t, twoStep.sessionId, "sudokuStates"),
+		);
+	});
+
+	it("lets a guest solve alone, already started, with no way in for others", async () => {
+		const t = setup();
+		const { sessionId: _, ...puzzle } = createArgs(await deletedSessionId(t));
+		const created = await t.mutation(api.sudoku.create, {
+			...NAMES,
+			...puzzle,
+		});
+		expect(created.joinCode).toBeUndefined();
+		expect(created.shareToken).toBeUndefined();
+		const session = await getDoc(t, created.sessionId);
+		expect(session?.status).toBe("active");
+		expect(session?.startedAt).toBe(T0);
+		expect((await bundle(t, created.sessionId))?.state?.givens).toBe(GIVENS);
+	});
+
+	it("leaves no session behind when the puzzle is rejected", async () => {
+		const t = setup();
+		const { sessionId: _, ...puzzle } = createArgs(await deletedSessionId(t), {
+			variant: "killer",
+		});
+		await expectCode(
+			t.mutation(api.sudoku.create, { ...NAMES, ...puzzle }),
+			"invalidKillerCages",
+		);
+		expect(await sessionCount(t)).toBe(0);
 	});
 });

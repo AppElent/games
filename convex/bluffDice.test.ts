@@ -4,20 +4,24 @@ import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
 	arrange,
+	createdRows,
 	deletedParticipantId,
 	deletedSessionId,
 	expectCode,
 	fields,
 	fixRandom,
+	HOSTED,
 	hostSession,
 	joinWithCode,
 	otherGameSession,
 	outsider,
 	type ParticipantId,
+	sessionCount,
 	type SessionId,
 	setup,
-	T0,
+	signedInHost,
 	type T,
+	T0,
 	useFixedClock,
 } from "./test.helpers";
 
@@ -659,4 +663,33 @@ it("lets a true claim on the last dice win the game for the claimant", async () 
 		{ participantId: players[0], values: [1] },
 		{ participantId: players[1], values: [2] },
 	]);
+});
+
+describe("create", () => {
+	it("stores what sessions.create and createState store together", async () => {
+		const t = setup();
+		const twoStep = await newRoom(t);
+		const created = await signedInHost(t).mutation(api.bluffDice.create, HOSTED);
+		expect(await createdRows(t, created.sessionId, "bluffDiceStates")).toEqual(
+			await createdRows(t, twoStep.sessionId, "bluffDiceStates"),
+		);
+	});
+
+	it("returns a code a guest can type, and no link", async () => {
+		const t = setup();
+		const created = await signedInHost(t).mutation(api.bluffDice.create, HOSTED);
+		expect(created.shareToken).toBeUndefined();
+		const joined = await joinWithCode(
+			t,
+			created.joinCode as string,
+			"guest_two",
+		);
+		expect(joined.sessionId).toBe(created.sessionId);
+	});
+
+	it("needs an account to host, and leaves nothing behind without one", async () => {
+		const t = setup();
+		await expectCode(t.mutation(api.bluffDice.create, HOSTED), "signInToHost");
+		expect(await sessionCount(t)).toBe(0);
+	});
 });
