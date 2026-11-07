@@ -15,6 +15,8 @@ export type OnlineStatus = {
 	/** Everyone else still in the game, by display name. */
 	others: string[];
 	joinCode?: string;
+	/** Which game the session is, where the game type alone doesn't say. */
+	title?: string;
 };
 
 /**
@@ -35,6 +37,7 @@ export function onlineStatus(
 			.filter((p) => p._id !== participantId && !p.kickedAt)
 			.map((p) => p.displayName),
 		joinCode: session.joinCode,
+		title: session.title,
 	};
 }
 

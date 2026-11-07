@@ -1,9 +1,15 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
-import {
-	type CardGameDefinition,
-	SEAT_SILENT_AFTER_MS,
-} from "@arcadeclub/core/cards/engine";
+import type { CardGameDefinition } from "@arcadeclub/core/cards/engine";
 import type { CardEvent } from "@arcadeclub/core/cards/events";
+import {
+	cardTilt,
+	latestEventText,
+	nextFreshCards,
+	opponentOrder,
+	seatIsSilent,
+	seatName,
+	startFreshCards,
+} from "@arcadeclub/core/cards/table-view";
 import { Bot, MoreHorizontal, ScrollText } from "lucide-react";
 import {
 	type CSSProperties,
@@ -17,10 +23,10 @@ import {
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { CardCrumbs, Sheet } from "./Chrome";
-import { cardTilt, describeEvent, seatName } from "./format";
 import { CardSprite, PlayingCard, useCardName } from "./PlayingCard";
 import { RulesSheet } from "./RulesSheet";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
+import { useCardWords } from "./useCardWords";
 
 const FAN_SLOTS = [0, 1, 2, 3, 4];
 
@@ -39,7 +45,7 @@ function initialOf(name: string) {
 	return [...name.trim()][0]?.toUpperCase() ?? "?";
 }
 
-/** The other seats, in the order play reaches them, so the table reads clockwise. */
+/** The opponents around the top of the table. */
 export function SeatRow({
 	table,
 	handCounts,
@@ -68,15 +74,8 @@ export function SeatRow({
 		return () => window.clearInterval(timer);
 	}, []);
 
-	const seatCount = table.seats.length;
 	const you = table.you;
-	const order =
-		you === null
-			? table.seats.map((_, index) => index)
-			: Array.from(
-					{ length: seatCount - 1 },
-					(_, step) => (you + step + 1) % seatCount,
-				);
+	const order = opponentOrder(table);
 
 	return (
 		<>
@@ -89,11 +88,7 @@ export function SeatRow({
 					const entry = table.seats[seat];
 					const name = seatName(cards, table, seat);
 					const human = entry.botIndex === null;
-					const silent =
-						human &&
-						!entry.autopilot &&
-						entry.lastSeen !== null &&
-						now - entry.lastSeen > SEAT_SILENT_AFTER_MS;
+					const silent = seatIsSilent(entry, now);
 					const canManage =
 						you !== null &&
 						human &&
@@ -338,51 +333,23 @@ const MANY_CARDS = 12;
 /** Room left beside a card scrolled into view, clear of the hand's edge fade. */
 const FRESH_CARD_MARGIN = 24;
 
-/**
- * The cards that just arrived in this hand, so a draw can be found in a sorted
- * fan. They stay marked until the player's next turn begins. A new deal marks
- * nothing: a rematch restarts the event log, so its newest event number drops.
- */
+/** The cards that just arrived in this hand; see `nextFreshCards`. */
 export function useFreshCards(
 	hand: readonly CardId[],
 	mine: boolean,
 	events: readonly CardEvent[],
 ) {
-	const previous = useRef<readonly CardId[] | null>(null);
-	const wasMine = useRef(mine);
-	const lastDeal = useRef<number | null>(null);
-	const lastSeq = useRef<number | null>(null);
+	const memory = useRef(startFreshCards(mine));
 	const [fresh, setFresh] = useState(NO_CARDS);
 
 	useEffect(() => {
-		const before = previous.current;
-		const turnBegan = mine && !wasMine.current;
-		const dealSeq = [...events]
-			.reverse()
-			.find((event) => event.type === "deal")?.seq;
-		const newestSeq = events.at(-1)?.seq ?? null;
-		const dealt =
-			(dealSeq !== undefined && dealSeq !== lastDeal.current) ||
-			(newestSeq !== null &&
-				lastSeq.current !== null &&
-				newestSeq < lastSeq.current);
-		previous.current = hand;
-		wasMine.current = mine;
-		lastDeal.current = dealSeq ?? lastDeal.current;
-		lastSeq.current = newestSeq;
-		const added =
-			before && !dealt ? hand.filter((card) => !before.includes(card)) : [];
-		setFresh((current) => {
-			const kept =
-				turnBegan || dealt
-					? []
-					: [...current].filter((card) => hand.includes(card));
-			const next = [...kept, ...added];
-			return next.length === current.size &&
-				next.every((card) => current.has(card))
+		memory.current = nextFreshCards(memory.current, hand, mine, events);
+		const next = memory.current.fresh;
+		setFresh((current) =>
+			next.length === current.size && next.every((card) => current.has(card))
 				? current
-				: new Set(next);
-		});
+				: new Set(next),
+		);
 	}, [hand, mine, events]);
 
 	return fresh;
@@ -490,13 +457,6 @@ export function Hand({
 	);
 }
 
-/** Means little alone: "Anna misses a turn" doesn't say who played what. */
-const FOLLOWS_A_PLAY: ReadonlySet<CardEvent["type"]> = new Set([
-	"skip",
-	"reverse",
-	"again",
-]);
-
 /** The latest thing that happened. A polite live region narrates play for screen readers. */
 export function EventTicker({
 	events,
@@ -505,25 +465,10 @@ export function EventTicker({
 	events: readonly CardEvent[];
 	table: CardTableBundle;
 }) {
-	const { locale } = useI18n();
-	const cards = useMessages().games.cards;
-	const cardName = useCardName();
-	const latest = events.at(-1);
-	const describe = (event: CardEvent) =>
-		describeEvent(event, cards, locale, table, cardName);
-	const before =
-		latest && FOLLOWS_A_PLAY.has(latest.type)
-			? events.slice(-3, -1).find((event) => event.type === "play")
-			: null;
-	const text = latest
-		? [before, latest]
-				.filter((event) => event != null)
-				.map(describe)
-				.join(" ")
-		: "";
+	const words = useCardWords();
 	return (
 		<p className="ticker" aria-live="polite">
-			{text}
+			{latestEventText(events, words, table)}
 		</p>
 	);
 }

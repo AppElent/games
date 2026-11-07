@@ -101,6 +101,46 @@ export const backgammonColors = {
 	pip: "#1c1207",
 } as const;
 
+/**
+ * The card table: felt, gold and ivory, transcribed from the web table. A
+ * table is a physical object, so it looks the same in light and dark. The cards
+ * themselves are drawn from `@arcadeclub/core/cards/art`.
+ */
+export const cardColors = {
+	gold: "#e6c06a",
+	goldSoft: "rgba(230, 192, 106, 0.32)",
+	goldTop: "#f2d486",
+	goldBottom: "#d9a94a",
+	onGold: "#231704",
+	ivory: "#f8f2e2",
+	ivoryMuted: "rgba(248, 242, 226, 0.72)",
+	chip: "rgba(0, 0, 0, 0.28)",
+	line: "rgba(248, 242, 226, 0.16)",
+	panel: "#14151d",
+	scrim: "rgba(4, 4, 8, 0.62)",
+	dim: "rgba(8, 8, 14, 0.42)",
+	alert: "#ffc2a8",
+	alertFill: "rgba(200, 60, 30, 0.34)",
+	suitRed: "#ef5a65",
+	cardBack: "#1d2f6b",
+	shadow: "#000000",
+	felts: {
+		oxblood: ["#7f2230", "#551421", "#260810"],
+		bottle: ["#1e7053", "#0f4c38", "#05221a"],
+		midnight: ["#27407d", "#172a58", "#0a1229"],
+	},
+	seatTones: [
+		["#3f6fd8", "#1d2f6b"],
+		["#d0713a", "#7a2f12"],
+		["#3aa17e", "#0f4c38"],
+		["#a858c9", "#512368"],
+		["#c9a233", "#6e5310"],
+		["#d0506f", "#6c1730"],
+		["#3a9fc4", "#104d66"],
+		["#8d8fa3", "#3b3c4e"],
+	],
+} as const;
+
 export const spacing = {
 	xxs: 2,
 	xs: 4,
@@ -161,6 +201,7 @@ export const type = {
 	keypad: { fontSize: 24, fontWeight: "600" },
 	boardLabel: { fontSize: 9, fontWeight: "700" },
 	checkerCount: { fontSize: 11, fontWeight: "800" },
+	seatInitial: { fontSize: 18, fontWeight: "800" },
 } as const;
 
 function dynamic(dark: string, light: string): ColorValue {

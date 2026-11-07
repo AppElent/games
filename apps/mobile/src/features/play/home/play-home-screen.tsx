@@ -1,5 +1,5 @@
 /**
- * The Play tab: the three games the app carries, then anything this phone can
+ * The Play tab: the games the app carries, then anything this phone can
  * pick back up (saved solo games and online seats).
  */
 import { type Href, useFocusEffect, useRouter } from "expo-router";
@@ -30,7 +30,7 @@ import {
 import { type OnlineStatus, useOnlineStatuses } from "./online-status";
 
 type GameEntry = {
-	key: "sudoku" | "backgammon" | "hitster";
+	key: "sudoku" | "backgammon" | "hitster" | "card-games";
 	href: Href;
 	icon: Parameters<typeof Icon>[0]["ios"];
 	androidIcon: Parameters<typeof Icon>[0]["android"];
@@ -62,6 +62,14 @@ const GAMES: readonly GameEntry[] = [
 		androidIcon: "queue_music",
 		tint: "pink",
 		tintDim: "pinkDim",
+	},
+	{
+		key: "card-games",
+		href: "/cards",
+		icon: "suit.spade.fill",
+		androidIcon: "playing_cards",
+		tint: "green",
+		tintDim: "greenDim",
 	},
 ];
 
@@ -195,8 +203,12 @@ export function PlayHomeScreen() {
 					</AppText>
 					{visible.map((item) => {
 						const game = GAMES.find((entry) => entry.key === item.gameType);
-						const title = t.catalog[item.gameType].title;
-						const text = detail(item, statuses[item.id] ?? undefined);
+						const status = statuses[item.id] ?? undefined;
+						const title =
+							item.gameType === "card-games" && status?.title
+								? status.title
+								: t.catalog[item.gameType].title;
+						const text = detail(item, status);
 						return (
 							<Card
 								key={item.id}

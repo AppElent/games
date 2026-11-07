@@ -100,7 +100,7 @@ export const cards = {
 		callLast: "Laatste kaart!",
 		callLastArmed: "Laatste kaart gemeld",
 		callLastHint: "Meld het voor je speelt, anders riskeer je strafkaarten.",
-		catch: "{name} betrapt!",
+		catch: "Betrap {name}!",
 		chooseSuit: "Kies de volgende kleur",
 		chosenSuit: "Gevraagd: {suit}",
 		openTable: "Alles mag",

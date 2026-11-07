@@ -16,7 +16,9 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
 - Online games call the existing Convex functions unchanged through
   `src/convex/api.ts`. A device's seat in an online session is stored by
   `src/features/sessions/session-seats.ts`. Every game screen resolves its
-  `participantId` from there, never from route params.
+  `participantId` from there, never from route params. A card table also needs
+  the seat's `seatSecret`, which `joinByCode` and `createTable` hand back and the
+  same store keeps: a participant id alone is public.
 - Local saves (Sudoku puzzles, the one pass-and-play backgammon match) use
   `expo-sqlite/kv-store`. Every store validates parsed data and degrades to "no save"
   instead of throwing.

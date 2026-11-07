@@ -19,6 +19,8 @@ export type SessionSeat = {
 	participantId: string;
 	gameType: GameType;
 	joinedAt: number;
+	/** Proves a card-game seat is this phone's: participant ids are public. */
+	seatSecret?: string;
 };
 
 function readAll(): SessionSeat[] {

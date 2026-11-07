@@ -13,6 +13,7 @@ export {
 export type { Tokens } from "./tokens";
 export {
 	backgammonColors,
+	cardColors,
 	chrome,
 	darkColors,
 	lightColors,

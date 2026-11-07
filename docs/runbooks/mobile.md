@@ -140,6 +140,7 @@ Claim a simulator/emulator through `~/.agents/bin/sim`, then drive it with
 Useful entry points:
 
 - `arcadeclub-dev://join?code=ABCDEF` / `arcadeclub-dev://join?token=…`: join flows.
+- `arcadeclub-dev://cards` / `arcadeclub-dev://cards/pesten`: card hub and game setup.
 - `arcadeclub-dev://backgammon/local`, `arcadeclub-dev://hitster`.
 - `settings appearance dark|light` and `settings text-size …` for theme and large
   text checks.

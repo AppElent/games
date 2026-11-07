@@ -1,25 +1,24 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
-import { parseCard } from "@arcadeclub/core/cards/deck";
 import {
 	type CardGameDefinition,
 	type CardGameId,
 	resolvedRules,
 } from "@arcadeclub/core/cards/engine";
-import {
-	buildMeld,
-	fitOnMeld,
-	type Meld,
-	meldPoints,
-	runFaceAt,
-	swapJoker,
-} from "@arcadeclub/core/cards/melds";
+import type { Meld } from "@arcadeclub/core/cards/melds";
 import type { RummyView } from "@arcadeclub/core/cards/rummy";
+import {
+	meldCardNames,
+	rummyHint,
+	rummyMeldAction,
+	rummyTurn,
+	seatName,
+	sortCards,
+} from "@arcadeclub/core/cards/table-view";
 import { ArrowDownUp, ListOrdered } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
 import { EndOverlay } from "./EndOverlay";
-import { seatName, sortCards } from "./format";
 import { PlayingCard, useCardName } from "./PlayingCard";
 import {
 	AutopilotBack,
@@ -31,6 +30,7 @@ import {
 	useFreshCards,
 } from "./Table";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
+import { useCardWords } from "./useCardWords";
 import { useFlights } from "./useFlights";
 
 function ScoreBoard({
@@ -89,6 +89,7 @@ export function RummyTable({
 	const { locale } = useI18n();
 	const { games, serverErrors } = useMessages();
 	const cards = games.cards;
+	const words = useCardWords();
 	const cardName = useCardName();
 	const rootRef = useRef<HTMLDivElement>(null);
 	const [selected, setSelected] = useState<CardId[]>([]);
@@ -116,11 +117,26 @@ export function RummyTable({
 	const rules = resolved.rules;
 	const name = cards.games[game.id as CardGameId].name;
 	const you = table.you;
-	const live = view.phase === "draw" || view.phase === "play";
-	const mine = live && view.turn === you;
-	const drawing = mine && view.phase === "draw";
-	const playing = mine && view.phase === "play";
-	const opened = you !== null && view.opened[you];
+	const turn = rummyTurn({ view, rules, you, selected, staged });
+	const {
+		live,
+		mine,
+		drawing,
+		playing,
+		opened,
+		inHand,
+		selection: liveSelection,
+		shape,
+		shapePoints,
+		stagedPoints,
+		keepsOne,
+		canOpen,
+		openingWithShape,
+		canOpenNow,
+		singleCard,
+		canDiscard,
+		canTakeDiscard,
+	} = turn;
 
 	// A rematch shows its own last round again when that game ends.
 	useEffect(() => {
@@ -138,44 +154,7 @@ export function RummyTable({
 	}, [playing]);
 
 	const fresh = useFreshCards(view.hand, mine, view.events);
-	const stagedFlat = staged.flat();
-	const handShown = sortCards(
-		view.hand.filter((card) => !stagedFlat.includes(card)),
-		sortBy,
-	);
-	const liveSelection = selected.filter((card) => handShown.includes(card));
-	const shape =
-		liveSelection.length >= rules.minMeldSize
-			? buildMeld(liveSelection, rules)
-			: null;
-	const shapePoints = shape ? meldPoints(shape, rules) : 0;
-	const stagedPoints = staged.reduce((sum, group) => {
-		const built = buildMeld(group, rules);
-		return sum + (built ? meldPoints(built, rules) : 0);
-	}, 0);
-	// Every turn ends on a discard, so laying down can never empty the hand.
-	const keepsOne = liveSelection.length < handShown.length;
-	const canOpen =
-		!opened &&
-		staged.length > 0 &&
-		shape === null &&
-		stagedPoints >= rules.openingPoints &&
-		handShown.length > 0;
-	// The selection itself reaches the opening, with or without what's set aside.
-	const openingWithShape = stagedPoints + shapePoints;
-	const canOpenNow =
-		playing &&
-		!opened &&
-		shape !== null &&
-		keepsOne &&
-		openingWithShape >= rules.openingPoints;
-	const singleCard = liveSelection.length === 1 ? liveSelection[0] : null;
-	const cantReturn =
-		singleCard !== null &&
-		singleCard === view.takenDiscard &&
-		view.hand.length > 1;
-	const canDiscard =
-		playing && singleCard !== null && staged.length === 0 && !cantReturn;
+	const handShown = sortCards(inHand, sortBy);
 
 	// A target can sit below the fold when the table is full of melds.
 	const selectionKey = liveSelection.join();
@@ -194,21 +173,9 @@ export function RummyTable({
 		);
 	}
 
-	function meldAction(meld: Meld) {
-		if (!playing || !opened || liveSelection.length === 0) {
-			return null;
-		}
-		// Taking the joker back beats adding the card, as the rules promise.
-		if (singleCard && swapJoker(meld, singleCard)) {
-			return { type: "swap" as const };
-		}
-		const order = keepsOne ? fitOnMeld(meld, liveSelection) : null;
-		return order ? { type: "add" as const, order } : null;
-	}
-
 	function runMeldAction(
 		meld: Meld,
-		action: NonNullable<ReturnType<typeof meldAction>>,
+		action: NonNullable<ReturnType<typeof rummyMeldAction>>,
 	) {
 		const element = document.querySelector<HTMLElement>(
 			`[data-card-id="${liveSelection[0]}"]`,
@@ -266,45 +233,7 @@ export function RummyTable({
 		setSelected([]);
 	}
 
-	const canTakeDiscard = drawing && rules.takeFromDiscard && view.top !== null;
-	const hint = drawing
-		? rules.takeFromDiscard
-			? cards.rummy.drawHint
-			: cards.rummy.drawStockHint
-		: playing
-			? playHint()
-			: null;
-
-	function playHint() {
-		if (!keepsOne && !canDiscard) {
-			return serverErrors.cardsKeepOneToDiscard;
-		}
-		if (cantReturn) {
-			return serverErrors.cardsCannotReturnDiscard;
-		}
-		if (liveSelection.length === 0) {
-			return staged.length > 0 ? stagedNote() : cards.rummy.selectHint;
-		}
-		if (melds.some((meld) => meldAction(meld))) {
-			return cards.rummy.tapMeldHint;
-		}
-		if (liveSelection.length > 1 && shape === null) {
-			return cards.rummy.invalidMeld;
-		}
-		if (canOpenNow) {
-			return cards.rummy.openNowHint;
-		}
-		if (!opened && shape !== null) {
-			return fmt(cards.rummy.openingNeeded, { needed: rules.openingPoints });
-		}
-		return staged.length > 0 ? stagedNote() : cards.rummy.discardHint;
-	}
-
-	function stagedNote() {
-		return stagedPoints >= rules.openingPoints
-			? cards.rummy.stagedHint
-			: fmt(cards.rummy.stagedMoreHint, { needed: rules.openingPoints });
-	}
+	const hint = rummyHint(turn, view, rules, staged, { serverErrors, words });
 
 	const meldKind = (meld: Meld) =>
 		meld.kind === "set" ? cards.rummy.meldSet : cards.rummy.meldRun;
@@ -417,19 +346,9 @@ export function RummyTable({
 							<p className="meld-empty">{cards.rummy.tableEmpty}</p>
 						) : null}
 						{view.melds.map((meld) => {
-							const action = meldAction(meld);
+							const action = rummyMeldAction(turn, meld);
 							const kind = meldKind(meld).toLowerCase();
-							const faces = meld.cards.map((card, index) => {
-								if (!parseCard(card).joker || meld.kind !== "run") {
-									return cardName(card);
-								}
-								const face = runFaceAt(meld, index);
-								return fmt(cards.rummy.jokerAs, {
-									card: cards.cardName
-										.replace("{rank}", cards.ranks[face.rank])
-										.replace("{suit}", cards.suits[face.suit]),
-								});
-							});
+							const faces = meldCardNames(cards, meld);
 							const content = meld.cards.map((card, index) => (
 								<PlayingCard
 									key={card}

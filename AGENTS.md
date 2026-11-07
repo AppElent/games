@@ -47,13 +47,13 @@ Joining happens through `sessions.joinByCode` (room code) or `sessions.joinByTok
 
 The frontend mirrors this: `src/lib/games/catalog.ts` is the single source of truth for which games exist, their routes, and availability (`playable` vs `coming-soon`); `src/lib/games/sessions.ts` and `src/lib/games/<game>.ts` hold client-side helpers/types per game. `src/routes/games/$gameType.tsx` and per-game routes (`src/routes/quiz/*`, `src/routes/backgammon/*`) render off the catalog + session bundle (`sessions.getBundle`).
 
-### Card games (`packages/core/src/cards`, `convex/cardGames.ts`, `src/components/cards`)
+### Card games (`packages/core/src/cards`, `convex/cardGames.ts`, `src/components/cards`, `apps/mobile/src/features/cards`)
 
-One catalog entry (`card-games`) leads to a hub at `/cards` listing Pesten and Jokeren. A game is a config file in `packages/core/src/cards/games/` for a rule family (`shedding`, `rummy`), so adding one to a family needs no backend or UI code. Before changing the engine, its stored state or seat claims, read [the decision](docs/adr/0001-card-games-use-rule-families-and-config.md).
+One catalog entry (`card-games`) leads to a hub at `/cards` listing Pesten and Jokeren. A game is a config file in `packages/core/src/cards/games/` for a rule family (`shedding`, `rummy`), so adding one to a family needs no backend or UI code. Both clients draw the same card art and derive the same table logic from `cards/art.ts` and `cards/table-view.ts`. Before changing the engine, its stored state or seat claims, read [the decision](docs/adr/0001-card-games-use-rule-families-and-config.md).
 
 ### Mobile app (`apps/mobile`, `packages/core`)
 
-pnpm workspace: `apps/mobile` is the Expo app **Arcade Club** (`com.appelent.arcadeclub`, scheme `arcadeclub`) with Sudoku (local), Backgammon (local pass-and-play + online challenge) and Hitster (online room). Other games are web-only and not listed in the app. `packages/core` (`@arcadeclub/core`) holds the pure rules shared by web, Convex and mobile. Mobile is just another Convex client: it calls the same functions, stores its seats and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=` links. Before native changes read `apps/mobile/CODING_STANDARDS.md` / `DESIGN_SYSTEM.md`; to run or verify it on a device, see `docs/runbooks/mobile.md`.
+pnpm workspace: `apps/mobile` is the Expo app **Arcade Club** (`com.appelent.arcadeclub`, scheme `arcadeclub`) with Sudoku (local), Backgammon (local pass-and-play + online challenge), Hitster (online room) and card games (bots or online room). Other games are web-only and not listed in the app. `packages/core` (`@arcadeclub/core`) holds the pure rules shared by web, Convex and mobile. Mobile is just another Convex client: it calls the same functions, stores its seats and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=` links. Before native changes read `apps/mobile/CODING_STANDARDS.md` / `DESIGN_SYSTEM.md`; to run or verify it on a device, see `docs/runbooks/mobile.md`.
 
 ### Auth wiring
 

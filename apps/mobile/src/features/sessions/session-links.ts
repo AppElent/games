@@ -12,7 +12,12 @@ import type { GameType } from "./session-seats";
 const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_ORIGIN?.replace(/\/+$/, "");
 
 /** The games this app can open; everything else is web-only. */
-export const APP_GAME_TYPES = ["sudoku", "backgammon", "hitster"] as const;
+export const APP_GAME_TYPES = [
+	"sudoku",
+	"backgammon",
+	"hitster",
+	"card-games",
+] as const;
 export type AppGameType = (typeof APP_GAME_TYPES)[number];
 
 export function isAppGameType(gameType: string): gameType is AppGameType {
@@ -32,6 +37,8 @@ export function onlineSessionHref(
 			};
 		case "hitster":
 			return { pathname: "/hitster/[sessionId]", params: { sessionId } };
+		case "card-games":
+			return { pathname: "/cards/table/[sessionId]", params: { sessionId } };
 		default:
 			return null;
 	}

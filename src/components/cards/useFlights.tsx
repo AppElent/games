@@ -1,13 +1,17 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import type { CardEvent } from "@arcadeclub/core/cards/events";
 import {
+	cardTilt,
+	eventsSince,
+	planFlights,
+} from "@arcadeclub/core/cards/table-view";
+import {
 	type ReactNode,
 	type RefObject,
 	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
-import { cardTilt } from "./format";
 import { PlayingCard } from "./PlayingCard";
 
 type Spot = { x: number; y: number; width: number };
@@ -22,10 +26,7 @@ type Flight = {
 };
 
 const DURATION_MS = 340;
-const STEP_MS = 60;
 const FALLBACK_WIDTH = 40;
-const MAX_CARDS_PER_EVENT = 6;
-const DEAL_CARDS_PER_SEAT = 3;
 
 function zoneOf(root: HTMLElement, zone: string) {
 	return root.querySelector<HTMLElement>(`[data-zone="${zone}"]`);
@@ -133,94 +134,33 @@ export function useFlights(
 		if (previous === null || newestSeq === previous || !root || quiet) {
 			return;
 		}
-		// A rematch restarts the count: everything in the log is then new.
-		const fresh =
-			newestSeq < previous ? events : events.filter((e) => e.seq > previous);
-		const seatZone = (seat: number) => (seat === you ? "hand" : `seat-${seat}`);
+		const plan = planFlights(eventsSince(events, previous), {
+			you,
+			seatCount,
+			meldCard,
+		});
 		const planned: Flight[] = [];
-		let delay = 0;
-
-		const fly = (
-			card: CardId | null,
-			fromZone: string,
-			toZone: string,
-			from?: Spot,
-		) => {
-			const start = from ?? spotOf(root, fromZone);
-			const end = spotOf(root, toZone);
-			if (!start || !end) {
-				return;
+		for (const flight of plan.flights) {
+			const start =
+				(flight.fromHandCard && flight.card
+					? origins.current.get(flight.card)
+					: undefined) ?? spotOf(root, flight.from);
+			const end = spotOf(root, flight.to);
+			if (start && end) {
+				planned.push({
+					id: nextId.current++,
+					card: flight.card,
+					from: start,
+					to: end,
+					tilt:
+						flight.to === "discard" && flight.card ? cardTilt(flight.card) : 0,
+					delay: flight.delay,
+					toDiscard: flight.to === "discard",
+				});
 			}
-			planned.push({
-				id: nextId.current++,
-				card,
-				from: start,
-				to: end,
-				tilt: toZone === "discard" && card ? cardTilt(card) : 0,
-				delay,
-				toDiscard: toZone === "discard",
-			});
-			delay += STEP_MS;
-		};
-		const flyBacks = (count: number, fromZone: string, seat: number) => {
-			for (let i = 0; i < Math.min(count, MAX_CARDS_PER_EVENT); i += 1) {
-				fly(null, fromZone, seatZone(seat));
-			}
-		};
-
-		for (const event of fresh) {
-			switch (event.type) {
-				case "deal":
-					for (let round = 0; round < DEAL_CARDS_PER_SEAT; round += 1) {
-						for (let seat = 0; seat < seatCount; seat += 1) {
-							fly(null, "stock", seatZone(seat));
-						}
-					}
-					break;
-				case "play":
-				case "discard":
-					fly(
-						event.card,
-						seatZone(event.seat),
-						"discard",
-						event.seat === you ? origins.current.get(event.card) : undefined,
-					);
-					delay += STEP_MS;
-					break;
-				case "draw":
-					flyBacks(
-						event.count,
-						event.source === "discard" ? "discard" : "stock",
-						event.seat,
-					);
-					break;
-				case "penalty":
-				case "caught":
-				case "finishPenalty":
-					flyBacks(event.count, "stock", event.seat);
-					break;
-				case "meld":
-					for (const id of event.meldIds) {
-						fly(meldCard(id), seatZone(event.seat), `meld-${id}`);
-					}
-					break;
-				case "layoff":
-					fly(
-						event.cards[0] ?? null,
-						seatZone(event.seat),
-						`meld-${event.meldId}`,
-					);
-					break;
-				case "swap":
-					fly(event.card, seatZone(event.seat), `meld-${event.meldId}`);
-					break;
-				case "skip":
-				case "again":
-					setFlash(event.seat);
-					break;
-				default:
-					break;
-			}
+		}
+		if (plan.flash !== null) {
+			setFlash(plan.flash);
 		}
 		origins.current.clear();
 		if (planned.length > 0) {

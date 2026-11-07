@@ -2,12 +2,12 @@ import type {
 	CardGameDefinition,
 	CardGameId,
 } from "@arcadeclub/core/cards/engine";
+import { seatName } from "@arcadeclub/core/cards/table-view";
 import { Bot, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { CardsPage } from "./Chrome";
-import { seatName } from "./format";
 import { RulesSheet } from "./RulesSheet";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
 
