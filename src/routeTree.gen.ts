@@ -32,7 +32,6 @@ import { Route as ConnectFourIndexRouteImport } from './routes/connect-four/inde
 import { Route as ConnectFourSessionIdRouteImport } from './routes/connect-four/$sessionId'
 import { Route as ConnectFourNewRouteImport } from './routes/connect-four/new'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as GamesGameTypeRouteImport } from './routes/games/$gameType'
 import { Route as HitsterIndexRouteImport } from './routes/hitster/index'
 import { Route as HitsterNewRouteImport } from './routes/hitster/new'
 import { Route as QuizIndexRouteImport } from './routes/quiz/index'
@@ -172,11 +171,6 @@ const ConnectFourNewRoute = ConnectFourNewRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GamesGameTypeRoute = GamesGameTypeRouteImport.update({
-  id: '/games/$gameType',
-  path: '/games/$gameType',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HitsterIndexRoute = HitsterIndexRouteImport.update({
@@ -324,7 +318,6 @@ export interface FileRoutesByFullPath {
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
   '/connect-four/new': typeof ConnectFourNewRoute
-  '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
   '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
@@ -375,7 +368,6 @@ export interface FileRoutesByTo {
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
   '/connect-four/new': typeof ConnectFourNewRoute
-  '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
   '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
@@ -427,7 +419,6 @@ export interface FileRoutesById {
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
   '/connect-four/new': typeof ConnectFourNewRoute
-  '/games/$gameType': typeof GamesGameTypeRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
   '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
@@ -480,7 +471,6 @@ export interface FileRouteTypes {
     | '/chess/new'
     | '/connect-four/$sessionId'
     | '/connect-four/new'
-    | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
     | '/signal-words/$sessionId'
@@ -531,7 +521,6 @@ export interface FileRouteTypes {
     | '/chess/new'
     | '/connect-four/$sessionId'
     | '/connect-four/new'
-    | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
     | '/signal-words/$sessionId'
@@ -582,7 +571,6 @@ export interface FileRouteTypes {
     | '/chess/new'
     | '/connect-four/$sessionId'
     | '/connect-four/new'
-    | '/games/$gameType'
     | '/hitster/new'
     | '/quiz/new'
     | '/signal-words/$sessionId'
@@ -634,7 +622,6 @@ export interface RootRouteChildren {
   ChessNewRoute: typeof ChessNewRoute
   ConnectFourSessionIdRoute: typeof ConnectFourSessionIdRoute
   ConnectFourNewRoute: typeof ConnectFourNewRoute
-  GamesGameTypeRoute: typeof GamesGameTypeRoute
   HitsterNewRoute: typeof HitsterNewRoute
   QuizNewRoute: typeof QuizNewRoute
   SignalWordsSessionIdRoute: typeof SignalWordsSessionIdRoute
@@ -829,13 +816,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/games/$gameType': {
-      id: '/games/$gameType'
-      path: '/games/$gameType'
-      fullPath: '/games/$gameType'
-      preLoaderRoute: typeof GamesGameTypeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hitster/': {
@@ -1034,7 +1014,6 @@ const rootRouteChildren: RootRouteChildren = {
   ChessNewRoute: ChessNewRoute,
   ConnectFourSessionIdRoute: ConnectFourSessionIdRoute,
   ConnectFourNewRoute: ConnectFourNewRoute,
-  GamesGameTypeRoute: GamesGameTypeRoute,
   HitsterNewRoute: HitsterNewRoute,
   QuizNewRoute: QuizNewRoute,
   SignalWordsSessionIdRoute: SignalWordsSessionIdRoute,

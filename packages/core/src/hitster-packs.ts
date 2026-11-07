@@ -10,7 +10,7 @@ export type HitsterCard = {
 	albumArtUrl?: string;
 };
 
-export type HitsterPack = {
+type HitsterPack = {
 	id: string;
 	title: string;
 	description: string;

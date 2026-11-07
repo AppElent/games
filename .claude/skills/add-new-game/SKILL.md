@@ -41,9 +41,7 @@ Decide: `gameType` id (kebab-case), `joinMode`, `authPolicy` (`guestAllowed` unl
 `src/lib/games/catalog.ts`:
 
 1. Add the id to the `GameType` union.
-2. Add an entry to `GAME_CATALOG_ITEMS` (title, tagline, description, joinMode, authPolicy, `availability: "playable"`, gradient `accent`, lucide `icon`, `primaryAction`, `route: "/<game-id>/new"`, `stats`).
-
-If the game replaces a `coming-soon` placeholder, update that entry instead of adding one.
+2. Add an entry to `GAME_CATALOG` (joinMode, authPolicy, gradient `accent`, lucide `icon`, `route: "/<game-id>/new"`). Its display text (title, tagline, description, primaryAction, stats) goes in `packages/core/src/i18n/{en,nl}/catalog.ts`; read it through `getLocalizedGame`.
 
 ## Step 3: Convex schema + module
 

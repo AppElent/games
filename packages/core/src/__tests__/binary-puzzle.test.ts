@@ -7,7 +7,6 @@ import {
 	generateBinaryPuzzle,
 	isBinarySolved,
 	parseBinaryGrid,
-	seededBinaryPuzzle,
 } from "../binary-puzzle";
 import { mulberry32 } from "../sudoku";
 
@@ -84,8 +83,8 @@ describe("generateBinaryPuzzle", () => {
 	});
 
 	it("is deterministic for a given seed", () => {
-		const a = seededBinaryPuzzle(42, "easy");
-		const b = seededBinaryPuzzle(42, "easy");
+		const a = generateBinaryPuzzle("easy", mulberry32(42));
+		const b = generateBinaryPuzzle("easy", mulberry32(42));
 		expect(a.givens).toEqual(b.givens);
 		expect(a.solution).toEqual(b.solution);
 	});
@@ -99,7 +98,7 @@ describe("generateBinaryPuzzle", () => {
 
 describe("serialization", () => {
 	it("round-trips grids through strings", () => {
-		const puzzle = seededBinaryPuzzle(1, "easy");
+		const puzzle = generateBinaryPuzzle("easy", mulberry32(1));
 		const text = binaryGridToString(puzzle.givens);
 		expect(text).toHaveLength(36);
 		expect(parseBinaryGrid(text, puzzle.size)).toEqual(puzzle.givens);

@@ -25,7 +25,7 @@ export type Rank = (typeof RANKS)[number];
 export type CardId = string;
 export type Random = () => number;
 
-export type ParsedCard =
+type ParsedCard =
 	| { joker: true; suit: null; rank: null }
 	| { joker: false; suit: Suit; rank: Rank };
 

@@ -5,7 +5,7 @@ import type { KillerCage } from "@arcadeclub/core/sudoku-killer";
 import { useMemo } from "react";
 import { fmt, useMessages } from "#/lib/i18n";
 
-export const SUDOKU_COLOR_CLASSES = [
+const SUDOKU_COLOR_CLASSES = [
 	"", // 0 = none
 	"bg-sky-500/40",
 	"bg-emerald-500/40",
@@ -39,18 +39,12 @@ const CORNER_SLOTS = [
 	"right-0.5 top-1/2 -translate-y-1/2",
 ];
 
-export type SudokuHighlightSettings = {
-	peers: boolean;
-	matchingDigits: boolean;
-};
-
-export type SudokuBoardProps = {
+type SudokuBoardProps = {
 	board: SudokuBoardState;
 	selectedCell: number | null;
 	onSelectCell?: (cell: number) => void;
 	conflicts?: ReadonlySet<number>;
 	hintCells?: ReadonlySet<number>;
-	highlight?: SudokuHighlightSettings;
 	hidden?: boolean;
 	className?: string;
 	/** Killer sudoku cages: dashed outlines plus a sum in each cage's corner. */
@@ -70,7 +64,6 @@ export function SudokuBoard({
 	onSelectCell,
 	conflicts,
 	hintCells,
-	highlight = { peers: true, matchingDigits: true },
 	hidden = false,
 	className = "",
 	cages,
@@ -109,7 +102,6 @@ export function SudokuBoard({
 				const isGiven = board.givens[cell] !== 0;
 				const isSelected = cell === selectedCell;
 				const isPeer =
-					highlight.peers &&
 					!isSelected &&
 					selectedCell !== null &&
 					(row === selRow ||
@@ -117,10 +109,7 @@ export function SudokuBoard({
 						(Math.floor(row / 3) === selBoxRow &&
 							Math.floor(col / 3) === selBoxCol));
 				const sameDigit =
-					highlight.matchingDigits &&
-					selectedDigit !== 0 &&
-					value === selectedDigit &&
-					!isSelected;
+					selectedDigit !== 0 && value === selectedDigit && !isSelected;
 				const isConflict = conflicts?.has(cell) ?? false;
 				const isHint = hintCells?.has(cell) ?? false;
 				const colorClass = SUDOKU_COLOR_CLASSES[board.colors[cell]] ?? "";

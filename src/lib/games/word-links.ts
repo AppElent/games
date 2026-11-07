@@ -1,6 +1,6 @@
 export type WordLinkDifficulty = "easy" | "medium" | "hard" | "tricky";
 
-export type WordLinkGroup = {
+type WordLinkGroup = {
 	id: string;
 	label: string;
 	terms: string[];
@@ -26,7 +26,7 @@ export type WordLinkAttempt = {
 	finishedAt?: number;
 };
 
-export type WordLinkGuessResult =
+type WordLinkGuessResult =
 	| { type: "correct"; groupId: string; won: boolean }
 	| { type: "oneAway"; lost: boolean }
 	| { type: "wrong"; lost: boolean }
@@ -34,8 +34,8 @@ export type WordLinkGuessResult =
 	| { type: "invalidSelection"; reason: string };
 
 export const WORD_LINK_MISTAKE_LIMIT = 4;
-export const WORD_LINK_GROUP_SIZE = 4;
-export const WORD_LINK_GROUP_COUNT = 4;
+const WORD_LINK_GROUP_SIZE = 4;
+const WORD_LINK_GROUP_COUNT = 4;
 
 const DIFFICULTY_ORDER: readonly WordLinkDifficulty[] = [
 	"easy",
@@ -51,7 +51,7 @@ const DIFFICULTY_EMOJI: Record<WordLinkDifficulty, string> = {
 	tricky: "🟪",
 };
 
-export type WordLinkValidationError = { path: string; message: string };
+type WordLinkValidationError = { path: string; message: string };
 
 export function validateWordLinkPuzzle(
 	puzzle: WordLinkPuzzle,
@@ -298,10 +298,6 @@ export function sortGroupsByDifficulty(groups: WordLinkGroup[]) {
 			DIFFICULTY_ORDER.indexOf(a.difficulty) -
 			DIFFICULTY_ORDER.indexOf(b.difficulty),
 	);
-}
-
-export function getWordLinkGroupEmoji(difficulty: WordLinkDifficulty) {
-	return DIFFICULTY_EMOJI[difficulty];
 }
 
 /** Deterministic daily puzzle: same UTC date resolves to the same puzzle id. */

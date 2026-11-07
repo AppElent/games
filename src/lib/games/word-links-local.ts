@@ -5,7 +5,7 @@ const STREAK_KEY = "arcade-club.word-links.streak";
 
 type AttemptStore = Record<string, WordLinkAttempt>;
 
-export type WordLinkStreak = {
+type WordLinkStreak = {
 	current: number;
 	best: number;
 	lastWonDay?: number;

@@ -1,15 +1,15 @@
 import { type GameErrorCode, GameRuleError } from "@arcadeclub/core/errors";
 export type SignalTeam = "red" | "blue";
 export type SignalCardRole = "red" | "blue" | "neutral" | "trap";
-export type SignalPhase = "clue" | "guess" | "finished";
+type SignalPhase = "clue" | "guess" | "finished";
 
 export const SIGNAL_BOARD_SIZE = 25;
-export const SIGNAL_STARTING_CARDS = 9;
-export const SIGNAL_SECOND_CARDS = 8;
-export const SIGNAL_NEUTRAL_CARDS = 7;
-export const SIGNAL_TRAP_CARDS = 1;
+const SIGNAL_STARTING_CARDS = 9;
+const SIGNAL_SECOND_CARDS = 8;
+const SIGNAL_NEUTRAL_CARDS = 7;
+const SIGNAL_TRAP_CARDS = 1;
 
-export type SignalBoard = {
+type SignalBoard = {
 	words: string[];
 	/** Hidden key — must never reach non-clue-giver clients. */
 	assignments: SignalCardRole[];
@@ -82,7 +82,7 @@ export function createSignalGameState(board: SignalBoard): SignalGameState {
 	};
 }
 
-export type SignalClueError =
+type SignalClueError =
 	| "emptyClue"
 	| "multiWordClue"
 	| "invalidCount"
@@ -139,7 +139,7 @@ export function applySignalClue(
 	};
 }
 
-export type SignalGuessResult =
+type SignalGuessResult =
 	| { type: "correct"; won: boolean }
 	| { type: "neutral" }
 	| { type: "opponent"; opponentWon: boolean }
@@ -245,10 +245,4 @@ export function applySignalPass(state: SignalGameState): SignalGameState {
 		throw new GameRuleError("passOnlyDuringGuess");
 	}
 	return endTurn(state);
-}
-
-export function countRemaining(state: SignalGameState, team: SignalTeam) {
-	return state.assignments.filter(
-		(role, index) => role === team && !state.revealed[index],
-	).length;
 }

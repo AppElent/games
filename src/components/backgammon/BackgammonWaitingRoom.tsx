@@ -86,7 +86,6 @@ export function BackgammonWaitingRoom({
 	const [showInfo, setShowInfo] = useState(false);
 	const [options, setOptions] = useState<BackgammonBoardOptions>({
 		showNumbers: true,
-		autoRoll: false,
 		autoSwitchTurn: true,
 		autoCombine: true,
 	});

@@ -7,7 +7,7 @@ import { useMessages } from "#/lib/i18n";
 import "./cards.css";
 import { CardSprite } from "./PlayingCard";
 
-export type Crumb = {
+type Crumb = {
 	label: string;
 	to?: "/cards" | "/cards/$gameId";
 	params?: { gameId: string };

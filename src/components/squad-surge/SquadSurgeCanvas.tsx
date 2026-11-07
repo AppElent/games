@@ -1433,14 +1433,6 @@ export function SquadSurgeCanvas({
 		}
 
 		const rt = makeRuntime(level);
-		if (import.meta.env.DEV) {
-			(window as unknown as { __ssDebug?: () => unknown }).__ssDebug = () => ({
-				z: rt.z,
-				army: rt.army,
-				elapsed: rt.elapsed,
-				status: rt.status,
-			});
-		}
 		const keys = new Set<string>();
 		let raf = 0;
 		let last = performance.now();

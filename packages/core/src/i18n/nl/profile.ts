@@ -1,7 +1,6 @@
 import type { profile as en } from "../en/profile";
 
 export const profile = {
-	title: "Profiel",
 	account: "Account",
 	guestTitle: "Je speelt als gast",
 	guestBody:

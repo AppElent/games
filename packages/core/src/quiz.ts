@@ -105,7 +105,7 @@ export function parseQuizQuestionsTsv(input: string): {
 	return { questions, errors };
 }
 
-export type ScoredAnswer = {
+type ScoredAnswer = {
 	participantId: string;
 	score: number;
 };

@@ -1,6 +1,5 @@
 import { GameRuleError } from "./errors";
 export type BackgammonColor = "white" | "black";
-export type BackgammonPhase = "waiting" | "ready" | "active" | "finished";
 export type BackgammonMoveSource = number | "bar";
 export type BackgammonMoveDestination = number | "off";
 
@@ -10,7 +9,7 @@ export type BackgammonPoint = {
 	count: number;
 };
 
-export type BackgammonCounters = {
+type BackgammonCounters = {
 	white: number;
 	black: number;
 };
@@ -28,7 +27,7 @@ export type BackgammonTurnState = {
 	used: boolean[];
 };
 
-export type BackgammonStep = {
+type BackgammonStep = {
 	from: BackgammonMoveSource;
 	to: BackgammonMoveDestination;
 	die: number;
@@ -39,7 +38,7 @@ export type BackgammonMovePlan = {
 	steps: BackgammonStep[];
 };
 
-export type BackgammonMove = {
+type BackgammonMove = {
 	color: BackgammonColor;
 	from: BackgammonMoveSource;
 	to: BackgammonMoveDestination;
@@ -88,17 +87,6 @@ export function getBackgammonPoint(
 	return state.points[point - 1];
 }
 
-export function countBackgammonCheckers(
-	state: Pick<BackgammonTurnState, "points" | "bar" | "off">,
-	color: BackgammonColor,
-) {
-	const onBoard = state.points.reduce(
-		(total, point) => total + (point.color === color ? point.count : 0),
-		0,
-	);
-	return onBoard + state.bar[color] + state.off[color];
-}
-
 /** Doubles yield four moves, so the roll expands to four dice. */
 export function rollBackgammonDice(random = Math.random) {
 	const first = rollBackgammonDie(random);
@@ -129,7 +117,7 @@ export function computeUsedFlags(dice: number[], usedDice: number[]) {
 	return used;
 }
 
-export function destinationFor(
+function destinationFor(
 	from: BackgammonMoveSource,
 	die: number,
 	color: BackgammonColor,
@@ -145,7 +133,7 @@ export function destinationFor(
 	return dest > 24 ? "off" : dest;
 }
 
-export function isLandingOpen(
+function isLandingOpen(
 	points: BackgammonPoint[],
 	dest: number,
 	color: BackgammonColor,

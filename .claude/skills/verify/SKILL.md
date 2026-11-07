@@ -18,7 +18,6 @@ Session model: every game is a `gameSessions` row (`gameType` discriminator) + a
 | Route | Module |
 | --- | --- |
 | `/` | `src/routes/index.tsx` |
-| `/games/$gameType` | `src/routes/games/$gameType.tsx`, `src/lib/games/catalog.ts` |
 | `/dashboard` | `src/routes/dashboard/*` |
 | `/join` | `src/routes/join.tsx`, `convex/sessions.ts` (`joinByCode`/`joinByToken`) |
 | `/quiz/*` | `src/routes/quiz/*`, `convex/quiz.ts` (`liveQuizStates`/`liveQuizAnswers`) |

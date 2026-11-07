@@ -1,4 +1,4 @@
-export type BluffClaim = {
+type BluffClaim = {
 	quantity: number;
 	face: number;
 };
@@ -36,7 +36,7 @@ export function isClaimHigher(previous: BluffClaim, next: BluffClaim) {
 	return next.quantity === previous.quantity && next.face > previous.face;
 }
 
-export type BluffChallengeOutcome = {
+type BluffChallengeOutcome = {
 	/** How many dice actually show the claimed face across all hands. */
 	actualCount: number;
 	claimWasTrue: boolean;

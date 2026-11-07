@@ -47,7 +47,7 @@ type SudokuStateDoc = {
 	lastResumedAt?: number;
 };
 
-export type SudokuGameProps = {
+type SudokuGameProps = {
 	sessionId: Id<"gameSessions">;
 	title: string;
 	state: SudokuStateDoc;

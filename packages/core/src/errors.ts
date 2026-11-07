@@ -23,7 +23,7 @@ export class GameRuleError extends Error {
 	}
 }
 
-export function isGameErrorData(value: unknown): value is GameErrorData {
+function isGameErrorData(value: unknown): value is GameErrorData {
 	return (
 		typeof value === "object" &&
 		value !== null &&

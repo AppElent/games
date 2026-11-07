@@ -87,7 +87,7 @@ export function isBoardComplete(state: SudokuBoardState) {
 	return isGridSolved(effectiveGrid(state));
 }
 
-export type SudokuActionOptions = {
+type SudokuActionOptions = {
 	/** Strip the placed digit from peer notes after a digit entry. */
 	autoCleanup?: boolean;
 };

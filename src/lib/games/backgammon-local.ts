@@ -5,7 +5,7 @@ import type { BackgammonBoardOptions } from "#/components/backgammon/BackgammonB
  * Local (same device) backgammon matches live entirely in localStorage:
  * no Convex session is created and no reads/writes are spent on them.
  */
-export type LocalBackgammonGame = {
+type LocalBackgammonGame = {
 	state: BackgammonTurnState;
 	history: BackgammonTurnState[];
 	future: BackgammonTurnState[];

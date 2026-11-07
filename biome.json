@@ -18,7 +18,6 @@
 			"apps/mobile/*.js",
 			"!**/src/styles.css",
 			"!**/.claude",
-			"!**/*wsl.localhost*",
 			"!**/.expo",
 			"!apps/mobile/expo-env.d.ts"
 		]

@@ -10,7 +10,7 @@ export type SquadSurgeProgress = {
 	runs: number;
 };
 
-export type SquadSurgeSettings = {
+type SquadSurgeSettings = {
 	soundOn: boolean;
 };
 

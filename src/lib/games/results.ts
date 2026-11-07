@@ -1,11 +1,11 @@
-export type ResultParticipant = {
+type ResultParticipant = {
 	_id: string;
 	displayName: string;
 	role: "host" | "player" | "watcher";
 	kickedAt?: number;
 };
 
-export type ResultAnswer = {
+type ResultAnswer = {
 	participantId: string;
 	questionId: string;
 	selectedChoiceIds: string[];
@@ -13,7 +13,7 @@ export type ResultAnswer = {
 	score: number;
 };
 
-export type ResultQuestion = {
+type ResultQuestion = {
 	id: string;
 	prompt: string;
 	choices: { id: string; label: string }[];
@@ -121,7 +121,7 @@ export function buildQuestionStats(
 	});
 }
 
-export type GameStatsRow = {
+type GameStatsRow = {
 	gameType: string;
 	played: number;
 	completed: number;

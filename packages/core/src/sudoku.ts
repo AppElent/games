@@ -30,10 +30,6 @@ export function boxOf(cell: number) {
 	return Math.floor(rowOf(cell) / 3) * 3 + Math.floor(colOf(cell) / 3);
 }
 
-export function cellAt(row: number, col: number) {
-	return row * 9 + col;
-}
-
 function buildUnits() {
 	const rows: number[][] = [];
 	const cols: number[][] = [];
@@ -152,20 +148,7 @@ export function findConflicts(grid: SudokuGrid): Set<number> {
 	return conflicts;
 }
 
-export function isValidPlacement(
-	grid: SudokuGrid,
-	cell: number,
-	digit: number,
-) {
-	for (const peer of SUDOKU_PEERS[cell]) {
-		if (grid[peer] === digit) {
-			return false;
-		}
-	}
-	return true;
-}
-
-export function isGridFull(grid: SudokuGrid) {
+function isGridFull(grid: SudokuGrid) {
 	return grid.every((value) => value !== 0);
 }
 
@@ -216,18 +199,11 @@ function findBestCell(grid: SudokuGrid, candidates: number[]) {
 	return { cell: best, size: bestSize };
 }
 
-function search(
-	grid: SudokuGrid,
-	limit: number,
-	found: { count: number; solution: SudokuGrid | null },
-) {
+function search(grid: SudokuGrid, limit: number, found: { count: number }) {
 	const candidates = computeCandidates(grid);
 	const { cell, size } = findBestCell(grid, candidates);
 	if (cell === -1) {
 		found.count += 1;
-		if (!found.solution) {
-			found.solution = [...grid];
-		}
 		return;
 	}
 	if (size === 0) {
@@ -247,18 +223,9 @@ export function countSolutions(grid: SudokuGrid, limit = 2) {
 	if (findConflicts(grid).size > 0) {
 		return 0;
 	}
-	const found = { count: 0, solution: null as SudokuGrid | null };
+	const found = { count: 0 };
 	search([...grid], limit, found);
 	return found.count;
-}
-
-export function solve(grid: SudokuGrid): SudokuGrid | null {
-	if (findConflicts(grid).size > 0) {
-		return null;
-	}
-	const found = { count: 0, solution: null as SudokuGrid | null };
-	search([...grid], 1, found);
-	return found.solution;
 }
 
 // --- generation ---
@@ -313,7 +280,7 @@ export function generateSolvedGrid(rng: SudokuRng = Math.random): SudokuGrid {
 	return grid;
 }
 
-export type GeneratedPuzzle = {
+type GeneratedPuzzle = {
 	givens: SudokuGrid;
 	solution: SudokuGrid;
 	difficulty: SudokuDifficulty;
@@ -379,8 +346,4 @@ export function generatePuzzle(
 	}
 
 	return { givens, solution, difficulty, clueCount };
-}
-
-export function isSudokuDifficulty(value: string): value is SudokuDifficulty {
-	return (SUDOKU_DIFFICULTIES as readonly string[]).includes(value);
 }

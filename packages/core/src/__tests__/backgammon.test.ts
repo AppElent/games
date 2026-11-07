@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
 	applyBackgammonMove,
 	applyBackgammonPlan,
+	type BackgammonColor,
 	type BackgammonTurnState,
 	canBearOff,
 	canEndBackgammonTurn,
 	computeUsedFlags,
-	countBackgammonCheckers,
 	createInitialBackgammonState,
 	getBackgammonPoint,
 	getBackgammonWinner,
@@ -23,6 +23,17 @@ function withDice(
 	used?: boolean[],
 ): BackgammonTurnState {
 	return { ...state, dice, used: used ?? dice.map(() => false) };
+}
+
+function countBackgammonCheckers(
+	state: Pick<BackgammonTurnState, "points" | "bar" | "off">,
+	color: BackgammonColor,
+) {
+	const onBoard = state.points.reduce(
+		(total, point) => total + (point.color === color ? point.count : 0),
+		0,
+	);
+	return onBoard + state.bar[color] + state.off[color];
 }
 
 describe("backgammon engine", () => {

@@ -68,7 +68,7 @@ export type RummyState = {
 	nextSeq: number;
 };
 
-export type RummyLayDown = {
+type RummyLayDown = {
 	melds?: CardId[][];
 	additions?: Array<{ meldId: number; cards: CardId[] }>;
 	swaps?: Array<{ meldId: number; card: CardId }>;
@@ -137,7 +137,7 @@ export function createRummy(
 	return state;
 }
 
-export function totalsOf(scores: readonly number[][], seats: number) {
+function totalsOf(scores: readonly number[][], seats: number) {
 	return Array.from({ length: seats }, (_, seat) =>
 		scores.reduce((sum, round) => sum + (round[seat] ?? 0), 0),
 	);

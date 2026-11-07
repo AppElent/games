@@ -14,14 +14,15 @@ import { fmt, plural, useI18n } from "#/lib/i18n";
 
 /**
  * Backgammon board from the Claude Design handoff, converted to a controlled
- * component: all rules live in #/lib/games/backgammon and the game state is
+ * component: all rules live in @arcadeclub/core/backgammon and the game state is
  * owned by the caller (local hook or Convex bundle). Supports click and drag
  * (mouse + touch) and combined two-die moves.
  */
 
 export type BackgammonBoardOptions = {
 	showNumbers: boolean;
-	autoRoll: boolean;
+	/** Local play only; online games never offer it. */
+	autoRoll?: boolean;
 	autoSwitchTurn: boolean;
 	autoCombine: boolean;
 };
@@ -47,9 +48,10 @@ type Props = {
 	canUndo?: boolean;
 	canRedo?: boolean;
 	statusOverride?: string;
-	lightPoint?: string;
-	darkPoint?: string;
 };
+
+const LIGHT_POINT = "#e7d2a4";
+const DARK_POINT = "#a54c38";
 
 const PIPS: Record<number, number[]> = {
 	1: [4],
@@ -179,8 +181,6 @@ export function BackgammonBoard({
 	canUndo = false,
 	canRedo = false,
 	statusOverride,
-	lightPoint = "#e7d2a4",
-	darkPoint = "#a54c38",
 }: Props) {
 	const { locale, messages } = useI18n();
 	const backgammon = messages.games.backgammon;
@@ -356,7 +356,7 @@ export function BackgammonBoard({
 	) {
 		const point = state.points[n - 1];
 		const isDark = (colIndex + rowParity) % 2 === 0;
-		const triColor = isDark ? darkPoint : lightPoint;
+		const triColor = isDark ? DARK_POINT : LIGHT_POINT;
 		const selected = selectedSource === n;
 		const highlighted = highlights.points.has(n);
 		const selectable =

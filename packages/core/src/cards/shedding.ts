@@ -33,7 +33,7 @@ export type CardPower =
 	/** Playable on anything; the player names the next suit. */
 	| { kind: "chooseSuit" };
 
-export type PowerKey = Rank | "joker";
+type PowerKey = Rank | "joker";
 
 export type SheddingRules = {
 	/** First matching entry from the top wins: `from` is a minimum seat count. */
@@ -122,7 +122,7 @@ function isWild(power: CardPower | undefined) {
 	return power?.kind === "chooseSuit" || (power?.kind === "draw" && power.wild);
 }
 
-export function canPlaySheddingCard(
+function canPlaySheddingCard(
 	rules: SheddingRules,
 	state: SheddingState,
 	card: CardId,

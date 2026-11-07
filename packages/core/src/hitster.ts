@@ -139,7 +139,7 @@ export type HitsterAnswerFlags = {
 	yearCorrect: boolean;
 };
 
-export type HitsterRoundOutcome = {
+type HitsterRoundOutcome = {
 	cardWon: boolean;
 	tokenDelta: number;
 };
@@ -188,7 +188,7 @@ export function hitsterStealRequirementMet(
 	return met;
 }
 
-export type HitsterStealClaimEvaluation = {
+type HitsterStealClaimEvaluation = {
 	participantId: string;
 	submittedAt: number;
 	flags: HitsterAnswerFlags;
@@ -213,7 +213,7 @@ export function resolveHitsterSteals(
 	return winner?.participantId;
 }
 
-export type HitsterCoopOutcome = "won" | "lost" | "ongoing";
+type HitsterCoopOutcome = "won" | "lost" | "ongoing";
 
 export function getHitsterCoopOutcome({
 	cardsOnTimeline,

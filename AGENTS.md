@@ -45,7 +45,7 @@ All games share one `gameSessions` + `sessionParticipants` pair of tables, not p
 
 Joining happens through `sessions.joinByCode` (room code) or `sessions.joinByToken` (share token for challenge links); both create a `sessionParticipants` row and, for backgammon specifically, seat the joining participant into the waiting `backgammonGameStates` row. Participants can be signed-in users (`userId`) or guests (`guestId`, generated client-side) — `convex/lib/auth.ts`'s `getOptionalUserId`/`requireUserId` are the two entry points for reading identity in a Convex function.
 
-The frontend mirrors this: `src/lib/games/catalog.ts` is the single source of truth for which games exist, their routes, and availability (`playable` vs `coming-soon`); `src/lib/games/sessions.ts` and `src/lib/games/<game>.ts` hold client-side helpers/types per game. `src/routes/games/$gameType.tsx` and per-game routes (`src/routes/quiz/*`, `src/routes/backgammon/*`) render off the catalog + session bundle (`sessions.getBundle`).
+The frontend mirrors this: `src/lib/games/catalog.ts` is the single source of truth for which games exist and their routes, with display text in `packages/core/src/i18n/*/catalog.ts` (`getLocalizedGame` joins the two); `src/lib/games/sessions.ts` and `src/lib/games/<game>.ts` hold client-side helpers/types per game. Per-game routes (`src/routes/quiz/*`, `src/routes/backgammon/*`) render off the session bundle (`sessions.getBundle`).
 
 ### Card games (`packages/core/src/cards`, `convex/cardGames.ts`, `src/components/cards`)
 

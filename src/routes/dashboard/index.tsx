@@ -9,10 +9,13 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { GameCatalog } from "#/components/games/GameCatalog";
-import { type GameType, getGameByType } from "#/lib/games/catalog";
+import {
+	type GameType,
+	getGameByType,
+	getLocalizedGame,
+} from "#/lib/games/catalog";
 import { buildGameStats } from "#/lib/games/results";
 import { fmt, useI18n, useMessages } from "#/lib/i18n";
-import { useGameLocalizer } from "#/lib/i18n/catalog";
 import { api } from "../../../convex/_generated/api";
 import { authConfig } from "../../lib/auth-config";
 
@@ -63,7 +66,6 @@ function DashboardPage() {
 
 function PlayerStats() {
 	const rows = useQuery(api.sessions.listParticipation);
-	const localize = useGameLocalizer();
 	const messages = useMessages();
 	if (!rows?.length) {
 		return null;
@@ -78,7 +80,7 @@ function PlayerStats() {
 			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 				{stats.slice(0, 4).map((stat) => {
 					const base = getGameByType(stat.gameType as GameType);
-					const game = base ? localize(base) : undefined;
+					const game = base ? getLocalizedGame(base, messages) : undefined;
 					return (
 						<div key={stat.gameType} className="club-panel rounded-lg p-4">
 							<p className="text-sm font-bold text-[var(--club-text)]">
@@ -108,7 +110,6 @@ function PlayerStats() {
 
 function RecentGames() {
 	const rows = useQuery(api.sessions.listParticipation);
-	const localize = useGameLocalizer();
 	const { messages, locale } = useI18n();
 	if (!rows?.length) {
 		return null;
@@ -122,7 +123,7 @@ function RecentGames() {
 			<ul className="space-y-2">
 				{recent.map(({ session, participant }) => {
 					const base = getGameByType(session.gameType as GameType);
-					const game = base ? localize(base) : undefined;
+					const game = base ? getLocalizedGame(base, messages) : undefined;
 					const won = session.winnerParticipantIds?.includes(participant._id);
 					return (
 						<li key={session._id}>

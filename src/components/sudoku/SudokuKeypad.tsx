@@ -3,7 +3,7 @@ import { Eraser, Lightbulb, Palette, Pencil, Redo2, Undo2 } from "lucide-react";
 import { fmt, useMessages } from "#/lib/i18n";
 import { SUDOKU_COLOR_SWATCHES } from "./SudokuBoard";
 
-export type SudokuKeypadProps = {
+type SudokuKeypadProps = {
 	mode: SudokuInputMode;
 	onModeChange: (mode: SudokuInputMode) => void;
 	onDigit: (digit: number) => void;

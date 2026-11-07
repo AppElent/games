@@ -1,4 +1,4 @@
-import { mulberry32, type SudokuRng } from "./sudoku";
+import type { SudokuRng } from "./sudoku";
 
 /**
  * Binary puzzle (Binairo / Takuzu). Cells hold 0s and 1s:
@@ -9,16 +9,9 @@ import { mulberry32, type SudokuRng } from "./sudoku";
  * Grid encoding: 0 = empty, 1 = the digit "0", 2 = the digit "1". This keeps
  * the shared "0 means empty" convention used by the sudoku persistence layer.
  */
-export type BinaryGrid = number[];
+type BinaryGrid = number[];
 
 export type BinaryDifficulty = "easy" | "medium" | "hard" | "expert";
-
-export const BINARY_DIFFICULTIES: readonly BinaryDifficulty[] = [
-	"easy",
-	"medium",
-	"hard",
-	"expert",
-];
 
 export const BINARY_SIZES: Record<BinaryDifficulty, number> = {
 	easy: 6,
@@ -40,7 +33,7 @@ export function binaryDigitLabel(value: number) {
 	return value === 1 ? "0" : value === 2 ? "1" : "";
 }
 
-export function emptyBinaryGrid(size: number): BinaryGrid {
+function emptyBinaryGrid(size: number): BinaryGrid {
 	return new Array(size * size).fill(0);
 }
 
@@ -256,7 +249,7 @@ function generateSolvedBinaryGrid(size: number, rng: SudokuRng): BinaryGrid {
 	return grid;
 }
 
-export type GeneratedBinaryPuzzle = {
+type GeneratedBinaryPuzzle = {
 	size: number;
 	givens: BinaryGrid;
 	solution: BinaryGrid;
@@ -295,10 +288,6 @@ export function generateBinaryPuzzle(
 	return { size, givens, solution, difficulty, clueCount };
 }
 
-export function seededBinaryPuzzle(seed: number, difficulty: BinaryDifficulty) {
-	return generateBinaryPuzzle(difficulty, mulberry32(seed));
-}
-
 // --- serialization (shared with the Convex sudoku module) ---
 
 export function binaryGridToString(grid: BinaryGrid) {
@@ -310,8 +299,4 @@ export function parseBinaryGrid(text: string, size: number): BinaryGrid {
 		throw new Error("Invalid binary grid");
 	}
 	return [...text].map(Number);
-}
-
-export function isBinaryDifficulty(value: string): value is BinaryDifficulty {
-	return (BINARY_DIFFICULTIES as readonly string[]).includes(value);
 }

@@ -6,7 +6,7 @@ export type ContentDraftKind =
 	| "signal-words-pack"
 	| "quiz-set";
 
-export type ContentValidationError = { path: string; message: string };
+type ContentValidationError = { path: string; message: string };
 
 export const CONTENT_DRAFT_KINDS: readonly ContentDraftKind[] = [
 	"word-links-puzzle",

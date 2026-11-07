@@ -61,7 +61,6 @@ export const serverErrors = {
 	waitingForBothPlayers: "Waiting for both players.",
 	notYourTurn: "It is not your turn.",
 	illegalMove: "That move is not allowed.",
-	invalidMove: "That move is not possible.",
 	timeRanOut: "Your time ran out.",
 	opponentHasTime: "Your opponent still has time.",
 	gameUntimed: "This game has no clock.",

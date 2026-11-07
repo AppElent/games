@@ -66,7 +66,7 @@ export function isCardGameId(value: string): value is CardGameId {
 
 export type CardGameState = SheddingState | RummyState;
 export type CardAction = SheddingAction | RummyAction;
-export type CardView = SheddingView | RummyView;
+type CardView = SheddingView | RummyView;
 
 export function getCardGame(id: string): CardGameDefinition {
 	if (!isCardGameId(id)) {

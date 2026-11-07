@@ -243,7 +243,7 @@ export function countKillerSolutions(
 	return found.count;
 }
 
-export type GeneratedKillerPuzzle = {
+type GeneratedKillerPuzzle = {
 	givens: SudokuGrid;
 	solution: SudokuGrid;
 	cages: KillerCage[];

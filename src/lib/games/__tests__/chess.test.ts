@@ -3,9 +3,7 @@ import {
 	applyChessMove,
 	CHESS_INITIAL_FEN,
 	type ChessClockState,
-	describeChessResult,
 	formatClockMs,
-	getActiveColorFromFen,
 	getLegalMoves,
 	getRemainingMs,
 	hasFlagFallen,
@@ -94,27 +92,10 @@ describe("helpers", () => {
 		expect(isPromotionMove(CHESS_INITIAL_FEN, "e2", "e4")).toBe(false);
 	});
 
-	it("reads the active color from a FEN", () => {
-		expect(getActiveColorFromFen(CHESS_INITIAL_FEN)).toBe("white");
-		const afterMove = applyChessMove(CHESS_INITIAL_FEN, {
-			from: "e2",
-			to: "e4",
-		}).fen;
-		expect(getActiveColorFromFen(afterMove)).toBe("black");
-	});
-
 	it("detects check", () => {
 		const fen = "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3";
 		expect(isInCheck(fen)).toBe(true);
 		expect(isInCheck(CHESS_INITIAL_FEN)).toBe(false);
-	});
-
-	it("describes every result", () => {
-		expect(
-			describeChessResult({ outcome: "checkmate", winner: "white" }),
-		).toContain("white");
-		expect(describeChessResult({ outcome: "stalemate" })).toContain("Draw");
-		expect(describeChessResult({ outcome: "drawAgreed" })).toContain("agreed");
 	});
 });
 

@@ -15,7 +15,7 @@ import {
 	SUDOKU_ROWS,
 } from "./sudoku";
 
-export type HintTechniqueLevel = "beginner" | "intermediate" | "advanced";
+type HintTechniqueLevel = "beginner" | "intermediate" | "advanced";
 
 type UnitKind = "row" | "column" | "box";
 type HintUnit = { kind: UnitKind; index: number };
@@ -24,7 +24,7 @@ type HintUnit = { kind: UnitKind; index: number };
  * What a hint is about. `describeHint` turns it into localized text; the
  * engine itself has no prose.
  */
-export type HintTechnique =
+type HintTechnique =
 	| "mistake"
 	| "naked-single"
 	| "hidden-single"
@@ -53,7 +53,7 @@ export type SudokuHint = {
 	box?: number;
 };
 
-export type TechniqueDetector = {
+type TechniqueDetector = {
 	id: string;
 	name: string;
 	level: HintTechniqueLevel;
@@ -401,10 +401,7 @@ const snyderSuggestion: TechniqueDetector = {
 	},
 };
 
-/**
- * Ordered registry. Advanced techniques (X-Wing, Swordfish, XY-Wing,
- * coloring, chains) plug in here later as additional detectors.
- */
+/** Tried in order; the first detector that finds something wins. */
 export const SUDOKU_TECHNIQUES: readonly TechniqueDetector[] = [
 	nakedSingle,
 	hiddenSingle,
@@ -444,12 +441,11 @@ function findMistake(
 	};
 }
 
-export type HintOptions = {
+type HintOptions = {
 	/** The solved grid, when the client has it. */
 	solution?: SudokuGrid;
 	/** Non-zero for the puzzle's own digits, which are never the mistake. */
 	givens?: SudokuGrid;
-	detectors?: readonly TechniqueDetector[];
 };
 
 export function findHint(
@@ -461,7 +457,7 @@ export function findHint(
 		return mistake;
 	}
 	const candidates = computeCandidates(grid);
-	for (const detector of options.detectors ?? SUDOKU_TECHNIQUES) {
+	for (const detector of SUDOKU_TECHNIQUES) {
 		const hint = detector.detect(grid, candidates);
 		if (hint) {
 			return hint;
@@ -470,7 +466,7 @@ export function findHint(
 	return null;
 }
 
-export type SudokuHintCopy = typeof sudokuCopy.hints;
+type SudokuHintCopy = typeof sudokuCopy.hints;
 
 /** Fill {name} placeholders. */
 function fill(template: string, values: Record<string, string | number>) {

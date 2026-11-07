@@ -1,10 +1,9 @@
 import type { AuthPolicy, GameType, JoinMode } from "@arcadeclub/core/games";
+import type { Messages } from "@arcadeclub/core/messages";
 import {
 	Brain,
-	ChartNoAxesColumnIncreasing,
 	CircleDot,
 	Dices,
-	Gamepad2,
 	Grid3X3,
 	Music,
 	Spade,
@@ -16,277 +15,120 @@ import type { ComponentType } from "react";
 
 export type { AuthPolicy, GameType, JoinMode };
 
-export type GameAvailability = "playable" | "coming-soon";
-
-export type GameCatalogItem = {
+type GameCatalogItem = {
 	readonly type: GameType;
-	readonly title: string;
-	readonly tagline: string;
-	readonly description: string;
 	readonly joinMode: JoinMode;
 	readonly authPolicy: AuthPolicy;
-	readonly availability: GameAvailability;
 	readonly accent: string;
 	readonly icon: ComponentType<{ className?: string }>;
-	readonly primaryAction: string;
 	readonly route: string;
-	readonly stats: string;
-	readonly minPlayers: number;
-	readonly maxPlayers: number;
-	readonly supportsGuests: boolean;
-	readonly supportsRematch: boolean;
-	readonly supportsSpectators: boolean;
 };
 
-const GAME_CATALOG_ITEMS = [
+export type LocalizedGame = GameCatalogItem & Messages["catalog"][GameType];
+
+const GAME_CATALOG: readonly GameCatalogItem[] = [
 	{
 		type: "live-quiz",
-		title: "Live Quiz",
-		tagline: "Host-led quiz nights",
-		description:
-			"Run a room, show questions on the big screen, and let everyone answer from their own device.",
 		joinMode: "room",
 		authPolicy: "hostChoice",
-		availability: "playable",
 		accent: "from-emerald-400 to-cyan-300",
 		icon: Trophy,
-		primaryAction: "Host quiz",
 		route: "/quiz/new",
-		stats: "Room code",
-		minPlayers: 2,
-		maxPlayers: 50,
-		supportsGuests: true,
-		supportsRematch: true,
-		supportsSpectators: true,
 	},
 	{
 		type: "backgammon",
-		title: "Backgammon",
-		tagline: "Two-player challenge",
-		description:
-			"Start a board, share a link or QR code, and let your opponent claim the second seat.",
 		joinMode: "challenge",
 		authPolicy: "guestAllowed",
-		availability: "playable",
 		accent: "from-fuchsia-400 to-orange-300",
 		icon: Dices,
-		primaryAction: "Start match",
 		route: "/backgammon/new",
-		stats: "Share link",
-		minPlayers: 2,
-		maxPlayers: 2,
-		supportsGuests: true,
-		supportsRematch: true,
-		supportsSpectators: true,
 	},
 	{
 		type: "sudoku",
-		title: "Sudoku",
-		tagline: "Solo puzzle sessions",
-		description:
-			"Generate puzzles at four difficulties, annotate with pro notation, or scan a paper puzzle and keep solving digitally.",
 		joinMode: "solo",
 		authPolicy: "guestAllowed",
-		availability: "playable",
 		accent: "from-sky-400 to-blue-500",
 		icon: Grid3X3,
-		primaryAction: "Play sudoku",
 		route: "/sudoku/new",
-		stats: "Solo",
-		minPlayers: 1,
-		maxPlayers: 1,
-		supportsGuests: true,
-		supportsRematch: false,
-		supportsSpectators: false,
 	},
 	{
 		type: "chess",
-		title: "Chess",
-		tagline: "Direct board duels",
-		description: "Share a challenge link and play a clean real-time match.",
 		joinMode: "challenge",
 		authPolicy: "guestAllowed",
-		availability: "playable",
 		accent: "from-violet-400 to-indigo-400",
 		icon: Brain,
-		primaryAction: "Start match",
 		route: "/chess/new",
-		stats: "2 players",
-		minPlayers: 2,
-		maxPlayers: 2,
-		supportsGuests: true,
-		supportsRematch: true,
-		supportsSpectators: true,
 	},
 	{
 		type: "hitster",
-		title: "Hitster",
-		tagline: "Music timeline party",
-		description:
-			"Host a music round and place songs on a shared timeline with friends.",
 		joinMode: "room",
 		authPolicy: "hostChoice",
-		availability: "playable",
 		accent: "from-pink-400 to-rose-300",
 		icon: Music,
-		primaryAction: "Host room",
 		route: "/hitster/new",
-		stats: "Room code",
-		minPlayers: 2,
-		maxPlayers: 10,
-		supportsGuests: true,
-		supportsRematch: true,
-		supportsSpectators: true,
 	},
 	{
 		type: "word-links",
-		title: "Word Links",
-		tagline: "Daily grouping puzzle",
-		description:
-			"Sort 16 words into four hidden groups. A fresh daily puzzle plus a stack of practice puzzles.",
 		joinMode: "solo",
 		authPolicy: "guestAllowed",
-		availability: "playable",
 		accent: "from-lime-300 to-emerald-400",
 		icon: CircleDot,
-		primaryAction: "Play daily",
 		route: "/word-links",
-		stats: "Daily",
-		minPlayers: 1,
-		maxPlayers: 1,
-		supportsGuests: true,
-		supportsRematch: false,
-		supportsSpectators: false,
 	},
 	{
 		type: "connect-four",
-		title: "Connect Four",
-		tagline: "Drop, stack, connect",
-		description:
-			"Classic four-in-a-row. Share a challenge link and drop discs in real time.",
 		joinMode: "challenge",
 		authPolicy: "guestAllowed",
-		availability: "playable",
 		accent: "from-amber-300 to-red-400",
 		icon: CircleDot,
-		primaryAction: "Start game",
 		route: "/connect-four/new",
-		stats: "2 players",
-		minPlayers: 2,
-		maxPlayers: 2,
-		supportsGuests: true,
-		supportsRematch: true,
-		supportsSpectators: true,
 	},
 	{
 		type: "signal-words",
-		title: "Signal Words",
-		tagline: "Team clue battles",
-		description:
-			"Two teams, one grid of 25 words. Clue-givers signal, teams guess — and everyone avoids the trap tile.",
 		joinMode: "room",
 		authPolicy: "guestAllowed",
-		availability: "playable",
 		accent: "from-rose-400 to-sky-400",
 		icon: Users,
-		primaryAction: "Host room",
 		route: "/signal-words/new",
-		stats: "Room code",
-		minPlayers: 4,
-		maxPlayers: 12,
-		supportsGuests: true,
-		supportsRematch: true,
-		supportsSpectators: true,
 	},
 	{
 		type: "bluff-dice",
-		title: "Bluff Dice",
-		tagline: "Hidden dice, bold claims",
-		description:
-			"Everyone rolls hidden dice, claims climb higher, and one challenge reveals who was bluffing.",
 		joinMode: "room",
 		authPolicy: "guestAllowed",
-		availability: "playable",
 		accent: "from-orange-300 to-rose-400",
 		icon: Dices,
-		primaryAction: "Host table",
 		route: "/bluff-dice/new",
-		stats: "2-8 players",
-		minPlayers: 2,
-		maxPlayers: 8,
-		supportsGuests: true,
-		supportsRematch: true,
-		supportsSpectators: true,
 	},
 	{
 		type: "squad-surge",
-		title: "Squad Surge",
-		tagline: "Grow your army, break the line",
-		description:
-			"Steer your squad through multiplier gates, survive enemy waves, and outnumber the boss at the finish.",
 		joinMode: "solo",
 		authPolicy: "guestAllowed",
-		availability: "playable",
 		accent: "from-red-500 to-orange-400",
 		icon: Swords,
-		primaryAction: "Deploy squad",
 		route: "/squad-surge",
-		stats: "Solo",
-		minPlayers: 1,
-		maxPlayers: 1,
-		supportsGuests: true,
-		supportsRematch: false,
-		supportsSpectators: false,
 	},
 	{
 		type: "card-games",
-		title: "Card Club",
-		tagline: "Pesten, Jokeren and more",
-		description:
-			"Classic Dutch card games at one table. Play the computer straight away or invite friends with a room code.",
 		joinMode: "room",
 		authPolicy: "guestAllowed",
-		availability: "playable",
 		accent: "from-rose-400 to-emerald-400",
 		icon: Spade,
-		primaryAction: "Pick a game",
 		route: "/cards",
-		stats: "2-8 players",
-		minPlayers: 2,
-		maxPlayers: 8,
-		supportsGuests: true,
-		supportsRematch: true,
-		supportsSpectators: true,
 	},
-] satisfies readonly GameCatalogItem[];
-
-export const GAME_CATALOG: readonly GameCatalogItem[] = Object.freeze(
-	GAME_CATALOG_ITEMS.map((game) => Object.freeze(game)),
-);
-
-function copyGame(game: GameCatalogItem) {
-	return { ...game };
-}
+];
 
 export function getVisibleGames() {
-	return GAME_CATALOG.map(copyGame);
-}
-
-export function getPlayableGames() {
-	return GAME_CATALOG.filter((game) => game.availability === "playable").map(
-		copyGame,
-	);
+	return GAME_CATALOG;
 }
 
 export function getGameByType(type: GameType) {
-	const game = GAME_CATALOG.find((item) => item.type === type);
-	return game ? copyGame(game) : undefined;
+	return GAME_CATALOG.find((item) => item.type === type);
 }
 
-export function getCatalogIcon() {
-	return Gamepad2;
-}
-
-export function getCatalogStatsIcon() {
-	return ChartNoAxesColumnIncreasing;
+/** A catalog item with its display text in the viewer's language. */
+export function getLocalizedGame(
+	game: GameCatalogItem,
+	messages: Pick<Messages, "catalog">,
+): LocalizedGame {
+	return { ...game, ...messages.catalog[game.type] };
 }

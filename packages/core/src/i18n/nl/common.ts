@@ -57,24 +57,16 @@ export const common = {
 	actions: {
 		undo: "Ongedaan maken",
 		redo: "Opnieuw doen",
-		continue: "Doorgaan",
-		done: "Klaar",
-		share: "Delen",
 		signIn: "Inloggen",
-		start: "Start",
 		cancel: "Annuleren",
 		close: "Sluiten",
 		save: "Opslaan",
 		delete: "Verwijderen",
-		copy: "Kopiëren",
 		copied: "Gekopieerd!",
-		retry: "Opnieuw proberen",
 		back: "Terug",
 		playAgain: "Opnieuw spelen",
-		leave: "Verlaten",
 	},
 	session: {
-		you: "Jij",
 		unavailable: "Dit spel is niet meer beschikbaar.",
 		notSeated:
 			"Dit toestel zit niet in dit spel. Doe opnieuw mee met de code of uitnodigingslink.",
@@ -82,19 +74,13 @@ export const common = {
 		shareCode:
 			"Doe mee met mijn {game}-spel op Arcade Club met kamercode {code}",
 		roomCode: "Kamercode",
-		shareLink: "Deellink",
-		waitingForPlayers: "Wachten op spelers…",
 		players: { one: "{count} speler", other: "{count} spelers" },
-		guest: "Gast",
 		guestName: "Speler {number}",
 		host: "Host",
 		yourTurn: "Jij bent aan de beurt",
-		spectating: "Meekijken",
 	},
 	errors: {
-		offline: "Je bent offline. Online spellen hebben verbinding nodig.",
 		somethingWentWrong: "Er ging iets mis. Probeer het opnieuw.",
-		notFound: "Niet gevonden.",
 		loading: "Laden…",
 	},
 	gameShell: {
@@ -103,13 +89,8 @@ export const common = {
 		paused: "Gepauzeerd",
 		resume: "Verder spelen",
 		restart: "Opnieuw starten",
-		soundOn: "Geluid aan",
-		soundOff: "Geluid uit",
 		returnToGames: "Terug naar spellen",
 		rotateHint: "Draai je telefoon voor een groter bord",
-	},
-	gameCard: {
-		comingSoon: "Binnenkort beschikbaar",
 	},
 	endScreen: {
 		rematch: "Rematch",
@@ -169,12 +150,6 @@ export const common = {
 			"Geef in Instellingen toegang tot de camera om QR-codes te scannen.",
 		openSettings: "Instellingen openen",
 		scanQrLabel: "QR-code om mee te doen aan dit spel",
-	},
-	gameDetail: {
-		notFound: "Spel niet gevonden.",
-		comingSoonNotice:
-			"Dit spel staat op de Arcade Club-plank en gebruikt hetzelfde live sessiesysteem zodra het speelbaar wordt.",
-		backToGames: "Terug naar spellen",
 	},
 	dashboard: {
 		kicker: "Dashboard",

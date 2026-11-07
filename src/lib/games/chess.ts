@@ -2,7 +2,7 @@ import { Chess } from "chess.js";
 
 export type ChessColor = "white" | "black";
 
-export type ChessMoveInput = {
+type ChessMoveInput = {
 	from: string;
 	to: string;
 	promotion?: "q" | "r" | "b" | "n";
@@ -18,7 +18,7 @@ export type ChessGameResult =
 	| { outcome: "fiftyMoveRule" }
 	| { outcome: "drawAgreed" };
 
-export type ChessMoveOutcome = {
+type ChessMoveOutcome = {
 	fen: string;
 	san: string;
 	activeColor: ChessColor;
@@ -37,10 +37,6 @@ export const CHESS_TIME_CONTROLS: Record<
 	untimed: { label: "Untimed" },
 	"10+0": { label: "10 minutes", initialSeconds: 600 },
 };
-
-export function getActiveColorFromFen(fen: string): ChessColor {
-	return fen.split(" ")[1] === "b" ? "black" : "white";
-}
 
 function detectDraw(game: Chess): ChessGameResult | undefined {
 	if (game.isStalemate()) {
@@ -177,25 +173,4 @@ export function formatClockMs(ms: number) {
 	const minutes = Math.floor(clamped / 60);
 	const seconds = clamped % 60;
 	return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
-export function describeChessResult(result: ChessGameResult) {
-	switch (result.outcome) {
-		case "checkmate":
-			return `Checkmate — ${result.winner} wins`;
-		case "timeout":
-			return `Time out — ${result.winner} wins`;
-		case "resignation":
-			return `Resignation — ${result.winner} wins`;
-		case "stalemate":
-			return "Draw — stalemate";
-		case "insufficientMaterial":
-			return "Draw — insufficient material";
-		case "threefoldRepetition":
-			return "Draw — threefold repetition";
-		case "fiftyMoveRule":
-			return "Draw — fifty-move rule";
-		case "drawAgreed":
-			return "Draw — agreed";
-	}
 }

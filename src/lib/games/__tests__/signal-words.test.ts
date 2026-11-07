@@ -3,7 +3,6 @@ import {
 	applySignalClue,
 	applySignalGuess,
 	applySignalPass,
-	countRemaining,
 	createSignalGameState,
 	generateSignalBoard,
 	otherTeam,
@@ -240,13 +239,5 @@ describe("pass and counters", () => {
 			seededRandom(5),
 		);
 		expect(() => applySignalPass(createSignalGameState(board))).toThrow();
-	});
-
-	it("counts remaining cards per team", () => {
-		const state = stateWithClue();
-		expect(countRemaining(state, state.startingTeam)).toBe(9);
-		const index = findIndex(state, state.startingTeam);
-		const { state: next } = applySignalGuess(state, index);
-		expect(countRemaining(next, state.startingTeam)).toBe(8);
 	});
 });

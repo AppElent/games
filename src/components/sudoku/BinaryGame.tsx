@@ -20,7 +20,7 @@ type BinaryStateDoc = {
 	lastResumedAt?: number;
 };
 
-export type BinaryGameProps = {
+type BinaryGameProps = {
 	sessionId: Id<"gameSessions">;
 	title: string;
 	state: BinaryStateDoc;

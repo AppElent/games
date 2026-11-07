@@ -63,7 +63,6 @@ export const serverErrors = {
 	waitingForBothPlayers: "Wachten op beide spelers.",
 	notYourTurn: "Je bent niet aan de beurt.",
 	illegalMove: "Die zet is niet toegestaan.",
-	invalidMove: "Die zet is niet mogelijk.",
 	timeRanOut: "Je tijd is op.",
 	opponentHasTime: "Je tegenstander heeft nog tijd.",
 	gameUntimed: "Dit spel heeft geen klok.",

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sudoku as en } from "../i18n/en/games/sudoku";
 import { sudoku as nl } from "../i18n/nl/games/sudoku";
 import {
-	cellAt,
+	computeCandidates,
 	emptyGrid,
 	generatePuzzle,
 	mulberry32,
@@ -10,12 +10,15 @@ import {
 } from "../sudoku";
 import { describeHint, findHint, SUDOKU_TECHNIQUES } from "../sudoku-hints";
 
-function detectorsById(id: string) {
+const cellAt = (row: number, col: number) => row * 9 + col;
+
+/** Runs one technique alone, so earlier techniques in the order can't win. */
+function hintFrom(id: string, grid: number[]) {
 	const detector = SUDOKU_TECHNIQUES.find((technique) => technique.id === id);
 	if (!detector) {
 		throw new Error(`Unknown technique ${id}`);
 	}
-	return { detectors: [detector] };
+	return detector.detect(grid, computeCandidates(grid));
 }
 
 const KNOWN_PUZZLE =
@@ -39,7 +42,7 @@ describe("sudoku hints", () => {
 		grid[cellAt(1, 7)] = 1; // blocks row 1
 		grid[cellAt(5, 0)] = 1; // blocks column 0
 		grid[cellAt(7, 1)] = 1; // blocks column 1
-		const hint = findHint(grid, detectorsById("hidden-single"));
+		const hint = hintFrom("hidden-single", grid);
 		expect(hint?.technique).toBe("hidden-single");
 		expect(hint?.placements).toEqual([{ cell: cellAt(2, 2), digit: 1 }]);
 		expect(hint && describeHint(hint, 3, en.hints).text).toContain(
@@ -56,7 +59,7 @@ describe("sudoku hints", () => {
 		grid[cellAt(2, 0)] = 5;
 		grid[cellAt(2, 1)] = 6;
 		grid[cellAt(2, 2)] = 7;
-		const hint = findHint(grid, detectorsById("pointing"));
+		const hint = hintFrom("pointing", grid);
 		expect(hint?.technique).toBe("pointing");
 		expect(hint?.candidateDigits).toEqual([1]);
 		expect(hint?.cells).toEqual([cellAt(0, 0), cellAt(0, 1), cellAt(0, 2)]);
@@ -76,7 +79,7 @@ describe("sudoku hints", () => {
 		grid[cellAt(0, 6)] = 5;
 		grid[cellAt(0, 7)] = 6;
 		grid[cellAt(0, 8)] = 7;
-		const hint = findHint(grid, detectorsById("box-line-reduction"));
+		const hint = hintFrom("box-line-reduction", grid);
 		expect(hint?.technique).toBe("box-line-reduction");
 		expect(hint?.candidateDigits).toEqual([1]);
 		const eliminatedCells = hint?.eliminations.map((entry) => entry.cell) ?? [];
@@ -90,7 +93,7 @@ describe("sudoku hints", () => {
 		for (let col = 2; col <= 8; col += 1) {
 			grid[cellAt(0, col)] = col - 1;
 		}
-		const hint = findHint(grid, detectorsById("naked-pair"));
+		const hint = hintFrom("naked-pair", grid);
 		expect(hint?.technique).toBe("naked-pair");
 		expect(hint?.candidateDigits).toEqual([8, 9]);
 		expect(hint?.cells.sort()).toEqual([cellAt(0, 0), cellAt(0, 1)]);
@@ -110,7 +113,7 @@ describe("sudoku hints", () => {
 		grid[cellAt(4, 2)] = 9;
 		grid[cellAt(5, 3)] = 8;
 		grid[cellAt(6, 3)] = 9;
-		const hint = findHint(grid, detectorsById("hidden-pair"));
+		const hint = hintFrom("hidden-pair", grid);
 		expect(hint?.technique).toBe("hidden-pair");
 		expect(hint?.candidateDigits).toEqual([8, 9]);
 		expect(hint?.cells.sort()).toEqual([cellAt(0, 0), cellAt(0, 1)]);
@@ -126,7 +129,7 @@ describe("sudoku hints", () => {
 		grid[cellAt(2, 1)] = 6;
 		grid[cellAt(2, 2)] = 7;
 		grid[cellAt(0, 2)] = 8;
-		const hint = findHint(grid, detectorsById("snyder-pair"));
+		const hint = hintFrom("snyder-pair", grid);
 		expect(hint?.technique).toBe("snyder-pair");
 		expect(hint?.cells).toHaveLength(2);
 		expect(hint?.placements).toEqual([]);

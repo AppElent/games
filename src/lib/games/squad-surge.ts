@@ -1,16 +1,12 @@
 import { mulberry32, type SudokuRng } from "@arcadeclub/core/sudoku";
 
-export { mulberry32 };
-
 /** Forward speed in track units per second. */
 export const SPEED = 14;
-/** How quickly the squad eases toward the target lane (per second). */
-export const LANE_RESPONSIVENESS = 10;
 
-export type GateOp = "mul" | "add" | "sub";
+type GateOp = "mul" | "add" | "sub";
 export type Gate = { side: 0 | 1; op: GateOp; value: number };
-export type GatePair = { z: number; gates: [Gate, Gate] };
-export type Wave = { z: number; strength: number };
+type GatePair = { z: number; gates: [Gate, Gate] };
+type Wave = { z: number; strength: number };
 
 export type WeaponId = "pistol" | "smg" | "shotgun" | "minigun";
 
@@ -68,7 +64,7 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
 };
 
 /** A weapon crate sitting on one side of the road; run over it to pick it up. */
-export type WeaponDrop = { z: number; weapon: WeaponId; lane: number };
+type WeaponDrop = { z: number; weapon: WeaponId; lane: number };
 
 export type Level = {
 	seed: number;
@@ -87,23 +83,6 @@ export type Level = {
 };
 
 export type SimStatus = "running" | "won" | "lost";
-
-export type SimState = {
-	/** Distance travelled. */
-	z: number;
-	/** Continuous horizontal position, 0..1 (0 = left gate/side). */
-	lane: number;
-	/** Integer soldier count, always >= 0. */
-	army: number;
-	nextGateIdx: number;
-	nextWaveIdx: number;
-	status: SimStatus;
-	elapsed: number;
-};
-
-function clamp(value: number, min: number, max: number) {
-	return Math.min(max, Math.max(min, value));
-}
 
 export function applyGate(army: number, gate: Gate): number {
 	switch (gate.op) {
@@ -220,80 +199,5 @@ export function generateLevel(seed: number, difficulty: number): Level {
 		weaponDrops,
 		boss,
 		startArmy,
-	};
-}
-
-export function initialState(level: Level): SimState {
-	return {
-		z: 0,
-		lane: 0.5,
-		army: level.startArmy,
-		nextGateIdx: 0,
-		nextWaveIdx: 0,
-		status: "running",
-		elapsed: 0,
-	};
-}
-
-export function isTerminal(state: SimState): boolean {
-	return state.status !== "running";
-}
-
-export function stepSimulation(
-	state: SimState,
-	input: { targetLane: number },
-	dt: number,
-	level: Level,
-): SimState {
-	if (state.status !== "running") {
-		return state;
-	}
-
-	const z = state.z + SPEED * dt;
-	const target = clamp(input.targetLane, 0, 1);
-	const ease = Math.min(1, LANE_RESPONSIVENESS * dt);
-	const lane = clamp(state.lane + (target - state.lane) * ease, 0, 1);
-
-	let army = state.army;
-	let nextGateIdx = state.nextGateIdx;
-	let nextWaveIdx = state.nextWaveIdx;
-	let status: SimStatus = "running";
-
-	// Resolve crossed gates and waves in z order.
-	while (status === "running") {
-		const gate = level.gatePairs[nextGateIdx];
-		const wave = level.waves[nextWaveIdx];
-		const gateZ = gate && gate.z <= z ? gate.z : Infinity;
-		const waveZ = wave && wave.z <= z ? wave.z : Infinity;
-		if (gateZ === Infinity && waveZ === Infinity) {
-			break;
-		}
-		if (gateZ <= waveZ && gate) {
-			const side: 0 | 1 = lane < 0.5 ? 0 : 1;
-			const chosen =
-				gate.gates[0].side === side ? gate.gates[0] : gate.gates[1];
-			army = applyGate(army, chosen);
-			nextGateIdx += 1;
-		} else if (wave) {
-			army = resolveWave(army, wave.strength);
-			nextWaveIdx += 1;
-			if (army === 0) {
-				status = "lost";
-			}
-		}
-	}
-
-	if (status === "running" && z >= level.length) {
-		status = army > level.boss ? "won" : "lost";
-	}
-
-	return {
-		z,
-		lane,
-		army,
-		nextGateIdx,
-		nextWaveIdx,
-		status,
-		elapsed: state.elapsed + dt,
 	};
 }
