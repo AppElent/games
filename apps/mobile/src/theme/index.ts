@@ -13,6 +13,7 @@ export { useAccessibilityTextSize } from "./text-size";
 export type { Tokens } from "./tokens";
 export {
 	backgammonColors,
+	cardColors,
 	chrome,
 	markerColors,
 	metrics,

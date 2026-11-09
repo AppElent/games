@@ -140,6 +140,7 @@ Claim a simulator/emulator through `~/.agents/bin/sim`, then drive it with
 Useful entry points:
 
 - `arcadeclub-dev://join?code=ABCDEF` / `arcadeclub-dev://join?token=…`: join flows.
+- `arcadeclub-dev://cards` / `arcadeclub-dev://cards/pesten`: card hub and game setup.
 - `arcadeclub-dev://backgammon/local`, `arcadeclub-dev://hitster`.
 - `settings appearance dark|light` and `settings text-size …` for theme and large
   text checks.
@@ -160,7 +161,8 @@ pnpm exec convex run --identity "$ID" hitster:create \
   '{"title":"Test","displayName":"DJ CLI","mode":"original","packId":"normal","targetCards":10,"playbackMode":"hostDevice"}'
 # then hitster:start / hitster:reveal / hitster:nextRound with the returned
 # sessionId and participantId; backgammon:create '{"title":"Test","displayName":"CLI"}'
-# opens a challenge.
+# opens a challenge, and a card room opens with
+# cardGames:createTable '{"title":"Pesten","displayName":"CLI","seatSecret":"cli-seat-secret-0123456789abcdef","joinMode":"room","gameId":"pesten","options":[],"bots":0,"start":false}'.
 ```
 
 ## Error reporting

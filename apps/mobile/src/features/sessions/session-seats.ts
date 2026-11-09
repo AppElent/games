@@ -25,7 +25,12 @@ export type Seat = {
 	participantId: Id<"sessionParticipants">;
 };
 
-type SessionSeat = Seat & { gameType: GameType; joinedAt: number };
+type SessionSeat = Seat & {
+	gameType: GameType;
+	joinedAt: number;
+	/** Proves a card-game seat is this phone's: participant ids are public. */
+	seatSecret?: string;
+};
 
 function isSeat(value: unknown): value is SessionSeat {
 	const seat = value as Partial<SessionSeat> | null;
@@ -33,7 +38,8 @@ function isSeat(value: unknown): value is SessionSeat {
 		typeof seat?.sessionId === "string" &&
 		typeof seat.participantId === "string" &&
 		GAME_TYPES.some((gameType) => gameType === seat.gameType) &&
-		typeof seat.joinedAt === "number"
+		typeof seat.joinedAt === "number" &&
+		(seat.seatSecret === undefined || typeof seat.seatSecret === "string")
 	);
 }
 

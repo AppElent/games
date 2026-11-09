@@ -18,8 +18,12 @@ type AppGame<G extends GameType = GameType> = {
 	androidIcon: Parameters<typeof Icon>[0]["android"];
 	tint: keyof Tokens;
 	tintDim: keyof Tokens;
+	/** One entry opens several games, so Continue shows the session's own title. */
+	titledBySession?: true;
 	online?: {
 		create: unknown;
+		/** A seat is proven by a secret this phone keeps: participant ids are public. */
+		seatSecret?: true;
 		sessionHref: (sessionId: string) => Href;
 	};
 };
@@ -63,6 +67,23 @@ export const APP_GAMES = {
 			}),
 		},
 	},
+	"card-games": {
+		id: "card-games",
+		href: "/cards",
+		icon: "suit.spade.fill",
+		androidIcon: "playing_cards",
+		tint: "green",
+		tintDim: "greenDim",
+		titledBySession: true,
+		online: {
+			create: api.cardGames.createTable,
+			seatSecret: true,
+			sessionHref: (sessionId: string) => ({
+				pathname: "/cards/table/[sessionId]",
+				params: { sessionId },
+			}),
+		},
+	},
 } as const satisfies { [G in GameType]?: AppGame<G> };
 
 export type AppGameType = keyof typeof APP_GAMES;
@@ -81,6 +102,11 @@ export function isOnlineAppGame(
 	gameType: GameType,
 ): gameType is OnlineGameType {
 	return Boolean(BY_TYPE[gameType]?.online);
+}
+
+/** Whether this game's seats carry a secret this phone must keep. */
+export function usesSeatSecret(gameType: GameType) {
+	return Boolean(BY_TYPE[gameType]?.online?.seatSecret);
 }
 
 /** The in-app screen for an online session. */

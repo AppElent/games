@@ -124,3 +124,20 @@ export function parseInvite(text: string): Invite | null {
 		? { code: normalizeJoinCode(value) }
 		: null;
 }
+
+/**
+ * The secret a device keeps for a card-table seat after joining. A returning
+ * seat keeps the one it holds; a seat the join just claimed, or one this
+ * device never held, takes the new one, so an account's seat can move here.
+ */
+export function seatSecretAfterJoin<
+	Held extends { participantId: string; seatSecret?: string },
+>(
+	held: Held | null | undefined,
+	joined: { participantId: string; seatClaimed: boolean },
+	newSecret: string,
+): Held["seatSecret"] | string {
+	return held?.participantId === joined.participantId && !joined.seatClaimed
+		? held.seatSecret
+		: newSecret;
+}

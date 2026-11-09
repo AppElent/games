@@ -1,8 +1,9 @@
+import { isRedSuit } from "@arcadeclub/core/cards/art";
 import { SUITS } from "@arcadeclub/core/cards/deck";
 import { Link } from "@tanstack/react-router";
 import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
 import { useMessages } from "#/lib/i18n";
-import { isRedSuit, SuitIcon } from "./PlayingCard";
+import { SuitIcon } from "./PlayingCard";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
 
 const CASCADE = Array.from({ length: 16 }, (_, index) => ({

@@ -1,3 +1,4 @@
+import { seatSecretAfterJoin } from "@arcadeclub/core/sessions";
 import { readJson, removeStored, writeJson } from "#/lib/games/local-store";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -17,20 +18,20 @@ export function newCardSeatSecret() {
 	return `${crypto.randomUUID()}${crypto.randomUUID()}`;
 }
 
-/** A returning participant keeps the secret their seat already holds. */
+/** A returning participant keeps the secret their seat already holds; see `seatSecretAfterJoin`. */
 export function rememberCardSeat(
 	sessionId: string,
 	participantId: Id<"sessionParticipants">,
 	seatSecret: string,
 	seatClaimed: boolean,
 ): CardSeat {
-	const existing = readCardSeat(sessionId);
 	const seat = {
 		participantId,
-		seatSecret:
-			existing?.participantId === participantId && !seatClaimed
-				? existing.seatSecret
-				: seatSecret,
+		seatSecret: seatSecretAfterJoin(
+			readCardSeat(sessionId),
+			{ participantId, seatClaimed },
+			seatSecret,
+		),
 	};
 	writeJson(keyOf(sessionId), seat);
 	return seat;

@@ -10,13 +10,19 @@ import { CenteredState } from "../../../ui/centered-state";
 export function OnlineScreenFrame({
 	title,
 	loading = false,
+	loadingMessage,
 	blocked = null,
+	blockedAction,
 	children = null,
 }: {
 	title: string;
 	loading?: boolean;
+	/** The game's own words while it loads; a plain "Loading" otherwise. */
+	loadingMessage?: string;
 	/** Why the game isn't shown, such as an unavailable session. */
 	blocked?: string | null;
+	/** A way out of the blocked state. */
+	blockedAction?: { label: string; onPress: () => void };
 	children?: ReactNode;
 }) {
 	const { t } = useI18n();
@@ -24,9 +30,12 @@ export function OnlineScreenFrame({
 		<>
 			<Stack.Screen options={{ title }} />
 			{loading ? (
-				<CenteredState loading message={t.common.errors.loading} />
+				<CenteredState
+					loading
+					message={loadingMessage ?? t.common.errors.loading}
+				/>
 			) : blocked ? (
-				<CenteredState title={blocked} />
+				<CenteredState title={blocked} action={blockedAction} />
 			) : (
 				children
 			)}

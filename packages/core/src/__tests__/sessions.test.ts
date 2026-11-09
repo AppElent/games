@@ -8,6 +8,7 @@ import {
 	isJoinCodeLike,
 	normalizeJoinCode,
 	parseInvite,
+	seatSecretAfterJoin,
 } from "../sessions";
 
 describe("session helpers", () => {
@@ -89,5 +90,31 @@ describe("session helpers", () => {
 		expect(parseInvite("https://games.example/join")).toBeNull();
 		expect(parseInvite("WIFI:S:home;T:WPA;P:secret;;")).toBeNull();
 		expect(parseInvite("hello world, long text")).toBeNull();
+	});
+});
+
+describe("seatSecretAfterJoin", () => {
+	const joined = { participantId: "seat-1", seatClaimed: false };
+	const held = { participantId: "seat-1", seatSecret: "held" };
+
+	it("keeps the secret a returning seat already holds", () => {
+		expect(seatSecretAfterJoin(held, joined, "new")).toBe("held");
+	});
+
+	it("uses the new secret when the join claimed the seat", () => {
+		expect(
+			seatSecretAfterJoin(held, { ...joined, seatClaimed: true }, "new"),
+		).toBe("new");
+	});
+
+	it("uses the new secret for a seat this device has never held", () => {
+		expect(seatSecretAfterJoin(undefined, joined, "new")).toBe("new");
+		expect(
+			seatSecretAfterJoin(
+				{ participantId: "other-seat", seatSecret: "held" },
+				joined,
+				"new",
+			),
+		).toBe("new");
 	});
 });

@@ -1,20 +1,18 @@
+import { isRedSuit, suitColor } from "@arcadeclub/core/cards/art";
 import { type CardId, SUITS, type Suit } from "@arcadeclub/core/cards/deck";
-import type { CardGame } from "@arcadeclub/core/cards/engine";
+import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import { powerOf, type SheddingView } from "@arcadeclub/core/cards/shedding";
+import {
+	seatName,
+	sheddingHint,
+	sortCards,
+} from "@arcadeclub/core/cards/table-view";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
 import { EndOverlay } from "./EndOverlay";
-import { familyRules } from "./family";
-import { seatName, sortCards } from "./format";
-import {
-	isRedSuit,
-	PlayingCard,
-	SuitIcon,
-	suitColor,
-	useCardName,
-} from "./PlayingCard";
+import { PlayingCard, SuitIcon, useCardName } from "./PlayingCard";
 import {
 	Hand,
 	Piles,
@@ -24,6 +22,7 @@ import {
 	useFreshCards,
 } from "./Table";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
+import { useCardWords } from "./useCardWords";
 import { useFlights } from "./useFlights";
 import { cardAttr } from "./zones";
 
@@ -44,6 +43,7 @@ export function SheddingTable({
 }) {
 	const { locale } = useI18n();
 	const cards = useMessages().games.cards;
+	const words = useCardWords();
 	const cardName = useCardName();
 	const rootRef = useRef<HTMLDivElement>(null);
 	const [picking, setPicking] = useState<CardId | null>(null);
@@ -115,22 +115,7 @@ export function SheddingTable({
 		});
 	}
 
-	const hint = !mine
-		? null
-		: view.pendingDraw > 0
-			? fmt(
-					view.legal.length > 0
-						? cards.shedding.mustAnswer
-						: cards.shedding.mustTake,
-					{ count: view.pendingDraw },
-				)
-			: view.drawnCard
-				? cards.shedding.playDrawnHint
-				: view.mustContinue
-					? cards.shedding.mustContinue
-					: view.legal.length > 0
-						? cards.shedding.pickMove
-						: cards.shedding.noMove;
+	const hint = sheddingHint(view, mine, words);
 
 	const fresh = useFreshCards(view.hand, mine, view.events);
 	const debtor = view.lastCardDebtor;

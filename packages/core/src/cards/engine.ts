@@ -257,3 +257,15 @@ export function resolvedRules(
 		rules: rulesFor(game, options),
 	} as ResolvedRules;
 }
+
+type RulesOf = { [R in ResolvedRules as R["family"]]: R["rules"] };
+
+/** The game's rules with its house options applied, or null when it plays another family. */
+export function familyRules<F extends Family>(
+	game: CardGameDefinition,
+	options: readonly string[],
+	family: F,
+): RulesOf[F] | null {
+	const resolved = resolvedRules(game, options);
+	return resolved.family === family ? (resolved.rules as RulesOf[F]) : null;
+}

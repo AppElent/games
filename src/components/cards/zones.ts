@@ -4,17 +4,13 @@
  * selector lives in one place: a typo would only make a card quietly not fly.
  */
 import type { CardId } from "@arcadeclub/core/cards/deck";
+import type { FlightZone } from "@arcadeclub/core/cards/table-view";
 import { CARD_FACE_CLASS } from "./PlayingCard";
 
 /** Somewhere to search: the table root, an element in it, or the page. */
 type Scope = Element | Document;
 
-export type Zone =
-	| "stock"
-	| "discard"
-	| "hand"
-	| `seat-${number}`
-	| `meld-${number}`;
+export type Zone = FlightZone;
 
 export const seatZone = (seat: number): Zone => `seat-${seat}`;
 export const meldZone = (meldId: number): Zone => `meld-${meldId}`;

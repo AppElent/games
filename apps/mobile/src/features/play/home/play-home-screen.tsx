@@ -1,5 +1,5 @@
 /**
- * The Play tab: the three games the app carries, then anything this phone can
+ * The Play tab: the games the app carries, then anything this phone can
  * pick back up (saved solo games and online seats).
  */
 import { useFocusEffect, useRouter } from "expo-router";
@@ -158,8 +158,12 @@ export function PlayHomeScreen() {
 					</AppText>
 					{visible.map((item) => {
 						const game = APP_GAMES[item.gameType];
-						const title = t.catalog[item.gameType].title;
-						const text = detail(item, statuses[item.id] ?? undefined);
+						const status = statuses[item.id] ?? undefined;
+						const title =
+							"titledBySession" in game && status?.title
+								? status.title
+								: t.catalog[item.gameType].title;
+						const text = detail(item, status);
 						return (
 							<Card
 								key={item.id}

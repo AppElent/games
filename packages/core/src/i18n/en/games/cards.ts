@@ -30,6 +30,7 @@ export const cards = {
 	lobby: {
 		kicker: "Table is open",
 		codeLabel: "Room code",
+		inviteLabel: "Invite players",
 		seatsHeading: "At the table",
 		seatsCount: "{count} of {max} seats",
 		hostBadge: "Host",
@@ -99,7 +100,7 @@ export const cards = {
 		callLast: "Last card!",
 		callLastArmed: "Last card called",
 		callLastHint: "Call it before you play, or risk a penalty.",
-		catch: "Caught {name}!",
+		catch: "Catch {name}!",
 		chooseSuit: "Name the next suit",
 		chosenSuit: "{suit} to play",
 		openTable: "Anything goes",

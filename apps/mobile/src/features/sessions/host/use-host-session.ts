@@ -6,13 +6,18 @@
  * The hook calls the game's own atomic `create` mutation, named in
  * `APP_GAMES`, which opens the session and its game state together and
  * decides the join mode and auth policy; the seat is remembered under that
- * game.
+ * game, with a fresh seat secret when the game's seats need one.
  */
 import { useMutation } from "convex/react";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useCallback } from "react";
-import { APP_GAMES, type OnlineGameType } from "../../play/app-games";
+import {
+	APP_GAMES,
+	type OnlineGameType,
+	usesSeatSecret,
+} from "../../play/app-games";
 import { usePlayerIdentity } from "../../players/identity/use-player-identity";
+import { newSeatSecret } from "../seat-secret";
 import { rememberSeat } from "../session-seats";
 import { useBackendAuthReady } from "../use-backend-auth-ready";
 import { useSessionAction } from "../use-session-action";
@@ -20,10 +25,10 @@ import { useSessionAction } from "../use-session-action";
 type Create<G extends OnlineGameType> =
 	(typeof APP_GAMES)[G]["online"]["create"];
 
-/** The game's `create` arguments besides who hosts. */
+/** The game's `create` arguments besides who hosts and the seat secret. */
 type HostOptions<G extends OnlineGameType> = Omit<
 	FunctionArgs<Create<G>>,
-	"displayName" | "guestId"
+	"displayName" | "guestId" | "seatSecret"
 >;
 
 export function useHostSession<G extends OnlineGameType>(gameType: G) {
@@ -39,15 +44,20 @@ export function useHostSession<G extends OnlineGameType>(gameType: G) {
 	const host = useCallback(
 		(options: HostOptions<G>) =>
 			run(async () => {
+				const seatSecret = usesSeatSecret(gameType)
+					? newSeatSecret()
+					: undefined;
 				const session = await create({
 					...options,
 					displayName,
 					guestId,
+					...(seatSecret ? { seatSecret } : {}),
 				} as FunctionArgs<Create<G>>);
 				rememberSeat({
 					sessionId: session.sessionId,
 					participantId: session.participantId,
 					gameType,
+					seatSecret,
 				});
 				return session;
 			}),

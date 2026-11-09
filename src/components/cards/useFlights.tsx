@@ -1,5 +1,12 @@
+import { CARD_ASPECT } from "@arcadeclub/core/cards/art";
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import type { CardEvent } from "@arcadeclub/core/cards/events";
+import {
+	cardTilt,
+	eventsSince,
+	newestSeq,
+	planFlights,
+} from "@arcadeclub/core/cards/table-view";
 import {
 	type ReactNode,
 	type RefObject,
@@ -7,17 +14,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { eventsSince, newestSeq } from "./events";
-import { cardTilt } from "./format";
-import { CARD_HEIGHT, CARD_WIDTH, PlayingCard } from "./PlayingCard";
-import {
-	findCardFace,
-	findZone,
-	isSeatZone,
-	meldZone,
-	seatZone as otherSeatZone,
-	type Zone,
-} from "./zones";
+import { PlayingCard } from "./PlayingCard";
+import { findCardFace, findZone, isSeatZone, type Zone } from "./zones";
 
 type Spot = { x: number; y: number; width: number };
 type Flight = {
@@ -31,10 +29,7 @@ type Flight = {
 };
 
 const DURATION_MS = 340;
-const STEP_MS = 60;
 const FALLBACK_WIDTH = 40;
-const MAX_CARDS_PER_EVENT = 6;
-const DEAL_CARDS_PER_SEAT = 3;
 
 /** Where `element` sits inside `root`, at its own width. */
 function spotIn(root: HTMLElement, element: HTMLElement, width: number): Spot {
@@ -67,7 +62,7 @@ function FlightCard({
 	flight: Flight;
 	onDone: (flight: Flight) => void;
 }) {
-	const height = (flight.to.width * CARD_HEIGHT) / CARD_WIDTH;
+	const height = flight.to.width * CARD_ASPECT;
 	return (
 		<div
 			className="flight"
@@ -154,93 +149,33 @@ export function useFlights(
 		if (previous === null || newest === previous || !root || quiet) {
 			return;
 		}
-		const fresh = eventsSince(events, previous);
-		const seatZone = (seat: number): Zone =>
-			seat === you ? "hand" : otherSeatZone(seat);
+		const plan = planFlights(eventsSince(events, previous), {
+			you,
+			seatCount,
+			meldCard,
+		});
 		const planned: Flight[] = [];
-		let delay = 0;
-
-		const fly = (
-			card: CardId | null,
-			fromZone: Zone,
-			toZone: Zone,
-			from?: Spot,
-		) => {
-			const start = from ?? spotOf(root, fromZone);
-			const end = spotOf(root, toZone);
-			if (!start || !end) {
-				return;
+		for (const flight of plan.flights) {
+			const start =
+				(flight.fromHandCard && flight.card
+					? origins.current.get(flight.card)
+					: undefined) ?? spotOf(root, flight.from);
+			const end = spotOf(root, flight.to);
+			if (start && end) {
+				planned.push({
+					id: nextId.current++,
+					card: flight.card,
+					from: start,
+					to: end,
+					tilt:
+						flight.to === "discard" && flight.card ? cardTilt(flight.card) : 0,
+					delay: flight.delay,
+					toDiscard: flight.to === "discard",
+				});
 			}
-			planned.push({
-				id: nextId.current++,
-				card,
-				from: start,
-				to: end,
-				tilt: toZone === "discard" && card ? cardTilt(card) : 0,
-				delay,
-				toDiscard: toZone === "discard",
-			});
-			delay += STEP_MS;
-		};
-		const flyBacks = (count: number, fromZone: Zone, seat: number) => {
-			for (let i = 0; i < Math.min(count, MAX_CARDS_PER_EVENT); i += 1) {
-				fly(null, fromZone, seatZone(seat));
-			}
-		};
-
-		for (const event of fresh) {
-			switch (event.type) {
-				case "deal":
-					for (let round = 0; round < DEAL_CARDS_PER_SEAT; round += 1) {
-						for (let seat = 0; seat < seatCount; seat += 1) {
-							fly(null, "stock", seatZone(seat));
-						}
-					}
-					break;
-				case "play":
-				case "discard":
-					fly(
-						event.card,
-						seatZone(event.seat),
-						"discard",
-						event.seat === you ? origins.current.get(event.card) : undefined,
-					);
-					delay += STEP_MS;
-					break;
-				case "draw":
-					flyBacks(
-						event.count,
-						event.source === "discard" ? "discard" : "stock",
-						event.seat,
-					);
-					break;
-				case "penalty":
-				case "caught":
-				case "finishPenalty":
-					flyBacks(event.count, "stock", event.seat);
-					break;
-				case "meld":
-					for (const id of event.meldIds) {
-						fly(meldCard(id), seatZone(event.seat), meldZone(id));
-					}
-					break;
-				case "layoff":
-					fly(
-						event.cards[0] ?? null,
-						seatZone(event.seat),
-						meldZone(event.meldId),
-					);
-					break;
-				case "swap":
-					fly(event.card, seatZone(event.seat), meldZone(event.meldId));
-					break;
-				case "skip":
-				case "again":
-					setFlash(event.seat);
-					break;
-				default:
-					break;
-			}
+		}
+		if (plan.flash !== null) {
+			setFlash(plan.flash);
 		}
 		origins.current.clear();
 		if (planned.length > 0) {
