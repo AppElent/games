@@ -56,8 +56,13 @@ describe("seat", () => {
 		expect(renderHook(() => useSeat("session_a")).result.current).toBe(alice);
 	});
 
-	it("prefers the pre-deploy host seat, as host screens did", () => {
+	it("prefers the pre-deploy joined seat, the newer of the two", () => {
 		window.sessionStorage.setItem("arcade-club.participantId", bob);
+		window.sessionStorage.setItem("arcade-club.hostParticipantId", alice);
+		expect(renderHook(() => useSeat("session_a")).result.current).toBe(bob);
+	});
+
+	it("carries a pre-deploy host-only seat", () => {
 		window.sessionStorage.setItem("arcade-club.hostParticipantId", alice);
 		expect(renderHook(() => useSeat("session_a")).result.current).toBe(alice);
 	});

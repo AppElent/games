@@ -17,13 +17,14 @@ type ParticipantId = Id<"sessionParticipants">;
 const keyOf = (sessionId: string) => `arcade-club.seat.${sessionId}`;
 
 /**
- * One-shot carry-over: before per-session seats a tab kept one global seat, the
- * host's first. A tab open across that deploy moves it to the session it is on.
+ * One-shot carry-over: before per-session seats a tab kept one global seat. A
+ * tab open across that deploy moves it to the session it is on: the joined seat
+ * first, since every join overwrote it while a host key stayed behind.
  * sessionStorage dies with the tab, so remove after 2026-12-01.
  */
 const LEGACY_SEAT_KEYS = [
-	"arcade-club.hostParticipantId",
 	"arcade-club.participantId",
+	"arcade-club.hostParticipantId",
 ];
 
 function readSeat(sessionId: string): string | null {
