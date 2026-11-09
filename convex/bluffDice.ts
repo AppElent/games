@@ -19,7 +19,8 @@ import {
 	loadGame,
 	reopenSession,
 	requireHostByParticipantId,
-	requireParticipant,
+	requireOwnParticipant,
+	seatArgs,
 	startSession,
 } from "./lib/gameSession";
 import {
@@ -67,16 +68,14 @@ export const create = mutation({
 });
 
 export const start = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { session, state } = await loadGame(
 			ctx,
 			"bluff-dice",
 			args.sessionId,
 		);
+		await requireOwnParticipant(ctx, args);
 		if (state.phase !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
@@ -93,13 +92,13 @@ export const start = mutation({
 
 export const submitClaim = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		quantity: v.number(),
 		face: v.number(),
 	},
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "bluff-dice", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		requireActive(state, args.participantId);
 		const totalDice = state.hands.reduce(
 			(sum, hand) => sum + hand.values.length,
@@ -126,12 +125,10 @@ export const submitClaim = mutation({
 });
 
 export const challenge = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "bluff-dice", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		requireActive(state, args.participantId);
 		const claim = state.claimHistory.at(-1);
 		if (!claim) {
@@ -152,16 +149,14 @@ export const challenge = mutation({
 });
 
 export const rematch = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { session, state } = await loadGame(
 			ctx,
 			"bluff-dice",
 			args.sessionId,
 		);
+		await requireOwnParticipant(ctx, args);
 		if (state.phase !== "finished") {
 			throw gameError("currentGameNotFinished");
 		}
@@ -205,12 +200,9 @@ export const getBundle = query({
 
 /** The requesting participant's own dice. */
 export const getMyDice = query({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
-		await requireParticipant(ctx, args.sessionId, args.participantId);
+		await requireOwnParticipant(ctx, args);
 		const state = await findGameState(ctx, "bluff-dice", args.sessionId);
 		if (!state) {
 			return null;

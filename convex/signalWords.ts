@@ -26,7 +26,8 @@ import {
 	loadGame,
 	reopenSession,
 	requireHostByParticipantId,
-	requireParticipant,
+	requireOwnParticipant,
+	seatArgs,
 	startSession,
 } from "./lib/gameSession";
 import {
@@ -125,8 +126,7 @@ export const create = mutation({
 
 export const joinTeam = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		team: signalTeamValidator,
 		clueGiver: v.boolean(),
 	},
@@ -135,7 +135,7 @@ export const joinTeam = mutation({
 		if (state.phase !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
-		await requireParticipant(ctx, args.sessionId, args.participantId);
+		await requireOwnParticipant(ctx, args);
 		const seat = signalSeat(args.team, args.clueGiver);
 		if (args.clueGiver) {
 			const participants = await listParticipants(ctx, args.sessionId);
@@ -152,16 +152,14 @@ export const joinTeam = mutation({
 });
 
 export const start = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { session, state } = await loadGame(
 			ctx,
 			"signal-words",
 			args.sessionId,
 		);
+		await requireOwnParticipant(ctx, args);
 		if (state.phase !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
@@ -186,8 +184,7 @@ export const start = mutation({
 
 export const submitClue = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		clue: v.string(),
 		count: v.number(),
 	},
@@ -196,11 +193,7 @@ export const submitClue = mutation({
 		if (state.phase !== "clue") {
 			throw gameError("notExpectingClue");
 		}
-		const participant = await requireParticipant(
-			ctx,
-			args.sessionId,
-			args.participantId,
-		);
+		const participant = await requireOwnParticipant(ctx, args);
 		if (participant.seat !== signalSeat(state.currentTeam, true)) {
 			throw gameError("clueGiverOnly");
 		}
@@ -213,8 +206,7 @@ export const submitClue = mutation({
 
 export const submitGuess = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		cardIndex: v.number(),
 	},
 	handler: async (ctx, args) => {
@@ -222,11 +214,7 @@ export const submitGuess = mutation({
 		if (state.phase !== "guess") {
 			throw gameError("notExpectingGuess");
 		}
-		const participant = await requireParticipant(
-			ctx,
-			args.sessionId,
-			args.participantId,
-		);
+		const participant = await requireOwnParticipant(ctx, args);
 		if (participant.seat !== state.currentTeam) {
 			throw gameError("guessersOnlyPick");
 		}
@@ -238,20 +226,13 @@ export const submitGuess = mutation({
 });
 
 export const pass = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "signal-words", args.sessionId);
 		if (state.phase !== "guess") {
 			throw gameError("passOnlyDuringGuess");
 		}
-		const participant = await requireParticipant(
-			ctx,
-			args.sessionId,
-			args.participantId,
-		);
+		const participant = await requireOwnParticipant(ctx, args);
 		if (participant.seat !== state.currentTeam) {
 			throw gameError("guessersOnlyPass");
 		}
@@ -265,16 +246,14 @@ export const pass = mutation({
 });
 
 export const rematch = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { session, state } = await loadGame(
 			ctx,
 			"signal-words",
 			args.sessionId,
 		);
+		await requireOwnParticipant(ctx, args);
 		if (state.phase !== "finished") {
 			throw gameError("currentGameNotFinished");
 		}
@@ -316,16 +295,9 @@ export const getBundle = query({
 
 /** The hidden key, for clue-givers only. */
 export const getKey = query({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
-		const participant = await requireParticipant(
-			ctx,
-			args.sessionId,
-			args.participantId,
-		);
+		const participant = await requireOwnParticipant(ctx, args);
 		if (!isSignalClueGiver(participant.seat)) {
 			return null;
 		}

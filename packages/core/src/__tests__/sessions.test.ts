@@ -6,10 +6,15 @@ import {
 	formatJoinCode,
 	getGuestDisplayName,
 	isJoinCodeLike,
+	isUnguessableGuestId,
 	normalizeJoinCode,
 	parseInvite,
+	resolveGuestIdentity,
 	seatSecretAfterJoin,
 } from "../sessions";
+
+const UUID = () => "0f8fad5b-d9cb-469f-a165-70867728950e";
+const OTHER_UUID = () => "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 
 describe("session helpers", () => {
 	it("normalizes room codes to uppercase alphanumeric text", () => {
@@ -48,11 +53,39 @@ describe("session helpers", () => {
 	});
 
 	it("gives a new guest a name from the template it is passed", () => {
-		const guest = createGuestIdentity("Speler {number}", 123);
+		const guest = createGuestIdentity("Speler {number}", UUID, 123);
 		expect(guest.displayName).toBe(
 			getGuestDisplayName(guest.id, "Speler {number}"),
 		);
 		expect(guest.createdAt).toBe(123);
+	});
+
+	it("gives a new guest a whole UUID, which cannot be guessed", () => {
+		const guest = createGuestIdentity("Player {number}", UUID);
+		expect(guest.id).toBe(`guest_${UUID()}`);
+		expect(isUnguessableGuestId(guest.id)).toBe(true);
+		expect(isUnguessableGuestId("guest_1a2b3c4d")).toBe(false);
+		expect(isUnguessableGuestId("guest_123456")).toBe(false);
+	});
+
+	it("keeps a stored guest whose id cannot be guessed", () => {
+		const stored = createGuestIdentity("Player {number}", UUID, 5);
+		expect(resolveGuestIdentity(stored, "Player {number}", OTHER_UUID)).toBe(
+			stored,
+		);
+	});
+
+	it("replaces a missing guest, or one with a short id, keeping its name", () => {
+		const created = resolveGuestIdentity(null, "Player {number}", OTHER_UUID);
+		expect(created.id).toBe(`guest_${OTHER_UUID()}`);
+		const short = {
+			id: "guest_123456",
+			displayName: "Player 456",
+			createdAt: 1,
+		};
+		const replaced = resolveGuestIdentity(short, "Player {number}", OTHER_UUID);
+		expect(replaced.id).toBe(`guest_${OTHER_UUID()}`);
+		expect(replaced.displayName).toBe("Player 456");
 	});
 
 	it("builds invite urls for room codes and same-site links", () => {

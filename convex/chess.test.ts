@@ -10,8 +10,10 @@ import {
 	fixRandom,
 	freezeClock,
 	getDoc,
+	HOST_USER,
 	HOSTED,
 	hostSession,
+	impostors,
 	joinWithCode,
 	joinWithToken,
 	otherGameSession,
@@ -820,5 +822,35 @@ describe("create", () => {
 		expect((await getDoc(t, participantId))?.seat).toBe(color);
 		const state = await t.query(api.chess.getBundle, { sessionId });
 		expect(state?.state?.[`${color}ParticipantId`]).toBe(participantId);
+	});
+});
+
+describe("ownership", () => {
+	it("answers notInGame to anyone acting for another player's seat", async () => {
+		const t = setup();
+		const { sessionId, white, black } = await fullMatch(t);
+		for (const caller of impostors(t, { guestIds: ["guest_black"] })) {
+			await expectCode(move(caller, sessionId, white, "e2", "e4"), "notInGame");
+			await expectCode(
+				caller.mutation(api.chess.resign, { sessionId, participantId: white }),
+				"notInGame",
+			);
+		}
+		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
+			await expectCode(
+				caller.mutation(api.chess.resign, { sessionId, participantId: black }),
+				"notInGame",
+			);
+			await expectCode(
+				caller.mutation(api.chess.offerDraw, {
+					sessionId,
+					participantId: black,
+				}),
+				"notInGame",
+			);
+		}
+		const { state } = await bundle(t, sessionId);
+		expect(state.fen).toBe(INITIAL_FEN);
+		expect(state.phase).not.toBe("finished");
 	});
 });

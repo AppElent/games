@@ -1,13 +1,16 @@
 import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
 import { gameError } from "./lib/errors";
 import {
+	isCaller,
 	kickParticipant as kick,
 	listParticipants,
 	markConnected,
-	requireHostByIdentity,
+	publicParticipants,
+	requireHost,
 } from "./lib/gameSession";
 import { createHostedSession } from "./lib/hostedSession";
 import { findOpenSession, joinSession } from "./lib/join";
@@ -88,7 +91,7 @@ export const getBundle = query({
 			return null;
 		}
 		const participants = await listParticipants(ctx, args.sessionId);
-		return { session, participants };
+		return { session, participants: publicParticipants(participants) };
 	},
 });
 
@@ -117,24 +120,41 @@ export const listParticipation = query({
 });
 
 export const heartbeat = mutation({
-	args: { participantId: v.id("sessionParticipants") },
+	args: {
+		participantId: v.id("sessionParticipants"),
+		guestId: v.optional(v.string()),
+	},
 	handler: async (ctx, args) => {
 		const participant = await ctx.db.get(args.participantId);
-		if (!participant) {
+		if (!participant || !(await isCaller(ctx, participant, args.guestId))) {
 			throw gameError("participantNotFound");
 		}
 		await markConnected(ctx, args.participantId);
 	},
 });
 
+/** The host's seat that every moderation call names, as `requireHost` reads it. */
+function hostSeat(args: {
+	sessionId: Id<"gameSessions">;
+	hostParticipantId: Id<"sessionParticipants">;
+	guestId?: string;
+}) {
+	return {
+		sessionId: args.sessionId,
+		participantId: args.hostParticipantId,
+		guestId: args.guestId,
+	};
+}
+
 export const kickParticipant = mutation({
 	args: {
 		sessionId: v.id("gameSessions"),
 		hostParticipantId: v.id("sessionParticipants"),
+		guestId: v.optional(v.string()),
 		targetParticipantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		await requireHostByIdentity(ctx, args.sessionId, args.hostParticipantId);
+		await requireHost(ctx, hostSeat(args));
 		if (args.targetParticipantId === args.hostParticipantId) {
 			throw gameError("hostCannotKickSelf");
 		}
@@ -150,10 +170,11 @@ export const setLocked = mutation({
 	args: {
 		sessionId: v.id("gameSessions"),
 		hostParticipantId: v.id("sessionParticipants"),
+		guestId: v.optional(v.string()),
 		locked: v.boolean(),
 	},
 	handler: async (ctx, args) => {
-		await requireHostByIdentity(ctx, args.sessionId, args.hostParticipantId);
+		await requireHost(ctx, hostSeat(args));
 		await ctx.db.patch(args.sessionId, { locked: args.locked });
 	},
 });
@@ -162,10 +183,11 @@ export const rename = mutation({
 	args: {
 		sessionId: v.id("gameSessions"),
 		hostParticipantId: v.id("sessionParticipants"),
+		guestId: v.optional(v.string()),
 		title: v.string(),
 	},
 	handler: async (ctx, args) => {
-		await requireHostByIdentity(ctx, args.sessionId, args.hostParticipantId);
+		await requireHost(ctx, hostSeat(args));
 		const title = args.title.trim();
 		if (!title || title.length > MAX_TITLE_LENGTH) {
 			throw gameError("titleLength");
@@ -178,14 +200,11 @@ export const transferHost = mutation({
 	args: {
 		sessionId: v.id("gameSessions"),
 		hostParticipantId: v.id("sessionParticipants"),
+		guestId: v.optional(v.string()),
 		targetParticipantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const session = await requireHostByIdentity(
-			ctx,
-			args.sessionId,
-			args.hostParticipantId,
-		);
+		const session = await requireHost(ctx, hostSeat(args));
 		const target = await ctx.db.get(args.targetParticipantId);
 		if (!target || target.sessionId !== args.sessionId || target.kickedAt) {
 			throw gameError("participantNotFound");

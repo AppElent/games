@@ -31,7 +31,7 @@ export function useDuel<
 	Participant extends { _id: ParticipantId },
 >(bundle: DuelBundle<Seat, Participant>, seats: readonly [Seat, Seat]) {
 	const { state, participants } = bundle;
-	const { participantId, seatAction, error, run } = useSeatAction(
+	const { participantId, seat, seatAction, error, run } = useSeatAction(
 		bundle.session._id,
 	);
 	const localColor = state ? seatOf(seats, state, participantId) : undefined;
@@ -43,6 +43,8 @@ export function useDuel<
 
 	return {
 		participantId,
+		/** What a call acting for this tab's seat sends. */
+		seat,
 		localColor,
 		opponentJoined,
 		finished,

@@ -8,8 +8,12 @@ import {
 	expectCode,
 	fields,
 	freezeClock,
+	getDoc,
+	HOST_USER,
 	HOSTED,
 	hostSession,
+	impostor,
+	impostors,
 	joinWithCode,
 	otherGameSession,
 	outsider,
@@ -646,19 +650,22 @@ describe("getKey", () => {
 		).resolves.toBeNull();
 	});
 
-	it("pins that a clue giver's public id is enough to read the key", async () => {
+	it("answers notInGame to anyone naming a clue giver's id", async () => {
 		const t = setup();
-		const { sessionId, stored } = await startedGame(t);
+		const { sessionId } = await startedGame(t);
 		const { participants } = await bundle(t, sessionId);
 		const clueSeat = participants.find((row) => row.seat === "blue-clue");
-		await expect(
-			t
+		const args = { sessionId, participantId: clueSeat?._id as ParticipantId };
+		await expectCode(
+			impostor(t).query(api.signalWords.getKey, args),
+			"notInGame",
+		);
+		await expectCode(
+			impostor(t)
 				.withIdentity({ subject: "user_stranger" })
-				.query(api.signalWords.getKey, {
-					sessionId,
-					participantId: clueSeat?._id as ParticipantId,
-				}),
-		).resolves.toEqual(stored.assignments);
+				.query(api.signalWords.getKey, args),
+			"notInGame",
+		);
 	});
 
 	it("answers notInGame to an outsider and is null for a seatless player", async () => {
@@ -700,5 +707,39 @@ describe("create", () => {
 			"signInToHost",
 		);
 		expect(await sessionCount(t)).toBe(0);
+	});
+});
+
+describe("ownership", () => {
+	it("answers notInGame to anyone acting for another player's seat", async () => {
+		const t = setup();
+		const { sessionId, seats } = await seatedRoom(t);
+		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
+			await expectCode(
+				joinTeam(caller, sessionId, seats.red, "blue", false),
+				"notInGame",
+			);
+		}
+		await t.mutation(api.signalWords.start, {
+			sessionId,
+			participantId: seats["red-clue"],
+		});
+		const stored = await storedState(t, sessionId);
+		const clueGiver = seats[`${stored.currentTeam}-clue`];
+		for (const caller of impostors(t, {
+			guestIds: ["guest_red", "guest_blue"],
+		})) {
+			await expectCode(
+				caller.mutation(api.signalWords.submitClue, {
+					sessionId,
+					participantId: clueGiver,
+					clue: "ZEBRAFISH",
+					count: 1,
+				}),
+				"notInGame",
+			);
+		}
+		expect((await getDoc(t, seats.red))?.seat).toBe("red");
+		expect((await storedState(t, sessionId)).phase).toBe("clue");
 	});
 });

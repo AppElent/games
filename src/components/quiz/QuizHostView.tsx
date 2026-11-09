@@ -9,8 +9,7 @@ import { ParticipantList } from "#/components/games/ParticipantList";
 import { SessionHostControls } from "#/components/games/SessionHostControls";
 import { useSessionModeration } from "#/components/games/useSessionModeration";
 import { getGameRoute } from "#/lib/games/catalog";
-import { useSeat } from "#/lib/games/seat";
-import { useGameAction } from "#/lib/games/use-game-action";
+import { useSeatAction } from "#/lib/games/use-seat-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import { Scoreboard } from "./Scoreboard";
@@ -20,8 +19,9 @@ type QuizBundle = NonNullable<FunctionReturnType<typeof api.quiz.getBundle>>;
 export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 	const { messages, locale } = useI18n();
 	const advancePhase = useMutation(api.quiz.advancePhase);
-	const participantId = useSeat(bundle.session._id);
-	const { error, run } = useGameAction();
+	const { participantId, seatAction, error, run } = useSeatAction(
+		bundle.session._id,
+	);
 	const actionFailed = messages.games.quiz.hostView.actionFailed;
 	const moderation = useSessionModeration(
 		bundle.session._id,
@@ -131,12 +131,7 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 					<button
 						type="button"
 						className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2.5 font-bold text-slate-950"
-						onClick={() =>
-							run(
-								() => advancePhase({ sessionId: bundle.session._id }),
-								actionFailed,
-							)
-						}
+						onClick={seatAction(advancePhase, actionFailed)}
 					>
 						{state?.phase === "finished" ? (
 							<>

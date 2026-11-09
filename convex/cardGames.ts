@@ -17,7 +17,6 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { getOptionalUserId } from "./lib/auth";
 import {
 	appendHumanSeat,
 	humanSeat,
@@ -31,6 +30,7 @@ import { gameError, rules } from "./lib/errors";
 import {
 	findGameState,
 	finishSession,
+	isCaller,
 	kickParticipant,
 	loadGame,
 	reopenSession,
@@ -323,8 +323,8 @@ export const takeSeat = mutation({
 			return held;
 		}
 		const index = occupiedSeatIndex(table, args.participantId);
-		const userId = await getOptionalUserId(ctx);
-		const ownsParticipant = Boolean(userId) && participant.userId === userId;
+		// Only an account claims a seat here: a guest's proof is the secret.
+		const ownsParticipant = await isCaller(ctx, participant, undefined);
 		if (index >= 0) {
 			if (!ownsParticipant) {
 				throw gameError("cardsSeatCredential");

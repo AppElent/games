@@ -18,7 +18,13 @@ import {
 	seatHost,
 } from "./lib/duel";
 import { rules } from "./lib/errors";
-import { loadBundle, loadGame, startSession } from "./lib/gameSession";
+import {
+	loadBundle,
+	loadGame,
+	requireOwnParticipant,
+	seatArgs,
+	startSession,
+} from "./lib/gameSession";
 import {
 	createdSession,
 	createdSessionValidator,
@@ -56,8 +62,7 @@ export const create = mutation({
 
 export const drop = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		column: v.number(),
 	},
 	handler: async (ctx, args) => {
@@ -66,6 +71,7 @@ export const drop = mutation({
 			"connect-four",
 			args.sessionId,
 		);
+		await requireOwnParticipant(ctx, args);
 		const color = requireTurn(CONNECT_FOUR_DUEL, state, args.participantId);
 		const next = rules(() =>
 			applyConnectFourDrop(state.board, color, args.column),
@@ -96,12 +102,10 @@ export const drop = mutation({
 });
 
 export const resign = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "connect-four", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		const winner = requireResign(CONNECT_FOUR_DUEL, state, args.participantId);
 		await finishDuel(
 			ctx,
@@ -114,12 +118,10 @@ export const resign = mutation({
 });
 
 export const rematch = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "connect-four", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		await rematchDuel(
 			ctx,
 			CONNECT_FOUR_DUEL,

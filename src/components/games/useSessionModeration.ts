@@ -1,4 +1,5 @@
 import { useMutation } from "convex/react";
+import { useGuestId } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -17,18 +18,19 @@ export function useSessionModeration(
 	const rename = useMutation(api.sessions.rename);
 	const kickParticipant = useMutation(api.sessions.kickParticipant);
 	const transferHost = useMutation(api.sessions.transferHost);
+	const guestId = useGuestId();
 
 	if (!hostParticipantId) {
 		return undefined;
 	}
+	const host = { sessionId, hostParticipantId, guestId };
 	return {
-		setLocked: (locked: boolean) =>
-			setLocked({ sessionId, hostParticipantId, locked }),
-		rename: (title: string) => rename({ sessionId, hostParticipantId, title }),
+		setLocked: (locked: boolean) => setLocked({ ...host, locked }),
+		rename: (title: string) => rename({ ...host, title }),
 		kick: (targetParticipantId: ParticipantId) =>
-			kickParticipant({ sessionId, hostParticipantId, targetParticipantId }),
+			kickParticipant({ ...host, targetParticipantId }),
 		transferHost: (targetParticipantId: ParticipantId) =>
-			transferHost({ sessionId, hostParticipantId, targetParticipantId }),
+			transferHost({ ...host, targetParticipantId }),
 	};
 }
 

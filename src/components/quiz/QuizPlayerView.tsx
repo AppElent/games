@@ -2,6 +2,7 @@ import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+import { useGuestId } from "#/lib/games/sessions";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -20,6 +21,7 @@ export function QuizPlayerView({
 	const submitAnswer = useMutation(api.quiz.submitAnswer);
 	const [pendingChoice, setPendingChoice] = useState("");
 	const { error, run } = useGameAction();
+	const guestId = useGuestId();
 	const state = bundle.quizState;
 	const question = state
 		? bundle.quizSet?.questions[state.currentQuestionIndex]
@@ -99,6 +101,7 @@ export function QuizPlayerView({
 										submitAnswer({
 											sessionId: bundle.session._id,
 											participantId,
+											guestId,
 											selectedChoiceIds: [choice.id],
 										}),
 									messages.games.quiz.playerView.submitError,

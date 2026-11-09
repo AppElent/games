@@ -25,6 +25,9 @@ import {
 	loadBundle,
 	loadGame,
 	loadSession,
+	requireHost,
+	requireOwnParticipant,
+	seatArgs,
 	startSession,
 } from "./lib/gameSession";
 import {
@@ -75,6 +78,10 @@ export const createState = mutation({
 	},
 	handler: async (ctx, args) => {
 		await loadSession(ctx, "backgammon", args.sessionId, "sessionNotFound");
+		await requireHost(ctx, {
+			sessionId: args.sessionId,
+			participantId: args.hostParticipantId,
+		});
 		const existing = await findGameState(ctx, "backgammon", args.sessionId);
 		if (existing) {
 			return existing._id;
@@ -84,16 +91,14 @@ export const createState = mutation({
 });
 
 export const rollDice = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { session, state } = await loadGame(
 			ctx,
 			"backgammon",
 			args.sessionId,
 		);
+		await requireOwnParticipant(ctx, args);
 		const color = requireTurn(BACKGAMMON_DUEL, state, args.participantId);
 		if (state.dice.length > 0) {
 			throw gameError("endTurnBeforeRolling");
@@ -121,13 +126,13 @@ export const rollDice = mutation({
 
 export const applyMove = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		from: v.union(v.number(), v.literal("bar")),
 		to: v.union(v.number(), v.literal("off")),
 	},
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "backgammon", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		const color = requireTurn(BACKGAMMON_DUEL, state, args.participantId);
 		const now = Date.now();
 		const result = rules(() =>
@@ -165,12 +170,10 @@ export const applyMove = mutation({
 });
 
 export const endTurn = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "backgammon", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		const color = requireTurn(BACKGAMMON_DUEL, state, args.participantId);
 		if (state.dice.length === 0) {
 			throw gameError("rollBeforeEndingTurn");
@@ -197,12 +200,10 @@ export const endTurn = mutation({
 });
 
 export const rematch = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "backgammon", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		await rematchDuel(ctx, BACKGAMMON_DUEL, state, args.participantId, () => {
 			const initialState = createInitialBackgammonState();
 			return {

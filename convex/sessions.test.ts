@@ -13,6 +13,8 @@ import {
 	getDoc,
 	HOST_USER,
 	hostSession,
+	impostor,
+	impostors,
 	joinWithCode,
 	joinWithToken,
 	type ParticipantId,
@@ -498,7 +500,7 @@ describe("getBundle", () => {
 		).resolves.toBeNull();
 	});
 
-	it("pins that every participant's guest and user ids ship to all readers", async () => {
+	it("ships user ids to all readers but keeps guest ids out", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await room(t);
 		await joinWithCode(t, joinCode, "guest_one");
@@ -512,10 +514,7 @@ describe("getBundle", () => {
 			HOST_USER,
 			undefined,
 		]);
-		expect(result?.participants.map((row) => row.guestId)).toEqual([
-			undefined,
-			"guest_one",
-		]);
+		expect(result?.participants.every((row) => !("guestId" in row))).toBe(true);
 	});
 });
 
@@ -660,7 +659,7 @@ describe("host controls", () => {
 	it("answers hostOnly when a signed-in host's id comes from anyone else", async () => {
 		const t = setup();
 		const { sessionId, hostId, guest } = await roomWithGuest(t);
-		await expectCode(kick(t, sessionId, hostId, guest), "hostOnly");
+		await expectCode(kick(impostor(t), sessionId, hostId, guest), "hostOnly");
 		await expectCode(
 			asUser(t).mutation(api.sessions.kickParticipant, {
 				sessionId,
@@ -672,13 +671,25 @@ describe("host controls", () => {
 		expect((await getDoc(t, guest))?.kickedAt).toBeUndefined();
 	});
 
-	it("pins that a guest host proves itself with its participant id alone", async () => {
+	it("lets a guest host prove itself with its guest id, and nobody else", async () => {
 		const t = setup();
 		const { sessionId, participantId } = await guestSolo(t);
-		await t.mutation(api.sessions.setLocked, {
-			sessionId,
-			hostParticipantId: participantId,
-			locked: true,
+		const args = { sessionId, hostParticipantId: participantId, locked: true };
+		await expectCode(
+			impostor(t).mutation(api.sessions.setLocked, args),
+			"hostOnly",
+		);
+		await expectCode(
+			impostor(t).mutation(api.sessions.setLocked, {
+				...args,
+				guestId: "guest_other",
+			}),
+			"hostOnly",
+		);
+		expect((await getDoc(t, sessionId))?.locked).toBeUndefined();
+		await impostor(t).mutation(api.sessions.setLocked, {
+			...args,
+			guestId: "guest_solver",
 		});
 		expect((await getDoc(t, sessionId))?.locked).toBe(true);
 	});
@@ -918,5 +929,26 @@ describe("listParticipation", () => {
 			.query(api.sessions.listParticipation, {});
 		expect(rows).toHaveLength(100);
 		expect(rows.map((row) => row.session._id)).not.toContain(oldest.sessionId);
+	});
+});
+
+describe("ownership", () => {
+	it("answers participantNotFound to a heartbeat for someone else", async () => {
+		const t = setup();
+		const { joinCode } = await room(t);
+		const { participantId } = await joinWithCode(t, joinCode, "guest_one");
+		await arrange(t, participantId, { connected: false, lastSeen: 0 });
+		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
+			await expectCode(
+				caller.mutation(api.sessions.heartbeat, { participantId }),
+				"participantNotFound",
+			);
+		}
+		expect(fields(await getDoc(t, participantId))).toMatchObject({
+			connected: false,
+			lastSeen: 0,
+		});
+		await t.mutation(api.sessions.heartbeat, { participantId });
+		expect((await getDoc(t, participantId))?.connected).toBe(true);
 	});
 });

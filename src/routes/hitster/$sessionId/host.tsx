@@ -7,6 +7,7 @@ import {
 } from "#/components/games/SessionBundleRoute";
 import { HitsterHostView } from "#/components/hitster/HitsterHostView";
 import { useSeat } from "#/lib/games/seat";
+import { useGuestId } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -21,9 +22,11 @@ function HitsterHostPage() {
 	const session = messages.games.hitster.session;
 	const { sessionId } = Route.useParams();
 	const participantId = useSeat(sessionId);
+	const guestId = useGuestId();
 	const bundle = useQuery(api.hitster.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 		participantId,
+		guestId,
 	});
 	const shell = pageShell(messages.catalog.hitster.title, {
 		loading: "text-[var(--club-muted)]",
