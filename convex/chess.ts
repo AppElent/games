@@ -27,7 +27,13 @@ import {
 	seatHost,
 } from "./lib/duel";
 import { gameError, rules } from "./lib/errors";
-import { loadBundle, loadGame, startSession } from "./lib/gameSession";
+import {
+	loadBundle,
+	loadGame,
+	requireOwnParticipant,
+	seatArgs,
+	startSession,
+} from "./lib/gameSession";
 import {
 	createdSession,
 	createdSessionValidator,
@@ -101,14 +107,14 @@ export const create = mutation({
 
 export const applyMove = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		from: v.string(),
 		to: v.string(),
 		promotion: v.optional(literals(CHESS_PROMOTIONS)),
 	},
 	handler: async (ctx, args) => {
 		const { session, state } = await loadGame(ctx, "chess", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		const color = requireTurn(CHESS_DUEL, state, args.participantId);
 		const now = Date.now();
 
@@ -162,24 +168,20 @@ export const applyMove = mutation({
 });
 
 export const resign = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "chess", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		const winner = requireResign(CHESS_DUEL, state, args.participantId);
 		await finishGame(ctx, state, "resignation", winner, Date.now());
 	},
 });
 
 export const offerDraw = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "chess", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		if (state.phase !== "active") {
 			throw gameError("noActiveGame");
 		}
@@ -197,12 +199,12 @@ export const offerDraw = mutation({
 
 export const respondDraw = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		accept: v.boolean(),
 	},
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "chess", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		if (state.phase !== "active" || !state.drawOfferBy) {
 			throw gameError("noDrawOffer");
 		}
@@ -222,12 +224,10 @@ export const respondDraw = mutation({
 });
 
 export const claimTimeout = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "chess", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		if (state.phase !== "active") {
 			throw gameError("noActiveGame");
 		}
@@ -248,12 +248,10 @@ export const claimTimeout = mutation({
 });
 
 export const rematch = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "chess", args.sessionId);
+		await requireOwnParticipant(ctx, args);
 		await rematchDuel(ctx, CHESS_DUEL, state, args.participantId, (now) => {
 			const clock = initialClock(state.timeControl);
 			return {

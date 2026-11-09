@@ -21,12 +21,14 @@ import { mutation, query } from "./_generated/server";
 import { gameError, rules } from "./lib/errors";
 import {
 	findGameState,
+	findOwnParticipant,
 	finishSession,
 	listPlayersIncludingKicked,
 	loadBundle,
 	loadSession,
 	requireHostByParticipantId,
-	requireParticipant,
+	requireOwnParticipant,
+	seatArgs,
 	startSession,
 } from "./lib/gameSession";
 import {
@@ -120,13 +122,12 @@ export const create = mutation({
 // Installed mobile builds call this: remove once no installed build predates hitster.create.
 export const setup = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		...gameConfigArgs,
 	},
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
-		await requireParticipant(ctx, args.sessionId, args.participantId);
+		await requireOwnParticipant(ctx, args);
 		requireHostByParticipantId(session, args.participantId);
 		if (session.status !== "lobby") {
 			throw gameError("gameAlreadyStarted");
@@ -141,13 +142,10 @@ export const setup = mutation({
 });
 
 export const start = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
-		await requireParticipant(ctx, args.sessionId, args.participantId);
+		await requireOwnParticipant(ctx, args);
 		requireHostByParticipantId(session, args.participantId);
 		if (state?.phase !== "lobby") {
 			throw gameError("gameNotReady");
@@ -173,8 +171,7 @@ export const start = mutation({
 
 export const submitGuess = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		dropIndex: v.number(),
 		artistGuess: v.optional(v.string()),
 		titleGuess: v.optional(v.string()),
@@ -182,7 +179,7 @@ export const submitGuess = mutation({
 	},
 	handler: async (ctx, args) => {
 		const { state } = await getSessionAndState(ctx, args.sessionId);
-		await requireParticipant(ctx, args.sessionId, args.participantId);
+		await requireOwnParticipant(ctx, args);
 		if (state?.phase !== "nowPlaying") {
 			throw gameError("guessesClosed");
 		}
@@ -213,8 +210,7 @@ export const submitGuess = mutation({
 
 export const submitSteal = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		dropIndex: v.number(),
 		artistGuess: v.optional(v.string()),
 		titleGuess: v.optional(v.string()),
@@ -222,7 +218,7 @@ export const submitSteal = mutation({
 	},
 	handler: async (ctx, args) => {
 		const { state } = await getSessionAndState(ctx, args.sessionId);
-		await requireParticipant(ctx, args.sessionId, args.participantId);
+		await requireOwnParticipant(ctx, args);
 		if (state?.phase !== "nowPlaying") {
 			throw gameError("stealsClosed");
 		}
@@ -270,13 +266,10 @@ export const submitSteal = mutation({
 });
 
 export const reveal = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
-		await requireParticipant(ctx, args.sessionId, args.participantId);
+		await requireOwnParticipant(ctx, args);
 		requireHostByParticipantId(session, args.participantId);
 		if (state?.phase !== "nowPlaying" || !state.currentCardId) {
 			throw gameError("nothingToReveal");
@@ -297,13 +290,10 @@ export const reveal = mutation({
 });
 
 export const nextRound = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-	},
+	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
-		await requireParticipant(ctx, args.sessionId, args.participantId);
+		await requireOwnParticipant(ctx, args);
 		requireHostByParticipantId(session, args.participantId);
 		if (state?.phase !== "reveal") {
 			throw gameError("finishRevealFirst");
@@ -327,12 +317,17 @@ export const nextRound = mutation({
 	},
 });
 
+/**
+ * The room as one viewer sees it. A seat the caller cannot prove is theirs
+ * views it as a spectator, so naming the host's id shows no song.
+ */
 export const getBundle = query({
 	args: {
 		sessionId: v.id("gameSessions"),
 		participantId: v.optional(v.id("sessionParticipants")),
+		guestId: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
+	handler: async (ctx, { participantId: named, ...args }) => {
 		const bundle = await loadBundle(ctx, "hitster", args.sessionId);
 		if (!bundle) {
 			return null;
@@ -342,10 +337,14 @@ export const getBundle = query({
 			return { session, participants, state: null, hostPlayback: null };
 		}
 
+		const viewer =
+			named &&
+			(await findOwnParticipant(ctx, { ...args, participantId: named }));
+		const participantId = viewer ? viewer._id : undefined;
 		const revealed = state.phase === "reveal" || state.phase === "finished";
 		const isHost =
-			args.participantId !== undefined &&
-			session.hostParticipantId === args.participantId;
+			participantId !== undefined &&
+			session.hostParticipantId === participantId;
 
 		// Never ship the deck order; hide the mystery card and other players'
 		// written answers until reveal.
@@ -355,7 +354,7 @@ export const getBundle = query({
 			deckRemaining: deck.length,
 			currentCardId: revealed ? state.currentCardId : undefined,
 			pendingGuess: state.pendingGuess
-				? revealed || state.pendingGuess.participantId === args.participantId
+				? revealed || state.pendingGuess.participantId === participantId
 					? state.pendingGuess
 					: {
 							participantId: state.pendingGuess.participantId,
@@ -364,7 +363,7 @@ export const getBundle = query({
 						}
 				: undefined,
 			stealClaims: state.stealClaims.map((claim) =>
-				revealed || claim.participantId === args.participantId
+				revealed || claim.participantId === participantId
 					? claim
 					: {
 							participantId: claim.participantId,

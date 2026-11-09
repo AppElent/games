@@ -9,8 +9,10 @@ import {
 	fields,
 	freezeClock,
 	getDoc,
+	HOST_USER,
 	HOSTED,
 	hostSession,
+	impostors,
 	joinWithCode,
 	joinWithToken,
 	otherGameSession,
@@ -540,5 +542,27 @@ describe("create", () => {
 			"signInToHost",
 		);
 		expect(await sessionCount(t)).toBe(0);
+	});
+});
+
+describe("ownership", () => {
+	it("answers notInGame to anyone acting for another player's seat", async () => {
+		const t = setup();
+		const { sessionId, red, yellow } = await fullMatch(t);
+		for (const caller of impostors(t, { guestIds: ["guest_yellow"] })) {
+			await expectCode(drop(caller, sessionId, red, 0), "notInGame");
+		}
+		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
+			await expectCode(
+				caller.mutation(api.connectFour.resign, {
+					sessionId,
+					participantId: yellow,
+				}),
+				"notInGame",
+			);
+		}
+		const { state } = await bundle(t, sessionId);
+		expect(state.board).toEqual(emptyBoard());
+		expect(state.phase).not.toBe("finished");
 	});
 });

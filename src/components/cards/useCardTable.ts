@@ -9,6 +9,7 @@ import {
 	readCardSeat,
 } from "#/lib/games/card-seat";
 import { useErrorMessage } from "#/lib/games/errors";
+import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -126,8 +127,9 @@ export function useCardTable(sessionId: Id<"gameSessions">) {
 		if (!participantId) {
 			return;
 		}
+		const { id: guestId } = getOrCreateGuestIdentity();
 		const beat = () => {
-			void heartbeat({ participantId }).catch(() => {});
+			void heartbeat({ participantId, guestId }).catch(() => {});
 		};
 		beat();
 		const timer = window.setInterval(beat, HEARTBEAT_MS);

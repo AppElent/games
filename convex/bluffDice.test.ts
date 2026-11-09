@@ -10,8 +10,11 @@ import {
 	fields,
 	fixRandom,
 	freezeClock,
+	HOST_USER,
 	HOSTED,
 	hostSession,
+	impostor,
+	impostors,
 	joinWithCode,
 	otherGameSession,
 	outsider,
@@ -153,7 +156,6 @@ describe("joining", () => {
 		const { participants } = await bundle(t, sessionId);
 		expect(fields(participants[1])).toEqual({
 			sessionId,
-			guestId: "guest_two",
 			displayName: "guest_two",
 			role: "player",
 			connected: true,
@@ -524,22 +526,31 @@ describe("getMyDice", () => {
 		).resolves.toEqual(FOURS);
 	});
 
-	it("pins that a public participant id is enough to read a hand", async () => {
+	it("answers notInGame to anyone reading another player's hand", async () => {
 		const t = setup();
-		const { sessionId } = await startedGame(t);
-		const { participants } = await bundle(t, sessionId);
-		const anonymous = await t.query(api.bluffDice.getMyDice, {
-			sessionId,
-			participantId: participants[0]._id,
-		});
-		expect(anonymous).toEqual(FOURS);
-		const stranger = t.withIdentity({ subject: "user_stranger" });
-		await expect(
-			stranger.query(api.bluffDice.getMyDice, {
+		const { sessionId, players } = await startedGame(t);
+		const [host, guest] = players;
+		await expectCode(
+			impostor(t).query(api.bluffDice.getMyDice, {
 				sessionId,
-				participantId: participants[1]._id,
+				participantId: host,
 			}),
-		).resolves.toEqual(FOURS);
+			"notInGame",
+		);
+		await expectCode(
+			impostor(t)
+				.withIdentity({ subject: "user_stranger" })
+				.query(api.bluffDice.getMyDice, { sessionId, participantId: guest }),
+			"notInGame",
+		);
+		await expectCode(
+			impostor(t).query(api.bluffDice.getMyDice, {
+				sessionId,
+				participantId: guest,
+				guestId: "guest_other",
+			}),
+			"notInGame",
+		);
 	});
 
 	it("is null for a watcher, or ahead of the state", async () => {
@@ -616,5 +627,34 @@ describe("create", () => {
 		const t = setup();
 		await expectCode(t.mutation(api.bluffDice.create, HOSTED), "signInToHost");
 		expect(await sessionCount(t)).toBe(0);
+	});
+});
+
+describe("ownership", () => {
+	it("answers notInGame to anyone acting for another player's seat", async () => {
+		const t = setup();
+		const { sessionId, joinCode, hostId } = await newRoom(t);
+		const guest = (await joinWithCode(t, joinCode, "guest_0")).participantId;
+		for (const caller of impostors(t, { guestIds: ["guest_0"] })) {
+			await expectCode(
+				caller.mutation(api.bluffDice.start, {
+					sessionId,
+					participantId: hostId,
+				}),
+				"notInGame",
+			);
+		}
+		fixRandom(ALL_FOURS);
+		await t.mutation(api.bluffDice.start, { sessionId, participantId: hostId });
+		for (const caller of impostors(t, { guestIds: ["guest_0"] })) {
+			await expectCode(claim(caller, sessionId, hostId, 1, 4), "notInGame");
+		}
+		await claim(t, sessionId, hostId, 1, 4);
+		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
+			await expectCode(challenge(caller, sessionId, guest), "notInGame");
+		}
+		const { state } = await bundle(t, sessionId);
+		expect(state.claimHistory).toHaveLength(1);
+		expect(state.lastReveal).toBeUndefined();
 	});
 });

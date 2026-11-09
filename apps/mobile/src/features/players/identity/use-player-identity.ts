@@ -10,11 +10,12 @@
 
 import { messages } from "@arcadeclub/core/messages";
 import {
-	createGuestIdentity,
 	getGuestDisplayName,
 	type LocalGuestIdentity,
+	resolveGuestIdentity,
 } from "@arcadeclub/core/sessions";
 import { useUser } from "@clerk/expo";
+import { randomUUID } from "expo-crypto";
 import { useCallback, useState } from "react";
 import { useI18n } from "../../../i18n";
 import {
@@ -34,12 +35,18 @@ function parseGuestIdentity(value: unknown): LocalGuestIdentity | null {
 		: null;
 }
 
-/** The install's guest identity, created on first read. */
-function readGuestIdentity(): LocalGuestIdentity {
+/**
+ * The install's guest identity, created (or given an unguessable id) on first
+ * read. Its id proves this phone's guest seats to the server.
+ */
+export function readGuestIdentity(): LocalGuestIdentity {
 	const saved = readJson(STORAGE_KEYS.guest, parseGuestIdentity);
-	if (saved) return saved;
-	const identity = createGuestIdentity(messages.en.common.session.guestName);
-	writeJson(STORAGE_KEYS.guest, identity);
+	const identity = resolveGuestIdentity(
+		saved,
+		messages.en.common.session.guestName,
+		randomUUID,
+	);
+	if (identity !== saved) writeJson(STORAGE_KEYS.guest, identity);
 	return identity;
 }
 

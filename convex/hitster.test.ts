@@ -14,8 +14,10 @@ import {
 	expectCode,
 	fields,
 	freezeClock,
+	HOST_USER,
 	HOSTED,
 	hostSession,
+	impostors,
 	joinWithCode,
 	otherGameSession,
 	outsider,
@@ -1190,5 +1192,36 @@ describe("create", () => {
 			}),
 			"signInToHost",
 		);
+	});
+});
+
+describe("ownership", () => {
+	it("answers notInGame to anyone acting for another player's seat", async () => {
+		const t = setup();
+		const { sessionId, hostId, guest } = await startedGame(t);
+		for (const caller of impostors(t, { guestIds: ["guest_0"] })) {
+			await expectCode(submitGuess(caller, sessionId, hostId, 0), "notInGame");
+			await expectCode(reveal(caller, sessionId, hostId), "notInGame");
+		}
+		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
+			await expectCode(submitSteal(caller, sessionId, guest, 0), "notInGame");
+		}
+		const { state } = await bundle(t, sessionId);
+		expect(state.pendingGuess).toBeUndefined();
+		expect(state.stealClaims).toEqual([]);
+		expect(state.phase).toBe("nowPlaying");
+	});
+
+	it("shows the host's song only to the host", async () => {
+		const t = setup();
+		const { sessionId, hostId } = await startedGame(t);
+		expect((await bundle(t, sessionId, hostId)).hostPlayback).not.toBeNull();
+		for (const caller of impostors(t, { guestIds: ["guest_0"] })) {
+			const seen = await caller.query(api.hitster.getBundle, {
+				sessionId,
+				participantId: hostId,
+			});
+			expect(seen?.hostPlayback).toBeNull();
+		}
 	});
 });

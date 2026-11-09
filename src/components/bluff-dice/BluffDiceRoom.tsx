@@ -30,7 +30,7 @@ export function BluffDiceRoom({
 	const submitClaim = useMutation(api.bluffDice.submitClaim);
 	const challenge = useMutation(api.bluffDice.challenge);
 	const rematch = useMutation(api.bluffDice.rematch);
-	const { participantId, seatAction, error } = useSeatAction(
+	const { participantId, seat, seatAction, error } = useSeatAction(
 		bundle.session._id,
 	);
 	const [quantity, setQuantity] = useState(2);
@@ -39,12 +39,7 @@ export function BluffDiceRoom({
 	const state = bundle.state;
 	const myDice = useQuery(
 		api.bluffDice.getMyDice,
-		participantId && state && state.phase !== "lobby"
-			? {
-					sessionId: bundle.session._id,
-					participantId,
-				}
-			: "skip",
+		seat && state && state.phase !== "lobby" ? seat : "skip",
 	);
 
 	if (!state) {

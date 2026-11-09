@@ -56,25 +56,45 @@ export function getGuestDisplayName(guestId: string, template: string) {
 	return fmt(template, { number: digits });
 }
 
-/** Web Crypto when the runtime has it (browsers, Node, Hermes with a polyfill). */
-const runtimeCrypto = (globalThis as { crypto?: { randomUUID?: () => string } })
-	.crypto;
+const GUEST_ID =
+	/^guest_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether a guest id is a whole random UUID. Participant ids are public, so
+ * the guest id is what proves a guest's seats to the server; older installs
+ * made a short one that could be guessed.
+ */
+export function isUnguessableGuestId(id: string) {
+	return GUEST_ID.test(id);
+}
 
 export function createGuestIdentity(
 	nameTemplate: string,
+	randomUUID: () => string,
 	now = Date.now(),
 ): LocalGuestIdentity {
-	const suffix = runtimeCrypto?.randomUUID
-		? runtimeCrypto.randomUUID().slice(0, 8)
-		: Math.floor(Math.random() * 1_000_000)
-				.toString()
-				.padStart(6, "0");
-	const id = `guest_${suffix}`;
+	const id = `guest_${randomUUID()}`;
 	return {
 		id,
 		displayName: getGuestDisplayName(id, nameTemplate),
 		createdAt: now,
 	};
+}
+
+/**
+ * The stored guest, or a new one when there is none or its id can be
+ * guessed. A replaced guest keeps its name but not its seats in running games.
+ */
+export function resolveGuestIdentity(
+	stored: LocalGuestIdentity | null,
+	nameTemplate: string,
+	randomUUID: () => string,
+): LocalGuestIdentity {
+	if (stored && isUnguessableGuestId(stored.id)) {
+		return stored;
+	}
+	const created = createGuestIdentity(nameTemplate, randomUUID);
+	return stored ? { ...created, displayName: stored.displayName } : created;
 }
 
 export type Invite = { token: string } | { code: string };

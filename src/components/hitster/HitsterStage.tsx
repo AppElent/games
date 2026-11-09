@@ -7,6 +7,7 @@ import {
 } from "@arcadeclub/core/hitster";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { useGuestId } from "#/lib/games/sessions";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
@@ -128,6 +129,7 @@ function PlacementForm({
 	const [title, setTitle] = useState("");
 	const [year, setYear] = useState("");
 	const { error, run } = useGameAction();
+	const guestId = useGuestId();
 	const [busy, setBusy] = useState(false);
 
 	const timeline = hitsterTimelineFor(state, participantId);
@@ -166,6 +168,7 @@ function PlacementForm({
 					const payload = {
 						sessionId: bundle.session._id,
 						participantId,
+						guestId,
 						dropIndex,
 						artistGuess: artist.trim() || undefined,
 						titleGuess: title.trim() || undefined,

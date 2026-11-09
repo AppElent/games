@@ -15,7 +15,9 @@ import {
 	finishSession,
 	loadBundle,
 	loadSession,
-	requireParticipant,
+	requireHost,
+	requireOwnParticipant,
+	seatArgs,
 	startSession,
 } from "./lib/gameSession";
 import {
@@ -207,8 +209,9 @@ export const create = mutation({
 });
 
 export const advancePhase = mutation({
-	args: { sessionId: v.id("gameSessions") },
+	args: seatArgs,
 	handler: async (ctx, args) => {
+		await requireHost(ctx, args);
 		const quizState = await findGameState(ctx, "live-quiz", args.sessionId);
 		if (!quizState) {
 			throw gameError("quizNotPrepared");
@@ -250,15 +253,13 @@ export const advancePhase = mutation({
 
 export const submitAnswer = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
+		...seatArgs,
 		selectedChoiceIds: v.array(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const participant = await requireParticipant(
+		const participant = await requireOwnParticipant(
 			ctx,
-			args.sessionId,
-			args.participantId,
+			args,
 			"participantNotFound",
 		);
 		if (participant.role === "watcher") {

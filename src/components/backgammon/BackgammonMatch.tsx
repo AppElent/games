@@ -56,6 +56,7 @@ export function BackgammonMatch({
 	const rematch = useMutation(api.backgammon.rematch);
 	const {
 		participantId,
+		seat,
 		localColor,
 		opponentJoined,
 		finished,
@@ -79,21 +80,16 @@ export function BackgammonMatch({
 	const turnState = bundle.state ? toTurnState(bundle.state) : null;
 
 	function handlePlan(plan: BackgammonMovePlan) {
-		if (!participantId || !turnState) {
+		if (!seat || !turnState) {
 			return;
 		}
 		run(async () => {
 			for (const step of plan.steps) {
-				await applyMove({
-					sessionId: bundle.session._id,
-					participantId,
-					from: step.from,
-					to: step.to,
-				});
+				await applyMove({ ...seat, from: step.from, to: step.to });
 			}
 			const after = applyBackgammonPlan(turnState, plan);
 			if (shouldAutoEndTurn(after, options.autoSwitchTurn)) {
-				await endTurn({ sessionId: bundle.session._id, participantId });
+				await endTurn(seat);
 			}
 		}, backgammon.waitingRoom.moveError);
 	}

@@ -65,7 +65,7 @@ export function ChessMatch({
 	const [showInfo, setShowInfo] = useState(false);
 	const state = bundle.state;
 	const {
-		participantId,
+		seat,
 		localColor,
 		opponentJoined,
 		finished,
@@ -119,7 +119,7 @@ export function ChessMatch({
 		(clockFor(state.activeColor) ?? 1) <= 0;
 
 	async function handleSquareClick(square: string, piece?: string) {
-		if (!myTurn || !participantId || !state) {
+		if (!myTurn || !seat || !state) {
 			return;
 		}
 		const myPrefix = localColor === "white" ? "w" : "b";
@@ -129,8 +129,7 @@ export function ChessMatch({
 			await run(
 				() =>
 					applyMove({
-						sessionId: bundle.session._id,
-						participantId,
+						...seat,
 						from,
 						to: square,
 						promotion: isPromotionMove(state.fen, from, square)

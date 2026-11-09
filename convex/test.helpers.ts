@@ -4,8 +4,9 @@
  * name keep it out of the Convex deployment, like the `.test.ts` files.
  */
 import type { GameErrorCode, GameErrorParams } from "@arcadeclub/core/errors";
+import { getFunctionName } from "convex/server";
 import { ConvexError, type Value } from "convex/values";
-import { convexTest } from "convex-test";
+import { convexTest, type TestConvex } from "convex-test";
 import { afterEach, beforeEach, expect, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
@@ -18,11 +19,106 @@ const modules = import.meta.glob("./**/*.ts");
 /** The clock every suite starts on, so stored timestamps can be asserted exactly. */
 export const T0 = Date.UTC(2026, 0, 1, 12);
 
+type Backend = TestConvex<typeof schema>;
+type Args = Record<string, unknown>;
+type FunctionRef = Parameters<typeof getFunctionName>[0];
+
+/** The backend behind each `setup()`, with no proof added to its calls. */
+const unproven = new WeakMap<object, Backend>();
+
+/**
+ * A backend whose `query` and `mutation` calls by function reference go
+ * through `rewrite` first, which picks the caller and the arguments.
+ */
+function intercept(
+	backend: Backend,
+	rewrite: (fn: FunctionRef, args: Args) => Promise<[Backend, Args]>,
+): Backend {
+	return new Proxy(backend, {
+		get(target, property, receiver) {
+			if (property !== "query" && property !== "mutation") {
+				return Reflect.get(target, property, receiver);
+			}
+			return async (fn: unknown, args?: Args) => {
+				type Call = (fn: unknown, args?: Args) => Promise<unknown>;
+				if (typeof fn === "function" || !args) {
+					return await (target[property] as Call)(fn, args);
+				}
+				const [caller, rewritten] = await rewrite(fn as FunctionRef, args);
+				return await (caller[property] as Call)(fn, rewritten);
+			};
+		},
+	});
+}
+
+/**
+ * A backend whose calls act as the participant their arguments name
+ * (`participantId`, or `hostParticipantId`), as that player's own client
+ * would: signed in as its account, or sending its guest id. Card games are
+ * left alone, since their seat secret is the proof. `impostor(t)` calls with
+ * no proof at all.
+ */
 export function setup() {
-	return convexTest(schema, modules);
+	const backend = convexTest(schema, modules);
+	const t = intercept(backend, async (fn, args) => {
+		const named = args.participantId ?? args.hostParticipantId;
+		if (
+			typeof named !== "string" ||
+			"guestId" in args ||
+			getFunctionName(fn).startsWith("cardGames:")
+		) {
+			return [backend, args];
+		}
+		// A query, not `run`: reading commits nothing, so the clock stays put.
+		const row = await backend.query(async (ctx) => {
+			const id = ctx.db.normalizeId("sessionParticipants", named);
+			return id ? await ctx.db.get(id) : null;
+		});
+		if (row?.userId) {
+			return [backend.withIdentity({ subject: row.userId }) as Backend, args];
+		}
+		return [backend, row?.guestId ? { ...args, guestId: row.guestId } : args];
+	});
+	unproven.set(t, backend);
+	return t;
 }
 
 export type T = ReturnType<typeof setup>;
+
+/**
+ * The same backend calling with no proof: a player naming someone else's
+ * public participant id. Add `withIdentity` to sign them in as someone else.
+ */
+export function impostor(t: T): Backend {
+	const backend = unproven.get(t);
+	if (!backend) {
+		throw new Error("impostor() needs a backend from setup()");
+	}
+	return backend;
+}
+
+/**
+ * Everyone who might name a seat that is not theirs: a caller with no proof,
+ * a stranger signed in, and the other players in the game, each with their
+ * own proof (a guest id, or an account).
+ */
+export function impostors(
+	t: T,
+	others: { guestIds?: string[]; userIds?: string[] } = {},
+): Backend[] {
+	const backend = impostor(t);
+	return [
+		backend,
+		backend.withIdentity({ subject: "user_stranger" }) as Backend,
+		...(others.guestIds ?? []).map((guestId) =>
+			intercept(backend, async (_fn, args) => [backend, { ...args, guestId }]),
+		),
+		...(others.userIds ?? []).map(
+			(subject) => backend.withIdentity({ subject }) as Backend,
+		),
+	];
+}
+
 export type SessionId = Id<"gameSessions">;
 export type ParticipantId = Id<"sessionParticipants">;
 export type GameType = Doc<"gameSessions">["gameType"];

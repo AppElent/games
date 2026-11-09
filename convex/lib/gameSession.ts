@@ -1,5 +1,6 @@
 import type { GameErrorCode } from "@arcadeclub/core/errors";
 import type { GameType, SessionGameType } from "@arcadeclub/core/games";
+import { type ObjectType, v } from "convex/values";
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { getOptionalUserId } from "./auth";
@@ -43,6 +44,16 @@ export async function findGameState<G extends SessionGameType>(
 }
 
 /**
+ * A participant row as anyone in the session may see it. The guest id stays
+ * out: it is a guest's proof of their seats (see `requireOwnParticipant`).
+ */
+export function publicParticipants(participants: Doc<"sessionParticipants">[]) {
+	return participants.map(
+		({ guestId: _guestId, ...participant }) => participant,
+	);
+}
+
+/**
  * What every `getBundle` starts from: the session, everyone in it and the
  * game's state. Null when the session does not exist.
  */
@@ -55,7 +66,9 @@ export async function loadBundle<G extends SessionGameType>(
 	if (!session) {
 		return null;
 	}
-	const participants = await listParticipants(ctx, sessionId);
+	const participants = publicParticipants(
+		await listParticipants(ctx, sessionId),
+	);
 	const state = await findGameState(ctx, gameType, sessionId);
 	return { session, participants, state };
 }
@@ -114,7 +127,11 @@ export async function listPlayersIncludingKicked(
 	return participants.filter((participant) => participant.role !== "watcher");
 }
 
-/** A participant of this session who has not been kicked. */
+/**
+ * A participant of this session who has not been kicked. Proves nothing about
+ * the caller, since participant ids are public: a mutation acting for a seat
+ * uses `requireOwnParticipant`.
+ */
 export async function requireParticipant(
 	ctx: ReadCtx,
 	sessionId: SessionId,
@@ -127,6 +144,63 @@ export async function requireParticipant(
 		participant.sessionId !== sessionId ||
 		participant.kickedAt
 	) {
+		throw gameError(notInSession);
+	}
+	return participant;
+}
+
+/**
+ * What every call acting for a seat takes: the seat, and the guest id that
+ * proves a guest's seat. A signed-in player's account is their proof.
+ */
+export const seatArgs = {
+	sessionId: v.id("gameSessions"),
+	participantId: v.id("sessionParticipants"),
+	guestId: v.optional(v.string()),
+};
+
+export type SeatArgs = ObjectType<typeof seatArgs>;
+
+/**
+ * Whether the caller is this participant: signed in as its account, or for a
+ * guest's row, holding its guest id. A row with neither belongs to nobody.
+ */
+export async function isCaller(
+	ctx: ReadCtx,
+	participant: Doc<"sessionParticipants">,
+	guestId: string | undefined,
+) {
+	if (participant.userId) {
+		return participant.userId === (await getOptionalUserId(ctx));
+	}
+	return participant.guestId !== undefined && participant.guestId === guestId;
+}
+
+/** The caller's own participant row in this session, not kicked; null otherwise. */
+export async function findOwnParticipant(ctx: ReadCtx, seat: SeatArgs) {
+	const participant = await ctx.db.get(seat.participantId);
+	if (
+		!participant ||
+		participant.sessionId !== seat.sessionId ||
+		participant.kickedAt ||
+		!(await isCaller(ctx, participant, seat.guestId))
+	) {
+		return null;
+	}
+	return participant;
+}
+
+/**
+ * The caller's own participant row in this session. Someone else's seat looks
+ * exactly like one that is not in the game.
+ */
+export async function requireOwnParticipant(
+	ctx: ReadCtx,
+	seat: SeatArgs,
+	notInSession: GameErrorCode = "notInGame",
+) {
+	const participant = await findOwnParticipant(ctx, seat);
+	if (!participant) {
 		throw gameError(notInSession);
 	}
 	return participant;
@@ -216,8 +290,8 @@ export async function kickParticipant(
 }
 
 /**
- * The weakest proof of being host: the caller names the host's participant id,
- * which is public. Used where a game has never asked for more.
+ * Whether this seat is the host's. The seat must already be proven the
+ * caller's own (`requireOwnParticipant`), or held with a card seat secret.
  */
 export function requireHostByParticipantId(
 	session: Doc<"gameSessions">,
@@ -229,23 +303,13 @@ export function requireHostByParticipantId(
 	}
 }
 
-/**
- * A signed-in host must also be signed in as themselves. A guest host has no
- * account to show, so for them the participant id is still the whole proof.
- */
-export async function requireHostByIdentity(
-	ctx: ReadCtx,
-	sessionId: SessionId,
-	participantId: ParticipantId,
-) {
-	const session = await ctx.db.get(sessionId);
+/** The session, when the caller holds its host's seat. */
+export async function requireHost(ctx: ReadCtx, seat: SeatArgs) {
+	const session = await ctx.db.get(seat.sessionId);
 	if (!session) {
 		throw gameError("gameNotFound");
 	}
-	requireHostByParticipantId(session, participantId);
-	const host = await ctx.db.get(participantId);
-	if (host?.userId && host.userId !== (await getOptionalUserId(ctx))) {
-		throw gameError("hostOnly");
-	}
+	requireHostByParticipantId(session, seat.participantId);
+	await requireOwnParticipant(ctx, seat, "hostOnly");
 	return session;
 }

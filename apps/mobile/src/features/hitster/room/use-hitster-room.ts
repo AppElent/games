@@ -20,6 +20,7 @@ export function useHitsterRoom(sessionId: string) {
 	const bundle = useQuery(api.hitster.getBundle, {
 		sessionId: id,
 		participantId: seat?.participantId,
+		guestId: seat?.guestId,
 	});
 	const startMutation = useMutation(api.hitster.start);
 	const guessMutation = useMutation(api.hitster.submitGuess);

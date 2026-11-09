@@ -48,7 +48,7 @@ export function SignalWordsRoom({
 	const submitGuess = useMutation(api.signalWords.submitGuess);
 	const pass = useMutation(api.signalWords.pass);
 	const rematch = useMutation(api.signalWords.rematch);
-	const { participantId, seatAction, error } = useSeatAction(
+	const { participantId, seat, seatAction, error } = useSeatAction(
 		bundle.session._id,
 	);
 	const [clue, setClue] = useState("");
@@ -64,12 +64,7 @@ export function SignalWordsRoom({
 
 	const key = useQuery(
 		api.signalWords.getKey,
-		amClueGiver && participantId && state && state.phase !== "lobby"
-			? {
-					sessionId: bundle.session._id,
-					participantId,
-				}
-			: "skip",
+		amClueGiver && seat && state && state.phase !== "lobby" ? seat : "skip",
 	);
 
 	if (!state) {

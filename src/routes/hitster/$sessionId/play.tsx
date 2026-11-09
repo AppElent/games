@@ -7,6 +7,7 @@ import {
 } from "#/components/games/SessionBundleRoute";
 import { HitsterStage } from "#/components/hitster/HitsterStage";
 import { parseSeatSearch, useSeat } from "#/lib/games/seat";
+import { useGuestId } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -25,9 +26,11 @@ function HitsterPlayerPage() {
 	const stored = useSeat(sessionId);
 	// A join link names the seat; otherwise this tab's remembered one.
 	const participantId = linked || stored;
+	const guestId = useGuestId();
 	const bundle = useQuery(api.hitster.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 		participantId,
+		guestId,
 	});
 	const shell = pageShell(messages.catalog.hitster.title, {
 		loading: "text-[var(--club-muted)]",

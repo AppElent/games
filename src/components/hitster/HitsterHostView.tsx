@@ -3,6 +3,7 @@ import { getHitsterPack } from "@arcadeclub/core/hitster-packs";
 import { useMutation } from "convex/react";
 import { JoinCodePanel } from "#/components/games/JoinCodePanel";
 import { ParticipantList } from "#/components/games/ParticipantList";
+import { useGuestId } from "#/lib/games/sessions";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -23,6 +24,8 @@ export function HitsterHostView({
 	const reveal = useMutation(api.hitster.reveal);
 	const nextRound = useMutation(api.hitster.nextRound);
 	const { error, run } = useGameAction();
+	const guestId = useGuestId();
+	const seat = { sessionId: bundle.session._id, participantId, guestId };
 	const state = bundle.state;
 	const config = state ? getHitsterModeConfig(state.mode) : null;
 	const pack = state ? getHitsterPack(state.packId) : undefined;
@@ -72,12 +75,7 @@ export function HitsterHostView({
 						<button
 							type="button"
 							className="mt-4 rounded-xl bg-blue-600 px-6 py-3 font-bold text-[#fff]"
-							onClick={() =>
-								run(
-									() => start({ sessionId: bundle.session._id, participantId }),
-									hostView.actionFailed,
-								)
-							}
+							onClick={() => run(() => start(seat), hostView.actionFailed)}
 						>
 							{hostView.startGame}
 						</button>
@@ -123,13 +121,7 @@ export function HitsterHostView({
 								type="button"
 								className="rounded-xl bg-[var(--club-text)] px-5 py-2.5 font-bold text-[color:var(--club-bg)] disabled:opacity-50"
 								disabled={!state.pendingGuess}
-								onClick={() =>
-									run(
-										() =>
-											reveal({ sessionId: bundle.session._id, participantId }),
-										hostView.actionFailed,
-									)
-								}
+								onClick={() => run(() => reveal(seat), hostView.actionFailed)}
 							>
 								{hostView.revealYear}
 							</button>
@@ -142,13 +134,7 @@ export function HitsterHostView({
 						<button
 							type="button"
 							className="rounded-xl bg-[var(--club-text)] px-5 py-2.5 font-bold text-[color:var(--club-bg)]"
-							onClick={() =>
-								run(
-									() =>
-										nextRound({ sessionId: bundle.session._id, participantId }),
-									hostView.actionFailed,
-								)
-							}
+							onClick={() => run(() => nextRound(seat), hostView.actionFailed)}
 						>
 							{hostView.nextRound}
 						</button>

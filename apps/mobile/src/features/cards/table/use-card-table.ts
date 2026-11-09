@@ -12,6 +12,7 @@ import { api, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
 import { haptics } from "../../../feedback/haptics";
 import { useI18n } from "../../../i18n";
+import { readGuestIdentity } from "../../players/identity/use-player-identity";
 import { findSeat, forgetSeat, type Seat } from "../../sessions/session-seats";
 
 export type CardTableBundle = NonNullable<
@@ -114,8 +115,9 @@ export function useCardTable(sessionId: string) {
 
 	useEffect(() => {
 		if (!participantId) return;
+		const { id: guestId } = readGuestIdentity();
 		const beat = () => {
-			void heartbeat({ participantId }).catch(() => {});
+			void heartbeat({ participantId, guestId }).catch(() => {});
 		};
 		beat();
 		const timer = setInterval(beat, HEARTBEAT_MS);

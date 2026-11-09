@@ -46,7 +46,7 @@ export function ConnectFourMatch({
 
 	const state = bundle.state;
 	const {
-		participantId,
+		seat,
 		localColor,
 		opponentJoined,
 		finished,
@@ -95,23 +95,10 @@ export function ConnectFourMatch({
 					});
 
 	function handleDrop(column: number) {
-		if (
-			!myTurn ||
-			!participantId ||
-			!state ||
-			isColumnFull(state.board, column)
-		) {
+		if (!myTurn || !seat || !state || isColumnFull(state.board, column)) {
 			return;
 		}
-		run(
-			() =>
-				drop({
-					sessionId: bundle.session._id,
-					participantId,
-					column,
-				}),
-			connectFour.actions.dropError,
-		);
+		run(() => drop({ ...seat, column }), connectFour.actions.dropError);
 	}
 
 	const discCards = (

@@ -16,6 +16,7 @@ import {
 	HOST_USER,
 	HOSTED,
 	hostSession,
+	impostors,
 	joinWithCode,
 	joinWithToken,
 	otherGameSession,
@@ -865,5 +866,50 @@ describe("create", () => {
 		const t = setup();
 		await expectCode(t.mutation(api.backgammon.create, HOSTED), "signInToHost");
 		expect(await sessionCount(t)).toBe(0);
+	});
+});
+
+describe("ownership", () => {
+	it("answers notInGame to anyone acting for another player's seat", async () => {
+		const t = setup();
+		const { sessionId, white, black } = await fullMatch(t);
+		for (const caller of impostors(t, { guestIds: ["guest_black"] })) {
+			await expectCode(roll(caller, sessionId, white), "notInGame");
+			await expectCode(
+				caller.mutation(api.backgammon.endTurn, {
+					sessionId,
+					participantId: white,
+				}),
+				"notInGame",
+			);
+		}
+		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
+			await expectCode(
+				caller.mutation(api.backgammon.rematch, {
+					sessionId,
+					participantId: black,
+				}),
+				"notInGame",
+			);
+		}
+		expect((await bundle(t, sessionId)).state.dice).toEqual([]);
+	});
+
+	it("answers hostOnly to anyone but the host creating the legacy state", async () => {
+		const t = setup();
+		const { sessionId, hostId } = await hostSession(
+			t,
+			"backgammon",
+			"challenge",
+		);
+		for (const caller of impostors(t)) {
+			await expectCode(
+				caller.mutation(api.backgammon.createState, {
+					sessionId,
+					hostParticipantId: hostId,
+				}),
+				"hostOnly",
+			);
+		}
 	});
 });
