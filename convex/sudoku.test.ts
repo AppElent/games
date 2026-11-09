@@ -5,6 +5,7 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
+	afterCommits,
 	deletedSessionId,
 	expectCode,
 	fields,
@@ -437,7 +438,7 @@ describe("setPaused", () => {
 		const resumed = await storedState(t, sessionId);
 		expect(resumed.status).toBe("active");
 		expect(resumed.elapsedSeconds).toBe(1);
-		expect(resumed.lastResumedAt).toBe(T0 + 6000);
+		expect(resumed.lastResumedAt).toBe(afterCommits(T0 + 6000));
 	});
 
 	it("does nothing once completed", async () => {
@@ -586,33 +587,32 @@ describe("create", () => {
 		expect((await bundle(t, created.sessionId))?.state?.givens).toBe(GIVENS);
 	});
 
-	it.each([
-		"classic",
-		"killer",
-		"binary",
-	] as const)("stores a %s puzzle from the shared generator, solvable by its solution", async (variant) => {
-		const t = setup();
-		const puzzle = generateVariantPuzzle(variant, "easy");
-		const givens = digitsToString(puzzle.givens);
-		const { sessionId } = await t.mutation(api.sudoku.create, {
-			title: "Puzzle",
-			displayName: "Solver",
-			guestId: "guest_solver",
-			source: "generated",
-			difficulty: "easy",
-			variant: puzzle.variant,
-			size: puzzle.variant === "binary" ? puzzle.size : undefined,
-			cages: puzzle.variant === "killer" ? puzzle.cages : undefined,
-			givens,
-			solution: digitsToString(puzzle.solution),
-		});
-		const stored = await storedState(t, sessionId);
-		expect(stored.variant ?? "classic").toBe(variant);
-		expect(stored.givens).toBe(givens);
-		await expect(
-			complete(t, sessionId, digitsToString(puzzle.solution)),
-		).resolves.toEqual({ completed: true });
-	});
+	it.each(["classic", "killer", "binary"] as const)(
+		"stores a %s puzzle from the shared generator, solvable by its solution",
+		async (variant) => {
+			const t = setup();
+			const puzzle = generateVariantPuzzle(variant, "easy");
+			const givens = digitsToString(puzzle.givens);
+			const { sessionId } = await t.mutation(api.sudoku.create, {
+				title: "Puzzle",
+				displayName: "Solver",
+				guestId: "guest_solver",
+				source: "generated",
+				difficulty: "easy",
+				variant: puzzle.variant,
+				size: puzzle.variant === "binary" ? puzzle.size : undefined,
+				cages: puzzle.variant === "killer" ? puzzle.cages : undefined,
+				givens,
+				solution: digitsToString(puzzle.solution),
+			});
+			const stored = await storedState(t, sessionId);
+			expect(stored.variant ?? "classic").toBe(variant);
+			expect(stored.givens).toBe(givens);
+			await expect(
+				complete(t, sessionId, digitsToString(puzzle.solution)),
+			).resolves.toEqual({ completed: true });
+		},
+	);
 
 	it("leaves no session behind when the puzzle is rejected", async () => {
 		const t = setup();

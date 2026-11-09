@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import {
 	advance,
+	afterCommits,
 	arrange,
 	deletedParticipantId,
 	deletedSessionId,
@@ -542,7 +543,7 @@ describe("heartbeat", () => {
 		await t.mutation(api.sessions.heartbeat, { participantId });
 		const row = await getDoc(t, participantId);
 		expect(row?.connected).toBe(true);
-		expect(row?.kickedAt).toBe(T0);
+		expect(row?.kickedAt).toBe(afterCommits(T0));
 	});
 
 	it("answers participantNotFound for a missing row", async () => {

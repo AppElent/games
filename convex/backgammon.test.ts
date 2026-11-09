@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import {
 	advance,
+	afterCommits,
 	alternateRandom,
 	arrange,
 	createdRows,
@@ -347,7 +348,9 @@ describe("rollDice", () => {
 		});
 		advance(5000);
 		await roll(t, sessionId, black);
-		expect((await bundle(t, sessionId)).session.startedAt).toBe(T0);
+		expect((await bundle(t, sessionId)).session.startedAt).toBe(
+			afterCommits(T0),
+		);
 	});
 
 	it("refuses a second roll", async () => {
@@ -831,12 +834,14 @@ describe("create", () => {
 	it("stores what sessions.create and createState store together", async () => {
 		const t = setup();
 		const twoStep = await twoStepMatch(t);
-		const created = await signedInHost(t).mutation(
+		// Its own backend, so both paths run at T0 on a fresh commit clock.
+		const oneStep = setup();
+		const created = await signedInHost(oneStep).mutation(
 			api.backgammon.create,
 			HOSTED,
 		);
 		expect(
-			await createdRows(t, created.sessionId, "backgammonGameStates"),
+			await createdRows(oneStep, created.sessionId, "backgammonGameStates"),
 		).toEqual(await createdRows(t, twoStep.sessionId, "backgammonGameStates"));
 	});
 
