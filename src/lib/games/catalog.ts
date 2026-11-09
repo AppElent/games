@@ -1,4 +1,8 @@
-import { GAME_TYPES, type GameType } from "@arcadeclub/core/games";
+import {
+	GAME_TYPES,
+	type GameType,
+	type SessionGameType,
+} from "@arcadeclub/core/games";
 import type { Messages } from "@arcadeclub/core/messages";
 import {
 	Brain,
@@ -30,8 +34,15 @@ type GameCatalogItem = {
 
 export type LocalizedGame = GameCatalogItem & Messages["catalog"][GameType];
 
+/** `sessionPath` is set exactly for the games core says have sessions. */
+type CatalogEntries = {
+	readonly [G in GameType]: Omit<GameCatalogItem, "type" | "sessionPath"> & {
+		readonly sessionPath: G extends SessionGameType ? SessionPath : null;
+	};
+};
+
 /** A new game in `GAME_TYPES` fails to compile here until it has an entry. */
-const GAME_CATALOG: Record<GameType, Omit<GameCatalogItem, "type">> = {
+const GAME_CATALOG: CatalogEntries = {
 	"live-quiz": {
 		accent: "from-emerald-400 to-cyan-300",
 		icon: Trophy,

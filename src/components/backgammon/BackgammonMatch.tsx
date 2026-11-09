@@ -6,7 +6,10 @@ import {
 	shouldAutoEndTurn,
 	toTurnState,
 } from "@arcadeclub/core/backgammon";
-import { DEFAULT_ONLINE_OPTIONS } from "@arcadeclub/core/backgammon-local";
+import {
+	DEFAULT_ONLINE_OPTIONS,
+	ONLINE_OPTION_KEYS,
+} from "@arcadeclub/core/backgammon-local";
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
@@ -14,7 +17,6 @@ import {
 	BackgammonBoard,
 	type BackgammonBoardOptions,
 	type BackgammonOptionKey,
-	ONLINE_OPTION_KEYS,
 } from "#/components/backgammon/BackgammonBoard";
 import { BackgammonStage } from "#/components/backgammon/BackgammonStage";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";

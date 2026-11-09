@@ -7,6 +7,7 @@ import {
 	getBackgammonWinner,
 	rollBackgammonDice,
 } from "@arcadeclub/core/backgammon";
+import { LOCAL_OPTION_KEYS } from "@arcadeclub/core/backgammon-local";
 import { useEffect } from "react";
 import { haptics } from "../../../feedback/haptics";
 import { useI18n } from "../../../i18n";
@@ -20,13 +21,6 @@ import { MatchPanel } from "../components/match-panel";
 import { OptionsPanel } from "../components/options-panel";
 import { TURN_HINT_MESSAGE, turnHint } from "../components/turn-hint";
 import { useLocalMatch } from "./use-local-match";
-
-const OPTION_KEYS = [
-	"showNumbers",
-	"autoRoll",
-	"autoSwitchTurn",
-	"autoCombine",
-] as const;
 
 export function LocalGameScreen() {
 	const { t } = useI18n();
@@ -114,7 +108,7 @@ export function LocalGameScreen() {
 			</MatchPanel>
 			<OptionsPanel
 				options={options}
-				keys={OPTION_KEYS}
+				keys={LOCAL_OPTION_KEYS}
 				onChange={(key, value) =>
 					dispatch({
 						type: "setOption",

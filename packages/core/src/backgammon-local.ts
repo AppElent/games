@@ -39,6 +39,14 @@ export type OnlineOptions = Omit<BackgammonOptions, "autoRoll">;
 const { autoRoll: _autoRoll, ...onlineDefaults } = DEFAULT_BACKGAMMON_OPTIONS;
 export const DEFAULT_ONLINE_OPTIONS: OnlineOptions = onlineDefaults;
 
+/** The options menu's toggles per mode, in the order of each mode's defaults. */
+export const LOCAL_OPTION_KEYS = Object.keys(
+	DEFAULT_BACKGAMMON_OPTIONS,
+) as readonly (keyof BackgammonOptions)[];
+export const ONLINE_OPTION_KEYS = Object.keys(
+	DEFAULT_ONLINE_OPTIONS,
+) as readonly (keyof OnlineOptions)[];
+
 const HISTORY_LIMIT = 60;
 
 export type LocalMatch = {

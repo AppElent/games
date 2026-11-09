@@ -5,6 +5,7 @@ import {
 	rollBackgammonDice,
 } from "@arcadeclub/core/backgammon";
 import {
+	LOCAL_OPTION_KEYS,
 	type LocalMatch,
 	type LocalMatchAction,
 	newLocalMatch,
@@ -14,7 +15,6 @@ import { useEffect, useState } from "react";
 import {
 	BackgammonBoard,
 	type BackgammonOptionKey,
-	LOCAL_OPTION_KEYS,
 } from "#/components/backgammon/BackgammonBoard";
 import { BackgammonStage } from "#/components/backgammon/BackgammonStage";
 import { colorLabel } from "#/components/backgammon/color-label";

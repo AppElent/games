@@ -4,10 +4,11 @@ Arcade Club is a real-time games web app built with TanStack Start, Clerk, and C
 
 ## Features
 
-- Live Quiz rooms with a host screen, join code, and player devices.
-- Backgammon challenge links for direct two-player games.
-- Game catalog with future games including Sudoku, Chess, Hitster, and Word Games.
+- Room games with a host screen and player phones: Live Quiz, Hitster, Bluff Dice, Signal Words and card games.
+- Two-player challenge links: Backgammon, Chess and Connect Four.
+- Solo puzzles: Sudoku (classic, killer, binary), Word Links and Squad Surge.
 - Guest-friendly joining with signed-in ownership for saved sessions.
+- An Expo mobile app (`apps/mobile`) that shares rules and text through `packages/core`.
 
 ## Tech Stack
 
@@ -22,8 +23,8 @@ Arcade Club is a real-time games web app built with TanStack Start, Clerk, and C
 
 This project uses [pnpm](https://pnpm.io) — never npm or yarn.
 
-1. Copy `.env.example` to `.env.local` and fill in the values (Clerk publishable key, Convex deployment/URL — see `.cta.json` or run `pnpm exec convex dev` to provision one).
-2. `pnpm install`
+1. `pnpm install`
+2. `pnpm env:apply local` writes `.env.local` from Infisical, and `pnpm exec convex dev` adds the Convex deployment and URL. See `docs/runbooks/environment.md`.
 
 ## Development
 
@@ -57,4 +58,4 @@ pnpm run deploy:dev    # builds and deploys the games-dev Worker
 pnpm run deploy:prod   # convex deploy && build && wrangler deploy
 ```
 
-Pull requests also get an isolated preview (per-PR Convex backend + Cloudflare Worker) via `.github/workflows/preview.yml`.
+Pull requests labelled `preview:web` get an isolated preview (per-PR Convex backend + Cloudflare Worker) via `.github/workflows/preview.yml`.

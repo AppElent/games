@@ -1,3 +1,4 @@
+import { ONLINE_OPTION_KEYS } from "@arcadeclub/core/backgammon-local";
 /**
  * An online match: the board from this player's side, whose turn it is,
  * and the invite while the second seat is empty. Every action goes to
@@ -41,8 +42,6 @@ import {
 	type OnlineMatch,
 	useOnlineMatch,
 } from "./use-online-match";
-
-const OPTION_KEYS = ["showNumbers", "autoSwitchTurn", "autoCombine"] as const;
 
 export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 	const { t } = useI18n();
@@ -209,7 +208,7 @@ function OnlineMatchLoaded({
 			) : null}
 			<OptionsPanel
 				options={options}
-				keys={OPTION_KEYS}
+				keys={ONLINE_OPTION_KEYS}
 				onChange={(key, value) =>
 					setOptions((current) => ({ ...current, [key]: value }))
 				}
