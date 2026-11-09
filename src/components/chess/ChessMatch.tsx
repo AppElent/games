@@ -15,8 +15,8 @@ import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { GameInfoOverlay } from "#/components/games/match/GameInfoOverlay";
 import {
 	MatchHud,
-	MatchLoading,
 	MatchStage,
+	MatchStatus,
 } from "#/components/games/match/MatchStage";
 import { MatchWaitingScreen } from "#/components/games/match/MatchWaitingScreen";
 import { SeatCard, SeatCards } from "#/components/games/match/SeatCard";
@@ -69,10 +69,12 @@ export function ChessMatch({
 		opponentJoined,
 		finished,
 		myTurn,
+		occupant,
+		isActive,
 		seatAction,
 		error,
 		run,
-	} = useDuel(bundle.session._id, CHESS_COLORS, state);
+	} = useDuel(bundle, CHESS_COLORS);
 	const timed = state?.remainingWhiteMs !== undefined;
 	const now = useNow(500, timed && state?.phase === "active");
 
@@ -87,19 +89,15 @@ export function ChessMatch({
 
 	if (!state || !board) {
 		return (
-			<MatchLoading
+			<MatchStatus
 				title={bundle.session.title}
 				text={chess.game.boardLoading}
 			/>
 		);
 	}
 
-	const white = bundle.participants.find(
-		(participant) => participant._id === state.whiteParticipantId,
-	);
-	const black = bundle.participants.find(
-		(participant) => participant._id === state.blackParticipantId,
-	);
+	const white = occupant("white");
+	const black = occupant("black");
 	const flipped = localColor === "black";
 	const check = !finished && isInCheck(state.fen);
 
@@ -193,7 +191,7 @@ export function ChessMatch({
 		<SeatCards>
 			<SeatCard
 				label={chess.players.white}
-				active={!finished && opponentJoined && state.activeColor === "white"}
+				active={isActive("white")}
 				open={!white}
 			>
 				<NameAndClock
@@ -203,7 +201,7 @@ export function ChessMatch({
 			</SeatCard>
 			<SeatCard
 				label={chess.players.black}
-				active={!finished && opponentJoined && state.activeColor === "black"}
+				active={isActive("black")}
 				open={!black}
 			>
 				<NameAndClock
@@ -363,8 +361,7 @@ export function ChessMatch({
 						status: statusLabel,
 						count: state.sanHistory.length,
 					})}
-					onRematch={seatAction(rematch, chess.endScreen.rematchError)}
-					rematchLabel={chess.endScreen.rematchLabel}
+					onRematch={seatAction(rematch, messages.common.match.rematchError)}
 					newGameRoute={getGameRoute("chess")}
 				/>
 			) : null}

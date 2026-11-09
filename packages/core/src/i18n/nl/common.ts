@@ -85,6 +85,8 @@ export const common = {
 		info: "Info",
 		challengeLink: "Uitdagingslink",
 		openSeat: "Open plek",
+		rematch: "Rematch (kleuren wisselen)",
+		rematchError: "Kon rematch niet starten",
 	},
 	room: {
 		loadingKicker: "Klaarzetten",
@@ -105,7 +107,6 @@ export const common = {
 		rotateHint: "Draai je telefoon voor een groter bord",
 	},
 	endScreen: {
-		rematch: "Rematch",
 		newGame: "Nieuw spel",
 		shareResult: "Deel resultaat",
 		backToArcade: "Terug naar de arcade",

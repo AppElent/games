@@ -19,7 +19,7 @@ import {
 import { BackgammonStage } from "#/components/backgammon/BackgammonStage";
 import { colorLabel } from "#/components/backgammon/color-label";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
-import { MatchLoading } from "#/components/games/match/MatchStage";
+import { MatchStatus } from "#/components/games/match/MatchStage";
 import {
 	loadLocalBackgammonGame,
 	saveLocalBackgammonGame,
@@ -47,7 +47,7 @@ export function BackgammonLocalMatch() {
 
 	if (!match) {
 		return (
-			<MatchLoading
+			<MatchStatus
 				title={backgammon.localPlay.title}
 				text={backgammon.localPlay.settingUp}
 			/>

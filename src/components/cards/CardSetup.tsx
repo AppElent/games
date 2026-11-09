@@ -1,5 +1,4 @@
 import { type CardGameId, getCardGame } from "@arcadeclub/core/cards/engine";
-import { useUser } from "@clerk/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Minus, Plus } from "lucide-react";
@@ -30,7 +29,6 @@ function useCreateCardTable(
 	const cards = useMessages().games.cards;
 	const navigate = useNavigate();
 	const createTable = useMutation(api.cardGames.createTable);
-	const { user } = useUser();
 	const { busy, error, host } = useHostSession("card-games", {
 		open: ({ sessionId }) =>
 			navigate({ to: "/cards/table/$sessionId", params: { sessionId } }),
@@ -38,13 +36,13 @@ function useCreateCardTable(
 
 	function create() {
 		const solo = mode === "computer";
-		return host(async ({ hostName, guestId, guestName }) => {
+		return host(async ({ displayName, guestId }) => {
 			const seatSecret = newCardSeatSecret();
 			const created = await createTable({
 				seatSecret,
 				joinMode: solo ? "solo" : "room",
 				title: cards.games[gameId].name,
-				displayName: user ? hostName : guestName,
+				displayName,
 				guestId,
 				gameId,
 				options,

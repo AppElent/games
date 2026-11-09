@@ -28,8 +28,6 @@ export const connectFour = {
 	},
 	endScreen: {
 		shareText: "Vier op een rij op Arcade Club — {status}",
-		rematchLabel: "Rematch (kleuren wisselen)",
-		rematchError: "Kon rematch niet starten",
 	},
 	session: {
 		gameNotFound: "Spel niet gevonden.",

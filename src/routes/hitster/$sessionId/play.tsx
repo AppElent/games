@@ -44,9 +44,9 @@ function HitsterPlayerPage() {
 				participantId ? (
 					<FullscreenGamePage
 						title={messages.catalog.hitster.title}
+						kicker={hitster.musicTimelineKicker}
 						maxWidthClassName="max-w-5xl"
 					>
-						<p className="club-kicker mb-2">{hitster.musicTimelineKicker}</p>
 						<HitsterStage bundle={loaded} participantId={participantId} />
 					</FullscreenGamePage>
 				) : (

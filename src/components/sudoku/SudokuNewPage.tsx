@@ -80,13 +80,13 @@ export function SudokuNewPage() {
 
 	const start = (difficulty: SudokuDifficulty) => {
 		setPending(difficulty);
-		return host(async ({ guestId, guestName }) => {
+		return host(async ({ displayName, guestId }) => {
 			const title =
 				name.trim() ||
 				autoSessionTitle(difficulty, "generated", new Date(), variant);
 			return createSudokuSession(create, {
 				title,
-				displayName: guestName,
+				displayName,
 				guestId,
 				source: "generated",
 				difficulty,

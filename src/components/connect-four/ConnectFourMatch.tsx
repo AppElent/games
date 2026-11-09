@@ -14,8 +14,8 @@ import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { GameInfoOverlay } from "#/components/games/match/GameInfoOverlay";
 import {
 	MatchHud,
-	MatchLoading,
 	MatchStage,
+	MatchStatus,
 } from "#/components/games/match/MatchStage";
 import { MatchWaitingScreen } from "#/components/games/match/MatchWaitingScreen";
 import {
@@ -51,25 +51,23 @@ export function ConnectFourMatch({
 		opponentJoined,
 		finished,
 		myTurn,
+		occupant,
+		isActive,
 		seatAction,
 		error,
 		run,
-	} = useDuel(bundle.session._id, CONNECT_FOUR_COLORS, state);
+	} = useDuel(bundle, CONNECT_FOUR_COLORS);
 	if (!state) {
 		return (
-			<MatchLoading
+			<MatchStatus
 				title={bundle.session.title}
 				text={connectFour.game.boardLoading}
 			/>
 		);
 	}
 
-	const red = bundle.participants.find(
-		(participant) => participant._id === state.redParticipantId,
-	);
-	const yellow = bundle.participants.find(
-		(participant) => participant._id === state.yellowParticipantId,
-	);
+	const red = occupant("red");
+	const yellow = occupant("yellow");
 	const statusLabel = finished
 		? state.resultOutcome === "draw"
 			? connectFour.status.draw
@@ -121,7 +119,7 @@ export function ConnectFourMatch({
 			<SeatCard
 				icon={<Disc color="red" />}
 				label={connectFour.players.red}
-				active={!finished && opponentJoined && state.activeColor === "red"}
+				active={isActive("red")}
 				open={!red}
 			>
 				<SeatName name={red?.displayName ?? messages.common.match.openSeat} />
@@ -129,7 +127,7 @@ export function ConnectFourMatch({
 			<SeatCard
 				icon={<Disc color="yellow" />}
 				label={connectFour.players.yellow}
-				active={!finished && opponentJoined && state.activeColor === "yellow"}
+				active={isActive("yellow")}
 				open={!yellow}
 			>
 				<SeatName
@@ -194,8 +192,7 @@ export function ConnectFourMatch({
 		<GameEndScreen
 			heading={statusLabel}
 			shareText={fmt(connectFour.endScreen.shareText, { status: statusLabel })}
-			onRematch={seatAction(rematch, connectFour.endScreen.rematchError)}
-			rematchLabel={connectFour.endScreen.rematchLabel}
+			onRematch={seatAction(rematch, messages.common.match.rematchError)}
 			newGameRoute={getGameRoute("connect-four")}
 		/>
 	) : null;

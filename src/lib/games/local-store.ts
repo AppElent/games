@@ -1,16 +1,22 @@
 /**
- * Guarded localStorage access. Storage can be missing (SSR), blocked (private
- * mode) or full, and a stored value can be corrupt: reads fall back and writes
- * become no-ops, so a game keeps working in memory. What a value must look like
- * stays with each store. Players' browsers hold these keys, so renaming one
- * forgets what was saved under it.
+ * Guarded browser storage access. Storage can be missing (SSR), blocked
+ * (private mode) or full, and a stored value can be corrupt: reads fall back
+ * and writes become no-ops, so a game keeps working in memory. What a value
+ * must look like stays with each store. Players' browsers hold these keys, so
+ * renaming one forgets what was saved under it.
  */
-function localStore(): Storage | undefined {
+function storageArea(
+	area: "localStorage" | "sessionStorage",
+): Storage | undefined {
 	try {
-		return window.localStorage;
+		return window[area];
 	} catch {
 		return undefined;
 	}
+}
+
+function localStore(): Storage | undefined {
+	return storageArea("localStorage");
 }
 
 /** The stored value, or `fallback` when it is absent or `parse` throws. */
@@ -44,5 +50,22 @@ export function removeStored(key: string) {
 		localStore()?.removeItem(key);
 	} catch {
 		// Private mode.
+	}
+}
+
+/** This tab's sessionStorage value, or null when absent or unreadable. */
+export function readTabValue(key: string): string | null {
+	try {
+		return storageArea("sessionStorage")?.getItem(key) ?? null;
+	} catch {
+		return null;
+	}
+}
+
+export function writeTabValue(key: string, value: string) {
+	try {
+		storageArea("sessionStorage")?.setItem(key, value);
+	} catch {
+		// Quota or private mode.
 	}
 }

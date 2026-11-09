@@ -72,10 +72,10 @@ export function QuizSetupForm() {
 				className="rounded-md bg-cyan-300 px-5 py-3 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
 				onClick={() =>
 					host(
-						async ({ hostName, guestId }) =>
+						async ({ displayName, guestId }) =>
 							create({
 								title: messages.catalog["live-quiz"].title,
-								displayName: hostName,
+								displayName,
 								guestId,
 								quizSetId: selectedSetId
 									? (selectedSetId as Id<"quizSets">)

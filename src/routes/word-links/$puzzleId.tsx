@@ -32,9 +32,9 @@ function WordLinksPracticePage() {
 	return (
 		<FullscreenGamePage
 			title={messages.catalog["word-links"].title}
+			kicker={messages.catalog["word-links"].title}
 			maxWidthClassName="max-w-xl"
 		>
-			<p className="club-kicker mb-2">{messages.catalog["word-links"].title}</p>
 			<div className="mb-6 flex flex-wrap items-end justify-between gap-3">
 				<h1 className="club-title text-4xl font-bold text-white">
 					{puzzle.title ?? wordLinks.page.practicePuzzleFallback}

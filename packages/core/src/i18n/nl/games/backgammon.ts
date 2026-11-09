@@ -67,11 +67,8 @@ export const backgammon = {
 		sendInvite: "Uitnodiging sturen",
 		noInviteLink:
 			"Voor uitnodigingslinks moet het webadres zijn ingesteld. Laat je tegenstander via de webapp meedoen.",
-		joinBeforeRolling: "Doe mee aan deze uitdaging voordat je gooit",
 		rollError: "Kon niet gooien",
 		moveError: "Kon niet zetten",
-		joinBeforeEndingTurn:
-			"Doe mee aan deze uitdaging voordat je je beurt beëindigt",
 		endTurnError: "Kon beurt niet beëindigen",
 		seatWhite: "Wit",
 		seatBlack: "Zwart",
@@ -87,8 +84,6 @@ export const backgammon = {
 		subtitleWon: "Je hebt alle 15 schijven uitgespeeld. Goed gespeeld!",
 		subtitleLost: "Meer geluk bij de rematch.",
 		shareText: "Backgammon op Arcade Club — {name} wint!",
-		rematchError: "Kon rematch niet starten",
-		rematchLabel: "Rematch (kleuren wisselen)",
 		youArePlaying: "Jij speelt {color}.",
 		youArePlayingAgainst: "Jij speelt {color} tegen {name}.",
 		bothSeatsClaimed: "Beide plekken zijn bezet — jij kijkt mee.",

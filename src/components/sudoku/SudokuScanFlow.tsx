@@ -337,12 +337,12 @@ function VerifyStep({
 	}, [cells]);
 
 	const confirm = () =>
-		host(async ({ guestId, guestName }) => {
+		host(async ({ displayName, guestId }) => {
 			const title = autoSessionTitle(undefined, "scan");
 			const board = scanResultToBoardState(cells);
 			return createSudokuSession(create, {
 				title,
-				displayName: guestName,
+				displayName,
 				guestId,
 				source: "scan",
 				givens: digitsToString(board.givens),

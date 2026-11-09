@@ -13,8 +13,7 @@ import {
 	RoomPlayAgain,
 	RoomStartButton,
 } from "#/components/games/RoomFrame";
-import { useSeat } from "#/lib/games/seat";
-import { useGameAction } from "#/lib/games/use-game-action";
+import { useSeatAction } from "#/lib/games/use-seat-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
@@ -49,8 +48,9 @@ export function SignalWordsRoom({
 	const submitGuess = useMutation(api.signalWords.submitGuess);
 	const pass = useMutation(api.signalWords.pass);
 	const rematch = useMutation(api.signalWords.rematch);
-	const participantId = useSeat(bundle.session._id);
-	const { error, run } = useGameAction();
+	const { participantId, seatAction, error } = useSeatAction(
+		bundle.session._id,
+	);
 	const [clue, setClue] = useState("");
 	const [count, setCount] = useState(2);
 
@@ -127,10 +127,8 @@ export function SignalWordsRoom({
 			gameTitle={messages.catalog["signal-words"].title}
 			title={bundle.session.title}
 			joinCode={bundle.session.joinCode}
-			status={{
-				label: statusLabel,
-				tone: finished ? "success" : inLobby ? "warning" : "success",
-			}}
+			status={statusLabel}
+			inLobby={inLobby}
 			error={error}
 			joinUrl={joinUrl}
 			howToPlay={{
@@ -181,36 +179,20 @@ export function SignalWordsRoom({
 										<button
 											type="button"
 											className="min-h-11 flex-1 rounded-md border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
-											onClick={() =>
-												run(
-													() =>
-														joinTeam({
-															sessionId: bundle.session._id,
-															participantId,
-															team,
-															clueGiver: false,
-														}),
-													signalWords.teams.joinError,
-												)
-											}
+											onClick={seatAction(
+												(seat) => joinTeam({ ...seat, team, clueGiver: false }),
+												signalWords.teams.joinError,
+											)}
 										>
 											{signalWords.teams.joinAsGuesser}
 										</button>
 										<button
 											type="button"
 											className="min-h-11 flex-1 rounded-md border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
-											onClick={() =>
-												run(
-													() =>
-														joinTeam({
-															sessionId: bundle.session._id,
-															participantId,
-															team,
-															clueGiver: true,
-														}),
-													signalWords.teams.joinError,
-												)
-											}
+											onClick={seatAction(
+												(seat) => joinTeam({ ...seat, team, clueGiver: true }),
+												signalWords.teams.joinError,
+											)}
 										>
 											{signalWords.teams.joinAsClueGiver}
 										</button>
@@ -223,16 +205,7 @@ export function SignalWordsRoom({
 					{inLobby && isHost && participantId ? (
 						<RoomStartButton
 							label={signalWords.actions.startGame}
-							onClick={() =>
-								run(
-									() =>
-										start({
-											sessionId: bundle.session._id,
-											participantId,
-										}),
-									signalWords.actions.startGameError,
-								)
-							}
+							onClick={seatAction(start, signalWords.actions.startGameError)}
 						/>
 					) : null}
 				</>
@@ -249,20 +222,10 @@ export function SignalWordsRoom({
 								key={word}
 								type="button"
 								disabled={!clickable}
-								onClick={() => {
-									if (!participantId) {
-										return;
-									}
-									run(
-										() =>
-											submitGuess({
-												sessionId: bundle.session._id,
-												participantId,
-												cardIndex: index,
-											}),
-										signalWords.actions.guessError,
-									);
-								}}
+								onClick={seatAction(
+									(seat) => submitGuess({ ...seat, cardIndex: index }),
+									signalWords.actions.guessError,
+								)}
 								className={`relative flex min-h-11 items-center justify-center rounded-md border px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide sm:py-4 sm:text-xs ${
 									revealedRole && state.revealed[index]
 										? `${ROLE_STYLES[revealedRole]} opacity-90`
@@ -289,16 +252,10 @@ export function SignalWordsRoom({
 					className="club-panel flex flex-wrap items-end gap-3 rounded-lg p-4"
 					onSubmit={(event) => {
 						event.preventDefault();
-						run(
-							() =>
-								submitClue({
-									sessionId: bundle.session._id,
-									participantId,
-									clue,
-									count,
-								}),
+						seatAction(
+							(seat) => submitClue({ ...seat, clue, count }),
 							signalWords.clueForm.error,
-						).then((sent) => {
+						)?.().then((sent) => {
 							if (sent) {
 								setClue("");
 							}
@@ -343,16 +300,7 @@ export function SignalWordsRoom({
 					<button
 						type="button"
 						className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white"
-						onClick={() =>
-							run(
-								() =>
-									pass({
-										sessionId: bundle.session._id,
-										participantId,
-									}),
-								signalWords.actions.passError,
-							)
-						}
+						onClick={seatAction(pass, signalWords.actions.passError)}
 					>
 						{signalWords.actions.passTurn}
 					</button>
@@ -362,16 +310,7 @@ export function SignalWordsRoom({
 			{finished && isHost && participantId ? (
 				<RoomPlayAgain
 					label={signalWords.actions.playAgain}
-					onClick={() =>
-						run(
-							() =>
-								rematch({
-									sessionId: bundle.session._id,
-									participantId,
-								}),
-							signalWords.actions.rematchError,
-						)
-					}
+					onClick={seatAction(rematch, messages.common.match.rematchError)}
 				/>
 			) : null}
 		</RoomFrame>

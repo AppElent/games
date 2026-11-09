@@ -12,22 +12,19 @@ export function GameEndScreen({
 	subtitle,
 	shareText,
 	onRematch,
-	rematchLabel,
 	newGameRoute,
 	newGameLabel,
 }: {
 	heading: string;
 	subtitle?: string;
 	shareText?: string;
+	/** Offered by the two-seat matches, whose rematch swaps colours. */
 	onRematch?: () => void;
-	rematchLabel?: string;
 	newGameRoute?: string;
 	newGameLabel?: string;
 }) {
 	const messages = useMessages();
 	const { copied, copy } = useCopyFeedback();
-	const resolvedRematchLabel =
-		rematchLabel ?? messages.common.endScreen.rematch;
 	const resolvedNewGameLabel =
 		newGameLabel ?? messages.common.endScreen.newGame;
 
@@ -46,7 +43,7 @@ export function GameEndScreen({
 						onClick={onRematch}
 					>
 						<RotateCcw className="h-4 w-4" />
-						{resolvedRematchLabel}
+						{messages.common.match.rematch}
 					</button>
 				) : null}
 				{newGameRoute ? (

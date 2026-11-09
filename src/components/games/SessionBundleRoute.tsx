@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
-import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import { MatchStatus } from "#/components/games/match/MatchStage";
 
 type BundleStatus = "loading" | "notFound";
 
@@ -36,17 +36,7 @@ export function SessionBundleRoute<Bundle>({
 /** The status line centered in a full-screen board shell. */
 export function boardShell(title: string): StatusShell {
 	return (text, status) => (
-		<FullscreenGameShell title={title}>
-			<div className="flex h-full items-center justify-center">
-				<p
-					className={
-						status === "notFound" ? "text-orange-200" : "text-slate-300"
-					}
-				>
-					{text}
-				</p>
-			</div>
-		</FullscreenGameShell>
+		<MatchStatus title={title} text={text} notFound={status === "notFound"} />
 	);
 }
 

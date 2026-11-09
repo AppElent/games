@@ -50,8 +50,6 @@ export const chess = {
 		youWin: "Je wint!",
 		betterLuck: "Meer geluk bij de rematch.",
 		shareText: "Schaken op Arcade Club — {status} na {count} halve zetten.",
-		rematchLabel: "Rematch (kleuren wisselen)",
-		rematchError: "Kon rematch niet starten",
 	},
 	moveList: {
 		heading: "Zetten",

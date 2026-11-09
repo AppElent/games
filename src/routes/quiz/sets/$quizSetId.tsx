@@ -16,8 +16,10 @@ function QuizSetEditPage() {
 	const messages = useMessages();
 	const { quizSetId } = Route.useParams();
 	return (
-		<FullscreenGamePage title={messages.games.quiz.sets.editSetTitle}>
-			<p className="club-kicker mb-2">{messages.catalog["live-quiz"].title}</p>
+		<FullscreenGamePage
+			title={messages.games.quiz.sets.editSetTitle}
+			kicker={messages.catalog["live-quiz"].title}
+		>
 			<h1 className="club-title mb-6 text-4xl font-bold text-white">
 				{messages.games.quiz.sets.editSetTitle}
 			</h1>

@@ -117,10 +117,10 @@ export function HitsterSetupForm() {
 				className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-[#fff] disabled:cursor-not-allowed disabled:opacity-50"
 				onClick={() =>
 					host(
-						({ hostName, guestId }) =>
+						({ displayName, guestId }) =>
 							create({
 								title: messages.games.hitster.musicTimelineKicker,
-								displayName: hostName,
+								displayName,
 								guestId,
 								mode,
 								packId,

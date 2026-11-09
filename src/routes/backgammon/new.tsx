@@ -53,10 +53,10 @@ function BackgammonNewPage() {
 							className="mt-5 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
 							onClick={() =>
 								host(
-									({ hostName, guestId }) =>
+									({ displayName, guestId }) =>
 										create({
 											title: messages.catalog.backgammon.title,
-											displayName: hostName,
+											displayName,
 											guestId,
 										}),
 									backgammon.newGame.createChallengeError,

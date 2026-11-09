@@ -58,37 +58,23 @@ export function BackgammonMatch({
 		opponentJoined,
 		finished,
 		myTurn,
+		occupant,
+		isActive,
 		seatAction,
 		error,
-		setError,
 		run,
-	} = useDuel(bundle.session._id, BACKGAMMON_COLORS, bundle.state);
+	} = useDuel(bundle, BACKGAMMON_COLORS);
 	const [showInfo, setShowInfo] = useState(false);
 	const [options, setOptions] = useState<BackgammonBoardOptions>(
 		DEFAULT_ONLINE_OPTIONS,
 	);
 
-	const white = bundle.participants.find(
-		(participant) => participant._id === bundle.state?.whiteParticipantId,
-	);
-	const black = bundle.participants.find(
-		(participant) => participant._id === bundle.state?.blackParticipantId,
-	);
+	const white = occupant("white");
+	const black = occupant("black");
 	const winner = bundle.participants.find(
 		(participant) => participant._id === bundle.state?.winnerParticipantId,
 	);
 	const turnState = bundle.state ? toTurnState(bundle.state) : null;
-
-	function handleRoll() {
-		if (!participantId) {
-			setError(backgammon.waitingRoom.joinBeforeRolling);
-			return;
-		}
-		run(
-			() => rollDice({ sessionId: bundle.session._id, participantId }),
-			backgammon.waitingRoom.rollError,
-		);
-	}
 
 	function handlePlan(plan: BackgammonMovePlan) {
 		if (!participantId || !turnState) {
@@ -110,17 +96,6 @@ export function BackgammonMatch({
 		}, backgammon.waitingRoom.moveError);
 	}
 
-	function handleEndTurn() {
-		if (!participantId) {
-			setError(backgammon.waitingRoom.joinBeforeEndingTurn);
-			return;
-		}
-		run(
-			() => endTurn({ sessionId: bundle.session._id, participantId }),
-			backgammon.waitingRoom.endTurnError,
-		);
-	}
-
 	function handleToggleOption(key: BackgammonOptionKey) {
 		setOptions((current) => ({ ...current, [key]: !current[key] }));
 	}
@@ -129,7 +104,7 @@ export function BackgammonMatch({
 		<SeatCards>
 			<SeatCard
 				label={backgammon.waitingRoom.seatWhite}
-				active={!finished && bundle.state?.activeColor === "white"}
+				active={isActive("white")}
 			>
 				<SeatName name={white?.displayName ?? messages.common.session.host} />
 				<SeatCounts
@@ -145,7 +120,7 @@ export function BackgammonMatch({
 			</SeatCard>
 			<SeatCard
 				label={backgammon.waitingRoom.seatBlack}
-				active={!finished && bundle.state?.activeColor === "black"}
+				active={isActive("black")}
 				open={!black}
 			>
 				<SeatName name={black?.displayName ?? messages.common.match.openSeat} />
@@ -201,8 +176,13 @@ export function BackgammonMatch({
 						optionKeys={ONLINE_OPTION_KEYS}
 						onToggleOption={handleToggleOption}
 						onPlan={handlePlan}
-						onRoll={handleRoll}
-						onEndTurn={handleEndTurn}
+						onRoll={
+							seatAction(rollDice, backgammon.waitingRoom.rollError) ?? spectate
+						}
+						onEndTurn={
+							seatAction(endTurn, backgammon.waitingRoom.endTurnError) ??
+							spectate
+						}
 						statusOverride={
 							finished
 								? fmt(backgammon.waitingRoom.finishedStatus, {
@@ -245,9 +225,8 @@ export function BackgammonMatch({
 							})}
 							onRematch={seatAction(
 								rematch,
-								backgammon.waitingRoom.rematchError,
+								messages.common.match.rematchError,
 							)}
-							rematchLabel={backgammon.waitingRoom.rematchLabel}
 							newGameRoute={getGameRoute("backgammon")}
 						/>
 					</div>
@@ -278,6 +257,12 @@ export function BackgammonMatch({
 		</FullscreenGameShell>
 	);
 }
+
+/**
+ * A spectator's roll and end-turn buttons: still drawn, always disabled, so
+ * the board looks the same to everyone.
+ */
+function spectate() {}
 
 /** How many of a side's checkers sit on the bar and are borne off. */
 function SeatCounts({ counts }: { counts?: string }) {

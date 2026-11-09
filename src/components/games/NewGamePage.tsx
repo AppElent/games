@@ -62,10 +62,10 @@ export function NewGamePage({
 						disabled={busy}
 						onClick={() =>
 							host(
-								({ hostName, guestId }) =>
+								({ displayName, guestId }) =>
 									create({
 										title: sessionTitle ?? title,
-										displayName: hostName,
+										displayName,
 										guestId,
 									}),
 								errorFallback,

@@ -29,8 +29,6 @@ export const connectFour = {
 	},
 	endScreen: {
 		shareText: "Connect Four on Arcade Club — {status}",
-		rematchLabel: "Rematch (colors swap)",
-		rematchError: "Could not start rematch",
 	},
 	session: {
 		gameNotFound: "Game not found.",

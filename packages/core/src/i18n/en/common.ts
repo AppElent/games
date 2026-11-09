@@ -78,6 +78,8 @@ export const common = {
 		info: "Info",
 		challengeLink: "Challenge link",
 		openSeat: "Open seat",
+		rematch: "Rematch (colors swap)",
+		rematchError: "Could not start rematch",
 	},
 	room: {
 		loadingKicker: "Setting up",
@@ -98,7 +100,6 @@ export const common = {
 		rotateHint: "Rotate your phone for a bigger board",
 	},
 	endScreen: {
-		rematch: "Rematch",
 		newGame: "New game",
 		shareResult: "Share result",
 		backToArcade: "Back to arcade",

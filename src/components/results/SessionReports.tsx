@@ -1,4 +1,4 @@
-import type { FunctionReturnType } from "convex/server";
+import { useQuery } from "convex/react";
 import { Download } from "lucide-react";
 import { downloadCsv, toCsv } from "#/lib/games/csv";
 import {
@@ -8,48 +8,43 @@ import {
 	type ResultParticipant,
 } from "#/lib/games/quiz-report";
 import { fmt, useMessages } from "#/lib/i18n";
-import type { api } from "../../../convex/_generated/api";
-
-type QuizBundle = NonNullable<FunctionReturnType<typeof api.quiz.getBundle>>;
+import { api } from "../../../convex/_generated/api";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
 /**
  * A finished session's report under the results header. Only the live quiz
  * keeps scores; every other game lists its players at zero points.
  */
 export function SessionReport({
-	sessionId,
+	session,
 	participants,
-	quizBundle,
 }: {
-	sessionId: string;
+	session: Pick<Doc<"gameSessions">, "_id" | "gameType">;
 	participants: ResultParticipant[];
-	/** Present for a live quiz session. */
-	quizBundle?: QuizBundle | null;
 }) {
-	return quizBundle !== undefined ? (
-		<QuizReport
-			sessionId={sessionId}
-			participants={participants}
-			quizBundle={quizBundle}
-		/>
+	return session.gameType === "live-quiz" ? (
+		<QuizReport sessionId={session._id} participants={participants} />
 	) : (
 		<ScoreboardSection
-			sessionId={sessionId}
+			sessionId={session._id}
 			scoreboard={buildScoreboard(participants, [])}
 		/>
 	);
 }
 
+/** The quiz's scores from its answers, then each question's accuracy. */
 function QuizReport({
 	sessionId,
 	participants,
-	quizBundle,
 }: {
-	sessionId: string;
+	sessionId: Id<"gameSessions">;
 	participants: ResultParticipant[];
-	quizBundle: QuizBundle | null;
 }) {
 	const messages = useMessages();
+	const quizBundle = useQuery(api.quiz.getBundle, { sessionId });
+	if (quizBundle === undefined) {
+		return null;
+	}
 	const quizSet = quizBundle?.quizSet ?? null;
 	const answers = quizBundle?.answers ?? [];
 	const questionStats = quizSet

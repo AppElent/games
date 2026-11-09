@@ -8,18 +8,11 @@ import { useGameAction } from "#/lib/games/use-game-action";
 import { useMessages } from "#/lib/i18n";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-/** Default host name: the signed-in account's first name. */
-export function useHostDisplayName(): string {
-	const { user } = useUser();
-	const messages = useMessages();
-	return user?.firstName || user?.username || messages.common.session.host;
-}
-
-type HostNames = {
-	/** The account's name, which most games host under. */
-	hostName: string;
+/** Who hosts: this device's guest id, and the name the host plays under. */
+type HostIdentity = {
+	/** The account's first name when signed in, else this device's guest name. */
+	displayName: string;
 	guestId: string;
-	guestName: string;
 };
 
 type CreatedSession = {
@@ -37,30 +30,32 @@ function reloadIntoSession(gameType: GameType, created: CreatedSession) {
 }
 
 /**
- * Hosting one game: `create` runs its mutation with the names the game wants,
- * then `open` takes this tab into the session (by default it takes the seat
+ * Hosting one game: `create` runs its mutation as this host, then `open` takes this tab into the session (by default it takes the seat
  * and reloads). `busy` stays set through that, and clears only on failure.
  */
 export function useHostSession(
 	gameType: GameType,
 	{ open }: { open?: (created: CreatedSession) => Promise<unknown> } = {},
 ) {
-	const hostName = useHostDisplayName();
+	const { user } = useUser();
+	const messages = useMessages();
+	const accountName = user
+		? user.firstName || user.username || messages.common.session.host
+		: undefined;
 	const { error, setError, run } = useGameAction();
 	const [busy, setBusy] = useState(false);
 
 	const host = useCallback(
 		async (
-			create: (names: HostNames) => Promise<CreatedSession>,
+			create: (host: HostIdentity) => Promise<CreatedSession>,
 			fallback: string,
 		) => {
 			setBusy(true);
 			const succeeded = await run(async () => {
 				const guest = getOrCreateGuestIdentity();
 				const created = await create({
-					hostName,
+					displayName: accountName ?? guest.displayName,
 					guestId: guest.id,
-					guestName: guest.displayName,
 				});
 				if (open) {
 					await open(created);
@@ -72,7 +67,7 @@ export function useHostSession(
 				setBusy(false);
 			}
 		},
-		[gameType, hostName, open, run],
+		[accountName, gameType, open, run],
 	);
 
 	return { busy, error, setError, host };

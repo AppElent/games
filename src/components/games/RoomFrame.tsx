@@ -5,15 +5,17 @@ import { useMessages } from "#/lib/i18n";
 
 /**
  * A room game's screen (bluff dice, signal words): the header panel with the
- * game name, session title, raw join code, status banner and error line, the
- * game's own blocks below it, and an aside with the invite QR and how to play.
- * `panel` renders inside the header panel; `children` follow it.
+ * game name, session title, raw join code, status banner (a warning while the
+ * lobby fills, success after) and error line, the game's own blocks below it,
+ * and an aside with the invite QR and how to play. `panel` renders inside the
+ * header panel; `children` follow it.
  */
 export function RoomFrame({
 	gameTitle,
 	title,
 	joinCode,
 	status,
+	inLobby,
 	error,
 	panel,
 	children,
@@ -23,7 +25,8 @@ export function RoomFrame({
 	gameTitle: string;
 	title: string;
 	joinCode?: string;
-	status: { label: string; tone: "success" | "warning" };
+	status: string;
+	inLobby: boolean;
 	error: string;
 	panel: ReactNode;
 	children: ReactNode;
@@ -49,7 +52,7 @@ export function RoomFrame({
 						) : null}
 					</div>
 					<div className="mt-4">
-						<SeatBanner tone={status.tone} label={status.label} />
+						<SeatBanner tone={inLobby ? "warning" : "success"} label={status} />
 					</div>
 					{error ? <p className="mt-3 club-error">{error}</p> : null}
 					{panel}
@@ -93,7 +96,8 @@ export function RoomStartButton({
 	onClick,
 }: {
 	label: string;
-	onClick: () => void;
+	/** Unset while this tab holds no seat. */
+	onClick?: () => void;
 }) {
 	return (
 		<button
@@ -112,7 +116,8 @@ export function RoomPlayAgain({
 	onClick,
 }: {
 	label: string;
-	onClick: () => void;
+	/** Unset while this tab holds no seat. */
+	onClick?: () => void;
 }) {
 	return (
 		<div className="flex justify-center">

@@ -13,8 +13,10 @@ function HitsterNewPage() {
 	const messages = useMessages();
 	const hitster = messages.games.hitster;
 	return (
-		<FullscreenGamePage title={messages.catalog.hitster.title}>
-			<p className="club-kicker mb-2">{hitster.musicTimelineKicker}</p>
+		<FullscreenGamePage
+			title={messages.catalog.hitster.title}
+			kicker={hitster.musicTimelineKicker}
+		>
 			<h1 className="club-title mb-4 text-4xl font-bold text-[var(--club-text)]">
 				{hitster.newGame.heading}
 			</h1>

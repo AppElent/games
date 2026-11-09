@@ -17,8 +17,11 @@ export function MatchWaitingScreen({
 	gameTitle: string;
 } & Omit<ComponentProps<typeof MatchDetails>, "className" | "tone">) {
 	return (
-		<FullscreenGamePage title={title} maxWidthClassName="max-w-md">
-			<p className="club-kicker mb-2">{gameTitle}</p>
+		<FullscreenGamePage
+			title={title}
+			kicker={gameTitle}
+			maxWidthClassName="max-w-md"
+		>
 			<h1 className="club-title mb-4 text-3xl font-bold text-white">{title}</h1>
 			<MatchDetails className="space-y-4" tone="warning" {...details} />
 		</FullscreenGamePage>

@@ -53,8 +53,6 @@ export const chess = {
 		youWin: "You win!",
 		betterLuck: "Better luck in the rematch.",
 		shareText: "Chess on Arcade Club — {status} after {count} half-moves.",
-		rematchLabel: "Rematch (colors swap)",
-		rematchError: "Could not start rematch",
 	},
 	moveList: {
 		heading: "Moves",

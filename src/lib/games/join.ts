@@ -1,5 +1,5 @@
 import { normalizeJoinCode } from "@arcadeclub/core/sessions";
-import { useConvex, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
 import { getSessionPath, joinsWithSeatSecret } from "#/lib/games/catalog";
 import { rememberSeat } from "#/lib/games/seat";
@@ -21,19 +21,15 @@ type JoinRequest = {
  * the result is where the player plays (`null` for a game with no sessions).
  */
 export function useJoinSession() {
-	const convex = useConvex();
 	const joinByCode = useMutation(api.sessions.joinByCode);
 	const joinByToken = useMutation(api.sessions.joinByToken);
 
 	return async ({ code, token, name, asSpectator }: JoinRequest) => {
 		const guest = getOrCreateGuestIdentity();
 		const displayName = name.trim() || guest.displayName;
-		const joinCode = normalizeJoinCode(code);
-		const invited = token
-			? null
-			: await convex.query(api.sessions.inviteGameType, { joinCode });
-		const seatSecret =
-			invited && joinsWithSeatSecret(invited) ? newCardSeatSecret() : undefined;
+		// A room code may open a card table, whose seat needs a secret; the
+		// server ignores it for every other game.
+		const seatSecret = token ? undefined : newCardSeatSecret();
 		const result = token
 			? await joinByToken({
 					shareToken: token,
@@ -42,7 +38,7 @@ export function useJoinSession() {
 					asSpectator,
 				})
 			: await joinByCode({
-					joinCode,
+					joinCode: normalizeJoinCode(code),
 					displayName,
 					guestId: guest.id,
 					asSpectator,

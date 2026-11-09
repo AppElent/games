@@ -38,7 +38,6 @@ export const signalWords = {
 		passTurn: "Pass turn",
 		passError: "Could not pass",
 		playAgain: "Play again (new board)",
-		rematchError: "Could not start rematch",
 	},
 	clueForm: {
 		label: "One-word clue",

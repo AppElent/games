@@ -16,13 +16,8 @@ function SessionResultsPage() {
 	const bundle = useQuery(api.sessions.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 	});
-	const isQuizSession = bundle?.session.gameType === "live-quiz";
-	const quizBundle = useQuery(
-		api.quiz.getBundle,
-		isQuizSession ? { sessionId: sessionId as Id<"gameSessions"> } : "skip",
-	);
 
-	if (bundle === undefined || (isQuizSession && quizBundle === undefined)) {
+	if (bundle === undefined) {
 		return (
 			<main className="club-wrap py-10 text-slate-300">
 				{messages.common.results.loadingResults}
@@ -79,11 +74,7 @@ function SessionResultsPage() {
 				) : null}
 			</div>
 
-			<SessionReport
-				sessionId={sessionId}
-				participants={participants}
-				quizBundle={isQuizSession ? quizBundle : undefined}
-			/>
+			<SessionReport session={session} participants={participants} />
 		</main>
 	);
 }

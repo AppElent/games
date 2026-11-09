@@ -6,12 +6,25 @@ import {
 } from "#/components/games/FullscreenGameShell";
 import { useMessages } from "#/lib/i18n";
 
-/** A match screen before its state has loaded. */
-export function MatchLoading({ title, text }: { title: string; text: string }) {
+/**
+ * A board screen with no board yet: its status line centered in the shell,
+ * orange once the game is gone (`notFound`).
+ */
+export function MatchStatus({
+	title,
+	text,
+	notFound = false,
+}: {
+	title: string;
+	text: string;
+	notFound?: boolean;
+}) {
 	return (
 		<FullscreenGameShell title={title}>
-			<div className="flex h-full items-center justify-center text-slate-300">
-				{text}
+			<div className="flex h-full items-center justify-center">
+				<p className={notFound ? "text-orange-200" : "text-slate-300"}>
+					{text}
+				</p>
 			</div>
 		</FullscreenGameShell>
 	);

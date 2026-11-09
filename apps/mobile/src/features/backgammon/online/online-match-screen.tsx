@@ -179,7 +179,7 @@ function OnlineMatchLoaded({
 					finishedAction={
 						match.myColor ? (
 							<Button
-								label={copy.waitingRoom.rematchLabel}
+								label={t.common.match.rematch}
 								onPress={() => void match.rematch()}
 								busy={match.busy}
 								testID="bg-rematch"

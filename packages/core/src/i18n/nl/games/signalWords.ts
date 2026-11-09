@@ -38,7 +38,6 @@ export const signalWords = {
 		passTurn: "Beurt doorgeven",
 		passError: "Kon beurt niet doorgeven",
 		playAgain: "Opnieuw spelen (nieuw bord)",
-		rematchError: "Kon rematch niet starten",
 	},
 	clueForm: {
 		label: "Hint van één woord",

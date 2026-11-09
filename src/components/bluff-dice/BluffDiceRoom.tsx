@@ -8,8 +8,7 @@ import {
 	RoomPlayAgain,
 	RoomStartButton,
 } from "#/components/games/RoomFrame";
-import { useSeat } from "#/lib/games/seat";
-import { useGameAction } from "#/lib/games/use-game-action";
+import { useSeatAction } from "#/lib/games/use-seat-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -31,8 +30,9 @@ export function BluffDiceRoom({
 	const submitClaim = useMutation(api.bluffDice.submitClaim);
 	const challenge = useMutation(api.bluffDice.challenge);
 	const rematch = useMutation(api.bluffDice.rematch);
-	const participantId = useSeat(bundle.session._id);
-	const { error, run } = useGameAction();
+	const { participantId, seatAction, error } = useSeatAction(
+		bundle.session._id,
+	);
 	const [quantity, setQuantity] = useState(2);
 	const [face, setFace] = useState(3);
 
@@ -84,7 +84,8 @@ export function BluffDiceRoom({
 			gameTitle={messages.catalog["bluff-dice"].title}
 			title={bundle.session.title}
 			joinCode={bundle.session.joinCode}
-			status={{ label: statusLabel, tone: inLobby ? "warning" : "success" }}
+			status={statusLabel}
+			inLobby={inLobby}
 			error={error}
 			joinUrl={joinUrl}
 			howToPlay={{
@@ -131,16 +132,7 @@ export function BluffDiceRoom({
 					{inLobby && isHost && participantId ? (
 						<RoomStartButton
 							label={bluffDice.room.startGameButton}
-							onClick={() =>
-								run(
-									() =>
-										start({
-											sessionId: bundle.session._id,
-											participantId,
-										}),
-									bluffDice.room.couldNotStartGame,
-								)
-							}
+							onClick={seatAction(start, bluffDice.room.couldNotStartGame)}
 						/>
 					) : null}
 				</>
@@ -252,18 +244,10 @@ export function BluffDiceRoom({
 							<button
 								type="button"
 								className="min-h-11 club-btn-primary"
-								onClick={() =>
-									run(
-										() =>
-											submitClaim({
-												sessionId: bundle.session._id,
-												participantId,
-												quantity,
-												face,
-											}),
-										bluffDice.room.couldNotClaim,
-									)
-								}
+								onClick={seatAction(
+									(seat) => submitClaim({ ...seat, quantity, face }),
+									bluffDice.room.couldNotClaim,
+								)}
 							>
 								{bluffDice.room.claimButton}
 							</button>
@@ -271,16 +255,10 @@ export function BluffDiceRoom({
 								<button
 									type="button"
 									className="min-h-11 rounded-md border border-orange-300/40 bg-orange-300/10 px-5 py-2 font-bold text-orange-100"
-									onClick={() =>
-										run(
-											() =>
-												challenge({
-													sessionId: bundle.session._id,
-													participantId,
-												}),
-											bluffDice.room.couldNotChallenge,
-										)
-									}
+									onClick={seatAction(
+										challenge,
+										bluffDice.room.couldNotChallenge,
+									)}
 								>
 									{bluffDice.room.challengeButton}
 								</button>
@@ -293,16 +271,7 @@ export function BluffDiceRoom({
 			{finished && isHost && participantId ? (
 				<RoomPlayAgain
 					label={messages.common.actions.playAgain}
-					onClick={() =>
-						run(
-							() =>
-								rematch({
-									sessionId: bundle.session._id,
-									participantId,
-								}),
-							bluffDice.room.couldNotStartRematch,
-						)
-					}
+					onClick={seatAction(rematch, bluffDice.room.couldNotStartRematch)}
 				/>
 			) : null}
 		</RoomFrame>
