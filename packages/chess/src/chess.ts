@@ -1,6 +1,11 @@
 import { GameRuleError } from "@arcadeclub/core/errors";
 import { Chess } from "chess.js";
-import type { ChessColor, ChessPromotion, ChessTimeControl } from "./enums";
+import type {
+	ChessColor,
+	ChessOutcome,
+	ChessPromotion,
+	ChessTimeControl,
+} from "./enums";
 
 type ChessMoveInput = {
 	from: string;
@@ -8,15 +13,18 @@ type ChessMoveInput = {
 	promotion?: ChessPromotion;
 };
 
+/** How a move can end the game: mate, or a draw the position forces. */
 type ChessGameResult =
 	| { outcome: "checkmate"; winner: ChessColor }
-	| { outcome: "timeout"; winner: ChessColor }
-	| { outcome: "resignation"; winner: ChessColor }
-	| { outcome: "stalemate" }
-	| { outcome: "insufficientMaterial" }
-	| { outcome: "threefoldRepetition" }
-	| { outcome: "fiftyMoveRule" }
-	| { outcome: "drawAgreed" };
+	| {
+			outcome: Extract<
+				ChessOutcome,
+				| "stalemate"
+				| "insufficientMaterial"
+				| "threefoldRepetition"
+				| "fiftyMoveRule"
+			>;
+	  };
 
 type ChessMoveOutcome = {
 	fen: string;
@@ -134,6 +142,31 @@ export type ChessClockState = {
 	/** Timestamp when the active player's clock started running. */
 	turnStartedAt: number;
 };
+
+/**
+ * The clock of an active timed game, or undefined when the game is untimed or
+ * not under way (no clock runs before the first move or after the end).
+ */
+export function runningClock(state: {
+	phase: string;
+	remainingWhiteMs?: number;
+	remainingBlackMs?: number;
+	turnStartedAt?: number;
+}): ChessClockState | undefined {
+	if (
+		state.phase !== "active" ||
+		state.remainingWhiteMs === undefined ||
+		state.remainingBlackMs === undefined ||
+		state.turnStartedAt === undefined
+	) {
+		return undefined;
+	}
+	return {
+		remainingWhiteMs: state.remainingWhiteMs,
+		remainingBlackMs: state.remainingBlackMs,
+		turnStartedAt: state.turnStartedAt,
+	};
+}
 
 /** Remaining ms for a color right now, given a running clock. */
 export function getRemainingMs(

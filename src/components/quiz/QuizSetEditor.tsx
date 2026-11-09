@@ -8,7 +8,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { ClipboardPaste, Plus, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useErrorMessage } from "#/lib/games/errors";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -44,7 +44,6 @@ export function QuizSetEditor({
 	initialDescription?: string;
 	initialQuestions?: QuizQuestionDraft[];
 }) {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const navigate = useNavigate();
 	const createSet = useMutation(api.quiz.createSet);
@@ -57,7 +56,7 @@ export function QuizSetEditor({
 	const [importText, setImportText] = useState("");
 	const [importErrors, setImportErrors] = useState<string[]>([]);
 	const [showImport, setShowImport] = useState(false);
-	const [error, setError] = useState("");
+	const { error, setError, run } = useGameAction();
 	const [busy, setBusy] = useState(false);
 
 	function patchQuestion(index: number, patch: Partial<QuizQuestionDraft>) {
@@ -103,7 +102,6 @@ export function QuizSetEditor({
 			return;
 		}
 		setBusy(true);
-		setError("");
 		const payload = {
 			title: title.trim(),
 			description: description.trim() || undefined,
@@ -113,18 +111,15 @@ export function QuizSetEditor({
 				choices: question.choices.filter((choice) => choice.label.trim()),
 			})),
 		};
-		try {
+		await run(async () => {
 			if (quizSetId) {
 				await updateSet({ quizSetId, ...payload });
 			} else {
 				await createSet(payload);
 			}
 			await navigate({ to: "/quiz/sets" });
-		} catch (caught) {
-			setError(errorMessage(caught, messages.games.quiz.setEditor.saveError));
-		} finally {
-			setBusy(false);
-		}
+		}, messages.games.quiz.setEditor.saveError);
+		setBusy(false);
 	}
 
 	return (

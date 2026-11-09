@@ -33,7 +33,6 @@ export const bluffDice = {
 		couldNotClaim: "Kon niet bieden",
 		challengeButton: "Uitdagen!",
 		couldNotChallenge: "Kon niet uitdagen",
-		couldNotStartRematch: "Kon rematch niet starten",
 		howToPlayKicker: "Zo werkt het",
 		howToPlayRollDice: "Iedereen gooit verborgen dobbelstenen.",
 		howToPlayClaim:

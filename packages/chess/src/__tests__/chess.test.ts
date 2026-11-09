@@ -11,6 +11,7 @@ import {
 	initialClock,
 	isInCheck,
 	isPromotionMove,
+	runningClock,
 	tickClockAfterMove,
 } from "../chess";
 
@@ -147,5 +148,29 @@ describe("initialClock", () => {
 			remainingWhiteMs: undefined,
 			remainingBlackMs: undefined,
 		});
+	});
+});
+
+describe("runningClock", () => {
+	const timed = {
+		remainingWhiteMs: 600_000,
+		remainingBlackMs: 590_000,
+		turnStartedAt: 1_000,
+	};
+
+	it("is the clock of an active timed game", () => {
+		expect(runningClock({ phase: "active", ...timed })).toEqual(timed);
+	});
+
+	it("runs only while the game is active", () => {
+		expect(runningClock({ phase: "waiting", ...timed })).toBeUndefined();
+		expect(runningClock({ phase: "finished", ...timed })).toBeUndefined();
+	});
+
+	it("is unset for an untimed game or before the clock starts", () => {
+		expect(runningClock({ phase: "active" })).toBeUndefined();
+		expect(
+			runningClock({ ...timed, phase: "active", turnStartedAt: undefined }),
+		).toBeUndefined();
 	});
 });

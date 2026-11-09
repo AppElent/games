@@ -3,6 +3,7 @@ import {
 	CHESS_INITIAL_FEN,
 	hasFlagFallen,
 	initialClock,
+	runningClock,
 	tickClockAfterMove,
 } from "@arcadeclub/chess/chess";
 import {
@@ -35,21 +36,6 @@ import {
 } from "./lib/hostedSession";
 import { literals } from "./lib/validators";
 import { chessTimeControlValidator } from "./schema";
-
-function getClock(state: Doc<"chessGameStates">) {
-	if (
-		state.remainingWhiteMs === undefined ||
-		state.remainingBlackMs === undefined ||
-		state.turnStartedAt === undefined
-	) {
-		return undefined;
-	}
-	return {
-		remainingWhiteMs: state.remainingWhiteMs,
-		remainingBlackMs: state.remainingBlackMs,
-		turnStartedAt: state.turnStartedAt,
-	};
-}
 
 async function finishGame(
 	ctx: MutationCtx,
@@ -126,7 +112,7 @@ export const applyMove = mutation({
 		const color = requireTurn(CHESS_DUEL, state, args.participantId);
 		const now = Date.now();
 
-		let clock = state.phase === "active" ? getClock(state) : undefined;
+		let clock = runningClock(state);
 		if (clock && hasFlagFallen(clock, color, now)) {
 			throw gameError("timeRanOut");
 		}
@@ -246,7 +232,7 @@ export const claimTimeout = mutation({
 			throw gameError("noActiveGame");
 		}
 		const color = requireSeat(CHESS_DUEL, state, args.participantId);
-		const clock = getClock(state);
+		const clock = runningClock(state);
 		if (!clock) {
 			throw gameError("gameUntimed");
 		}

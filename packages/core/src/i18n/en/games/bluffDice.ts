@@ -30,7 +30,6 @@ export const bluffDice = {
 		couldNotClaim: "Could not claim",
 		challengeButton: "Challenge!",
 		couldNotChallenge: "Could not challenge",
-		couldNotStartRematch: "Could not start rematch",
 		howToPlayKicker: "How to play",
 		howToPlayRollDice: "Everyone rolls hidden dice.",
 		howToPlayClaim: "Take turns claiming how many of a face exist in total.",

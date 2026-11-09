@@ -52,8 +52,10 @@ type Props = {
 	optionKeys?: BackgammonOptionKey[];
 	onToggleOption?: (key: BackgammonOptionKey) => void;
 	onPlan: (plan: BackgammonMovePlan) => void | Promise<void>;
-	onRoll?: () => void | Promise<void>;
-	onEndTurn?: () => void | Promise<void>;
+	/** Unset for a viewer without a seat: the button still shows, disabled. */
+	onRoll?: () => unknown;
+	/** Unset for a viewer without a seat: the button still shows, disabled. */
+	onEndTurn?: () => unknown;
 	onUndo?: () => void;
 	onRedo?: () => void;
 	onReset?: () => void;
@@ -210,6 +212,8 @@ export function BackgammonBoard({
 
 	const active = state.activeColor;
 	const movable = interactive && canMoveNow(state);
+	const rollEnabled = canRoll && Boolean(onRoll);
+	const endTurnEnabled = canEndTurn && Boolean(onEndTurn);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: clear stale selection when the turn changes hands
 	useEffect(() => {
@@ -684,44 +688,40 @@ export function BackgammonBoard({
 							))
 						)}
 					</div>
-					{onRoll ? (
-						<button
-							type="button"
-							onClick={() => void onRoll()}
-							disabled={!canRoll}
-							style={{
-								...btnBase,
-								color: "#1a1610",
-								background: "linear-gradient(180deg,#e7cf9d,#cbab72)",
-								border: "1px solid #7c5f34",
-								padding: "9px 16px",
-								opacity: canRoll ? 1 : 0.4,
-								cursor: canRoll ? "pointer" : "not-allowed",
-								boxShadow:
-									"0 2px 5px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)",
-							}}
-						>
-							{backgammon.board.rollButton}
-						</button>
-					) : null}
-					{onEndTurn ? (
-						<button
-							type="button"
-							onClick={() => void onEndTurn()}
-							disabled={!canEndTurn}
-							style={{
-								...btnBase,
-								color: "#d9cbb2",
-								background: "rgba(255,255,255,0.05)",
-								border: "1px solid rgba(233,217,189,0.22)",
-								padding: "9px 16px",
-								opacity: canEndTurn ? 1 : 0.4,
-								cursor: canEndTurn ? "pointer" : "not-allowed",
-							}}
-						>
-							{backgammon.board.endTurnButton}
-						</button>
-					) : null}
+					<button
+						type="button"
+						onClick={() => void onRoll?.()}
+						disabled={!rollEnabled}
+						style={{
+							...btnBase,
+							color: "#1a1610",
+							background: "linear-gradient(180deg,#e7cf9d,#cbab72)",
+							border: "1px solid #7c5f34",
+							padding: "9px 16px",
+							opacity: rollEnabled ? 1 : 0.4,
+							cursor: rollEnabled ? "pointer" : "not-allowed",
+							boxShadow:
+								"0 2px 5px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)",
+						}}
+					>
+						{backgammon.board.rollButton}
+					</button>
+					<button
+						type="button"
+						onClick={() => void onEndTurn?.()}
+						disabled={!endTurnEnabled}
+						style={{
+							...btnBase,
+							color: "#d9cbb2",
+							background: "rgba(255,255,255,0.05)",
+							border: "1px solid rgba(233,217,189,0.22)",
+							padding: "9px 16px",
+							opacity: endTurnEnabled ? 1 : 0.4,
+							cursor: endTurnEnabled ? "pointer" : "not-allowed",
+						}}
+					>
+						{backgammon.board.endTurnButton}
+					</button>
 					{onUndo ? (
 						<button
 							type="button"

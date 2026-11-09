@@ -1,4 +1,4 @@
-import type { SudokuDifficulty } from "@arcadeclub/core/sudoku";
+import type { SudokuDifficulty, SudokuVariant } from "@arcadeclub/core/sudoku";
 import { readJson, writeJson } from "#/lib/games/local-store";
 
 /**
@@ -19,7 +19,7 @@ export function autoSessionTitle(
 	difficulty: SudokuDifficulty | undefined,
 	source: "generated" | "scan",
 	now = new Date(),
-	variant: "classic" | "killer" | "binary" = "classic",
+	variant: SudokuVariant = "classic",
 ) {
 	const stamp = `${now.toLocaleDateString(undefined, {
 		month: "short",

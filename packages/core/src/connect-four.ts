@@ -12,7 +12,6 @@ export const CONNECT_FOUR_OUTCOMES = [
 	"draw",
 	"resignation",
 ] as const;
-export type ConnectFourOutcome = (typeof CONNECT_FOUR_OUTCOMES)[number];
 
 export const CONNECT_FOUR_COLS = 7;
 export const CONNECT_FOUR_ROWS = 6;

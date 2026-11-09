@@ -3,7 +3,6 @@ import { digitsInMask } from "@arcadeclub/core/sudoku";
 import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useErrorMessage } from "#/lib/games/errors";
 import { autoSessionTitle } from "#/lib/games/sudoku-local";
 import type { ScanCell, ScanCellType } from "#/lib/games/sudoku-scan";
 import {
@@ -23,6 +22,7 @@ import {
 	warpToSquare,
 } from "#/lib/games/sudoku-scan-image";
 import { createSudokuSession } from "#/lib/games/sudoku-session";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -35,35 +35,30 @@ type Step =
 	| { id: "verify"; warpedUrl: string; cells: ScanCell[] };
 
 export function SudokuScanFlow() {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
 	const [step, setStep] = useState<Step>({ id: "upload" });
-	const [error, setError] = useState("");
+	const { error, setError, run } = useGameAction();
 
 	const onFile = async (file: File | undefined) => {
 		if (!file) {
 			return;
 		}
-		setError("");
-		try {
+		await run(async () => {
 			const source = await fileToCanvas(file);
 			setStep({
 				id: "corners",
 				source,
 				corners: defaultCorners(source.width, source.height),
 			});
-		} catch (caught) {
-			setError(errorMessage(caught, sudoku.scan.couldNotReadImage));
-		}
+		}, sudoku.scan.couldNotReadImage);
 	};
 
 	const runRecognition = async (
 		source: HTMLCanvasElement,
 		corners: Point[],
 	) => {
-		setError("");
-		try {
+		const read = await run(async () => {
 			const warped = warpToSquare(source, corners);
 			const warpedUrl = warped.toDataURL("image/jpeg", 0.8);
 			setStep({
@@ -77,8 +72,8 @@ export function SudokuScanFlow() {
 				),
 			);
 			setStep({ id: "verify", warpedUrl, cells });
-		} catch (caught) {
-			setError(errorMessage(caught, sudoku.scan.recognitionFailed));
+		}, sudoku.scan.recognitionFailed);
+		if (!read) {
 			setStep({ id: "upload" });
 		}
 	};

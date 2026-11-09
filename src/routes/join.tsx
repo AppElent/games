@@ -1,8 +1,8 @@
 import { useUser } from "@clerk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useErrorMessage } from "#/lib/games/errors";
 import { useJoinSession } from "#/lib/games/join";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { useMessages } from "#/lib/i18n";
 
 export const Route = createFileRoute("/join")({
@@ -20,13 +20,12 @@ export const Route = createFileRoute("/join")({
 });
 
 function JoinPage() {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const search = Route.useSearch();
 	const join = useJoinSession();
 	const [code, setCode] = useState(search.code ?? "");
 	const [name, setName] = useState("");
-	const [error, setError] = useState("");
+	const { error, run } = useGameAction();
 	const [asSpectator, setAsSpectator] = useState(false);
 	const joiningByLink = Boolean(search.token);
 
@@ -47,22 +46,19 @@ function JoinPage() {
 				className="club-panel w-full max-w-md rounded-lg p-6"
 				onSubmit={async (event) => {
 					event.preventDefault();
-					setError("");
-					try {
+					await run(async () => {
 						const path = await join({
 							code,
 							token: search.token,
 							name,
 							asSpectator,
 						});
-						if (path) {
-							window.location.href = path;
-						} else {
-							setError(messages.common.joinPanel.joinError);
+						if (!path) {
+							// No screen to open: shown as the generic join error.
+							throw new Error("Joined a session with no screen to open.");
 						}
-					} catch (caught) {
-						setError(errorMessage(caught, messages.common.joinPanel.joinError));
-					}
+						window.location.href = path;
+					}, messages.common.joinPanel.joinError);
 				}}
 			>
 				<p className="club-kicker mb-2">{messages.common.joinPanel.kicker}</p>

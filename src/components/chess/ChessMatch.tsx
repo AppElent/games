@@ -5,6 +5,7 @@ import {
 	getRemainingMs,
 	isInCheck,
 	isPromotionMove,
+	runningClock,
 } from "@arcadeclub/chess/chess";
 import { CHESS_COLORS, type ChessColor } from "@arcadeclub/chess/enums";
 import { useMutation } from "convex/react";
@@ -101,29 +102,13 @@ export function ChessMatch({
 	const flipped = localColor === "black";
 	const check = !finished && isInCheck(state.fen);
 
-	function clockFor(color: ChessColor) {
-		if (
-			state?.remainingWhiteMs === undefined ||
-			state.remainingBlackMs === undefined
-		) {
-			return undefined;
-		}
-		if (state.turnStartedAt === undefined || state.phase !== "active") {
-			return color === "white"
+	const running = runningClock(state);
+	const clockFor = (color: ChessColor) =>
+		running
+			? getRemainingMs(running, state.activeColor, color, now)
+			: color === "white"
 				? state.remainingWhiteMs
 				: state.remainingBlackMs;
-		}
-		return getRemainingMs(
-			{
-				remainingWhiteMs: state.remainingWhiteMs,
-				remainingBlackMs: state.remainingBlackMs,
-				turnStartedAt: state.turnStartedAt,
-			},
-			state.activeColor,
-			color,
-			now,
-		);
-	}
 
 	const opponentFlagDown =
 		timed &&
@@ -217,40 +202,26 @@ export function ChessMatch({
 			<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-200">
 				{state.drawOfferBy === localColor ? (
 					<span>{chess.drawOffer.waitingForOpponent}</span>
-				) : localColor && participantId ? (
+				) : localColor ? (
 					<>
 						<span>{chess.drawOffer.opponentOffers}</span>
 						<button
 							type="button"
 							className="rounded-md bg-white px-3 py-1.5 font-bold text-slate-950"
-							onClick={() =>
-								run(
-									() =>
-										respondDraw({
-											sessionId: bundle.session._id,
-											participantId,
-											accept: true,
-										}),
-									chess.drawOffer.acceptError,
-								)
-							}
+							onClick={seatAction(
+								(seat) => respondDraw({ ...seat, accept: true }),
+								chess.drawOffer.acceptError,
+							)}
 						>
 							{chess.drawOffer.accept}
 						</button>
 						<button
 							type="button"
 							className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 font-bold text-white"
-							onClick={() =>
-								run(
-									() =>
-										respondDraw({
-											sessionId: bundle.session._id,
-											participantId,
-											accept: false,
-										}),
-									chess.drawOffer.declineError,
-								)
-							}
+							onClick={seatAction(
+								(seat) => respondDraw({ ...seat, accept: false }),
+								chess.drawOffer.declineError,
+							)}
 						>
 							{chess.drawOffer.decline}
 						</button>

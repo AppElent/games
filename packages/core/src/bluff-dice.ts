@@ -8,9 +8,9 @@ type BluffClaim = {
 	face: number;
 };
 
-export const BLUFF_STARTING_DICE = 5;
-export const BLUFF_MIN_PLAYERS = 2;
-export const BLUFF_MAX_PLAYERS = 8;
+const BLUFF_STARTING_DICE = 5;
+const BLUFF_MIN_PLAYERS = 2;
+const BLUFF_MAX_PLAYERS = 8;
 
 export function rollBluffDice(count: number, random: Rng = Math.random) {
 	return Array.from({ length: count }, () => 1 + Math.floor(random() * 6));

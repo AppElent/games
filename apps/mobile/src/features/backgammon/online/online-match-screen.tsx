@@ -5,6 +5,7 @@
  */
 
 import {
+	BACKGAMMON_COLORS,
 	type BackgammonColor,
 	type BackgammonMovePlan,
 	getBackgammonWinner,
@@ -13,6 +14,7 @@ import {
 	DEFAULT_ONLINE_OPTIONS,
 	type OnlineOptions,
 } from "@arcadeclub/core/backgammon-local";
+import { occupant, opponent } from "@arcadeclub/core/duel";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -88,18 +90,12 @@ function OnlineMatchLoaded({
 	}, [won]);
 
 	const viewer: BackgammonColor = match.myColor ?? "white";
-	const opponentId =
-		viewer === "white" ? state.blackParticipantId : state.whiteParticipantId;
-	const opponentSeatName = match.nameOf(opponentId);
-	const opponentName =
-		opponentSeatName ??
-		colorLabel(copy, viewer === "white" ? "black" : "white");
+	const opponentColor = opponent(BACKGAMMON_COLORS, viewer);
+	const opponentSeatName = match.nameOf(occupant(state, opponentColor));
+	const opponentName = opponentSeatName ?? colorLabel(copy, opponentColor);
 	const activeName =
-		match.nameOf(
-			turn.activeColor === "white"
-				? state.whiteParticipantId
-				: state.blackParticipantId,
-		) ?? colorLabel(copy, turn.activeColor);
+		match.nameOf(occupant(state, turn.activeColor)) ??
+		colorLabel(copy, turn.activeColor);
 	const waiting = state.phase === "waiting";
 
 	const hint = match.isMyTurn ? turnHint(turn, selection.selected) : null;

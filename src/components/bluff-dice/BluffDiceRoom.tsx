@@ -271,7 +271,7 @@ export function BluffDiceRoom({
 			{finished && isHost && participantId ? (
 				<RoomPlayAgain
 					label={messages.common.actions.playAgain}
-					onClick={seatAction(rematch, bluffDice.room.couldNotStartRematch)}
+					onClick={seatAction(rematch, messages.common.match.rematchError)}
 				/>
 			) : null}
 		</RoomFrame>

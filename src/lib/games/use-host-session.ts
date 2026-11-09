@@ -42,7 +42,7 @@ export function useHostSession(
 	const accountName = user
 		? user.firstName || user.username || messages.common.session.host
 		: undefined;
-	const { error, setError, run } = useGameAction();
+	const { error, run } = useGameAction();
 	const [busy, setBusy] = useState(false);
 
 	const host = useCallback(
@@ -70,5 +70,5 @@ export function useHostSession(
 		[accountName, gameType, open, run],
 	);
 
-	return { busy, error, setError, host };
+	return { busy, error, host };
 }

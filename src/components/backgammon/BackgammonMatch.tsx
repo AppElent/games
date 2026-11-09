@@ -176,13 +176,8 @@ export function BackgammonMatch({
 						optionKeys={ONLINE_OPTION_KEYS}
 						onToggleOption={handleToggleOption}
 						onPlan={handlePlan}
-						onRoll={
-							seatAction(rollDice, backgammon.waitingRoom.rollError) ?? spectate
-						}
-						onEndTurn={
-							seatAction(endTurn, backgammon.waitingRoom.endTurnError) ??
-							spectate
-						}
+						onRoll={seatAction(rollDice, backgammon.waitingRoom.rollError)}
+						onEndTurn={seatAction(endTurn, backgammon.waitingRoom.endTurnError)}
 						statusOverride={
 							finished
 								? fmt(backgammon.waitingRoom.finishedStatus, {
@@ -257,12 +252,6 @@ export function BackgammonMatch({
 		</FullscreenGameShell>
 	);
 }
-
-/**
- * A spectator's roll and end-turn buttons: still drawn, always disabled, so
- * the board looks the same to everyone.
- */
-function spectate() {}
 
 /** How many of a side's checkers sit on the bar and are borne off. */
 function SeatCounts({ counts }: { counts?: string }) {

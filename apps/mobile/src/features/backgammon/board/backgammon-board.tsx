@@ -4,12 +4,14 @@
  * tapping (see `use-board-selection.ts`); the board itself only draws and
  * reports taps.
  */
-import type {
-	BackgammonColor,
-	BackgammonMoveSource,
-	BackgammonPoint,
-	BackgammonTurnState,
+import {
+	BACKGAMMON_COLORS,
+	type BackgammonColor,
+	type BackgammonMoveSource,
+	type BackgammonPoint,
+	type BackgammonTurnState,
 } from "@arcadeclub/core/backgammon";
+import { opponent as opponentOf } from "@arcadeclub/core/duel";
 import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Svg, { Polygon, Rect } from "react-native-svg";
@@ -60,7 +62,7 @@ export function BackgammonBoard({
 		[width, fontScale],
 	);
 	const rows = boardRows(viewer);
-	const opponent: BackgammonColor = viewer === "white" ? "black" : "white";
+	const opponent = opponentOf(BACKGAMMON_COLORS, viewer);
 
 	const describe = (point: BackgammonPoint) => {
 		if (!point.color || point.count === 0) {
