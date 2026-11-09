@@ -8,7 +8,7 @@
  */
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
-export type AppVariant = "development" | "preview" | "production";
+type AppVariant = "development" | "preview" | "production";
 
 const VARIANTS = {
 	production: {
@@ -31,7 +31,7 @@ const VARIANTS = {
 	},
 } as const satisfies Record<AppVariant, object>;
 
-export function appVariant(value = process.env.APP_VARIANT): AppVariant {
+function appVariant(value = process.env.APP_VARIANT): AppVariant {
 	if (!value) return "development";
 	if (value in VARIANTS) return value as AppVariant;
 	throw new Error(`Unknown APP_VARIANT "${value}"`);
@@ -44,6 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 	return {
 		...config,
 		name,
+		// ExpoConfig requires it; `config` types every field as optional.
 		slug: "arcadeclub",
 		scheme,
 		icon: `./assets/icon${icon}.png`,

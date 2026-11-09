@@ -19,7 +19,7 @@ through `AppText` variants.
 | --- | --- |
 | `Screen` | Scrolling screen with gutters and content max width |
 | `Card` | One object or summary; pressable when it navigates |
-| `Button` | `primary` (one per view), `secondary`, `plain` text action, `danger` |
+| `Button` | `primary` (one per view), `secondary`, `plain` text action |
 | `Segmented` | Small fixed choice sets (difficulty, target, timer) |
 | `ChoiceList` | Radio list where each option needs a detail line (Hitster mode, pack) |
 | `TextField` | Labelled text entry |

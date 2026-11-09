@@ -26,7 +26,6 @@ function base(
 	return {
 		id,
 		difficulty: "easy" as const,
-		createdAt: updatedAt,
 		updatedAt,
 		elapsedSeconds: 0,
 		status,
@@ -99,7 +98,6 @@ describe("sudoku save store", () => {
 			size: 6,
 			givens: "0".repeat(36),
 			entries: "1".repeat(36),
-			solution: "2".repeat(36),
 		};
 		writeSudokuSave(killer);
 		writeSudokuSave(binary);
@@ -107,10 +105,10 @@ describe("sudoku save store", () => {
 		expect(readSudokuSave("binary")).toEqual(binary);
 	});
 
-	it("loads a save without the fields no screen reads", () => {
-		const { createdAt: _, ...withoutCreatedAt } = gridSave("old", 1);
-		writeJson(STORAGE_KEYS.sudokuSave("old"), withoutCreatedAt);
-		expect(readSudokuSave("old")).toEqual(withoutCreatedAt);
+	it("loads an older save that still has fields no screen reads", () => {
+		const old = { ...gridSave("old", 1), createdAt: 1 };
+		writeJson(STORAGE_KEYS.sudokuSave("old"), old);
+		expect(readSudokuSave("old")).toEqual(old);
 	});
 
 	describe("a corrupt save reads as no save", () => {

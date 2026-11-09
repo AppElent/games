@@ -9,8 +9,9 @@
 import type { GameType } from "@arcadeclub/core/games";
 import { buildInviteUrl, type Invite } from "@arcadeclub/core/sessions";
 import type { Href } from "expo-router";
+import { env } from "../../env";
 
-const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_ORIGIN?.replace(/\/+$/, "");
+const WEB_ORIGIN = env.webOrigin?.replace(/\/+$/, "");
 
 /** The online games this app opens; every other game is web-only. */
 const SESSION_HREFS = {
@@ -38,11 +39,6 @@ export function onlineSessionHref(
 	sessionId: string,
 ): Href {
 	return SESSION_HREFS[gameType](sessionId);
-}
-
-/** Whether invites can carry a web link (the web origin is configured). */
-export function hasWebOrigin() {
-	return Boolean(WEB_ORIGIN);
 }
 
 export function webJoinUrl(invite: Invite): string | null {

@@ -5,9 +5,10 @@
  * error.
  */
 import * as Haptics from "expo-haptics";
+import { bestEffort } from "../observability/report";
 
 function run(effect: () => Promise<void>) {
-	effect().catch(() => {});
+	bestEffort(effect());
 }
 
 export const haptics = {
@@ -25,6 +26,10 @@ export const haptics = {
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
 		),
 	gameWon: () =>
+		run(() =>
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+		),
+	answerRevealed: () =>
 		run(() =>
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
 		),

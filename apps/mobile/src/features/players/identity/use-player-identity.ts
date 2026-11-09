@@ -16,14 +16,14 @@ import {
 } from "@arcadeclub/core/sessions";
 import { useUser } from "@clerk/expo";
 import { useCallback, useState } from "react";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../../i18n";
 import {
 	readJson,
 	readText,
 	STORAGE_KEYS,
 	writeJson,
 	writeText,
-} from "../../storage/local-store";
+} from "../../../storage/local-store";
 
 export const PLAYER_NAME_MAX = 32;
 
@@ -67,6 +67,5 @@ export function usePlayerIdentity() {
 		defaultName,
 		savedName: savedName ?? "",
 		setDisplayName,
-		isSignedIn: Boolean(user),
 	};
 }

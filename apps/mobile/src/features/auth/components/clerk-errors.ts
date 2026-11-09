@@ -4,7 +4,7 @@
  * `{ error }` wrappers, while the machine-stable code lives on the hook's
  * `errors` signal, so field errors are read first and the wrapper last.
  */
-import type { Messages } from "../i18n";
+import type { Messages } from "../../../i18n";
 
 export type ErrorKey = keyof Messages["auth"]["errors"];
 
@@ -31,7 +31,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** A machine-stable code, searched through nested `errors` arrays. */
-export function clerkErrorCode(error: unknown, depth = 0): string | null {
+function clerkErrorCode(error: unknown, depth = 0): string | null {
 	if (!isRecord(error) || depth > 8) return null;
 	if (typeof error.code === "string") return error.code;
 	if (Array.isArray(error.errors)) {
@@ -44,7 +44,7 @@ export function clerkErrorCode(error: unknown, depth = 0): string | null {
 }
 
 /** The translation key for an error, or `null` for no error. */
-export function clerkErrorKey(error: unknown): ErrorKey | null {
+function clerkErrorKey(error: unknown): ErrorKey | null {
 	if (!error) return null;
 	const code = clerkErrorCode(error);
 	const key = code ? CODE_MAP[code] : undefined;

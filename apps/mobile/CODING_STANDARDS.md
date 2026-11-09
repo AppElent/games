@@ -21,7 +21,7 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
 - Local saves (Sudoku puzzles, the one pass-and-play backgammon match) use
   `expo-sqlite/kv-store`. Every store validates parsed data and degrades to "no save"
   instead of throwing.
-- `src/feedback/haptics.ts` names haptics by meaning (`moveMade`, `gameWon`).
+- `src/feedback/haptics.ts` names haptics by meaning (`moveMade`, `gameWon`, `answerRevealed`).
   Screens do not call `expo-haptics` directly.
 
 ## Project decisions

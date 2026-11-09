@@ -22,7 +22,12 @@
 // Production refuses to publish without SENTRY_AUTH_TOKEN. Preview publishes
 // without it and says so, so the pipeline can be tried without the token.
 import { spawnSync } from "node:child_process";
-import { appRoot, fingerprint, PLATFORMS } from "./fingerprint.mjs";
+import {
+	appRoot,
+	fingerprint,
+	hasFinishedBuild,
+	PLATFORMS,
+} from "./fingerprint.mjs";
 
 const CHANNELS = ["preview", "production"];
 
@@ -73,40 +78,10 @@ function run(command, args) {
 	}
 }
 
-/** Whether a finished build on this channel and platform has `runtime`. */
-function hasBuild(platform, runtime) {
-	const result = spawnSync(
-		"pnpm",
-		[
-			"exec",
-			"eas",
-			"build:list",
-			"--channel",
-			channel,
-			"--platform",
-			platform,
-			"--runtime-version",
-			runtime,
-			"--status",
-			"finished",
-			"--limit",
-			"1",
-			"--json",
-			"--non-interactive",
-		],
-		{ cwd: appRoot, env, encoding: "utf8" },
-	);
-	if (result.status !== 0) {
-		console.error(result.stderr);
-		process.exit(result.status || 1);
-	}
-	return JSON.parse(result.stdout).length > 0;
-}
-
 if (!uploadOnly && !withoutBuild) {
 	const found = PLATFORMS.map((platform) => {
 		const runtime = fingerprint(channel, platform).hash;
-		const ok = hasBuild(platform, runtime);
+		const ok = hasFinishedBuild(channel, platform, runtime);
 		console.log(
 			`${platform}: runtime ${runtime.slice(0, 12)}, ${ok ? "a build has it" : "no build has it"}`,
 		);

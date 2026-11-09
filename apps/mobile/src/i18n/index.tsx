@@ -20,21 +20,15 @@ import {
 	type ReactNode,
 	use,
 	useCallback,
+	useEffect,
 	useMemo,
 	useState,
 } from "react";
+import { setFeedbackLocale } from "../observability/init";
 import { readText, STORAGE_KEYS, writeText } from "../storage/local-store";
 
 export { fmt, plural } from "@arcadeclub/core/i18n/format";
 export type { Locale, Messages };
-
-export const SUPPORTED_LOCALES = LOCALES;
-const DATE_LOCALE: Record<Locale, string> = { en: "en-GB", nl: "nl-NL" };
-
-/** The BCP 47 tag used for date formatting, so screens never branch on locale. */
-export function dateLocale(locale: Locale): string {
-	return DATE_LOCALE[locale];
-}
 
 function initialLocale(): Locale {
 	let device = "";
@@ -46,7 +40,7 @@ function initialLocale(): Locale {
 		// No native locale module: fall back to English.
 	}
 	return resolveLocale(
-		SUPPORTED_LOCALES,
+		LOCALES,
 		DEFAULT_LOCALE,
 		readText(STORAGE_KEYS.locale) ?? undefined,
 		device,
@@ -69,6 +63,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 		setStoredLocale(next);
 		writeText(STORAGE_KEYS.locale, next);
 	}, []);
+
+	// The shake-to-report form follows the app's language.
+	useEffect(() => setFeedbackLocale(locale), [locale]);
 
 	const value = useMemo(
 		() => ({ locale, t: messages[locale], setLocale }),

@@ -14,7 +14,7 @@ import {
 import { useConvex } from "convex/react";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Linking, Platform } from "react-native";
+import { Linking } from "react-native";
 import { api } from "../../../convex/api";
 import { fmt, useI18n } from "../../../i18n";
 import { useTokens } from "../../../theme";
@@ -28,7 +28,7 @@ import { TextField } from "../../../ui/text-field";
 import {
 	PLAYER_NAME_MAX,
 	usePlayerIdentity,
-} from "../../players/use-player-identity";
+} from "../../players/identity/use-player-identity";
 import { hasAppScreen, onlineSessionHref, webJoinUrl } from "../session-links";
 import { useJoinSession } from "../use-join-session";
 
@@ -116,7 +116,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 					testID="join-code"
 				/>
 			)}
-			{shareToken || Platform.OS === "web" ? null : (
+			{shareToken ? null : (
 				<Button
 					variant="secondary"
 					label={copy.scan}

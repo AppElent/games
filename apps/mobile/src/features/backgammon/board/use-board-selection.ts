@@ -87,5 +87,5 @@ export function useBoardSelection({
 		if (movable && !commit("off") && selected != null) haptics.moveRejected();
 	};
 
-	return { selected, highlights, movable, tapPoint, tapOff };
+	return { selected, highlights, tapPoint, tapOff };
 }

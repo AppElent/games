@@ -7,12 +7,12 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Appearance, Platform, useColorScheme } from "react-native";
+import { Appearance, useColorScheme } from "react-native";
 import { readText, STORAGE_KEYS, writeText } from "../storage/local-store";
 import { darkColors, lightColors, type Tokens } from "./tokens";
 
 export type AppearancePreference = "system" | "light" | "dark";
-export type ColorScheme = "light" | "dark";
+type ColorScheme = "light" | "dark";
 
 function readAppearance(): AppearancePreference {
 	const saved = readText(STORAGE_KEYS.appearance);
@@ -20,7 +20,6 @@ function readAppearance(): AppearancePreference {
 }
 
 function overrideNativeScheme(preference: AppearancePreference) {
-	if (Platform.OS === "web") return;
 	Appearance.setColorScheme(
 		preference === "system" ? "unspecified" : preference,
 	);

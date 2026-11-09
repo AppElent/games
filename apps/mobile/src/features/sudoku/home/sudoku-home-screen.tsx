@@ -4,7 +4,9 @@
  */
 import {
 	SUDOKU_DIFFICULTIES,
+	SUDOKU_VARIANTS,
 	type SudokuDifficulty,
+	type SudokuVariant,
 } from "@arcadeclub/core/sudoku";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -18,6 +20,7 @@ import {
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
 import { relativeTime } from "../../../i18n/relative-time";
+import { reportError } from "../../../observability/report";
 import { metrics, opacity, spacing, useTokens } from "../../../theme";
 import { Card } from "../../../ui/card";
 import { Icon } from "../../../ui/icon";
@@ -26,16 +29,15 @@ import { Screen } from "../../../ui/screen";
 import { Segmented } from "../../../ui/segmented";
 import { AppText } from "../../../ui/text";
 import { formatElapsed } from "../components/game-clock";
+import { puzzleTitle } from "../components/puzzle-title";
 import {
 	deleteSudokuSave,
 	listSudokuSaves,
-	SUDOKU_VARIANTS,
 	type SudokuSaveSummary,
-	type SudokuVariant,
 	sudokuSaveHref,
 	writeSudokuSave,
 } from "../saves/sudoku-save-store";
-import { createSudokuSave } from "./create-sudoku-save";
+import { createSudokuSaveAfterPaint } from "./create-sudoku-save";
 
 export function SudokuHomeScreen() {
 	const router = useRouter();
@@ -53,23 +55,21 @@ export function SudokuHomeScreen() {
 		}, []),
 	);
 
-	function start(difficulty: SudokuDifficulty) {
+	async function start(difficulty: SudokuDifficulty) {
 		if (busy) return;
 		setBusy(difficulty);
 		setFailed(false);
-		// Yield a frame so the spinner paints before the generator blocks.
-		setTimeout(() => {
-			try {
-				const save = createSudokuSave(variant, difficulty);
-				writeSudokuSave(save);
-				router.push(sudokuSaveHref(save.id));
-			} catch {
-				setFailed(true);
-				haptics.actionFailed();
-			} finally {
-				setBusy(null);
-			}
-		}, 32);
+		try {
+			const save = await createSudokuSaveAfterPaint(variant, difficulty);
+			writeSudokuSave(save);
+			router.push(sudokuSaveHref(save.id));
+		} catch (error) {
+			reportError(error);
+			setFailed(true);
+			haptics.actionFailed();
+		} finally {
+			setBusy(null);
+		}
 	}
 
 	function confirmDelete(save: SudokuSaveSummary) {
@@ -155,7 +155,7 @@ export function SudokuHomeScreen() {
 							save.status === "completed"
 								? fmt(copy.saved.solved, { time })
 								: fmt(copy.saved.inProgress, { time });
-						const title = `${copy.variant[save.variant]} · ${copy.difficulty[save.difficulty]}`;
+						const title = puzzleTitle(copy, save);
 						const detail = `${progress} · ${relativeTime(t, locale, save.updatedAt)}`;
 						return (
 							<Card key={save.id} style={styles.savedCard}>

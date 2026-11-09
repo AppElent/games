@@ -32,7 +32,6 @@ const save: GridSave = {
 	id: "p1",
 	variant: "classic",
 	difficulty: "easy",
-	createdAt: 1,
 	updatedAt: 2_000,
 	elapsedSeconds: 0,
 	status: "active",

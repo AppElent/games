@@ -10,7 +10,7 @@ import type { Invite } from "@arcadeclub/core/sessions";
 import { useMutation } from "convex/react";
 import { useCallback } from "react";
 import { api } from "../../convex/api";
-import { usePlayerIdentity } from "../players/use-player-identity";
+import { usePlayerIdentity } from "../players/identity/use-player-identity";
 import { rememberSeat } from "./session-seats";
 import { useBackendAuthReady } from "./use-backend-auth-ready";
 import { useSessionAction } from "./use-session-action";

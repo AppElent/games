@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
-import { radius, spacing, useThemedStyles } from "../../../theme";
+import { radius, spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
 import { CenteredState } from "../../../ui/centered-state";
@@ -27,7 +27,7 @@ import { Notice } from "../../../ui/notice";
 import { QrCode } from "../../../ui/qr-code";
 import { AppText } from "../../../ui/text";
 import { shareInvite } from "../../sessions/host/share-invite";
-import { hasWebOrigin, webJoinUrl } from "../../sessions/session-links";
+import { webJoinUrl } from "../../sessions/session-links";
 import { BackgammonBoard } from "../board/backgammon-board";
 import { useBoardSelection } from "../board/use-board-selection";
 import { BoardScreen } from "../components/board-screen";
@@ -80,7 +80,6 @@ function OnlineMatchLoaded({
 }) {
 	const { t } = useI18n();
 	const copy = t.games.backgammon;
-	const styles = useThemedStyles(createStyles);
 	const [options, setOptions] = useState<OnlineOptions>(DEFAULT_ONLINE_OPTIONS);
 	const { turn, state } = live;
 	const { session } = live.bundle;
@@ -118,8 +117,7 @@ function OnlineMatchLoaded({
 	const waiting = state.phase === "waiting";
 
 	const hint = match.isMyTurn ? turnHint(turn, selection.selected) : null;
-	const invite =
-		session.shareToken && hasWebOrigin() ? { token: session.shareToken } : null;
+	const invite = session.shareToken ? { token: session.shareToken } : null;
 	const inviteUrl = invite && webJoinUrl(invite);
 
 	return (
@@ -244,10 +242,9 @@ function OnlineMatchLoaded({
 	);
 }
 
-const createStyles = () =>
-	StyleSheet.create({
-		section: { gap: spacing.md },
-		qr: { alignSelf: "center", borderRadius: radius.sm, overflow: "hidden" },
-		/** Lines up with the text inside the cards above and below. */
-		inset: { paddingHorizontal: spacing.lg },
-	});
+const styles = StyleSheet.create({
+	section: { gap: spacing.md },
+	qr: { alignSelf: "center", borderRadius: radius.sm, overflow: "hidden" },
+	/** Lines up with the text inside the cards above and below. */
+	inset: { paddingHorizontal: spacing.lg },
+});

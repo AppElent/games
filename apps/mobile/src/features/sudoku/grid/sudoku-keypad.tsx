@@ -25,6 +25,7 @@ const MODES: readonly SudokuInputMode[] = [
 	"center",
 	"color",
 ];
+/** The digits, each placed once per row, so `DIGITS.length` times in all. */
 const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 type Props = {
@@ -94,7 +95,10 @@ export function SudokuKeypad({
 							</Pressable>
 						))
 					: DIGITS.map((digit) => {
-							const left = Math.max(0, 9 - (digitCounts[digit] ?? 0));
+							const left = Math.max(
+								0,
+								DIGITS.length - (digitCounts[digit] ?? 0),
+							);
 							return (
 								<Pressable
 									key={digit}

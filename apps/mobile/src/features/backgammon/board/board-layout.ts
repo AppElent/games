@@ -6,7 +6,7 @@
  * Black's board is White's with the rows swapped.
  */
 import type { BackgammonColor } from "@arcadeclub/core/backgammon";
-import { type as typeRamp } from "../../../theme/tokens";
+import { type as typeRamp } from "../../../theme";
 
 /** Point numbers per row, left to right, as seen by `viewer`. */
 export function boardRows(viewer: BackgammonColor) {

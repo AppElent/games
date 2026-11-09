@@ -6,7 +6,7 @@
 import { Stack } from "expo-router";
 import { useI18n } from "../../../i18n";
 import { HeaderButton } from "../../../ui/button";
-import type { SudokuStatus } from "../saves/sudoku-save-store";
+import type { SudokuStatus } from "./puzzle-types";
 
 export function PuzzleHeader({
 	title,

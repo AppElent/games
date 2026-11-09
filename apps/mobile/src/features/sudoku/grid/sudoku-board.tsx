@@ -34,9 +34,10 @@ type Props = {
 	selectedCell: number | null;
 	onSelectCell: (cell: number) => void;
 	conflicts: ReadonlySet<number>;
-	hintCells?: ReadonlySet<number>;
+	/** Cells a hint points at, once the player asks for more than its name. */
+	hintCells: ReadonlySet<number> | undefined;
 	cages?: KillerCage[];
-	hidden?: boolean;
+	hidden: boolean;
 };
 
 const BOARD_BORDER = 2;
@@ -70,7 +71,7 @@ export function SudokuBoard({
 	conflicts,
 	hintCells,
 	cages,
-	hidden = false,
+	hidden,
 }: Props) {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);

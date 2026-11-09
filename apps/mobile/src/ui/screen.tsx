@@ -12,10 +12,9 @@ type Props = {
 	children: ReactNode;
 	/** Screens under a tab bar let the bar own the bottom inset. */
 	inTabs?: boolean;
-	testID?: string;
 };
 
-export function Screen({ children, inTabs = false, testID }: Props) {
+export function Screen({ children, inTabs = false }: Props) {
 	const styles = useThemedStyles(createStyles);
 	const insets = useSafeAreaInsets();
 	return (
@@ -28,7 +27,6 @@ export function Screen({ children, inTabs = false, testID }: Props) {
 				styles.content,
 				{ paddingBottom: (inTabs ? 0 : insets.bottom) + spacing.xxl },
 			]}
-			testID={testID}
 		>
 			<View style={styles.column}>{children}</View>
 		</ScrollView>

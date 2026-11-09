@@ -4,12 +4,14 @@
  * the `(auth)` layout dismisses the modal.
  */
 import { useState } from "react";
-import { usePasswordReset } from "../../../auth/use-password-reset";
 import { fmt, useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { TextField } from "../../../ui/text-field";
 import { AuthForm } from "../components/auth-form";
+import { AUTH_CODE_LENGTH, CodeField } from "../components/code-field";
+import { EmailField } from "../components/email-field";
 import { useAuthError } from "../components/use-auth-error";
+import { usePasswordReset } from "./use-password-reset";
 
 export function PasswordResetScreen({
 	initialEmail,
@@ -32,15 +34,9 @@ export function PasswordResetScreen({
 		};
 		return (
 			<AuthForm title={copy.title} subtitle={copy.body} error={error}>
-				<TextField
-					label={t.auth.signIn.email}
+				<EmailField
 					value={email}
 					onChangeText={setEmail}
-					autoCapitalize="none"
-					autoCorrect={false}
-					keyboardType="email-address"
-					autoComplete="email"
-					textContentType="username"
 					returnKeyType="send"
 					onSubmitEditing={send}
 				/>
@@ -54,7 +50,7 @@ export function PasswordResetScreen({
 		);
 	}
 
-	const ready = code.length === 6 && password.length > 0;
+	const ready = code.length === AUTH_CODE_LENGTH && password.length > 0;
 	const submit = () => ready && flow.submit(code, password);
 	return (
 		<AuthForm
@@ -62,16 +58,7 @@ export function PasswordResetScreen({
 			subtitle={fmt(copy.codeBody, { email: sentTo })}
 			error={error}
 		>
-			<TextField
-				label={t.auth.signInCode.code}
-				value={code}
-				onChangeText={(next) => setCode(next.replace(/\D/g, ""))}
-				keyboardType="number-pad"
-				autoComplete="one-time-code"
-				textContentType="oneTimeCode"
-				maxLength={6}
-				autoFocus
-			/>
+			<CodeField value={code} onChange={setCode} />
 			<TextField
 				label={copy.newPassword}
 				value={password}

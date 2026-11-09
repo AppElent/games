@@ -7,14 +7,15 @@ import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import type { TextInputInstance } from "react-native";
 import { devLogin } from "../../../auth/config";
-import { useEmailCodeSignIn } from "../../../auth/use-email-code-sign-in";
-import { usePasswordSignIn } from "../../../auth/use-password-sign-in";
 import { useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { AppText } from "../../../ui/text";
 import { TextField } from "../../../ui/text-field";
 import { AuthForm } from "../components/auth-form";
+import { EmailField } from "../components/email-field";
 import { useAuthError } from "../components/use-auth-error";
+import { useEmailCodeSignIn } from "./use-email-code-sign-in";
+import { usePasswordSignIn } from "./use-password-sign-in";
 
 export function SignInScreen() {
 	const router = useRouter();
@@ -83,15 +84,9 @@ export function SignInScreen() {
 				</>
 			}
 		>
-			<TextField
-				label={copy.email}
+			<EmailField
 				value={email}
 				onChangeText={setEmail}
-				autoCapitalize="none"
-				autoCorrect={false}
-				keyboardType="email-address"
-				autoComplete="email"
-				textContentType="username"
 				returnKeyType="next"
 				submitBehavior="submit"
 				onSubmitEditing={() => passwordRef.current?.focus()}

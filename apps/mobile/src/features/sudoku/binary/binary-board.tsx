@@ -3,12 +3,7 @@ import { binaryDigitLabel } from "@arcadeclub/core/binary-puzzle";
 import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
-import {
-	radius,
-	type Tokens,
-	useThemedStyles,
-	useTokens,
-} from "../../../theme";
+import { radius, useTokens } from "../../../theme";
 import { AppText } from "../../../ui/text";
 
 type Props = {
@@ -32,7 +27,6 @@ export function BinaryBoard({
 	hidden,
 	onCycle,
 }: Props) {
-	const styles = useThemedStyles(createStyles);
 	const cell = (side - GAP * (size - 1)) / size;
 	const cells = useMemo(
 		() => Array.from({ length: size * size }, (_, index) => index),
@@ -77,7 +71,6 @@ const BinaryCell = memo(function BinaryCell({
 	onPress: (cell: number) => void;
 }) {
 	const tokens = useTokens();
-	const styles = useThemedStyles(createStyles);
 	const { t } = useI18n();
 	const copy = t.games.sudoku.board;
 	const label = binaryDigitLabel(value);
@@ -138,14 +131,13 @@ const BinaryCell = memo(function BinaryCell({
 	);
 });
 
-const createStyles = (_colors: Tokens) =>
-	StyleSheet.create({
-		board: { position: "relative" },
-		cell: {
-			position: "absolute",
-			alignItems: "center",
-			justifyContent: "center",
-			borderRadius: radius.sm,
-			borderWidth: StyleSheet.hairlineWidth,
-		},
-	});
+const styles = StyleSheet.create({
+	board: { position: "relative" },
+	cell: {
+		position: "absolute",
+		alignItems: "center",
+		justifyContent: "center",
+		borderRadius: radius.sm,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
+});

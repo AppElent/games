@@ -26,7 +26,6 @@ import {
 	Stack,
 	ThemeProvider,
 } from "expo-router";
-import * as ScreenOrientation from "expo-screen-orientation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
@@ -37,20 +36,17 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { publishableKey } from "../src/auth/config";
 import { AppConvexProvider } from "../src/convex/provider";
 import { AppQueryCacheProvider } from "../src/convex/query-cache";
-import { LocaleProvider, useI18n } from "../src/i18n";
-import { sentryEnabled, setFeedbackLocale } from "../src/observability/init";
+import { LocaleProvider } from "../src/i18n";
+import { sentryEnabled } from "../src/observability/init";
 import { useNavigationBreadcrumbs } from "../src/observability/navigation";
-import { reportError } from "../src/observability/report";
+import { bestEffort, reportError } from "../src/observability/report";
 import { AppearanceProvider, useAppearance, useTokens } from "../src/theme";
+import { headerOptions } from "../src/ui/header-options";
+import { lockPortrait } from "../src/ui/orientation";
 
 SplashScreen.preventAutoHideAsync();
-// Portrait everywhere; only the backgammon board unlocks it (BoardScreen).
 // iOS starts portrait from the config plugin, Android from this call.
-ScreenOrientation.lockAsync(
-	ScreenOrientation.OrientationLock.PORTRAIT_UP,
-).catch(() => {
-	// Resizable windows (iPad, iPhone Mirroring) may refuse a lock.
-});
+lockPortrait();
 
 /** Deep links into a modal or game still get the tabs beneath them. */
 export const unstable_settings = { anchor: "(tabs)" };
@@ -85,13 +81,10 @@ function ThemedRoot() {
 
 	useEffect(() => {
 		let active = true;
-		SystemUI.setBackgroundColorAsync(colors.bg)
-			.catch(() => {
-				// React's root still paints the background if the OS rejects it.
-			})
-			.finally(() => {
-				if (active) setWindowReady(true);
-			});
+		// React's root still paints the background if the OS rejects it.
+		bestEffort(SystemUI.setBackgroundColorAsync(colors.bg)).then(() => {
+			if (active) setWindowReady(true);
+		});
 		return () => {
 			active = false;
 		};
@@ -113,7 +106,6 @@ function ThemedRoot() {
 	return (
 		<GestureHandlerRootView style={window}>
 			<LocaleProvider>
-				<FeedbackLocale />
 				<ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
 					<AppConvexProvider>
 						<ScopedQueryCache>
@@ -131,13 +123,6 @@ function ThemedRoot() {
 			</LocaleProvider>
 		</GestureHandlerRootView>
 	);
-}
-
-/** The shake-to-report form follows the app's language. */
-function FeedbackLocale() {
-	const { locale } = useI18n();
-	useEffect(() => setFeedbackLocale(locale), [locale]);
-	return null;
 }
 
 /** A sign-in or sign-out drops every retained subscription. */
@@ -164,16 +149,7 @@ function RootNavigator({ windowReady }: { windowReady: boolean }) {
 	if (!ready) return null;
 
 	return (
-		<Stack
-			screenOptions={{
-				headerTintColor: colors.accent,
-				headerBackButtonDisplayMode: "minimal",
-				headerShadowVisible: false,
-				headerStyle: { backgroundColor: colors.bg },
-				headerTitleStyle: { color: colors.text },
-				contentStyle: { backgroundColor: colors.bg },
-			}}
-		>
+		<Stack screenOptions={headerOptions(colors)}>
 			<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 			<Stack.Screen
 				name="(auth)"

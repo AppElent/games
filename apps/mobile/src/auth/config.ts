@@ -1,16 +1,14 @@
 /**
- * Public configuration read from the environment.
- *
- * **Static dot access is load-bearing.** Metro inlines `EXPO_PUBLIC_*` by
- * textually substituting `process.env.EXPO_PUBLIC_NAME` at build time; a
- * computed or destructured read is `undefined` in a release build.
+ * Clerk's configuration. The app cannot start without a publishable key.
  *
  * The dev-login prefill is gated on a `pk_test_` key, not `__DEV__`: a dev
  * build pointed at production must never offer it.
  */
-const PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
-const TEST_USER_EMAIL = process.env.EXPO_PUBLIC_TEST_USER_EMAIL;
-const TEST_USER_PASSWORD = process.env.EXPO_PUBLIC_TEST_USER_PASSWORD;
+import { env } from "../env";
+
+const PUBLISHABLE_KEY = env.clerkPublishableKey;
+const TEST_USER_EMAIL = env.testUserEmail;
+const TEST_USER_PASSWORD = env.testUserPassword;
 
 if (!PUBLISHABLE_KEY) {
 	throw new Error(

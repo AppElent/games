@@ -37,6 +37,45 @@ export function fingerprint(variant, platform, root = appRoot) {
 	return JSON.parse(result.stdout);
 }
 
+/**
+ * Parsed JSON output of an EAS CLI query, run as the variant `channel`
+ * builds. Prints EAS's error and exits when the query fails.
+ */
+export function easQuery(channel, args) {
+	const result = spawnSync(
+		"pnpm",
+		["exec", "eas", ...args, "--json", "--non-interactive"],
+		{
+			cwd: appRoot,
+			env: { ...process.env, APP_VARIANT: channel },
+			encoding: "utf8",
+		},
+	);
+	if (result.status !== 0) {
+		console.error(result.stderr);
+		process.exit(result.status || 1);
+	}
+	return JSON.parse(result.stdout);
+}
+
+/** Whether a finished EAS build on `channel` for `platform` has `runtime`. */
+export function hasFinishedBuild(channel, platform, runtime) {
+	const builds = easQuery(channel, [
+		"build:list",
+		"--channel",
+		channel,
+		"--platform",
+		platform,
+		"--runtime-version",
+		runtime,
+		"--status",
+		"finished",
+		"--limit",
+		"1",
+	]);
+	return builds.length > 0;
+}
+
 /** Readable id: pnpm's store path shortened to `node_modules/<package>/…`. */
 function sourceKey(source) {
 	return source.type === "contents"

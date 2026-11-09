@@ -8,17 +8,15 @@ import {
 	parseBinaryGrid,
 } from "@arcadeclub/core/binary-puzzle";
 import { digitsToString } from "@arcadeclub/core/puzzle";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
-import { useGameClock } from "../components/use-game-clock";
 import {
-	type BinarySave,
-	type SudokuStatus,
-	writeSudokuSave,
-} from "../saves/sudoku-save-store";
+	type PuzzleProgress,
+	usePuzzleSession,
+} from "../components/use-puzzle-session";
+import { type BinarySave, writeSudokuSave } from "../saves/sudoku-save-store";
 
 const UNDO_DEPTH = 100;
-const ELAPSED_SAVE_EVERY = 15;
 
 export function useBinaryGame(save: BinarySave) {
 	const size = save.size;
@@ -30,20 +28,18 @@ export function useBinaryGame(save: BinarySave) {
 		parseBinaryGrid(save.entries, size),
 	);
 	const [undoStack, setUndoStack] = useState<number[][]>([]);
-	const [status, setStatus] = useState<SudokuStatus>(
-		save.status === "completed" ? "completed" : "active",
+	const write = useCallback(
+		(progress: PuzzleProgress) =>
+			writeSudokuSave({
+				...save,
+				...progress,
+				entries: digitsToString(entries),
+				updatedAt: Date.now(),
+			}),
+		[save, entries],
 	);
-	const statusRef = useRef(status);
-	statusRef.current = status;
-
-	const pause = useCallback(() => {
-		if (statusRef.current === "active") setStatus("paused");
-	}, []);
-	const { elapsed, elapsedRef } = useGameClock({
-		initialSeconds: save.elapsedSeconds,
-		running: status === "active",
-		onAway: pause,
-	});
+	const session = usePuzzleSession(save, write);
+	const { statusRef, complete } = session;
 
 	const merged = useMemo(
 		() => givens.map((given, cell) => (given !== 0 ? given : entries[cell])),
@@ -55,32 +51,6 @@ export function useBinaryGame(save: BinarySave) {
 	);
 	const remaining = merged.filter((value) => value === 0).length;
 
-	const persist = useCallback(() => {
-		writeSudokuSave({
-			...save,
-			entries: digitsToString(entries),
-			status: statusRef.current,
-			elapsedSeconds: elapsedRef.current,
-			updatedAt: Date.now(),
-		});
-	}, [save, entries, elapsedRef]);
-	// biome-ignore lint/correctness/useExhaustiveDependencies: status is read through its ref
-	useEffect(() => {
-		persist();
-	}, [persist, status]);
-	const persistRef = useRef(persist);
-	persistRef.current = persist;
-	useEffect(() => () => persistRef.current(), []);
-	useEffect(() => {
-		if (
-			status === "active" &&
-			elapsed > 0 &&
-			elapsed % ELAPSED_SAVE_EVERY === 0
-		) {
-			persist();
-		}
-	}, [elapsed, status, persist]);
-
 	const replace = useCallback(
 		(next: number[]) => {
 			setUndoStack((stack) => [...stack.slice(-(UNDO_DEPTH - 1)), entries]);
@@ -89,11 +59,11 @@ export function useBinaryGame(save: BinarySave) {
 				given !== 0 ? given : next[cell],
 			);
 			if (isBinarySolved(nextMerged, size)) {
-				setStatus("completed");
+				complete();
 				haptics.gameWon();
 			}
 		},
-		[entries, givens, size],
+		[entries, givens, size, complete],
 	);
 
 	const cycle = useCallback(
@@ -108,7 +78,7 @@ export function useBinaryGame(save: BinarySave) {
 			replace(next);
 			haptics.selectionChanged();
 		},
-		[entries, givens, replace],
+		[entries, givens, replace, statusRef],
 	);
 
 	const undo = useCallback(() => {
@@ -118,12 +88,12 @@ export function useBinaryGame(save: BinarySave) {
 		setUndoStack(undoStack.slice(0, -1));
 		setEntries(previous);
 		haptics.selectionChanged();
-	}, [undoStack]);
+	}, [undoStack, statusRef]);
 
 	const restart = useCallback(() => {
 		if (statusRef.current !== "active") return;
 		replace(new Array<number>(size * size).fill(0));
-	}, [replace, size]);
+	}, [replace, size, statusRef]);
 
 	return {
 		size,
@@ -131,15 +101,10 @@ export function useBinaryGame(save: BinarySave) {
 		merged,
 		conflicts,
 		remaining,
-		status,
-		elapsed,
+		session,
 		cycle,
 		undo,
 		canUndo: undoStack.length > 0,
 		restart,
-		pause,
-		resume: () => {
-			if (statusRef.current === "paused") setStatus("active");
-		},
 	};
 }

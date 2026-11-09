@@ -1,14 +1,11 @@
-/**
- * The phone as a second client of the web app's Convex deployment.
- * Static `process.env.EXPO_PUBLIC_*` access is load-bearing (see
- * `src/auth/config.ts`).
- */
+/** The phone as a second client of the web app's Convex deployment. */
 import { useAuth } from "@clerk/expo";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import type { ReactNode } from "react";
+import { env } from "../env";
 
-const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL;
+const CONVEX_URL = env.convexUrl;
 
 if (!CONVEX_URL) {
 	throw new Error(

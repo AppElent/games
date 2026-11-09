@@ -1,6 +1,6 @@
 /**
- * A system symbol: SF Symbols on iOS, Material Symbols on Android. Decorative
- * by default; pass `accessibilityLabel` when the icon carries meaning alone.
+ * A system symbol: SF Symbols on iOS, Material Symbols on Android. Always
+ * decorative: the control or text beside it carries the meaning.
  */
 import { type SFSymbol, SymbolView } from "expo-symbols";
 import type { ComponentProps } from "react";
@@ -15,23 +15,15 @@ type Props = {
 	android: NonNullable<AndroidSymbol>;
 	size?: number;
 	color: string;
-	accessibilityLabel?: string;
 };
 
-export function Icon({
-	ios,
-	android,
-	size = 22,
-	color,
-	accessibilityLabel,
-}: Props) {
+export function Icon({ ios, android, size = 22, color }: Props) {
 	return (
 		<SymbolView
-			name={{ ios, android, web: android }}
+			name={{ ios, android }}
 			size={size}
 			tintColor={color}
-			accessible={Boolean(accessibilityLabel)}
-			accessibilityLabel={accessibilityLabel}
+			accessible={false}
 		/>
 	);
 }

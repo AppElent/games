@@ -5,12 +5,13 @@
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import type { TextInputInstance } from "react-native";
-import { useSignUp } from "../../../auth/use-sign-up";
 import { useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { TextField } from "../../../ui/text-field";
 import { AuthForm } from "../components/auth-form";
+import { EmailField } from "../components/email-field";
 import { useAuthError } from "../components/use-auth-error";
+import { useSignUp } from "./use-sign-up";
 
 export function SignUpScreen() {
 	const router = useRouter();
@@ -58,16 +59,10 @@ export function SignUpScreen() {
 				submitBehavior="submit"
 				onSubmitEditing={() => emailRef.current?.focus()}
 			/>
-			<TextField
+			<EmailField
 				ref={emailRef}
-				label={t.auth.signIn.email}
 				value={email}
 				onChangeText={setEmail}
-				autoCapitalize="none"
-				autoCorrect={false}
-				keyboardType="email-address"
-				autoComplete="email"
-				textContentType="username"
 				returnKeyType="next"
 				submitBehavior="submit"
 				onSubmitEditing={() => passwordRef.current?.focus()}

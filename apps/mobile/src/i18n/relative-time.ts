@@ -1,4 +1,4 @@
-import { fmt, plural } from "@arcadeclub/core/i18n/format";
+import { plural } from "@arcadeclub/core/i18n/format";
 import type { Locale, Messages } from "./index";
 
 const MINUTE = 60_000;
@@ -15,7 +15,7 @@ export function relativeTime(
 	const elapsed = Math.max(0, now - timestamp);
 	const forms = t.common.time;
 	const say = (count: number, form: { one: string; other: string }) =>
-		fmt(plural(locale, count, form), { count });
+		plural(locale, count, form);
 	if (elapsed < MINUTE) return forms.justNow;
 	if (elapsed < HOUR)
 		return say(Math.floor(elapsed / MINUTE), forms.minutesAgo);

@@ -14,8 +14,8 @@ import {
 import { Button } from "../../../ui/button";
 import { Icon } from "../../../ui/icon";
 import { AppText } from "../../../ui/text";
-import type { SudokuStatus } from "../saves/sudoku-save-store";
 import { formatElapsed } from "./game-clock";
+import type { SudokuStatus } from "./puzzle-types";
 
 export function PuzzleStatus({
 	status,

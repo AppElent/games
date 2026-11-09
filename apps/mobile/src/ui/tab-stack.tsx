@@ -5,6 +5,7 @@
 import { Stack } from "expo-router";
 import { Platform } from "react-native";
 import { useTokens } from "../theme";
+import { headerOptions } from "./header-options";
 
 /** iOS 26+ draws its own scroll-edge glass under the header; a blur on top doubles it. */
 const NEEDS_HEADER_BLUR =
@@ -12,14 +13,14 @@ const NEEDS_HEADER_BLUR =
 
 export function TabStack({ title }: { title: string }) {
 	const colors = useTokens();
+	// iOS draws a transparent large-title header over the content instead.
+	const { headerStyle, headerShadowVisible, ...shared } = headerOptions(colors);
 	return (
 		<Stack
-			screenOptions={{
-				headerTintColor: colors.accent,
-				headerBackButtonDisplayMode: "minimal",
-				contentStyle: { backgroundColor: colors.bg },
-				...(Platform.OS === "ios"
+			screenOptions={
+				Platform.OS === "ios"
 					? {
+							...shared,
 							headerLargeTitle: true,
 							headerTransparent: true,
 							headerBlurEffect: NEEDS_HEADER_BLUR
@@ -27,14 +28,9 @@ export function TabStack({ title }: { title: string }) {
 								: undefined,
 							headerLargeStyle: { backgroundColor: "transparent" },
 							headerLargeTitleStyle: { color: colors.text },
-							headerTitleStyle: { color: colors.text },
 						}
-					: {
-							headerStyle: { backgroundColor: colors.bg },
-							headerTitleStyle: { color: colors.text },
-							headerShadowVisible: false,
-						}),
-			}}
+					: { ...shared, headerStyle, headerShadowVisible }
+			}
 		>
 			<Stack.Screen name="index" options={{ title }} />
 		</Stack>

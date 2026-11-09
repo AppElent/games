@@ -4,11 +4,11 @@
  */
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { useI18n } from "../../i18n";
-import { CenteredState } from "../../ui/centered-state";
-import { BinaryGameScreen } from "./binary/binary-game-screen";
-import { SudokuGameScreen } from "./classic/sudoku-game-screen";
-import { readSudokuSave } from "./saves/sudoku-save-store";
+import { useI18n } from "../../../i18n";
+import { CenteredState } from "../../../ui/centered-state";
+import { BinaryGameScreen } from "../binary/binary-game-screen";
+import { SudokuGameScreen } from "../grid/sudoku-game-screen";
+import { readSudokuSave } from "../saves/sudoku-save-store";
 
 export function SudokuPlayScreen({ id }: { id: string }) {
 	const router = useRouter();

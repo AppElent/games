@@ -25,11 +25,11 @@ const SLOTS = [0, 1, 2, 3];
 export function DiceRow({
 	dice,
 	used,
-	size = 36,
+	size,
 }: {
 	dice: number[];
 	used: boolean[];
-	size?: number;
+	size: number;
 }) {
 	const { t } = useI18n();
 	const copy = t.games.backgammon.board;

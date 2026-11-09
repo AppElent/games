@@ -19,7 +19,13 @@
 import { spawnSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
-import { appRoot, fingerprint, PLATFORMS } from "./fingerprint.mjs";
+import {
+	appRoot,
+	easQuery,
+	fingerprint,
+	hasFinishedBuild,
+	PLATFORMS,
+} from "./fingerprint.mjs";
 
 // Everything the mobile bundle is built from, relative to the repo root.
 const BUNDLED = [
@@ -49,38 +55,20 @@ function git(...args) {
 	return spawnSync("git", args, { cwd: repoRoot, encoding: "utf8" });
 }
 
-function eas(args) {
-	const result = spawnSync(
-		"pnpm",
-		["exec", "eas", ...args, "--json", "--non-interactive"],
-		{
-			cwd: appRoot,
-			env: { ...process.env, APP_VARIANT: channel },
-			encoding: "utf8",
-		},
-	);
-	if (result.status !== 0) {
-		console.error(result.stderr);
-		process.exit(result.status || 1);
-	}
-	return JSON.parse(result.stdout);
-}
-
 /** Whether a finished build or an earlier update on the channel has `runtime`. */
 function runtimeKnown(platform, runtime) {
-	const filter = ["--platform", platform, "--runtime-version", runtime];
-	const builds = eas([
-		"build:list",
-		"--channel",
+	if (hasFinishedBuild(channel, platform, runtime)) return true;
+	const updates = easQuery(channel, [
+		"update:list",
+		"--branch",
 		channel,
-		"--status",
-		"finished",
 		"--limit",
 		"1",
-		...filter,
+		"--platform",
+		platform,
+		"--runtime-version",
+		runtime,
 	]);
-	if (builds.length > 0) return true;
-	const updates = eas(["update:list", "--branch", channel, "--limit", "1", ...filter]);
 	return (updates.currentPage ?? []).length > 0;
 }
 

@@ -118,7 +118,7 @@ function HitsterRoomLoaded({
 
 	const phase = live.phase;
 	useEffect(() => {
-		if (phase === "reveal" || phase === "finished") haptics.gameWon();
+		if (phase === "reveal" || phase === "finished") haptics.answerRevealed();
 	}, [phase]);
 
 	const modeLabel =

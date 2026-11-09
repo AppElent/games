@@ -5,7 +5,7 @@
  */
 import type { Messages } from "@arcadeclub/core/messages";
 import type { Breadcrumb, ErrorEvent, Event } from "@sentry/react-native";
-import type { Tokens } from "../theme/tokens";
+import type { Tokens } from "../theme";
 
 export type SentryEnvironment = "development" | "preview" | "production";
 

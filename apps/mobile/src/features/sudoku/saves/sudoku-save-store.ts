@@ -11,7 +11,12 @@ import {
 	PUZZLE_DIFFICULTIES,
 	type PuzzleDifficulty,
 } from "@arcadeclub/core/puzzle";
-import { parseGrid, SUDOKU_CELL_COUNT } from "@arcadeclub/core/sudoku";
+import {
+	parseGrid,
+	SUDOKU_CELL_COUNT,
+	SUDOKU_STATUSES,
+	SUDOKU_VARIANTS,
+} from "@arcadeclub/core/sudoku";
 import type { SerializedSudokuBoard } from "@arcadeclub/core/sudoku-board";
 import type { KillerCage } from "@arcadeclub/core/sudoku-killer";
 import type { Href } from "expo-router";
@@ -21,17 +26,11 @@ import {
 	STORAGE_KEYS,
 	writeJson,
 } from "../../../storage/local-store";
-
-export const SUDOKU_VARIANTS = ["classic", "killer", "binary"] as const;
-export type SudokuVariant = (typeof SUDOKU_VARIANTS)[number];
-
-const SUDOKU_STATUSES = ["active", "paused", "completed"] as const;
-export type SudokuStatus = (typeof SUDOKU_STATUSES)[number];
+import type { SudokuStatus } from "../components/puzzle-types";
 
 type SaveBase = {
 	id: string;
 	difficulty: PuzzleDifficulty;
-	createdAt: number;
 	updatedAt: number;
 	elapsedSeconds: number;
 	status: SudokuStatus;
@@ -50,7 +49,6 @@ export type BinarySave = SaveBase & {
 	size: number;
 	givens: string;
 	entries: string;
-	solution: string;
 };
 
 export type SudokuSave = GridSave | BinarySave;

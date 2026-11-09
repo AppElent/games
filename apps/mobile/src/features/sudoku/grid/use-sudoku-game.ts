@@ -24,23 +24,17 @@ import {
 	boardConflictsWithCages,
 	isBoardSolved,
 } from "@arcadeclub/core/sudoku-killer";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
-import { useGameClock } from "../components/use-game-clock";
 import {
-	type GridSave,
-	type SudokuStatus,
-	writeSudokuSave,
-} from "../saves/sudoku-save-store";
-
-const ELAPSED_SAVE_EVERY = 15;
+	type PuzzleProgress,
+	usePuzzleSession,
+} from "../components/use-puzzle-session";
+import { type GridSave, writeSudokuSave } from "../saves/sudoku-save-store";
 
 export function useSudokuGame(save: GridSave) {
 	const [history, setHistory] = useState<SudokuHistory>(() =>
 		createHistory(deserializeBoard(save.board)),
-	);
-	const [status, setStatus] = useState<SudokuStatus>(
-		save.status === "completed" ? "completed" : "active",
 	);
 	const [mode, setMode] = useState<SudokuInputMode>("digit");
 	const [selectedCell, setSelectedCell] = useState<number | null>(null);
@@ -48,52 +42,24 @@ export function useSudokuGame(save: GridSave) {
 	const [hint, setHint] = useState<SudokuHint | null>(null);
 	const [hintLevel, setHintLevel] = useState<1 | 2 | 3>(1);
 	const [noHint, setNoHint] = useState(false);
-	const statusRef = useRef(status);
-	statusRef.current = status;
-
-	const pause = useCallback(() => {
-		if (statusRef.current === "active") setStatus("paused");
-	}, []);
-	const { elapsed, elapsedRef } = useGameClock({
-		initialSeconds: save.elapsedSeconds,
-		running: status === "active",
-		onAway: pause,
-	});
+	// Every board or option change is written, with the clock alongside.
+	const write = useCallback(
+		(progress: PuzzleProgress) =>
+			writeSudokuSave({
+				...save,
+				...progress,
+				board: serializeBoard(history.current),
+				autoCleanup,
+				updatedAt: Date.now(),
+			}),
+		[save, history, autoCleanup],
+	);
+	const session = usePuzzleSession(save, write);
+	const { statusRef, complete } = session;
 
 	const board = history.current;
 	const cages = save.cages;
 	const solution = useMemo(() => parseGrid(save.solution), [save.solution]);
-
-	const persist = useCallback(() => {
-		writeSudokuSave({
-			...save,
-			board: serializeBoard(history.current),
-			status: statusRef.current,
-			elapsedSeconds: elapsedRef.current,
-			autoCleanup,
-			updatedAt: Date.now(),
-		});
-	}, [save, history, autoCleanup, elapsedRef]);
-
-	// Every board, status or option change; the clock is written alongside.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: status is read through its ref
-	useEffect(() => {
-		persist();
-	}, [persist, status]);
-	// Leaving the screen unmounts it before the blur-pause can re-render, so
-	// the final clock reading is written here.
-	const persistRef = useRef(persist);
-	persistRef.current = persist;
-	useEffect(() => () => persistRef.current(), []);
-	useEffect(() => {
-		if (
-			status === "active" &&
-			elapsed > 0 &&
-			elapsed % ELAPSED_SAVE_EVERY === 0
-		) {
-			persist();
-		}
-	}, [elapsed, status, persist]);
 
 	const conflicts = useMemo(
 		() => boardConflictsWithCages(board, cages),
@@ -118,12 +84,12 @@ export function useSudokuGame(save: GridSave) {
 			setHint(null);
 			setNoHint(false);
 			if (solved(next)) {
-				setStatus("completed");
+				complete();
 				setSelectedCell(null);
 				haptics.gameWon();
 			}
 		},
-		[solved],
+		[solved, complete],
 	);
 
 	const dispatch = useCallback(
@@ -149,7 +115,7 @@ export function useSudokuGame(save: GridSave) {
 				haptics.selectionChanged();
 			}
 		},
-		[history, autoCleanup, commit],
+		[history, autoCleanup, commit, statusRef],
 	);
 
 	const enter = useCallback(
@@ -181,18 +147,18 @@ export function useSudokuGame(save: GridSave) {
 		if (statusRef.current !== "active") return;
 		commit(undo(history), history);
 		haptics.selectionChanged();
-	}, [history, commit]);
+	}, [history, commit, statusRef]);
 
 	const stepForward = useCallback(() => {
 		if (statusRef.current !== "active") return;
 		commit(redo(history), history);
 		haptics.selectionChanged();
-	}, [history, commit]);
+	}, [history, commit, statusRef]);
 
 	const restart = useCallback(() => {
 		if (statusRef.current === "completed") return;
 		dispatch({ type: "restart" });
-	}, [dispatch]);
+	}, [dispatch, statusRef]);
 
 	const requestHint = useCallback(() => {
 		if (statusRef.current !== "active") return;
@@ -207,7 +173,7 @@ export function useSudokuGame(save: GridSave) {
 		setHint(found);
 		setHintLevel(1);
 		setNoHint(!found);
-	}, [hint, history, solution]);
+	}, [hint, history, solution, statusRef]);
 
 	const hintCells = useMemo(() => {
 		if (!hint || hintLevel === 1) return undefined;
@@ -227,8 +193,7 @@ export function useSudokuGame(save: GridSave) {
 	return {
 		board,
 		cages,
-		status,
-		elapsed,
+		session,
 		mode,
 		setMode,
 		selectedCell,
@@ -254,9 +219,5 @@ export function useSudokuGame(save: GridSave) {
 		canUndo: canUndo(history),
 		canRedo: canRedo(history),
 		restart,
-		pause,
-		resume: () => {
-			if (statusRef.current === "paused") setStatus("active");
-		},
 	};
 }

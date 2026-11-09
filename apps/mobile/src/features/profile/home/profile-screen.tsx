@@ -2,25 +2,31 @@
  * Profile: who this phone plays as (account or guest, and the display name
  * other players see), then phone-local preferences.
  */
+
+import { LOCALES } from "@arcadeclub/core/messages";
 import { useAuth, useUser } from "@clerk/expo";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { fmt, type Locale, SUPPORTED_LOCALES, useI18n } from "../../i18n";
-import { openFeedbackForm, sentryEnabled } from "../../observability/init";
-import { type AppearancePreference, spacing, useAppearance } from "../../theme";
-import { Button } from "../../ui/button";
-import { Card } from "../../ui/card";
-import { Screen } from "../../ui/screen";
-import { Segmented } from "../../ui/segmented";
-import { AppText } from "../../ui/text";
-import { TextField } from "../../ui/text-field";
+import { fmt, type Locale, useI18n } from "../../../i18n";
+import { openFeedbackForm, sentryEnabled } from "../../../observability/init";
+import {
+	type AppearancePreference,
+	spacing,
+	useAppearance,
+} from "../../../theme";
+import { Button } from "../../../ui/button";
+import { Card } from "../../../ui/card";
+import { Screen } from "../../../ui/screen";
+import { Segmented } from "../../../ui/segmented";
+import { AppText } from "../../../ui/text";
+import { TextField } from "../../../ui/text-field";
 import {
 	PLAYER_NAME_MAX,
 	usePlayerIdentity,
-} from "../players/use-player-identity";
+} from "../../players/identity/use-player-identity";
 
 const APPEARANCES: readonly AppearancePreference[] = [
 	"system",
@@ -105,7 +111,7 @@ export function ProfileScreen() {
 				<AppText variant="label">{copy.language}</AppText>
 				<Segmented<Locale>
 					accessibilityLabel={copy.language}
-					options={SUPPORTED_LOCALES.map((value) => ({
+					options={LOCALES.map((value) => ({
 						value,
 						label: copy.languages[value],
 					}))}
