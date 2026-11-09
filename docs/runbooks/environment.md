@@ -93,7 +93,9 @@ pnpm mobile:update:preview
 
 `ship:dev` names the dev deployment itself and clears `CONVEX_DEPLOY_KEY`. Without that,
 the Convex CLI would push to whatever `.env.local` selects, which in a prepared worktree
-is the worktree backend and its scoped key.
+is the worktree backend and its scoped key. `convex dev` also rewrites `.env.local` for
+the deployment it pushed to, so `ship:dev` runs it through `scripts/keep-env-local.mjs`,
+which puts the file back exactly as it was.
 
 ## Supplied values
 
