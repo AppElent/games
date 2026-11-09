@@ -8,9 +8,17 @@ import { readJson, writeJson } from "#/lib/games/local-store";
 
 const GUEST_KEY = "arcade-club.guest";
 
-/** This browser's guest, created (or given an unguessable id) on first read. */
+/** The guest this page last resolved, for when storage cannot keep it. */
+let current: LocalGuestIdentity | null = null;
+
+/**
+ * This browser's guest, created (or given an unguessable id) on first read.
+ * Storage that will not save it still leaves the page one guest, so the id
+ * sent when joining is the one every later call proves the seat with.
+ */
 export function getOrCreateGuestIdentity() {
-	const stored = readJson<LocalGuestIdentity | null>(GUEST_KEY, null);
+	const stored =
+		readJson<LocalGuestIdentity | null>(GUEST_KEY, null) ?? current;
 	const identity = resolveGuestIdentity(
 		stored,
 		messages.en.common.session.guestName,
@@ -19,6 +27,7 @@ export function getOrCreateGuestIdentity() {
 	if (identity !== stored) {
 		writeJson(GUEST_KEY, identity);
 	}
+	current = identity;
 	return identity;
 }
 

@@ -35,18 +35,23 @@ function parseGuestIdentity(value: unknown): LocalGuestIdentity | null {
 		: null;
 }
 
+/** The guest this run last resolved, for when the store cannot keep it. */
+let current: LocalGuestIdentity | null = null;
+
 /**
  * The install's guest identity, created (or given an unguessable id) on first
- * read. Its id proves this phone's guest seats to the server.
+ * read. Its id proves this phone's guest seats to the server, so a store that
+ * will not save it still leaves the run one guest.
  */
 export function readGuestIdentity(): LocalGuestIdentity {
-	const saved = readJson(STORAGE_KEYS.guest, parseGuestIdentity);
+	const saved = readJson(STORAGE_KEYS.guest, parseGuestIdentity) ?? current;
 	const identity = resolveGuestIdentity(
 		saved,
 		messages.en.common.session.guestName,
 		randomUUID,
 	);
 	if (identity !== saved) writeJson(STORAGE_KEYS.guest, identity);
+	current = identity;
 	return identity;
 }
 

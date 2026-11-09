@@ -1,3 +1,4 @@
+import { useConvexAuth } from "convex/react";
 import { useSeat } from "#/lib/games/seat";
 import { useGuestId } from "#/lib/games/sessions";
 import { useGameAction } from "#/lib/games/use-game-action";
@@ -16,15 +17,17 @@ export type SeatArgs = {
 /**
  * This tab's seat in a session and the error slot its actions share. `seat`
  * is what a call acting for it sends; `seatAction` sends a mutation as that
- * seat. Both are undefined while the tab holds none, so a screen can hide or
- * skip the action.
+ * seat. Both are undefined while the tab holds none, or while Convex has yet
+ * to learn who is signed in (an account-held seat would be refused), so a
+ * screen can hide or skip the action.
  */
 export function useSeatAction(sessionId: Id<"gameSessions">) {
 	const participantId = useSeat(sessionId);
 	const guestId = useGuestId();
+	const { isLoading: authLoading } = useConvexAuth();
 	const { error, run } = useGameAction();
 	const seat: SeatArgs | undefined =
-		participantId && guestId
+		participantId && guestId && !authLoading
 			? { sessionId, participantId, guestId }
 			: undefined;
 
