@@ -73,8 +73,6 @@ function allUnits(): UnitRef[] {
 	return units;
 }
 
-// --- detectors ---
-
 const nakedSingle: TechniqueDetector = {
 	id: "naked-single",
 	name: "Naked single",

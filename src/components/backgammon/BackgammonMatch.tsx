@@ -186,8 +186,6 @@ export function BackgammonMatch({
 		</SeatCards>
 	);
 
-	// Pre-game: opponent hasn't claimed the black seat yet — show a scrollable
-	// share screen instead of the board.
 	if (!turnState || !opponentJoined) {
 		return (
 			<MatchWaitingScreen

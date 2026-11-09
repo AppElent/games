@@ -494,10 +494,6 @@ function updateEffects(rt: Runtime, dt: number) {
 	rt.floats = rt.floats.filter((float) => float.life > 0);
 }
 
-// ---------------------------------------------------------------------------
-// Rendering
-// ---------------------------------------------------------------------------
-
 type Projection = {
 	yForZ: (z: number) => number;
 	scaleForZ: (z: number) => number;

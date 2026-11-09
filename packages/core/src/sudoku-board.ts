@@ -212,7 +212,7 @@ export function canRedo(history: SudokuHistory) {
 	return history.future.length > 0;
 }
 
-// --- persistence (Convex-friendly compact shape) ---
+// The compact shape a board is stored in by Convex.
 
 export type SerializedSudokuBoard = {
 	givens: string;

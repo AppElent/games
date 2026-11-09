@@ -441,7 +441,6 @@ export function ChessMatch({
 		</div>
 	);
 
-	// Pre-game: waiting for the second seat — scrollable share screen.
 	if (!opponentJoined) {
 		return (
 			<MatchWaitingScreen

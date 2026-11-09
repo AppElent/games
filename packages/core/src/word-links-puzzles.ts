@@ -20,7 +20,7 @@ function puzzle(
 
 /**
  * Curated seed puzzles. Every puzzle must pass validateWordLinkPuzzle —
- * enforced by src/lib/games/__tests__/word-links.test.ts.
+ * enforced by `__tests__/word-links.test.ts`.
  */
 export const WORD_LINK_PUZZLES: readonly WordLinkPuzzle[] = [
 	puzzle("wl-001", "Puzzle 1", [

@@ -1,5 +1,3 @@
-// Components
-
 export { AppearanceSettings } from "#/lib/auth/components/account/AppearanceSettings";
 export { AuthButton } from "#/lib/auth/components/auth/AuthButton";
 export { AuthCard } from "#/lib/auth/components/auth/AuthCard";
@@ -22,7 +20,6 @@ export {
 	type SocialProvider,
 } from "#/lib/auth/components/auth/types";
 export { ThemeSync } from "#/lib/auth/components/ThemeSync";
-// Lib
 export { shouldShowTestLogin } from "#/lib/auth/core";
 export { default as HeaderUser } from "#/lib/auth/integrations/clerk/header-user";
 export {

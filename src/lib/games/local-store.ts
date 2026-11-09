@@ -2,7 +2,8 @@
  * Guarded localStorage access. Storage can be missing (SSR), blocked (private
  * mode) or full, and a stored value can be corrupt: reads fall back and writes
  * become no-ops, so a game keeps working in memory. What a value must look like
- * stays with each store.
+ * stays with each store. Players' browsers hold these keys, so renaming one
+ * forgets what was saved under it.
  */
 function localStore(): Storage | undefined {
 	try {

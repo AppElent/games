@@ -1,7 +1,7 @@
 /**
  * Default family-friendly word pack for Signal Words. Common English
  * nouns only — no proper nouns of living people, no branded content.
- * Validated by src/lib/games/__tests__/signal-words.test.ts.
+ * Validated by `__tests__/signal-words.test.ts`.
  */
 export const SIGNAL_WORDS_DEFAULT_PACK: readonly string[] = [
 	"ANCHOR",

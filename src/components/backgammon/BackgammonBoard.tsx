@@ -19,8 +19,8 @@ import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 
 /**
- * Backgammon board from the Claude Design handoff, converted to a controlled
- * component: all rules live in @arcadeclub/core/backgammon and the game state is
+ * The backgammon board as a controlled component: all rules live in
+ * @arcadeclub/core/backgammon and the game state is
  * owned by the caller (local hook or Convex bundle). Supports click and drag
  * (mouse + touch) and combined two-die moves.
  */
@@ -911,7 +911,6 @@ export function BackgammonBoard({
 						boxShadow: "inset 0 10px 24px rgba(0,0,0,0.4)",
 					}}
 				>
-					{/* left half */}
 					<div style={halfStyle}>
 						<div style={rowStyle}>
 							{topLeft.map((n, i) => renderCell(n, "down", i, 0))}
@@ -921,7 +920,6 @@ export function BackgammonBoard({
 						</div>
 					</div>
 
-					{/* bar */}
 					{/* biome-ignore lint/a11y/noStaticElementInteractions: board surface */}
 					{/* biome-ignore lint/a11y/useKeyWithClickEvents: board surface */}
 					<div
@@ -1000,7 +998,6 @@ export function BackgammonBoard({
 						</div>
 					</div>
 
-					{/* right half */}
 					<div style={halfStyle}>
 						<div style={rowStyle}>
 							{topRight.map((n, i) => renderCell(n, "down", i, 0))}

@@ -1,5 +1,5 @@
 /**
- * Solo puzzles saved on this phone (decided for v1: local, offline, no sync).
+ * Solo puzzles saved on this phone: local, offline, never synced.
  *
  * Each puzzle is one local-store entry; a small index of summaries keeps the
  * list screen from parsing every board. Writes are synchronous and cheap, so

@@ -1,6 +1,5 @@
 /**
- * Clerk error codes mapped to translated copy. Behaviour copied from
- * developer-tools `auth/examples/native.ts`: Core 3 calls resolve to
+ * Clerk error codes mapped to translated copy. Clerk Core 3 calls resolve to
  * `{ error }` wrappers, while the machine-stable code lives on the hook's
  * `errors` signal, so field errors are read first and the wrapper last.
  */

@@ -42,7 +42,7 @@ export function isLowConfidence(cell: ScanCell) {
 	return cell.type !== "empty" && cell.confidence < LOW_CONFIDENCE_THRESHOLD;
 }
 
-// --- verifier correction helpers (all return new arrays) ---
+// The verifier's corrections each return a new array.
 
 function withCell(cells: ScanCell[], index: number, cell: ScanCell) {
 	const next = [...cells];
@@ -76,7 +76,6 @@ export function setScanCellType(
 			next.digit = digits.length === 1 ? digits[0] : 0;
 		}
 	} else {
-		// note types
 		if (current.digit !== 0) {
 			const mask = digitMask(current.digit);
 			if (type === "cornerNotes") {
@@ -139,8 +138,6 @@ export function toggleScanCellNote(
 export function clearScanCell(cells: ScanCell[], index: number): ScanCell[] {
 	return withCell(cells, index, emptyScanCell());
 }
-
-// --- validation before session creation ---
 
 type ScanValidation = {
 	ok: boolean;

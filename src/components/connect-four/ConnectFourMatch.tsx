@@ -230,7 +230,6 @@ export function ConnectFourMatch({
 		/>
 	) : null;
 
-	// Pre-game: waiting for the second seat — scrollable share screen.
 	if (!opponentJoined) {
 		return (
 			<MatchWaitingScreen

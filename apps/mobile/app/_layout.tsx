@@ -10,7 +10,7 @@
  * navigation theme. Language sits outside Clerk because it belongs to the
  * phone and has to apply to the sign-in screens too.
  *
- * Unlike Foundry there is no signed-in shell: guests play everything except
+ * There is no signed-in shell: guests play everything except
  * hosting online rooms, so `(auth)` is a modal stack over the tabs.
  */
 // First, so a crash while the rest of the app loads is still reported.

@@ -168,7 +168,6 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 		);
 	}, [isActive, hint, history]);
 
-	// keyboard controls
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement | null;

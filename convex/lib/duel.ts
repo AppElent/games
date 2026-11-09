@@ -24,7 +24,7 @@ export type Duel<Seat extends string> = {
 	onFull?: { phase: "ready" };
 };
 
-/** A client reads backgammon's `ready`, through `phase === "waiting"`. */
+/** Installed mobile builds show the invite while `phase === "waiting"`, so a full table must leave it. */
 export const BACKGAMMON_DUEL: Duel<BackgammonColor> = {
 	gameType: "backgammon",
 	seats: ["white", "black"],

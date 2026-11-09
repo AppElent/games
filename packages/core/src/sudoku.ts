@@ -83,7 +83,7 @@ function buildPeers() {
 
 export const SUDOKU_PEERS: readonly (readonly number[])[] = buildPeers();
 
-// --- bitmask helpers (bit 0 = digit 1 ... bit 8 = digit 9) ---
+// Digit sets are bitmasks: bit 0 = digit 1 ... bit 8 = digit 9.
 
 export function digitMask(digit: number) {
 	return 1 << (digit - 1);
@@ -119,8 +119,6 @@ export function maskSize(mask: number) {
 
 export const FULL_MASK = 0x1ff;
 
-// --- grid parsing/serialization ---
-
 export function emptyGrid(): SudokuGrid {
 	return new Array(SUDOKU_CELL_COUNT).fill(0);
 }
@@ -132,8 +130,6 @@ export function parseGrid(text: string): SudokuGrid {
 	}
 	return digitsFromString(chars.replace(/\./g, "0"));
 }
-
-// --- validation ---
 
 export function findConflicts(grid: SudokuGrid): Set<number> {
 	const conflicts = new Set<number>();
@@ -178,8 +174,6 @@ export function computeCandidates(grid: SudokuGrid): number[] {
 	}
 	return candidates;
 }
-
-// --- solver ---
 
 function findBestCell(grid: SudokuGrid, candidates: number[]) {
 	let best = -1;
@@ -243,8 +237,6 @@ export function countSolutions(
 	search([...grid], candidatesOf, limit, found);
 	return found.count;
 }
-
-// --- generation ---
 
 export function generateSolvedGrid(rng: Rng = Math.random): SudokuGrid {
 	const grid = emptyGrid();

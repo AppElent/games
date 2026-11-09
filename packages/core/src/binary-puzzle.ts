@@ -87,7 +87,6 @@ export function findBinaryConflicts(
 	const conflicts = new Set<number>();
 
 	const scanLine = (cells: number[]) => {
-		// triples
 		for (let i = 2; i < size; i += 1) {
 			const value = grid[cells[i]];
 			if (
@@ -100,7 +99,6 @@ export function findBinaryConflicts(
 				conflicts.add(cells[i - 2]);
 			}
 		}
-		// counts
 		let zeros = 0;
 		let ones = 0;
 		for (const cell of cells) {
@@ -282,8 +280,6 @@ export function generateBinaryPuzzle(
 	);
 	return { size, givens, solution, difficulty, clueCount };
 }
-
-// --- serialization ---
 
 export function parseBinaryGrid(text: string, size: number): BinaryGrid {
 	if (!new RegExp(`^[0-2]{${size * size}}$`).test(text)) {

@@ -53,8 +53,7 @@ export function fmt(
  * Falls back to `count === 1 ? "one" : "other"` when `Intl.PluralRules` is
  * unavailable (e.g. Hermes/React Native — see appelent-packages#16). That
  * fallback is exact for any locale whose CLDR `one` category is `i = 1 and
- * v = 0` (English and Dutch both are); it is only reached in an environment
- * that would otherwise have crashed, so it is strictly an improvement.
+ * v = 0` (English and Dutch both are).
  */
 export function plural<L extends string>(
 	locale: L,

@@ -422,7 +422,7 @@ export function viewRummy(
 	};
 }
 
-// --- Computer player -------------------------------------------------------
+// The computer player, which also plays autopiloted seats.
 
 /** Every meld findable in `hand`, best first. Jokers fill single gaps only. */
 function candidateMelds(hand: readonly CardId[], rules: RummyRules) {
