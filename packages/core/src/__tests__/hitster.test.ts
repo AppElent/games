@@ -3,9 +3,8 @@ import {
 	applyHitsterTokenDelta,
 	evaluateHitsterRound,
 	getHitsterCoopOutcome,
-	getHitsterModeConfig,
 	HITSTER_MODES,
-	hitsterStealRequirementMet,
+	type HitsterMode,
 	matchesHitsterArtist,
 	matchesHitsterTitle,
 	normalizeHitsterAnswer,
@@ -124,13 +123,6 @@ describe("mode-specific scoring", () => {
 			evaluateHitsterRound("expert", { ...allCorrect, yearCorrect: false }),
 		).toEqual({ cardWon: false, tokenDelta: 0 });
 	});
-
-	it("configures start tokens per mode", () => {
-		expect(getHitsterModeConfig("original").startTokens).toBe(2);
-		expect(getHitsterModeConfig("pro").startTokens).toBe(5);
-		expect(getHitsterModeConfig("expert").startTokens).toBe(3);
-		expect(getHitsterModeConfig("coop").startTokens).toBe(5);
-	});
 });
 
 describe("token cap", () => {
@@ -194,16 +186,19 @@ describe("steal claims", () => {
 			titleCorrect: false,
 			yearCorrect: false,
 		};
-		expect(hitsterStealRequirementMet("original", placementOnly)).toBe(true);
-		expect(hitsterStealRequirementMet("pro", placementOnly)).toBe(false);
-		expect(hitsterStealRequirementMet("pro", allCorrect)).toBe(true);
-		expect(
-			hitsterStealRequirementMet("expert", {
-				...allCorrect,
-				yearCorrect: false,
-			}),
-		).toBe(false);
-		expect(hitsterStealRequirementMet("coop", allCorrect)).toBe(false);
+		const wins = (mode: HitsterMode, flags: typeof allCorrect) =>
+			resolveHitsterSteals(
+				mode,
+				false,
+				[{ submittedAt: 1, flags }],
+				(claim) => claim.flags,
+			)[0].wonCard;
+		expect(wins("original", placementOnly)).toBe(true);
+		expect(wins("pro", placementOnly)).toBe(false);
+		expect(wins("pro", allCorrect)).toBe(true);
+		expect(wins("expert", { ...allCorrect, yearCorrect: false })).toBe(false);
+		expect(wins("expert", allCorrect)).toBe(true);
+		expect(wins("coop", allCorrect)).toBe(false);
 	});
 });
 

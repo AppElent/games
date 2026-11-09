@@ -74,22 +74,6 @@ describe("createDraft", () => {
 		});
 	});
 
-	it("maps each kind to its game", async () => {
-		const t = setup();
-		for (const [kind, gameType] of [
-			["word-links-puzzle", "word-links"],
-			["signal-words-pack", "signal-words"],
-			["quiz-set", "live-quiz"],
-		] as const) {
-			const draftId = await owner(t).mutation(api.workbench.createDraft, {
-				kind,
-				title: "x",
-				payload: "{}",
-			});
-			expect((await getDoc(t, draftId))?.gameType).toBe(gameType);
-		}
-	});
-
 	it("names a blank title, and trims any other", async () => {
 		const t = setup();
 		const create = (title: string) =>

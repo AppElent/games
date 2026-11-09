@@ -37,6 +37,19 @@ describe("quiz logic", () => {
 		).toBe(1250);
 	});
 
+	it("shrinks the time bonus to nothing by the end of the question", () => {
+		const score = (answeredInMs: number) =>
+			calculateAnswerScore({
+				correct: true,
+				basePoints: 1000,
+				answeredInMs,
+				questionDurationMs: 20_000,
+			});
+		expect(score(10_000)).toBe(1167);
+		expect(score(20_000)).toBe(1000);
+		expect(score(60_000)).toBe(1000);
+	});
+
 	it("summarizes scores by participant", () => {
 		expect(
 			summarizeScores([

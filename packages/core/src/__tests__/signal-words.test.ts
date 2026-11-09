@@ -12,7 +12,6 @@ import {
 	type SignalGameState,
 	signalSeat,
 	signalSeatTeam,
-	validateSignalClue,
 } from "../signal-words";
 import { SIGNAL_WORDS_DEFAULT_PACK } from "../signal-words-packs";
 
@@ -95,15 +94,17 @@ describe("clue validation", () => {
 			seededRandom(7),
 		);
 		const state = createSignalGameState(board);
-		expect(validateSignalClue(state, "  ", 2)).toBe("emptyClue");
-		expect(validateSignalClue(state, "two words", 2)).toBe("multiWordClue");
-		expect(validateSignalClue(state, "fine", 0)).toBe("invalidCount");
-		expect(validateSignalClue(state, "fine", 10)).toBe("invalidCount");
-		expect(validateSignalClue(state, "fine", 2.5)).toBe("invalidCount");
-		expect(validateSignalClue(state, state.words[0].toLowerCase(), 2)).toBe(
-			"matchesBoardWord",
+		const clue = (word: string, count: number) => () =>
+			applySignalClue(state, word, count);
+		expect(clue("  ", 2)).toThrow("clueEmpty");
+		expect(clue("two words", 2)).toThrow("clueMultiWord");
+		expect(clue("fine", 0)).toThrow("clueInvalidCount");
+		expect(clue("fine", 10)).toThrow("clueInvalidCount");
+		expect(clue("fine", 2.5)).toThrow("clueInvalidCount");
+		expect(clue(state.words[0].toLowerCase(), 2)).toThrow(
+			"clueMatchesBoardWord",
 		);
-		expect(validateSignalClue(state, "galaxy", 3)).toBeUndefined();
+		expect(clue("galaxy", 3)).not.toThrow();
 	});
 
 	it("moves to guess phase with count + 1 guesses", () => {
@@ -140,6 +141,8 @@ describe("applySignalGuess", () => {
 		expect(state.phase).toBe("clue");
 		expect(state.currentTeam).toBe(otherTeam(team));
 		expect(state.guessesLeft).toBeUndefined();
+		expect(state.clueWord).toBeUndefined();
+		expect(state.clueCount).toBeUndefined();
 	});
 
 	it("ends the turn on a neutral card", () => {

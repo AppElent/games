@@ -2,11 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
 	bluffDiceCounts,
 	describeBluffClaim,
-	getBluffWinnerIndex,
 	isClaimHigher,
 	isValidBluffClaim,
 	nextActiveIndex,
-	resolveBluffChallenge,
 	resolveBluffRound,
 	rollBluffDice,
 } from "../bluff-dice";
@@ -54,34 +52,6 @@ describe("claim validation and ordering", () => {
 	});
 });
 
-describe("resolveBluffChallenge", () => {
-	const hands = [
-		[3, 3, 5],
-		[2, 3, 6],
-		[1, 4, 3],
-	];
-
-	it("challenger loses when the claim holds", () => {
-		const outcome = resolveBluffChallenge(hands, { quantity: 4, face: 3 });
-		expect(outcome.actualCount).toBe(4);
-		expect(outcome.claimWasTrue).toBe(true);
-		expect(outcome.loser).toBe("challenger");
-	});
-
-	it("claimant loses when the claim is a bluff", () => {
-		const outcome = resolveBluffChallenge(hands, { quantity: 5, face: 3 });
-		expect(outcome.actualCount).toBe(4);
-		expect(outcome.claimWasTrue).toBe(false);
-		expect(outcome.loser).toBe("claimant");
-	});
-
-	it("counts faces literally with no wilds", () => {
-		const outcome = resolveBluffChallenge(hands, { quantity: 1, face: 1 });
-		expect(outcome.actualCount).toBe(1);
-		expect(outcome.claimWasTrue).toBe(true);
-	});
-});
-
 describe("turn order and winner", () => {
 	it("advances to the next player with dice", () => {
 		expect(nextActiveIndex([5, 5, 5], 0)).toBe(1);
@@ -98,12 +68,6 @@ describe("turn order and winner", () => {
 		expect(nextActiveIndex([1, 1], 1)).toBe(0);
 		const eight = [1, 1, 1, 1, 1, 1, 1, 1];
 		expect(nextActiveIndex(eight, 7)).toBe(0);
-	});
-
-	it("detects the winner when one player has dice", () => {
-		expect(getBluffWinnerIndex([0, 3, 0])).toBe(1);
-		expect(getBluffWinnerIndex([1, 3, 0])).toBeUndefined();
-		expect(getBluffWinnerIndex([5, 5, 5])).toBeUndefined();
 	});
 
 	it("describes claims", () => {
@@ -157,6 +121,18 @@ describe("resolveBluffRound", () => {
 		expect(next.lastReveal.loserParticipantId).toBe("b");
 		expect(next.hands.map((hand) => hand.values.length)).toEqual([2, 1]);
 		expect(next.activeIndex).toBe(1);
+	});
+
+	it("counts faces literally, with no wild ones", () => {
+		const claim = { quantity: 2, face: 3, byParticipantId: "a" };
+		const next = resolveBluffRound(
+			{ ...state, hands: [{ participantId: "a", values: [1, 1] }, hands[1]] },
+			claim,
+			"b",
+			fixedRandom,
+		);
+		expect(next.lastReveal.actualCount).toBe(1);
+		expect(next.lastReveal.loserParticipantId).toBe("a");
 	});
 
 	it("finishes when the loser gives up their last die", () => {

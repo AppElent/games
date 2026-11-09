@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import {
+	createSudokuSession,
+	generatedPuzzle,
+} from "../src/lib/games/sudoku-session";
 import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
@@ -585,6 +589,32 @@ describe("create", () => {
 		expect(session?.status).toBe("active");
 		expect(session?.startedAt).toBe(T0);
 		expect((await bundle(t, created.sessionId))?.state?.givens).toBe(GIVENS);
+	});
+
+	it.each([
+		"classic",
+		"killer",
+		"binary",
+	] as const)("stores a %s puzzle the new-puzzle page generates, solvable by its solution", async (variant) => {
+		const t = setup();
+		const puzzle = generatedPuzzle(variant, "easy");
+		const { sessionId } = await createSudokuSession(
+			(args) => t.mutation(api.sudoku.create, args),
+			{
+				title: "Puzzle",
+				displayName: "Solver",
+				guestId: "guest_solver",
+				source: "generated",
+				difficulty: "easy",
+				...puzzle,
+			},
+		);
+		const stored = await storedState(t, sessionId);
+		expect(stored.variant ?? "classic").toBe(variant);
+		expect(stored.givens).toBe(puzzle.givens);
+		await expect(
+			complete(t, sessionId, puzzle.solution),
+		).resolves.toEqual({ completed: true });
 	});
 
 	it("leaves no session behind when the puzzle is rejected", async () => {

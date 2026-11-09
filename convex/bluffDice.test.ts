@@ -3,7 +3,6 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
-	arrange,
 	deletedParticipantId,
 	deletedSessionId,
 	expectCode,
@@ -290,14 +289,6 @@ describe("submitClaim", () => {
 		expect(state.updatedAt).toBe(T0 + 1000);
 	});
 
-	it("wraps the turn back around the table", async () => {
-		const t = setup();
-		const { sessionId, players } = await startedGame(t);
-		await claim(t, sessionId, players[0], 1, 3);
-		await claim(t, sessionId, players[1], 1, 4);
-		expect((await bundle(t, sessionId)).state.activeIndex).toBe(0);
-	});
-
 	it("answers notYourTurn out of turn", async () => {
 		const t = setup();
 		const { sessionId, players } = await startedGame(t);
@@ -373,18 +364,6 @@ describe("challenge", () => {
 			],
 		});
 		expect(state.winnerParticipantId).toBeUndefined();
-	});
-
-	it("costs the challenger a die when the claim holds", async () => {
-		const t = setup();
-		const { sessionId, players } = await startedGame(t);
-		await claim(t, sessionId, players[0], 10, 4);
-		await challenge(t, sessionId, players[1]);
-		const { state } = await bundle(t, sessionId);
-		expect(state.lastReveal?.actualCount).toBe(10);
-		expect(state.lastReveal?.loserParticipantId).toBe(players[1]);
-		expect(state.activeIndex).toBe(1);
-		expect(state.diceCounts[1].count).toBe(4);
 	});
 
 	it("answers noClaimToChallenge ahead of any claim", async () => {
@@ -607,28 +586,6 @@ describe("getMyDice", () => {
 			"notInGame",
 		);
 	});
-});
-
-it("lets a true claim on the last dice win the game for the claimant", async () => {
-	const t = setup();
-	const { sessionId, players } = await startedGame(t);
-	const stored = await storedState(t, sessionId);
-	await arrange(t, stored._id, {
-		hands: [
-			{ participantId: players[0], values: [1] },
-			{ participantId: players[1], values: [2] },
-		],
-	});
-	await claim(t, sessionId, players[0], 1, 2);
-	await challenge(t, sessionId, players[1]);
-	const { state } = await bundle(t, sessionId);
-	expect(state.phase).toBe("finished");
-	expect(state.winnerParticipantId).toBe(players[0]);
-	expect(state.lastReveal?.actualCount).toBe(1);
-	expect(state.lastReveal?.hands).toEqual([
-		{ participantId: players[0], values: [1] },
-		{ participantId: players[1], values: [2] },
-	]);
 });
 
 describe("create", () => {

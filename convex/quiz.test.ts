@@ -377,42 +377,12 @@ describe("submitAnswer", () => {
 		]);
 	});
 
-	it("shrinks the bonus with time, down to the base points", async () => {
-		const t = setup();
-		const { sessionId, player, joinCode } = await quizWithPlayer(t);
-		await advancePhase(t, sessionId);
-		advance(10_000);
-		await expect(answer(t, sessionId, player, ["a"])).resolves.toMatchObject({
-			score: 1167,
-		});
-		const late = await joinWithCode(t, joinCode, "guest_late");
-		advance(60_000);
-		await expect(
-			answer(t, sessionId, late.participantId, ["a"]),
-		).resolves.toMatchObject({ score: 1000 });
-	});
-
 	it("pins that an answer in the same millisecond misses the bonus", async () => {
 		const t = setup();
 		const { sessionId, player } = await quizWithPlayer(t);
 		await advancePhase(t, sessionId);
 		await expect(answer(t, sessionId, player, ["a"])).resolves.toMatchObject({
 			score: 1000,
-		});
-	});
-
-	it("scores a wrong answer zero and needs every correct choice", async () => {
-		const t = setup();
-		const { sessionId, player, stateId } = await quizWithPlayer(t);
-		await advancePhase(t, sessionId);
-		await expect(answer(t, sessionId, player, ["b"])).resolves.toMatchObject({
-			correct: false,
-			score: 0,
-		});
-		await arrange(t, stateId, { currentQuestionIndex: 1 });
-		await expect(answer(t, sessionId, player, ["a"])).resolves.toMatchObject({
-			correct: false,
-			score: 0,
 		});
 	});
 

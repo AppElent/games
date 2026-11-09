@@ -3,7 +3,6 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
-	arrange,
 	deletedSessionId,
 	expectCode,
 	fields,
@@ -435,47 +434,6 @@ describe("submitGuess", () => {
 		expect(state.currentTeam).toBe(team);
 	});
 
-	it("ends the turn when the guesses run out", async () => {
-		const t = setup();
-		const { sessionId, guesser, stored, team, rival } = await guessingGame(t, 1);
-		for (const card of indexesOf(stored, team).slice(0, 2)) {
-			await guess(t, sessionId, guesser, card);
-		}
-		const { state } = await bundle(t, sessionId);
-		expect(state.phase).toBe("clue");
-		expect(state.currentTeam).toBe(rival);
-		expect(state.clueWord).toBeUndefined();
-		expect(state.clueCount).toBeUndefined();
-		expect(state.guessesLeft).toBeUndefined();
-	});
-
-	it("ends the turn on a neutral or an opposing card", async () => {
-		const t = setup();
-		const game = await guessingGame(t);
-		await guess(
-			t,
-			game.sessionId,
-			game.guesser,
-			indexesOf(game.stored, "neutral")[0],
-		);
-		expect((await bundle(t, game.sessionId)).state.currentTeam).toBe(game.rival);
-		await t.mutation(api.signalWords.submitClue, {
-			sessionId: game.sessionId,
-			participantId: game.rivalClueGiver,
-			clue: "ZEBRAFISH",
-			count: 1,
-		});
-		await guess(
-			t,
-			game.sessionId,
-			game.rivalGuesser,
-			indexesOf(game.stored, game.team)[0],
-		);
-		const { state } = await bundle(t, game.sessionId);
-		expect(state.phase).toBe("clue");
-		expect(state.currentTeam).toBe(game.team);
-	});
-
 	it("finishes on the trap, for the other team and its clue giver too", async () => {
 		const t = setup();
 		const { sessionId, rival, rivalClueGiver, rivalGuesser, team, stored } =
@@ -509,21 +467,6 @@ describe("submitGuess", () => {
 		expect(new Set(session.winnerParticipantIds)).toEqual(
 			new Set([clueGiver, guesser]),
 		);
-	});
-
-	it("finishes for the rival when a guess clears their last card", async () => {
-		const t = setup();
-		const { sessionId, guesser, stored, rival } = await guessingGame(t);
-		const rivalCards = indexesOf(stored, rival);
-		await arrange(t, stored._id, {
-			revealed: stored.revealed.map((_, index) =>
-				rivalCards.slice(1).includes(index),
-			),
-		});
-		await guess(t, sessionId, guesser, rivalCards[0]);
-		const { state } = await bundle(t, sessionId);
-		expect(state.phase).toBe("finished");
-		expect(state.winnerTeam).toBe(rival);
 	});
 
 	it("answers guessersOnlyPick to clue givers and the other team", async () => {

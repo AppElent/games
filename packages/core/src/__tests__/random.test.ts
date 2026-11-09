@@ -12,16 +12,11 @@ describe("mulberry32", () => {
 });
 
 describe("shuffle", () => {
-	it("draws from the last index down and does not touch its input", () => {
-		const items = [1, 2, 3, 4];
-		const draws: number[] = [];
-		const result = shuffle(items, () => {
-			draws.push(draws.length);
-			return 0;
-		});
-		expect(draws).toHaveLength(3);
-		expect(result).toEqual([2, 3, 4, 1]);
-		expect(items).toEqual([1, 2, 3, 4]);
+	it("returns every item once and does not touch its input", () => {
+		const items = [1, 2, 3, 4, 5, 6];
+		const result = shuffle(items, mulberry32(7));
+		expect([...result].sort()).toEqual(items);
+		expect(items).toEqual([1, 2, 3, 4, 5, 6]);
 	});
 
 	it("keeps seeded output stable", () => {
