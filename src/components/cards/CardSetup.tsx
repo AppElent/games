@@ -6,9 +6,7 @@ import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { HostGate } from "#/components/games/HostGate";
 import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
-import { useGameAction } from "#/lib/games/use-game-action";
-import { useHostDisplayName } from "#/lib/games/use-host-session";
+import { useHostSession } from "#/lib/games/use-host-session";
 import { plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import { CardsPage } from "./Chrome";
@@ -19,54 +17,51 @@ type CardTableMode = "computer" | "friends";
 /**
  * Opening a table: against the computer it deals at once with bots in the
  * other seats, with friends it opens a room to share. This device keeps the
- * host's seat, then goes to the table. `busy` clears only on failure.
+ * host's seat, then goes to the table.
  */
-function useCreateCardTable(gameId: CardGameId) {
-	const cards = useMessages().games.cards;
-	const navigate = useNavigate();
-	const create = useMutation(api.cardGames.createTable);
-	const { user } = useUser();
-	const hostName = useHostDisplayName();
-	const { error, run } = useGameAction();
-	const [busy, setBusy] = useState(false);
-
-	async function createTable({
+function useCreateCardTable(
+	gameId: CardGameId,
+	{
 		mode,
 		opponents,
 		options,
-	}: {
-		mode: CardTableMode;
-		opponents: number;
-		options: string[];
-	}) {
-		setBusy(true);
-		const succeeded = await run(async () => {
-			const guest = getOrCreateGuestIdentity();
-			const solo = mode === "computer";
+	}: { mode: CardTableMode; opponents: number; options: string[] },
+) {
+	const cards = useMessages().games.cards;
+	const navigate = useNavigate();
+	const createTable = useMutation(api.cardGames.createTable);
+	const { user } = useUser();
+	const { busy, error, host } = useHostSession("card-games", {
+		open: ({ sessionId }) =>
+			navigate({ to: "/cards/table/$sessionId", params: { sessionId } }),
+	});
+
+	function create() {
+		const solo = mode === "computer";
+		return host(async ({ hostName, guestId, guestName }) => {
 			const seatSecret = newCardSeatSecret();
-			const { sessionId, participantId } = await create({
+			const created = await createTable({
 				seatSecret,
 				joinMode: solo ? "solo" : "room",
 				title: cards.games[gameId].name,
-				displayName: user ? hostName : guest.displayName,
-				guestId: guest.id,
+				displayName: user ? hostName : guestName,
+				guestId,
 				gameId,
 				options,
 				bots: solo ? opponents : 0,
 				start: solo,
 			});
-			rememberCardSeat(sessionId, participantId, seatSecret, true);
-			await navigate({
-				to: "/cards/table/$sessionId",
-				params: { sessionId },
-			});
+			rememberCardSeat(
+				created.sessionId,
+				created.participantId,
+				seatSecret,
+				true,
+			);
+			return created;
 		}, cards.setup.couldNotCreate);
-		if (!succeeded) {
-			setBusy(false);
-		}
 	}
 
-	return { busy, error, createTable };
+	return { busy, error, create };
 }
 
 /** Picking how to play a card game, then opening its table. */
@@ -83,8 +78,11 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 3));
 	const [options, setOptions] = useState<string[]>([]);
 	const [rulesOpen, setRulesOpen] = useState(false);
-	const { busy, error, createTable } = useCreateCardTable(gameId);
-	const create = () => createTable({ mode, opponents, options });
+	const { busy, error, create } = useCreateCardTable(gameId, {
+		mode,
+		opponents,
+		options,
+	});
 
 	const button = (
 		<button

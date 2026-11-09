@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { fmt, useMessages } from "#/lib/i18n";
+import { useMessages } from "#/lib/i18n";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 export type ListedParticipant = {
@@ -7,7 +7,6 @@ export type ListedParticipant = {
 	displayName: string;
 	role: "host" | "player" | "watcher";
 	seat?: string;
-	connected: boolean;
 	kickedAt?: number;
 };
 
@@ -39,27 +38,20 @@ export function ParticipantList({
 				{messages.common.participants.heading}
 			</h2>
 			<ul className="space-y-2">
-				{visible.map((participant) => {
-					const label = participant.seat ?? roleLabel(participant.role);
-					return (
-						<li
-							key={participant._id}
-							className="flex items-center justify-between gap-2 rounded-md bg-white/5 px-3 py-2 text-sm"
-						>
-							<span className="min-w-0 truncate font-semibold text-white">
-								{participant.displayName}
-							</span>
-							<span className="flex shrink-0 items-center gap-2 text-slate-400">
-								{participant.connected
-									? label
-									: fmt(messages.common.participants.awayStatus, {
-											role: label,
-										})}
-								{renderActions?.(participant)}
-							</span>
-						</li>
-					);
-				})}
+				{visible.map((participant) => (
+					<li
+						key={participant._id}
+						className="flex items-center justify-between gap-2 rounded-md bg-white/5 px-3 py-2 text-sm"
+					>
+						<span className="min-w-0 truncate font-semibold text-white">
+							{participant.displayName}
+						</span>
+						<span className="flex shrink-0 items-center gap-2 text-slate-400">
+							{participant.seat ?? roleLabel(participant.role)}
+							{renderActions?.(participant)}
+						</span>
+					</li>
+				))}
 			</ul>
 		</div>
 	);

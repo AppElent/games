@@ -9,8 +9,6 @@ export const chess = {
 		black: "Zwart",
 		colorWhite: "wit",
 		colorBlack: "zwart",
-		openSeat: "Open plek",
-		turnBadge: "Beurt",
 	},
 	status: {
 		gameOver: "Partij afgelopen",
@@ -58,12 +56,6 @@ export const chess = {
 	moveList: {
 		heading: "Zetten",
 		empty: "Nog geen zetten.",
-	},
-	info: {
-		button: "Info",
-	},
-	share: {
-		challengeLinkLabel: "Uitdagingslink",
 	},
 	session: {
 		matchNotFound: "Partij niet gevonden.",

@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
-import { SessionBundleRoute } from "#/components/games/SessionBundleRoute";
+import {
+	pageShell,
+	SessionBundleRoute,
+} from "#/components/games/SessionBundleRoute";
 import { BinaryGame } from "#/components/sudoku/BinaryGame";
 import { SudokuGame } from "#/components/sudoku/SudokuGame";
 import { useMessages } from "#/lib/i18n";
@@ -22,17 +25,7 @@ function SudokuSessionPage() {
 	return (
 		<SessionBundleRoute
 			bundle={bundle}
-			shell={(text, status) => (
-				<FullscreenGamePage title={messages.catalog.sudoku.title}>
-					<p
-						className={
-							status === "notFound" ? "text-orange-200" : "text-slate-300"
-						}
-					>
-						{text}
-					</p>
-				</FullscreenGamePage>
-			)}
+			shell={pageShell(messages.catalog.sudoku.title)}
 			loading={messages.games.sudoku.session.loadingPuzzle}
 			notFound={messages.games.sudoku.session.puzzleNotFound}
 		>

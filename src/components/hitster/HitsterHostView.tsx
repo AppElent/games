@@ -1,7 +1,7 @@
 import { getHitsterModeConfig } from "@arcadeclub/core/hitster";
 import { getHitsterPack } from "@arcadeclub/core/hitster-packs";
-import { formatJoinCode } from "@arcadeclub/core/sessions";
 import { useMutation } from "convex/react";
+import { JoinCodePanel } from "#/components/games/JoinCodePanel";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
@@ -57,16 +57,7 @@ export function HitsterHostView({
 							</p>
 						) : null}
 					</div>
-					<div className="rounded-2xl border border-[var(--club-line)] bg-[var(--club-panel)] px-4 py-3 text-right">
-						<span className="block text-xs font-bold uppercase tracking-wide text-[var(--club-soft)]">
-							{hostView.joinCodeLabel}
-						</span>
-						<span className="text-3xl font-bold tabular-nums tracking-tight text-[var(--club-text)]">
-							{bundle.session.joinCode
-								? formatJoinCode(bundle.session.joinCode)
-								: "------"}
-						</span>
-					</div>
+					<JoinCodePanel tone="hitster" joinCode={bundle.session.joinCode} />
 				</div>
 
 				{error ? <p className="text-sm text-orange-300">{error}</p> : null}

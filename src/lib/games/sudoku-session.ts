@@ -1,11 +1,6 @@
-import { generateBinaryPuzzle } from "@arcadeclub/core/binary-puzzle";
 import { digitsToString } from "@arcadeclub/core/puzzle";
-import {
-	generatePuzzle,
-	type SudokuDifficulty,
-	type SudokuVariant,
-} from "@arcadeclub/core/sudoku";
-import { generateKillerPuzzle } from "@arcadeclub/core/sudoku-killer";
+import type { SudokuDifficulty, SudokuVariant } from "@arcadeclub/core/sudoku";
+import { generateVariantPuzzle } from "@arcadeclub/core/sudoku-variants";
 import type { FunctionArgs } from "convex/server";
 import { rememberLocalSudokuSession } from "#/lib/games/sudoku-local";
 import type { api } from "../../../convex/_generated/api";
@@ -13,34 +8,28 @@ import type { Id } from "../../../convex/_generated/dataModel";
 
 type CreateArgs = FunctionArgs<typeof api.sudoku.create>;
 
-/** A fresh puzzle of `variant` in the shape `sudoku.create` stores. */
+/**
+ * A fresh puzzle of `variant` in the shape `sudoku.create` stores. Classic
+ * puzzles carry no `variant`, like every classic session stored before
+ * variants existed.
+ */
 export function generatedPuzzle(
 	variant: SudokuVariant,
 	difficulty: SudokuDifficulty,
 ) {
-	if (variant === "binary") {
-		const puzzle = generateBinaryPuzzle(difficulty);
-		return {
-			variant,
-			size: puzzle.size,
-			givens: digitsToString(puzzle.givens),
-			solution: digitsToString(puzzle.solution),
-		};
-	}
-	if (variant === "killer") {
-		const puzzle = generateKillerPuzzle(difficulty);
-		return {
-			variant,
-			cages: puzzle.cages,
-			givens: digitsToString(puzzle.givens),
-			solution: digitsToString(puzzle.solution),
-		};
-	}
-	const puzzle = generatePuzzle(difficulty);
-	return {
+	const puzzle = generateVariantPuzzle(variant, difficulty);
+	const grids = {
 		givens: digitsToString(puzzle.givens),
 		solution: digitsToString(puzzle.solution),
 	};
+	switch (puzzle.variant) {
+		case "binary":
+			return { variant: puzzle.variant, size: puzzle.size, ...grids };
+		case "killer":
+			return { variant: puzzle.variant, cages: puzzle.cages, ...grids };
+		case "classic":
+			return grids;
+	}
 }
 
 /**

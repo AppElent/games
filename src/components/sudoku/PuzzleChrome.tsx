@@ -6,11 +6,6 @@ import type { PuzzleStateDoc } from "./useSoloPuzzleSession";
 
 type PuzzleStatus = PuzzleStateDoc["status"];
 
-/** `max-w-*` for a puzzle row that does not span its column, with its space. */
-function widthPrefix(widthClassName?: string) {
-	return widthClassName ? `${widthClassName} ` : "";
-}
-
 /** Title, puzzle details, the clock and the pause toggle above a board. */
 export function PuzzleHeader({
 	title,
@@ -18,20 +13,16 @@ export function PuzzleHeader({
 	status,
 	elapsedLabel,
 	onTogglePause,
-	widthClassName,
 }: {
 	title: ReactNode;
 	details: ReactNode;
 	status: PuzzleStatus;
 	elapsedLabel: string;
 	onTogglePause: () => void;
-	widthClassName?: string;
 }) {
 	const messages = useMessages();
 	return (
-		<div
-			className={`flex w-full ${widthPrefix(widthClassName)}flex-wrap items-center justify-between gap-2`}
-		>
+		<div className="flex w-full flex-wrap items-center justify-between gap-2">
 			<div className="min-w-0">
 				{title}
 				<p className="text-xs text-slate-400">{details}</p>
@@ -64,18 +55,10 @@ export function PuzzleHeader({
 }
 
 /** The solved notice, with the time taken and a way to the next puzzle. */
-export function CompletedBanner({
-	elapsedLabel,
-	widthClassName,
-}: {
-	elapsedLabel: string;
-	widthClassName?: string;
-}) {
+export function CompletedBanner({ elapsedLabel }: { elapsedLabel: string }) {
 	const sudoku = useMessages().games.sudoku;
 	return (
-		<div
-			className={`w-full ${widthPrefix(widthClassName)}rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-4 py-3 text-emerald-200`}
-		>
+		<div className="w-full rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-4 py-3 text-emerald-200">
 			<p className="font-bold">{sudoku.game.solvedTitle}</p>
 			<p className="text-sm">
 				{fmt(sudoku.game.completedIn, { time: elapsedLabel })}{" "}

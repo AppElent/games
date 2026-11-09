@@ -11,8 +11,6 @@ export const quiz = {
 	questionNumber: "Vraag {number}",
 	questionsCount: { one: "{count} vraag", other: "{count} vragen" },
 	hostView: {
-		joinCode: "Kamercode",
-		joinCodePlaceholder: "------",
 		playersInRoom: "{players} in de kamer",
 		readyWhenYouAre: "Klaar als jij er klaar voor bent",
 		questionProgress: "Vraag {current} van {total}",

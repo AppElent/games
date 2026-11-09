@@ -1,4 +1,5 @@
 import {
+	CONNECT_FOUR_COLORS,
 	CONNECT_FOUR_COLS,
 	CONNECT_FOUR_ROWS,
 	type ConnectFourColor,
@@ -15,7 +16,6 @@ import {
 	MatchHud,
 	MatchLoading,
 	MatchStage,
-	MatchStatusPill,
 } from "#/components/games/match/MatchStage";
 import { MatchWaitingScreen } from "#/components/games/match/MatchWaitingScreen";
 import {
@@ -23,9 +23,8 @@ import {
 	SeatCards,
 	SeatName,
 } from "#/components/games/match/SeatCard";
+import { useDuel } from "#/components/games/match/useDuel";
 import { getGameRoute } from "#/lib/games/catalog";
-import { useSeat } from "#/lib/games/seat";
-import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
@@ -43,11 +42,19 @@ export function ConnectFourMatch({
 	const drop = useMutation(api.connectFour.drop);
 	const resign = useMutation(api.connectFour.resign);
 	const rematch = useMutation(api.connectFour.rematch);
-	const participantId = useSeat(bundle.session._id);
-	const { error, run } = useGameAction();
 	const [showInfo, setShowInfo] = useState(false);
 
 	const state = bundle.state;
+	const {
+		participantId,
+		localColor,
+		opponentJoined,
+		finished,
+		myTurn,
+		seatAction,
+		error,
+		run,
+	} = useDuel(bundle.session._id, CONNECT_FOUR_COLORS, state);
 	if (!state) {
 		return (
 			<MatchLoading
@@ -63,22 +70,6 @@ export function ConnectFourMatch({
 	const yellow = bundle.participants.find(
 		(participant) => participant._id === state.yellowParticipantId,
 	);
-	const localColor: ConnectFourColor | undefined =
-		state.redParticipantId === participantId
-			? "red"
-			: state.yellowParticipantId === participantId
-				? "yellow"
-				: undefined;
-	const opponentJoined = Boolean(
-		state.redParticipantId && state.yellowParticipantId,
-	);
-	const finished = state.phase === "finished";
-	const myTurn =
-		Boolean(localColor) &&
-		state.activeColor === localColor &&
-		opponentJoined &&
-		!finished;
-
 	const statusLabel = finished
 		? state.resultOutcome === "draw"
 			? connectFour.status.draw
@@ -130,20 +121,20 @@ export function ConnectFourMatch({
 			<SeatCard
 				icon={<Disc color="red" />}
 				label={connectFour.players.red}
-				turnLabel={connectFour.players.turnBadge}
 				active={!finished && opponentJoined && state.activeColor === "red"}
 				open={!red}
 			>
-				<SeatName name={red?.displayName ?? connectFour.players.openSeat} />
+				<SeatName name={red?.displayName ?? messages.common.match.openSeat} />
 			</SeatCard>
 			<SeatCard
 				icon={<Disc color="yellow" />}
 				label={connectFour.players.yellow}
-				turnLabel={connectFour.players.turnBadge}
 				active={!finished && opponentJoined && state.activeColor === "yellow"}
 				open={!yellow}
 			>
-				<SeatName name={yellow?.displayName ?? connectFour.players.openSeat} />
+				<SeatName
+					name={yellow?.displayName ?? messages.common.match.openSeat}
+				/>
 			</SeatCard>
 		</SeatCards>
 	);
@@ -187,20 +178,11 @@ export function ConnectFourMatch({
 
 	const actionRow = (
 		<div className="flex flex-wrap justify-center gap-3 empty:hidden">
-			{participantId && localColor && !finished && opponentJoined ? (
+			{localColor && !finished && opponentJoined ? (
 				<button
 					type="button"
 					className="rounded-md border border-orange-300/40 bg-orange-300/10 px-4 py-2 text-sm font-bold text-orange-100"
-					onClick={() =>
-						run(
-							() =>
-								resign({
-									sessionId: bundle.session._id,
-									participantId,
-								}),
-							connectFour.actions.resignError,
-						)
-					}
+					onClick={seatAction(resign, connectFour.actions.resignError)}
 				>
 					{connectFour.actions.resign}
 				</button>
@@ -212,19 +194,7 @@ export function ConnectFourMatch({
 		<GameEndScreen
 			heading={statusLabel}
 			shareText={fmt(connectFour.endScreen.shareText, { status: statusLabel })}
-			onRematch={
-				participantId && localColor
-					? () =>
-							run(
-								() =>
-									rematch({
-										sessionId: bundle.session._id,
-										participantId,
-									}),
-								connectFour.endScreen.rematchError,
-							)
-					: undefined
-			}
+			onRematch={seatAction(rematch, connectFour.endScreen.rematchError)}
 			rematchLabel={connectFour.endScreen.rematchLabel}
 			newGameRoute={getGameRoute("connect-four")}
 		/>
@@ -238,7 +208,6 @@ export function ConnectFourMatch({
 				status={statusLabel}
 				seats={discCards}
 				error={error}
-				shareLabel={connectFour.share.challengeLinkLabel}
 				shareUrl={shareUrl}
 				participants={bundle.participants}
 			/>
@@ -250,11 +219,9 @@ export function ConnectFourMatch({
 			title={bundle.session.title}
 			hud={
 				<MatchHud
-					infoLabel={connectFour.info.button}
+					status={statusLabel}
 					onInfo={() => setShowInfo((open) => !open)}
-				>
-					<MatchStatusPill status={statusLabel} />
-				</MatchHud>
+				/>
 			}
 		>
 			<MatchStage board={board} designWidth={480} error={error}>
@@ -270,7 +237,6 @@ export function ConnectFourMatch({
 				<GameInfoOverlay
 					status={statusLabel}
 					seats={discCards}
-					shareLabel={connectFour.share.challengeLinkLabel}
 					shareUrl={shareUrl}
 					participants={bundle.participants}
 					onClose={() => setShowInfo(false)}

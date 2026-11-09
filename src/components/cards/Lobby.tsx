@@ -1,7 +1,4 @@
-import type {
-	CardGameDefinition,
-	CardGameId,
-} from "@arcadeclub/core/cards/engine";
+import type { CardGame } from "@arcadeclub/core/cards/engine";
 import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { Bot, Plus, X } from "lucide-react";
 import { useState } from "react";
@@ -19,13 +16,14 @@ export function Lobby({
 	table,
 	controls,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	table: CardTableBundle;
 	controls: CardTableControls;
 }) {
 	const { locale } = useI18n();
-	const cards = useMessages().games.cards;
-	const text = cards.games[game.id as CardGameId];
+	const messages = useMessages();
+	const cards = messages.games.cards;
+	const text = cards.games[game.id];
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const code = table.session.joinCode ?? "";
 	const optionText = text.options as Record<string, { label: string }>;
@@ -61,7 +59,7 @@ export function Lobby({
 							{code}
 						</p>
 					</section>
-					<QrSharePanel url={url} label={cards.lobby.inviteLabel} />
+					<QrSharePanel url={url} label={messages.common.room.invitePlayers} />
 				</div>
 				<section className="cards-panel flex flex-col gap-3 p-5">
 					<div className="flex items-baseline justify-between gap-2">

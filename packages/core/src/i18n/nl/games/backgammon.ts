@@ -75,13 +75,9 @@ export const backgammon = {
 		endTurnError: "Kon beurt niet beëindigen",
 		seatWhite: "Wit",
 		seatBlack: "Zwart",
-		openSeat: "Open plek",
 		seatCounts: "Bar {bar} / Uit {off}",
-		turnBadge: "Beurt",
 		shareToClaimBlackSeat:
 			"Deel de link met één tegenstander om de zwarte plek te claimen.",
-		challengeLinkLabel: "Uitdagingslink",
-		infoButton: "Info",
 		finishedStatus: "{name} heeft alle 15 schijven uitgespeeld",
 		winnerFallback: "Winnaar",
 		waitingForPlayerToPlay: "Wachten tot {name} speelt",

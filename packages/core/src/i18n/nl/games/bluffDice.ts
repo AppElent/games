@@ -2,8 +2,6 @@ import type { bluffDice as enBluffDice } from "../../en/games/bluffDice";
 
 export const bluffDice = {
 	room: {
-		loadingKicker: "Klaarzetten",
-		loadingHeading: "Kamer wordt geladen",
 		playerFallback: "Speler",
 		waitingForPlayers:
 			"Wachten op spelers — de host start het spel (2-8 spelers).",
@@ -44,9 +42,6 @@ export const bluffDice = {
 			"Elk bod moet hoger zijn dan het vorige — of je daagt uit.",
 		howToPlayLoseDie:
 			"Wie het mis heeft verliest een dobbelsteen. De laatste speler met dobbelstenen wint.",
-	},
-	share: {
-		invitePlayers: "Spelers uitnodigen",
 	},
 	new: {
 		heading: "Open een tafel",

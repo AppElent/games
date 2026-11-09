@@ -30,7 +30,6 @@ export const cards = {
 	lobby: {
 		kicker: "De tafel is open",
 		codeLabel: "Kamercode",
-		inviteLabel: "Spelers uitnodigen",
 		seatsHeading: "Aan tafel",
 		seatsCount: "{count} van {max} plaatsen",
 		hostBadge: "Host",

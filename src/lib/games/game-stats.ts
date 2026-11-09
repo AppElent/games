@@ -1,5 +1,7 @@
+import type { GameType } from "@arcadeclub/core/games";
+
 type GameStatsRow = {
-	gameType: string;
+	gameType: GameType;
 	played: number;
 	completed: number;
 	won: number;
@@ -12,14 +14,14 @@ type GameStatsRow = {
 export function buildGameStats(
 	rows: {
 		session: {
-			gameType: string;
+			gameType: GameType;
 			status: string;
 			winnerParticipantIds?: string[];
 		};
 		participant: { _id: string };
 	}[],
 ): GameStatsRow[] {
-	const byGame = new Map<string, GameStatsRow>();
+	const byGame = new Map<GameType, GameStatsRow>();
 	for (const row of rows) {
 		const entry = byGame.get(row.session.gameType) ?? {
 			gameType: row.session.gameType,

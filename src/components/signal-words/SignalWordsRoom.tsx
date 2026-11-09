@@ -73,12 +73,7 @@ export function SignalWordsRoom({
 	);
 
 	if (!state) {
-		return (
-			<RoomLoading
-				kicker={signalWords.loading.kicker}
-				heading={signalWords.loading.heading}
-			/>
-		);
+		return <RoomLoading />;
 	}
 
 	const inLobby = state.phase === "lobby";
@@ -137,7 +132,6 @@ export function SignalWordsRoom({
 				tone: finished ? "success" : inLobby ? "warning" : "success",
 			}}
 			error={error}
-			inviteLabel={signalWords.share.invitePlayers}
 			joinUrl={joinUrl}
 			howToPlay={{
 				heading: signalWords.howToPlay.heading,

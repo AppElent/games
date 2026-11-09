@@ -5,7 +5,6 @@ import {
 	sanitizeBreadcrumb,
 	sanitizeEvent,
 	sanitizeFeedbackEvent,
-	sanitizeText,
 } from "./privacy";
 
 describe("isLocalSentryUrl", () => {
@@ -23,11 +22,12 @@ describe("isLocalSentryUrl", () => {
 	});
 });
 
-describe("sanitizeText", () => {
+describe("sanitizeEvent message", () => {
 	it("filters tokens, emails and secret query values", () => {
-		expect(sanitizeText("Bearer abc a@b.nl /join?token=xyz&x=1")).toBe(
-			"Bearer [Filtered] [Filtered] /join?token=[Filtered]&x=1",
-		);
+		expect(
+			sanitizeEvent({ message: "Bearer abc a@b.nl /join?token=xyz&x=1" })
+				.message,
+		).toBe("Bearer [Filtered] [Filtered] /join?token=[Filtered]&x=1");
 	});
 });
 

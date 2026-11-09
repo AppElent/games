@@ -29,7 +29,7 @@ function HitsterPlayerPage() {
 		sessionId: sessionId as Id<"gameSessions">,
 		participantId,
 	});
-	const shell = pageShell("Hitster", {
+	const shell = pageShell(messages.catalog.hitster.title, {
 		loading: "text-[var(--club-muted)]",
 		notFound: "text-orange-500",
 	});
@@ -42,7 +42,10 @@ function HitsterPlayerPage() {
 		>
 			{(loaded) =>
 				participantId ? (
-					<FullscreenGamePage title="Hitster" maxWidthClassName="max-w-5xl">
+					<FullscreenGamePage
+						title={messages.catalog.hitster.title}
+						maxWidthClassName="max-w-5xl"
+					>
 						<p className="club-kicker mb-2">{hitster.musicTimelineKicker}</p>
 						<HitsterStage bundle={loaded} participantId={participantId} />
 					</FullscreenGamePage>

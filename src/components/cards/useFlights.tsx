@@ -7,7 +7,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { eventsSince } from "./events";
+import { eventsSince, newestSeq } from "./events";
 import { cardTilt } from "./format";
 import { CARD_HEIGHT, CARD_WIDTH, PlayingCard } from "./PlayingCard";
 import {
@@ -143,14 +143,15 @@ export function useFlights(
 	const origins = useRef(new Map<CardId, Spot>());
 	const [flights, setFlights] = useState<Flight[]>([]);
 	const [flash, setFlash] = useState<number | null>(null);
-	const newestSeq = events.at(-1)?.seq ?? 0;
+	// An empty log counts as 0, so the first events after it fly.
+	const newest = newestSeq(events) ?? 0;
 
 	useLayoutEffect(() => {
 		const previous = lastSeq.current;
-		lastSeq.current = newestSeq;
+		lastSeq.current = newest;
 		const root = rootRef.current;
 		const quiet = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-		if (previous === null || newestSeq === previous || !root || quiet) {
+		if (previous === null || newest === previous || !root || quiet) {
 			return;
 		}
 		const fresh = eventsSince(events, previous);
@@ -245,7 +246,7 @@ export function useFlights(
 		if (planned.length > 0) {
 			setFlights((current) => [...current, ...planned]);
 		}
-	}, [newestSeq, events, you, seatCount, rootRef, meldCard]);
+	}, [newest, events, you, seatCount, rootRef, meldCard]);
 
 	useLayoutEffect(() => {
 		if (flash === null) {

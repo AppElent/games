@@ -95,10 +95,6 @@ export function applyGate(army: number, gate: Gate): number {
 	}
 }
 
-export function resolveWave(army: number, strength: number): number {
-	return Math.max(0, army - strength);
-}
-
 function makeGatePair(rng: Rng, difficulty: number): [Gate, Gate] {
 	const goodSide: 0 | 1 = rng() < 0.5 ? 0 : 1;
 	const good: Gate =
@@ -180,7 +176,7 @@ export function generateLevel(seed: number, difficulty: number): Level {
 			);
 			if (strength > 0) {
 				waves.push({ z, strength });
-				expected = resolveWave(expected, strength);
+				expected -= strength;
 			}
 			placedWaves += 1;
 			z += segment;

@@ -5,11 +5,11 @@ import type { Id } from "../../../convex/_generated/dataModel";
 type ParticipantId = Id<"sessionParticipants">;
 
 /**
- * The quiz host's moderation: lock the room, rename the session, remove a
+ * A host's moderation of their session: lock the room, rename the session, remove a
  * player or hand over hosting. Each call returns the mutation's promise, so the
  * screen decides where its error shows. Undefined until the session has a host.
  */
-export function useQuizModeration(
+export function useSessionModeration(
 	sessionId: Id<"gameSessions">,
 	hostParticipantId: ParticipantId | undefined,
 ) {
@@ -32,4 +32,6 @@ export function useQuizModeration(
 	};
 }
 
-export type QuizModeration = NonNullable<ReturnType<typeof useQuizModeration>>;
+export type SessionModeration = NonNullable<
+	ReturnType<typeof useSessionModeration>
+>;

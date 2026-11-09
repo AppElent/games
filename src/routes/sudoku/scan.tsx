@@ -11,11 +11,11 @@ export const Route = createFileRoute("/sudoku/scan")({
 function SudokuScanPage() {
 	const messages = useMessages();
 	return (
-		<FullscreenGamePage title={messages.catalog.sudoku.title}>
-			<p className="club-kicker mb-2">{messages.catalog.sudoku.title}</p>
-			<h1 className="club-title mb-4 text-4xl font-bold text-white">
-				{messages.games.sudoku.scan.pageHeading}
-			</h1>
+		<FullscreenGamePage
+			title={messages.catalog.sudoku.title}
+			kicker={messages.catalog.sudoku.title}
+			heading={messages.games.sudoku.scan.pageHeading}
+		>
 			<SudokuScanFlow />
 		</FullscreenGamePage>
 	);

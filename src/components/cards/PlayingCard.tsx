@@ -9,8 +9,8 @@ import { memo } from "react";
 import { useMessages } from "#/lib/i18n";
 
 /** Ink for black suits and red suits, as printed on a card. */
-export const INK = "#17181f";
-export const RED = "#b81f2d";
+const INK = "#17181f";
+const RED = "#b81f2d";
 const GOLD = "#c6962f";
 const NAVY = "#1d2f6b";
 const SKIN = "#f4dfc6";

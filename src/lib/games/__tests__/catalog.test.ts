@@ -7,7 +7,6 @@ import {
 import { messages } from "@arcadeclub/core/messages";
 import { describe, expect, it } from "vitest";
 import {
-	getGameByType,
 	getHostPath,
 	getLocalizedGame,
 	getSessionPath,
@@ -79,7 +78,7 @@ describe("game catalog", () => {
 	});
 
 	it("shows each game's text in the viewer's language", () => {
-		const chess = getGameByType("chess");
+		const chess = getVisibleGames().find((game) => game.type === "chess");
 		if (!chess) throw new Error("chess is missing from the catalog");
 		expect(getLocalizedGame(chess, messages.en)).toMatchObject({
 			type: "chess",

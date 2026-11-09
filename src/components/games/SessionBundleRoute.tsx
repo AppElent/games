@@ -2,10 +2,10 @@ import type { ReactNode } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
 
-export type BundleStatus = "loading" | "notFound";
+type BundleStatus = "loading" | "notFound";
 
 /** How a game screen shows a status line while it has no bundle to render. */
-export type StatusShell = (text: string, status: BundleStatus) => ReactNode;
+type StatusShell = (text: string, status: BundleStatus) => ReactNode;
 
 /**
  * A session screen's three states: loading (`undefined`), gone (`null`), and

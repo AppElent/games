@@ -1,4 +1,3 @@
-import type { GameType } from "@arcadeclub/core/games";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -10,7 +9,6 @@ import {
 } from "lucide-react";
 import { GameCatalog } from "#/components/games/GameCatalog";
 import { RequireSignedIn } from "#/components/RequireSignedIn";
-import { getGameByType, getLocalizedGame } from "#/lib/games/catalog";
 import { buildGameStats } from "#/lib/games/game-stats";
 import { fmt, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -83,12 +81,10 @@ function PlayerStats({ rows }: { rows: ParticipationRow[] }) {
 			</h2>
 			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 				{stats.slice(0, 4).map((stat) => {
-					const base = getGameByType(stat.gameType as GameType);
-					const game = base ? getLocalizedGame(base, messages) : undefined;
 					return (
 						<div key={stat.gameType} className="club-panel rounded-lg p-4">
 							<p className="text-sm font-bold text-[var(--club-text)]">
-								{game?.title ?? stat.gameType}
+								{messages.catalog[stat.gameType].title}
 							</p>
 							<p className="mt-1 text-2xl font-bold text-[var(--club-text)]">
 								{stat.played}
@@ -122,8 +118,6 @@ function RecentGames({ rows }: { rows: ParticipationRow[] }) {
 			</h2>
 			<ul className="space-y-2">
 				{recent.map(({ session, participant }) => {
-					const base = getGameByType(session.gameType as GameType);
-					const game = base ? getLocalizedGame(base, messages) : undefined;
 					const won = session.winnerParticipantIds?.includes(participant._id);
 					return (
 						<li key={session._id}>
@@ -137,7 +131,7 @@ function RecentGames({ rows }: { rows: ParticipationRow[] }) {
 										{session.title}
 									</p>
 									<p className="truncate text-sm text-[var(--club-muted)]">
-										{game?.title ?? session.gameType} —{" "}
+										{messages.catalog[session.gameType].title} —{" "}
 										{messages.common.dashboard.status[session.status]}
 										{won ? ` ${messages.common.dashboard.youWon}` : ""}
 										{" — "}

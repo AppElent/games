@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import { Check, Copy, Home, RotateCcw, Sparkles } from "lucide-react";
-import type { ReactNode } from "react";
 import { useMessages } from "#/lib/i18n";
 import { useCopyFeedback } from "#/lib/use-copy-feedback";
 
@@ -16,7 +15,6 @@ export function GameEndScreen({
 	rematchLabel,
 	newGameRoute,
 	newGameLabel,
-	children,
 }: {
 	heading: string;
 	subtitle?: string;
@@ -25,7 +23,6 @@ export function GameEndScreen({
 	rematchLabel?: string;
 	newGameRoute?: string;
 	newGameLabel?: string;
-	children?: ReactNode;
 }) {
 	const messages = useMessages();
 	const { copied, copy } = useCopyFeedback();
@@ -41,7 +38,6 @@ export function GameEndScreen({
 				{heading}
 			</h2>
 			{subtitle ? <p className="mt-2 text-slate-300">{subtitle}</p> : null}
-			{children}
 			<div className="mt-6 flex flex-wrap items-center justify-center gap-3">
 				{onRematch ? (
 					<button

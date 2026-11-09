@@ -1,8 +1,5 @@
 import { type CardId, SUITS, type Suit } from "@arcadeclub/core/cards/deck";
-import type {
-	CardGameDefinition,
-	CardGameId,
-} from "@arcadeclub/core/cards/engine";
+import type { CardGame } from "@arcadeclub/core/cards/engine";
 import { powerOf, type SheddingView } from "@arcadeclub/core/cards/shedding";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -40,7 +37,7 @@ export function SheddingTable({
 	view,
 	controls,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	table: CardTableBundle;
 	view: SheddingView;
 	controls: CardTableControls;
@@ -62,7 +59,7 @@ export function SheddingTable({
 	);
 
 	const rules = familyRules(game, table.options, "shedding");
-	const name = cards.games[game.id as CardGameId].name;
+	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "playing";
 	const mine = playing && view.turn === you;

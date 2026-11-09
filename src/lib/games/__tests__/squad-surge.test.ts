@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyGate, generateLevel, resolveWave } from "../squad-surge";
+import { applyGate, generateLevel } from "../squad-surge";
 
 describe("generateLevel", () => {
 	it("is deterministic for the same seed and difficulty", () => {
@@ -42,15 +42,5 @@ describe("applyGate", () => {
 
 	it("never returns a negative army", () => {
 		expect(applyGate(5, { side: 0, op: "sub", value: 50 })).toBe(0);
-	});
-});
-
-describe("resolveWave", () => {
-	it("reduces the army by strength", () => {
-		expect(resolveWave(30, 12)).toBe(18);
-	});
-
-	it("never goes below zero", () => {
-		expect(resolveWave(5, 12)).toBe(0);
 	});
 });

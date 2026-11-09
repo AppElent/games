@@ -1,19 +1,19 @@
 import { summarizeScores } from "@arcadeclub/core/quiz";
-import { formatJoinCode } from "@arcadeclub/core/sessions";
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { ChevronRight, Eye, Trophy } from "lucide-react";
 import { GameEndScreen } from "#/components/games/GameEndScreen";
+import { JoinCodePanel } from "#/components/games/JoinCodePanel";
+import { ModerationActions } from "#/components/games/ModerationActions";
 import { ParticipantList } from "#/components/games/ParticipantList";
+import { SessionHostControls } from "#/components/games/SessionHostControls";
+import { useSessionModeration } from "#/components/games/useSessionModeration";
 import { getGameRoute } from "#/lib/games/catalog";
 import { useSeat } from "#/lib/games/seat";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
-import { ModerationActions } from "./ModerationActions";
 import { Scoreboard } from "./Scoreboard";
-import { SessionHostControls } from "./SessionHostControls";
-import { useQuizModeration } from "./useQuizModeration";
 
 type QuizBundle = NonNullable<FunctionReturnType<typeof api.quiz.getBundle>>;
 
@@ -23,7 +23,7 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 	const participantId = useSeat(bundle.session._id);
 	const { error, run } = useGameAction();
 	const actionFailed = messages.games.quiz.hostView.actionFailed;
-	const moderation = useQuizModeration(
+	const moderation = useSessionModeration(
 		bundle.session._id,
 		bundle.session.hostParticipantId,
 	);
@@ -62,16 +62,7 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 							{bundle.session.title}
 						</h1>
 					</div>
-					<div className="rounded-md border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-right">
-						<span className="block text-xs font-bold uppercase tracking-wide text-cyan-100">
-							{messages.games.quiz.hostView.joinCode}
-						</span>
-						<span className="club-title text-3xl font-bold text-white">
-							{bundle.session.joinCode
-								? formatJoinCode(bundle.session.joinCode)
-								: messages.games.quiz.hostView.joinCodePlaceholder}
-						</span>
-					</div>
+					<JoinCodePanel tone="quiz" joinCode={bundle.session.joinCode} />
 				</div>
 
 				{state?.phase === "lobby" ? (

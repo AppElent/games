@@ -12,8 +12,6 @@ export const chess = {
 		black: "Black",
 		colorWhite: "white",
 		colorBlack: "black",
-		openSeat: "Open seat",
-		turnBadge: "Turn",
 	},
 	status: {
 		gameOver: "Game over",
@@ -61,12 +59,6 @@ export const chess = {
 	moveList: {
 		heading: "Moves",
 		empty: "No moves yet.",
-	},
-	info: {
-		button: "Info",
-	},
-	share: {
-		challengeLinkLabel: "Challenge link",
 	},
 	session: {
 		matchNotFound: "Match not found.",

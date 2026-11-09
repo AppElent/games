@@ -24,6 +24,8 @@ type GameCatalogItem = {
 	readonly sessionPath: SessionPath | null;
 	/** Where the host runs the game, when that differs from `sessionPath`. */
 	readonly hostPath?: (sessionId: string) => string;
+	/** A joiner by code binds their seat to a secret this device keeps (`card-seat.ts`). */
+	readonly seatSecret?: true;
 };
 
 export type LocalizedGame = GameCatalogItem & Messages["catalog"][GameType];
@@ -99,6 +101,7 @@ const GAME_CATALOG: Record<GameType, Omit<GameCatalogItem, "type">> = {
 		icon: Spade,
 		route: "/cards",
 		sessionPath: (sessionId) => `/cards/table/${sessionId}`,
+		seatSecret: true,
 	},
 };
 
@@ -109,10 +112,6 @@ const VISIBLE_GAMES: readonly GameCatalogItem[] = GAME_TYPES.map((type) => ({
 
 export function getVisibleGames() {
 	return VISIBLE_GAMES;
-}
-
-export function getGameByType(type: GameType) {
-	return VISIBLE_GAMES.find((item) => item.type === type);
 }
 
 export function getGameRoute(type: GameType) {
@@ -126,6 +125,11 @@ export function getSessionPath(
 	participantId: string,
 ) {
 	return GAME_CATALOG[type].sessionPath?.(sessionId, participantId) ?? null;
+}
+
+/** Whether joining this game by code mints a seat secret. */
+export function joinsWithSeatSecret(type: GameType) {
+	return GAME_CATALOG[type].seatSecret === true;
 }
 
 /** Where a game's host goes after creating it. */

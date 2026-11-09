@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useMessages } from "#/lib/i18n";
 
 /** The two seats side by side on wide screens, stacked on phones. */
 export function SeatCards({ children }: { children: ReactNode }) {
@@ -13,7 +14,6 @@ export function SeatCards({ children }: { children: ReactNode }) {
 export function SeatCard({
 	label,
 	icon,
-	turnLabel,
 	active = false,
 	open = false,
 	children,
@@ -21,11 +21,11 @@ export function SeatCard({
 	label: string;
 	/** Drawn before the label, such as a disc colour. */
 	icon?: ReactNode;
-	turnLabel: string;
 	active?: boolean;
 	open?: boolean;
 	children: ReactNode;
 }) {
+	const messages = useMessages();
 	return (
 		<div
 			className={`rounded-lg border p-4 ${
@@ -45,7 +45,7 @@ export function SeatCard({
 				</p>
 				{active ? (
 					<span className="rounded-full bg-cyan-300/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-100">
-						{turnLabel}
+						{messages.common.match.turn}
 					</span>
 				) : null}
 			</div>

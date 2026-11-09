@@ -48,12 +48,7 @@ export function BluffDiceRoom({
 	);
 
 	if (!state) {
-		return (
-			<RoomLoading
-				kicker={bluffDice.room.loadingKicker}
-				heading={bluffDice.room.loadingHeading}
-			/>
-		);
+		return <RoomLoading />;
 	}
 
 	const nameOf = (id: Id<"sessionParticipants">) =>
@@ -91,7 +86,6 @@ export function BluffDiceRoom({
 			joinCode={bundle.session.joinCode}
 			status={{ label: statusLabel, tone: inLobby ? "warning" : "success" }}
 			error={error}
-			inviteLabel={bluffDice.share.invitePlayers}
 			joinUrl={joinUrl}
 			howToPlay={{
 				heading: bluffDice.room.howToPlayKicker,

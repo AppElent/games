@@ -73,13 +73,9 @@ export const backgammon = {
 		endTurnError: "Could not end turn",
 		seatWhite: "White",
 		seatBlack: "Black",
-		openSeat: "Open seat",
 		seatCounts: "Bar {bar} / Off {off}",
-		turnBadge: "Turn",
 		shareToClaimBlackSeat:
 			"Share the link with one opponent to claim the black seat.",
-		challengeLinkLabel: "Challenge link",
-		infoButton: "Info",
 		finishedStatus: "{name} has borne off all 15 checkers",
 		winnerFallback: "Winner",
 		waitingForPlayerToPlay: "Waiting for {name} to play",

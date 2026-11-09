@@ -1,8 +1,7 @@
 import { getCardGame } from "@arcadeclub/core/cards/engine";
-import { Link } from "@tanstack/react-router";
 import { useMessages } from "#/lib/i18n";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { CardsPage } from "./Chrome";
+import { CardsNotFound, CardsPage } from "./Chrome";
 import { Lobby } from "./Lobby";
 import { RummyTable } from "./RummyTable";
 import { SheddingTable } from "./SheddingTable";
@@ -33,14 +32,7 @@ export function CardTableScreen({
 						{cards.session.loading}
 					</p>
 				) : (
-					<div className="cards-panel mt-10 p-6 text-center">
-						<h1 className="cards-title mb-3 text-2xl">
-							{cards.session.notFound}
-						</h1>
-						<Link to="/cards" className="btn-gold">
-							{cards.session.backToGames}
-						</Link>
-					</div>
+					<CardsNotFound heading={cards.session.notFound} />
 				)}
 			</CardsPage>
 		);

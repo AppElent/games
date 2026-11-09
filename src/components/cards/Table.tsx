@@ -1,6 +1,6 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import {
-	type CardGameDefinition,
+	type CardGame,
 	SEAT_SILENT_AFTER_MS,
 } from "@arcadeclub/core/cards/engine";
 import type { CardEvent } from "@arcadeclub/core/cards/events";
@@ -19,7 +19,7 @@ import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
 import { CardCrumbs, Sheet } from "./Chrome";
-import { logRestarted, newestSeq as newestSeqOf } from "./events";
+import { logRestarted, newestSeq } from "./events";
 import { cardTilt, describeEvent, seatName } from "./format";
 import { CardSprite, PlayingCard, useCardName } from "./PlayingCard";
 import { RulesSheet } from "./RulesSheet";
@@ -359,14 +359,14 @@ export function useFreshCards(
 		const dealSeq = [...events]
 			.reverse()
 			.find((event) => event.type === "deal")?.seq;
-		const newestSeq = newestSeqOf(events);
+		const newest = newestSeq(events);
 		const dealt =
 			(dealSeq !== undefined && dealSeq !== lastDeal.current) ||
-			logRestarted(newestSeq, lastSeq.current);
+			logRestarted(newest, lastSeq.current);
 		previous.current = hand;
 		wasMine.current = mine;
 		lastDeal.current = dealSeq ?? lastDeal.current;
-		lastSeq.current = newestSeq;
+		lastSeq.current = newest;
 		const added =
 			before && !dealt ? hand.filter((card) => !before.includes(card)) : [];
 		setFresh((current) => {
@@ -495,7 +495,7 @@ const FOLLOWS_A_PLAY: ReadonlySet<CardEvent["type"]> = new Set([
 ]);
 
 /** The latest thing that happened. A polite live region narrates play for screen readers. */
-export function EventTicker({
+function EventTicker({
 	events,
 	table,
 }: {
@@ -592,7 +592,7 @@ export function TableFrame({
 	overlays,
 	error,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	rootRef: RefObject<HTMLDivElement | null>;
 	table: CardTableBundle;
 	name: string;

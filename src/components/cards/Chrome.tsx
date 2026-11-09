@@ -62,6 +62,19 @@ export function CardsPage({
 	);
 }
 
+/** A panel saying what could not be found, with the way back to the card games. */
+export function CardsNotFound({ heading }: { heading: string }) {
+	const cards = useMessages().games.cards;
+	return (
+		<div className="cards-panel mt-10 p-6 text-center">
+			<h1 className="cards-title mb-3 text-2xl">{heading}</h1>
+			<Link to="/cards" className="btn-gold">
+				{cards.session.backToGames}
+			</Link>
+		</div>
+	);
+}
+
 /**
  * A native modal dialog, shown as a bottom sheet on phones. Native gives us the
  * focus trap, Escape, and focus returning to whatever opened it.

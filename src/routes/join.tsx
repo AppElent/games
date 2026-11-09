@@ -1,15 +1,9 @@
-import { normalizeJoinCode } from "@arcadeclub/core/sessions";
 import { useUser } from "@clerk/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useConvex, useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
-import { getSessionPath } from "#/lib/games/catalog";
 import { useErrorMessage } from "#/lib/games/errors";
-import { rememberSeat } from "#/lib/games/seat";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { useJoinSession } from "#/lib/games/join";
 import { useMessages } from "#/lib/i18n";
-import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/join")({
 	validateSearch: (search): { code?: string; token?: string } => {
@@ -29,9 +23,7 @@ function JoinPage() {
 	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const search = Route.useSearch();
-	const joinByCode = useMutation(api.sessions.joinByCode);
-	const joinByToken = useMutation(api.sessions.joinByToken);
-	const convex = useConvex();
+	const join = useJoinSession();
 	const [code, setCode] = useState(search.code ?? "");
 	const [name, setName] = useState("");
 	const [error, setError] = useState("");
@@ -56,43 +48,13 @@ function JoinPage() {
 				onSubmit={async (event) => {
 					event.preventDefault();
 					setError("");
-					const guest = getOrCreateGuestIdentity();
-					const displayName = name.trim() || guest.displayName;
 					try {
-						const joinCode = normalizeJoinCode(code);
-						// Only a card table binds its seat to a secret.
-						const seatSecret =
-							!joiningByLink &&
-							(await convex.query(api.sessions.inviteGameType, {
-								joinCode,
-							})) === "card-games"
-								? newCardSeatSecret()
-								: undefined;
-						const result = joiningByLink
-							? await joinByToken({
-									shareToken: search.token ?? "",
-									displayName,
-									guestId: guest.id,
-									asSpectator,
-								})
-							: await joinByCode({
-									joinCode,
-									displayName,
-									guestId: guest.id,
-									asSpectator,
-									seatSecret,
-								});
-						const { sessionId, participantId, gameType } = result;
-						if (gameType === "card-games" && seatSecret) {
-							rememberCardSeat(
-								sessionId,
-								participantId,
-								seatSecret,
-								result.seatClaimed,
-							);
-						}
-						rememberSeat(sessionId, participantId);
-						const path = getSessionPath(gameType, sessionId, participantId);
+						const path = await join({
+							code,
+							token: search.token,
+							name,
+							asSpectator,
+						});
 						if (path) {
 							window.location.href = path;
 						} else {

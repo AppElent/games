@@ -4,6 +4,7 @@ import {
 	FullscreenGameShell,
 	SHELL_INSET,
 } from "#/components/games/FullscreenGameShell";
+import { useMessages } from "#/lib/i18n";
 
 /** A match screen before its state has loaded. */
 export function MatchLoading({ title, text }: { title: string; text: string }) {
@@ -16,36 +17,36 @@ export function MatchLoading({ title, text }: { title: string; text: string }) {
 	);
 }
 
-/** The bar beside the menu button: game items, then the info toggle. */
+/**
+ * The bar beside the menu button: the status line from `sm` up (phones show
+ * it under the board), game items, then the info toggle.
+ */
 export function MatchHud({
-	infoLabel,
+	status,
 	onInfo,
 	children,
 }: {
-	infoLabel: string;
+	status?: string;
 	onInfo: () => void;
 	children?: ReactNode;
 }) {
+	const messages = useMessages();
 	return (
 		<div className="flex items-center justify-end gap-2">
+			{status !== undefined ? (
+				<span className="hidden max-w-[40vw] truncate rounded-xl bg-slate-900/70 px-3 py-2 text-xs text-slate-200 backdrop-blur sm:inline">
+					{status}
+				</span>
+			) : null}
 			{children}
 			<button
 				type="button"
 				onClick={onInfo}
 				className="flex h-11 items-center rounded-xl border border-white/20 bg-slate-900/70 px-4 text-sm font-bold text-white backdrop-blur"
 			>
-				{infoLabel}
+				{messages.common.match.info}
 			</button>
 		</div>
-	);
-}
-
-/** The status line in the hud, from `sm` up; phones show it under the board. */
-export function MatchStatusPill({ status }: { status: string }) {
-	return (
-		<span className="hidden max-w-[40vw] truncate rounded-xl bg-slate-900/70 px-3 py-2 text-xs text-slate-200 backdrop-blur sm:inline">
-			{status}
-		</span>
 	);
 }
 

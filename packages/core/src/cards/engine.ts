@@ -62,6 +62,8 @@ export const CARD_GAMES = { pesten, jokeren } as const satisfies Record<
 >;
 
 export type CardGameId = keyof typeof CARD_GAMES;
+/** A listed game: a definition whose `id` is one of `CARD_GAME_IDS`. */
+export type CardGame = (typeof CARD_GAMES)[CardGameId];
 export const CARD_GAME_IDS = Object.keys(CARD_GAMES) as CardGameId[];
 
 export function isCardGameId(value: string): value is CardGameId {
@@ -72,7 +74,7 @@ export type CardGameState = SheddingState | RummyState;
 export type CardAction = SheddingAction | RummyAction;
 type CardView = SheddingView | RummyView;
 
-export function getCardGame(id: string): CardGameDefinition {
+export function getCardGame(id: string): CardGame {
 	if (!isCardGameId(id)) {
 		throw new GameRuleError("gameNotFound");
 	}

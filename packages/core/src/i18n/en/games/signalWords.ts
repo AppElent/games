@@ -1,10 +1,6 @@
 /** Signal Words UI chrome. The word-pack words shown on the board are
  * content, not English prose, and are never routed through message keys. */
 export const signalWords = {
-	loading: {
-		kicker: "Setting up",
-		heading: "Room is loading",
-	},
 	teams: {
 		nameRed: "Red",
 		nameBlue: "Blue",
@@ -50,9 +46,6 @@ export const signalWords = {
 		countLabel: "Count",
 		submit: "Send clue",
 		error: "Could not send clue",
-	},
-	share: {
-		invitePlayers: "Invite players",
 	},
 	howToPlay: {
 		heading: "How to play",

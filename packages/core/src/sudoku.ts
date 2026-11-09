@@ -14,6 +14,8 @@ export type SudokuVariant = (typeof SUDOKU_VARIANTS)[number];
 
 export const SUDOKU_SOURCES = ["generated", "scan"] as const;
 export const SUDOKU_STATUSES = ["active", "paused", "completed"] as const;
+/** Where a puzzle stands; its clock runs only while `active`. */
+export type SudokuStatus = (typeof SUDOKU_STATUSES)[number];
 
 /** 81 cells, row-major. 0 = empty, 1-9 = digit. */
 export type SudokuGrid = number[];

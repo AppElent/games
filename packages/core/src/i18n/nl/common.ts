@@ -74,10 +74,22 @@ export const common = {
 		shareCode:
 			"Doe mee met mijn {game}-spel op Arcade Club met kamercode {code}",
 		roomCode: "Kamercode",
+		joinCode: "Kamercode",
 		players: { one: "{count} speler", other: "{count} spelers" },
 		guestName: "Speler {number}",
 		host: "Host",
 		yourTurn: "Jij bent aan de beurt",
+	},
+	match: {
+		turn: "Beurt",
+		info: "Info",
+		challengeLink: "Uitdagingslink",
+		openSeat: "Open plek",
+	},
+	room: {
+		loadingKicker: "Klaarzetten",
+		loadingHeading: "Kamer wordt geladen",
+		invitePlayers: "Spelers uitnodigen",
 	},
 	errors: {
 		somethingWentWrong: "Er ging iets mis. Probeer het opnieuw.",
@@ -107,7 +119,6 @@ export const common = {
 		heading: "Spelers",
 		player: "Speler",
 		watcher: "Toeschouwer",
-		awayStatus: "{role} (afwezig)",
 		makeHost: "Maak {name} host",
 		remove: "Verwijder {name}",
 	},

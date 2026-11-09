@@ -10,7 +10,7 @@ const reported = new WeakSet<Error>();
  * `ConvexError` is an expected, keyed outcome (`roomNotFound`) the UI shows,
  * not a bug, so it is left out.
  */
-export function reportConvexFailure(error: unknown, operation: string) {
+function reportConvexFailure(error: unknown, operation: string) {
 	if (error instanceof ConvexError) return;
 	const value =
 		error instanceof Error ? error : new Error("Non-Error value thrown");

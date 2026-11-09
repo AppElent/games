@@ -6,6 +6,10 @@ import {
 
 type FullscreenGamePageProps = {
 	title: string;
+	/** Small line above `heading`, usually the game's name. */
+	kicker?: string;
+	/** The page's h1. */
+	heading?: string;
 	children: ReactNode;
 	/** Tailwind max-width class for the content column. */
 	maxWidthClassName?: string;
@@ -21,6 +25,8 @@ type FullscreenGamePageProps = {
  */
 export function FullscreenGamePage({
 	title,
+	kicker,
+	heading,
 	children,
 	maxWidthClassName = "max-w-3xl",
 	className,
@@ -31,6 +37,14 @@ export function FullscreenGamePage({
 				<div
 					className={`mx-auto w-full px-4 ${SHELL_PAGE_INSET} pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
 				>
+					{kicker !== undefined ? (
+						<p className="club-kicker mb-2">{kicker}</p>
+					) : null}
+					{heading !== undefined ? (
+						<h1 className="club-title mb-4 text-4xl font-bold text-white">
+							{heading}
+						</h1>
+					) : null}
 					{children}
 				</div>
 			</div>

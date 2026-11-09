@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
+import { useMessages } from "#/lib/i18n";
 
 /**
  * A room game's screen (bluff dice, signal words): the header panel with the
@@ -16,7 +17,6 @@ export function RoomFrame({
 	error,
 	panel,
 	children,
-	inviteLabel,
 	joinUrl,
 	howToPlay,
 }: {
@@ -27,10 +27,10 @@ export function RoomFrame({
 	error: string;
 	panel: ReactNode;
 	children: ReactNode;
-	inviteLabel: string;
 	joinUrl: string;
 	howToPlay: { heading: string; steps: string[] };
 }) {
+	const messages = useMessages();
 	return (
 		<div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
 			<section className="space-y-4">
@@ -57,7 +57,10 @@ export function RoomFrame({
 				{children}
 			</section>
 			<aside className="space-y-4">
-				<QrSharePanel label={inviteLabel} url={joinUrl} />
+				<QrSharePanel
+					label={messages.common.room.invitePlayers}
+					url={joinUrl}
+				/>
 				<div className="club-panel rounded-lg p-4">
 					<p className="club-kicker mb-2">{howToPlay.heading}</p>
 					<ul className="space-y-1.5 text-sm text-slate-300">
@@ -72,17 +75,14 @@ export function RoomFrame({
 }
 
 /** Shown while the room's game state row does not exist yet. */
-export function RoomLoading({
-	kicker,
-	heading,
-}: {
-	kicker: string;
-	heading: string;
-}) {
+export function RoomLoading() {
+	const { room } = useMessages().common;
 	return (
 		<div className="club-panel rounded-lg p-6 text-center">
-			<p className="club-kicker mb-2">{kicker}</p>
-			<h2 className="club-title text-2xl font-bold text-white">{heading}</h2>
+			<p className="club-kicker mb-2">{room.loadingKicker}</p>
+			<h2 className="club-title text-2xl font-bold text-white">
+				{room.loadingHeading}
+			</h2>
 		</div>
 	);
 }

@@ -1,7 +1,5 @@
 export const bluffDice = {
 	room: {
-		loadingKicker: "Setting up",
-		loadingHeading: "Room is loading",
 		playerFallback: "Player",
 		waitingForPlayers:
 			"Waiting for players — the host starts the game (2-8 players).",
@@ -39,9 +37,6 @@ export const bluffDice = {
 		howToPlayOutrank: "Each claim must outrank the last — or challenge it.",
 		howToPlayLoseDie:
 			"Whoever is wrong loses a die. Last player with dice wins.",
-	},
-	share: {
-		invitePlayers: "Invite players",
 	},
 	new: {
 		heading: "Host a table",

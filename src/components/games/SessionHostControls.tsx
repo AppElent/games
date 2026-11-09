@@ -2,7 +2,7 @@ import { Lock, LockOpen, Pencil } from "lucide-react";
 import { useState } from "react";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { useMessages } from "#/lib/i18n";
-import type { QuizModeration } from "./useQuizModeration";
+import type { SessionModeration } from "./useSessionModeration";
 
 /**
  * Host-only room controls: lock the room against new joiners and rename
@@ -13,7 +13,7 @@ export function SessionHostControls({
 	title,
 	locked,
 }: {
-	moderation: QuizModeration;
+	moderation: SessionModeration;
 	title: string;
 	locked: boolean;
 }) {

@@ -6,7 +6,7 @@ import {
 	isInCheck,
 	isPromotionMove,
 } from "@arcadeclub/chess/chess";
-import type { ChessColor } from "@arcadeclub/chess/enums";
+import { CHESS_COLORS, type ChessColor } from "@arcadeclub/chess/enums";
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useMemo, useState } from "react";
@@ -17,13 +17,11 @@ import {
 	MatchHud,
 	MatchLoading,
 	MatchStage,
-	MatchStatusPill,
 } from "#/components/games/match/MatchStage";
 import { MatchWaitingScreen } from "#/components/games/match/MatchWaitingScreen";
 import { SeatCard, SeatCards } from "#/components/games/match/SeatCard";
+import { useDuel } from "#/components/games/match/useDuel";
 import { getGameRoute } from "#/lib/games/catalog";
-import { useSeat } from "#/lib/games/seat";
-import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
 import { api } from "../../../convex/_generated/api";
@@ -62,29 +60,21 @@ export function ChessMatch({
 	const respondDraw = useMutation(api.chess.respondDraw);
 	const claimTimeout = useMutation(api.chess.claimTimeout);
 	const rematch = useMutation(api.chess.rematch);
-	const participantId = useSeat(bundle.session._id);
-	const { error, run } = useGameAction();
 	const [selected, setSelected] = useState<string>();
 	const [showInfo, setShowInfo] = useState(false);
 	const state = bundle.state;
+	const {
+		participantId,
+		localColor,
+		opponentJoined,
+		finished,
+		myTurn,
+		seatAction,
+		error,
+		run,
+	} = useDuel(bundle.session._id, CHESS_COLORS, state);
 	const timed = state?.remainingWhiteMs !== undefined;
 	const now = useNow(500, timed && state?.phase === "active");
-
-	const localColor: ChessColor | undefined =
-		state?.whiteParticipantId === participantId
-			? "white"
-			: state?.blackParticipantId === participantId
-				? "black"
-				: undefined;
-	const opponentJoined = Boolean(
-		state?.whiteParticipantId && state?.blackParticipantId,
-	);
-	const finished = state?.phase === "finished";
-	const myTurn =
-		Boolean(localColor) &&
-		state?.activeColor === localColor &&
-		opponentJoined &&
-		!finished;
 
 	const board = useMemo(
 		() => (state ? getChessBoard(state.fen) : null),
@@ -203,23 +193,21 @@ export function ChessMatch({
 		<SeatCards>
 			<SeatCard
 				label={chess.players.white}
-				turnLabel={chess.players.turnBadge}
 				active={!finished && opponentJoined && state.activeColor === "white"}
 				open={!white}
 			>
 				<NameAndClock
-					name={white?.displayName ?? chess.players.openSeat}
+					name={white?.displayName ?? messages.common.match.openSeat}
 					clock={timed ? formatClockMs(clockFor("white") ?? 0) : undefined}
 				/>
 			</SeatCard>
 			<SeatCard
 				label={chess.players.black}
-				turnLabel={chess.players.turnBadge}
 				active={!finished && opponentJoined && state.activeColor === "black"}
 				open={!black}
 			>
 				<NameAndClock
-					name={black?.displayName ?? chess.players.openSeat}
+					name={black?.displayName ?? messages.common.match.openSeat}
 					clock={timed ? formatClockMs(clockFor("black") ?? 0) : undefined}
 				/>
 			</SeatCard>
@@ -329,37 +317,19 @@ export function ChessMatch({
 	const actionRows = (
 		<>
 			{drawOfferRow}
-			{participantId && localColor && !finished && opponentJoined ? (
+			{localColor && !finished && opponentJoined ? (
 				<div className="flex flex-wrap justify-center gap-3">
 					<button
 						type="button"
 						className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white"
-						onClick={() =>
-							run(
-								() =>
-									offerDraw({
-										sessionId: bundle.session._id,
-										participantId,
-									}),
-								chess.actions.offerDrawError,
-							)
-						}
+						onClick={seatAction(offerDraw, chess.actions.offerDrawError)}
 					>
 						{chess.actions.offerDraw}
 					</button>
 					<button
 						type="button"
 						className="rounded-md border border-orange-300/40 bg-orange-300/10 px-4 py-2 text-sm font-bold text-orange-100"
-						onClick={() =>
-							run(
-								() =>
-									resign({
-										sessionId: bundle.session._id,
-										participantId,
-									}),
-								chess.actions.resignError,
-							)
-						}
+						onClick={seatAction(resign, chess.actions.resignError)}
 					>
 						{chess.actions.resign}
 					</button>
@@ -367,16 +337,10 @@ export function ChessMatch({
 						<button
 							type="button"
 							className="rounded-md bg-white px-4 py-2 text-sm font-bold text-slate-950"
-							onClick={() =>
-								run(
-									() =>
-										claimTimeout({
-											sessionId: bundle.session._id,
-											participantId,
-										}),
-									chess.actions.claimTimeoutError,
-								)
-							}
+							onClick={seatAction(
+								claimTimeout,
+								chess.actions.claimTimeoutError,
+							)}
 						>
 							{chess.actions.claimWinOnTime}
 						</button>
@@ -399,19 +363,7 @@ export function ChessMatch({
 						status: statusLabel,
 						count: state.sanHistory.length,
 					})}
-					onRematch={
-						localColor && participantId
-							? () =>
-									run(
-										() =>
-											rematch({
-												sessionId: bundle.session._id,
-												participantId,
-											}),
-										chess.endScreen.rematchError,
-									)
-							: undefined
-					}
+					onRematch={seatAction(rematch, chess.endScreen.rematchError)}
 					rematchLabel={chess.endScreen.rematchLabel}
 					newGameRoute={getGameRoute("chess")}
 				/>
@@ -449,7 +401,6 @@ export function ChessMatch({
 				status={statusLabel}
 				seats={playerCards}
 				error={error}
-				shareLabel={chess.share.challengeLinkLabel}
 				shareUrl={shareUrl}
 				participants={bundle.participants}
 			/>
@@ -461,10 +412,9 @@ export function ChessMatch({
 			title={bundle.session.title}
 			hud={
 				<MatchHud
-					infoLabel={chess.info.button}
+					status={statusLabel}
 					onInfo={() => setShowInfo((open) => !open)}
 				>
-					<MatchStatusPill status={statusLabel} />
 					{timed ? (
 						<span className="rounded-xl bg-slate-900/70 px-3 py-2 text-xs font-bold tabular-nums text-slate-200 backdrop-blur">
 							{formatClockMs(clockFor("white") ?? 0)} ·{" "}
@@ -486,7 +436,6 @@ export function ChessMatch({
 				<GameInfoOverlay
 					status={statusLabel}
 					seats={playerCards}
-					shareLabel={chess.share.challengeLinkLabel}
 					shareUrl={shareUrl}
 					participants={bundle.participants}
 					extra={moveList}

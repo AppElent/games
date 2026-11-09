@@ -18,11 +18,11 @@ function BackgammonNewPage() {
 	const { busy, error, host } = useHostSession("backgammon");
 
 	return (
-		<FullscreenGamePage title={messages.catalog.backgammon.title}>
-			<p className="club-kicker mb-2">{messages.catalog.backgammon.title}</p>
-			<h1 className="club-title mb-4 text-4xl font-bold text-white">
-				{backgammon.newGame.heading}
-			</h1>
+		<FullscreenGamePage
+			title={messages.catalog.backgammon.title}
+			kicker={messages.catalog.backgammon.title}
+			heading={backgammon.newGame.heading}
+		>
 			{error ? <p className="mb-4 club-error">{error}</p> : null}
 			<div className="grid max-w-3xl gap-4 md:grid-cols-2">
 				<div className="club-panel flex flex-col rounded-lg p-6">

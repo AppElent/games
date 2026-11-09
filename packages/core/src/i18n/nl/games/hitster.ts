@@ -100,7 +100,6 @@ export const hitster = {
 		packSummaryWithTracks:
 			"{packTitle}-pack · eerst tot {target} kaarten · nog {count} nummers over",
 		packSummaryNoTracks: "{packTitle}-pack · eerst tot {target} kaarten",
-		joinCodeLabel: "Kamercode",
 		lobbyInstructionsShared:
 			"Deel de kamercode. Iedereen die meedoet voordat het spel start, speelt op één gedeelde teamtijdlijn.",
 		lobbyInstructionsSolo:

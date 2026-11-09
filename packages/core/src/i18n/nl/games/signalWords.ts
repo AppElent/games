@@ -1,10 +1,6 @@
 import type { signalWords as enSignalWords } from "../../en/games/signalWords";
 
 export const signalWords = {
-	loading: {
-		kicker: "Klaarzetten",
-		heading: "Kamer wordt geladen",
-	},
 	teams: {
 		nameRed: "Rood",
 		nameBlue: "Blauw",
@@ -50,9 +46,6 @@ export const signalWords = {
 		countLabel: "Aantal",
 		submit: "Hint versturen",
 		error: "Kon hint niet versturen",
-	},
-	share: {
-		invitePlayers: "Spelers uitnodigen",
 	},
 	howToPlay: {
 		heading: "Hoe te spelen",

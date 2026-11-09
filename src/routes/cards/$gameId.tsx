@@ -1,7 +1,7 @@
 import { isCardGameId } from "@arcadeclub/core/cards/engine";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { CardSetup } from "#/components/cards/CardSetup";
-import { CardsPage } from "#/components/cards/Chrome";
+import { CardsNotFound, CardsPage } from "#/components/cards/Chrome";
 import { useMessages } from "#/lib/i18n";
 
 export const Route = createFileRoute("/cards/$gameId")({
@@ -19,14 +19,7 @@ function CardSetupPage() {
 				felt="midnight"
 				crumbs={[{ label: cards.hub.kicker, to: "/cards" }, { label: gameId }]}
 			>
-				<div className="cards-panel mt-10 p-6 text-center">
-					<h1 className="cards-title mb-3 text-2xl">
-						{cards.session.unknownGame}
-					</h1>
-					<Link to="/cards" className="btn-gold">
-						{cards.session.backToGames}
-					</Link>
-				</div>
+				<CardsNotFound heading={cards.session.unknownGame} />
 			</CardsPage>
 		);
 	}

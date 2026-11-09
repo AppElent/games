@@ -27,12 +27,24 @@ type CreatedSession = {
 	participantId: Id<"sessionParticipants">;
 };
 
+/** This tab takes the seat and reloads into where the host plays. */
+function reloadIntoSession(gameType: GameType, created: CreatedSession) {
+	rememberSeat(created.sessionId, created.participantId);
+	const path = getHostPath(gameType, created.sessionId, created.participantId);
+	if (path) {
+		window.location.href = path;
+	}
+}
+
 /**
  * Hosting one game: `create` runs its mutation with the names the game wants,
- * then this tab takes the seat and reloads into the session. `busy` stays set
- * through that reload, and clears only on failure.
+ * then `open` takes this tab into the session (by default it takes the seat
+ * and reloads). `busy` stays set through that, and clears only on failure.
  */
-export function useHostSession(gameType: GameType) {
+export function useHostSession(
+	gameType: GameType,
+	{ open }: { open?: (created: CreatedSession) => Promise<unknown> } = {},
+) {
 	const hostName = useHostDisplayName();
 	const { error, setError, run } = useGameAction();
 	const [busy, setBusy] = useState(false);
@@ -45,22 +57,22 @@ export function useHostSession(gameType: GameType) {
 			setBusy(true);
 			const succeeded = await run(async () => {
 				const guest = getOrCreateGuestIdentity();
-				const { sessionId, participantId } = await create({
+				const created = await create({
 					hostName,
 					guestId: guest.id,
 					guestName: guest.displayName,
 				});
-				rememberSeat(sessionId, participantId);
-				const path = getHostPath(gameType, sessionId, participantId);
-				if (path) {
-					window.location.href = path;
+				if (open) {
+					await open(created);
+				} else {
+					reloadIntoSession(gameType, created);
 				}
 			}, fallback);
 			if (!succeeded) {
 				setBusy(false);
 			}
 		},
-		[gameType, hostName, run],
+		[gameType, hostName, open, run],
 	);
 
 	return { busy, error, setError, host };

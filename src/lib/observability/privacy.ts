@@ -1,7 +1,7 @@
 import type { Breadcrumb, Event } from "@sentry/react";
 
 /** Redact common credentials and identifiers even with default PII disabled. */
-export function sanitizeText(value: string): string {
+function sanitizeText(value: string): string {
 	return value
 		.replace(/Bearer\s+[^\s"']+/gi, "Bearer [Filtered]")
 		.replace(/\beyJ[\w-]+\.[\w-]+\.[\w-]+\b/g, "[Filtered]")

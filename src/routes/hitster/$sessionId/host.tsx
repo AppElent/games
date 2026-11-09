@@ -25,7 +25,7 @@ function HitsterHostPage() {
 		sessionId: sessionId as Id<"gameSessions">,
 		participantId,
 	});
-	const shell = pageShell("Hitster", {
+	const shell = pageShell(messages.catalog.hitster.title, {
 		loading: "text-[var(--club-muted)]",
 		notFound: "text-orange-500",
 	});
@@ -38,7 +38,10 @@ function HitsterHostPage() {
 		>
 			{(loaded) =>
 				participantId ? (
-					<FullscreenGamePage title="Hitster" maxWidthClassName="max-w-5xl">
+					<FullscreenGamePage
+						title={messages.catalog.hitster.title}
+						maxWidthClassName="max-w-5xl"
+					>
 						<HitsterHostView bundle={loaded} participantId={participantId} />
 					</FullscreenGamePage>
 				) : (

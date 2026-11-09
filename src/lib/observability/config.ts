@@ -4,7 +4,7 @@ import { sanitizeBreadcrumb, sanitizeEvent } from "./privacy";
 export const DEFAULT_SENTRY_DSN =
 	"https://6aadd60de214ee0977243d34bc50a28a@o4504753234051072.ingest.us.sentry.io/4512351895552000";
 
-export const SENTRY_DATA_COLLECTION = {
+const SENTRY_DATA_COLLECTION = {
 	userInfo: false,
 	cookies: false,
 	httpHeaders: false,

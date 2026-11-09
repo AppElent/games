@@ -1,9 +1,6 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import { parseCard } from "@arcadeclub/core/cards/deck";
-import type {
-	CardGameDefinition,
-	CardGameId,
-} from "@arcadeclub/core/cards/engine";
+import type { CardGame } from "@arcadeclub/core/cards/engine";
 import {
 	buildMeld,
 	fitOnMeld,
@@ -88,7 +85,7 @@ export function RummyTable({
 	view,
 	controls,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	table: CardTableBundle;
 	view: RummyView;
 	controls: CardTableControls;
@@ -121,7 +118,7 @@ export function RummyTable({
 		throw new Error("RummyTable needs a rummy game");
 	}
 	const rules = rummyRules;
-	const name = cards.games[game.id as CardGameId].name;
+	const name = cards.games[game.id].name;
 	const you = table.you;
 	const live = view.phase === "draw" || view.phase === "play";
 	const mine = live && view.turn === you;
