@@ -6,6 +6,7 @@
 import { gameErrorMessage } from "@arcadeclub/core/errors";
 import type { GameType } from "@arcadeclub/core/games";
 import {
+	FORMATTED_JOIN_CODE_MAX_LENGTH,
 	formatJoinCode,
 	isJoinCodeLike,
 	normalizeJoinCode,
@@ -15,7 +16,6 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Linking, Platform } from "react-native";
 import { api } from "../../../convex/api";
-import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
 import { useTokens } from "../../../theme";
 import { Button } from "../../../ui/button";
@@ -25,8 +25,11 @@ import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { TextField } from "../../../ui/text-field";
-import { usePlayerIdentity } from "../../players/use-player-identity";
-import { onlineSessionHref, webJoinUrl } from "../session-links";
+import {
+	PLAYER_NAME_MAX,
+	usePlayerIdentity,
+} from "../../players/use-player-identity";
+import { hasAppScreen, onlineSessionHref, webJoinUrl } from "../session-links";
 import { useJoinSession } from "../use-join-session";
 
 type Props = { shareToken?: string; initialCode?: string };
@@ -56,6 +59,8 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 		const invite = shareToken
 			? { token: shareToken }
 			: { code: normalizeJoinCode(code) };
+		const showUnsupported = (gameType: GameType) =>
+			setUnsupported({ gameType, url: webJoinUrl(invite) });
 		// Check the game first: joining claims a seat, and the web would then
 		// join again under its own guest identity.
 		const gameType = await convex
@@ -66,32 +71,21 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 					: { joinCode: invite.code },
 			)
 			.catch(() => null);
-		if (gameType && !onlineSessionHref(gameType, "")) {
-			setUnsupported({ gameType, url: webJoinUrl(invite) });
+		if (gameType && !hasAppScreen(gameType)) {
+			showUnsupported(gameType);
 			return;
 		}
 		const result = await join(invite, name);
-		if (!result) {
-			haptics.actionFailed();
-			return;
-		}
-		if (name.trim() && name.trim() !== identity.displayName) {
-			identity.setDisplayName(name);
-		}
-		const href = onlineSessionHref(result.gameType, result.sessionId);
-		if (!href) {
-			setUnsupported({ gameType: result.gameType, url: webJoinUrl(invite) });
+		if (!result) return;
+		if (!hasAppScreen(result.gameType)) {
+			showUnsupported(result.gameType);
 			return;
 		}
 		setCode("");
-		router.push(href);
+		router.push(onlineSessionHref(result.gameType, result.sessionId));
 	}
 
-	const gameName = unsupported
-		? unsupported.gameType in t.catalog
-			? t.catalog[unsupported.gameType].title
-			: unsupported.gameType
-		: "";
+	const gameName = unsupported ? t.catalog[unsupported.gameType].title : "";
 
 	return (
 		<Screen inTabs>
@@ -107,7 +101,11 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 				<TextField
 					label={t.common.session.roomCode}
 					value={code}
-					onChangeText={(next) => setCode(formatJoinCode(next).slice(0, 9))}
+					onChangeText={(next) =>
+						setCode(
+							formatJoinCode(next).slice(0, FORMATTED_JOIN_CODE_MAX_LENGTH),
+						)
+					}
 					placeholder={copy.codePlaceholder}
 					autoCapitalize="characters"
 					autoCorrect={false}
@@ -137,7 +135,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 				label={copy.displayName}
 				value={name}
 				onChangeText={setName}
-				maxLength={32}
+				maxLength={PLAYER_NAME_MAX}
 				autoComplete="nickname"
 				returnKeyType="join"
 				onSubmitEditing={submit}

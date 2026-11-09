@@ -1,7 +1,7 @@
 /**
  * The phone's language: a saved choice beats the device's language list,
  * which beats English. Resolved synchronously during the first render (see
- * `src/prefs/local-preference.ts`) so no frame paints in the wrong language.
+ * `src/storage/local-store.ts`) so no frame paints in the wrong language.
  *
  * Mounted outside Clerk and Convex: language belongs to the phone, not the
  * account, and has to apply to sign-in and offline states too.
@@ -23,11 +23,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import {
-	PREFERENCE_KEYS,
-	readPreference,
-	writePreference,
-} from "../prefs/local-preference";
+import { readText, STORAGE_KEYS, writeText } from "../storage/local-store";
 
 export { fmt, plural } from "@arcadeclub/core/i18n/format";
 export type { Locale, Messages };
@@ -52,7 +48,7 @@ function initialLocale(): Locale {
 	return resolveLocale(
 		SUPPORTED_LOCALES,
 		DEFAULT_LOCALE,
-		readPreference(PREFERENCE_KEYS.locale) ?? undefined,
+		readText(STORAGE_KEYS.locale) ?? undefined,
 		device,
 	);
 }
@@ -71,7 +67,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
 	const setLocale = useCallback((next: Locale) => {
 		setStoredLocale(next);
-		writePreference(PREFERENCE_KEYS.locale, next);
+		writeText(STORAGE_KEYS.locale, next);
 	}, []);
 
 	const value = useMemo(

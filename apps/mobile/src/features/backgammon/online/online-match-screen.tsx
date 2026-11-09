@@ -7,8 +7,6 @@
 import {
 	type BackgammonColor,
 	type BackgammonMovePlan,
-	canEndBackgammonTurn,
-	createInitialBackgammonState,
 	getBackgammonWinner,
 } from "@arcadeclub/core/backgammon";
 import {
@@ -34,43 +32,24 @@ import { BackgammonBoard } from "../board/backgammon-board";
 import { useBoardSelection } from "../board/use-board-selection";
 import { BoardScreen } from "../components/board-screen";
 import { colorLabel } from "../components/color-label";
+import { MatchPanel } from "../components/match-panel";
 import { OptionsPanel } from "../components/options-panel";
 import { TURN_HINT_MESSAGE, turnHint } from "../components/turn-hint";
-import { TurnPanel } from "../components/turn-panel";
-import { useOnlineMatch } from "./use-online-match";
+import {
+	type LiveMatch,
+	type OnlineMatch,
+	useOnlineMatch,
+} from "./use-online-match";
 
 const OPTION_KEYS = ["showNumbers", "autoSwitchTurn", "autoCombine"] as const;
-const NO_HIGHLIGHTS = { points: new Set<number>(), off: false };
-/** Stands in for the turn while the bundle loads; never interactive. */
-const PLACEHOLDER_TURN = createInitialBackgammonState();
 
 export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 	const { t } = useI18n();
-	const copy = t.games.backgammon;
-	const styles = useThemedStyles(createStyles);
-	const [options, setOptions] = useState<OnlineOptions>(DEFAULT_ONLINE_OPTIONS);
-	const match = useOnlineMatch(sessionId, options.autoSwitchTurn);
-	const turn = match.turn;
-	const winner = turn ? getBackgammonWinner(turn.off) : null;
-
-	const onPlan = (plan: BackgammonMovePlan) => {
-		haptics.moveMade();
-		void match.play(plan);
-	};
-	const selection = useBoardSelection({
-		state: turn ?? PLACEHOLDER_TURN,
-		interactive: match.isMyTurn && !match.busy,
-		autoCombine: options.autoCombine,
-		onPlan,
-	});
-
-	const won = Boolean(winner && winner === match.myColor);
-	useEffect(() => {
-		if (won) haptics.gameWon();
-	}, [won]);
-
+	const match = useOnlineMatch(sessionId);
 	const title = (
-		<Stack.Screen options={{ title: copy.waitingRoom.onlineTitle }} />
+		<Stack.Screen
+			options={{ title: t.games.backgammon.waitingRoom.onlineTitle }}
+		/>
 	);
 
 	if (match.loading) {
@@ -81,7 +60,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 			</>
 		);
 	}
-	if (!match.bundle || !turn || !match.bundle.state) {
+	if (!match.live) {
 		return (
 			<>
 				{title}
@@ -89,8 +68,40 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 			</>
 		);
 	}
+	return <OnlineMatchLoaded match={match} live={match.live} />;
+}
 
-	const { session, state } = match.bundle;
+function OnlineMatchLoaded({
+	match,
+	live,
+}: {
+	match: OnlineMatch;
+	live: LiveMatch;
+}) {
+	const { t } = useI18n();
+	const copy = t.games.backgammon;
+	const styles = useThemedStyles(createStyles);
+	const [options, setOptions] = useState<OnlineOptions>(DEFAULT_ONLINE_OPTIONS);
+	const { turn, state } = live;
+	const { session } = live.bundle;
+	const winner = getBackgammonWinner(turn.off);
+
+	const onPlan = (plan: BackgammonMovePlan) => {
+		haptics.moveMade();
+		void match.play(plan, { autoSwitchTurn: options.autoSwitchTurn });
+	};
+	const selection = useBoardSelection({
+		state: turn,
+		interactive: match.isMyTurn && !match.busy,
+		autoCombine: options.autoCombine,
+		onPlan,
+	});
+
+	const won = Boolean(winner && winner === match.myColor);
+	useEffect(() => {
+		if (won) haptics.gameWon();
+	}, [won]);
+
 	const viewer: BackgammonColor = match.myColor ?? "white";
 	const opponentId =
 		viewer === "white" ? state.blackParticipantId : state.whiteParticipantId;
@@ -104,17 +115,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 				? state.whiteParticipantId
 				: state.blackParticipantId,
 		) ?? colorLabel(copy, turn.activeColor);
-	const waiting = match.phase === "waiting";
-
-	const heading = winner
-		? match.myColor
-			? won
-				? copy.waitingRoom.youWon
-				: fmt(copy.waitingRoom.winsTheMatch, { name: opponentName })
-			: fmt(copy.waitingRoom.winsTheMatch, { name: colorLabel(copy, winner) })
-		: match.isMyTurn
-			? t.common.session.yourTurn
-			: fmt(copy.waitingRoom.waitingForPlayerToPlay, { name: activeName });
+	const waiting = state.phase === "waiting";
 
 	const hint = match.isMyTurn ? turnHint(turn, selection.selected) : null;
 	const invite =
@@ -131,7 +132,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 					width={width}
 					showNumbers={options.showNumbers}
 					selected={selection.selected}
-					highlights={match.isMyTurn ? selection.highlights : NO_HIGHLIGHTS}
+					highlights={selection.highlights}
 					onPointPress={selection.tapPoint}
 					onOffPress={selection.tapOff}
 					testID="bg-board"
@@ -170,9 +171,22 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 					</View>
 				</Card>
 			) : (
-				<TurnPanel
-					color={winner ?? turn.activeColor}
-					heading={heading}
+				<MatchPanel
+					turn={turn}
+					winner={
+						winner && {
+							color: winner,
+							name: match.myColor ? opponentName : colorLabel(copy, winner),
+							isYou: won,
+						}
+					}
+					heading={
+						match.isMyTurn
+							? t.common.session.yourTurn
+							: fmt(copy.waitingRoom.waitingForPlayerToPlay, {
+									name: activeName,
+								})
+					}
 					message={
 						hint
 							? copy.board[TURN_HINT_MESSAGE[hint]]
@@ -180,37 +194,21 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 								? null
 								: copy.waitingRoom.bothSeatsClaimed
 					}
-					dice={turn.dice}
-					used={turn.used}
-				>
-					{winner && match.myColor ? (
-						<Button
-							label={copy.waitingRoom.rematchLabel}
-							onPress={() => void match.rematch()}
-							busy={match.busy}
-							testID="bg-rematch"
-						/>
-					) : null}
-					{!winner && match.isMyTurn && turn.dice.length === 0 ? (
-						<Button
-							label={copy.board.rollButton}
-							onPress={() => {
-								haptics.valueEntered();
-								void match.roll();
-							}}
-							busy={match.busy}
-							testID="bg-roll"
-						/>
-					) : null}
-					{!winner && match.isMyTurn && canEndBackgammonTurn(turn) ? (
-						<Button
-							label={copy.board.endTurnButton}
-							onPress={() => void match.endTurn()}
-							busy={match.busy}
-							testID="bg-end-turn"
-						/>
-					) : null}
-				</TurnPanel>
+					canAct={match.isMyTurn}
+					busy={match.busy}
+					onRoll={() => void match.roll()}
+					onEndTurn={() => void match.endTurn()}
+					finishedAction={
+						match.myColor ? (
+							<Button
+								label={copy.waitingRoom.rematchLabel}
+								onPress={() => void match.rematch()}
+								busy={match.busy}
+								testID="bg-rematch"
+							/>
+						) : null
+					}
+				/>
 			)}
 			<Notice
 				message={

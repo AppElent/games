@@ -34,9 +34,14 @@ export function formatJoinCode(value: string) {
 	return `${normalized.slice(0, 3)} ${normalized.slice(3)}`;
 }
 
+const JOIN_CODE_MAX_LENGTH = 8;
+
+/** The longest code `isJoinCodeLike` accepts, as `formatJoinCode` prints it. */
+export const FORMATTED_JOIN_CODE_MAX_LENGTH = JOIN_CODE_MAX_LENGTH + 1;
+
 export function isJoinCodeLike(value: string) {
 	const normalized = normalizeJoinCode(value);
-	return normalized.length >= 4 && normalized.length <= 8;
+	return normalized.length >= 4 && normalized.length <= JOIN_CODE_MAX_LENGTH;
 }
 
 /** A guest's name from their id, in the given `common.session.guestName` template. */

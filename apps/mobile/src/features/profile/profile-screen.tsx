@@ -17,7 +17,10 @@ import { Screen } from "../../ui/screen";
 import { Segmented } from "../../ui/segmented";
 import { AppText } from "../../ui/text";
 import { TextField } from "../../ui/text-field";
-import { usePlayerIdentity } from "../players/use-player-identity";
+import {
+	PLAYER_NAME_MAX,
+	usePlayerIdentity,
+} from "../players/use-player-identity";
 
 const APPEARANCES: readonly AppearancePreference[] = [
 	"system",
@@ -82,7 +85,7 @@ export function ProfileScreen() {
 					placeholder={identity.defaultName}
 					onChangeText={setName}
 					onEndEditing={() => identity.setDisplayName(name)}
-					maxLength={32}
+					maxLength={PLAYER_NAME_MAX}
 					autoComplete="nickname"
 					returnKeyType="done"
 					testID="profile-display-name"

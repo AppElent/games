@@ -1,12 +1,9 @@
 /**
  * Placing the mystery song: pick a slot on the timeline, add the answers the
  * mode asks for, lock it in. A steal uses the same form on the stealer's own
- * timeline, without the bonus fields.
+ * timeline; the caller says whether artist and title are asked.
  */
-import {
-	type HitsterModeConfig,
-	hitsterAsksArtistTitle,
-} from "@arcadeclub/core/hitster";
+import type { HitsterModeConfig } from "@arcadeclub/core/hitster";
 import type { HitsterCard } from "@arcadeclub/core/hitster-packs";
 import { useRef, useState } from "react";
 import { StyleSheet, type TextInputInstance, View } from "react-native";
@@ -21,13 +18,17 @@ import type { Answer } from "./use-hitster-room";
 export function PlacementForm({
 	cards,
 	config,
-	forSteal,
+	askArtistTitle,
+	submitLabel,
+	submitTestID,
 	busy,
 	onSubmit,
 }: {
 	cards: HitsterCard[];
 	config: HitsterModeConfig;
-	forSteal: boolean;
+	askArtistTitle: boolean;
+	submitLabel: string;
+	submitTestID: string;
 	busy: boolean;
 	onSubmit: (answer: Answer) => void;
 }) {
@@ -39,7 +40,6 @@ export function PlacementForm({
 	const [year, setYear] = useState("");
 	const titleRef = useRef<TextInputInstance>(null);
 	const yearRef = useRef<TextInputInstance>(null);
-	const askArtistTitle = hitsterAsksArtistTitle(config, forSteal);
 	const parsedYear = Number.parseInt(year.trim(), 10);
 
 	return (
@@ -99,7 +99,7 @@ export function PlacementForm({
 				/>
 			) : null}
 			<Button
-				label={forSteal ? copy.stealSubmit : copy.lockPlacement}
+				label={submitLabel}
 				disabled={dropIndex === undefined}
 				busy={busy}
 				onPress={() => {
@@ -111,7 +111,7 @@ export function PlacementForm({
 						yearGuess: Number.isFinite(parsedYear) ? parsedYear : undefined,
 					});
 				}}
-				testID={forSteal ? "hitster-lock-steal" : "hitster-lock"}
+				testID={submitTestID}
 			/>
 		</View>
 	);

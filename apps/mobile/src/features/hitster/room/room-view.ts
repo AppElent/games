@@ -31,6 +31,13 @@ export function participantName(
 	);
 }
 
+/** Who counts as joined in the lobby: not watchers, not kicked players. */
+export function lobbyPlayers(bundle: Pick<HitsterBundle, "participants">) {
+	return bundle.participants.filter(
+		(participant) => participant.role !== "watcher" && !participant.kickedAt,
+	);
+}
+
 /** The timeline a participant plays on: the shared one in co-op. */
 export function timelineFor(
 	state: Pick<HitsterState, "mode" | "timelines">,
@@ -77,4 +84,24 @@ export function roomView(bundle: HitsterBundle, participantId?: string) {
 		),
 		myTimeline: timelineFor(state, participantId),
 	} as const;
+}
+
+/** The room once the host has picked a mode and the game has state. */
+export type LiveRoomView = Extract<
+	ReturnType<typeof roomView>,
+	{ state: HitsterState }
+>;
+
+/**
+ * Whether the player's own timeline shows below the round: never in the
+ * lobby, and not while a placement or steal form already shows it.
+ */
+export function showsOwnTimeline(view: LiveRoomView, stealOpen: boolean) {
+	const { state } = view;
+	const placing =
+		view.isActive && state.phase === "nowPlaying" && !state.pendingGuess;
+	const stealing = stealOpen && !view.hasClaimed;
+	return (
+		state.phase !== "lobby" && Boolean(view.myTimeline) && !placing && !stealing
+	);
 }

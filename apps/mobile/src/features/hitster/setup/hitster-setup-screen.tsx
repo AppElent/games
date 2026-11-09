@@ -20,7 +20,6 @@ import { useRouter } from "expo-router";
 import { type ReactNode, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
-import { haptics } from "../../../feedback/haptics";
 import { fmt, plural, useI18n } from "../../../i18n";
 import { spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
@@ -41,7 +40,7 @@ export function HitsterSetupScreen() {
 	const { t, locale } = useI18n();
 	const copy = t.games.hitster;
 	const hosting = useHostSession();
-	const setup = useMutation(api.hitster.setup);
+	const createRoom = useMutation(api.hitster.create);
 	const [mode, setMode] = useState<HitsterMode>(HITSTER_SETUP_DEFAULTS.mode);
 	const [packId, setPackId] = useState<string>(HITSTER_SETUP_DEFAULTS.packId);
 	const [target, setTarget] = useState(
@@ -52,25 +51,19 @@ export function HitsterSetupScreen() {
 	const packs = listHitsterPacks();
 
 	const create = async () => {
-		const session = await hosting.host(
-			{ gameType: "hitster", joinMode: "room", title: t.catalog.hitster.title },
-			(created) =>
-				setup({
-					sessionId: created.sessionId,
-					participantId: created.participantId,
-					mode,
-					packId,
-					targetCards: Number(target),
-					turnTimerSeconds: timer === "0" ? undefined : Number(timer),
-					playbackMode: HITSTER_SETUP_DEFAULTS.playbackMode,
-				}),
+		const session = await hosting.host("hitster", (host) =>
+			createRoom({
+				...host,
+				title: t.catalog.hitster.title,
+				mode,
+				packId,
+				targetCards: Number(target),
+				turnTimerSeconds: timer === "0" ? undefined : Number(timer),
+				playbackMode: HITSTER_SETUP_DEFAULTS.playbackMode,
+			}),
 		);
-		if (!session) {
-			haptics.actionFailed();
-			return;
-		}
-		const href = onlineSessionHref("hitster", session.sessionId);
-		if (href) router.replace(href);
+		if (session)
+			router.replace(onlineSessionHref("hitster", session.sessionId));
 	};
 
 	return (

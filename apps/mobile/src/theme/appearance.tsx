@@ -8,18 +8,14 @@ import {
 	useState,
 } from "react";
 import { Appearance, Platform, useColorScheme } from "react-native";
-import {
-	PREFERENCE_KEYS,
-	readPreference,
-	writePreference,
-} from "../prefs/local-preference";
+import { readText, STORAGE_KEYS, writeText } from "../storage/local-store";
 import { darkColors, lightColors, type Tokens } from "./tokens";
 
 export type AppearancePreference = "system" | "light" | "dark";
 export type ColorScheme = "light" | "dark";
 
 function readAppearance(): AppearancePreference {
-	const saved = readPreference(PREFERENCE_KEYS.appearance);
+	const saved = readText(STORAGE_KEYS.appearance);
 	return saved === "light" || saved === "dark" ? saved : "system";
 }
 
@@ -34,7 +30,7 @@ type AppearanceValue = {
 	preference: AppearancePreference;
 	scheme: ColorScheme;
 	colors: Tokens;
-	setPreference: (next: AppearancePreference) => boolean;
+	setPreference: (next: AppearancePreference) => void;
 };
 
 const AppearanceContext = createContext<AppearanceValue | null>(null);
@@ -56,9 +52,8 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
 
 	const setPreference = useCallback((next: AppearancePreference) => {
 		overrideNativeScheme(next);
-		const persisted = writePreference(PREFERENCE_KEYS.appearance, next);
+		writeText(STORAGE_KEYS.appearance, next);
 		setStoredPreference(next);
-		return persisted;
 	}, []);
 
 	const value = useMemo(

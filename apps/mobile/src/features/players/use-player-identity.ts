@@ -2,7 +2,7 @@
  * Who this phone is when it joins or hosts a game.
  *
  * A guest id is created once per install and kept in the synchronous
- * preference store (the web keeps the same shape in localStorage), so a guest
+ * local store (the web keeps the same shape in localStorage), so a guest
  * who reopens the app reclaims the same participant row and seat. The display
  * name is a phone-local preference: a signed-in player defaults to their
  * Clerk first name, a guest to "Player 123" in the player's language.
@@ -18,33 +18,28 @@ import { useUser } from "@clerk/expo";
 import { useCallback, useState } from "react";
 import { useI18n } from "../../i18n";
 import {
-	PREFERENCE_KEYS,
-	readPreference,
-	writePreference,
-} from "../../prefs/local-preference";
+	readJson,
+	readText,
+	STORAGE_KEYS,
+	writeJson,
+	writeText,
+} from "../../storage/local-store";
 
-function isGuestIdentity(value: unknown): value is LocalGuestIdentity {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		typeof (value as LocalGuestIdentity).id === "string" &&
-		typeof (value as LocalGuestIdentity).displayName === "string"
-	);
+export const PLAYER_NAME_MAX = 32;
+
+function parseGuestIdentity(value: unknown): LocalGuestIdentity | null {
+	const guest = value as LocalGuestIdentity | null;
+	return typeof guest?.id === "string" && typeof guest.displayName === "string"
+		? guest
+		: null;
 }
 
 /** The install's guest identity, created on first read. */
-export function readGuestIdentity(): LocalGuestIdentity {
-	const raw = readPreference(PREFERENCE_KEYS.guest);
-	if (raw) {
-		try {
-			const parsed: unknown = JSON.parse(raw);
-			if (isGuestIdentity(parsed)) return parsed;
-		} catch {
-			// Corrupt value: replaced below.
-		}
-	}
+function readGuestIdentity(): LocalGuestIdentity {
+	const saved = readJson(STORAGE_KEYS.guest, parseGuestIdentity);
+	if (saved) return saved;
 	const identity = createGuestIdentity(messages.en.common.session.guestName);
-	writePreference(PREFERENCE_KEYS.guest, JSON.stringify(identity));
+	writeJson(STORAGE_KEYS.guest, identity);
 	return identity;
 }
 
@@ -53,7 +48,7 @@ export function usePlayerIdentity() {
 	const { t } = useI18n();
 	const [guest] = useState(readGuestIdentity);
 	const [savedName, setSavedName] = useState(() =>
-		readPreference(PREFERENCE_KEYS.displayName),
+		readText(STORAGE_KEYS.displayName),
 	);
 	const defaultName =
 		user?.firstName?.trim() ||
@@ -61,8 +56,8 @@ export function usePlayerIdentity() {
 	const displayName = savedName?.trim() || defaultName;
 
 	const setDisplayName = useCallback((next: string) => {
-		const trimmed = next.trim().slice(0, 32);
-		writePreference(PREFERENCE_KEYS.displayName, trimmed);
+		const trimmed = next.trim().slice(0, PLAYER_NAME_MAX);
+		writeText(STORAGE_KEYS.displayName, trimmed);
 		setSavedName(trimmed);
 	}, []);
 

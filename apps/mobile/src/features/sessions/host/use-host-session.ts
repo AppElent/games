@@ -2,70 +2,53 @@
  * Creating an online session this phone hosts. The backend requires an
  * account to host anything but solo play, so callers gate on `canHost`
  * (signed in and the Clerk token already on the Convex client).
+ *
+ * Each game passes its own atomic `create` mutation, which opens the session
+ * and its game state together and decides the join mode and auth policy.
  */
 import type { GameType } from "@arcadeclub/core/games";
-import { useAuth } from "@clerk/expo";
-import { useConvexAuth, useMutation } from "convex/react";
-import { useCallback, useState } from "react";
-import { api, type Id } from "../../../convex/api";
+import { useCallback } from "react";
+import type { Id } from "../../../convex/api";
 import { usePlayerIdentity } from "../../players/use-player-identity";
 import { rememberSeat } from "../session-seats";
+import { useBackendAuthReady } from "../use-backend-auth-ready";
+import { useSessionAction } from "../use-session-action";
 
-export type HostedSession = {
+type HostedSession = {
 	sessionId: Id<"gameSessions">;
 	participantId: Id<"sessionParticipants">;
-	joinCode?: string;
 };
 
 export function useHostSession() {
-	const { isSignedIn } = useAuth();
-	const convexAuth = useConvexAuth();
-	const identity = usePlayerIdentity();
-	const create = useMutation(api.sessions.create);
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<unknown>(null);
+	const backendAuth = useBackendAuthReady();
+	const { displayName, guestId } = usePlayerIdentity();
+	const { run, busy, error } = useSessionAction();
 
 	const host = useCallback(
-		async (
-			args: {
-				gameType: GameType;
-				joinMode: "room" | "challenge";
-				title: string;
-			},
-			/** Game-specific setup that must succeed for the session to count. */
-			setup?: (session: HostedSession) => Promise<unknown>,
-		): Promise<HostedSession | null> => {
-			setBusy(true);
-			setError(null);
-			try {
-				const session = await create({
-					...args,
-					authPolicy: "guestAllowed",
-					displayName: identity.displayName,
-					guestId: identity.guestId,
-				});
-				await setup?.(session);
+		(
+			gameType: GameType,
+			create: (host: {
+				displayName: string;
+				guestId: string;
+			}) => Promise<HostedSession>,
+		) =>
+			run(async () => {
+				const session = await create({ displayName, guestId });
 				rememberSeat({
 					sessionId: session.sessionId,
 					participantId: session.participantId,
-					gameType: args.gameType,
+					gameType,
 				});
 				return session;
-			} catch (caught) {
-				setError(caught);
-				return null;
-			} finally {
-				setBusy(false);
-			}
-		},
-		[create, identity.displayName, identity.guestId],
+			}),
+		[displayName, guestId, run],
 	);
 
 	return {
 		host,
-		busy: busy || (Boolean(isSignedIn) && convexAuth.isLoading),
+		busy: busy || backendAuth.loading,
 		error,
-		isSignedIn: Boolean(isSignedIn),
-		canHost: Boolean(isSignedIn) && convexAuth.isAuthenticated,
+		isSignedIn: backendAuth.isSignedIn,
+		canHost: backendAuth.ready,
 	};
 }

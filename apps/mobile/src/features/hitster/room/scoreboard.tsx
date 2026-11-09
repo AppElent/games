@@ -1,4 +1,5 @@
 /** Standings by cards on each timeline, or the team's progress in co-op. */
+import { getHitsterModeConfig } from "@arcadeclub/core/hitster";
 import { StyleSheet, View } from "react-native";
 import { fmt, plural, useI18n } from "../../../i18n";
 import { spacing, useTokens } from "../../../theme";
@@ -12,16 +13,14 @@ import {
 export function Scoreboard({
 	bundle,
 	state,
-	shared,
 }: {
 	bundle: HitsterBundle;
 	state: HitsterState;
-	shared: boolean;
 }) {
 	const { t, locale } = useI18n();
 	const copy = t.games.hitster.bits.scoreboard;
 	const tokens = useTokens();
-	if (shared) {
+	if (getHitsterModeConfig(state.mode).shared) {
 		return (
 			<View style={styles.list}>
 				<AppText variant="label">{copy.teamProgress.toUpperCase()}</AppText>

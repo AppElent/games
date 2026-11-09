@@ -4,7 +4,7 @@
  */
 import type { FunctionReturnType } from "convex/server";
 import { useMemo } from "react";
-import { api, type Id } from "../../../convex/api";
+import { api } from "../../../convex/api";
 import { useQueries } from "../../../convex/query-cache";
 import type { ContinueItem } from "./continue-items";
 
@@ -44,15 +44,13 @@ export function useOnlineStatuses(items: ContinueItem[]) {
 		() =>
 			Object.fromEntries(
 				items.flatMap((item) =>
-					item.source.kind === "online"
+					item.seat
 						? [
 								[
 									item.id,
 									{
 										query: api.sessions.getBundle,
-										args: {
-											sessionId: item.source.sessionId as Id<"gameSessions">,
-										},
+										args: { sessionId: item.seat.sessionId },
 									},
 								],
 							]
@@ -64,13 +62,13 @@ export function useOnlineStatuses(items: ContinueItem[]) {
 	const results = useQueries(queries);
 	const statuses: Record<string, OnlineStatus | null | undefined> = {};
 	for (const item of items) {
-		if (item.source.kind !== "online") continue;
+		if (!item.seat) continue;
 		const result = results[item.id];
 		// A failed query (a malformed id from an old build) reads as gone.
 		statuses[item.id] =
 			result instanceof Error
 				? null
-				: onlineStatus(result as Bundle | undefined, item.source.participantId);
+				: onlineStatus(result as Bundle | undefined, item.seat.participantId);
 	}
 	return statuses;
 }

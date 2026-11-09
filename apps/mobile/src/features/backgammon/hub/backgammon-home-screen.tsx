@@ -3,14 +3,12 @@
  * or create an online challenge to send to a friend.
  */
 
-import { getBackgammonWinner } from "@arcadeclub/core/backgammon";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { useMutation } from "convex/react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
-import { haptics } from "../../../feedback/haptics";
 import { useI18n } from "../../../i18n";
 import { spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
@@ -21,16 +19,18 @@ import { AppText } from "../../../ui/text";
 import { HostGate } from "../../sessions/host/host-gate";
 import { useHostSession } from "../../sessions/host/use-host-session";
 import { onlineSessionHref } from "../../sessions/session-links";
-import { clearLocalMatch, readLocalMatch } from "../local/local-match-store";
+import { confirmNewMatch } from "../components/confirm-new-match";
+import {
+	hubOffersContinue,
+	LOCAL_MATCH_HREF,
+	readLocalMatch,
+	startNewLocalMatch,
+} from "../local/local-match-store";
 
 /** Whether a pass-and-play match is under way and worth continuing. */
 function hasMatchInProgress() {
 	const match = readLocalMatch();
-	return Boolean(
-		match &&
-			getBackgammonWinner(match.state.off) === null &&
-			(match.history.length > 0 || match.state.dice.length > 0),
-	);
+	return Boolean(match && hubOffersContinue(match));
 }
 
 export function BackgammonHomeScreen() {
@@ -38,7 +38,7 @@ export function BackgammonHomeScreen() {
 	const { t } = useI18n();
 	const copy = t.games.backgammon;
 	const hosting = useHostSession();
-	const createState = useMutation(api.backgammon.createState);
+	const create = useMutation(api.backgammon.create);
 	const [inProgress, setInProgress] = useState(false);
 
 	useFocusEffect(
@@ -48,43 +48,20 @@ export function BackgammonHomeScreen() {
 	);
 
 	const startLocal = () => {
-		if (!inProgress) {
-			clearLocalMatch();
-			router.push("/backgammon/local");
-			return;
-		}
-		Alert.alert(copy.newGame.confirmNewTitle, copy.newGame.confirmNewBody, [
-			{ text: t.common.actions.cancel, style: "cancel" },
-			{
-				text: t.common.endScreen.newGame,
-				style: "destructive",
-				onPress: () => {
-					clearLocalMatch();
-					router.push("/backgammon/local");
-				},
-			},
-		]);
+		const start = () => {
+			startNewLocalMatch();
+			router.push(LOCAL_MATCH_HREF);
+		};
+		if (inProgress) confirmNewMatch(t, start);
+		else start();
 	};
 
 	const createChallenge = async () => {
-		const session = await hosting.host(
-			{
-				gameType: "backgammon",
-				joinMode: "challenge",
-				title: t.catalog.backgammon.title,
-			},
-			(created) =>
-				createState({
-					sessionId: created.sessionId,
-					hostParticipantId: created.participantId,
-				}),
+		const session = await hosting.host("backgammon", (host) =>
+			create({ ...host, title: t.catalog.backgammon.title }),
 		);
-		if (!session) {
-			haptics.actionFailed();
-			return;
-		}
-		const href = onlineSessionHref("backgammon", session.sessionId);
-		if (href) router.push(href);
+		if (session)
+			router.push(onlineSessionHref("backgammon", session.sessionId));
 	};
 
 	return (
@@ -100,7 +77,7 @@ export function BackgammonHomeScreen() {
 					{inProgress ? (
 						<Button
 							label={copy.newGame.continueLocal}
-							onPress={() => router.push("/backgammon/local")}
+							onPress={() => router.push(LOCAL_MATCH_HREF)}
 							testID="bg-continue-local"
 						/>
 					) : null}

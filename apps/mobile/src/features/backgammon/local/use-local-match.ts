@@ -21,9 +21,10 @@ export function useLocalMatch() {
 		setMatch((current) => reduceLocalMatch(current, action, Date.now()));
 	}, []);
 
-	const restart = useCallback(() => {
+	/** A restart from the board keeps the options; `startNewLocalMatch` does not. */
+	const restartKeepingOptions = useCallback(() => {
 		setMatch((current) => newLocalMatch(Date.now(), current.options));
 	}, []);
 
-	return { match, dispatch, restart };
+	return { match, dispatch, restartKeepingOptions };
 }

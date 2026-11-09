@@ -6,42 +6,43 @@
  * keeps it in sessionStorage). Persisting it here is what lets the app
  * reopen an online game after a restart without joining again.
  */
-import type { GameType } from "@arcadeclub/core/games";
-import Storage from "expo-sqlite/kv-store";
+import { GAME_TYPES, type GameType } from "@arcadeclub/core/games";
+import type { Id } from "../../convex/api";
+import { readJson, STORAGE_KEYS, writeJson } from "../../storage/local-store";
+import { hasAppScreen, onlineSessionHref } from "./session-links";
 
-const KEY = "arcade:seats";
 const LIMIT = 20;
 
-export type SessionSeat = {
-	sessionId: string;
-	participantId: string;
+/** Finished online games drop out once the Play tab sees their status. */
+const RESUMABLE_WINDOW_MS = 7 * 24 * 60 * 60_000;
+
+type SessionSeat = {
+	sessionId: Id<"gameSessions">;
+	participantId: Id<"sessionParticipants">;
 	gameType: GameType;
 	joinedAt: number;
 };
 
+function isSeat(value: unknown): value is SessionSeat {
+	const seat = value as Partial<SessionSeat> | null;
+	return (
+		typeof seat?.sessionId === "string" &&
+		typeof seat.participantId === "string" &&
+		GAME_TYPES.some((gameType) => gameType === seat.gameType) &&
+		typeof seat.joinedAt === "number"
+	);
+}
+
 function readAll(): SessionSeat[] {
-	try {
-		const raw = Storage.getItemSync(KEY);
-		if (!raw) return [];
-		const parsed: unknown = JSON.parse(raw);
-		return Array.isArray(parsed)
-			? parsed.filter(
-					(item): item is SessionSeat =>
-						typeof item?.sessionId === "string" &&
-						typeof item?.participantId === "string",
-				)
-			: [];
-	} catch {
-		return [];
-	}
+	return (
+		readJson(STORAGE_KEYS.seats, (value) =>
+			Array.isArray(value) ? value.filter(isSeat) : null,
+		) ?? []
+	);
 }
 
 function writeAll(seats: SessionSeat[]) {
-	try {
-		Storage.setItemSync(KEY, JSON.stringify(seats.slice(0, LIMIT)));
-	} catch {
-		// Best-effort: the game still works for this launch.
-	}
+	writeJson(STORAGE_KEYS.seats, seats.slice(0, LIMIT));
 }
 
 export function listSeats(): SessionSeat[] {
@@ -59,4 +60,23 @@ export function rememberSeat(seat: Omit<SessionSeat, "joinedAt">) {
 
 export function forgetSeat(sessionId: string) {
 	writeAll(readAll().filter((seat) => seat.sessionId !== sessionId));
+}
+
+/** Recent seats in games this app opens. Removing one leaves the game running. */
+export function resumableItems(now = Date.now()) {
+	return listSeats().flatMap((seat) => {
+		const { sessionId, participantId, gameType } = seat;
+		if (now - seat.joinedAt > RESUMABLE_WINDOW_MS) return [];
+		if (!hasAppScreen(gameType)) return [];
+		return [
+			{
+				id: `online:${sessionId}`,
+				gameType,
+				href: onlineSessionHref(gameType, sessionId),
+				updatedAt: seat.joinedAt,
+				seat: { sessionId, participantId },
+				remove: () => forgetSeat(sessionId),
+			},
+		];
+	});
 }

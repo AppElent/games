@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	buildInviteUrl,
 	createGuestIdentity,
+	FORMATTED_JOIN_CODE_MAX_LENGTH,
 	formatJoinCode,
 	getGuestDisplayName,
 	isJoinCodeLike,
@@ -24,6 +25,13 @@ describe("session helpers", () => {
 		expect(isJoinCodeLike("ABC123")).toBe(true);
 		expect(isJoinCodeLike("A")).toBe(false);
 		expect(isJoinCodeLike("too-long-code")).toBe(false);
+	});
+
+	it("fits the longest accepted code, formatted, in the formatted maximum", () => {
+		const longest = formatJoinCode("ABCDEFGH");
+		expect(isJoinCodeLike(longest)).toBe(true);
+		expect(longest).toHaveLength(FORMATTED_JOIN_CODE_MAX_LENGTH);
+		expect(isJoinCodeLike("ABCDEFGHI")).toBe(false);
 	});
 
 	it("creates stable guest display names from ids", () => {

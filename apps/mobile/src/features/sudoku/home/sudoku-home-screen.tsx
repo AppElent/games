@@ -29,13 +29,13 @@ import { formatElapsed } from "../components/game-clock";
 import {
 	deleteSudokuSave,
 	listSudokuSaves,
+	SUDOKU_VARIANTS,
 	type SudokuSaveSummary,
 	type SudokuVariant,
+	sudokuSaveHref,
 	writeSudokuSave,
 } from "../saves/sudoku-save-store";
 import { createSudokuSave } from "./create-sudoku-save";
-
-const VARIANTS: readonly SudokuVariant[] = ["classic", "killer", "binary"];
 
 export function SudokuHomeScreen() {
 	const router = useRouter();
@@ -62,7 +62,7 @@ export function SudokuHomeScreen() {
 			try {
 				const save = createSudokuSave(variant, difficulty);
 				writeSudokuSave(save);
-				router.push({ pathname: "/sudoku/[id]", params: { id: save.id } });
+				router.push(sudokuSaveHref(save.id));
 			} catch {
 				setFailed(true);
 				haptics.actionFailed();
@@ -94,7 +94,7 @@ export function SudokuHomeScreen() {
 				</AppText>
 				<Segmented
 					accessibilityLabel={copy.newGame.gameTypeLegend}
-					options={VARIANTS.map((value) => ({
+					options={SUDOKU_VARIANTS.map((value) => ({
 						value,
 						label: copy.variant[value],
 					}))}
@@ -163,12 +163,7 @@ export function SudokuHomeScreen() {
 									<Pressable
 										accessibilityRole="button"
 										accessibilityLabel={`${title}, ${detail}`}
-										onPress={() =>
-											router.push({
-												pathname: "/sudoku/[id]",
-												params: { id: save.id },
-											})
-										}
+										onPress={() => router.push(sudokuSaveHref(save.id))}
 										style={({ pressed }) => [
 											styles.savedMain,
 											pressed && { opacity: opacity.pressed },

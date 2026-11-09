@@ -12,30 +12,32 @@ import type { Href } from "expo-router";
 
 const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_ORIGIN?.replace(/\/+$/, "");
 
-/** The games this app can open; everything else is web-only. */
-export const APP_GAME_TYPES = ["sudoku", "backgammon", "hitster"] as const;
-export type AppGameType = (typeof APP_GAME_TYPES)[number];
+/** The online games this app opens; every other game is web-only. */
+const SESSION_HREFS = {
+	backgammon: (sessionId: string) => ({
+		pathname: "/backgammon/online/[sessionId]",
+		params: { sessionId },
+	}),
+	hitster: (sessionId: string) => ({
+		pathname: "/hitster/[sessionId]",
+		params: { sessionId },
+	}),
+} satisfies Partial<Record<GameType, (sessionId: string) => Href>>;
 
-export function isAppGameType(gameType: string): gameType is AppGameType {
-	return (APP_GAME_TYPES as readonly string[]).includes(gameType);
+type AppSessionGameType = keyof typeof SESSION_HREFS;
+
+export function hasAppScreen(
+	gameType: GameType,
+): gameType is AppSessionGameType {
+	return gameType in SESSION_HREFS;
 }
 
-/** The in-app screen for an online session, or `null` when web-only. */
+/** The in-app screen for an online session. */
 export function onlineSessionHref(
-	gameType: GameType,
+	gameType: AppSessionGameType,
 	sessionId: string,
-): Href | null {
-	switch (gameType) {
-		case "backgammon":
-			return {
-				pathname: "/backgammon/online/[sessionId]",
-				params: { sessionId },
-			};
-		case "hitster":
-			return { pathname: "/hitster/[sessionId]", params: { sessionId } };
-		default:
-			return null;
-	}
+): Href {
+	return SESSION_HREFS[gameType](sessionId);
 }
 
 /** Whether invites can carry a web link (the web origin is configured). */

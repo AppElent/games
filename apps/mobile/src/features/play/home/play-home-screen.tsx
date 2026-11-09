@@ -23,14 +23,14 @@ import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { useAppUpdate } from "../../../updates/use-app-update";
 import {
+	type ContinueGameType,
 	type ContinueItem,
 	listContinueItems,
-	removeContinueItem,
 } from "./continue-items";
 import { type OnlineStatus, useOnlineStatuses } from "./online-status";
 
 type GameEntry = {
-	key: "sudoku" | "backgammon" | "hitster";
+	key: ContinueGameType;
 	href: Href;
 	icon: Parameters<typeof Icon>[0]["ios"];
 	androidIcon: Parameters<typeof Icon>[0]["android"];
@@ -87,7 +87,7 @@ export function PlayHomeScreen() {
 	);
 
 	const remove = (item: ContinueItem) => {
-		const online = item.source.kind === "online";
+		const online = Boolean(item.seat);
 		haptics.selectionChanged();
 		Alert.alert(
 			online ? t.play.removeOnlineTitle : t.play.removeSavedTitle,
@@ -98,7 +98,7 @@ export function PlayHomeScreen() {
 					text: t.play.remove,
 					style: "destructive",
 					onPress: () => {
-						removeContinueItem(item.source);
+						item.remove();
 						setItems(listContinueItems());
 					},
 				},
@@ -107,7 +107,7 @@ export function PlayHomeScreen() {
 	};
 
 	const detail = (item: ContinueItem, status: OnlineStatus | undefined) => {
-		if (item.source.kind !== "online") {
+		if (!item.seat) {
 			return `${t.play.savedGame} · ${relativeTime(t, locale, item.updatedAt)}`;
 		}
 		if (!status) return t.play.onlineGame;
