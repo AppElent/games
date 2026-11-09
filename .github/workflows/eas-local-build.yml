@@ -22,21 +22,9 @@ jobs:
       SENTRY_DISABLE_AUTO_UPLOAD: "true"
       ARTIFACT: arcadeclub-${{ inputs.platform }}-${{ inputs.profile }}.${{ inputs.platform == 'ios' && 'ipa' || 'apk' }}
     steps:
-      - name: Check Expo token
-        run: |
-          if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::No EXPO_TOKEN secret. Create a token at expo.dev → Access tokens, store it in Infisical as expo-token, then run pnpm env:apply preview --only github."
-            exit 1
-          fi
-
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+      - uses: ./.github/actions/require-expo-token
 
       - uses: actions/setup-java@v4
         if: inputs.platform == 'android'
@@ -49,7 +37,8 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - run: pnpm install --frozen-lockfile
+      # Installs after the toolchains above, as before the shared action.
+      - uses: ./.github/actions/setup
 
       - name: eas build --local
         working-directory: apps/mobile

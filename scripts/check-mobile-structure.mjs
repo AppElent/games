@@ -3,15 +3,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
-// Adjust to the app. Set messagesRoot to null when the app has no message catalog.
 const mobileRoot = "apps/mobile/";
 const sourceRoot = `${mobileRoot}src/`;
 const routeRoot = `${mobileRoot}app/`;
 const featureRoot = `${sourceRoot}features/`;
 const uiRoot = `${sourceRoot}ui/`;
 const messagesRoot = `${sourceRoot}i18n/`;
-/** Units and names that read the same in every supported language. */
-const UNTRANSLATED = /\b(?:kcal|kg|km|lb)\b/g;
 /** JSX props and object keys that people read or hear. */
 const TEXT_ATTRIBUTES = new Set([
 	"accessibilityLabel",
@@ -22,14 +19,13 @@ const TEXT_ATTRIBUTES = new Set([
 	"message",
 	"confirmLabel",
 	"cancelLabel",
-	"retryLabel",
 ]);
 /** Calls whose literal arguments are shown to the user. */
-const MESSAGE_CALL = /^(?:error|success|alert|convexErrorMessage)$/;
+const MESSAGE_CALL = /^(?:error|success|alert|gameErrorMessage)$/;
 const CATALOG_MESSAGE =
 	"Put UI text in the message catalog and read it through the i18n hook.";
 
-const hasWords = (text) => /\p{L}{3,}/u.test(text.replace(UNTRANSLATED, ""));
+const hasWords = (text) => /\p{L}{3,}/u.test(text);
 const unwrap = (node) =>
 	ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node;
 const literalText = (node) => {
@@ -84,10 +80,10 @@ export function inspectMobileSource(filename, source, resolveImport) {
 	const file = filename.replaceAll("\\", "/");
 	const feature = file.startsWith(featureRoot);
 	const ui = file.startsWith(uiRoot);
-	const messages = messagesRoot !== null && file.startsWith(messagesRoot);
+	const messages = file.startsWith(messagesRoot);
 	const route = file.startsWith(routeRoot);
 	const issues = [];
-	if (messagesRoot !== null && !messages && /-copy\.tsx?$/.test(file))
+	if (!messages && /-copy\.tsx?$/.test(file))
 		issues.push({ file, line: 1, rule: "message-catalog", message: CATALOG_MESSAGE });
 	if (!route && !file.startsWith(sourceRoot)) return issues;
 	const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
@@ -111,7 +107,6 @@ export function inspectMobileSource(filename, source, resolveImport) {
 		});
 	}
 	const checkText =
-		messagesRoot !== null &&
 		!messages &&
 		!/(?:^|\/)(?:__tests__|test-support)\/|\.test\.tsx?$/.test(file);
 	const jsx = file.endsWith(".tsx");

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	CONSUMERS,
+	CONVEX_DEPLOYMENTS,
 	destinationFor,
 	ENTRIES,
 	ENV_CONFIG,
@@ -29,11 +30,11 @@ describe("Arcade Club environment routing", () => {
 		expect(ENV_CONFIG.github.repository).toBe("AppElent/games");
 		expect(destinationFor("convex-functions", "dev")).toMatchObject({
 			kind: "convex",
-			deployment: "zany-parakeet-507",
+			deployment: CONVEX_DEPLOYMENTS.dev,
 		});
 		expect(destinationFor("convex-functions", "production")).toMatchObject({
 			kind: "convex",
-			deployment: "chatty-ram-217",
+			deployment: CONVEX_DEPLOYMENTS.production,
 		});
 	});
 

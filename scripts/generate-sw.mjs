@@ -2,6 +2,8 @@ import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { generateSW } from "workbox-build";
 
+const clientDir = "dist/client";
+
 // Sentry uploads during Vite's build. Never deploy public source maps, even
 // when a build without SENTRY_AUTH_TOKEN skipped the upload.
 async function removeSourceMaps(directory) {
@@ -11,12 +13,12 @@ async function removeSourceMaps(directory) {
 		else if (entry.name.endsWith(".map")) await rm(filename);
 	}
 }
-await removeSourceMaps("dist/client");
+await removeSourceMaps(clientDir);
 
 const { count, size, warnings } = await generateSW({
-	globDirectory: "dist/client",
+	globDirectory: clientDir,
 	globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
-	swDest: "dist/client/sw.js",
+	swDest: path.join(clientDir, "sw.js"),
 	navigateFallbackDenylist: [/^\/api\//, /^\/convex\//],
 	skipWaiting: true,
 	clientsClaim: true,

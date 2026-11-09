@@ -22,6 +22,12 @@ export const ENV_CONFIG = {
 	github: { repository: "AppElent/games" },
 } as const;
 
+/** The fixed Convex deployments behind the dev and production environments. */
+export const CONVEX_DEPLOYMENTS = {
+	dev: "zany-parakeet-507",
+	production: "chatty-ram-217",
+} as const;
+
 export const ENVIRONMENTS = [
 	"local",
 	"preview",
@@ -96,13 +102,13 @@ export function destinationFor(
 					return {
 						kind: "convex",
 						target: "dev",
-						deployment: "zany-parakeet-507",
+						deployment: CONVEX_DEPLOYMENTS.dev,
 					};
 				case "production":
 					return {
 						kind: "convex",
 						target: "production",
-						deployment: "chatty-ram-217",
+						deployment: CONVEX_DEPLOYMENTS.production,
 					};
 			}
 			break;
@@ -373,7 +379,7 @@ export const ENTRIES = [
 		key: "expoToken",
 		infisicalKey: "expo-token",
 		description:
-			"Expo access token for `eas build --local` in the opt-in Mobile Build workflow (expo.dev → Access tokens).",
+			"Expo access token for CI: `eas build --local` in the opt-in Mobile Build workflow and the preview over-the-air update that Deploy publishes (expo.dev → Access tokens). Repo scope, so both workflows read it.",
 		optional: true,
 		secret: true,
 		lands: {

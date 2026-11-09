@@ -1,7 +1,6 @@
 /**
  * Forwards failed Convex executions, including scheduled and other unattended
- * functions, from `convex logs --jsonl` to Sentry. Copy to scripts/ and add
- * `"sentry:convex": "node scripts/convex-sentry.mjs"`; needs @sentry/node.
+ * functions, from `convex logs --jsonl` to Sentry.
  *
  *   pnpm sentry:convex --prod
  *   pnpm sentry:convex --deployment <name>

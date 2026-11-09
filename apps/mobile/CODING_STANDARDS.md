@@ -14,8 +14,9 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
   `src/features/backgammon/local/use-local-match.ts` over the reducer in
   `@arcadeclub/core/backgammon-local` (callers pre-roll dice so it stays
   deterministic).
-- Online games call the existing Convex functions unchanged through
-  `src/convex/api.ts`. A device's seat in an online session is stored by
+- Online games call the same Convex functions as web through
+  `src/convex/api.ts`, and host through each game's `create`
+  (`backgammon.create`, `hitster.create`). A device's seat in an online session is stored by
   `src/features/sessions/session-seats.ts`. Every game screen resolves its
   `participantId` from there, never from route params.
 - Local saves (Sudoku puzzles, the one pass-and-play backgammon match) use
@@ -29,7 +30,7 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
 | Rule | Scope | Replacement | Reason |
 | --- | --- | --- | --- |
 | Convex query caching | Mobile reads | `retention` flavour in `src/convex/query-cache.tsx`: 5 min expiration, 20 idle entries, both 0 in background; no disk cache. Biome forbids `useQuery` from `convex/react`. | Same binding as Foundry. Keeps game subscriptions alive across short navigation gaps. |
-| Auth gate | Whole app | No signed-in gate. Guests play and join with a local guest id; only hosting an online game asks for sign-in (`HostGate`). | `sessions.create` requires an identity; joining does not. Matches web. |
+| Auth gate | Whole app | No signed-in gate. Guests play and join with a local guest id; only hosting an online game asks for sign-in (`HostGate`). | A game's `create` requires an identity for online sessions; joining does not. Matches web. |
 
 ## Review and enforcement
 

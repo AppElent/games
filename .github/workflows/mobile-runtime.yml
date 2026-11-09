@@ -30,12 +30,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: .base
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
       # Native modules are fingerprinted from node_modules, so both sides
       # need their own install. The second one comes from the pnpm store.
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       # A base without the app needs no install; fingerprint.mjs says so.
       - name: Install base
         run: |
@@ -55,14 +52,6 @@ jobs:
         with:
           script: |
             const fs = require('node:fs');
-            const marker = '<!-- mobile-runtime -->';
-            const body = `${marker}\n${fs.readFileSync(`${process.env.RUNNER_TEMP}/runtime.md`, 'utf8')}`;
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number,
-            });
-            const existing = comments.find((c) => c.body && c.body.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body });
-            } else {
-              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
-            }
+            const { upsertPrComment } = await import(`${process.env.GITHUB_WORKSPACE}/.github/scripts/upsert-pr-comment.js`);
+            const body = fs.readFileSync(`${process.env.RUNNER_TEMP}/runtime.md`, 'utf8');
+            await upsertPrComment({ github, context }, '<!-- mobile-runtime -->', body);
