@@ -1,32 +1,19 @@
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
-import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { useErrorMessage } from "#/lib/games/errors";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
-import { plural, useI18n } from "#/lib/i18n";
+import { useHostSession } from "#/lib/games/use-host-session";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { QuizSetOptions } from "./quiz-set-text";
 
 export function QuizSetupForm() {
-	return (
-		<HostGate>
-			<QuizSetupFormInner />
-		</HostGate>
-	);
-}
-
-function QuizSetupFormInner() {
-	const errorMessage = useErrorMessage();
-	const { messages, locale } = useI18n();
-	const createSession = useMutation(api.sessions.create);
+	const messages = useMessages();
 	const ensureSampleSet = useMutation(api.quiz.ensureSampleSet);
-	const startQuiz = useMutation(api.quiz.startForSession);
+	const create = useMutation(api.quiz.create);
+	const { busy, error, host } = useHostSession("live-quiz");
 	const mySets = useQuery(api.quiz.listMine);
 	const sampleSets = useQuery(api.quiz.listSampleSets);
-	const hostName = useHostDisplayName();
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState("");
 	const [selectedSetId, setSelectedSetId] = useState("");
 
 	// Default to your newest own set, otherwise the sample set.
@@ -56,35 +43,15 @@ function QuizSetupFormInner() {
 				id="quiz-set"
 				value={selectedSetId}
 				onChange={(event) => setSelectedSetId(event.target.value)}
-				className="mb-2 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300"
+				className="mb-2 w-full club-input-dark"
 			>
 				{mySets?.length ? (
 					<optgroup label={messages.games.quiz.sets.mySets}>
-						{mySets.map((set) => (
-							<option key={set._id} value={set._id}>
-								{set.title} (
-								{plural(
-									locale,
-									set.questions.length,
-									messages.games.quiz.questionsCount,
-								)}
-								)
-							</option>
-						))}
+						<QuizSetOptions sets={mySets} />
 					</optgroup>
 				) : null}
 				<optgroup label={messages.games.quiz.setupForm.builtIn}>
-					{sampleSets?.map((set) => (
-						<option key={set._id} value={set._id}>
-							{set.title} (
-							{plural(
-								locale,
-								set.questions.length,
-								messages.games.quiz.questionsCount,
-							)}
-							)
-						</option>
-					))}
+					{sampleSets ? <QuizSetOptions sets={sampleSets} /> : null}
 					{!sampleSets?.length ? (
 						<option value="">
 							{messages.games.quiz.setupForm.starterQuizFallback}
@@ -98,47 +65,25 @@ function QuizSetupFormInner() {
 					{messages.games.quiz.setupForm.manageQuizSets}
 				</Link>
 			</p>
-			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="mb-4 club-error">{error}</p> : null}
 			<button
 				type="button"
 				disabled={busy}
 				className="rounded-md bg-cyan-300 px-5 py-3 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-				onClick={async () => {
-					setBusy(true);
-					setError("");
-					try {
-						const guest = getOrCreateGuestIdentity();
-						const quizSetId = selectedSetId
-							? (selectedSetId as Id<"quizSets">)
-							: await ensureSampleSet();
-						const result = await createSession({
-							gameType: "live-quiz",
-							joinMode: "room",
-							authPolicy: "hostChoice",
-							title: messages.catalog["live-quiz"].title,
-							displayName: hostName,
-							guestId: guest.id,
-						});
-						await startQuiz({
-							sessionId: result.sessionId,
-							quizSetId,
-						});
-						window.sessionStorage.setItem(
-							"arcade-club.hostParticipantId",
-							result.participantId,
-						);
-						window.location.href = `/quiz/${result.sessionId}/host`;
-					} catch (caught) {
-						setError(
-							errorMessage(
-								caught,
-								messages.games.quiz.setupForm.createRoomError,
-							),
-						);
-					} finally {
-						setBusy(false);
-					}
-				}}
+				onClick={() =>
+					host(
+						async ({ displayName, guestId }) =>
+							create({
+								title: messages.catalog["live-quiz"].title,
+								displayName,
+								guestId,
+								quizSetId: selectedSetId
+									? (selectedSetId as Id<"quizSets">)
+									: await ensureSampleSet(),
+							}),
+						messages.games.quiz.setupForm.createRoomError,
+					)
+				}
 			>
 				{busy
 					? messages.games.quiz.setupForm.creatingRoom

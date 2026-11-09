@@ -1,178 +1,142 @@
-import { v } from "convex/values";
 import {
-	applyHitsterTokenDelta,
-	evaluateHitsterRound,
-	getHitsterCoopOutcome,
 	getHitsterModeConfig,
-	type HitsterAnswerFlags,
-	type HitsterMode,
-	hitsterStealRequirementMet,
-	matchesHitsterArtist,
-	matchesHitsterTitle,
-	shuffleHitsterDeck,
-	validateHitsterPlacement,
+	HITSTER_SPARE_TRACKS,
+	HITSTER_TARGET_CARDS_RANGE,
+	hitsterPlayerView,
 } from "@arcadeclub/core/hitster";
 import {
 	buildSpotifySearchUrl,
 	getHitsterCard,
 	getPlayableHitsterCards,
 } from "@arcadeclub/core/hitster-packs";
-import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { resolveHitsterReveal } from "@arcadeclub/core/hitster-reveal";
+import {
+	advanceHitsterRound,
+	startHitsterGame,
+} from "@arcadeclub/core/hitster-round";
+import { type ObjectType, v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { completeSession } from "./lib/completion";
+import { gameError, rules } from "./lib/errors";
+import {
+	findGameState,
+	finishSession,
+	listPlayersIncludingKicked,
+	loadBundle,
+	loadSession,
+	requireHostByParticipantId,
+	requireParticipant,
+	startSession,
+} from "./lib/gameSession";
+import {
+	createdSession,
+	createdSessionValidator,
+	hostedSessionArgs,
+	hostGame,
+} from "./lib/hostedSession";
 import { hitsterModeValidator, hitsterPlaybackModeValidator } from "./schema";
-import { gameError } from "./lib/errors";
 
-type Ctx = MutationCtx | QueryCtx;
-
-async function getSessionAndState(ctx: Ctx, sessionId: Id<"gameSessions">) {
-	const session = await ctx.db.get(sessionId);
-	if (!session || session.gameType !== "hitster") {
-		throw gameError("gameNotFound");
-	}
-	const state = await ctx.db
-		.query("hitsterGameStates")
-		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-		.unique();
+/** Hitster's state may not exist yet: `setup` creates it, and callers word its absence. */
+async function getSessionAndState(
+	ctx: MutationCtx,
+	sessionId: Id<"gameSessions">,
+) {
+	const session = await loadSession(ctx, "hitster", sessionId);
+	const state = await findGameState(ctx, "hitster", sessionId);
 	return { session, state };
 }
 
-async function requireParticipant(
-	ctx: Ctx,
-	sessionId: Id<"gameSessions">,
-	participantId: Id<"sessionParticipants">,
-) {
-	const participant = await ctx.db.get(participantId);
-	if (
-		!participant ||
-		participant.sessionId !== sessionId ||
-		participant.kickedAt
-	) {
-		throw gameError("notInGame");
-	}
-	return participant;
-}
-
-function requireHost(
-	session: Doc<"gameSessions">,
-	participantId: Id<"sessionParticipants">,
-) {
-	if (session.hostParticipantId !== participantId) {
-		throw gameError("hostOnly");
-	}
-}
-
-function timelineYears(
-	packId: string,
-	cardIds: string[],
-): number[] {
-	return cardIds.map((cardId) => {
-		const card = getHitsterCard(packId, cardId);
-		if (!card) {
-			throw gameError("unknownTimelineCard");
-		}
-		return card.releaseYear;
-	});
-}
-
-function findTimeline(
-	state: Doc<"hitsterGameStates">,
-	participantId: Id<"sessionParticipants">,
-) {
-	const shared = getHitsterModeConfig(state.mode as HitsterMode).shared;
-	const timeline = shared
-		? state.timelines[0]
-		: state.timelines.find((entry) => entry.participantId === participantId);
-	if (!timeline) {
+function requireTimeline<T>(view: { myTimeline: T | undefined }) {
+	if (!view.myTimeline) {
 		throw gameError("timelineNotFound");
 	}
-	return timeline;
+	return view.myTimeline;
 }
 
-function evaluateAnswerFlags(
-	state: Doc<"hitsterGameStates">,
-	guess: {
-		participantId: Id<"sessionParticipants">;
-		dropIndex: number;
-		artistGuess?: string;
-		titleGuess?: string;
-		yearGuess?: number;
-	},
-	cardId: string,
-): HitsterAnswerFlags {
-	const card = getHitsterCard(state.packId, cardId);
-	if (!card) {
-		throw gameError("cardNotFound");
+const gameConfigArgs = {
+	mode: hitsterModeValidator,
+	packId: v.string(),
+	targetCards: v.number(),
+	turnTimerSeconds: v.optional(v.number()),
+	playbackMode: hitsterPlaybackModeValidator,
+};
+
+function checkedConfig(config: ObjectType<typeof gameConfigArgs>, now: number) {
+	const playable = getPlayableHitsterCards(config.packId, config.playbackMode);
+	if (playable.length < config.targetCards + HITSTER_SPARE_TRACKS) {
+		throw gameError("notEnoughTracks");
 	}
-	const timeline = findTimeline(state, guess.participantId);
-	const years = timelineYears(state.packId, timeline.cardIds);
+	if (
+		config.targetCards < HITSTER_TARGET_CARDS_RANGE.min ||
+		config.targetCards > HITSTER_TARGET_CARDS_RANGE.max
+	) {
+		throw gameError("targetCardsRange");
+	}
 	return {
-		placementCorrect: validateHitsterPlacement(
-			years,
-			guess.dropIndex,
-			card.releaseYear,
-		),
-		artistCorrect: guess.artistGuess
-			? matchesHitsterArtist(guess.artistGuess, card.artistNames)
-			: false,
-		titleCorrect: guess.titleGuess
-			? matchesHitsterTitle(guess.titleGuess, card.title)
-			: false,
-		yearCorrect: guess.yearGuess === card.releaseYear,
+		mode: config.mode,
+		packId: config.packId,
+		targetCards: config.targetCards,
+		turnTimerSeconds: config.turnTimerSeconds,
+		playbackMode: config.playbackMode,
+		updatedAt: now,
 	};
 }
 
+async function insertLobbyState(
+	ctx: MutationCtx,
+	sessionId: Id<"gameSessions">,
+	config: ReturnType<typeof checkedConfig>,
+) {
+	return await ctx.db.insert("hitsterGameStates", {
+		sessionId,
+		...config,
+		phase: "lobby",
+		deck: [],
+		roundNumber: 0,
+		turnOrder: [],
+		activeIndex: 0,
+		timelines: [],
+		tokens: [],
+		stealClaims: [],
+		createdAt: config.updatedAt,
+	});
+}
+
+export const create = mutation({
+	args: { ...hostedSessionArgs, ...gameConfigArgs },
+	returns: createdSessionValidator,
+	handler: async (ctx, args) => {
+		const hosted = await hostGame(ctx, "hitster", args);
+		await insertLobbyState(
+			ctx,
+			hosted.session._id,
+			checkedConfig(args, Date.now()),
+		);
+		return createdSession(hosted);
+	},
+});
+
+// Installed mobile builds call this: remove once no installed build predates hitster.create.
 export const setup = mutation({
 	args: {
 		sessionId: v.id("gameSessions"),
 		participantId: v.id("sessionParticipants"),
-		mode: hitsterModeValidator,
-		packId: v.string(),
-		targetCards: v.number(),
-		turnTimerSeconds: v.optional(v.number()),
-		playbackMode: hitsterPlaybackModeValidator,
+		...gameConfigArgs,
 	},
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		requireHost(session, args.participantId);
+		requireHostByParticipantId(session, args.participantId);
 		if (session.status !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
-		const playable = getPlayableHitsterCards(args.packId, args.playbackMode);
-		if (playable.length < args.targetCards + 5) {
-			throw gameError("notEnoughTracks");
-		}
-		if (args.targetCards < 3 || args.targetCards > 20) {
-			throw gameError("targetCardsRange");
-		}
-		const now = Date.now();
-		const fields = {
-			mode: args.mode,
-			packId: args.packId,
-			targetCards: args.targetCards,
-			turnTimerSeconds: args.turnTimerSeconds,
-			playbackMode: args.playbackMode,
-			updatedAt: now,
-		};
+		const config = checkedConfig(args, Date.now());
 		if (state) {
-			await ctx.db.patch(state._id, fields);
+			await ctx.db.patch(state._id, config);
 			return state._id;
 		}
-		return await ctx.db.insert("hitsterGameStates", {
-			sessionId: args.sessionId,
-			...fields,
-			phase: "lobby",
-			deck: [],
-			roundNumber: 0,
-			turnOrder: [],
-			activeIndex: 0,
-			timelines: [],
-			tokens: [],
-			stealClaims: [],
-			createdAt: now,
-		});
+		return await insertLobbyState(ctx, args.sessionId, config);
 	},
 });
 
@@ -184,59 +148,26 @@ export const start = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		requireHost(session, args.participantId);
+		requireHostByParticipantId(session, args.participantId);
 		if (!state || state.phase !== "lobby") {
 			throw gameError("gameNotReady");
 		}
-		const config = getHitsterModeConfig(state.mode as HitsterMode);
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const players = participants
-			.filter((participant) => participant.role !== "watcher")
-			.sort((a, b) => a._creationTime - b._creationTime);
-		if (players.length < (config.shared ? 1 : 2)) {
-			throw gameError("notEnoughPlayers");
-		}
-
+		const players = await listPlayersIncludingKicked(ctx, args.sessionId);
 		const playable = getPlayableHitsterCards(state.packId, state.playbackMode);
-		const deck = shuffleHitsterDeck(playable.map((card) => card.id));
-		const turnOrder = players.map((player) => player._id);
-
-		// Deal one revealed start card per timeline, then draw the first
-		// mystery card.
-		const timelines = config.shared
-			? [{ participantId: undefined, cardIds: [deck.pop() as string] }]
-			: turnOrder.map((participantId) => ({
-					participantId,
-					cardIds: [deck.pop() as string],
-				}));
-		const currentCardId = deck.pop();
+		const dealt = rules(() =>
+			startHitsterGame(
+				state.mode,
+				playable.map((card) => card.id),
+				players.map((player) => player._id),
+			),
+		);
 		const now = Date.now();
-
 		await ctx.db.patch(state._id, {
-			phase: "nowPlaying",
-			deck,
-			roundNumber: 1,
-			currentCardId,
+			...dealt,
 			roundStartedAt: now,
-			turnOrder,
-			activeIndex: 0,
-			timelines,
-			tokens: config.shared
-				? []
-				: turnOrder.map((participantId) => ({
-						participantId,
-						tokens: config.startTokens,
-					})),
-			coopTokens: config.shared ? config.startTokens : undefined,
-			pendingGuess: undefined,
-			stealClaims: [],
-			lastRecap: undefined,
 			updatedAt: now,
 		});
-		await ctx.db.patch(args.sessionId, { status: "active", startedAt: now });
+		await startSession(ctx, session, now);
 	},
 });
 
@@ -255,13 +186,14 @@ export const submitGuess = mutation({
 		if (!state || state.phase !== "nowPlaying") {
 			throw gameError("guessesClosed");
 		}
-		if (state.turnOrder[state.activeIndex] !== args.participantId) {
+		const view = hitsterPlayerView(state, args.participantId);
+		if (!view.isActive) {
 			throw gameError("notYourTurn");
 		}
 		if (state.pendingGuess) {
 			throw gameError("guessAlreadyLocked");
 		}
-		const timeline = findTimeline(state, args.participantId);
+		const timeline = requireTimeline(view);
 		if (args.dropIndex < 0 || args.dropIndex > timeline.cardIds.length) {
 			throw gameError("invalidDropPosition");
 		}
@@ -294,30 +226,24 @@ export const submitSteal = mutation({
 		if (!state || state.phase !== "nowPlaying") {
 			throw gameError("stealsClosed");
 		}
-		const config = getHitsterModeConfig(state.mode as HitsterMode);
+		const config = getHitsterModeConfig(state.mode);
 		if (!config.stealsEnabled) {
 			throw gameError("stealsUnavailable");
 		}
-		if (state.turnOrder[state.activeIndex] === args.participantId) {
+		const view = hitsterPlayerView(state, args.participantId);
+		if (view.isActive) {
 			throw gameError("activePlayerCannotSteal");
 		}
-		if (!state.turnOrder.includes(args.participantId)) {
+		if (!view.isPlaying) {
 			throw gameError("notPlaying");
 		}
-		if (
-			state.stealClaims.some(
-				(claim) => claim.participantId === args.participantId,
-			)
-		) {
+		if (view.hasClaimed) {
 			throw gameError("stealAlreadyClaimed");
 		}
-		const tokenEntry = state.tokens.find(
-			(entry) => entry.participantId === args.participantId,
-		);
-		if (!tokenEntry || tokenEntry.tokens < 1) {
+		if (view.myTokens < 1) {
 			throw gameError("stealNeedsToken");
 		}
-		const timeline = findTimeline(state, args.participantId);
+		const timeline = requireTimeline(view);
 		if (args.dropIndex < 0 || args.dropIndex > timeline.cardIds.length) {
 			throw gameError("invalidDropPosition");
 		}
@@ -351,163 +277,21 @@ export const reveal = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		requireHost(session, args.participantId);
+		requireHostByParticipantId(session, args.participantId);
 		if (!state || state.phase !== "nowPlaying" || !state.currentCardId) {
 			throw gameError("nothingToReveal");
 		}
-		const mode = state.mode as HitsterMode;
-		const config = getHitsterModeConfig(mode);
-		const cardId = state.currentCardId;
-		const activeParticipantId = state.turnOrder[state.activeIndex];
-		const guess = state.pendingGuess;
-
-		const flags: HitsterAnswerFlags = guess
-			? evaluateAnswerFlags(state, guess, cardId)
-			: {
-					placementCorrect: false,
-					artistCorrect: false,
-					titleCorrect: false,
-					yearCorrect: false,
-				};
-		const outcome = evaluateHitsterRound(mode, flags);
-
-		const timelines = state.timelines.map((entry) => ({
-			...entry,
-			cardIds: [...entry.cardIds],
-		}));
-		let tokens = state.tokens.map((entry) => ({ ...entry }));
-		let coopTokens = state.coopTokens;
-		const tokenChanges: Array<{
-			participantId?: Id<"sessionParticipants">;
-			delta: number;
-		}> = [];
-
-		const activeTimeline = config.shared
-			? timelines[0]
-			: timelines.find(
-					(entry) => entry.participantId === activeParticipantId,
-				);
-		if (!activeTimeline) {
-			throw gameError("timelineNotFound");
-		}
-
-		if (outcome.cardWon && guess) {
-			activeTimeline.cardIds.splice(guess.dropIndex, 0, cardId);
-		}
-		if (outcome.tokenDelta !== 0) {
-			tokens = tokens.map((entry) => {
-				if (entry.participantId !== activeParticipantId) {
-					return entry;
-				}
-				const next = applyHitsterTokenDelta(
-					entry.tokens,
-					outcome.tokenDelta,
-					config.tokenCap,
-				);
-				if (next !== entry.tokens) {
-					tokenChanges.push({
-						participantId: activeParticipantId,
-						delta: next - entry.tokens,
-					});
-				}
-				return { ...entry, tokens: next };
-			});
-		}
-		if (config.shared && !outcome.cardWon && coopTokens !== undefined) {
-			coopTokens = Math.max(0, coopTokens - 1);
-			tokenChanges.push({ participantId: undefined, delta: -1 });
-		}
-
-		// Steal claims already paid their token on submission; report the spend
-		// and resolve the card if the active player missed.
-		const stealResults: Array<{
-			participantId: Id<"sessionParticipants">;
-			correct: boolean;
-			wonCard: boolean;
-		}> = [];
-		let cardWonBy: Id<"sessionParticipants"> | undefined = outcome.cardWon
-			? activeParticipantId
-			: undefined;
-		if (config.stealsEnabled && state.stealClaims.length > 0) {
-			const sortedClaims = [...state.stealClaims].sort(
-				(a, b) => a.submittedAt - b.submittedAt,
-			);
-			let stolen = false;
-			for (const claim of sortedClaims) {
-				const claimFlags = evaluateAnswerFlags(state, claim, cardId);
-				const qualifies = hitsterStealRequirementMet(mode, claimFlags);
-				const wins = !outcome.cardWon && !stolen && qualifies;
-				if (wins) {
-					stolen = true;
-					cardWonBy = claim.participantId;
-					const claimTimeline = timelines.find(
-						(entry) => entry.participantId === claim.participantId,
-					);
-					claimTimeline?.cardIds.splice(claim.dropIndex, 0, cardId);
-				}
-				tokenChanges.push({ participantId: claim.participantId, delta: -1 });
-				stealResults.push({
-					participantId: claim.participantId,
-					correct: qualifies,
-					wonCard: wins,
-				});
-			}
-		}
-
-		const recap = {
-			roundNumber: state.roundNumber,
-			cardId,
-			activeParticipantId,
-			placementCorrect: flags.placementCorrect,
-			artistCorrect: guess?.artistGuess !== undefined ? flags.artistCorrect : undefined,
-			titleCorrect: guess?.titleGuess !== undefined ? flags.titleCorrect : undefined,
-			yearCorrect: guess?.yearGuess !== undefined ? flags.yearCorrect : undefined,
-			cardWonByParticipantId: config.shared ? undefined : cardWonBy,
-			cardWonByTeam: config.shared ? outcome.cardWon : undefined,
-			tokenChanges,
-			stealResults,
-		};
-
-		// Win / loss checks.
-		let phase: "reveal" | "finished" = "reveal";
-		let winnerParticipantId: Id<"sessionParticipants"> | undefined;
-		let coopResult: "won" | "lost" | undefined;
-		if (config.shared) {
-			const status = getHitsterCoopOutcome({
-				cardsOnTimeline: timelines[0].cardIds.length,
-				tokens: coopTokens ?? 0,
-				targetCards: state.targetCards,
-			});
-			if (status !== "ongoing") {
-				phase = "finished";
-				coopResult = status;
-			}
-		} else {
-			const winner = timelines.find(
-				(entry) => entry.cardIds.length >= state.targetCards,
-			);
-			if (winner?.participantId) {
-				phase = "finished";
-				winnerParticipantId = winner.participantId;
-			}
-		}
-
+		const { currentCardId } = state;
+		const revealed = rules(() => resolveHitsterReveal(state, currentCardId));
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase,
-			timelines,
-			tokens,
-			coopTokens,
-			lastRecap: recap,
-			winnerParticipantId,
-			coopResult,
-			updatedAt: now,
-		});
-		if (phase === "finished") {
-			await completeSession(ctx, args.sessionId, {
-				endedAt: now,
-				winnerParticipantIds: winnerParticipantId ? [winnerParticipantId] : [],
+		const patch = { ...revealed, updatedAt: now };
+		if (revealed.phase === "finished") {
+			await finishSession(ctx, state, patch, {
+				now,
+				winners: [revealed.winnerParticipantId],
 			});
+		} else {
+			await ctx.db.patch(state._id, patch);
 		}
 	},
 });
@@ -520,46 +304,24 @@ export const nextRound = mutation({
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		requireHost(session, args.participantId);
+		requireHostByParticipantId(session, args.participantId);
 		if (!state || state.phase !== "reveal") {
 			throw gameError("finishRevealFirst");
 		}
-		const deck = [...state.deck];
-		const currentCardId = deck.pop();
+		const next = advanceHitsterRound(state);
 		const now = Date.now();
-		if (!currentCardId) {
-			// Deck exhausted: longest timeline wins (competitive) or coop loses.
-			const config = getHitsterModeConfig(state.mode as HitsterMode);
-			const leader = config.shared
-				? undefined
-				: [...state.timelines].sort(
-						(a, b) => b.cardIds.length - a.cardIds.length,
-					)[0];
-			await ctx.db.patch(state._id, {
-				phase: "finished",
-				deck,
-				currentCardId: undefined,
-				winnerParticipantId: leader?.participantId,
-				coopResult: config.shared ? "lost" : undefined,
-				updatedAt: now,
-			});
-			await completeSession(ctx, args.sessionId, {
-				endedAt: now,
-				winnerParticipantIds: leader?.participantId
-					? [leader.participantId]
-					: [],
-			});
+		if (next.phase === "finished") {
+			await finishSession(
+				ctx,
+				state,
+				{ ...next, updatedAt: now },
+				{ now, winners: [next.winnerParticipantId] },
+			);
 			return;
 		}
 		await ctx.db.patch(state._id, {
-			phase: "nowPlaying",
-			deck,
-			roundNumber: state.roundNumber + 1,
-			currentCardId,
+			...next,
 			roundStartedAt: now,
-			activeIndex: (state.activeIndex + 1) % state.turnOrder.length,
-			pendingGuess: undefined,
-			stealClaims: [],
 			updatedAt: now,
 		});
 	},
@@ -571,18 +333,11 @@ export const getBundle = query({
 		participantId: v.optional(v.id("sessionParticipants")),
 	},
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
+		const bundle = await loadBundle(ctx, "hitster", args.sessionId);
+		if (!bundle) {
 			return null;
 		}
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const state = await ctx.db
-			.query("hitsterGameStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const { session, participants, state } = bundle;
 		if (!state) {
 			return { session, participants, state: null, hostPlayback: null };
 		}

@@ -1,51 +1,33 @@
-import { v } from "convex/values";
 import {
-	BLUFF_MAX_PLAYERS,
-	BLUFF_MIN_PLAYERS,
-	BLUFF_STARTING_DICE,
-	getBluffWinnerIndex,
+	bluffDiceCounts,
 	isClaimHigher,
 	isValidBluffClaim,
 	nextActiveIndex,
-	resolveBluffChallenge,
-	rollBluffDice,
-} from "../src/lib/games/bluff-dice";
+	resolveBluffRound,
+	startBluffGame,
+} from "@arcadeclub/core/bluff-dice";
+import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { completeSession, reopenSession } from "./lib/completion";
-import { gameError } from "./lib/errors";
-
-async function getState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
-	const session = await ctx.db.get(sessionId);
-	if (!session || session.gameType !== "bluff-dice") {
-		throw gameError("gameNotFound");
-	}
-	const state = await ctx.db
-		.query("bluffDiceStates")
-		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-		.unique();
-	if (!state) {
-		throw gameError("gameNotFound");
-	}
-	return { session, state };
-}
-
-async function requireParticipant(
-	ctx: MutationCtx | QueryCtx,
-	sessionId: Id<"gameSessions">,
-	participantId: Id<"sessionParticipants">,
-) {
-	const participant = await ctx.db.get(participantId);
-	if (
-		!participant ||
-		participant.sessionId !== sessionId ||
-		participant.kickedAt
-	) {
-		throw gameError("notInGame");
-	}
-	return participant;
-}
+import { gameError, rules } from "./lib/errors";
+import {
+	findGameState,
+	finishSession,
+	listPlayersIncludingKicked,
+	loadBundle,
+	loadGame,
+	reopenSession,
+	requireHostByParticipantId,
+	requireParticipant,
+	startSession,
+} from "./lib/gameSession";
+import {
+	createdSession,
+	createdSessionValidator,
+	hostedSessionArgs,
+	hostGame,
+} from "./lib/hostedSession";
 
 function requireActive(
 	state: Doc<"bluffDiceStates">,
@@ -59,35 +41,28 @@ function requireActive(
 	}
 }
 
-export const createState = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		hostParticipantId: v.id("sessionParticipants"),
-	},
+async function insertState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
+	const now = Date.now();
+	return await ctx.db.insert("bluffDiceStates", {
+		sessionId,
+		phase: "lobby",
+		turnOrder: [],
+		hands: [],
+		activeIndex: 0,
+		roundNumber: 0,
+		claimHistory: [],
+		createdAt: now,
+		updatedAt: now,
+	});
+}
+
+export const create = mutation({
+	args: hostedSessionArgs,
+	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session || session.gameType !== "bluff-dice") {
-			throw gameError("sessionNotFound");
-		}
-		const existing = await ctx.db
-			.query("bluffDiceStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
-		if (existing) {
-			return existing._id;
-		}
-		const now = Date.now();
-		return await ctx.db.insert("bluffDiceStates", {
-			sessionId: args.sessionId,
-			phase: "lobby",
-			turnOrder: [],
-			hands: [],
-			activeIndex: 0,
-			roundNumber: 0,
-			claimHistory: [],
-			createdAt: now,
-			updatedAt: now,
-		});
+		const hosted = await hostGame(ctx, "bluff-dice", args);
+		await insertState(ctx, hosted.session._id);
+		return createdSession(hosted);
 	},
 });
 
@@ -97,46 +72,22 @@ export const start = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await getState(ctx, args.sessionId);
+		const { session, state } = await loadGame(
+			ctx,
+			"bluff-dice",
+			args.sessionId,
+		);
 		if (state.phase !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
-		if (session.hostParticipantId !== args.participantId) {
-			throw gameError("hostOnlyStart");
-		}
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const players = participants.filter(
-			(participant) => participant.role !== "watcher",
+		requireHostByParticipantId(session, args.participantId, "hostOnlyStart");
+		const players = await listPlayersIncludingKicked(ctx, args.sessionId);
+		const game = rules(() =>
+			startBluffGame(players.map((player) => player._id)),
 		);
-		if (players.length < BLUFF_MIN_PLAYERS) {
-			throw gameError("needTwoPlayers");
-		}
-		if (players.length > BLUFF_MAX_PLAYERS) {
-			throw gameError("bluffDiceMaxPlayers");
-		}
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase: "claim",
-			turnOrder: players.map((player) => player._id),
-			hands: players.map((player) => ({
-				participantId: player._id,
-				values: rollBluffDice(BLUFF_STARTING_DICE),
-			})),
-			activeIndex: 0,
-			roundNumber: 1,
-			claimHistory: [],
-			lastReveal: undefined,
-			winnerParticipantId: undefined,
-			updatedAt: now,
-		});
-		await ctx.db.patch(args.sessionId, {
-			status: "active",
-			startedAt: session.startedAt ?? now,
-			endedAt: undefined,
-		});
+		await ctx.db.patch(state._id, { ...game, updatedAt: now });
+		await startSession(ctx, session, now);
 	},
 });
 
@@ -148,7 +99,7 @@ export const submitClaim = mutation({
 		face: v.number(),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getState(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "bluff-dice", args.sessionId);
 		requireActive(state, args.participantId);
 		const totalDice = state.hands.reduce(
 			(sum, hand) => sum + hand.values.length,
@@ -162,11 +113,7 @@ export const submitClaim = mutation({
 		if (previous && !isClaimHigher(previous, claim)) {
 			throw gameError("claimMustOutrank");
 		}
-		const diceCounts = state.turnOrder.map(
-			(participantId) =>
-				state.hands.find((hand) => hand.participantId === participantId)
-					?.values.length ?? 0,
-		);
+		const diceCounts = bluffDiceCounts(state.turnOrder, state.hands);
 		await ctx.db.patch(state._id, {
 			claimHistory: [
 				...state.claimHistory,
@@ -184,65 +131,22 @@ export const challenge = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getState(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "bluff-dice", args.sessionId);
 		requireActive(state, args.participantId);
 		const claim = state.claimHistory.at(-1);
 		if (!claim) {
 			throw gameError("noClaimToChallenge");
 		}
-		const outcome = resolveBluffChallenge(
-			state.hands.map((hand) => hand.values),
-			claim,
-		);
-		const loserParticipantId =
-			outcome.loser === "claimant" ? claim.byParticipantId : args.participantId;
-
-		// Loser loses one die; re-roll everyone for the next round.
-		const nextHands = state.hands.map((hand) => {
-			const count =
-				hand.participantId === loserParticipantId
-					? hand.values.length - 1
-					: hand.values.length;
-			return {
-				participantId: hand.participantId,
-				values: rollBluffDice(Math.max(0, count)),
-			};
-		});
-		const diceCounts = state.turnOrder.map(
-			(participantId) =>
-				nextHands.find((hand) => hand.participantId === participantId)?.values
-					.length ?? 0,
-		);
-		const winnerIndex = getBluffWinnerIndex(diceCounts);
-		const loserIndex = state.turnOrder.indexOf(loserParticipantId);
-		// The loser starts the next round, unless they were eliminated.
-		const nextIndex =
-			diceCounts[loserIndex] > 0
-				? loserIndex
-				: nextActiveIndex(diceCounts, loserIndex);
+		const round = resolveBluffRound(state, claim, args.participantId);
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase: winnerIndex === undefined ? "claim" : "finished",
-			hands: nextHands,
-			activeIndex: nextIndex,
-			roundNumber: state.roundNumber + 1,
-			claimHistory: [],
-			lastReveal: {
-				claim,
-				challengerParticipantId: args.participantId,
-				actualCount: outcome.actualCount,
-				loserParticipantId,
-				hands: state.hands,
-			},
-			winnerParticipantId:
-				winnerIndex === undefined ? undefined : state.turnOrder[winnerIndex],
-			updatedAt: now,
-		});
-		if (winnerIndex !== undefined) {
-			await completeSession(ctx, args.sessionId, {
-				endedAt: now,
-				winnerParticipantIds: [state.turnOrder[winnerIndex]],
+		const resolved = { ...round, updatedAt: now };
+		if (round.winnerParticipantId !== undefined) {
+			await finishSession(ctx, state, resolved, {
+				now,
+				winners: [round.winnerParticipantId],
 			});
+		} else {
+			await ctx.db.patch(state._id, resolved);
 		}
 	},
 });
@@ -253,27 +157,18 @@ export const rematch = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await getState(ctx, args.sessionId);
+		const { session, state } = await loadGame(
+			ctx,
+			"bluff-dice",
+			args.sessionId,
+		);
 		if (state.phase !== "finished") {
 			throw gameError("currentGameNotFinished");
 		}
-		if (session.hostParticipantId !== args.participantId) {
-			throw gameError("hostOnlyRematch");
-		}
+		requireHostByParticipantId(session, args.participantId, "hostOnlyRematch");
+		const game = rules(() => startBluffGame(state.turnOrder));
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase: "claim",
-			hands: state.turnOrder.map((participantId) => ({
-				participantId,
-				values: rollBluffDice(BLUFF_STARTING_DICE),
-			})),
-			activeIndex: 0,
-			roundNumber: 1,
-			claimHistory: [],
-			lastReveal: undefined,
-			winnerParticipantId: undefined,
-			updatedAt: now,
-		});
+		await ctx.db.patch(state._id, { ...game, updatedAt: now });
 		await reopenSession(ctx, args.sessionId);
 	},
 });
@@ -285,18 +180,11 @@ export const rematch = mutation({
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
+		const bundle = await loadBundle(ctx, "bluff-dice", args.sessionId);
+		if (!bundle) {
 			return null;
 		}
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const state = await ctx.db
-			.query("bluffDiceStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const { session, participants, state } = bundle;
 		if (!state) {
 			return { session, participants, state: null };
 		}
@@ -323,10 +211,7 @@ export const getMyDice = query({
 	},
 	handler: async (ctx, args) => {
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		const state = await ctx.db
-			.query("bluffDiceStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const state = await findGameState(ctx, "bluff-dice", args.sessionId);
 		if (!state) {
 			return null;
 		}

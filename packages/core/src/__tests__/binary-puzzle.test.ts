@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
 	BINARY_SIZES,
-	binaryGridToString,
 	countBinarySolutions,
 	findBinaryConflicts,
 	generateBinaryPuzzle,
 	isBinarySolved,
+	nextBinaryCell,
 	parseBinaryGrid,
-	seededBinaryPuzzle,
 } from "../binary-puzzle";
-import { mulberry32 } from "../sudoku";
+import { digitsToString } from "../puzzle";
+import { mulberry32 } from "../random";
 
 describe("findBinaryConflicts", () => {
 	it("flags three identical digits in a row", () => {
@@ -84,8 +84,8 @@ describe("generateBinaryPuzzle", () => {
 	});
 
 	it("is deterministic for a given seed", () => {
-		const a = seededBinaryPuzzle(42, "easy");
-		const b = seededBinaryPuzzle(42, "easy");
+		const a = generateBinaryPuzzle("easy", mulberry32(42));
+		const b = generateBinaryPuzzle("easy", mulberry32(42));
 		expect(a.givens).toEqual(b.givens);
 		expect(a.solution).toEqual(b.solution);
 	});
@@ -99,8 +99,8 @@ describe("generateBinaryPuzzle", () => {
 
 describe("serialization", () => {
 	it("round-trips grids through strings", () => {
-		const puzzle = seededBinaryPuzzle(1, "easy");
-		const text = binaryGridToString(puzzle.givens);
+		const puzzle = generateBinaryPuzzle("easy", mulberry32(1));
+		const text = digitsToString(puzzle.givens);
 		expect(text).toHaveLength(36);
 		expect(parseBinaryGrid(text, puzzle.size)).toEqual(puzzle.givens);
 	});
@@ -108,5 +108,11 @@ describe("serialization", () => {
 	it("rejects malformed grids", () => {
 		expect(() => parseBinaryGrid("012", 6)).toThrow();
 		expect(() => parseBinaryGrid("3".repeat(36), 6)).toThrow();
+	});
+});
+
+describe("nextBinaryCell", () => {
+	it("cycles empty, 0, 1 and back to empty", () => {
+		expect([0, 1, 2].map(nextBinaryCell)).toEqual([1, 2, 0]);
 	});
 });

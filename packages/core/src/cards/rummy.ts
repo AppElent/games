@@ -4,19 +4,18 @@
  * differs between games in the family (Jokeren, Rummy 500) is `RummyRules` data.
  */
 import { GameRuleError } from "../errors";
+import { type Rng, shuffle } from "../random";
 import {
 	buildDeck,
 	type CardId,
+	cardFace,
 	clone,
 	deal,
-	drawCards,
 	isJoker,
 	parseCard,
 	RANKS,
-	type Random,
 	type Rank,
 	removeCard,
-	shuffle,
 } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
 import {
@@ -29,7 +28,7 @@ import {
 	meldPoints,
 	swapJoker,
 } from "./melds";
-import type { BotMove } from "./shedding";
+import { type BotMove, drawWithReshuffle, publicTable } from "./table";
 
 export type RummyRules = MeldRules & {
 	decks: number;
@@ -68,7 +67,7 @@ export type RummyState = {
 	nextSeq: number;
 };
 
-export type RummyLayDown = {
+type RummyLayDown = {
 	melds?: CardId[][];
 	additions?: Array<{ meldId: number; cards: CardId[] }>;
 	swaps?: Array<{ meldId: number; card: CardId }>;
@@ -80,6 +79,15 @@ export type RummyAction =
 	| ({ type: "layDown" } & RummyLayDown)
 	| { type: "discard"; card: CardId }
 	| { type: "nextRound" };
+
+/** Keyed by action type, so a new action cannot be left out. */
+export const RUMMY_ACTIONS: Record<RummyAction["type"], true> = {
+	drawStock: true,
+	takeDiscard: true,
+	layDown: true,
+	discard: true,
+	nextRound: true,
+};
 
 export type RummyView = {
 	family: "rummy";
@@ -107,7 +115,7 @@ export type RummyView = {
 export function createRummy(
 	rules: RummyRules,
 	seats: number,
-	random: Random,
+	random: Rng,
 	dealer = seats - 1,
 	carried?: Pick<RummyState, "round" | "scores" | "nextSeq" | "events">,
 ): RummyState {
@@ -137,7 +145,22 @@ export function createRummy(
 	return state;
 }
 
-export function totalsOf(scores: readonly number[][], seats: number) {
+/** Deals so `starter` plays first: the dealer sits one seat before them. */
+export function startRummy(
+	rules: RummyRules,
+	seats: number,
+	random: Rng,
+	starter: number,
+) {
+	return createRummy(rules, seats, random, (starter + seats - 1) % seats);
+}
+
+/** Who leads the rematch: the seat after the one who led the last round. */
+export function nextRummyStarter(state: RummyState) {
+	return (state.dealer + 2) % state.hands.length;
+}
+
+function totalsOf(scores: readonly number[][], seats: number) {
 	return Array.from({ length: seats }, (_, seat) =>
 		scores.reduce((sum, round) => sum + (round[seat] ?? 0), 0),
 	);
@@ -221,7 +244,7 @@ function applyLayDown(
 	for (const shape of built) {
 		const id = state.nextMeldId;
 		state.nextMeldId += 1;
-		state.melds.push({ ...shape, id } as Meld);
+		state.melds.push({ ...shape, id });
 		meldIds.push(id);
 	}
 	if (built.length > 0) {
@@ -289,7 +312,7 @@ export function applyRummy(
 	previous: RummyState,
 	seat: number,
 	action: RummyAction,
-	random: Random,
+	random: Rng,
 ): RummyState {
 	const state = clone(previous);
 	switch (action.type) {
@@ -312,10 +335,7 @@ export function applyRummy(
 		}
 		case "drawStock": {
 			requireTurn(state, seat, "draw");
-			const { drawn, reshuffled } = drawCards(state, 1, random);
-			if (reshuffled) {
-				pushEvent(state, { type: "reshuffle" });
-			}
+			const drawn = drawWithReshuffle(state, 1, random);
 			if (drawn.length === 0) {
 				endRound(rules, state, null);
 				return state;
@@ -388,11 +408,9 @@ export function viewRummy(
 		round: state.round,
 		totalRounds: rules.rounds,
 		top: state.discard[state.discard.length - 1] ?? null,
-		underTop: state.discard.slice(-4, -1),
-		stockCount: state.stock.length,
+		...publicTable(state),
 		melds: state.melds,
 		opened: state.opened,
-		handCounts: state.hands.map((hand) => hand.length),
 		hand: seat === null ? [] : state.hands[seat],
 		takenDiscard: isTurn ? state.takenDiscard : null,
 		scores: state.scores,
@@ -404,7 +422,7 @@ export function viewRummy(
 	};
 }
 
-// --- Computer player -------------------------------------------------------
+// The computer player, which also plays autopiloted seats.
 
 /** Every meld findable in `hand`, best first. Jokers fill single gaps only. */
 function candidateMelds(hand: readonly CardId[], rules: RummyRules) {
@@ -414,7 +432,7 @@ function candidateMelds(hand: readonly CardId[], rules: RummyRules) {
 	const unique = (cards: CardId[]) => {
 		const faces = new Set<string>();
 		return cards.filter((card) => {
-			const face = card.split("#")[0];
+			const face = cardFace(card);
 			if (faces.has(face)) {
 				return false;
 			}
@@ -424,10 +442,12 @@ function candidateMelds(hand: readonly CardId[], rules: RummyRules) {
 	};
 	const groups = new Map<string, CardId[]>();
 	for (const card of unique(naturals)) {
-		const face = card.split("#")[0];
-		const rank = face.slice(1);
-		groups.set(`r${rank}`, [...(groups.get(`r${rank}`) ?? []), card]);
-		groups.set(`s${face[0]}`, [...(groups.get(`s${face[0]}`) ?? []), card]);
+		const parsed = parseCard(card);
+		if (!parsed.joker) {
+			const { rank, suit } = parsed;
+			groups.set(`r${rank}`, [...(groups.get(`r${rank}`) ?? []), card]);
+			groups.set(`s${suit}`, [...(groups.get(`s${suit}`) ?? []), card]);
+		}
 	}
 	// Only naturals are grouped, so every card here has a rank.
 	const rankOf = (card: CardId) => parseCard(card).rank as Rank;
@@ -557,7 +577,7 @@ function botLayDown(
 	const swaps: Array<{ meldId: number; card: CardId }> = [];
 	const additions: Array<{ meldId: number; cards: CardId[] }> = [];
 	if (opened) {
-		const table = state.melds.map((meld) => ({ ...meld }) as Meld);
+		const table = state.melds.map((meld) => ({ ...meld }));
 		// Planned in the order applyLayDown runs them: every swap, then the addition.
 		for (let index = 0; index < table.length; index += 1) {
 			for (const card of [...remaining]) {
@@ -596,16 +616,19 @@ function botDiscard(rules: RummyRules, state: RummyState, seat: number) {
 	const naturals = allowed.filter((card) => !isJoker(card));
 	const pool = naturals.length > 0 ? naturals : allowed;
 	const neighbours = (card: CardId) => {
-		const face = card.split("#")[0];
-		return hand.filter((other) => {
-			if (other === card || isJoker(other)) {
+		const parsed = parseCard(card);
+		if (parsed.joker) {
+			return 0;
+		}
+		return hand.filter((held) => {
+			const other = parseCard(held);
+			if (held === card || other.joker) {
 				return false;
 			}
-			const otherFace = other.split("#")[0];
 			return (
-				otherFace.slice(1) === face.slice(1) ||
-				(otherFace[0] === face[0] &&
-					Math.abs(rankOfFace(otherFace) - rankOfFace(face)) <= 2)
+				other.rank === parsed.rank ||
+				(other.suit === parsed.suit &&
+					Math.abs(RANKS.indexOf(other.rank) - RANKS.indexOf(parsed.rank)) <= 2)
 			);
 		}).length;
 	};
@@ -614,10 +637,6 @@ function botDiscard(rules: RummyRules, state: RummyState, seat: number) {
 			neighbours(a) - neighbours(b) ||
 			handPoints([b], rules) - handPoints([a], rules),
 	)[0];
-}
-
-function rankOfFace(face: string) {
-	return RANKS.indexOf(face.slice(1) as Rank);
 }
 
 function discardHelps(rules: RummyRules, state: RummyState, seat: number) {

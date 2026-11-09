@@ -42,10 +42,7 @@ jobs:
           exit 1
 
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       # Fails before anything ships when the environment is half configured.
       # An Environment without its own CONVEX_DEPLOY_KEY silently inherits the
@@ -87,15 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - name: Check Expo token
-        run: |
-          if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::No EXPO_TOKEN secret. Store it in Infisical as expo-token, then run pnpm env:apply preview --only github."
-            exit 1
-          fi
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/require-expo-token
       - name: Publish preview update
         run: node apps/mobile/scripts/ci-publish-update.mjs preview

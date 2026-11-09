@@ -1,9 +1,5 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
-import {
-	type CardGameDefinition,
-	type CardGameId,
-	resolvedRules,
-} from "@arcadeclub/core/cards/engine";
+import { type CardGame, resolvedRules } from "@arcadeclub/core/cards/engine";
 import type { CardPower } from "@arcadeclub/core/cards/shedding";
 import { fmt, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
@@ -44,13 +40,13 @@ export function RulesSheet({
 	open,
 	onClose,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	options: readonly string[];
 	open: boolean;
 	onClose: () => void;
 }) {
 	const cards = useMessages().games.cards;
-	const text = cards.games[game.id as CardGameId];
+	const text = cards.games[game.id];
 	const optionText = text.options as Record<
 		string,
 		{ label: string; hint: string }

@@ -1,3 +1,4 @@
+import { digitsFromString, digitsToString } from "./puzzle";
 import type { SudokuGrid } from "./sudoku";
 import {
 	digitMask,
@@ -37,8 +38,6 @@ export type SudokuHistory = {
 	future: SudokuBoardState[];
 };
 
-export const SUDOKU_COLOR_COUNT = 8;
-
 export function createBoardState(
 	givens: SudokuGrid,
 	initial?: Partial<Omit<SudokuBoardState, "givens">>,
@@ -73,7 +72,9 @@ function cloneState(state: SudokuBoardState): SudokuBoardState {
 }
 
 /** Merged view: givens where present, otherwise user digits. */
-export function effectiveGrid(state: SudokuBoardState): SudokuGrid {
+export function effectiveGrid(
+	state: Pick<SudokuBoardState, "givens" | "digits">,
+): SudokuGrid {
 	return state.givens.map((value, cell) =>
 		value !== 0 ? value : state.digits[cell],
 	);
@@ -87,7 +88,7 @@ export function isBoardComplete(state: SudokuBoardState) {
 	return isGridSolved(effectiveGrid(state));
 }
 
-export type SudokuActionOptions = {
+type SudokuActionOptions = {
 	/** Strip the placed digit from peer notes after a digit entry. */
 	autoCleanup?: boolean;
 };
@@ -211,7 +212,7 @@ export function canRedo(history: SudokuHistory) {
 	return history.future.length > 0;
 }
 
-// --- persistence (Convex-friendly compact shape) ---
+// The compact shape a board is stored in by Convex.
 
 export type SerializedSudokuBoard = {
 	givens: string;
@@ -223,8 +224,8 @@ export type SerializedSudokuBoard = {
 
 export function serializeBoard(state: SudokuBoardState): SerializedSudokuBoard {
 	return {
-		givens: state.givens.join(""),
-		digits: state.digits.join(""),
+		givens: digitsToString(state.givens),
+		digits: digitsToString(state.digits),
 		corner: [...state.corner],
 		center: [...state.center],
 		colors: [...state.colors],
@@ -235,7 +236,7 @@ function parseDigitString(text: string): SudokuGrid {
 	if (text.length !== SUDOKU_CELL_COUNT) {
 		throw new Error(`Expected 81 characters, got ${text.length}`);
 	}
-	return [...text].map(Number);
+	return digitsFromString(text);
 }
 
 export function deserializeBoard(

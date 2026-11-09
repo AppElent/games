@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Check, Copy, Home, RotateCcw, Sparkles } from "lucide-react";
-import type { ReactNode } from "react";
-import { useState } from "react";
 import { useMessages } from "#/lib/i18n";
+import { useCopyFeedback } from "#/lib/use-copy-feedback";
 
 /**
  * Shared end-of-game panel: result headline, rematch, next actions, and a
@@ -13,24 +12,19 @@ export function GameEndScreen({
 	subtitle,
 	shareText,
 	onRematch,
-	rematchLabel,
 	newGameRoute,
 	newGameLabel,
-	children,
 }: {
 	heading: string;
 	subtitle?: string;
 	shareText?: string;
+	/** Offered by the two-seat matches, whose rematch swaps colours. */
 	onRematch?: () => void;
-	rematchLabel?: string;
 	newGameRoute?: string;
 	newGameLabel?: string;
-	children?: ReactNode;
 }) {
 	const messages = useMessages();
-	const [copied, setCopied] = useState(false);
-	const resolvedRematchLabel =
-		rematchLabel ?? messages.common.endScreen.rematch;
+	const { copied, copy } = useCopyFeedback();
 	const resolvedNewGameLabel =
 		newGameLabel ?? messages.common.endScreen.newGame;
 
@@ -41,7 +35,6 @@ export function GameEndScreen({
 				{heading}
 			</h2>
 			{subtitle ? <p className="mt-2 text-slate-300">{subtitle}</p> : null}
-			{children}
 			<div className="mt-6 flex flex-wrap items-center justify-center gap-3">
 				{onRematch ? (
 					<button
@@ -50,7 +43,7 @@ export function GameEndScreen({
 						onClick={onRematch}
 					>
 						<RotateCcw className="h-4 w-4" />
-						{resolvedRematchLabel}
+						{messages.common.match.rematch}
 					</button>
 				) : null}
 				{newGameRoute ? (
@@ -65,11 +58,7 @@ export function GameEndScreen({
 					<button
 						type="button"
 						className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-5 py-2.5 font-bold text-white hover:bg-white/15"
-						onClick={() => {
-							void navigator.clipboard.writeText(shareText);
-							setCopied(true);
-							window.setTimeout(() => setCopied(false), 2000);
-						}}
+						onClick={() => void copy(shareText)}
 					>
 						{copied ? (
 							<Check className="h-4 w-4 text-emerald-300" />

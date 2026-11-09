@@ -10,8 +10,6 @@ export const connectFour = {
 	players: {
 		red: "red",
 		yellow: "yellow",
-		openSeat: "Open seat",
-		turnBadge: "Turn",
 	},
 	status: {
 		draw: "Draw — the board is full",
@@ -31,14 +29,6 @@ export const connectFour = {
 	},
 	endScreen: {
 		shareText: "Connect Four on Arcade Club — {status}",
-		rematchLabel: "Rematch (colors swap)",
-		rematchError: "Could not start rematch",
-	},
-	info: {
-		button: "Info",
-	},
-	share: {
-		challengeLinkLabel: "Challenge link",
 	},
 	session: {
 		gameNotFound: "Game not found.",

@@ -9,7 +9,7 @@ import { emptyScanCell, emptyScanResult } from "./sudoku-scan";
 
 export type Point = { x: number; y: number };
 
-export const WARP_SIZE = 900; // 9 cells x 100px
+const WARP_SIZE = 900; // 9 cells x 100px
 const CELL = WARP_SIZE / 9;
 
 export async function fileToCanvas(file: Blob, maxDim = 1400) {

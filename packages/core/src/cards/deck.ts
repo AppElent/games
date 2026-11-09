@@ -1,3 +1,5 @@
+import { type Rng, shuffle } from "../random";
+
 /**
  * Playing cards as compact, JSON-safe ids: `H7#0` is the seven of hearts from
  * deck 0, `JK#3` the fourth joker. The deck index keeps ids unique when a game
@@ -23,9 +25,8 @@ export const RANKS = [
 export type Suit = (typeof SUITS)[number];
 export type Rank = (typeof RANKS)[number];
 export type CardId = string;
-export type Random = () => number;
 
-export type ParsedCard =
+type ParsedCard =
 	| { joker: true; suit: null; rank: null }
 	| { joker: false; suit: Suit; rank: Rank };
 
@@ -47,6 +48,16 @@ export function isJoker(id: CardId) {
 	return id.startsWith("JK");
 }
 
+/** The id without its deck index: two copies of a card share a face. */
+export function cardFace(id: CardId) {
+	return id.slice(0, id.indexOf("#"));
+}
+
+/** A card's deck index, or a joker's number. */
+export function cardCopy(id: CardId) {
+	return Number(id.slice(id.indexOf("#") + 1));
+}
+
 export function buildDeck(decks: number, jokers: number): CardId[] {
 	const cards: CardId[] = [];
 	for (let deck = 0; deck < decks; deck += 1) {
@@ -60,15 +71,6 @@ export function buildDeck(decks: number, jokers: number): CardId[] {
 		cards.push(`JK#${joker}`);
 	}
 	return cards;
-}
-
-export function shuffle<T>(items: readonly T[], random: Random): T[] {
-	const result = [...items];
-	for (let i = result.length - 1; i > 0; i -= 1) {
-		const j = Math.floor(random() * (i + 1));
-		[result[i], result[j]] = [result[j], result[i]];
-	}
-	return result;
 }
 
 /** Cards per seat dealt one at a time from the end of the stock. */
@@ -90,7 +92,7 @@ export function deal(stock: CardId[], seats: number, handSize: number) {
 export function drawCards(
 	piles: { stock: CardId[]; discard: CardId[] },
 	count: number,
-	random: Random,
+	random: Rng,
 ) {
 	const drawn: CardId[] = [];
 	let reshuffled = false;

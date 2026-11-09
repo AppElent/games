@@ -1,50 +1,34 @@
-import { useMutation } from "convex/react";
-import { useEffect, useState } from "react";
-import { FitScale } from "#/components/games/FitScale";
-import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
-import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
-import { GameEndScreen } from "#/components/games/GameEndScreen";
-import { ParticipantList } from "#/components/games/ParticipantList";
-import { QrSharePanel } from "#/components/games/QrSharePanel";
-import { SeatBanner } from "#/components/games/SeatBanner";
 import {
+	CONNECT_FOUR_COLORS,
 	CONNECT_FOUR_COLS,
 	CONNECT_FOUR_ROWS,
-	type ConnectFourCell,
 	type ConnectFourColor,
 	getCell,
 	isColumnFull,
-} from "#/lib/games/connect-four";
-import { useErrorMessage } from "#/lib/games/errors";
+} from "@arcadeclub/core/connect-four";
+import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import { useState } from "react";
+import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import { GameEndScreen } from "#/components/games/GameEndScreen";
+import { GameInfoOverlay } from "#/components/games/match/GameInfoOverlay";
+import {
+	MatchHud,
+	MatchStage,
+	MatchStatus,
+} from "#/components/games/match/MatchStage";
+import { MatchWaitingScreen } from "#/components/games/match/MatchWaitingScreen";
+import {
+	SeatCard,
+	SeatCards,
+	SeatName,
+} from "#/components/games/match/SeatCard";
+import { useDuel } from "#/components/games/match/useDuel";
+import { getGameRoute } from "#/lib/games/catalog";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 
-type Participant = {
-	_id: Id<"sessionParticipants">;
-	displayName: string;
-	role: "host" | "player" | "watcher";
-	seat?: string;
-	connected: boolean;
-};
-
-type Bundle = {
-	session: {
-		_id: Id<"gameSessions">;
-		title: string;
-		shareToken?: string;
-	};
-	participants: Participant[];
-	state: {
-		phase: "waiting" | "active" | "finished";
-		redParticipantId?: Id<"sessionParticipants">;
-		yellowParticipantId?: Id<"sessionParticipants">;
-		board: ConnectFourCell[];
-		activeColor: ConnectFourColor;
-		resultOutcome?: "connect" | "draw" | "resignation";
-		resultWinner?: ConnectFourColor;
-	} | null;
-};
+type Bundle = NonNullable<FunctionReturnType<typeof api.connectFour.getBundle>>;
 
 export function ConnectFourMatch({
 	bundle,
@@ -53,55 +37,37 @@ export function ConnectFourMatch({
 	bundle: Bundle;
 	shareUrl: string;
 }) {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const connectFour = messages.games.connectFour;
 	const drop = useMutation(api.connectFour.drop);
 	const resign = useMutation(api.connectFour.resign);
 	const rematch = useMutation(api.connectFour.rematch);
-	const [participantId, setParticipantId] = useState<string>();
-	const [error, setError] = useState("");
 	const [showInfo, setShowInfo] = useState(false);
 
-	useEffect(() => {
-		setParticipantId(
-			window.sessionStorage.getItem("arcade-club.participantId") ?? undefined,
-		);
-	}, []);
-
 	const state = bundle.state;
+	const {
+		participantId,
+		localColor,
+		opponentJoined,
+		finished,
+		myTurn,
+		occupant,
+		isActive,
+		seatAction,
+		error,
+		run,
+	} = useDuel(bundle, CONNECT_FOUR_COLORS);
 	if (!state) {
 		return (
-			<FullscreenGameShell title={bundle.session.title}>
-				<div className="flex h-full items-center justify-center text-slate-300">
-					{connectFour.game.boardLoading}
-				</div>
-			</FullscreenGameShell>
+			<MatchStatus
+				title={bundle.session.title}
+				text={connectFour.game.boardLoading}
+			/>
 		);
 	}
 
-	const red = bundle.participants.find(
-		(participant) => participant._id === state.redParticipantId,
-	);
-	const yellow = bundle.participants.find(
-		(participant) => participant._id === state.yellowParticipantId,
-	);
-	const localColor: ConnectFourColor | undefined =
-		state.redParticipantId === participantId
-			? "red"
-			: state.yellowParticipantId === participantId
-				? "yellow"
-				: undefined;
-	const opponentJoined = Boolean(
-		state.redParticipantId && state.yellowParticipantId,
-	);
-	const finished = state.phase === "finished";
-	const myTurn =
-		Boolean(localColor) &&
-		state.activeColor === localColor &&
-		opponentJoined &&
-		!finished;
-
+	const red = occupant("red");
+	const yellow = occupant("yellow");
 	const statusLabel = finished
 		? state.resultOutcome === "draw"
 			? connectFour.status.draw
@@ -128,15 +94,6 @@ export function ConnectFourMatch({
 								: (yellow?.displayName ?? connectFour.players.yellow),
 					});
 
-	async function run(action: () => Promise<unknown>, fallback: string) {
-		setError("");
-		try {
-			await action();
-		} catch (caught) {
-			setError(errorMessage(caught, fallback));
-		}
-	}
-
 	function handleDrop(column: number) {
 		if (
 			!myTurn ||
@@ -150,7 +107,7 @@ export function ConnectFourMatch({
 			() =>
 				drop({
 					sessionId: bundle.session._id,
-					participantId: participantId as Id<"sessionParticipants">,
+					participantId,
 					column,
 				}),
 			connectFour.actions.dropError,
@@ -158,24 +115,26 @@ export function ConnectFourMatch({
 	}
 
 	const discCards = (
-		<div className="grid gap-3 md:grid-cols-2">
-			<DiscCard
-				color="red"
+		<SeatCards>
+			<SeatCard
+				icon={<Disc color="red" />}
 				label={connectFour.players.red}
-				turnLabel={connectFour.players.turnBadge}
-				name={red?.displayName ?? connectFour.players.openSeat}
-				active={!finished && opponentJoined && state.activeColor === "red"}
+				active={isActive("red")}
 				open={!red}
-			/>
-			<DiscCard
-				color="yellow"
+			>
+				<SeatName name={red?.displayName ?? messages.common.match.openSeat} />
+			</SeatCard>
+			<SeatCard
+				icon={<Disc color="yellow" />}
 				label={connectFour.players.yellow}
-				turnLabel={connectFour.players.turnBadge}
-				name={yellow?.displayName ?? connectFour.players.openSeat}
-				active={!finished && opponentJoined && state.activeColor === "yellow"}
+				active={isActive("yellow")}
 				open={!yellow}
-			/>
-		</div>
+			>
+				<SeatName
+					name={yellow?.displayName ?? messages.common.match.openSeat}
+				/>
+			</SeatCard>
+		</SeatCards>
 	);
 
 	const board = (
@@ -221,16 +180,7 @@ export function ConnectFourMatch({
 				<button
 					type="button"
 					className="rounded-md border border-orange-300/40 bg-orange-300/10 px-4 py-2 text-sm font-bold text-orange-100"
-					onClick={() =>
-						run(
-							() =>
-								resign({
-									sessionId: bundle.session._id,
-									participantId: participantId as Id<"sessionParticipants">,
-								}),
-							connectFour.actions.resignError,
-						)
-					}
+					onClick={seatAction(resign, connectFour.actions.resignError)}
 				>
 					{connectFour.actions.resign}
 				</button>
@@ -242,48 +192,22 @@ export function ConnectFourMatch({
 		<GameEndScreen
 			heading={statusLabel}
 			shareText={fmt(connectFour.endScreen.shareText, { status: statusLabel })}
-			onRematch={
-				localColor
-					? () =>
-							run(
-								() =>
-									rematch({
-										sessionId: bundle.session._id,
-										participantId: participantId as Id<"sessionParticipants">,
-									}),
-								connectFour.endScreen.rematchError,
-							)
-					: undefined
-			}
-			rematchLabel={connectFour.endScreen.rematchLabel}
-			newGameRoute="/connect-four/new"
+			onRematch={seatAction(rematch, messages.common.match.rematchError)}
+			newGameRoute={getGameRoute("connect-four")}
 		/>
 	) : null;
 
-	// Pre-game: waiting for the second seat — scrollable share screen.
 	if (!opponentJoined) {
 		return (
-			<FullscreenGamePage
+			<MatchWaitingScreen
 				title={bundle.session.title}
-				maxWidthClassName="max-w-md"
-			>
-				<p className="club-kicker mb-2">
-					{messages.catalog["connect-four"].title}
-				</p>
-				<h1 className="club-title mb-4 text-3xl font-bold text-white">
-					{bundle.session.title}
-				</h1>
-				<div className="space-y-4">
-					<SeatBanner tone="warning" label={statusLabel} />
-					{discCards}
-					{error ? <p className="text-sm text-orange-200">{error}</p> : null}
-					<QrSharePanel
-						label={connectFour.share.challengeLinkLabel}
-						url={shareUrl}
-					/>
-					<ParticipantList participants={bundle.participants} />
-				</div>
-			</FullscreenGamePage>
+				gameTitle={messages.catalog["connect-four"].title}
+				status={statusLabel}
+				seats={discCards}
+				error={error}
+				shareUrl={shareUrl}
+				participants={bundle.participants}
+			/>
 		);
 	}
 
@@ -291,29 +215,13 @@ export function ConnectFourMatch({
 		<FullscreenGameShell
 			title={bundle.session.title}
 			hud={
-				<div className="flex items-center justify-end gap-2">
-					<span className="hidden max-w-[40vw] truncate rounded-xl bg-slate-900/70 px-3 py-2 text-xs text-slate-200 backdrop-blur sm:inline">
-						{statusLabel}
-					</span>
-					<button
-						type="button"
-						onClick={() => setShowInfo((open) => !open)}
-						className="flex h-11 items-center rounded-xl border border-white/20 bg-slate-900/70 px-4 text-sm font-bold text-white backdrop-blur"
-					>
-						{connectFour.info.button}
-					</button>
-				</div>
+				<MatchHud
+					status={statusLabel}
+					onInfo={() => setShowInfo((open) => !open)}
+				/>
 			}
 		>
-			<div className="flex h-full flex-col">
-				{error ? (
-					<p className="px-4 pt-14 text-center text-xs text-orange-200">
-						{error}
-					</p>
-				) : null}
-				<div className={`min-h-0 flex-1 px-2 pb-1 ${error ? "pt-1" : "pt-14"}`}>
-					<FitScale designWidth={480}>{board}</FitScale>
-				</div>
+			<MatchStage board={board} designWidth={480} error={error}>
 				<p className="truncate px-2 pb-1 text-center text-xs text-slate-300 sm:hidden">
 					{statusLabel}
 				</p>
@@ -321,74 +229,26 @@ export function ConnectFourMatch({
 				{endScreen ? (
 					<div className="mx-auto w-full max-w-md px-2 pb-3">{endScreen}</div>
 				) : null}
-			</div>
+			</MatchStage>
 			{showInfo ? (
-				<div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm">
-					<div className="h-full touch-pan-y overflow-y-auto overscroll-contain p-4 pt-16">
-						<div className="mx-auto max-w-md space-y-4">
-							<SeatBanner tone="success" label={statusLabel} />
-							{discCards}
-							<QrSharePanel
-								label={connectFour.share.challengeLinkLabel}
-								url={shareUrl}
-							/>
-							<ParticipantList participants={bundle.participants} />
-							<button
-								type="button"
-								onClick={() => setShowInfo(false)}
-								className="w-full min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
-							>
-								{messages.common.actions.close}
-							</button>
-						</div>
-					</div>
-				</div>
+				<GameInfoOverlay
+					status={statusLabel}
+					seats={discCards}
+					shareUrl={shareUrl}
+					participants={bundle.participants}
+					onClose={() => setShowInfo(false)}
+				/>
 			) : null}
 		</FullscreenGameShell>
 	);
 }
 
-function DiscCard({
-	color,
-	label,
-	turnLabel,
-	name,
-	active = false,
-	open = false,
-}: {
-	color: ConnectFourColor;
-	label: string;
-	turnLabel: string;
-	name: string;
-	active?: boolean;
-	open?: boolean;
-}) {
+function Disc({ color }: { color: ConnectFourColor }) {
 	return (
-		<div
-			className={`rounded-lg border p-4 ${
-				open
-					? "border-dashed border-orange-300/40 bg-orange-300/10"
-					: active
-						? "border-cyan-300/40 bg-cyan-300/10"
-						: "border-white/10 bg-white/5"
+		<span
+			className={`inline-block h-3 w-3 rounded-full ${
+				color === "red" ? "bg-red-500" : "bg-yellow-400"
 			}`}
-		>
-			<div className="flex items-center justify-between gap-3">
-				<p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400">
-					<span
-						className={`inline-block h-3 w-3 rounded-full ${
-							color === "red" ? "bg-red-500" : "bg-yellow-400"
-						}`}
-					/>
-					{label}
-				</p>
-				{active ? (
-					<span className="rounded-full bg-cyan-300/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-100">
-						{turnLabel}
-					</span>
-				) : null}
-			</div>
-			<p className="mt-1 truncate text-lg font-bold text-white">{name}</p>
-		</div>
+		/>
 	);
 }

@@ -9,7 +9,6 @@
  * column.
  */
 import { Stack, useFocusEffect, useRouter } from "expo-router";
-import * as ScreenOrientation from "expo-screen-orientation";
 import { type ReactNode, useCallback, useState } from "react";
 import {
 	type LayoutRectangle,
@@ -28,6 +27,7 @@ import {
 } from "../../../theme";
 import { HeaderButton } from "../../../ui/button";
 import { Icon } from "../../../ui/icon";
+import { lockPortrait, unlockRotation } from "../../../ui/orientation";
 import { fitBoardWidth } from "../board/board-layout";
 
 /** Below this height a landscape screen drops the header. */
@@ -136,15 +136,8 @@ export function BoardScreen({
 function useBoardRotation() {
 	useFocusEffect(
 		useCallback(() => {
-			const ignore = () => {
-				// Resizable windows (iPad, iPhone Mirroring) may refuse a lock.
-			};
-			ScreenOrientation.unlockAsync().catch(ignore);
-			return () => {
-				ScreenOrientation.lockAsync(
-					ScreenOrientation.OrientationLock.PORTRAIT_UP,
-				).catch(ignore);
-			};
+			unlockRotation();
+			return lockPortrait;
 		}, []),
 	);
 }

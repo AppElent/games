@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-	buildShareUrl,
+	buildInviteUrl,
+	createGuestIdentity,
+	FORMATTED_JOIN_CODE_MAX_LENGTH,
 	formatJoinCode,
 	getGuestDisplayName,
 	isJoinCodeLike,
 	normalizeJoinCode,
 	parseInvite,
+	seatSecretAfterJoin,
 } from "../sessions";
 
 describe("session helpers", () => {
@@ -25,16 +28,45 @@ describe("session helpers", () => {
 		expect(isJoinCodeLike("too-long-code")).toBe(false);
 	});
 
+	it("fits the longest accepted code, formatted, in the formatted maximum", () => {
+		const longest = formatJoinCode("ABCDEFGH");
+		expect(isJoinCodeLike(longest)).toBe(true);
+		expect(longest).toHaveLength(FORMATTED_JOIN_CODE_MAX_LENGTH);
+		expect(isJoinCodeLike("ABCDEFGHI")).toBe(false);
+	});
+
 	it("creates stable guest display names from ids", () => {
-		expect(getGuestDisplayName("guest_0001")).toBe("Player 001");
-		expect(getGuestDisplayName("guest_9876")).toBe("Player 876");
+		expect(getGuestDisplayName("guest_0001", "Player {number}")).toBe(
+			"Player 001",
+		);
+		expect(getGuestDisplayName("guest_9876", "Player {number}")).toBe(
+			"Player 876",
+		);
 		expect(getGuestDisplayName("guest_9876", "Speler {number}")).toBe(
 			"Speler 876",
 		);
 	});
 
+	it("gives a new guest a name from the template it is passed", () => {
+		const guest = createGuestIdentity("Speler {number}", 123);
+		expect(guest.displayName).toBe(
+			getGuestDisplayName(guest.id, "Speler {number}"),
+		);
+		expect(guest.createdAt).toBe(123);
+	});
+
+	it("builds invite urls for room codes and same-site links", () => {
+		expect(buildInviteUrl("https://games.test", { code: "ABC123" })).toBe(
+			"https://games.test/join?code=ABC123",
+		);
+		expect(buildInviteUrl("", { code: "ABC123" })).toBe("/join?code=ABC123");
+		expect(buildInviteUrl("https://games.test", { token: "a/b" })).toBe(
+			"https://games.test/join?token=a%2Fb",
+		);
+	});
+
 	it("builds share urls without duplicate slashes", () => {
-		expect(buildShareUrl("https://games.test/", "share_abc")).toBe(
+		expect(buildInviteUrl("https://games.test/", { token: "share_abc" })).toBe(
 			"https://games.test/join?token=share_abc",
 		);
 	});
@@ -58,5 +90,31 @@ describe("session helpers", () => {
 		expect(parseInvite("https://games.example/join")).toBeNull();
 		expect(parseInvite("WIFI:S:home;T:WPA;P:secret;;")).toBeNull();
 		expect(parseInvite("hello world, long text")).toBeNull();
+	});
+});
+
+describe("seatSecretAfterJoin", () => {
+	const joined = { participantId: "seat-1", seatClaimed: false };
+	const held = { participantId: "seat-1", seatSecret: "held" };
+
+	it("keeps the secret a returning seat already holds", () => {
+		expect(seatSecretAfterJoin(held, joined, "new")).toBe("held");
+	});
+
+	it("uses the new secret when the join claimed the seat", () => {
+		expect(
+			seatSecretAfterJoin(held, { ...joined, seatClaimed: true }, "new"),
+		).toBe("new");
+	});
+
+	it("uses the new secret for a seat this device has never held", () => {
+		expect(seatSecretAfterJoin(undefined, joined, "new")).toBe("new");
+		expect(
+			seatSecretAfterJoin(
+				{ participantId: "other-seat", seatSecret: "held" },
+				joined,
+				"new",
+			),
+		).toBe("new");
 	});
 });

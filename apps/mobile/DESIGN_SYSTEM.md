@@ -6,7 +6,7 @@ Arcade Club is a phone-first party and puzzle arcade: quick to start, readable a
 arm's length, and calm while a game is in progress. Dark is the brand default. Light
 mirrors the web app's `.light` palette. Cyan `accent` marks primary actions,
 selection and focus. Each game has one hue for its tile and highlights (Sudoku
-cyan, Backgammon orange, Hitster pink).
+cyan, Backgammon orange, Hitster pink, card games green).
 
 `src/theme/tokens.ts` owns every colour, the spacing and radius scales,
 `metrics` (44-point hit target, 50-point controls, 640-point content width) and
@@ -19,7 +19,7 @@ through `AppText` variants.
 | --- | --- |
 | `Screen` | Scrolling screen with gutters and content max width |
 | `Card` | One object or summary; pressable when it navigates |
-| `Button` | `primary` (one per view), `secondary`, `plain` text action, `danger` |
+| `Button` | `primary` (one per view), `secondary`, `plain` text action |
 | `Segmented` | Small fixed choice sets (difficulty, target, timer) |
 | `ChoiceList` | Radio list where each option needs a detail line (Hitster mode, pack) |
 | `TextField` | Labelled text entry |
@@ -62,4 +62,4 @@ Feature-owned game surfaces:
 | Colours come from semantic tokens per scheme | Card table | `cardColors`, the same in light and dark | Felt and playing cards read as physical objects. |
 | Text scales without a cap | Card table | Scales up to 1.3× (`TABLE_TEXT_SCALE`) | Seats, piles and hand share one fixed screen, and the rules and lobby carry the same words at full size. |
 | 44pt hit targets | Overlapping cards in a big hand | At least 23pt wide and a full card tall | Thirteen cards stay visible at once. VoiceOver reaches each card as its own button. |
-| Single accent | Game tiles | Per-game hue (`accent`, `orange`, `pink` with `*Dim` fills) | Helps players tell games apart in the list and in Continue. |
+| Single accent | Game tiles | Per-game hue (`accent`, `orange`, `pink`, `green` with `*Dim` fills) | Helps players tell games apart in the list and in Continue. |

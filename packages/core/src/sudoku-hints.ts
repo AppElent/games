@@ -1,4 +1,5 @@
 import type { sudoku as sudokuCopy } from "./i18n/en/games/sudoku";
+import { fmt } from "./i18n/format";
 import type { SudokuGrid } from "./sudoku";
 import {
 	boxOf,
@@ -15,7 +16,7 @@ import {
 	SUDOKU_ROWS,
 } from "./sudoku";
 
-export type HintTechniqueLevel = "beginner" | "intermediate" | "advanced";
+type HintTechniqueLevel = "beginner" | "intermediate" | "advanced";
 
 type UnitKind = "row" | "column" | "box";
 type HintUnit = { kind: UnitKind; index: number };
@@ -24,7 +25,7 @@ type HintUnit = { kind: UnitKind; index: number };
  * What a hint is about. `describeHint` turns it into localized text; the
  * engine itself has no prose.
  */
-export type HintTechnique =
+type HintTechnique =
 	| "mistake"
 	| "naked-single"
 	| "hidden-single"
@@ -53,9 +54,8 @@ export type SudokuHint = {
 	box?: number;
 };
 
-export type TechniqueDetector = {
+type TechniqueDetector = {
 	id: string;
-	name: string;
 	level: HintTechniqueLevel;
 	detect: (grid: SudokuGrid, candidates: number[]) => SudokuHint | null;
 };
@@ -72,11 +72,8 @@ function allUnits(): UnitRef[] {
 	return units;
 }
 
-// --- detectors ---
-
 const nakedSingle: TechniqueDetector = {
 	id: "naked-single",
-	name: "Naked single",
 	level: "beginner",
 	detect: (grid, candidates) => {
 		for (let cell = 0; cell < 81; cell += 1) {
@@ -100,7 +97,6 @@ const nakedSingle: TechniqueDetector = {
 
 const hiddenSingle: TechniqueDetector = {
 	id: "hidden-single",
-	name: "Hidden single",
 	level: "beginner",
 	detect: (grid, candidates) => {
 		for (const unit of allUnits()) {
@@ -180,14 +176,12 @@ function findPointing(
 
 const pointing: TechniqueDetector = {
 	id: "pointing",
-	name: "Pointing pair/triple",
 	level: "intermediate",
 	detect: findPointing,
 };
 
 const boxLineReduction: TechniqueDetector = {
 	id: "box-line-reduction",
-	name: "Box-line reduction",
 	level: "intermediate",
 	detect: (grid, candidates) => {
 		const lines: UnitRef[] = [];
@@ -342,28 +336,24 @@ function findHiddenSet(
 
 const nakedPair: TechniqueDetector = {
 	id: "naked-pair",
-	name: "Naked pair",
 	level: "intermediate",
 	detect: (grid, candidates) => findNakedSet(grid, candidates, 2),
 };
 
 const nakedTriple: TechniqueDetector = {
 	id: "naked-triple",
-	name: "Naked triple",
 	level: "intermediate",
 	detect: (grid, candidates) => findNakedSet(grid, candidates, 3),
 };
 
 const hiddenPair: TechniqueDetector = {
 	id: "hidden-pair",
-	name: "Hidden pair",
 	level: "intermediate",
 	detect: (grid, candidates) => findHiddenSet(grid, candidates, 2),
 };
 
 const hiddenTriple: TechniqueDetector = {
 	id: "hidden-triple",
-	name: "Hidden triple",
 	level: "intermediate",
 	detect: (grid, candidates) => findHiddenSet(grid, candidates, 3),
 };
@@ -375,7 +365,6 @@ const hiddenTriple: TechniqueDetector = {
  */
 const snyderSuggestion: TechniqueDetector = {
 	id: "snyder-pair",
-	name: "Snyder notation",
 	level: "beginner",
 	detect: (grid, candidates) => {
 		for (let box = 0; box < 9; box += 1) {
@@ -401,10 +390,7 @@ const snyderSuggestion: TechniqueDetector = {
 	},
 };
 
-/**
- * Ordered registry. Advanced techniques (X-Wing, Swordfish, XY-Wing,
- * coloring, chains) plug in here later as additional detectors.
- */
+/** Tried in order; the first detector that finds something wins. */
 export const SUDOKU_TECHNIQUES: readonly TechniqueDetector[] = [
 	nakedSingle,
 	hiddenSingle,
@@ -444,12 +430,11 @@ function findMistake(
 	};
 }
 
-export type HintOptions = {
+type HintOptions = {
 	/** The solved grid, when the client has it. */
 	solution?: SudokuGrid;
 	/** Non-zero for the puzzle's own digits, which are never the mistake. */
 	givens?: SudokuGrid;
-	detectors?: readonly TechniqueDetector[];
 };
 
 export function findHint(
@@ -461,7 +446,7 @@ export function findHint(
 		return mistake;
 	}
 	const candidates = computeCandidates(grid);
-	for (const detector of options.detectors ?? SUDOKU_TECHNIQUES) {
+	for (const detector of SUDOKU_TECHNIQUES) {
 		const hint = detector.detect(grid, candidates);
 		if (hint) {
 			return hint;
@@ -470,14 +455,7 @@ export function findHint(
 	return null;
 }
 
-export type SudokuHintCopy = typeof sudokuCopy.hints;
-
-/** Fill {name} placeholders. */
-function fill(template: string, values: Record<string, string | number>) {
-	return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-		key in values ? String(values[key]) : match,
-	);
-}
+type SudokuHintCopy = typeof sudokuCopy.hints;
 
 /**
  * A hint's title and the text for a level: 1 says where to look, 2 names the
@@ -489,8 +467,8 @@ export function describeHint(
 	copy: SudokuHintCopy,
 ) {
 	const cell = (index: number) =>
-		fill(copy.cell, { row: rowOf(index) + 1, col: colOf(index) + 1 });
-	const unit = (ref: HintUnit) => fill(copy[ref.kind], { n: ref.index + 1 });
+		fmt(copy.cell, { row: rowOf(index) + 1, col: colOf(index) + 1 });
+	const unit = (ref: HintUnit) => fmt(copy[ref.kind], { n: ref.index + 1 });
 	const size = hint.technique === "mistake" ? 1 : hint.cells.length;
 	const values = {
 		cell: cell(hint.cells[0]),
@@ -514,8 +492,8 @@ export function describeHint(
 			? copy.hiddenSingle.crossHatch
 			: "";
 	return {
-		title: fill(text.title, values),
-		text: fill(body, values) + crossHatch,
+		title: fmt(text.title, values),
+		text: fmt(body, values) + crossHatch,
 	};
 }
 

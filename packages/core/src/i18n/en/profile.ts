@@ -1,5 +1,4 @@
 export const profile = {
-	title: "Profile",
 	account: "Account",
 	guestTitle: "Playing as a guest",
 	guestBody:

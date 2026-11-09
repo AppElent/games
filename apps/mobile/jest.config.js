@@ -12,7 +12,6 @@ const mustTransform = [
 	"@expo",
 	"@react-native",
 	"@react-navigation",
-	"@testing-library",
 	"convex-helpers",
 	"expo",
 	"expo-.*",
@@ -24,14 +23,8 @@ const mustTransform = [
 
 module.exports = {
 	preset: "jest-expo",
-	setupFiles: [
-		require.resolve("react-native-gesture-handler/jestSetup"),
-		"<rootDir>/jest.setup.ts",
-	],
-	// Reanimated 4 / Worklets (SDK 58) load JSI-only builds unless Jest
-	// resolves their test entry points through Reanimated's resolver.
-	resolver: require.resolve("react-native-reanimated/jest/resolver"),
-	testMatch: ["<rootDir>/src/**/*.test.ts", "<rootDir>/src/**/*.test.tsx"],
+	setupFiles: ["<rootDir>/jest.setup.ts"],
+	testMatch: ["<rootDir>/src/**/*.test.ts"],
 	transformIgnorePatterns: [
 		`node_modules[\\\\/](?!([^\\\\/]+[\\\\/])*(${mustTransform})[\\\\/])`,
 	],

@@ -2,7 +2,7 @@
  * The Play tab: the games the app carries, then anything this phone can
  * pick back up (saved solo games and online seats).
  */
-import { type Href, useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import { haptics } from "../../../feedback/haptics";
@@ -22,56 +22,11 @@ import { Icon } from "../../../ui/icon";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { useAppUpdate } from "../../../updates/use-app-update";
-import {
-	type ContinueItem,
-	listContinueItems,
-	removeContinueItem,
-} from "./continue-items";
+import { APP_GAMES } from "../app-games";
+import { type ContinueItem, listContinueItems } from "./continue-items";
 import { type OnlineStatus, useOnlineStatuses } from "./online-status";
 
-type GameEntry = {
-	key: "sudoku" | "backgammon" | "hitster" | "card-games";
-	href: Href;
-	icon: Parameters<typeof Icon>[0]["ios"];
-	androidIcon: Parameters<typeof Icon>[0]["android"];
-	tint: keyof Tokens;
-	tintDim: keyof Tokens;
-};
-
-const GAMES: readonly GameEntry[] = [
-	{
-		key: "sudoku",
-		href: "/sudoku",
-		icon: "square.grid.3x3.fill",
-		androidIcon: "grid_on",
-		tint: "accent",
-		tintDim: "accentDim",
-	},
-	{
-		key: "backgammon",
-		href: "/backgammon",
-		icon: "dice.fill",
-		androidIcon: "casino",
-		tint: "orange",
-		tintDim: "orangeDim",
-	},
-	{
-		key: "hitster",
-		href: "/hitster",
-		icon: "music.note.list",
-		androidIcon: "queue_music",
-		tint: "pink",
-		tintDim: "pinkDim",
-	},
-	{
-		key: "card-games",
-		href: "/cards",
-		icon: "suit.spade.fill",
-		androidIcon: "playing_cards",
-		tint: "green",
-		tintDim: "greenDim",
-	},
-];
+const GAMES = Object.values(APP_GAMES);
 
 const CONTINUE_LIMIT = 5;
 
@@ -95,7 +50,7 @@ export function PlayHomeScreen() {
 	);
 
 	const remove = (item: ContinueItem) => {
-		const online = item.source.kind === "online";
+		const online = Boolean(item.seat);
 		haptics.selectionChanged();
 		Alert.alert(
 			online ? t.play.removeOnlineTitle : t.play.removeSavedTitle,
@@ -106,7 +61,7 @@ export function PlayHomeScreen() {
 					text: t.play.remove,
 					style: "destructive",
 					onPress: () => {
-						removeContinueItem(item.source);
+						item.remove();
 						setItems(listContinueItems());
 					},
 				},
@@ -115,7 +70,7 @@ export function PlayHomeScreen() {
 	};
 
 	const detail = (item: ContinueItem, status: OnlineStatus | undefined) => {
-		if (item.source.kind !== "online") {
+		if (!item.seat) {
 			return `${t.play.savedGame} · ${relativeTime(t, locale, item.updatedAt)}`;
 		}
 		if (!status) return t.play.onlineGame;
@@ -149,15 +104,15 @@ export function PlayHomeScreen() {
 			<AppText variant="secondary">{t.play.subtitle}</AppText>
 			<View style={styles.list}>
 				{GAMES.map((game) => {
-					const title = t.catalog[game.key].title;
-					const tagline = t.play.taglines[game.key];
+					const title = t.catalog[game.id].title;
+					const tagline = t.play.taglines[game.id];
 					return (
 						<Card
-							key={game.key}
+							key={game.id}
 							onPress={() => router.push(game.href)}
 							accessibilityLabel={title}
 							accessibilityHint={tagline}
-							testID={`play-${game.key}`}
+							testID={`play-${game.id}`}
 						>
 							<View style={[styles.row, stacked && styles.stacked]}>
 								<View
@@ -202,10 +157,10 @@ export function PlayHomeScreen() {
 						{t.play.continue.toUpperCase()}
 					</AppText>
 					{visible.map((item) => {
-						const game = GAMES.find((entry) => entry.key === item.gameType);
+						const game = APP_GAMES[item.gameType];
 						const status = statuses[item.id] ?? undefined;
 						const title =
-							item.gameType === "card-games" && status?.title
+							"titledBySession" in game && status?.title
 								? status.title
 								: t.catalog[item.gameType].title;
 						const text = detail(item, status);
@@ -225,21 +180,19 @@ export function PlayHomeScreen() {
 								testID={`continue-${item.id}`}
 							>
 								<View style={[styles.row, stacked && styles.stacked]}>
-									{game ? (
-										<View
-											style={[
-												styles.smallBadge,
-												{ backgroundColor: tokens[game.tintDim] },
-											]}
-										>
-											<Icon
-												ios={game.icon}
-												android={game.androidIcon}
-												size={18}
-												color={tokens[game.tint]}
-											/>
-										</View>
-									) : null}
+									<View
+										style={[
+											styles.smallBadge,
+											{ backgroundColor: tokens[game.tintDim] },
+										]}
+									>
+										<Icon
+											ios={game.icon}
+											android={game.androidIcon}
+											size={18}
+											color={tokens[game.tint]}
+										/>
+									</View>
 									<View style={styles.text}>
 										<AppText
 											variant="body"

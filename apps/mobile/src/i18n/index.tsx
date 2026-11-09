@@ -1,12 +1,13 @@
 /**
  * The phone's language: a saved choice beats the device's language list,
  * which beats English. Resolved synchronously during the first render (see
- * `src/prefs/local-preference.ts`) so no frame paints in the wrong language.
+ * `src/storage/local-store.ts`) so no frame paints in the wrong language.
  *
  * Mounted outside Clerk and Convex: language belongs to the phone, not the
  * account, and has to apply to sign-in and offline states too.
  */
 
+import { DEFAULT_LOCALE, resolveLocale } from "@arcadeclub/core/i18n/format";
 import {
 	LOCALES,
 	type Locale,
@@ -19,26 +20,15 @@ import {
 	type ReactNode,
 	use,
 	useCallback,
+	useEffect,
 	useMemo,
 	useState,
 } from "react";
-import {
-	PREFERENCE_KEYS,
-	readPreference,
-	writePreference,
-} from "../prefs/local-preference";
-import { resolveLocale } from "./core";
+import { setFeedbackLocale } from "../observability/init";
+import { readText, STORAGE_KEYS, writeText } from "../storage/local-store";
 
-export { fmt, plural } from "./core";
+export { fmt, plural } from "@arcadeclub/core/i18n/format";
 export type { Locale, Messages };
-
-export const SUPPORTED_LOCALES = LOCALES;
-const DATE_LOCALE: Record<Locale, string> = { en: "en-GB", nl: "nl-NL" };
-
-/** The BCP 47 tag used for date formatting, so screens never branch on locale. */
-export function dateLocale(locale: Locale): string {
-	return DATE_LOCALE[locale];
-}
 
 function initialLocale(): Locale {
 	let device = "";
@@ -50,9 +40,9 @@ function initialLocale(): Locale {
 		// No native locale module: fall back to English.
 	}
 	return resolveLocale(
-		SUPPORTED_LOCALES,
-		"en",
-		readPreference(PREFERENCE_KEYS.locale) ?? undefined,
+		LOCALES,
+		DEFAULT_LOCALE,
+		readText(STORAGE_KEYS.locale) ?? undefined,
 		device,
 	);
 }
@@ -71,8 +61,11 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
 	const setLocale = useCallback((next: Locale) => {
 		setStoredLocale(next);
-		writePreference(PREFERENCE_KEYS.locale, next);
+		writeText(STORAGE_KEYS.locale, next);
 	}, []);
+
+	// The shake-to-report form follows the app's language.
+	useEffect(() => setFeedbackLocale(locale), [locale]);
 
 	const value = useMemo(
 		() => ({ locale, t: messages[locale], setLocale }),

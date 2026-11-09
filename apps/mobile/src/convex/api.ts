@@ -2,7 +2,7 @@
  * The generated Convex API, re-exported across the monorepo boundary.
  *
  * `convex/_generated` lives at the repo root and crosses here by relative
- * path (same rule as Foundry and Gather). There is no mobile backend: this
+ * path. There is no mobile backend: this
  * app is a second client of the deployment the web app uses.
  */
 export { api } from "../../../../convex/_generated/api";

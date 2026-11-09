@@ -1,20 +1,17 @@
-import { Show } from "@clerk/react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import {
 	BarChart3,
 	ChevronRight,
 	FlaskConical,
 	ListChecks,
 } from "lucide-react";
-import { useEffect } from "react";
 import { GameCatalog } from "#/components/games/GameCatalog";
-import { type GameType, getGameByType } from "#/lib/games/catalog";
-import { buildGameStats } from "#/lib/games/results";
+import { RequireSignedIn } from "#/components/RequireSignedIn";
+import { buildGameStats } from "#/lib/games/game-stats";
 import { fmt, useI18n, useMessages } from "#/lib/i18n";
-import { useGameLocalizer } from "#/lib/i18n/catalog";
 import { api } from "../../../convex/_generated/api";
-import { authConfig } from "../../lib/auth-config";
 
 export const Route = createFileRoute("/dashboard/")({
 	component: DashboardPage,
@@ -23,51 +20,58 @@ export const Route = createFileRoute("/dashboard/")({
 function DashboardPage() {
 	const messages = useMessages();
 	return (
+		<RequireSignedIn>
+			<main className="club-wrap py-10">
+				<p className="club-kicker mb-2">{messages.common.dashboard.kicker}</p>
+				<h1 className="club-title mb-2 text-4xl font-bold text-[var(--club-text)]">
+					{messages.common.dashboard.heading}
+				</h1>
+				<p className="mb-6 max-w-2xl text-[var(--club-muted)]">
+					{messages.common.dashboard.intro}
+				</p>
+				<div className="mb-8 flex flex-wrap gap-3">
+					<Link
+						to="/quiz/sets"
+						className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-[var(--club-text)] no-underline hover:bg-white/10"
+					>
+						<ListChecks className="h-4 w-4 text-cyan-300" />
+						{messages.common.dashboard.quizSets}
+					</Link>
+					<Link
+						to="/workbench"
+						className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-[var(--club-text)] no-underline hover:bg-white/10"
+					>
+						<FlaskConical className="h-4 w-4 text-emerald-300" />
+						{messages.common.dashboard.contentWorkbench}
+					</Link>
+				</div>
+				<Participation />
+				<GameCatalog />
+			</main>
+		</RequireSignedIn>
+	);
+}
+
+type ParticipationRow = NonNullable<
+	FunctionReturnType<typeof api.sessions.listParticipation>
+>[number];
+
+/** The account's stats and recent games, both from its participation rows. */
+function Participation() {
+	const rows = useQuery(api.sessions.listParticipation);
+	if (!rows?.length) {
+		return null;
+	}
+	return (
 		<>
-			<Show when="signed-in">
-				<main className="club-wrap py-10">
-					<p className="club-kicker mb-2">{messages.common.dashboard.kicker}</p>
-					<h1 className="club-title mb-2 text-4xl font-bold text-[var(--club-text)]">
-						{messages.common.dashboard.heading}
-					</h1>
-					<p className="mb-6 max-w-2xl text-[var(--club-muted)]">
-						{messages.common.dashboard.intro}
-					</p>
-					<div className="mb-8 flex flex-wrap gap-3">
-						<Link
-							to="/quiz/sets"
-							className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-[var(--club-text)] no-underline hover:bg-white/10"
-						>
-							<ListChecks className="h-4 w-4 text-cyan-300" />
-							{messages.common.dashboard.quizSets}
-						</Link>
-						<Link
-							to="/workbench"
-							className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-[var(--club-text)] no-underline hover:bg-white/10"
-						>
-							<FlaskConical className="h-4 w-4 text-emerald-300" />
-							{messages.common.dashboard.contentWorkbench}
-						</Link>
-					</div>
-					<PlayerStats />
-					<RecentGames />
-					<GameCatalog />
-				</main>
-			</Show>
-			<Show when="signed-out">
-				<RedirectToSignIn />
-			</Show>
+			<PlayerStats rows={rows} />
+			<RecentGames rows={rows} />
 		</>
 	);
 }
 
-function PlayerStats() {
-	const rows = useQuery(api.sessions.listParticipation);
-	const localize = useGameLocalizer();
+function PlayerStats({ rows }: { rows: ParticipationRow[] }) {
 	const messages = useMessages();
-	if (!rows?.length) {
-		return null;
-	}
 	const stats = buildGameStats(rows);
 	return (
 		<section className="mb-8">
@@ -77,12 +81,10 @@ function PlayerStats() {
 			</h2>
 			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 				{stats.slice(0, 4).map((stat) => {
-					const base = getGameByType(stat.gameType as GameType);
-					const game = base ? localize(base) : undefined;
 					return (
 						<div key={stat.gameType} className="club-panel rounded-lg p-4">
 							<p className="text-sm font-bold text-[var(--club-text)]">
-								{game?.title ?? stat.gameType}
+								{messages.catalog[stat.gameType].title}
 							</p>
 							<p className="mt-1 text-2xl font-bold text-[var(--club-text)]">
 								{stat.played}
@@ -106,13 +108,8 @@ function PlayerStats() {
 	);
 }
 
-function RecentGames() {
-	const rows = useQuery(api.sessions.listParticipation);
-	const localize = useGameLocalizer();
+function RecentGames({ rows }: { rows: ParticipationRow[] }) {
 	const { messages, locale } = useI18n();
-	if (!rows?.length) {
-		return null;
-	}
 	const recent = rows.slice(0, 8);
 	return (
 		<section className="mb-8">
@@ -121,8 +118,6 @@ function RecentGames() {
 			</h2>
 			<ul className="space-y-2">
 				{recent.map(({ session, participant }) => {
-					const base = getGameByType(session.gameType as GameType);
-					const game = base ? localize(base) : undefined;
 					const won = session.winnerParticipantIds?.includes(participant._id);
 					return (
 						<li key={session._id}>
@@ -136,7 +131,7 @@ function RecentGames() {
 										{session.title}
 									</p>
 									<p className="truncate text-sm text-[var(--club-muted)]">
-										{game?.title ?? session.gameType} —{" "}
+										{messages.catalog[session.gameType].title} —{" "}
 										{messages.common.dashboard.status[session.status]}
 										{won ? ` ${messages.common.dashboard.youWon}` : ""}
 										{" — "}
@@ -151,14 +146,4 @@ function RecentGames() {
 			</ul>
 		</section>
 	);
-}
-
-function RedirectToSignIn() {
-	const navigate = useNavigate();
-
-	useEffect(() => {
-		navigate({ to: authConfig.paths.signIn });
-	}, [navigate]);
-
-	return null;
 }

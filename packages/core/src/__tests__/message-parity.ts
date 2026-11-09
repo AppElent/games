@@ -21,8 +21,8 @@ function placeholders(message: string): string[] {
  * Registers a `describe("message dictionaries", ...)` block that asserts
  * every locale's message tree has identical key sets, no empty strings, and
  * identical `{placeholder}` tokens per message pair — the load-bearing
- * correctness check for a `satisfies`-based typed dictionary. Call this once
- * per app from its own `messages.test.ts`, passing every locale's tree.
+ * correctness check for a `satisfies`-based typed dictionary. Called from
+ * core's `messages.test.ts` with every locale's tree.
  */
 export function assertMessageParity(locales: Record<string, Tree>): void {
 	const localeNames = Object.keys(locales);

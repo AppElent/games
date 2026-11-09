@@ -1,21 +1,18 @@
 /** The table before the deal: invite people, fill seats, and the host deals. */
-import type {
-	CardGameDefinition,
-	CardGameId,
-} from "@arcadeclub/core/cards/engine";
+import type { CardGame } from "@arcadeclub/core/cards/engine";
 import { seatName } from "@arcadeclub/core/cards/table-view";
 import { Stack, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { fmt, plural, useI18n } from "../../../i18n";
-import { metrics, radius, spacing, useTokens } from "../../../theme";
+import { metrics, spacing, useTokens } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
 import { Icon } from "../../../ui/icon";
 import { Notice } from "../../../ui/notice";
-import { QrCode } from "../../../ui/qr-code";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
+import { InviteQr } from "../../sessions/host/invite-qr";
 import { shareInvite } from "../../sessions/host/share-invite";
 import { webJoinUrl } from "../../sessions/session-links";
 import { RulesSheet } from "../deck/rules-sheet";
@@ -26,7 +23,7 @@ export function LobbyPanel({
 	table,
 	controls,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	table: CardTableBundle;
 	controls: CardTableControls;
 }) {
@@ -34,7 +31,7 @@ export function LobbyPanel({
 	const { t, locale } = useI18n();
 	const tokens = useTokens();
 	const cards = t.games.cards;
-	const text = cards.games[game.id as CardGameId];
+	const text = cards.games[game.id];
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const code = table.session.joinCode ?? "";
 	const optionText = text.options as Record<string, { label: string }>;
@@ -71,13 +68,7 @@ export function LobbyPanel({
 						>
 							{code}
 						</AppText>
-						<View style={styles.qr}>
-							<QrCode
-								value={webJoinUrl({ code }) ?? code}
-								size={176}
-								accessibilityLabel={t.common.joinPanel.scanQrLabel}
-							/>
-						</View>
+						<InviteQr value={webJoinUrl({ code }) ?? code} size={176} />
 						<Button
 							variant="secondary"
 							label={cards.lobby.inviteLabel}
@@ -199,7 +190,6 @@ export function LobbyPanel({
 const styles = StyleSheet.create({
 	section: { gap: spacing.sm },
 	code: { textAlign: "center" },
-	qr: { alignSelf: "center", borderRadius: radius.sm, overflow: "hidden" },
 	seat: {
 		minHeight: metrics.hitTarget,
 		flexDirection: "row",

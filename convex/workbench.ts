@@ -1,34 +1,48 @@
-import { v } from "convex/values";
+import type {
+	ContentDraftKind,
+	QuizSetDraft,
+} from "@arcadeclub/core/content-drafts";
 import {
-	type ContentDraftKind,
 	getDraftGameType,
 	validateContentDraft,
-} from "../src/lib/games/content-drafts";
+} from "@arcadeclub/core/content-drafts";
+import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { requireUserId } from "./lib/auth";
+import { requireOwned, requireUserId } from "./lib/auth";
 import { gameError } from "./lib/errors";
+import { contentDraftKindValidator } from "./schema";
 
-const draftKindValidator = v.union(
-	v.literal("word-links-puzzle"),
-	v.literal("signal-words-pack"),
-	v.literal("quiz-set"),
-);
+/** What a draft's rows store and its editor shows, one line per problem. */
+function draftErrors(kind: ContentDraftKind, payload: string) {
+	return validateContentDraft(kind, payload).map((error) =>
+		error.path ? `${error.path}: ${error.message}` : error.message,
+	);
+}
+
+async function requireOwnDraft(ctx: MutationCtx, draftId: Id<"contentDrafts">) {
+	const ownerUserId = await requireUserId(ctx);
+	const draft = requireOwned(
+		await ctx.db.get(draftId),
+		ownerUserId,
+		"draftNotFound",
+	);
+	return { ownerUserId, draft };
+}
 
 export const createDraft = mutation({
 	args: {
-		kind: draftKindValidator,
+		kind: contentDraftKindValidator,
 		title: v.string(),
 		payload: v.string(),
 	},
 	handler: async (ctx, args) => {
 		const ownerUserId = await requireUserId(ctx);
-		const validationErrors = validateContentDraft(
-			args.kind as ContentDraftKind,
-			args.payload,
-		).map((error) => (error.path ? `${error.path}: ${error.message}` : error.message));
+		const validationErrors = draftErrors(args.kind, args.payload);
 		return await ctx.db.insert("contentDrafts", {
 			ownerUserId,
-			gameType: getDraftGameType(args.kind as ContentDraftKind),
+			gameType: getDraftGameType(args.kind),
 			kind: args.kind,
 			title: args.title.trim() || "Untitled draft",
 			payload: args.payload,
@@ -45,15 +59,8 @@ export const updateDraft = mutation({
 		payload: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const ownerUserId = await requireUserId(ctx);
-		const draft = await ctx.db.get(args.draftId);
-		if (!draft || draft.ownerUserId !== ownerUserId) {
-			throw gameError("draftNotFound");
-		}
-		const validationErrors = validateContentDraft(
-			draft.kind as ContentDraftKind,
-			args.payload,
-		).map((error) => (error.path ? `${error.path}: ${error.message}` : error.message));
+		const { draft } = await requireOwnDraft(ctx, args.draftId);
+		const validationErrors = draftErrors(draft.kind, args.payload);
 		await ctx.db.patch(args.draftId, {
 			payload: args.payload,
 			title: args.title?.trim() || draft.title,
@@ -69,22 +76,11 @@ export const updateDraft = mutation({
 export const approveDraft = mutation({
 	args: { draftId: v.id("contentDrafts") },
 	handler: async (ctx, args) => {
-		const ownerUserId = await requireUserId(ctx);
-		const draft = await ctx.db.get(args.draftId);
-		if (!draft || draft.ownerUserId !== ownerUserId) {
-			throw gameError("draftNotFound");
-		}
+		const { ownerUserId, draft } = await requireOwnDraft(ctx, args.draftId);
 		// Re-validate at approval time so stale rows can never slip through.
-		const errors = validateContentDraft(
-			draft.kind as ContentDraftKind,
-			draft.payload,
-		);
-		if (errors.length > 0) {
-			await ctx.db.patch(args.draftId, {
-				validationErrors: errors.map((error) =>
-					error.path ? `${error.path}: ${error.message}` : error.message,
-				),
-			});
+		const validationErrors = draftErrors(draft.kind, draft.payload);
+		if (validationErrors.length > 0) {
+			await ctx.db.patch(args.draftId, { validationErrors });
 			throw gameError("draftInvalid");
 		}
 		await ctx.db.patch(args.draftId, {
@@ -95,18 +91,7 @@ export const approveDraft = mutation({
 
 		// Approved quiz sets become playable immediately.
 		if (draft.kind === "quiz-set") {
-			const payload = JSON.parse(draft.payload) as {
-				title: string;
-				description?: string;
-				questions: {
-					id: string;
-					prompt: string;
-					choices: { id: string; label: string }[];
-					correctChoiceIds: string[];
-					durationSeconds: number;
-					points: number;
-				}[];
-			};
+			const payload = JSON.parse(draft.payload) as QuizSetDraft;
 			const quizSetId = await ctx.db.insert("quizSets", {
 				ownerUserId,
 				title: payload.title,
@@ -123,11 +108,7 @@ export const approveDraft = mutation({
 export const rejectDraft = mutation({
 	args: { draftId: v.id("contentDrafts") },
 	handler: async (ctx, args) => {
-		const ownerUserId = await requireUserId(ctx);
-		const draft = await ctx.db.get(args.draftId);
-		if (!draft || draft.ownerUserId !== ownerUserId) {
-			throw gameError("draftNotFound");
-		}
+		await requireOwnDraft(ctx, args.draftId);
 		await ctx.db.patch(args.draftId, {
 			status: "rejected",
 			reviewedAt: Date.now(),
@@ -138,11 +119,7 @@ export const rejectDraft = mutation({
 export const deleteDraft = mutation({
 	args: { draftId: v.id("contentDrafts") },
 	handler: async (ctx, args) => {
-		const ownerUserId = await requireUserId(ctx);
-		const draft = await ctx.db.get(args.draftId);
-		if (!draft || draft.ownerUserId !== ownerUserId) {
-			throw gameError("draftNotFound");
-		}
+		await requireOwnDraft(ctx, args.draftId);
 		await ctx.db.delete(args.draftId);
 	},
 });
@@ -156,17 +133,5 @@ export const listMine = query({
 			.withIndex("by_owner", (q) => q.eq("ownerUserId", ownerUserId))
 			.collect();
 		return drafts.sort((a, b) => b._creationTime - a._creationTime);
-	},
-});
-
-/** Approved signal-words packs available for play (future game wiring). */
-export const listApproved = query({
-	args: { kind: draftKindValidator },
-	handler: async (ctx, args) => {
-		const drafts = await ctx.db
-			.query("contentDrafts")
-			.withIndex("by_status", (q) => q.eq("status", "approved"))
-			.collect();
-		return drafts.filter((draft) => draft.kind === args.kind);
 	},
 });

@@ -1,14 +1,20 @@
 import type { ReactNode } from "react";
-import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import {
+	FullscreenGameShell,
+	SHELL_PAGE_INSET,
+} from "#/components/games/FullscreenGameShell";
 
 type FullscreenGamePageProps = {
 	title: string;
+	/** Small line above `heading`, usually the game's name. */
+	kicker?: string;
+	/** The page's h1. */
+	heading?: string;
 	children: ReactNode;
 	/** Tailwind max-width class for the content column. */
 	maxWidthClassName?: string;
 	/** Extra classes for the content column. */
 	className?: string;
-	onRestart?: () => void;
 };
 
 /**
@@ -19,17 +25,26 @@ type FullscreenGamePageProps = {
  */
 export function FullscreenGamePage({
 	title,
+	kicker,
+	heading,
 	children,
 	maxWidthClassName = "max-w-3xl",
 	className,
-	onRestart,
 }: FullscreenGamePageProps) {
 	return (
-		<FullscreenGameShell title={title} onRestart={onRestart}>
+		<FullscreenGameShell title={title}>
 			<div className="h-full touch-pan-y overflow-y-auto overscroll-contain">
 				<div
-					className={`mx-auto w-full px-4 pt-16 pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
+					className={`mx-auto w-full px-4 ${SHELL_PAGE_INSET} pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
 				>
+					{kicker !== undefined ? (
+						<p className="club-kicker mb-2">{kicker}</p>
+					) : null}
+					{heading !== undefined ? (
+						<h1 className="club-title mb-4 text-4xl font-bold text-white">
+							{heading}
+						</h1>
+					) : null}
 					{children}
 				</div>
 			</div>

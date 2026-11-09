@@ -1,9 +1,4 @@
-import {
-	boardGeometry,
-	boardRows,
-	boardText,
-	fitBoardWidth,
-} from "./board-layout";
+import { boardGeometry, boardRows, fitBoardWidth } from "./board-layout";
 
 describe("board layout", () => {
 	it("puts the viewer's home board bottom right", () => {
@@ -38,10 +33,9 @@ describe("board layout", () => {
 	});
 
 	it("stops growing board text once it fills a column or checker", () => {
-		const unit = boardGeometry(360).unit;
-		const huge = boardText(unit, 3.5);
-		expect(huge.label).toBeLessThanOrEqual(unit * 0.78);
-		expect(huge.count).toBeLessThanOrEqual(unit * 0.5);
+		const { unit, text } = boardGeometry(360, 3.5);
+		expect(text.label).toBeLessThanOrEqual(unit * 0.78);
+		expect(text.count).toBeLessThanOrEqual(unit * 0.5);
 	});
 
 	it("fits the widest board into a height", () => {

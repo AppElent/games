@@ -4,18 +4,21 @@
  * tapping (see `use-board-selection.ts`); the board itself only draws and
  * reports taps.
  */
-import type {
-	BackgammonColor,
-	BackgammonMoveSource,
-	BackgammonPoint,
-	BackgammonTurnState,
+import {
+	BACKGAMMON_COLORS,
+	type BackgammonColor,
+	type BackgammonMoveSource,
+	type BackgammonPoint,
+	type BackgammonTurnState,
 } from "@arcadeclub/core/backgammon";
+import { opponent as opponentOf } from "@arcadeclub/core/duel";
 import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Svg, { Polygon, Rect } from "react-native-svg";
 import { fmt, plural, useI18n } from "../../../i18n";
 import { backgammonColors as board } from "../../../theme";
 import { AppText } from "../../../ui/text";
+import { colorLabel } from "../components/color-label";
 import {
 	type BoardGeometry,
 	boardGeometry,
@@ -51,14 +54,15 @@ export function BackgammonBoard({
 }: Props) {
 	const { t, locale } = useI18n();
 	const copy = t.games.backgammon;
-	const colors = copy.localPlay;
+	const white = colorLabel(copy, "white");
+	const black = colorLabel(copy, "black");
 	const { fontScale } = useWindowDimensions();
 	const geometry = useMemo(
 		() => boardGeometry(width, fontScale),
 		[width, fontScale],
 	);
 	const rows = boardRows(viewer);
-	const opponent: BackgammonColor = viewer === "white" ? "black" : "white";
+	const opponent = opponentOf(BACKGAMMON_COLORS, viewer);
 
 	const describe = (point: BackgammonPoint) => {
 		if (!point.color || point.count === 0) {
@@ -67,6 +71,7 @@ export function BackgammonBoard({
 		return fmt(copy.board.pointOccupied, {
 			number: point.point,
 			count: point.count,
+			// Inflected inside the sentence ("witte" in Dutch), unlike `colorLabel`.
 			color:
 				point.color === "white" ? copy.board.colorWhite : copy.board.colorBlack,
 			checkerWord: plural(locale, point.count, copy.board.checkerWord),
@@ -138,7 +143,7 @@ export function BackgammonBoard({
 						},
 					]}
 					accessible
-					accessibilityLabel={`${copy.board.barLabel}: ${colors.colorWhite} ${state.bar.white}, ${colors.colorBlack} ${state.bar.black}`}
+					accessibilityLabel={`${copy.board.barLabel}: ${white} ${state.bar.white}, ${black} ${state.bar.black}`}
 					accessibilityState={{ selected: selected === "bar" }}
 					testID="bg-bar"
 				>
@@ -165,7 +170,7 @@ export function BackgammonBoard({
 				</View>
 				<Pressable
 					accessibilityRole="button"
-					accessibilityLabel={`${copy.board.offLabel}: ${colors.colorWhite} ${state.off.white}, ${colors.colorBlack} ${state.off.black}`}
+					accessibilityLabel={`${copy.board.offLabel}: ${white} ${state.off.white}, ${black} ${state.off.black}`}
 					accessibilityHint={highlights.off ? copy.board.bearOff : undefined}
 					onPress={onOffPress}
 					disabled={!highlights.off}

@@ -9,8 +9,6 @@ export const connectFour = {
 	players: {
 		red: "rood",
 		yellow: "geel",
-		openSeat: "Open plek",
-		turnBadge: "Beurt",
 	},
 	status: {
 		draw: "Gelijkspel — het bord is vol",
@@ -30,14 +28,6 @@ export const connectFour = {
 	},
 	endScreen: {
 		shareText: "Vier op een rij op Arcade Club — {status}",
-		rematchLabel: "Rematch (kleuren wisselen)",
-		rematchError: "Kon rematch niet starten",
-	},
-	info: {
-		button: "Info",
-	},
-	share: {
-		challengeLinkLabel: "Uitdagingslink",
 	},
 	session: {
 		gameNotFound: "Spel niet gevonden.",

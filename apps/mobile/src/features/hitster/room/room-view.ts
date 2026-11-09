@@ -5,7 +5,7 @@
  */
 import {
 	getHitsterModeConfig,
-	type HitsterMode,
+	hitsterPlayerView,
 } from "@arcadeclub/core/hitster";
 import {
 	getHitsterCard,
@@ -30,14 +30,11 @@ export function participantName(
 	);
 }
 
-/** The timeline a participant plays on: the shared one in co-op. */
-export function timelineFor(
-	state: Pick<HitsterState, "mode" | "timelines">,
-	participantId: string | undefined,
-) {
-	return getHitsterModeConfig(state.mode as HitsterMode).shared
-		? state.timelines[0]
-		: state.timelines.find((entry) => entry.participantId === participantId);
+/** Who counts as joined in the lobby: not watchers, not kicked players. */
+export function lobbyPlayers(bundle: Pick<HitsterBundle, "participants">) {
+	return bundle.participants.filter(
+		(participant) => participant.role !== "watcher" && !participant.kickedAt,
+	);
 }
 
 export function timelineCards(
@@ -58,24 +55,30 @@ export function roomView(bundle: HitsterBundle, participantId?: string) {
 	if (!state) {
 		return { isHost, state: null } as const;
 	}
-	const config = getHitsterModeConfig(state.mode as HitsterMode);
-	const activeParticipantId = state.turnOrder[state.activeIndex];
-	const isPlaying =
-		participantId !== undefined &&
-		state.turnOrder.some((entry) => entry === participantId);
 	return {
 		isHost,
 		state,
-		config,
-		activeParticipantId,
-		isActive: isPlaying && activeParticipantId === participantId,
-		isPlaying,
-		myTokens:
-			state.tokens.find((entry) => entry.participantId === participantId)
-				?.tokens ?? 0,
-		hasClaimed: state.stealClaims.some(
-			(claim) => claim.participantId === participantId,
-		),
-		myTimeline: timelineFor(state, participantId),
+		config: getHitsterModeConfig(state.mode),
+		...hitsterPlayerView(state, participantId),
 	} as const;
+}
+
+/** The room once the host has picked a mode and the game has state. */
+export type LiveRoomView = Extract<
+	ReturnType<typeof roomView>,
+	{ state: HitsterState }
+>;
+
+/**
+ * Whether the player's own timeline shows below the round: never in the
+ * lobby, and not while a placement or steal form already shows it.
+ */
+export function showsOwnTimeline(view: LiveRoomView, stealOpen: boolean) {
+	const { state } = view;
+	const placing =
+		view.isActive && state.phase === "nowPlaying" && !state.pendingGuess;
+	const stealing = stealOpen && !view.hasClaimed;
+	return (
+		state.phase !== "lobby" && Boolean(view.myTimeline) && !placing && !stealing
+	);
 }

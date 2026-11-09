@@ -3,12 +3,13 @@
  * until the host asks to see it (players may be looking at this phone), with
  * a shortcut to find it on Spotify. Then: reveal the year, next round.
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Linking, StyleSheet, View } from "react-native";
 import { plural, useI18n } from "../../../i18n";
 import { radius, spacing, type Tokens, useThemedStyles } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { AppText } from "../../../ui/text";
+import { useResetOnChange } from "../../../ui/use-reset-on-change";
 import type { HitsterBundle, HitsterState } from "./room-view";
 
 export function DjPanel({
@@ -31,11 +32,9 @@ export function DjPanel({
 	const track = bundle.hostPlayback;
 
 	// Each round starts hidden, so the next mystery track is never on screen.
-	const roundKey = `${state.phase}:${track?.spotifySearchUrl ?? ""}`;
-	useEffect(() => {
-		void roundKey;
-		setShown(false);
-	}, [roundKey]);
+	useResetOnChange(`${state.phase}:${track?.spotifySearchUrl ?? ""}`, () =>
+		setShown(false),
+	);
 
 	if (state.phase === "reveal") {
 		return (

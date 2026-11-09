@@ -1,13 +1,9 @@
-import {
-	getHitsterModeConfig,
-	type HitsterMode,
-} from "@arcadeclub/core/hitster";
+import { getHitsterModeConfig } from "@arcadeclub/core/hitster";
 import { getHitsterPack } from "@arcadeclub/core/hitster-packs";
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { JoinCodePanel } from "#/components/games/JoinCodePanel";
 import { ParticipantList } from "#/components/games/ParticipantList";
-import { useErrorMessage } from "#/lib/games/errors";
-import { formatJoinCode } from "#/lib/games/sessions";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -21,25 +17,15 @@ export function HitsterHostView({
 	bundle: HitsterBundle;
 	participantId: Id<"sessionParticipants">;
 }) {
-	const errorMessage = useErrorMessage();
 	const { locale, messages } = useI18n();
 	const hostView = messages.games.hitster.hostView;
 	const start = useMutation(api.hitster.start);
 	const reveal = useMutation(api.hitster.reveal);
 	const nextRound = useMutation(api.hitster.nextRound);
-	const [error, setError] = useState("");
+	const { error, run } = useGameAction();
 	const state = bundle.state;
-	const config = state ? getHitsterModeConfig(state.mode as HitsterMode) : null;
+	const config = state ? getHitsterModeConfig(state.mode) : null;
 	const pack = state ? getHitsterPack(state.packId) : undefined;
-
-	const hostAction = async (action: () => Promise<unknown>) => {
-		setError("");
-		try {
-			await action();
-		} catch (caught) {
-			setError(errorMessage(caught, hostView.actionFailed));
-		}
-	};
 
 	return (
 		<div className="grid gap-5 lg:grid-cols-[1fr_300px]">
@@ -71,16 +57,7 @@ export function HitsterHostView({
 							</p>
 						) : null}
 					</div>
-					<div className="rounded-2xl border border-[var(--club-line)] bg-[var(--club-panel)] px-4 py-3 text-right">
-						<span className="block text-xs font-bold uppercase tracking-wide text-[var(--club-soft)]">
-							{hostView.joinCodeLabel}
-						</span>
-						<span className="text-3xl font-bold tabular-nums tracking-tight text-[var(--club-text)]">
-							{bundle.session.joinCode
-								? formatJoinCode(bundle.session.joinCode)
-								: "------"}
-						</span>
-					</div>
+					<JoinCodePanel tone="hitster" joinCode={bundle.session.joinCode} />
 				</div>
 
 				{error ? <p className="text-sm text-orange-300">{error}</p> : null}
@@ -96,8 +73,9 @@ export function HitsterHostView({
 							type="button"
 							className="mt-4 rounded-xl bg-blue-600 px-6 py-3 font-bold text-[#fff]"
 							onClick={() =>
-								hostAction(() =>
-									start({ sessionId: bundle.session._id, participantId }),
+								run(
+									() => start({ sessionId: bundle.session._id, participantId }),
+									hostView.actionFailed,
 								)
 							}
 						>
@@ -146,8 +124,10 @@ export function HitsterHostView({
 								className="rounded-xl bg-[var(--club-text)] px-5 py-2.5 font-bold text-[color:var(--club-bg)] disabled:opacity-50"
 								disabled={!state.pendingGuess}
 								onClick={() =>
-									hostAction(() =>
-										reveal({ sessionId: bundle.session._id, participantId }),
+									run(
+										() =>
+											reveal({ sessionId: bundle.session._id, participantId }),
+										hostView.actionFailed,
 									)
 								}
 							>
@@ -163,8 +143,10 @@ export function HitsterHostView({
 							type="button"
 							className="rounded-xl bg-[var(--club-text)] px-5 py-2.5 font-bold text-[color:var(--club-bg)]"
 							onClick={() =>
-								hostAction(() =>
-									nextRound({ sessionId: bundle.session._id, participantId }),
+								run(
+									() =>
+										nextRound({ sessionId: bundle.session._id, participantId }),
+									hostView.actionFailed,
 								)
 							}
 						>

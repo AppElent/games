@@ -1,139 +1,101 @@
-import { v } from "convex/values";
 import {
 	applyChessMove,
 	CHESS_INITIAL_FEN,
-	CHESS_TIME_CONTROLS,
 	hasFlagFallen,
+	initialClock,
+	runningClock,
 	tickClockAfterMove,
+} from "@arcadeclub/chess/chess";
+import {
+	CHESS_COLORS,
+	CHESS_HOST_COLORS,
+	CHESS_PROMOTIONS,
 	type ChessColor,
-	type ChessTimeControl,
-} from "../src/lib/games/chess";
+	type ChessOutcome,
+} from "@arcadeclub/chess/enums";
+import { type ObjectType, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { completeSession, reopenSession } from "./lib/completion";
+import {
+	CHESS_DUEL,
+	finishDuel,
+	rematchDuel,
+	requireResign,
+	requireSeat,
+	requireTurn,
+	seatHost,
+} from "./lib/duel";
+import { gameError, rules } from "./lib/errors";
+import { loadBundle, loadGame, startSession } from "./lib/gameSession";
+import {
+	createdSession,
+	createdSessionValidator,
+	hostedSessionArgs,
+	hostGame,
+} from "./lib/hostedSession";
+import { literals } from "./lib/validators";
 import { chessTimeControlValidator } from "./schema";
-import { gameError } from "./lib/errors";
-
-async function getChessState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
-	const session = await ctx.db.get(sessionId);
-	if (!session || session.gameType !== "chess") {
-		throw gameError("gameNotFound");
-	}
-	const state = await ctx.db
-		.query("chessGameStates")
-		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-		.unique();
-	if (!state) {
-		throw gameError("gameNotFound");
-	}
-	return { session, state };
-}
-
-function getParticipantColor(
-	state: Doc<"chessGameStates">,
-	participantId: Id<"sessionParticipants">,
-): ChessColor {
-	if (state.whiteParticipantId === participantId) {
-		return "white";
-	}
-	if (state.blackParticipantId === participantId) {
-		return "black";
-	}
-	throw gameError("notSeated");
-}
-
-function getClock(state: Doc<"chessGameStates">) {
-	if (
-		state.remainingWhiteMs === undefined ||
-		state.remainingBlackMs === undefined ||
-		state.turnStartedAt === undefined
-	) {
-		return undefined;
-	}
-	return {
-		remainingWhiteMs: state.remainingWhiteMs,
-		remainingBlackMs: state.remainingBlackMs,
-		turnStartedAt: state.turnStartedAt,
-	};
-}
 
 async function finishGame(
 	ctx: MutationCtx,
 	state: Doc<"chessGameStates">,
-	outcome: Doc<"chessGameStates">["resultOutcome"],
+	outcome: ChessOutcome,
 	winner: ChessColor | undefined,
 	now: number,
 ) {
-	const winnerParticipantId =
-		winner === "white"
-			? state.whiteParticipantId
-			: winner === "black"
-				? state.blackParticipantId
-				: undefined;
-	await ctx.db.patch(state._id, {
-		phase: "finished",
-		resultOutcome: outcome,
-		resultWinner: winner,
-		winnerParticipantId,
-		drawOfferBy: undefined,
+	await finishDuel(
+		ctx,
+		state,
+		winner,
+		{ resultOutcome: outcome, resultWinner: winner, drawOfferBy: undefined },
+		now,
+	);
+}
+
+const matchArgs = {
+	timeControl: chessTimeControlValidator,
+	hostColor: literals(CHESS_HOST_COLORS),
+};
+
+async function insertState(
+	ctx: MutationCtx,
+	sessionId: Id<"gameSessions">,
+	hostParticipantId: Id<"sessionParticipants">,
+	match: ObjectType<typeof matchArgs>,
+) {
+	const hostColor =
+		match.hostColor === "random"
+			? CHESS_COLORS[Math.random() < 0.5 ? 0 : 1]
+			: match.hostColor;
+	const hostSeat = await seatHost(
+		ctx,
+		CHESS_DUEL,
+		hostParticipantId,
+		hostColor,
+	);
+	const now = Date.now();
+	return await ctx.db.insert("chessGameStates", {
+		sessionId,
+		phase: "waiting",
+		...hostSeat,
+		fen: CHESS_INITIAL_FEN,
+		sanHistory: [],
+		activeColor: "white",
+		timeControl: match.timeControl,
+		...initialClock(match.timeControl),
+		createdAt: now,
 		updatedAt: now,
-	});
-	await completeSession(ctx, state.sessionId, {
-		endedAt: now,
-		winnerParticipantIds: winnerParticipantId ? [winnerParticipantId] : [],
 	});
 }
 
-export const createState = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		hostParticipantId: v.id("sessionParticipants"),
-		timeControl: chessTimeControlValidator,
-		hostColor: v.union(
-			v.literal("white"),
-			v.literal("black"),
-			v.literal("random"),
-		),
-	},
+export const create = mutation({
+	args: { ...hostedSessionArgs, ...matchArgs },
+	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session || session.gameType !== "chess") {
-			throw gameError("sessionNotFound");
-		}
-		const existing = await ctx.db
-			.query("chessGameStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
-		if (existing) {
-			return existing._id;
-		}
-		const hostColor: ChessColor =
-			args.hostColor === "random"
-				? Math.random() < 0.5
-					? "white"
-					: "black"
-				: args.hostColor;
-		await ctx.db.patch(args.hostParticipantId, { seat: hostColor });
-		const now = Date.now();
-		const initialSeconds =
-			CHESS_TIME_CONTROLS[args.timeControl as ChessTimeControl].initialSeconds;
-		return await ctx.db.insert("chessGameStates", {
-			sessionId: args.sessionId,
-			phase: "waiting",
-			whiteParticipantId:
-				hostColor === "white" ? args.hostParticipantId : undefined,
-			blackParticipantId:
-				hostColor === "black" ? args.hostParticipantId : undefined,
-			fen: CHESS_INITIAL_FEN,
-			sanHistory: [],
-			activeColor: "white",
-			timeControl: args.timeControl,
-			remainingWhiteMs: initialSeconds ? initialSeconds * 1000 : undefined,
-			remainingBlackMs: initialSeconds ? initialSeconds * 1000 : undefined,
-			createdAt: now,
-			updatedAt: now,
-		});
+		const hosted = await hostGame(ctx, "chess", args);
+		await insertState(ctx, hosted.session._id, hosted.participantId, args);
+		return createdSession(hosted);
 	},
 });
 
@@ -143,46 +105,25 @@ export const applyMove = mutation({
 		participantId: v.id("sessionParticipants"),
 		from: v.string(),
 		to: v.string(),
-		promotion: v.optional(
-			v.union(v.literal("q"), v.literal("r"), v.literal("b"), v.literal("n")),
-		),
+		promotion: v.optional(literals(CHESS_PROMOTIONS)),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await getChessState(ctx, args.sessionId);
-		if (state.phase === "finished") {
-			throw gameError("gameAlreadyFinished");
-		}
-		if (!state.whiteParticipantId || !state.blackParticipantId) {
-			throw gameError("waitingForOpponent");
-		}
-		const color = getParticipantColor(state, args.participantId);
-		if (state.activeColor !== color) {
-			throw gameError("notYourTurn");
-		}
+		const { session, state } = await loadGame(ctx, "chess", args.sessionId);
+		const color = requireTurn(CHESS_DUEL, state, args.participantId);
 		const now = Date.now();
 
-		let clock = state.phase === "active" ? getClock(state) : undefined;
+		let clock = runningClock(state);
 		if (clock && hasFlagFallen(clock, color, now)) {
-			await finishGame(
-				ctx,
-				state,
-				"timeout",
-				color === "white" ? "black" : "white",
-				now,
-			);
 			throw gameError("timeRanOut");
 		}
 
-		let outcome: ReturnType<typeof applyChessMove>;
-		try {
-			outcome = applyChessMove(state.fen, {
+		const outcome = rules(() =>
+			applyChessMove(state.fen, {
 				from: args.from,
 				to: args.to,
 				promotion: args.promotion,
-			});
-		} catch {
-			throw gameError("illegalMove");
-		}
+			}),
+		);
 
 		if (clock) {
 			clock = tickClockAfterMove(clock, color, now);
@@ -207,23 +148,15 @@ export const applyMove = mutation({
 				: startingClock),
 			updatedAt: now,
 		});
-		if (session.status === "lobby") {
-			await ctx.db.patch(args.sessionId, {
-				status: "active",
-				startedAt: now,
-			});
-		}
+		await startSession(ctx, session, now);
 		if (outcome.result) {
-			const freshState = await ctx.db.get(state._id);
-			if (freshState) {
-				await finishGame(
-					ctx,
-					freshState,
-					outcome.result.outcome,
-					"winner" in outcome.result ? outcome.result.winner : undefined,
-					now,
-				);
-			}
+			await finishGame(
+				ctx,
+				state,
+				outcome.result.outcome,
+				"winner" in outcome.result ? outcome.result.winner : undefined,
+				now,
+			);
 		}
 	},
 });
@@ -234,18 +167,9 @@ export const resign = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getChessState(ctx, args.sessionId);
-		if (state.phase === "finished") {
-			throw gameError("gameAlreadyFinished");
-		}
-		const color = getParticipantColor(state, args.participantId);
-		await finishGame(
-			ctx,
-			state,
-			"resignation",
-			color === "white" ? "black" : "white",
-			Date.now(),
-		);
+		const { state } = await loadGame(ctx, "chess", args.sessionId);
+		const winner = requireResign(CHESS_DUEL, state, args.participantId);
+		await finishGame(ctx, state, "resignation", winner, Date.now());
 	},
 });
 
@@ -255,11 +179,11 @@ export const offerDraw = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getChessState(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "chess", args.sessionId);
 		if (state.phase !== "active") {
 			throw gameError("noActiveGame");
 		}
-		const color = getParticipantColor(state, args.participantId);
+		const color = requireSeat(CHESS_DUEL, state, args.participantId);
 		if (state.drawOfferBy && state.drawOfferBy !== color) {
 			await finishGame(ctx, state, "drawAgreed", undefined, Date.now());
 			return;
@@ -278,11 +202,11 @@ export const respondDraw = mutation({
 		accept: v.boolean(),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getChessState(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "chess", args.sessionId);
 		if (state.phase !== "active" || !state.drawOfferBy) {
 			throw gameError("noDrawOffer");
 		}
-		const color = getParticipantColor(state, args.participantId);
+		const color = requireSeat(CHESS_DUEL, state, args.participantId);
 		if (state.drawOfferBy === color) {
 			throw gameError("ownOffer");
 		}
@@ -303,12 +227,12 @@ export const claimTimeout = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getChessState(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "chess", args.sessionId);
 		if (state.phase !== "active") {
 			throw gameError("noActiveGame");
 		}
-		const color = getParticipantColor(state, args.participantId);
-		const clock = getClock(state);
+		const color = requireSeat(CHESS_DUEL, state, args.participantId);
+		const clock = runningClock(state);
 		if (!clock) {
 			throw gameError("gameUntimed");
 		}
@@ -329,59 +253,27 @@ export const rematch = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getChessState(ctx, args.sessionId);
-		if (state.phase !== "finished") {
-			throw gameError("currentGameNotFinished");
-		}
-		getParticipantColor(state, args.participantId);
-		const now = Date.now();
-		const initialSeconds =
-			CHESS_TIME_CONTROLS[state.timeControl as ChessTimeControl]
-				.initialSeconds;
-		// Swap colors for the rematch.
-		const white = state.blackParticipantId;
-		const black = state.whiteParticipantId;
-		if (white) {
-			await ctx.db.patch(white, { seat: "white" });
-		}
-		if (black) {
-			await ctx.db.patch(black, { seat: "black" });
-		}
-		await ctx.db.patch(state._id, {
-			phase: "active",
-			whiteParticipantId: white,
-			blackParticipantId: black,
-			fen: CHESS_INITIAL_FEN,
-			sanHistory: [],
-			activeColor: "white",
-			remainingWhiteMs: initialSeconds ? initialSeconds * 1000 : undefined,
-			remainingBlackMs: initialSeconds ? initialSeconds * 1000 : undefined,
-			turnStartedAt: initialSeconds ? now : undefined,
-			drawOfferBy: undefined,
-			resultOutcome: undefined,
-			resultWinner: undefined,
-			winnerParticipantId: undefined,
-			updatedAt: now,
+		const { state } = await loadGame(ctx, "chess", args.sessionId);
+		await rematchDuel(ctx, CHESS_DUEL, state, args.participantId, (now) => {
+			const clock = initialClock(state.timeControl);
+			return {
+				phase: "active",
+				fen: CHESS_INITIAL_FEN,
+				sanHistory: [],
+				activeColor: "white",
+				...clock,
+				turnStartedAt: clock.remainingWhiteMs === undefined ? undefined : now,
+				drawOfferBy: undefined,
+				resultOutcome: undefined,
+				resultWinner: undefined,
+			};
 		});
-		await reopenSession(ctx, args.sessionId);
 	},
 });
 
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
-			return null;
-		}
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const state = await ctx.db
-			.query("chessGameStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
-		return { session, participants, state };
+		return await loadBundle(ctx, "chess", args.sessionId);
 	},
 });

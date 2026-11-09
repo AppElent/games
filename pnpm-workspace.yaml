@@ -46,9 +46,9 @@ overrides:
   # @clerk/react, and pnpm auto-installs optional peers. The web app is on
   # @clerk/react (Clerk Core 3), so keep the old package out of the graph.
   "convex>@clerk/clerk-react": "-"
-  # eas-cli (27.2.0 included) and @expo/eas-json pin exact versions with open
-  # advisories, so Dependabot security updates fail with
-  # security_update_not_possible. Drop each line once upstream moves past it.
+  # eas-cli (apps/mobile pins 26.0.0; 27.2.0 still has them) and
+  # @expo/eas-json pin exact versions with open advisories, so Dependabot
+  # security updates fail with security_update_not_possible. Drop each line once upstream moves past it.
   # joi GHSA-4528-x5fx-h6hg, GHSA-6h2x-m376-mqjq and older (< 17.13.9).
   "eas-cli>joi": "^17.13.9"
   "@expo/eas-json>joi": "^17.13.9"

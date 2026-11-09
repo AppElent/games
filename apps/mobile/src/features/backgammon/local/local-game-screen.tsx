@@ -4,40 +4,34 @@
  */
 import {
 	type BackgammonMovePlan,
-	canEndBackgammonTurn,
 	getBackgammonWinner,
+	rollBackgammonDice,
 } from "@arcadeclub/core/backgammon";
+import { LOCAL_OPTION_KEYS } from "@arcadeclub/core/backgammon-local";
 import { useEffect } from "react";
-import { Alert } from "react-native";
 import { haptics } from "../../../feedback/haptics";
-import { fmt, useI18n } from "../../../i18n";
+import { useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { BackgammonBoard } from "../board/backgammon-board";
 import { useBoardSelection } from "../board/use-board-selection";
 import { BoardScreen } from "../components/board-screen";
 import { colorLabel } from "../components/color-label";
+import { confirmNewMatch } from "../components/confirm-new-match";
+import { MatchPanel } from "../components/match-panel";
 import { OptionsPanel } from "../components/options-panel";
 import { TURN_HINT_MESSAGE, turnHint } from "../components/turn-hint";
-import { TurnPanel } from "../components/turn-panel";
 import { useLocalMatch } from "./use-local-match";
-
-const OPTION_KEYS = [
-	"showNumbers",
-	"autoRoll",
-	"autoSwitchTurn",
-	"autoCombine",
-] as const;
 
 export function LocalGameScreen() {
 	const { t } = useI18n();
 	const copy = t.games.backgammon;
-	const { match, dispatch, restart } = useLocalMatch();
+	const { match, dispatch, restartKeepingOptions } = useLocalMatch();
 	const { state, options } = match;
 	const winner = getBackgammonWinner(state.off);
 
 	const onPlan = (plan: BackgammonMovePlan) => {
 		haptics.moveMade();
-		dispatch({ type: "move", plan });
+		dispatch({ type: "move", plan, dice: rollBackgammonDice() });
 	};
 	const selection = useBoardSelection({
 		state,
@@ -50,29 +44,14 @@ export function LocalGameScreen() {
 		if (winner) haptics.gameWon();
 	}, [winner]);
 
-	const confirmRestart = () =>
-		Alert.alert(copy.newGame.confirmNewTitle, copy.newGame.confirmNewBody, [
-			{ text: t.common.actions.cancel, style: "cancel" },
-			{
-				text: t.common.endScreen.newGame,
-				style: "destructive",
-				onPress: restart,
-			},
-		]);
-
 	const hint = turnHint(state, selection.selected);
-	const heading = winner
-		? fmt(copy.waitingRoom.winsTheMatch, { name: colorLabel(copy, winner) })
-		: state.activeColor === "white"
-			? copy.board.whiteToMove
-			: copy.board.blackToMove;
 
 	return (
 		<BoardScreen
 			title={t.catalog.backgammon.title}
 			action={{
 				label: t.common.endScreen.newGame,
-				onPress: confirmRestart,
+				onPress: () => confirmNewMatch(t, restartKeepingOptions),
 				testID: "bg-new-game",
 			}}
 			board={(width) => (
@@ -89,31 +68,27 @@ export function LocalGameScreen() {
 				/>
 			)}
 		>
-			<TurnPanel
-				color={winner ?? state.activeColor}
-				heading={heading}
+			<MatchPanel
+				turn={state}
+				winner={winner && { color: winner, name: colorLabel(copy, winner) }}
+				heading={
+					state.activeColor === "white"
+						? copy.board.whiteToMove
+						: copy.board.blackToMove
+				}
 				message={hint ? copy.board[TURN_HINT_MESSAGE[hint]] : null}
-				dice={state.dice}
-				used={state.used}
+				canAct
+				onRoll={() => dispatch({ type: "roll", dice: rollBackgammonDice() })}
+				onEndTurn={() =>
+					dispatch({ type: "endTurn", dice: rollBackgammonDice() })
+				}
+				finishedAction={
+					<Button
+						label={t.common.endScreen.newGame}
+						onPress={restartKeepingOptions}
+					/>
+				}
 			>
-				{winner ? (
-					<Button label={t.common.endScreen.newGame} onPress={restart} />
-				) : state.dice.length === 0 ? (
-					<Button
-						label={copy.board.rollButton}
-						onPress={() => {
-							haptics.valueEntered();
-							dispatch({ type: "roll" });
-						}}
-						testID="bg-roll"
-					/>
-				) : canEndBackgammonTurn(state) ? (
-					<Button
-						label={copy.board.endTurnButton}
-						onPress={() => dispatch({ type: "endTurn" })}
-						testID="bg-end-turn"
-					/>
-				) : null}
 				<Button
 					variant="secondary"
 					compact
@@ -130,11 +105,18 @@ export function LocalGameScreen() {
 					onPress={() => dispatch({ type: "redo" })}
 					testID="bg-redo"
 				/>
-			</TurnPanel>
+			</MatchPanel>
 			<OptionsPanel
 				options={options}
-				keys={OPTION_KEYS}
-				onChange={(key, value) => dispatch({ type: "setOption", key, value })}
+				keys={LOCAL_OPTION_KEYS}
+				onChange={(key, value) =>
+					dispatch({
+						type: "setOption",
+						key,
+						value,
+						dice: rollBackgammonDice(),
+					})
+				}
 			/>
 		</BoardScreen>
 	);

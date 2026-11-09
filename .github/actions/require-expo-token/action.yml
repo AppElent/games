@@ -1,0 +1,12 @@
+name: Require Expo token
+description: Fails the job when the EXPO_TOKEN environment variable is empty.
+runs:
+  using: composite
+  steps:
+    - name: Check Expo token
+      shell: bash
+      run: |
+        if [ -z "$EXPO_TOKEN" ]; then
+          echo "::error::No EXPO_TOKEN secret. Create a token at expo.dev → Access tokens, store it in Infisical as expo-token, then run pnpm env:apply preview --only github."
+          exit 1
+        fi

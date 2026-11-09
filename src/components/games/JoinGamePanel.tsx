@@ -1,5 +1,5 @@
+import { buildInviteUrl, normalizeJoinCode } from "@arcadeclub/core/sessions";
 import { useState } from "react";
-import { normalizeJoinCode } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 
 export function JoinGamePanel() {
@@ -13,7 +13,7 @@ export function JoinGamePanel() {
 				event.preventDefault();
 				const joinCode = normalizeJoinCode(code);
 				if (joinCode) {
-					window.location.href = `/join?code=${encodeURIComponent(joinCode)}`;
+					window.location.href = buildInviteUrl("", { code: joinCode });
 				}
 			}}
 		>

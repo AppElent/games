@@ -22,7 +22,14 @@
 // Production refuses to publish without SENTRY_AUTH_TOKEN. Preview publishes
 // without it and says so, so the pipeline can be tried without the token.
 import { spawnSync } from "node:child_process";
-import { appRoot, fingerprint, PLATFORMS } from "./fingerprint.mjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+	appRoot,
+	fingerprint,
+	hasFinishedBuild,
+	PLATFORMS,
+} from "./fingerprint.mjs";
 
 const CHANNELS = ["preview", "production"];
 
@@ -40,7 +47,8 @@ const easArgs = rest.filter((arg) => !OWN_FLAGS.includes(arg));
 const upload = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
 if (!upload) {
-	const message = "SENTRY_AUTH_TOKEN is not set, so source maps cannot be uploaded.";
+	const message =
+		"SENTRY_AUTH_TOKEN is not set, so source maps cannot be uploaded.";
 	if (channel === "production" || uploadOnly) {
 		console.error(`${message} Refusing to continue.`);
 		process.exit(1);
@@ -48,12 +56,18 @@ if (!upload) {
 	console.warn(`${message} Publishing to ${channel} without them.`);
 }
 
+// The project the @sentry/react-native plugin in app.json names.
+const { expo } = JSON.parse(readFileSync(join(appRoot, "app.json"), "utf8"));
+const [, sentry] = expo.plugins.find(
+	(plugin) =>
+		Array.isArray(plugin) && plugin[0] === "@sentry/react-native/expo",
+);
+
 const env = {
 	...process.env,
 	APP_VARIANT: channel,
-	// Same project as the @sentry/react-native plugin in app.json.
-	SENTRY_ORG: "appelent",
-	SENTRY_PROJECT: "arcadeclub",
+	SENTRY_ORG: sentry.organization,
+	SENTRY_PROJECT: sentry.project,
 };
 
 function run(command, args) {
@@ -73,40 +87,10 @@ function run(command, args) {
 	}
 }
 
-/** Whether a finished build on this channel and platform has `runtime`. */
-function hasBuild(platform, runtime) {
-	const result = spawnSync(
-		"pnpm",
-		[
-			"exec",
-			"eas",
-			"build:list",
-			"--channel",
-			channel,
-			"--platform",
-			platform,
-			"--runtime-version",
-			runtime,
-			"--status",
-			"finished",
-			"--limit",
-			"1",
-			"--json",
-			"--non-interactive",
-		],
-		{ cwd: appRoot, env, encoding: "utf8" },
-	);
-	if (result.status !== 0) {
-		console.error(result.stderr);
-		process.exit(result.status || 1);
-	}
-	return JSON.parse(result.stdout).length > 0;
-}
-
 if (!uploadOnly && !withoutBuild) {
 	const found = PLATFORMS.map((platform) => {
 		const runtime = fingerprint(channel, platform).hash;
-		const ok = hasBuild(platform, runtime);
+		const ok = hasFinishedBuild(channel, platform, runtime);
 		console.log(
 			`${platform}: runtime ${runtime.slice(0, 12)}, ${ok ? "a build has it" : "no build has it"}`,
 		);
@@ -121,6 +105,13 @@ if (!uploadOnly && !withoutBuild) {
 }
 
 if (!uploadOnly) {
-	run("eas", ["update", "--channel", channel, "--environment", channel, ...easArgs]);
+	run("eas", [
+		"update",
+		"--channel",
+		channel,
+		"--environment",
+		channel,
+		...easArgs,
+	]);
 }
 if (upload) run("sentry-expo-upload-sourcemaps", ["dist"]);

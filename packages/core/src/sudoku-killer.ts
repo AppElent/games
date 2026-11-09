@@ -1,18 +1,25 @@
+import { removeClues } from "./puzzle";
+import { type Rng, shuffle } from "./random";
 import {
+	allCells,
 	colOf,
+	computeCandidates,
+	countSolutions,
 	digitMask,
 	digitsInMask,
-	FULL_MASK,
-	findConflicts,
 	generateSolvedGrid,
-	maskSize,
+	isGridSolved,
 	rowOf,
 	SUDOKU_CELL_COUNT,
-	SUDOKU_PEERS,
 	type SudokuDifficulty,
 	type SudokuGrid,
-	type SudokuRng,
 } from "./sudoku";
+import {
+	boardConflicts,
+	effectiveGrid,
+	isBoardComplete,
+	type SudokuBoardState,
+} from "./sudoku-board";
 
 /** A killer cage: contiguous cells whose digits are distinct and sum to `sum`. */
 export type KillerCage = { sum: number; cells: number[] };
@@ -36,17 +43,8 @@ function orthogonalNeighbors(cell: number): number[] {
 	return neighbors;
 }
 
-function shuffled<T>(items: readonly T[], rng: SudokuRng) {
-	const copy = [...items];
-	for (let i = copy.length - 1; i > 0; i -= 1) {
-		const j = Math.floor(rng() * (i + 1));
-		[copy[i], copy[j]] = [copy[j], copy[i]];
-	}
-	return copy;
-}
-
 /** Weighted cage size: mostly 2-3 cells, occasionally larger. */
-function pickCageSize(rng: SudokuRng) {
+function pickCageSize(rng: Rng) {
 	const roll = rng();
 	if (roll < 0.32) return 2;
 	if (roll < 0.68) return 3;
@@ -60,14 +58,11 @@ function pickCageSize(rng: SudokuRng) {
  */
 export function generateKillerCages(
 	solution: SudokuGrid,
-	rng: SudokuRng = Math.random,
+	rng: Rng = Math.random,
 ): KillerCage[] {
 	const cageIndex = new Array<number>(SUDOKU_CELL_COUNT).fill(-1);
 	const cages: number[][] = [];
-	for (const start of shuffled(
-		Array.from({ length: SUDOKU_CELL_COUNT }, (_, i) => i),
-		rng,
-	)) {
+	for (const start of shuffle(allCells(), rng)) {
 		if (cageIndex[start] !== -1) {
 			continue;
 		}
@@ -168,66 +163,17 @@ function cageAllowsDigit(
 	);
 }
 
+/** The classic candidates, narrowed by what each cell's cage still allows. */
 function killerCandidates(grid: SudokuGrid, lookup: CageLookup): number[] {
-	const candidates = new Array<number>(SUDOKU_CELL_COUNT).fill(0);
+	const candidates = computeCandidates(grid);
 	for (let cell = 0; cell < SUDOKU_CELL_COUNT; cell += 1) {
-		if (grid[cell] !== 0) {
-			continue;
-		}
-		let mask = FULL_MASK;
-		for (const peer of SUDOKU_PEERS[cell]) {
-			const value = grid[peer];
-			if (value !== 0) {
-				mask &= ~digitMask(value);
-			}
-		}
-		for (const digit of digitsInMask(mask)) {
+		for (const digit of digitsInMask(candidates[cell])) {
 			if (!cageAllowsDigit(grid, lookup, cell, digit)) {
-				mask &= ~digitMask(digit);
+				candidates[cell] &= ~digitMask(digit);
 			}
 		}
-		candidates[cell] = mask;
 	}
 	return candidates;
-}
-
-function killerSearch(
-	grid: SudokuGrid,
-	lookup: CageLookup,
-	limit: number,
-	found: { count: number },
-) {
-	const candidates = killerCandidates(grid, lookup);
-	let best = -1;
-	let bestSize = 10;
-	for (let cell = 0; cell < SUDOKU_CELL_COUNT; cell += 1) {
-		if (grid[cell] !== 0) {
-			continue;
-		}
-		const size = maskSize(candidates[cell]);
-		if (size === 0) {
-			return;
-		}
-		if (size < bestSize) {
-			best = cell;
-			bestSize = size;
-			if (size === 1) {
-				break;
-			}
-		}
-	}
-	if (best === -1) {
-		found.count += 1;
-		return;
-	}
-	for (const digit of digitsInMask(candidates[best])) {
-		grid[best] = digit;
-		killerSearch(grid, lookup, limit, found);
-		grid[best] = 0;
-		if (found.count >= limit) {
-			return;
-		}
-	}
 }
 
 export function countKillerSolutions(
@@ -235,15 +181,13 @@ export function countKillerSolutions(
 	cages: KillerCage[],
 	limit = 2,
 ) {
-	if (findConflicts(grid).size > 0) {
-		return 0;
-	}
-	const found = { count: 0 };
-	killerSearch([...grid], buildCageLookup(cages), limit, found);
-	return found.count;
+	const lookup = buildCageLookup(cages);
+	return countSolutions(grid, limit, (current) =>
+		killerCandidates(current, lookup),
+	);
 }
 
-export type GeneratedKillerPuzzle = {
+type GeneratedKillerPuzzle = {
 	givens: SudokuGrid;
 	solution: SudokuGrid;
 	cages: KillerCage[];
@@ -253,31 +197,16 @@ export type GeneratedKillerPuzzle = {
 
 export function generateKillerPuzzle(
 	difficulty: SudokuDifficulty,
-	rng: SudokuRng = Math.random,
+	rng: Rng = Math.random,
 ): GeneratedKillerPuzzle {
 	const solution = generateSolvedGrid(rng);
 	const cages = generateKillerCages(solution, rng);
-	const givens = [...solution];
-	const target = KILLER_CLUE_TARGETS[difficulty];
-	let clueCount = SUDOKU_CELL_COUNT;
-	for (const cell of shuffled(
-		Array.from({ length: SUDOKU_CELL_COUNT }, (_, i) => i),
-		rng,
-	)) {
-		if (clueCount <= target) {
-			break;
-		}
-		const saved = givens[cell];
-		if (saved === 0) {
-			continue;
-		}
-		givens[cell] = 0;
-		if (countKillerSolutions(givens, cages, 2) === 1) {
-			clueCount -= 1;
-		} else {
-			givens[cell] = saved;
-		}
-	}
+	const { givens, clueCount } = removeClues(
+		solution,
+		shuffle(allCells(), rng),
+		KILLER_CLUE_TARGETS[difficulty],
+		(grid) => countKillerSolutions(grid, cages, 2) === 1,
+	);
 	return { givens, solution, cages, difficulty, clueCount };
 }
 
@@ -351,9 +280,71 @@ export function validateKillerCages(cages: KillerCage[]): boolean {
 }
 
 export function isKillerSolved(grid: SudokuGrid, cages: KillerCage[]) {
+	return isGridSolved(grid) && findKillerConflicts(grid, cages).size === 0;
+}
+
+/** Peer conflicts on a board, plus cage conflicts when it has cages. */
+export function boardConflictsWithCages(
+	board: SudokuBoardState,
+	cages?: KillerCage[],
+) {
+	const merged = boardConflicts(board);
+	if (cages) {
+		for (const cell of findKillerConflicts(effectiveGrid(board), cages)) {
+			merged.add(cell);
+		}
+	}
+	return merged;
+}
+
+export function isBoardSolved(board: SudokuBoardState, cages?: KillerCage[]) {
 	return (
-		grid.every((value) => value !== 0) &&
-		findConflicts(grid).size === 0 &&
-		findKillerConflicts(grid, cages).size === 0
+		isBoardComplete(board) &&
+		(!cages || findKillerConflicts(effectiveGrid(board), cages).size === 0)
 	);
+}
+
+/** Which sides of a cell lie on its cage's outline. */
+type CageEdges = {
+	top: boolean;
+	bottom: boolean;
+	left: boolean;
+	right: boolean;
+};
+
+export type KillerCageLayout = {
+	/** Cage index per cell, -1 when uncaged. */
+	byCell: number[];
+	/** Sum label per cage, on its top-left-most cell. */
+	sumAt: Map<number, number>;
+	edges: CageEdges[];
+};
+
+/** How a board draws its cages; `null` when there are none. */
+export function killerCageLayout(
+	cages: KillerCage[] | undefined,
+): KillerCageLayout | null {
+	if (!cages || cages.length === 0) {
+		return null;
+	}
+	const byCell = new Array<number>(SUDOKU_CELL_COUNT).fill(-1);
+	const sumAt = new Map<number, number>();
+	cages.forEach((cage, index) => {
+		for (const cell of cage.cells) {
+			byCell[cell] = index;
+		}
+		sumAt.set(Math.min(...cage.cells), cage.sum);
+	});
+	const edges = allCells().map((cell) => {
+		const row = rowOf(cell);
+		const col = colOf(cell);
+		const cage = byCell[cell];
+		return {
+			top: row === 0 || byCell[cell - 9] !== cage,
+			bottom: row === 8 || byCell[cell + 9] !== cage,
+			left: col === 0 || byCell[cell - 1] !== cage,
+			right: col === 8 || byCell[cell + 1] !== cage,
+		};
+	});
+	return { byCell, sumAt, edges };
 }

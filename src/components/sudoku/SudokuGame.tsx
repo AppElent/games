@@ -1,3 +1,4 @@
+import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import type {
 	SudokuAction,
 	SudokuHistory,
@@ -5,75 +6,49 @@ import type {
 } from "@arcadeclub/core/sudoku-board";
 import {
 	applyAction,
-	boardConflicts,
 	canRedo,
 	canUndo,
 	createHistory,
 	deserializeBoard,
 	effectiveGrid,
-	isBoardComplete,
 	redo,
 	undo,
 } from "@arcadeclub/core/sudoku-board";
 import type { SudokuHint } from "@arcadeclub/core/sudoku-hints";
 import { describeHint, findHint } from "@arcadeclub/core/sudoku-hints";
 import {
-	findKillerConflicts,
-	type KillerCage,
+	boardConflictsWithCages,
+	isBoardSolved,
 } from "@arcadeclub/core/sudoku-killer";
 import { useMutation } from "convex/react";
-import { Pause, Play, RotateCcw, Timer } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { renameLocalSudokuSession } from "#/lib/games/sudoku-local";
-import { fmt, useMessages } from "#/lib/i18n";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { SudokuBoard } from "./SudokuBoard";
+import { CompletedBanner, PauseOverlay, PuzzleHeader } from "./PuzzleChrome";
+import { SUDOKU_COLORS, SudokuBoard } from "./SudokuBoard";
 import { SudokuKeypad } from "./SudokuKeypad";
+import {
+	bestEffort,
+	type PuzzleStateDoc,
+	sudokuProgress,
+	useSoloPuzzleSession,
+} from "./useSoloPuzzleSession";
 
-type SudokuStateDoc = {
-	givens: string;
-	digits: string;
-	cornerNotes: number[];
-	centerNotes: number[];
-	colors: number[];
-	status: "active" | "paused" | "completed";
-	difficulty?: "easy" | "medium" | "hard" | "expert";
-	source: "generated" | "scan";
-	variant?: "classic" | "killer" | "binary";
-	cages?: KillerCage[];
-	autoCleanup: boolean;
-	elapsedSeconds: number;
-	lastResumedAt?: number;
-};
-
-export type SudokuGameProps = {
+type SudokuGameProps = {
 	sessionId: Id<"gameSessions">;
 	title: string;
-	state: SudokuStateDoc;
+	state: PuzzleStateDoc;
 };
-
-function formatElapsed(totalSeconds: number) {
-	const minutes = Math.floor(totalSeconds / 60);
-	const seconds = totalSeconds % 60;
-	return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
-function initialElapsed(state: SudokuStateDoc) {
-	const running =
-		state.status === "active" && state.lastResumedAt
-			? Math.max(0, Math.round((Date.now() - state.lastResumedAt) / 1000))
-			: 0;
-	return state.elapsedSeconds + running;
-}
 
 export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
-	const saveProgress = useMutation(api.sudoku.saveProgress);
-	const setPaused = useMutation(api.sudoku.setPaused);
-	const complete = useMutation(api.sudoku.complete);
 	const rename = useMutation(api.sudoku.rename);
+	const { status, elapsedLabel, isActive, scheduleSave, finish, togglePause } =
+		useSoloPuzzleSession(sessionId, state);
 
 	const [history, setHistory] = useState<SudokuHistory>(() =>
 		createHistory(
@@ -89,8 +64,6 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 	const [selectedCell, setSelectedCell] = useState<number | null>(null);
 	const [mode, setMode] = useState<SudokuInputMode>("digit");
 	const [autoCleanup, setAutoCleanup] = useState(state.autoCleanup);
-	const [status, setStatus] = useState(state.status);
-	const [elapsed, setElapsed] = useState(() => initialElapsed(state));
 	const [hint, setHint] = useState<SudokuHint | null>(null);
 	const [hintLevel, setHintLevel] = useState<1 | 2 | 3>(1);
 	const [editingTitle, setEditingTitle] = useState(false);
@@ -98,15 +71,10 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 
 	const board = history.current;
 	const cages = state.cages;
-	const conflicts = useMemo(() => {
-		const merged = boardConflicts(board);
-		if (cages) {
-			for (const cell of findKillerConflicts(effectiveGrid(board), cages)) {
-				merged.add(cell);
-			}
-		}
-		return merged;
-	}, [board, cages]);
+	const conflicts = useMemo(
+		() => boardConflictsWithCages(board, cages),
+		[board, cages],
+	);
 	const digitCounts = useMemo(() => {
 		const counts = new Array<number>(10).fill(0);
 		for (const value of effectiveGrid(board)) {
@@ -115,112 +83,57 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 		return counts;
 	}, [board]);
 
-	const elapsedRef = useRef(elapsed);
-	elapsedRef.current = elapsed;
-	const statusRef = useRef(status);
-	statusRef.current = status;
+	// The latest history at event time: several inputs can land before React
+	// re-renders, and each must build on the one before.
+	const historyRef = useRef(history);
+	historyRef.current = history;
 
-	// timer tick
-	useEffect(() => {
-		if (status !== "active") {
-			return;
-		}
-		const timer = setInterval(() => setElapsed((value) => value + 1), 1000);
-		return () => clearInterval(timer);
-	}, [status]);
-
-	// debounced persistence
-	const saveTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
-		undefined,
+	const save = useCallback(
+		(next: SudokuHistory, nextAutoCleanup: boolean) =>
+			scheduleSave(sudokuProgress(next.current, nextAutoCleanup)),
+		[scheduleSave],
 	);
-	const scheduleSave = useCallback(
-		(next: SudokuHistory, nextAutoCleanup: boolean) => {
-			clearTimeout(saveTimeout.current);
-			saveTimeout.current = setTimeout(() => {
-				if (statusRef.current === "completed") {
-					return;
-				}
-				saveProgress({
-					sessionId,
-					digits: next.current.digits.join(""),
-					cornerNotes: next.current.corner,
-					centerNotes: next.current.center,
-					colors: next.current.colors,
-					elapsedSeconds: elapsedRef.current,
-					autoCleanup: nextAutoCleanup,
-				}).catch(() => undefined);
-			}, 1200);
-		},
-		[saveProgress, sessionId],
-	);
-	useEffect(() => () => clearTimeout(saveTimeout.current), []);
 
-	const finishIfComplete = useCallback(
-		(next: SudokuHistory) => {
-			if (!isBoardComplete(next.current)) {
+	/** Moves to `next` and saves it; a solved board completes the session. */
+	const commit = useCallback(
+		(next: SudokuHistory, checkSolved: boolean) => {
+			if (next === historyRef.current) {
 				return;
 			}
-			if (
-				cages &&
-				findKillerConflicts(effectiveGrid(next.current), cages).size > 0
-			) {
-				return;
+			historyRef.current = next;
+			setHistory(next);
+			save(next, autoCleanup);
+			if (checkSolved && isBoardSolved(next.current, cages)) {
+				finish(next.current.digits);
 			}
-			clearTimeout(saveTimeout.current);
-			setStatus("completed");
-			complete({
-				sessionId,
-				digits: next.current.digits.join(""),
-				elapsedSeconds: elapsedRef.current,
-			}).catch(() => undefined);
 		},
-		[complete, sessionId, cages],
+		[save, autoCleanup, cages, finish],
 	);
 
 	const dispatch = useCallback(
 		(action: SudokuAction) => {
-			if (statusRef.current !== "active") {
+			if (!isActive()) {
 				return;
 			}
 			setHint(null);
-			setHistory((current) => {
-				const next = applyAction(current, action, { autoCleanup });
-				if (next !== current) {
-					scheduleSave(next, autoCleanup);
-					finishIfComplete(next);
-				}
-				return next;
-			});
+			commit(applyAction(historyRef.current, action, { autoCleanup }), true);
 		},
-		[autoCleanup, scheduleSave, finishIfComplete],
+		[isActive, commit, autoCleanup],
 	);
 
 	const handleUndo = useCallback(() => {
-		if (statusRef.current !== "active") {
+		if (!isActive()) {
 			return;
 		}
-		setHistory((current) => {
-			const next = undo(current);
-			if (next !== current) {
-				scheduleSave(next, autoCleanup);
-			}
-			return next;
-		});
-	}, [scheduleSave, autoCleanup]);
+		commit(undo(historyRef.current), false);
+	}, [isActive, commit]);
 
 	const handleRedo = useCallback(() => {
-		if (statusRef.current !== "active") {
+		if (!isActive()) {
 			return;
 		}
-		setHistory((current) => {
-			const next = redo(current);
-			if (next !== current) {
-				scheduleSave(next, autoCleanup);
-				finishIfComplete(next);
-			}
-			return next;
-		});
-	}, [scheduleSave, autoCleanup, finishIfComplete]);
+		commit(redo(historyRef.current), true);
+	}, [isActive, commit]);
 
 	const handleDigit = useCallback(
 		(digit: number) => {
@@ -237,38 +150,25 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 				dispatch({
 					type: "setColor",
 					cell: selectedCell,
-					color: Math.min(digit, 8),
+					color: Math.min(digit, SUDOKU_COLORS.length),
 				});
 			}
 		},
 		[selectedCell, mode, dispatch],
 	);
 
-	const togglePause = useCallback(() => {
-		if (statusRef.current === "completed") {
-			return;
-		}
-		const pausing = statusRef.current === "active";
-		setStatus(pausing ? "paused" : "active");
-		setPaused({ sessionId, paused: pausing }).catch(() => undefined);
-	}, [setPaused, sessionId]);
-
 	const requestHint = useCallback(() => {
-		if (statusRef.current !== "active") {
+		if (!isActive() || hint) {
 			return;
 		}
-		setHint((current) => {
-			if (current) {
-				return current;
-			}
-			setHintLevel(1);
-			return findHint(effectiveGrid(history.current), {
+		setHintLevel(1);
+		setHint(
+			findHint(effectiveGrid(history.current), {
 				givens: history.current.givens,
-			});
-		});
-	}, [history]);
+			}),
+		);
+	}, [isActive, hint, history]);
 
-	// keyboard controls
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement | null;
@@ -277,7 +177,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 			}
 			if (event.key >= "1" && event.key <= "9") {
 				const digit = Number(event.key);
-				if (selectedCell !== null && statusRef.current === "active") {
+				if (selectedCell !== null && isActive()) {
 					if (event.shiftKey) {
 						dispatch({ type: "toggleCorner", cell: selectedCell, digit });
 					} else if (event.ctrlKey || event.altKey) {
@@ -349,7 +249,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [selectedCell, dispatch, handleDigit, handleUndo, handleRedo]);
+	}, [selectedCell, isActive, dispatch, handleDigit, handleUndo, handleRedo]);
 
 	const hintCells = useMemo(() => {
 		if (!hint) {
@@ -377,7 +277,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 			setTitleDraft(title);
 			return;
 		}
-		rename({ sessionId, title: next }).catch(() => undefined);
+		bestEffort(rename({ sessionId, title: next }));
 		renameLocalSudokuSession(sessionId, next);
 	}, [titleDraft, title, rename, sessionId]);
 
@@ -386,9 +286,9 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 			{/* Board column: title bar + board. On large/landscape viewports this
 			    sits beside the controls column so the keypad stays above the fold. */}
 			<div className="flex w-full max-w-[min(94vw,600px)] flex-col items-center gap-4 lg:w-[min(70vh,600px)]">
-				<div className="flex w-full flex-wrap items-center justify-between gap-2">
-					<div className="min-w-0">
-						{editingTitle ? (
+				<PuzzleHeader
+					title={
+						editingTitle ? (
 							<input
 								ref={(element) => element?.focus()}
 								value={titleDraft}
@@ -404,7 +304,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 									}
 								}}
 								className="w-full rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-sm text-white"
-								maxLength={80}
+								maxLength={MAX_TITLE_LENGTH}
 							/>
 						) : (
 							<button
@@ -415,50 +315,24 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 							>
 								{titleDraft}
 							</button>
-						)}
-						<p className="text-xs text-slate-400">
+						)
+					}
+					details={
+						<>
 							{state.difficulty
 								? sudoku.difficulty[state.difficulty]
 								: sudoku.game.importedFallback}
 							{state.variant === "killer" ? ` · ${sudoku.variant.killer}` : ""}
 							{state.source === "scan" ? ` · ${sudoku.game.scannedLabel}` : ""}
-						</p>
-					</div>
-					<div className="flex items-center gap-2">
-						<span className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 bg-slate-800/70 px-2 py-1 font-mono text-sm text-slate-200">
-							<Timer className="h-4 w-4" /> {formatElapsed(elapsed)}
-						</span>
-						{status !== "completed" ? (
-							<button
-								type="button"
-								onClick={togglePause}
-								className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 bg-slate-800/70 px-2 py-1 text-sm font-semibold text-slate-200 hover:bg-slate-700"
-							>
-								{status === "active" ? (
-									<>
-										<Pause className="h-4 w-4" /> {sudoku.game.pauseButton}
-									</>
-								) : (
-									<>
-										<Play className="h-4 w-4" />{" "}
-										{messages.common.gameShell.resume}
-									</>
-								)}
-							</button>
-						) : null}
-					</div>
-				</div>
+						</>
+					}
+					status={status}
+					elapsedLabel={elapsedLabel}
+					onTogglePause={togglePause}
+				/>
 
 				{status === "completed" ? (
-					<div className="w-full rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-4 py-3 text-emerald-200">
-						<p className="font-bold">{sudoku.game.solvedTitle}</p>
-						<p className="text-sm">
-							{fmt(sudoku.game.completedIn, { time: formatElapsed(elapsed) })}{" "}
-							<a href="/sudoku/new" className="underline hover:text-white">
-								{sudoku.game.startAnotherPuzzle}
-							</a>
-						</p>
-					</div>
+					<CompletedBanner elapsedLabel={elapsedLabel} />
 				) : null}
 
 				<div className="relative w-full">
@@ -473,16 +347,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 						hidden={status === "paused"}
 						cages={cages}
 					/>
-					{status === "paused" ? (
-						<button
-							type="button"
-							onClick={togglePause}
-							className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-slate-950/80 text-slate-200"
-						>
-							<Play className="h-10 w-10" />
-							<span className="font-bold">{sudoku.game.pausedOverlay}</span>
-						</button>
-					) : null}
+					{status === "paused" ? <PauseOverlay onResume={togglePause} /> : null}
 				</div>
 			</div>
 
@@ -551,7 +416,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 							checked={autoCleanup}
 							onChange={(event) => {
 								setAutoCleanup(event.target.checked);
-								scheduleSave(history, event.target.checked);
+								save(history, event.target.checked);
 							}}
 							className="accent-sky-400"
 						/>

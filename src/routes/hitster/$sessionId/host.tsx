@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import {
+	pageShell,
+	SessionBundleRoute,
+} from "#/components/games/SessionBundleRoute";
 import { HitsterHostView } from "#/components/hitster/HitsterHostView";
+import { useSeat } from "#/lib/games/seat";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -15,37 +20,34 @@ function HitsterHostPage() {
 	const messages = useMessages();
 	const session = messages.games.hitster.session;
 	const { sessionId } = Route.useParams();
-	const participantId =
-		typeof window !== "undefined"
-			? window.sessionStorage.getItem("arcade-club.hostParticipantId")
-			: null;
+	const participantId = useSeat(sessionId);
 	const bundle = useQuery(api.hitster.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
-		participantId: participantId
-			? (participantId as Id<"sessionParticipants">)
-			: undefined,
+		participantId,
 	});
-
-	if (bundle === undefined) {
-		return (
-			<FullscreenGamePage title="Hitster" className="text-[var(--club-muted)]">
-				{session.loadingRoom}
-			</FullscreenGamePage>
-		);
-	}
-	if (bundle === null || !participantId) {
-		return (
-			<FullscreenGamePage title="Hitster" className="text-orange-500">
-				{bundle === null ? session.roomNotFound : session.hostSessionExpired}
-			</FullscreenGamePage>
-		);
-	}
+	const shell = pageShell(messages.catalog.hitster.title, {
+		loading: "text-[var(--club-muted)]",
+		notFound: "text-orange-500",
+	});
 	return (
-		<FullscreenGamePage title="Hitster" maxWidthClassName="max-w-5xl">
-			<HitsterHostView
-				bundle={bundle}
-				participantId={participantId as Id<"sessionParticipants">}
-			/>
-		</FullscreenGamePage>
+		<SessionBundleRoute
+			bundle={bundle}
+			shell={shell}
+			loading={session.loadingRoom}
+			notFound={session.roomNotFound}
+		>
+			{(loaded) =>
+				participantId ? (
+					<FullscreenGamePage
+						title={messages.catalog.hitster.title}
+						maxWidthClassName="max-w-5xl"
+					>
+						<HitsterHostView bundle={loaded} participantId={participantId} />
+					</FullscreenGamePage>
+				) : (
+					shell(session.hostSessionExpired, "notFound")
+				)
+			}
+		</SessionBundleRoute>
 	);
 }

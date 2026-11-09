@@ -3,14 +3,10 @@
  * or create an online challenge to send to a friend.
  */
 
-import { getBackgammonWinner } from "@arcadeclub/core/backgammon";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
-import { useMutation } from "convex/react";
-import { useFocusEffect, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
-import { api } from "../../../convex/api";
-import { haptics } from "../../../feedback/haptics";
+import { StyleSheet, View } from "react-native";
 import { useI18n } from "../../../i18n";
 import { spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
@@ -18,27 +14,28 @@ import { Card } from "../../../ui/card";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
+import { onlineSessionHref } from "../../play/app-games";
 import { HostGate } from "../../sessions/host/host-gate";
 import { useHostSession } from "../../sessions/host/use-host-session";
-import { onlineSessionHref } from "../../sessions/session-links";
-import { clearLocalMatch, readLocalMatch } from "../local/local-match-store";
+import { confirmNewMatch } from "../components/confirm-new-match";
+import {
+	hubOffersContinue,
+	LOCAL_MATCH_HREF,
+	readLocalMatch,
+	startNewLocalMatch,
+} from "../local/local-match-store";
 
 /** Whether a pass-and-play match is under way and worth continuing. */
 function hasMatchInProgress() {
 	const match = readLocalMatch();
-	return Boolean(
-		match &&
-			getBackgammonWinner(match.state.off) === null &&
-			(match.history.length > 0 || match.state.dice.length > 0),
-	);
+	return Boolean(match && hubOffersContinue(match));
 }
 
 export function BackgammonHomeScreen() {
 	const router = useRouter();
 	const { t } = useI18n();
 	const copy = t.games.backgammon;
-	const hosting = useHostSession();
-	const createState = useMutation(api.backgammon.createState);
+	const hosting = useHostSession("backgammon");
 	const [inProgress, setInProgress] = useState(false);
 
 	useFocusEffect(
@@ -48,103 +45,81 @@ export function BackgammonHomeScreen() {
 	);
 
 	const startLocal = () => {
-		if (!inProgress) {
-			clearLocalMatch();
-			router.push("/backgammon/local");
-			return;
-		}
-		Alert.alert(copy.newGame.confirmNewTitle, copy.newGame.confirmNewBody, [
-			{ text: t.common.actions.cancel, style: "cancel" },
-			{
-				text: t.common.endScreen.newGame,
-				style: "destructive",
-				onPress: () => {
-					clearLocalMatch();
-					router.push("/backgammon/local");
-				},
-			},
-		]);
+		const start = () => {
+			startNewLocalMatch();
+			router.push(LOCAL_MATCH_HREF);
+		};
+		if (inProgress) confirmNewMatch(t, start);
+		else start();
 	};
 
 	const createChallenge = async () => {
-		const session = await hosting.host(
-			{
-				gameType: "backgammon",
-				joinMode: "challenge",
-				title: t.catalog.backgammon.title,
-			},
-			(created) =>
-				createState({
-					sessionId: created.sessionId,
-					hostParticipantId: created.participantId,
-				}),
-		);
-		if (!session) {
-			haptics.actionFailed();
-			return;
-		}
-		const href = onlineSessionHref("backgammon", session.sessionId);
-		if (href) router.push(href);
+		const session = await hosting.host({ title: t.catalog.backgammon.title });
+		if (session)
+			router.push(onlineSessionHref("backgammon", session.sessionId));
 	};
 
 	return (
-		<Screen>
-			<Card>
-				<View style={styles.section}>
-					<AppText variant="heading" accessibilityRole="header">
-						{copy.newGame.localMatchHeading}
-					</AppText>
-					<AppText variant="secondary">
-						{copy.newGame.localMatchDescription}
-					</AppText>
-					{inProgress ? (
+		<>
+			<Stack.Screen options={{ title: t.catalog.backgammon.title }} />
+			<Screen>
+				<Card>
+					<View style={styles.section}>
+						<AppText variant="heading" accessibilityRole="header">
+							{copy.newGame.localMatchHeading}
+						</AppText>
+						<AppText variant="secondary">
+							{copy.newGame.localMatchDescription}
+						</AppText>
+						{inProgress ? (
+							<Button
+								label={copy.newGame.continueLocal}
+								onPress={() => router.push(LOCAL_MATCH_HREF)}
+								testID="bg-continue-local"
+							/>
+						) : null}
 						<Button
-							label={copy.newGame.continueLocal}
-							onPress={() => router.push("/backgammon/local")}
-							testID="bg-continue-local"
+							variant={inProgress ? "secondary" : "primary"}
+							label={t.common.endScreen.newGame}
+							onPress={startLocal}
+							testID="bg-new-local"
 						/>
-					) : null}
-					<Button
-						variant={inProgress ? "secondary" : "primary"}
-						label={t.common.endScreen.newGame}
-						onPress={startLocal}
-						testID="bg-new-local"
-					/>
-				</View>
-			</Card>
-			<Card>
-				<View style={styles.section}>
-					<AppText variant="heading" accessibilityRole="header">
-						{copy.newGame.onlineChallengeHeading}
-					</AppText>
-					<AppText variant="secondary">
-						{copy.newGame.onlineChallengeDescription}
-					</AppText>
-					{hosting.isSignedIn ? (
-						<Button
-							label={copy.newGame.createChallengeLink}
-							onPress={createChallenge}
-							busy={hosting.busy}
-							disabled={!hosting.canHost}
-							testID="bg-create-challenge"
+					</View>
+				</Card>
+				<Card>
+					<View style={styles.section}>
+						<AppText variant="heading" accessibilityRole="header">
+							{copy.newGame.onlineChallengeHeading}
+						</AppText>
+						<AppText variant="secondary">
+							{copy.newGame.onlineChallengeDescription}
+						</AppText>
+						{hosting.isSignedIn ? (
+							<Button
+								label={copy.newGame.createChallengeLink}
+								onPress={createChallenge}
+								busy={hosting.busy}
+								disabled={!hosting.canHost}
+								testID="bg-create-challenge"
+							/>
+						) : (
+							<HostGate />
+						)}
+						<Notice
+							message={
+								hosting.error
+									? gameErrorMessage(
+											t,
+											hosting.error,
+											copy.newGame.createChallengeError,
+										)
+									: null
+							}
 						/>
-					) : (
-						<HostGate />
-					)}
-					<Notice
-						message={
-							hosting.error
-								? gameErrorMessage(
-										t,
-										hosting.error,
-										copy.newGame.createChallengeError,
-									)
-								: null
-						}
-					/>
-				</View>
-			</Card>
-		</Screen>
+					</View>
+				</Card>
+			</Screen>
+		</>
 	);
 }
 

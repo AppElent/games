@@ -1,26 +1,49 @@
-import type { Infer } from "convex/values";
+import {
+	type AuthPolicy,
+	GAME_SESSION_POLICY,
+	type GameType,
+	type JoinMode,
+	type SessionGameType,
+} from "@arcadeclub/core/games";
+import { type ObjectType, v } from "convex/values";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import type {
-	authPolicyValidator,
-	gameTypeValidator,
-	joinModeValidator,
-} from "../schema";
 import { getOptionalUserId } from "./auth";
 import { makeJoinCode, makeShareToken } from "./codes";
 import { gameError } from "./errors";
+import { insertParticipant } from "./gameSession";
+
+/** What every game's `create` takes besides its own settings. */
+export const hostedSessionArgs = {
+	title: v.string(),
+	displayName: v.string(),
+	guestId: v.optional(v.string()),
+};
+
+/** What every game's `create` returns: who you are and how others get in. */
+export const createdSessionValidator = v.object({
+	sessionId: v.id("gameSessions"),
+	participantId: v.id("sessionParticipants"),
+	joinCode: v.optional(v.string()),
+	shareToken: v.optional(v.string()),
+});
+
+type HostedArgs = ObjectType<typeof hostedSessionArgs>;
+
+type HostedSession = {
+	session: Doc<"gameSessions">;
+	participantId: Id<"sessionParticipants">;
+};
 
 /** Inserts a session and its host, so a game can do so within its own mutation. */
 export async function createHostedSession(
 	ctx: MutationCtx,
-	args: {
-		gameType: Infer<typeof gameTypeValidator>;
-		joinMode: Infer<typeof joinModeValidator>;
-		authPolicy: Infer<typeof authPolicyValidator>;
-		title: string;
-		displayName: string;
-		guestId?: string;
+	args: HostedArgs & {
+		gameType: GameType;
+		joinMode: JoinMode;
+		authPolicy: AuthPolicy;
 	},
-) {
+): Promise<HostedSession> {
 	const userId = await getOptionalUserId(ctx);
 	if (args.authPolicy === "signedInRequired" && !userId) {
 		throw gameError("signInToHost");
@@ -49,6 +72,8 @@ export async function createHostedSession(
 		}
 	}
 
+	const shareToken =
+		args.joinMode === "challenge" ? makeShareToken() : undefined;
 	const sessionId = await ctx.db.insert("gameSessions", {
 		gameType: args.gameType,
 		status: "lobby",
@@ -57,21 +82,49 @@ export async function createHostedSession(
 		title: args.title,
 		hostUserId: userId,
 		joinCode,
-		shareToken: args.joinMode === "challenge" ? makeShareToken() : undefined,
+		shareToken,
 	});
 
-	const participantId = await ctx.db.insert("sessionParticipants", {
+	const participantId = await insertParticipant(ctx, {
 		sessionId,
 		userId,
-		guestId: userId ? undefined : args.guestId,
+		guestId: args.guestId,
 		displayName: args.displayName,
 		role: "host",
 		seat: "host",
-		connected: true,
-		lastSeen: Date.now(),
 	});
 
 	await ctx.db.patch(sessionId, { hostParticipantId: participantId });
+	const session = await ctx.db.get(sessionId);
+	if (!session) {
+		throw gameError("sessionNotFound");
+	}
+	return { session, participantId };
+}
 
-	return { sessionId, participantId, joinCode };
+/** Hosts a game under its `GAME_SESSION_POLICY`; a card table picks its join mode. */
+export function hostGame(
+	ctx: MutationCtx,
+	gameType: SessionGameType,
+	args: HostedArgs,
+	joinMode: JoinMode = GAME_SESSION_POLICY[gameType].joinMode,
+) {
+	return createHostedSession(ctx, {
+		gameType,
+		joinMode,
+		authPolicy: GAME_SESSION_POLICY[gameType].authPolicy,
+		title: args.title,
+		displayName: args.displayName,
+		guestId: args.guestId,
+	});
+}
+
+/** A new session as every game's `create` returns it. */
+export function createdSession({ session, participantId }: HostedSession) {
+	return {
+		sessionId: session._id,
+		participantId,
+		joinCode: session.joinCode,
+		shareToken: session.shareToken,
+	};
 }

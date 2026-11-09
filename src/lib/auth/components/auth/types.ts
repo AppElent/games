@@ -22,7 +22,4 @@ export interface AuthConfig {
 	socialProviders: SocialProvider[];
 }
 
-// Moved to ../core (DOM-free, shared with mobile) — re-exported here so
-// existing imports of `clerkErrorMessage` from "./types" keep working
-// unchanged. See AppElent/workouts#48.
 export { clerkErrorMessage } from "#/lib/auth/core";

@@ -1,12 +1,8 @@
 /** A table for the shedding family: match the pile and be first out. */
 
-import { CARD_PAPER } from "@arcadeclub/core/cards/art";
+import { CARD_PAPER, isRedSuit } from "@arcadeclub/core/cards/art";
 import { type CardId, SUITS, type Suit } from "@arcadeclub/core/cards/deck";
-import {
-	type CardGameDefinition,
-	type CardGameId,
-	resolvedRules,
-} from "@arcadeclub/core/cards/engine";
+import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import { powerOf, type SheddingView } from "@arcadeclub/core/cards/shedding";
 import {
 	seatName,
@@ -46,7 +42,7 @@ export function SheddingTable({
 	view,
 	controls,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	table: CardTableBundle;
 	view: SheddingView;
 	controls: CardTableControls;
@@ -64,9 +60,8 @@ export function SheddingTable({
 		NO_MELD,
 	);
 
-	const resolved = resolvedRules(game, table.options);
-	const rules = resolved.family === "shedding" ? resolved.rules : null;
-	const name = cards.games[game.id as CardGameId].name;
+	const rules = familyRules(game, table.options, "shedding");
+	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "playing";
 	const mine = playing && view.turn === you;
@@ -200,7 +195,7 @@ export function SheddingTable({
 										suit={view.activeSuit}
 										size={13}
 										color={
-											view.activeSuit === "H" || view.activeSuit === "D"
+											isRedSuit(view.activeSuit)
 												? cardColors.suitRed
 												: cardColors.ivory
 										}

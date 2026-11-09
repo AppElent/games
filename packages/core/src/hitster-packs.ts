@@ -1,3 +1,5 @@
+import type { HitsterPlaybackMode } from "./hitster";
+
 export type HitsterCard = {
 	id: string;
 	title: string;
@@ -10,7 +12,7 @@ export type HitsterCard = {
 	albumArtUrl?: string;
 };
 
-export type HitsterPack = {
+type HitsterPack = {
 	id: string;
 	title: string;
 	description: string;
@@ -237,7 +239,7 @@ export function getHitsterCard(
  */
 export function getPlayableHitsterCards(
 	packId: string,
-	playbackMode: "hostDevice" | "preview",
+	playbackMode: HitsterPlaybackMode,
 ): HitsterCard[] {
 	const pack = getHitsterPack(packId);
 	if (!pack) {

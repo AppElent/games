@@ -2,69 +2,70 @@
  * Creating an online session this phone hosts. The backend requires an
  * account to host anything but solo play, so callers gate on `canHost`
  * (signed in and the Clerk token already on the Convex client).
+ *
+ * The hook calls the game's own atomic `create` mutation, named in
+ * `APP_GAMES`, which opens the session and its game state together and
+ * decides the join mode and auth policy; the seat is remembered under that
+ * game, with a fresh seat secret when the game's seats need one.
  */
-import { useAuth } from "@clerk/expo";
-import { useConvexAuth, useMutation } from "convex/react";
-import { useCallback, useState } from "react";
-import { api, type Id } from "../../../convex/api";
-import { usePlayerIdentity } from "../../players/use-player-identity";
-import { type GameType, rememberSeat } from "../session-seats";
+import { seatsCarrySecret } from "@arcadeclub/core/games";
+import { useMutation } from "convex/react";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
+import { useCallback } from "react";
+import { APP_GAMES, type OnlineGameType } from "../../play/app-games";
+import { usePlayerIdentity } from "../../players/identity/use-player-identity";
+import { newSeatSecret } from "../seat-secret";
+import { rememberSeat } from "../session-seats";
+import { useBackendAuthReady } from "../use-backend-auth-ready";
+import { useSessionAction } from "../use-session-action";
 
-export type HostedSession = {
-	sessionId: Id<"gameSessions">;
-	participantId: Id<"sessionParticipants">;
-	joinCode?: string;
-};
+type Create<G extends OnlineGameType> =
+	(typeof APP_GAMES)[G]["online"]["create"];
 
-export function useHostSession() {
-	const { isSignedIn } = useAuth();
-	const convexAuth = useConvexAuth();
-	const identity = usePlayerIdentity();
-	const create = useMutation(api.sessions.create);
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<unknown>(null);
+/** The game's `create` arguments besides who hosts and the seat secret. */
+type HostOptions<G extends OnlineGameType> = Omit<
+	FunctionArgs<Create<G>>,
+	"displayName" | "guestId" | "seatSecret"
+>;
+
+export function useHostSession<G extends OnlineGameType>(gameType: G) {
+	const backendAuth = useBackendAuthReady();
+	const { displayName, guestId } = usePlayerIdentity();
+	const { run, busy, error } = useSessionAction();
+	const mutate = useMutation(APP_GAMES[gameType].online.create);
+	// Each game's own args type; TypeScript can't relate the union to `G`.
+	const create = mutate as (
+		args: FunctionArgs<Create<G>>,
+	) => Promise<FunctionReturnType<Create<G>>>;
 
 	const host = useCallback(
-		async (
-			args: {
-				gameType: GameType;
-				joinMode: "room" | "challenge";
-				title: string;
-			},
-			/** Game-specific setup that must succeed for the session to count. */
-			setup?: (session: HostedSession) => Promise<unknown>,
-		): Promise<HostedSession | null> => {
-			setBusy(true);
-			setError(null);
-			try {
+		(options: HostOptions<G>) =>
+			run(async () => {
+				const seatSecret = seatsCarrySecret(gameType)
+					? newSeatSecret()
+					: undefined;
 				const session = await create({
-					...args,
-					authPolicy: "guestAllowed",
-					displayName: identity.displayName,
-					guestId: identity.guestId,
-				});
-				await setup?.(session);
+					...options,
+					displayName,
+					guestId,
+					...(seatSecret ? { seatSecret } : {}),
+				} as FunctionArgs<Create<G>>);
 				rememberSeat({
 					sessionId: session.sessionId,
 					participantId: session.participantId,
-					gameType: args.gameType,
+					gameType,
+					seatSecret,
 				});
 				return session;
-			} catch (caught) {
-				setError(caught);
-				return null;
-			} finally {
-				setBusy(false);
-			}
-		},
-		[create, identity.displayName, identity.guestId],
+			}),
+		[create, displayName, gameType, guestId, run],
 	);
 
 	return {
 		host,
-		busy: busy || (Boolean(isSignedIn) && convexAuth.isLoading),
+		busy: busy || backendAuth.loading,
 		error,
-		isSignedIn: Boolean(isSignedIn),
-		canHost: Boolean(isSignedIn) && convexAuth.isAuthenticated,
+		isSignedIn: backendAuth.isSignedIn,
+		canHost: backendAuth.ready,
 	};
 }

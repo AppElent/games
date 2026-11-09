@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE } from "@arcadeclub/core/i18n/format";
 import {
 	LOCALES,
 	type Locale,
@@ -6,7 +7,7 @@ import {
 } from "@arcadeclub/core/messages";
 import { createI18n } from "./react";
 
-export { fmt, plural } from "./core";
+export { fmt, plural } from "@arcadeclub/core/i18n/format";
 export type { Locale, Messages };
 
 export const SUPPORTED_LOCALES = LOCALES;
@@ -19,6 +20,6 @@ export const {
 	hasExplicitLocaleChoice,
 } = createI18n<Locale, Messages>({
 	locales: SUPPORTED_LOCALES,
-	fallback: "en",
+	fallback: DEFAULT_LOCALE,
 	messages,
 });

@@ -7,6 +7,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled, closed]
 
+# The per-PR Worker; deploy creates it and cleanup deletes it.
+env:
+  WORKER_NAME: games-pr-${{ github.event.pull_request.number }}
+
 jobs:
   deploy:
     # Fork and Dependabot runs get no Actions secrets, so a deploy cannot work.
@@ -26,7 +30,6 @@ jobs:
       pull-requests: write
       contents: read
     env:
-      WORKER_NAME: games-pr-${{ github.event.pull_request.number }}
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.PREVIEW_CLERK_PUBLISHABLE_KEY }}
       VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
@@ -34,13 +37,7 @@ jobs:
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       # Convex provisions/refreshes preview backend pr-<N>, exposes its URL as
       # $CONVEX_URL inside --cmd, then runs the build (bridge CONVEX_URL ->
@@ -80,17 +77,9 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         with:
           script: |
-            const marker = '<!-- pr-preview-comment -->';
-            const body = `${marker}\n### Preview\n- App: ${process.env.URL}\n- Convex preview: \`pr-${process.env.PR}\``;
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number,
-            });
-            const existing = comments.find((c) => c.body && c.body.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body });
-            } else {
-              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
-            }
+            const { upsertPrComment } = await import(`${process.env.GITHUB_WORKSPACE}/.github/scripts/upsert-pr-comment.js`);
+            const body = `### Preview\n- App: ${process.env.URL}\n- Convex preview: \`pr-${process.env.PR}\``;
+            await upsertPrComment({ github, context }, '<!-- pr-preview-comment -->', body);
 
   cleanup:
     if: >-
@@ -106,12 +95,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - name: Delete Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -119,7 +103,7 @@ jobs:
         # Close always runs cleanup, so a PR that never deployed has no Worker.
         # Tolerate only that (code 10007); any other failure must stay visible.
         run: |
-          status=0; out=$(pnpm exec wrangler delete --name "games-pr-${{ github.event.pull_request.number }}" 2>&1) || status=$?
+          status=0; out=$(pnpm exec wrangler delete --name "$WORKER_NAME" 2>&1) || status=$?
           echo "$out"
           [ "$status" -eq 0 ] || echo "$out" | grep -qE "10007|does not exist" || exit "$status"
       # Convex preview deployments idle-expire automatically (~14 days).

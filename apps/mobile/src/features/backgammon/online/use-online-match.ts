@@ -8,59 +8,47 @@
  */
 import {
 	applyBackgammonPlan,
-	type BackgammonColor,
+	BACKGAMMON_COLORS,
 	type BackgammonMovePlan,
 	type BackgammonTurnState,
-	computeUsedFlags,
-	getBackgammonWinner,
+	shouldAutoEndTurn,
+	toTurnState,
 } from "@arcadeclub/core/backgammon";
+import { duelTurn, seatOf } from "@arcadeclub/core/duel";
 import { useMutation } from "convex/react";
-import { useCallback, useMemo, useState } from "react";
+import type { FunctionReturnType } from "convex/server";
+import { useCallback, useMemo } from "react";
 import { api, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
-import { haptics } from "../../../feedback/haptics";
-import { findSeat } from "../../sessions/session-seats";
+import { useSeatedSession } from "../../sessions/use-seated-session";
 
-export function useOnlineMatch(sessionId: string, autoSwitchTurn: boolean) {
-	const id = sessionId as Id<"gameSessions">;
-	const bundle = useQuery(api.backgammon.getBundle, { sessionId: id });
-	const [participantId] = useState(
-		() =>
-			findSeat(sessionId)?.participantId as
-				| Id<"sessionParticipants">
-				| undefined,
-	);
+type Bundle = NonNullable<FunctionReturnType<typeof api.backgammon.getBundle>>;
+
+/** A match the server has a board for. */
+export type LiveMatch = {
+	bundle: Bundle;
+	state: NonNullable<Bundle["state"]>;
+	turn: BackgammonTurnState;
+};
+
+export function useOnlineMatch(sessionId: string) {
+	const session = useSeatedSession(sessionId);
+	const { seat, run } = session;
+	const bundle = useQuery(api.backgammon.getBundle, { sessionId: session.id });
 	const rollDice = useMutation(api.backgammon.rollDice);
 	const applyMove = useMutation(api.backgammon.applyMove);
 	const endTurnMutation = useMutation(api.backgammon.endTurn);
 	const rematchMutation = useMutation(api.backgammon.rematch);
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<unknown>(null);
 
-	const server = bundle?.state ?? null;
-	const turn = useMemo<BackgammonTurnState | null>(
-		() =>
-			server
-				? {
-						points: server.points,
-						bar: server.bar,
-						off: server.off,
-						activeColor: server.activeColor,
-						dice: server.dice,
-						used: computeUsedFlags(server.dice, server.usedDice),
-					}
-				: null,
-		[server],
-	);
+	const live = useMemo<LiveMatch | null>(() => {
+		const state = bundle?.state;
+		if (!bundle || !state) return null;
+		return { bundle, state, turn: toTurnState(state) };
+	}, [bundle]);
 
-	const myColor: BackgammonColor | null =
-		participantId && server
-			? server.whiteParticipantId === participantId
-				? "white"
-				: server.blackParticipantId === participantId
-					? "black"
-					: null
-			: null;
+	const server = live?.state;
+	const myColor =
+		(server && seatOf(BACKGAMMON_COLORS, server, seat?.participantId)) ?? null;
 
 	const nameOf = useCallback(
 		(participant?: Id<"sessionParticipants">) =>
@@ -69,44 +57,14 @@ export function useOnlineMatch(sessionId: string, autoSwitchTurn: boolean) {
 		[bundle?.participants],
 	);
 
-	const run = useCallback(async (action: () => Promise<unknown>) => {
-		setBusy(true);
-		setError(null);
-		try {
-			await action();
-			return true;
-		} catch (caught) {
-			haptics.actionFailed();
-			setError(caught);
-			return false;
-		} finally {
-			setBusy(false);
-		}
-	}, []);
-
-	const seat = participantId ? { sessionId: id, participantId } : null;
-
-	const roll = () =>
-		seat ? run(() => rollDice(seat)) : Promise.resolve(false);
-
-	const endTurn = () =>
-		seat ? run(() => endTurnMutation(seat)) : Promise.resolve(false);
-
-	const rematch = () =>
-		seat ? run(() => rematchMutation(seat)) : Promise.resolve(false);
-
-	const play = (plan: BackgammonMovePlan) => {
-		if (!seat || !turn) return Promise.resolve(false);
-		const after = applyBackgammonPlan(turn, plan);
-		return run(async () => {
+	const play = (plan: BackgammonMovePlan, { autoSwitchTurn = false } = {}) => {
+		if (!live) return Promise.resolve();
+		const after = applyBackgammonPlan(live.turn, plan);
+		return run(async (seat) => {
 			for (const step of plan.steps) {
 				await applyMove({ ...seat, from: step.from, to: step.to });
 			}
-			if (
-				autoSwitchTurn &&
-				after.used.every(Boolean) &&
-				getBackgammonWinner(after.off) === null
-			) {
+			if (shouldAutoEndTurn(after, autoSwitchTurn)) {
 				await endTurnMutation(seat);
 			}
 		});
@@ -114,19 +72,19 @@ export function useOnlineMatch(sessionId: string, autoSwitchTurn: boolean) {
 
 	return {
 		loading: bundle === undefined,
-		bundle,
-		turn,
-		phase: server?.phase ?? null,
+		live,
 		myColor,
-		isMyTurn: Boolean(
-			myColor && server?.phase !== "finished" && turn?.activeColor === myColor,
-		),
+		isMyTurn: server
+			? duelTurn(BACKGAMMON_COLORS, server, seat?.participantId).ok
+			: false,
 		nameOf,
-		busy,
-		error,
-		roll,
+		busy: session.busy,
+		error: session.error,
+		roll: () => run((seat) => rollDice(seat)),
 		play,
-		endTurn,
-		rematch,
+		endTurn: () => run((seat) => endTurnMutation(seat)),
+		rematch: () => run((seat) => rematchMutation(seat)),
 	};
 }
+
+export type OnlineMatch = ReturnType<typeof useOnlineMatch>;

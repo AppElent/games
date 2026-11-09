@@ -5,7 +5,6 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"#": fileURLToPath(new URL("./src", import.meta.url)),
-			"@": fileURLToPath(new URL("./src", import.meta.url)),
 		},
 	},
 	test: {
@@ -18,8 +17,6 @@ export default defineConfig({
 					exclude: [
 						...configDefaults.exclude,
 						"**/.claude/**",
-						"**/node_modules_OLD/**",
-						"**/node_modules.*/**",
 						"apps/**",
 						"convex/**/*.test.ts",
 					],

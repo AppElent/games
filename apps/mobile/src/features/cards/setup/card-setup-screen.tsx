@@ -9,11 +9,9 @@ import {
 	isCardGameId,
 } from "@arcadeclub/core/cards/engine";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
-import { useMutation } from "convex/react";
 import { Stack, useRouter } from "expo-router";
 import { type ReactNode, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Switch, View } from "react-native";
-import { api } from "../../../convex/api";
 import { haptics } from "../../../feedback/haptics";
 import { plural, useI18n } from "../../../i18n";
 import {
@@ -32,12 +30,9 @@ import { Icon } from "../../../ui/icon";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
-import { usePlayerIdentity } from "../../players/use-player-identity";
+import { onlineSessionHref } from "../../play/app-games";
 import { HostGate } from "../../sessions/host/host-gate";
 import { useHostSession } from "../../sessions/host/use-host-session";
-import { onlineSessionHref } from "../../sessions/session-links";
-import { rememberSeat } from "../../sessions/session-seats";
-import { newSeatSecret } from "../../sessions/use-join-session";
 import { RulesSheet } from "../deck/rules-sheet";
 
 export function CardSetupScreen({ gameId }: { gameId: string }) {
@@ -75,48 +70,26 @@ function Setup({
 	>;
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
-	const identity = usePlayerIdentity();
-	const hosting = useHostSession();
-	const createTable = useMutation(api.cardGames.createTable);
+	const hosting = useHostSession("card-games");
 	const [mode, setMode] = useState<"computer" | "friends">("computer");
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 3));
 	const [options, setOptions] = useState<string[]>([]);
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<unknown>(null);
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const solo = mode === "computer";
 	const headerOptions = useMemo(() => ({ title: text.name }), [text.name]);
 
 	const create = async () => {
-		setBusy(true);
-		setError(null);
-		try {
-			const seatSecret = newSeatSecret();
-			const { sessionId, participantId } = await createTable({
-				seatSecret,
-				joinMode: solo ? "solo" : "room",
-				title: text.name,
-				displayName: identity.displayName,
-				guestId: identity.guestId,
-				gameId,
-				options,
-				bots: solo ? opponents : 0,
-				start: solo,
-			});
-			rememberSeat({
-				sessionId,
-				participantId,
-				gameType: "card-games",
-				seatSecret,
-			});
-			haptics.moveMade();
-			const href = onlineSessionHref("card-games", sessionId);
-			if (href) router.replace(href);
-		} catch (caught) {
-			setError(caught);
-			haptics.actionFailed();
-			setBusy(false);
-		}
+		const session = await hosting.host({
+			joinMode: solo ? "solo" : "room",
+			title: text.name,
+			gameId,
+			options,
+			bots: solo ? opponents : 0,
+			start: solo,
+		});
+		if (!session) return;
+		haptics.moveMade();
+		router.replace(onlineSessionHref("card-games", session.sessionId));
 	};
 
 	const stepper = (delta: number, label: string, disabled: boolean) => (
@@ -223,8 +196,8 @@ function Setup({
 				) : null}
 				<Notice
 					message={
-						error
-							? gameErrorMessage(t, error, cards.setup.couldNotCreate)
+						hosting.error
+							? gameErrorMessage(t, hosting.error, cards.setup.couldNotCreate)
 							: null
 					}
 				/>
@@ -234,7 +207,7 @@ function Setup({
 					<Button
 						label={solo ? cards.setup.playNow : cards.setup.openRoom}
 						onPress={create}
-						busy={busy}
+						busy={hosting.busy}
 						disabled={!solo && !hosting.canHost}
 						testID="cards-create"
 					/>

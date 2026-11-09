@@ -9,20 +9,25 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
 - `app/` holds routes only; each route renders one screen from
   `src/features/<game-or-area>/<subject>/`. `src/ui/` holds generic primitives
   and never imports a feature.
-- `@arcadeclub/core` owns game rules (Sudoku, Backgammon, Hitster packs and modes).
-  Mobile adds only UI state around them, for example
-  `src/features/backgammon/local/local-match.ts` (a pure reducer; callers
-  pre-roll dice so it stays deterministic).
-- Online games call the existing Convex functions unchanged through
-  `src/convex/api.ts`. A device's seat in an online session is stored by
-  `src/features/sessions/session-seats.ts`. Every game screen resolves its
-  `participantId` from there, never from route params. A card table also needs
-  the seat's `seatSecret`, which `joinByCode` and `createTable` hand back and the
-  same store keeps: a participant id alone is public.
+- `@arcadeclub/core` owns game rules (Sudoku, Backgammon, Hitster packs and modes,
+  card games with their art and table logic in `cards/art.ts` and `cards/table-view.ts`).
+  Mobile adds only UI state and storage around them, for example
+  `src/features/backgammon/local/use-local-match.ts` over the reducer in
+  `@arcadeclub/core/backgammon-local` (callers pre-roll dice so it stays
+  deterministic).
+- Online games call the same Convex functions as web through
+  `src/convex/api.ts`, and host through each game's `create`
+  (`backgammon.create`, `hitster.create`, `cardGames.createTable`), named with
+  the game's screens in `src/features/play/app-games.ts`. A device's seat in an
+  online session is stored by `src/features/sessions/session-seats.ts`. Every
+  game screen resolves its `participantId` from there, never from route params.
+  A card table also needs the seat's `seatSecret`: the phone makes one
+  (`seat-secret.ts`), sends it with `createTable` or `joinByCode`, and keeps it
+  in the same store, because a participant id alone is public.
 - Local saves (Sudoku puzzles, the one pass-and-play backgammon match) use
   `expo-sqlite/kv-store`. Every store validates parsed data and degrades to "no save"
   instead of throwing.
-- `src/feedback/haptics.ts` names haptics by meaning (`moveMade`, `gameWon`).
+- `src/feedback/haptics.ts` names haptics by meaning (`moveMade`, `gameWon`, `answerRevealed`).
   Screens do not call `expo-haptics` directly.
 
 ## Project decisions
@@ -30,7 +35,7 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
 | Rule | Scope | Replacement | Reason |
 | --- | --- | --- | --- |
 | Convex query caching | Mobile reads | `retention` flavour in `src/convex/query-cache.tsx`: 5 min expiration, 20 idle entries, both 0 in background; no disk cache. Biome forbids `useQuery` from `convex/react`. | Same binding as Foundry. Keeps game subscriptions alive across short navigation gaps. |
-| Auth gate | Whole app | No signed-in gate. Guests play and join with a local guest id; only hosting an online game asks for sign-in (`HostGate`). | `sessions.create` requires an identity; joining does not. Matches web. |
+| Auth gate | Whole app | No signed-in gate. Guests play and join with a local guest id; only hosting an online game asks for sign-in (`HostGate`). | A game's `create` requires an identity for online sessions; joining does not. Matches web. |
 
 ## Review and enforcement
 

@@ -1,43 +1,23 @@
+import {
+	isSignalClueGiver,
+	type SignalCardRole,
+	type SignalTeam,
+	signalSeatTeam,
+} from "@arcadeclub/core/signal-words";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
-import { QrSharePanel } from "#/components/games/QrSharePanel";
-import { SeatBanner } from "#/components/games/SeatBanner";
-import { useErrorMessage } from "#/lib/games/errors";
-import type { SignalCardRole, SignalTeam } from "#/lib/games/signal-words";
+import type { FunctionReturnType } from "convex/server";
+import { useState } from "react";
+import {
+	RoomFrame,
+	RoomLoading,
+	RoomPlayAgain,
+	RoomStartButton,
+} from "#/components/games/RoomFrame";
+import { useSeatAction } from "#/lib/games/use-seat-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 
-type Participant = {
-	_id: Id<"sessionParticipants">;
-	displayName: string;
-	role: "host" | "player" | "watcher";
-	seat?: string;
-	connected: boolean;
-};
-
-type Bundle = {
-	session: {
-		_id: Id<"gameSessions">;
-		title: string;
-		joinCode?: string;
-		hostParticipantId?: Id<"sessionParticipants">;
-	};
-	participants: Participant[];
-	state: {
-		phase: "lobby" | "clue" | "guess" | "finished";
-		words: string[];
-		revealed: boolean[];
-		revealedRoles: Array<SignalCardRole | null>;
-		startingTeam: SignalTeam;
-		currentTeam: SignalTeam;
-		clueWord?: string;
-		clueCount?: number;
-		guessesLeft?: number;
-		winnerTeam?: SignalTeam;
-		trapHitBy?: SignalTeam;
-	} | null;
-};
+type Bundle = NonNullable<FunctionReturnType<typeof api.signalWords.getBundle>>;
 
 const ROLE_STYLES: Record<SignalCardRole, string> = {
 	red: "bg-rose-500/80 text-rose-50 border-rose-400/50",
@@ -60,7 +40,6 @@ export function SignalWordsRoom({
 	bundle: Bundle;
 	joinUrl: string;
 }) {
-	const errorMessage = useErrorMessage();
 	const { messages, locale } = useI18n();
 	const signalWords = messages.games.signalWords;
 	const joinTeam = useMutation(api.signalWords.joinTeam);
@@ -69,28 +48,18 @@ export function SignalWordsRoom({
 	const submitGuess = useMutation(api.signalWords.submitGuess);
 	const pass = useMutation(api.signalWords.pass);
 	const rematch = useMutation(api.signalWords.rematch);
-	const [participantId, setParticipantId] = useState<string>();
-	const [error, setError] = useState("");
+	const { participantId, seatAction, error } = useSeatAction(
+		bundle.session._id,
+	);
 	const [clue, setClue] = useState("");
 	const [count, setCount] = useState(2);
-
-	useEffect(() => {
-		setParticipantId(
-			window.sessionStorage.getItem("arcade-club.participantId") ?? undefined,
-		);
-	}, []);
 
 	const me = bundle.participants.find(
 		(participant) => participant._id === participantId,
 	);
 	const state = bundle.state;
-	const myTeam: SignalTeam | undefined =
-		me?.seat === "red" || me?.seat === "red-clue"
-			? "red"
-			: me?.seat === "blue" || me?.seat === "blue-clue"
-				? "blue"
-				: undefined;
-	const amClueGiver = me?.seat?.endsWith("-clue") ?? false;
+	const myTeam = signalSeatTeam(me?.seat);
+	const amClueGiver = isSignalClueGiver(me?.seat);
 	const isHost = bundle.session.hostParticipantId === participantId;
 
 	const key = useQuery(
@@ -98,29 +67,13 @@ export function SignalWordsRoom({
 		amClueGiver && participantId && state && state.phase !== "lobby"
 			? {
 					sessionId: bundle.session._id,
-					participantId: participantId as Id<"sessionParticipants">,
+					participantId,
 				}
 			: "skip",
 	);
 
-	async function run(action: () => Promise<unknown>, fallback: string) {
-		setError("");
-		try {
-			await action();
-		} catch (caught) {
-			setError(errorMessage(caught, fallback));
-		}
-	}
-
 	if (!state) {
-		return (
-			<div className="club-panel rounded-lg p-6 text-center">
-				<p className="club-kicker mb-2">{signalWords.loading.kicker}</p>
-				<h2 className="club-title text-2xl font-bold text-white">
-					{signalWords.loading.heading}
-				</h2>
-			</div>
-		);
+		return <RoomLoading />;
 	}
 
 	const inLobby = state.phase === "lobby";
@@ -165,40 +118,30 @@ export function SignalWordsRoom({
 
 	function teamMembers(team: SignalTeam) {
 		return bundle.participants.filter(
-			(participant) =>
-				participant.seat === team || participant.seat === `${team}-clue`,
+			(participant) => signalSeatTeam(participant.seat) === team,
 		);
 	}
 
 	return (
-		<div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-			<section className="space-y-4">
-				<div className="club-panel rounded-lg p-5">
-					<div className="flex flex-wrap items-start justify-between gap-4">
-						<div>
-							<p className="club-kicker mb-2">
-								{messages.catalog["signal-words"].title}
-							</p>
-							<h1 className="club-title text-3xl font-bold text-white">
-								{bundle.session.title}
-							</h1>
-						</div>
-						{bundle.session.joinCode ? (
-							<span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-bold tracking-widest text-white">
-								{bundle.session.joinCode}
-							</span>
-						) : null}
-					</div>
-					<div className="mt-4">
-						<SeatBanner
-							tone={finished ? "success" : inLobby ? "warning" : "success"}
-							label={statusLabel}
-						/>
-					</div>
-					{error ? (
-						<p className="mt-3 text-sm text-orange-200">{error}</p>
-					) : null}
-
+		<RoomFrame
+			gameTitle={messages.catalog["signal-words"].title}
+			title={bundle.session.title}
+			joinCode={bundle.session.joinCode}
+			status={statusLabel}
+			inLobby={inLobby}
+			error={error}
+			joinUrl={joinUrl}
+			howToPlay={{
+				heading: signalWords.howToPlay.heading,
+				steps: [
+					signalWords.howToPlay.step1,
+					signalWords.howToPlay.step2,
+					signalWords.howToPlay.step3,
+					signalWords.howToPlay.step4,
+				],
+			}}
+			panel={
+				<>
 					<div className="mt-4 grid gap-3 md:grid-cols-2">
 						{(["red", "blue"] as const).map((team) => (
 							<div
@@ -218,7 +161,7 @@ export function SignalWordsRoom({
 											<span className="truncate">
 												{participant.displayName}
 											</span>
-											{participant.seat?.endsWith("-clue") ? (
+											{isSignalClueGiver(participant.seat) ? (
 												<span className="text-xs uppercase text-slate-300">
 													{signalWords.teams.clueGiverTag}
 												</span>
@@ -231,43 +174,25 @@ export function SignalWordsRoom({
 										</li>
 									) : null}
 								</ul>
-								{inLobby && me ? (
+								{inLobby && me && participantId ? (
 									<div className="mt-3 flex gap-2">
 										<button
 											type="button"
 											className="min-h-11 flex-1 rounded-md border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
-											onClick={() =>
-												run(
-													() =>
-														joinTeam({
-															sessionId: bundle.session._id,
-															participantId:
-																participantId as Id<"sessionParticipants">,
-															team,
-															clueGiver: false,
-														}),
-													signalWords.teams.joinError,
-												)
-											}
+											onClick={seatAction(
+												(seat) => joinTeam({ ...seat, team, clueGiver: false }),
+												signalWords.teams.joinError,
+											)}
 										>
 											{signalWords.teams.joinAsGuesser}
 										</button>
 										<button
 											type="button"
 											className="min-h-11 flex-1 rounded-md border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
-											onClick={() =>
-												run(
-													() =>
-														joinTeam({
-															sessionId: bundle.session._id,
-															participantId:
-																participantId as Id<"sessionParticipants">,
-															team,
-															clueGiver: true,
-														}),
-													signalWords.teams.joinError,
-												)
-											}
+											onClick={seatAction(
+												(seat) => joinTeam({ ...seat, team, clueGiver: true }),
+												signalWords.teams.joinError,
+											)}
 										>
 											{signalWords.teams.joinAsClueGiver}
 										</button>
@@ -277,177 +202,117 @@ export function SignalWordsRoom({
 						))}
 					</div>
 
-					{inLobby && isHost ? (
-						<button
-							type="button"
-							className="mt-4 min-h-11 w-full rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
-							onClick={() =>
-								run(
-									() =>
-										start({
-											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
-										}),
-									signalWords.actions.startGameError,
-								)
-							}
-						>
-							{signalWords.actions.startGame}
-						</button>
+					{inLobby && isHost && participantId ? (
+						<RoomStartButton
+							label={signalWords.actions.startGame}
+							onClick={seatAction(start, signalWords.actions.startGameError)}
+						/>
 					) : null}
-				</div>
-
-				{!inLobby ? (
-					<div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-						{state.words.map((word, index) => {
-							const revealedRole = state.revealedRoles[index];
-							const keyRole = key?.[index];
-							const clickable = myGuessTurn && !state.revealed[index];
-							return (
-								<button
-									key={word}
-									type="button"
-									disabled={!clickable}
-									onClick={() =>
-										run(
-											() =>
-												submitGuess({
-													sessionId: bundle.session._id,
-													participantId:
-														participantId as Id<"sessionParticipants">,
-													cardIndex: index,
-												}),
-											signalWords.actions.guessError,
-										)
-									}
-									className={`relative flex min-h-11 items-center justify-center rounded-md border px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide sm:py-4 sm:text-xs ${
-										revealedRole && state.revealed[index]
-											? `${ROLE_STYLES[revealedRole]} opacity-90`
-											: revealedRole
-												? `${ROLE_STYLES[revealedRole]}`
-												: "border-white/15 bg-white/10 text-white"
-									} ${clickable ? "hover:bg-white/25" : ""}`}
-								>
-									{word}
-									{keyRole && !state.revealed[index] && !finished ? (
-										<span
-											className={`absolute right-1 top-1 h-2 w-2 rounded-full ${KEY_DOT[keyRole]}`}
-											title={signalWords.roles[keyRole]}
-										/>
-									) : null}
-								</button>
-							);
-						})}
-					</div>
-				) : null}
-
-				{myClueTurn ? (
-					<form
-						className="club-panel flex flex-wrap items-end gap-3 rounded-lg p-4"
-						onSubmit={(event) => {
-							event.preventDefault();
-							run(
-								() =>
-									submitClue({
-										sessionId: bundle.session._id,
-										participantId: participantId as Id<"sessionParticipants">,
-										clue,
-										count,
-									}),
-								signalWords.clueForm.error,
-							).then(() => setClue(""));
-						}}
-					>
-						<label className="flex-1">
-							<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-								{signalWords.clueForm.label}
-							</span>
-							<input
-								value={clue}
-								onChange={(event) => setClue(event.target.value)}
-								className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white"
-								placeholder={signalWords.clueForm.placeholder}
-							/>
-						</label>
-						<label>
-							<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-								{signalWords.clueForm.countLabel}
-							</span>
-							<select
-								value={count}
-								onChange={(event) => setCount(Number(event.target.value))}
-								className="rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-white"
+				</>
+			}
+		>
+			{!inLobby ? (
+				<div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+					{state.words.map((word, index) => {
+						const revealedRole = state.revealedRoles[index];
+						const keyRole = key?.[index];
+						const clickable = myGuessTurn && !state.revealed[index];
+						return (
+							<button
+								key={word}
+								type="button"
+								disabled={!clickable}
+								onClick={seatAction(
+									(seat) => submitGuess({ ...seat, cardIndex: index }),
+									signalWords.actions.guessError,
+								)}
+								className={`relative flex min-h-11 items-center justify-center rounded-md border px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide sm:py-4 sm:text-xs ${
+									revealedRole && state.revealed[index]
+										? `${ROLE_STYLES[revealedRole]} opacity-90`
+										: revealedRole
+											? `${ROLE_STYLES[revealedRole]}`
+											: "border-white/15 bg-white/10 text-white"
+								} ${clickable ? "hover:bg-white/25" : ""}`}
 							>
-								{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
-									<option key={value} value={value}>
-										{value}
-									</option>
-								))}
-							</select>
-						</label>
-						<button
-							type="submit"
-							className="min-h-11 rounded-md bg-white px-5 py-2 font-bold text-slate-950"
-						>
-							{signalWords.clueForm.submit}
-						</button>
-					</form>
-				) : null}
-
-				{myGuessTurn ? (
-					<div className="flex justify-center">
-						<button
-							type="button"
-							className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white"
-							onClick={() =>
-								run(
-									() =>
-										pass({
-											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
-										}),
-									signalWords.actions.passError,
-								)
-							}
-						>
-							{signalWords.actions.passTurn}
-						</button>
-					</div>
-				) : null}
-
-				{finished && isHost ? (
-					<div className="flex justify-center">
-						<button
-							type="button"
-							className="rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
-							onClick={() =>
-								run(
-									() =>
-										rematch({
-											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
-										}),
-									signalWords.actions.rematchError,
-								)
-							}
-						>
-							{signalWords.actions.playAgain}
-						</button>
-					</div>
-				) : null}
-			</section>
-			<aside className="space-y-4">
-				<QrSharePanel label={signalWords.share.invitePlayers} url={joinUrl} />
-				<div className="club-panel rounded-lg p-4">
-					<p className="club-kicker mb-2">{signalWords.howToPlay.heading}</p>
-					<ul className="space-y-1.5 text-sm text-slate-300">
-						<li>{signalWords.howToPlay.step1}</li>
-						<li>{signalWords.howToPlay.step2}</li>
-						<li>{signalWords.howToPlay.step3}</li>
-						<li>{signalWords.howToPlay.step4}</li>
-					</ul>
+								{word}
+								{keyRole && !state.revealed[index] && !finished ? (
+									<span
+										className={`absolute right-1 top-1 h-2 w-2 rounded-full ${KEY_DOT[keyRole]}`}
+										title={signalWords.roles[keyRole]}
+									/>
+								) : null}
+							</button>
+						);
+					})}
 				</div>
-			</aside>
-		</div>
+			) : null}
+
+			{myClueTurn && participantId ? (
+				<form
+					className="club-panel flex flex-wrap items-end gap-3 rounded-lg p-4"
+					onSubmit={(event) => {
+						event.preventDefault();
+						seatAction(
+							(seat) => submitClue({ ...seat, clue, count }),
+							signalWords.clueForm.error,
+						)?.().then((sent) => {
+							if (sent) {
+								setClue("");
+							}
+						});
+					}}
+				>
+					<label className="flex-1">
+						<span className="mb-1 club-field-label">
+							{signalWords.clueForm.label}
+						</span>
+						<input
+							value={clue}
+							onChange={(event) => setClue(event.target.value)}
+							className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white"
+							placeholder={signalWords.clueForm.placeholder}
+						/>
+					</label>
+					<label>
+						<span className="mb-1 club-field-label">
+							{signalWords.clueForm.countLabel}
+						</span>
+						<select
+							value={count}
+							onChange={(event) => setCount(Number(event.target.value))}
+							className="rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-white"
+						>
+							{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
+								<option key={value} value={value}>
+									{value}
+								</option>
+							))}
+						</select>
+					</label>
+					<button type="submit" className="min-h-11 club-btn-primary">
+						{signalWords.clueForm.submit}
+					</button>
+				</form>
+			) : null}
+
+			{myGuessTurn && participantId ? (
+				<div className="flex justify-center">
+					<button
+						type="button"
+						className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white"
+						onClick={seatAction(pass, signalWords.actions.passError)}
+					>
+						{signalWords.actions.passTurn}
+					</button>
+				</div>
+			) : null}
+
+			{finished && isHost && participantId ? (
+				<RoomPlayAgain
+					label={signalWords.actions.playAgain}
+					onClick={seatAction(rematch, messages.common.match.rematchError)}
+				/>
+			) : null}
+		</RoomFrame>
 	);
 }

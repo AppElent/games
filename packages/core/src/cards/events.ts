@@ -25,7 +25,7 @@ export type CardEvent = { seq: number } & (
 	| { type: "win"; seats: number[] }
 );
 
-export type CardEventInput = CardEvent extends infer E
+type CardEventInput = CardEvent extends infer E
 	? E extends CardEvent
 		? Omit<E, "seq">
 		: never

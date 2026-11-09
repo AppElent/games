@@ -1,3 +1,4 @@
+import { SUITS } from "@arcadeclub/core/cards/deck";
 import {
 	applyCardAction,
 	botMove,
@@ -5,21 +6,46 @@ import {
 	type CardGameState,
 	createCardGame,
 	getCardGame,
-	normalizeOptions,
-	viewCardGame,
-	SEAT_SILENT_AFTER_MS,
 	nextStarter,
+	normalizeOptions,
+	SEAT_SILENT_AFTER_MS,
+	viewCardGame,
 } from "@arcadeclub/core/cards/engine";
-import { v } from "convex/values";
+import { CARD_TABLE_STATUSES } from "@arcadeclub/core/cards/table";
+import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { getOptionalUserId } from "./lib/auth";
-import { requireSeatSecret } from "./lib/cardSeats";
-import { completeSession, reopenSession } from "./lib/completion";
-import { createHostedSession } from "./lib/hostedSession";
-import { gameError, toGameError } from "./lib/errors";
+import {
+	appendHumanSeat,
+	humanSeat,
+	isTableFull,
+	occupiedSeatIndex,
+	requireSeatSecret,
+	seatIndexOf,
+	tableGame,
+} from "./lib/cardSeats";
+import { gameError, rules } from "./lib/errors";
+import {
+	findGameState,
+	finishSession,
+	kickParticipant,
+	loadGame,
+	reopenSession,
+	requireHostByParticipantId,
+	requireParticipant,
+	startSession,
+} from "./lib/gameSession";
+import {
+	createdSession,
+	createdSessionValidator,
+	hostedSessionArgs,
+	hostGame,
+} from "./lib/hostedSession";
+import { literals } from "./lib/validators";
+import { joinModeValidator } from "./schema";
 
 /**
  * One backend for every card game: the game id selects a definition from
@@ -33,23 +59,18 @@ import { gameError, toGameError } from "./lib/errors";
  */
 
 type Table = Doc<"cardGameStates">;
+/** A table as written, which is all a just-inserted one needs to be dealt. */
+type TableRow = Omit<Table, "_creationTime">;
 
 const TURN_PACE_MS = { min: 1000, spread: 500 };
 const FOLLOW_UP_PACE_MS = 450;
 const REACTION_PACE_MS = 2400;
 
-const suit = v.union(
-	v.literal("S"),
-	v.literal("H"),
-	v.literal("D"),
-	v.literal("C"),
-);
-
-export const cardActionValidator = v.union(
+const cardActionValidator = v.union(
 	v.object({
 		type: v.literal("play"),
 		card: v.string(),
-		suit: v.optional(suit),
+		suit: v.optional(literals(SUITS)),
 		callLast: v.optional(v.boolean()),
 	}),
 	v.object({ type: v.literal("draw") }),
@@ -72,41 +93,45 @@ export const cardActionValidator = v.union(
 	v.object({ type: v.literal("nextRound") }),
 );
 
+// Arguments are a validator and core is dependency-free, so this cannot be
+// derived. It fails typecheck as soon as the two disagree, either way round.
+true satisfies [Infer<typeof cardActionValidator>] extends [CardAction]
+	? [CardAction] extends [Infer<typeof cardActionValidator>]
+		? true
+		: false
+	: false;
+
+/** Everything but `view`, whose shape belongs to the rule family, is checked on the way out. */
+const tableEnvelopeValidator = v.object({
+	session: v.object({
+		title: v.string(),
+		joinCode: v.union(v.string(), v.null()),
+		joinMode: joinModeValidator,
+		locked: v.boolean(),
+	}),
+	gameId: v.string(),
+	options: v.array(v.string()),
+	status: literals(CARD_TABLE_STATUSES),
+	seats: v.array(
+		v.object({
+			participantId: v.union(v.id("sessionParticipants"), v.null()),
+			botIndex: v.union(v.number(), v.null()),
+			autopilot: v.boolean(),
+			name: v.union(v.string(), v.null()),
+			lastSeen: v.union(v.number(), v.null()),
+			isHost: v.boolean(),
+		}),
+	),
+	you: v.union(v.number(), v.null()),
+	isHost: v.boolean(),
+	view: v.any(),
+});
+
 const credential = {
 	sessionId: v.id("gameSessions"),
 	participantId: v.id("sessionParticipants"),
 	seatSecret: v.string(),
 };
-
-async function loadTable(
-	ctx: QueryCtx | MutationCtx,
-	sessionId: Id<"gameSessions">,
-) {
-	return await ctx.db
-		.query("cardGameStates")
-		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-		.unique();
-}
-
-async function requireTable(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
-	const session = await ctx.db.get(sessionId);
-	const table = await loadTable(ctx, sessionId);
-	if (!session || session.gameType !== "card-games" || !table) {
-		throw gameError("gameNotFound");
-	}
-	return { session, table };
-}
-
-function seatIndexOf(
-	table: Table,
-	participantId: Id<"sessionParticipants">,
-	secret: string,
-) {
-	const index = table.seats.findIndex(
-		(seat) => seat.participantId === participantId,
-	);
-	return index >= 0 && table.seats[index].secret === secret ? index : null;
-}
 
 async function requireSeat(
 	ctx: MutationCtx,
@@ -116,7 +141,11 @@ async function requireSeat(
 		seatSecret: string;
 	},
 ) {
-	const { session, table } = await requireTable(ctx, args.sessionId);
+	const { session, state: table } = await loadGame(
+		ctx,
+		"card-games",
+		args.sessionId,
+	);
 	const seat = seatIndexOf(table, args.participantId, args.seatSecret);
 	if (seat === null) {
 		throw gameError("cardsNotSeated");
@@ -128,7 +157,8 @@ async function requireSeat(
 	return { session, table, seat };
 }
 
-async function requireHost(
+/** The strongest proof of being host: the id must hold its seat with the secret. */
+async function requireHostBySeatSecret(
 	ctx: MutationCtx,
 	args: {
 		sessionId: Id<"gameSessions">;
@@ -137,9 +167,7 @@ async function requireHost(
 	},
 ) {
 	const seated = await requireSeat(ctx, args);
-	if (seated.session.hostParticipantId !== args.participantId) {
-		throw gameError("hostOnly");
-	}
+	requireHostByParticipantId(seated.session, args.participantId);
 	return seated;
 }
 
@@ -152,23 +180,22 @@ function nextBotIndex(table: Table) {
 	return index;
 }
 
-function botSeats(table: Table) {
+function botSeats(table: Pick<Table, "seats">) {
 	return table.seats.flatMap((seat, index) => (seat.autopilot ? [index] : []));
 }
 
 /** Queues the computer's next move; a stale job sees a newer version and stops. */
 async function scheduleBots(
 	ctx: MutationCtx,
-	tableId: Id<"cardGameStates">,
-	table: Pick<Table, "gameId" | "options" | "seats" | "version"> & {
-		game: CardGameState;
-	},
+	table: Pick<Table, "_id" | "gameId" | "options" | "seats">,
+	game: CardGameState,
+	version: number,
 ) {
 	const move = botMove(
 		getCardGame(table.gameId),
 		table.options,
-		table.game,
-		botSeats(table as Table),
+		game,
+		botSeats(table),
 	);
 	if (!move) {
 		return;
@@ -180,59 +207,46 @@ async function scheduleBots(
 				? FOLLOW_UP_PACE_MS
 				: TURN_PACE_MS.min + Math.random() * TURN_PACE_MS.spread;
 	await ctx.scheduler.runAfter(delay, internal.cardGames.botStep, {
-		tableId,
-		version: table.version,
+		tableId: table._id,
+		version,
 	});
 }
 
-async function commit(
-	ctx: MutationCtx,
-	table: Table,
-	game: CardGameState,
-	extra: Partial<Pick<Table, "seats">> = {},
-) {
+async function commit(ctx: MutationCtx, table: TableRow, game: CardGameState) {
 	const version = table.version + 1;
-	const finished = game.phase === "finished";
 	const now = Date.now();
-	await ctx.db.patch(table._id, {
-		...extra,
-		game,
-		version,
-		status: finished ? "finished" : "playing",
-		updatedAt: now,
-	});
-	if (finished) {
-		await completeSession(ctx, table.sessionId, {
-			endedAt: now,
-			winnerParticipantIds: game.winners.flatMap((seat) => {
-				const id = table.seats[seat]?.participantId;
-				return id ? [id] : [];
-			}),
-		});
+	if (game.phase === "finished") {
+		await finishSession(
+			ctx,
+			table,
+			{ game, version, status: "finished", updatedAt: now },
+			{
+				now,
+				winners: game.winners.map((seat) => table.seats[seat]?.participantId),
+			},
+		);
 		return;
 	}
-	await scheduleBots(ctx, table._id, {
-		gameId: table.gameId,
-		options: table.options,
-		seats: extra.seats ?? table.seats,
-		version,
+	await ctx.db.patch(table._id, {
 		game,
+		version,
+		status: "playing",
+		updatedAt: now,
 	});
+	await scheduleBots(ctx, table, game, version);
 }
 
-async function deal(ctx: MutationCtx, table: Table, starter?: number) {
-	try {
-		const game = createCardGame(
+async function deal(ctx: MutationCtx, table: TableRow, starter?: number) {
+	const game = rules(() =>
+		createCardGame(
 			getCardGame(table.gameId),
 			table.options,
 			table.seats.length,
 			Math.random,
 			starter,
-		);
-		await commit(ctx, table, game);
-	} catch (caught) {
-		throw toGameError(caught);
-	}
+		),
+	);
+	await commit(ctx, table, game);
 }
 
 /**
@@ -241,31 +255,19 @@ async function deal(ctx: MutationCtx, table: Table, starter?: number) {
  */
 export const createTable = mutation({
 	args: {
+		...hostedSessionArgs,
 		seatSecret: v.string(),
 		joinMode: v.union(v.literal("solo"), v.literal("room")),
-		title: v.string(),
-		displayName: v.string(),
-		guestId: v.optional(v.string()),
 		gameId: v.string(),
 		options: v.array(v.string()),
 		bots: v.number(),
 		start: v.boolean(),
 	},
-	returns: v.object({
-		sessionId: v.id("gameSessions"),
-		participantId: v.id("sessionParticipants"),
-		joinCode: v.optional(v.string()),
-	}),
+	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
 		requireSeatSecret(args.seatSecret);
-		let game: ReturnType<typeof getCardGame>;
-		let options: string[];
-		try {
-			game = getCardGame(args.gameId);
-			options = normalizeOptions(game, args.options);
-		} catch (caught) {
-			throw toGameError(caught);
-		}
+		const game = rules(() => getCardGame(args.gameId));
+		const options = rules(() => normalizeOptions(game, args.options));
 		if (
 			!Number.isInteger(args.bots) ||
 			args.bots < 0 ||
@@ -273,46 +275,31 @@ export const createTable = mutation({
 		) {
 			throw gameError("cardsTableFull");
 		}
-		const created = await createHostedSession(ctx, {
-			gameType: "card-games",
-			joinMode: args.joinMode,
-			authPolicy: "guestAllowed",
-			title: args.title,
-			displayName: args.displayName,
-			guestId: args.guestId,
-		});
+		const hosted = await hostGame(ctx, "card-games", args, args.joinMode);
+		const { session, participantId } = hosted;
 		const now = Date.now();
-		const tableId = await ctx.db.insert("cardGameStates", {
-			sessionId: created.sessionId,
+		const row = {
+			sessionId: session._id,
 			gameId: args.gameId,
 			options,
 			seats: [
-				{
-					participantId: created.participantId,
-					secret: args.seatSecret,
-					autopilot: false,
-				},
+				humanSeat(participantId, args.seatSecret),
 				...Array.from({ length: args.bots }, (_, botIndex) => ({
 					botIndex,
 					autopilot: true,
 				})),
 			],
-			status: "lobby",
+			status: "lobby" as const,
 			version: 0,
 			createdAt: now,
 			updatedAt: now,
-		});
+		};
+		const tableId = await ctx.db.insert("cardGameStates", row);
 		if (args.start) {
-			const table = await ctx.db.get(tableId);
-			if (table) {
-				await deal(ctx, table);
-				await ctx.db.patch(created.sessionId, {
-					status: "active",
-					startedAt: now,
-				});
-			}
+			await deal(ctx, { ...row, _id: tableId });
+			await startSession(ctx, session, now);
 		}
-		return created;
+		return createdSession(hosted);
 	},
 });
 
@@ -322,24 +309,20 @@ export const takeSeat = mutation({
 	returns: v.union(v.number(), v.null()),
 	handler: async (ctx, args) => {
 		requireSeatSecret(args.seatSecret);
-		const { table } = await requireTable(ctx, args.sessionId);
-		const participant = await ctx.db.get(args.participantId);
-		if (
-			!participant ||
-			participant.sessionId !== args.sessionId ||
-			participant.kickedAt
-		) {
-			throw gameError("notInGame");
-		}
+		const { state: table } = await loadGame(ctx, "card-games", args.sessionId);
+		const participant = await requireParticipant(
+			ctx,
+			args.sessionId,
+			args.participantId,
+		);
 		if (participant.role === "watcher") {
 			return null;
 		}
-		const index = table.seats.findIndex(
-			(seat) => seat.participantId === args.participantId,
-		);
-		if (index >= 0 && table.seats[index].secret === args.seatSecret) {
-			return index;
+		const held = seatIndexOf(table, args.participantId, args.seatSecret);
+		if (held !== null) {
+			return held;
 		}
+		const index = occupiedSeatIndex(table, args.participantId);
 		const userId = await getOptionalUserId(ctx);
 		const ownsParticipant = Boolean(userId) && participant.userId === userId;
 		if (index >= 0) {
@@ -351,25 +334,10 @@ export const takeSeat = mutation({
 			await ctx.db.patch(table._id, { seats, updatedAt: Date.now() });
 			return index;
 		}
-		const game = getCardGame(table.gameId);
-		if (
-			!ownsParticipant ||
-			table.status !== "lobby" ||
-			table.seats.length >= game.players.max
-		) {
+		if (!ownsParticipant || table.status !== "lobby" || isTableFull(table)) {
 			return null;
 		}
-		await ctx.db.patch(table._id, {
-			seats: [
-				...table.seats,
-				{
-					participantId: args.participantId,
-					secret: args.seatSecret,
-					autopilot: false,
-				},
-			],
-			updatedAt: Date.now(),
-		});
+		await appendHumanSeat(ctx, table, args.participantId, args.seatSecret);
 		return table.seats.length;
 	},
 });
@@ -378,11 +346,11 @@ export const addBot = mutation({
 	args: credential,
 	returns: v.null(),
 	handler: async (ctx, args) => {
-		const { table } = await requireHost(ctx, args);
+		const { table } = await requireHostBySeatSecret(ctx, args);
 		if (table.status !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
-		if (table.seats.length >= getCardGame(table.gameId).players.max) {
+		if (isTableFull(table)) {
 			throw gameError("cardsTableFull");
 		}
 		await ctx.db.patch(table._id, {
@@ -401,7 +369,7 @@ export const removeSeat = mutation({
 	args: { ...credential, seat: v.number() },
 	returns: v.null(),
 	handler: async (ctx, args) => {
-		const { table, seat: hostSeat } = await requireHost(ctx, args);
+		const { table, seat: hostSeat } = await requireHostBySeatSecret(ctx, args);
 		if (table.status !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
@@ -413,10 +381,7 @@ export const removeSeat = mutation({
 			throw gameError("hostCannotKickSelf");
 		}
 		if (target.participantId) {
-			await ctx.db.patch(target.participantId, {
-				kickedAt: Date.now(),
-				connected: false,
-			});
+			await kickParticipant(ctx, target.participantId);
 		}
 		await ctx.db.patch(table._id, {
 			seats: table.seats.filter((_, index) => index !== args.seat),
@@ -430,16 +395,12 @@ export const start = mutation({
 	args: credential,
 	returns: v.null(),
 	handler: async (ctx, args) => {
-		const { session, table } = await requireHost(ctx, args);
+		const { session, table } = await requireHostBySeatSecret(ctx, args);
 		if (table.status !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
 		await deal(ctx, table);
-		await ctx.db.patch(args.sessionId, {
-			status: "active",
-			startedAt: session.startedAt ?? Date.now(),
-			endedAt: undefined,
-		});
+		await startSession(ctx, session, Date.now());
 		return null;
 	},
 });
@@ -452,18 +413,16 @@ export const act = mutation({
 		if (table.status !== "playing") {
 			throw gameError("noActiveGame");
 		}
-		try {
-			const game = applyCardAction(
+		const game = rules(() =>
+			applyCardAction(
 				getCardGame(table.gameId),
 				table.options,
-				table.game as CardGameState,
+				tableGame(table),
 				seat,
-				args.action as CardAction,
-			);
-			await commit(ctx, table, game);
-		} catch (caught) {
-			throw toGameError(caught);
-		}
+				args.action,
+			),
+		);
+		await commit(ctx, table, game);
 		return null;
 	},
 });
@@ -477,7 +436,7 @@ export const botStep = internalMutation({
 			return null;
 		}
 		const game = getCardGame(table.gameId);
-		const state = table.game as CardGameState;
+		const state = tableGame(table);
 		const move = botMove(game, table.options, state, botSeats(table));
 		if (!move) {
 			return null;
@@ -524,13 +483,7 @@ export const setAutopilot = mutation({
 		const version = table.version + 1;
 		await ctx.db.patch(table._id, { seats, version, updatedAt: Date.now() });
 		if (table.status === "playing") {
-			await scheduleBots(ctx, table._id, {
-				gameId: table.gameId,
-				options: table.options,
-				seats,
-				version,
-				game: table.game as CardGameState,
-			});
+			await scheduleBots(ctx, { ...table, seats }, tableGame(table), version);
 		}
 		return null;
 	},
@@ -546,7 +499,7 @@ export const rematch = mutation({
 			throw gameError("currentGameNotFinished");
 		}
 		await reopenSession(ctx, args.sessionId);
-		await deal(ctx, table, nextStarter(table.game));
+		await deal(ctx, table, nextStarter(tableGame(table)));
 		return null;
 	},
 });
@@ -563,14 +516,14 @@ export const getTable = query({
 		participantId: v.optional(v.id("sessionParticipants")),
 		seatSecret: v.optional(v.string()),
 	},
-	returns: v.any(),
+	returns: v.union(v.null(), tableEnvelopeValidator),
 	handler: async (ctx, args) => {
 		const sessionId = ctx.db.normalizeId("gameSessions", args.sessionId);
 		const session = sessionId ? await ctx.db.get(sessionId) : null;
 		if (!sessionId || !session || session.gameType !== "card-games") {
 			return null;
 		}
-		const table = await loadTable(ctx, sessionId);
+		const table = await findGameState(ctx, "card-games", sessionId);
 		if (!table) {
 			return null;
 		}
@@ -608,9 +561,11 @@ export const getTable = query({
 			status: table.status,
 			seats,
 			you,
-			isHost: you !== null && table.seats[you].participantId === session.hostParticipantId,
+			isHost:
+				you !== null &&
+				table.seats[you].participantId === session.hostParticipantId,
 			view: table.game
-				? viewCardGame(game, table.options, table.game as CardGameState, you)
+				? viewCardGame(game, table.options, tableGame(table), you)
 				: null,
 		};
 	},

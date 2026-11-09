@@ -1,13 +1,9 @@
+import { digitsToString } from "@arcadeclub/core/puzzle";
 import { digitsInMask } from "@arcadeclub/core/sudoku";
 import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useErrorMessage } from "#/lib/games/errors";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
-import {
-	autoSessionTitle,
-	rememberLocalSudokuSession,
-} from "#/lib/games/sudoku-local";
+import { autoSessionTitle } from "#/lib/games/sudoku-local";
 import type { ScanCell, ScanCellType } from "#/lib/games/sudoku-scan";
 import {
 	clearScanCell,
@@ -25,6 +21,9 @@ import {
 	recognizeGrid,
 	warpToSquare,
 } from "#/lib/games/sudoku-scan-image";
+import { createSudokuSession } from "#/lib/games/sudoku-session";
+import { useGameAction } from "#/lib/games/use-game-action";
+import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import { SudokuBoard } from "./SudokuBoard";
@@ -36,35 +35,30 @@ type Step =
 	| { id: "verify"; warpedUrl: string; cells: ScanCell[] };
 
 export function SudokuScanFlow() {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
 	const [step, setStep] = useState<Step>({ id: "upload" });
-	const [error, setError] = useState("");
+	const { error, setError, run } = useGameAction();
 
 	const onFile = async (file: File | undefined) => {
 		if (!file) {
 			return;
 		}
-		setError("");
-		try {
+		await run(async () => {
 			const source = await fileToCanvas(file);
 			setStep({
 				id: "corners",
 				source,
 				corners: defaultCorners(source.width, source.height),
 			});
-		} catch (caught) {
-			setError(errorMessage(caught, sudoku.scan.couldNotReadImage));
-		}
+		}, sudoku.scan.couldNotReadImage);
 	};
 
 	const runRecognition = async (
 		source: HTMLCanvasElement,
 		corners: Point[],
 	) => {
-		setError("");
-		try {
+		const read = await run(async () => {
 			const warped = warpToSquare(source, corners);
 			const warpedUrl = warped.toDataURL("image/jpeg", 0.8);
 			setStep({
@@ -78,15 +72,15 @@ export function SudokuScanFlow() {
 				),
 			);
 			setStep({ id: "verify", warpedUrl, cells });
-		} catch (caught) {
-			setError(errorMessage(caught, sudoku.scan.recognitionFailed));
+		}, sudoku.scan.recognitionFailed);
+		if (!read) {
 			setStep({ id: "upload" });
 		}
 	};
 
 	return (
 		<div className="flex flex-col gap-4">
-			{error ? <p className="text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="club-error">{error}</p> : null}
 			{step.id === "upload" ? <UploadStep onFile={onFile} /> : null}
 			{step.id === "corners" ? (
 				<CornerStep
@@ -268,11 +262,7 @@ function CornerStep({
 				>
 					{messages.common.actions.back}
 				</button>
-				<button
-					type="button"
-					onClick={onConfirm}
-					className="rounded-md bg-white px-5 py-2 font-bold text-slate-950"
-				>
+				<button type="button" onClick={onConfirm} className="club-btn-primary">
 					{sudoku.scan.readGrid}
 				</button>
 			</div>
@@ -306,7 +296,6 @@ function VerifyStep({
 	onRescan: () => void;
 	onError: (message: string) => void;
 }) {
-	const errorMessage = useErrorMessage();
 	const { locale, messages } = useI18n();
 	const sudoku = messages.games.sudoku;
 	const CELL_TYPES: { id: ScanCellType; label: string }[] = [
@@ -316,10 +305,15 @@ function VerifyStep({
 		{ id: "centerNotes", label: sudoku.scan.cellTypeCenterNotes },
 		{ id: "empty", label: sudoku.scan.cellTypeEmpty },
 	];
-	const createSession = useMutation(api.sessions.create);
-	const createState = useMutation(api.sudoku.createState);
+	const create = useMutation(api.sudoku.create);
+	const { busy, error, host } = useHostSession("sudoku");
 	const [selected, setSelected] = useState<number | null>(null);
-	const [busy, setBusy] = useState(false);
+
+	useEffect(() => {
+		if (error) {
+			onError(error);
+		}
+	}, [error, onError]);
 
 	const validation = useMemo(() => validateScanResult(cells), [cells]);
 	const previewBoard = useMemo(() => scanResultToBoardState(cells), [cells]);
@@ -337,40 +331,21 @@ function VerifyStep({
 		);
 	}, [cells]);
 
-	const confirm = async () => {
-		setBusy(true);
-		try {
-			const guest = getOrCreateGuestIdentity();
+	const confirm = () =>
+		host(async ({ displayName, guestId }) => {
 			const title = autoSessionTitle(undefined, "scan");
 			const board = scanResultToBoardState(cells);
-			const result = await createSession({
-				gameType: "sudoku",
-				joinMode: "solo",
-				authPolicy: "guestAllowed",
+			return createSudokuSession(create, {
 				title,
-				displayName: guest.displayName,
-				guestId: guest.id,
-			});
-			await createState({
-				sessionId: result.sessionId,
+				displayName,
+				guestId,
 				source: "scan",
-				givens: board.givens.join(""),
-				digits: board.digits.join(""),
+				givens: digitsToString(board.givens),
+				digits: digitsToString(board.digits),
 				cornerNotes: board.corner,
 				centerNotes: board.center,
 			});
-			rememberLocalSudokuSession({
-				sessionId: result.sessionId,
-				title,
-				source: "scan",
-				createdAt: Date.now(),
-			});
-			window.location.href = `/sudoku/${result.sessionId}`;
-		} catch (caught) {
-			onError(errorMessage(caught, sudoku.scan.couldNotCreateSession));
-			setBusy(false);
-		}
-	};
+		}, sudoku.scan.couldNotCreateSession);
 
 	const cell = selected !== null ? cells[selected] : null;
 
@@ -556,7 +531,7 @@ function VerifyStep({
 
 			<div className="max-w-xl">
 				{validation.errors.length > 0 ? (
-					<ul className="mb-3 space-y-1 rounded-md border border-orange-400/40 bg-orange-500/10 px-4 py-3 text-sm text-orange-200">
+					<ul className="mb-3 space-y-1 rounded-md border border-orange-400/40 bg-orange-500/10 px-4 py-3 club-error">
 						{validation.errors.map((message) => (
 							<li key={message}>{message}</li>
 						))}
@@ -582,7 +557,7 @@ function VerifyStep({
 						type="button"
 						disabled={!validation.ok || busy}
 						onClick={confirm}
-						className="inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+						className="inline-flex items-center gap-2 club-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<Check className="h-4 w-4" />
 						{busy ? sudoku.scan.creatingPuzzle : sudoku.scan.confirmAndPlay}

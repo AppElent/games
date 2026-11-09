@@ -15,9 +15,6 @@ type FitScaleProps = {
 	/** Fixed pixel width the content is designed for (content renders at this width, then scales). */
 	designWidth: number;
 	children: ReactNode;
-	/** Never scale beyond this (default 1 — shrink only, keep native size on big screens). */
-	maxScale?: number;
-	className?: string;
 	/**
 	 * Vertical alignment of the scaled content within the available space.
 	 * Defaults to "center"; use "top" for tall content that would otherwise
@@ -29,13 +26,12 @@ type FitScaleProps = {
 /**
  * Fits fixed-pixel content (game boards) inside the available space with a CSS
  * transform scale — no page scrolling, works in any orientation. The content is
- * rendered at `designWidth`, measured, and scaled down to fit both axes.
+ * rendered at `designWidth`, measured, and scaled down to fit both axes; it
+ * never scales up, so big screens keep the native size.
  */
 export function FitScale({
 	designWidth,
 	children,
-	maxScale = 1,
-	className,
 	align = "center",
 }: FitScaleProps) {
 	const outerRef = useRef<HTMLDivElement>(null);
@@ -52,9 +48,9 @@ export function FitScale({
 		const update = () => {
 			const naturalHeight = inner.offsetHeight;
 			const next = Math.min(
-				maxScale,
+				1,
 				outer.clientWidth / designWidth,
-				naturalHeight > 0 ? outer.clientHeight / naturalHeight : maxScale,
+				naturalHeight > 0 ? outer.clientHeight / naturalHeight : 1,
 			);
 			setScale(next);
 			setContentHeight(naturalHeight);
@@ -64,12 +60,12 @@ export function FitScale({
 		observer.observe(outer);
 		observer.observe(inner);
 		return () => observer.disconnect();
-	}, [designWidth, maxScale]);
+	}, [designWidth]);
 
 	return (
 		<div
 			ref={outerRef}
-			className={`flex h-full w-full justify-center overflow-hidden ${align === "top" ? "items-start" : "items-center"} ${className ?? ""}`}
+			className={`flex h-full w-full justify-center overflow-hidden ${align === "top" ? "items-start" : "items-center"}`}
 		>
 			<div
 				style={{ width: designWidth * scale, height: contentHeight * scale }}

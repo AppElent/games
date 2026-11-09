@@ -1,5 +1,5 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
-import type { CardGameDefinition } from "@arcadeclub/core/cards/engine";
+import type { CardGame } from "@arcadeclub/core/cards/engine";
 import type { CardEvent } from "@arcadeclub/core/cards/events";
 import {
 	cardTilt,
@@ -10,6 +10,7 @@ import {
 	seatName,
 	startFreshCards,
 } from "@arcadeclub/core/cards/table-view";
+import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { Bot, MoreHorizontal, ScrollText } from "lucide-react";
 import {
 	type CSSProperties,
@@ -22,11 +23,13 @@ import {
 } from "react";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
+import { useNow } from "#/lib/use-now";
 import { CardCrumbs, Sheet } from "./Chrome";
 import { CardSprite, PlayingCard, useCardName } from "./PlayingCard";
 import { RulesSheet } from "./RulesSheet";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
 import { useCardWords } from "./useCardWords";
+import { findCard, findCardFace, seatZone, zoneAttr } from "./zones";
 
 const FAN_SLOTS = [0, 1, 2, 3, 4];
 
@@ -67,12 +70,7 @@ export function SeatRow({
 	const { locale } = useI18n();
 	const cards = useMessages().games.cards;
 	const [menuSeat, setMenuSeat] = useState<number | null>(null);
-	const [now, setNow] = useState(() => Date.now());
-
-	useEffect(() => {
-		const timer = window.setInterval(() => setNow(Date.now()), 15_000);
-		return () => window.clearInterval(timer);
-	}, []);
+	const now = useNow(15_000);
 
 	const you = table.you;
 	const order = opponentOrder(table);
@@ -102,7 +100,7 @@ export function SeatRow({
 						<li
 							key={seat}
 							className="seat"
-							data-zone={`seat-${seat}`}
+							{...zoneAttr(seatZone(seat))}
 							data-active={turn === seat}
 							data-offline={silent}
 							data-flash={flash === seat}
@@ -253,7 +251,7 @@ export function Piles({
 				<button
 					type="button"
 					className="pile pile-stock"
-					data-zone="stock"
+					{...zoneAttr("stock")}
 					data-pulse={stockAction.pulse}
 					aria-label={`${stockAction.label}. ${countLabel}`}
 					onClick={stockAction.run}
@@ -263,7 +261,7 @@ export function Piles({
 			) : (
 				<div
 					className="pile pile-stock"
-					data-zone="stock"
+					{...zoneAttr("stock")}
 					role="img"
 					aria-label={`${cards.table.stock}: ${countLabel}`}
 				>
@@ -274,7 +272,7 @@ export function Piles({
 				<button
 					type="button"
 					className="pile"
-					data-zone="discard"
+					{...zoneAttr("discard")}
 					data-landing={landing}
 					data-pulse={discardAction.pulse}
 					aria-label={discardAction.label}
@@ -285,7 +283,7 @@ export function Piles({
 			) : (
 				<section
 					className="pile"
-					data-zone="discard"
+					{...zoneAttr("discard")}
 					data-landing={landing}
 					aria-label={cards.table.discard}
 				>
@@ -307,7 +305,7 @@ function TiltedCard({ card, label }: { card: CardId; label?: string }) {
 	);
 }
 
-export function AutopilotBack({
+function AutopilotBack({
 	controls,
 	seat,
 }: {
@@ -387,7 +385,7 @@ export function Hand({
 			const padding =
 				Number.parseFloat(style.paddingLeft) +
 				Number.parseFloat(style.paddingRight);
-			const card = element.querySelector<HTMLElement>(".pc")?.offsetWidth ?? 80;
+			const card = findCardFace(element)?.offsetWidth ?? 80;
 			setMetrics({ width: element.clientWidth - padding, card });
 		};
 		measure();
@@ -399,7 +397,7 @@ export function Hand({
 	useEffect(() => {
 		const list = scroller.current;
 		const newest = [...fresh].at(-1);
-		const card = newest && list?.querySelector(`[data-card-id="${newest}"]`);
+		const card = newest && list && findCard(list, newest);
 		if (!list || !card) {
 			return;
 		}
@@ -425,7 +423,7 @@ export function Hand({
 	const spread = Math.min(2.2, 22 / Math.max(total, 1));
 
 	return (
-		<div className="hand-wrap" data-zone="hand" data-many={many}>
+		<div className="hand-wrap" {...zoneAttr("hand")} data-many={many}>
 			<ul
 				ref={scroller}
 				className="hand"
@@ -458,7 +456,7 @@ export function Hand({
 }
 
 /** The latest thing that happened. A polite live region narrates play for screen readers. */
-export function EventTicker({
+function EventTicker({
 	events,
 	table,
 }: {
@@ -473,7 +471,59 @@ export function EventTicker({
 	);
 }
 
-/** The shared table: felt, header, opponents, and the family's middle and hand. */
+/**
+ * Whose turn it is, what to do about it, the latest event, and the moves the
+ * player can make (`children`), ending with taking back an autopiloted seat.
+ */
+export function TurnStatus({
+	table,
+	controls,
+	events,
+	turn,
+	live,
+	mine,
+	hint,
+	children,
+}: {
+	table: CardTableBundle;
+	controls: CardTableControls;
+	events: readonly CardEvent[];
+	turn: number;
+	/** A round is being played, so someone has the turn. */
+	live: boolean;
+	mine: boolean;
+	hint: string | null;
+	children?: ReactNode;
+}) {
+	const cards = useMessages().games.cards;
+	const you = table.you;
+	return (
+		<>
+			<p className="status-line" data-mine={mine} aria-live="polite">
+				{!live
+					? null
+					: mine
+						? cards.table.yourTurn
+						: fmt(cards.table.theirTurn, {
+								name: seatName(cards, table, turn),
+							})}
+			</p>
+			{hint ? <p className="status-hint">{hint}</p> : null}
+			<EventTicker events={events} table={table} />
+			<div className="table-actions">
+				{children}
+				{you !== null && table.seats[you]?.autopilot ? (
+					<AutopilotBack controls={controls} seat={you} />
+				) : null}
+			</div>
+		</>
+	);
+}
+
+/**
+ * The shared table: felt, header, opponents, and the family's middle and hand.
+ * A spectator holds no hand, so `hand` shows only for a seated player.
+ */
 export function TableFrame({
 	game,
 	rootRef,
@@ -488,7 +538,7 @@ export function TableFrame({
 	overlays,
 	error,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	rootRef: RefObject<HTMLDivElement | null>;
 	table: CardTableBundle;
 	name: string;
@@ -541,13 +591,13 @@ export function TableFrame({
 						{center}
 					</main>
 					<div className="table-status">{status}</div>
-					{hand}
+					{table.you === null ? <div className="h-4" /> : hand}
 				</div>
 				{table.you === null ? (
 					<p className="seat-spectating">
 						{cards.table.spectating}
 						{table.session.joinCode ? (
-							<a href={`/join?code=${table.session.joinCode}`}>
+							<a href={buildInviteUrl("", { code: table.session.joinCode })}>
 								{cards.table.rejoin}
 							</a>
 						) : null}

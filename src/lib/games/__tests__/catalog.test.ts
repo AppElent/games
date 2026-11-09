@@ -1,75 +1,90 @@
+import { readFileSync } from "node:fs";
+import {
+	GAME_SESSION_POLICY,
+	GAME_TYPES,
+	type SessionGameType,
+} from "@arcadeclub/core/games";
+import { messages } from "@arcadeclub/core/messages";
 import { describe, expect, it } from "vitest";
 import {
-	GAME_CATALOG,
-	getGameByType,
-	getPlayableGames,
+	getHostPath,
+	getLocalizedGame,
+	getSessionPath,
 	getVisibleGames,
 } from "../catalog";
 
+/** Every page the router serves, as `/chess/$sessionId`-style patterns. */
+const ROUTES = (() => {
+	const tree = readFileSync(
+		new URL("../../../routeTree.gen.ts", import.meta.url),
+		"utf8",
+	);
+	const fullPaths = tree.match(/fullPaths:([^;]*?)fileRoutesByTo/s)?.[1] ?? "";
+	return [...fullPaths.matchAll(/'([^']+)'/g)].map(([, path]) =>
+		path.length > 1 ? path.replace(/\/$/, "") : path,
+	);
+})();
+
+function isRoute(href: string) {
+	const segments = href.split("?")[0].split("/");
+	return ROUTES.some((route) => {
+		const pattern = route.split("/");
+		return (
+			pattern.length === segments.length &&
+			pattern.every(
+				(part, index) => part.startsWith("$") || part === segments[index],
+			)
+		);
+	});
+}
+
 describe("game catalog", () => {
-	it("lists the core games as playable", () => {
-		const playable = getPlayableGames().map((game) => game.type);
-		for (const type of [
-			"live-quiz",
-			"backgammon",
-			"sudoku",
-			"hitster",
-			"word-links",
-		]) {
-			expect(playable).toContain(type);
-		}
-	});
-
-	it("keeps every catalog entry visible", () => {
+	it("lists every game", () => {
 		const visibleTypes = getVisibleGames().map((game) => game.type);
-		expect(visibleTypes).toContain("chess");
-		expect(visibleTypes).toContain("word-links");
-		expect(visibleTypes.length).toBe(GAME_CATALOG.length);
+		expect(visibleTypes).toEqual([...GAME_TYPES]);
 	});
 
-	it("uses room mode for quiz and challenge mode for backgammon", () => {
-		expect(getGameByType("live-quiz")?.joinMode).toBe("room");
-		expect(getGameByType("backgammon")?.joinMode).toBe("challenge");
-	});
-
-	it("has stable unique game types", () => {
-		const types = GAME_CATALOG.map((game) => game.type);
-		expect(new Set(types).size).toBe(types.length);
-	});
-
-	it("declares valid player counts for every game", () => {
-		for (const game of GAME_CATALOG) {
-			expect(game.minPlayers).toBeGreaterThanOrEqual(1);
-			expect(game.maxPlayers).toBeGreaterThanOrEqual(game.minPlayers);
+	it("starts every game on a page that exists", () => {
+		expect(ROUTES.length).toBeGreaterThan(0);
+		for (const game of getVisibleGames()) {
+			expect(isRoute(game.route), game.route).toBe(true);
 		}
 	});
 
-	it("keeps solo games single-player without rematch or spectators", () => {
-		for (const game of GAME_CATALOG.filter(
-			(item) => item.joinMode === "solo",
-		)) {
-			expect(game.maxPlayers).toBe(1);
-			expect(game.supportsSpectators).toBe(false);
-		}
-	});
-
-	it("supports rematch and spectators on two-player challenge games", () => {
-		for (const type of ["backgammon", "chess", "connect-four"] as const) {
-			const game = getGameByType(type);
-			expect(game?.minPlayers).toBe(2);
-			expect(game?.maxPlayers).toBe(2);
-			expect(game?.supportsRematch).toBe(true);
-			expect(game?.supportsSpectators).toBe(true);
-		}
-	});
-
-	it("marks guest support consistently with the auth policy", () => {
-		for (const game of GAME_CATALOG) {
-			if (game.authPolicy === "signedInRequired") {
-				expect(game.supportsGuests).toBe(false);
-			} else {
-				expect(game.supportsGuests).toBe(true);
+	it("sends joiners and hosts of every session game to a page that exists", () => {
+		for (const game of getVisibleGames()) {
+			const joined = getSessionPath(game.type, "s1", "p1");
+			const hosted = getHostPath(game.type, "s1", "p1");
+			const othersJoin =
+				game.type in GAME_SESSION_POLICY &&
+				GAME_SESSION_POLICY[game.type as SessionGameType].joinMode !== "solo";
+			if (othersJoin) {
+				expect(joined, game.type).not.toBeNull();
+			}
+			for (const path of [joined, hosted]) {
+				if (path !== null) expect(isRoute(path), path).toBe(true);
 			}
 		}
+	});
+
+	it("carries the player's seat into room games that play on a second page", () => {
+		expect(getSessionPath("live-quiz", "s1", "p1")).toBe(
+			"/quiz/s1/play?participantId=p1",
+		);
+		expect(getHostPath("live-quiz", "s1", "p1")).toBe("/quiz/s1/host");
+		expect(getHostPath("chess", "s1", "p1")).toBe(
+			getSessionPath("chess", "s1", "p1"),
+		);
+	});
+
+	it("shows each game's text in the viewer's language", () => {
+		const chess = getVisibleGames().find((game) => game.type === "chess");
+		if (!chess) throw new Error("chess is missing from the catalog");
+		expect(getLocalizedGame(chess, messages.en)).toMatchObject({
+			type: "chess",
+			route: "/chess/new",
+			title: "Chess",
+		});
+		expect(getLocalizedGame(chess, messages.nl).title).toBe("Schaken");
 	});
 });

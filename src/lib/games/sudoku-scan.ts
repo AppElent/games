@@ -28,7 +28,7 @@ export type ScanCell = {
 	confidence: number;
 };
 
-export const LOW_CONFIDENCE_THRESHOLD = 0.7;
+const LOW_CONFIDENCE_THRESHOLD = 0.7;
 
 export function emptyScanCell(confidence = 1): ScanCell {
 	return { type: "empty", digit: 0, cornerMask: 0, centerMask: 0, confidence };
@@ -42,7 +42,7 @@ export function isLowConfidence(cell: ScanCell) {
 	return cell.type !== "empty" && cell.confidence < LOW_CONFIDENCE_THRESHOLD;
 }
 
-// --- verifier correction helpers (all return new arrays) ---
+// The verifier's corrections each return a new array.
 
 function withCell(cells: ScanCell[], index: number, cell: ScanCell) {
 	const next = [...cells];
@@ -76,7 +76,6 @@ export function setScanCellType(
 			next.digit = digits.length === 1 ? digits[0] : 0;
 		}
 	} else {
-		// note types
 		if (current.digit !== 0) {
 			const mask = digitMask(current.digit);
 			if (type === "cornerNotes") {
@@ -140,9 +139,7 @@ export function clearScanCell(cells: ScanCell[], index: number): ScanCell[] {
 	return withCell(cells, index, emptyScanCell());
 }
 
-// --- validation before session creation ---
-
-export type ScanValidation = {
+type ScanValidation = {
 	ok: boolean;
 	/** Cells whose given/user digits break Sudoku rules. */
 	conflictCells: number[];
@@ -157,7 +154,7 @@ export type ScanValidation = {
 	errors: string[];
 };
 
-export function scanGivensGrid(cells: ScanCell[]): SudokuGrid {
+function scanGivensGrid(cells: ScanCell[]): SudokuGrid {
 	const grid = emptyGrid();
 	cells.forEach((cell, index) => {
 		if (cell.type === "given" && cell.digit !== 0) {
@@ -167,7 +164,7 @@ export function scanGivensGrid(cells: ScanCell[]): SudokuGrid {
 	return grid;
 }
 
-export function scanMergedGrid(cells: ScanCell[]): SudokuGrid {
+function scanMergedGrid(cells: ScanCell[]): SudokuGrid {
 	const grid = scanGivensGrid(cells);
 	cells.forEach((cell, index) => {
 		if (cell.type === "userDigit" && cell.digit !== 0) {

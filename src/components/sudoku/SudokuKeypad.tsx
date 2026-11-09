@@ -1,9 +1,9 @@
 import type { SudokuInputMode } from "@arcadeclub/core/sudoku-board";
 import { Eraser, Lightbulb, Palette, Pencil, Redo2, Undo2 } from "lucide-react";
 import { fmt, useMessages } from "#/lib/i18n";
-import { SUDOKU_COLOR_SWATCHES } from "./SudokuBoard";
+import { SUDOKU_COLORS } from "./SudokuBoard";
 
-export type SudokuKeypadProps = {
+type SudokuKeypadProps = {
 	mode: SudokuInputMode;
 	onModeChange: (mode: SudokuInputMode) => void;
 	onDigit: (digit: number) => void;
@@ -74,7 +74,7 @@ export function SudokuKeypad({
 			</div>
 			{mode === "color" ? (
 				<div className="grid grid-cols-8 gap-1.5">
-					{SUDOKU_COLOR_SWATCHES.map((swatch, index) => (
+					{SUDOKU_COLORS.map(({ swatch }, index) => (
 						<button
 							// biome-ignore lint/suspicious/noArrayIndexKey: fixed palette
 							key={index}

@@ -1,11 +1,15 @@
 import {
 	getHitsterModeConfig,
 	type HitsterMode,
+	hitsterAsksArtistTitle,
+	hitsterSecondsLeft,
+	hitsterTimelineFor,
 } from "@arcadeclub/core/hitster";
 import { useMutation } from "convex/react";
-import { useEffect, useState } from "react";
-import { useErrorMessage } from "#/lib/games/errors";
+import { useState } from "react";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
+import { useNow } from "#/lib/use-now";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -26,21 +30,11 @@ function useCountdown(state: HitsterState) {
 		state.phase === "nowPlaying" &&
 		state.turnTimerSeconds &&
 		state.roundStartedAt;
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		if (!active) {
-			return;
-		}
-		const interval = window.setInterval(() => setNow(Date.now()), 1000);
-		return () => window.clearInterval(interval);
-	}, [active]);
+	const now = useNow(1000, Boolean(active));
 	if (!active || !state.turnTimerSeconds || !state.roundStartedAt) {
 		return null;
 	}
-	return Math.max(
-		0,
-		state.turnTimerSeconds - Math.floor((now - state.roundStartedAt) / 1000),
-	);
+	return hitsterSecondsLeft(state.turnTimerSeconds, state.roundStartedAt, now);
 }
 
 function AnswerInputs({
@@ -65,8 +59,7 @@ function AnswerInputs({
 	const { messages } = useI18n();
 	const stage = messages.games.hitster.stage;
 	const config = getHitsterModeConfig(mode);
-	const showArtistTitle =
-		config.needsArtistTitle || (!forSteal && config.earnTokens);
+	const showArtistTitle = hitsterAsksArtistTitle(config, forSteal);
 	if (!showArtistTitle && !config.needsYear) {
 		return null;
 	}
@@ -125,7 +118,6 @@ function PlacementForm({
 	participantId: Id<"sessionParticipants">;
 	forSteal: boolean;
 }) {
-	const errorMessage = useErrorMessage();
 	const { messages } = useI18n();
 	const stage = messages.games.hitster.stage;
 	const state = bundle.state as HitsterState;
@@ -135,13 +127,10 @@ function PlacementForm({
 	const [artist, setArtist] = useState("");
 	const [title, setTitle] = useState("");
 	const [year, setYear] = useState("");
-	const [error, setError] = useState("");
+	const { error, run } = useGameAction();
 	const [busy, setBusy] = useState(false);
 
-	const config = getHitsterModeConfig(state.mode as HitsterMode);
-	const timeline = config.shared
-		? state.timelines[0]
-		: state.timelines.find((entry) => entry.participantId === participantId);
+	const timeline = hitsterTimelineFor(state, participantId);
 	const cards = timeline ? resolveTimelineCards(state, timeline.cardIds) : [];
 
 	return (
@@ -155,7 +144,7 @@ function PlacementForm({
 				onSelectDrop={setDropIndex}
 			/>
 			<AnswerInputs
-				mode={state.mode as HitsterMode}
+				mode={state.mode}
 				forSteal={forSteal}
 				artist={artist}
 				title={title}
@@ -174,26 +163,19 @@ function PlacementForm({
 						return;
 					}
 					setBusy(true);
-					setError("");
-					try {
-						const payload = {
-							sessionId: bundle.session._id,
-							participantId,
-							dropIndex,
-							artistGuess: artist.trim() || undefined,
-							titleGuess: title.trim() || undefined,
-							yearGuess: year.trim() ? Number(year.trim()) : undefined,
-						};
-						if (forSteal) {
-							await submitSteal(payload);
-						} else {
-							await submitGuess(payload);
-						}
-					} catch (caught) {
-						setError(errorMessage(caught, stage.submitError));
-					} finally {
-						setBusy(false);
-					}
+					const payload = {
+						sessionId: bundle.session._id,
+						participantId,
+						dropIndex,
+						artistGuess: artist.trim() || undefined,
+						titleGuess: title.trim() || undefined,
+						yearGuess: year.trim() ? Number(year.trim()) : undefined,
+					};
+					await run(
+						() => (forSteal ? submitSteal(payload) : submitGuess(payload)),
+						stage.submitError,
+					);
+					setBusy(false);
 				}}
 			>
 				{forSteal ? stage.stealSubmit : stage.lockPlacement}
@@ -211,10 +193,6 @@ export function HitsterStage({
 }) {
 	const { locale, messages } = useI18n();
 	const stage = messages.games.hitster.stage;
-	const fallbacks = {
-		team: messages.games.hitster.bits.participantFallbackTeam,
-		player: messages.games.hitster.bits.participantFallbackPlayer,
-	};
 	const state = bundle.state;
 	const [stealOpen, setStealOpen] = useState(false);
 	const remaining = useCountdown((state ?? { phase: "lobby" }) as HitsterState);
@@ -223,17 +201,19 @@ export function HitsterStage({
 			<p className="text-[var(--club-muted)]">{stage.hostStillSettingUp}</p>
 		);
 	}
-	const mode = state.mode as HitsterMode;
+	const mode = state.mode;
 	const config = getHitsterModeConfig(mode);
 	const activeParticipantId = state.turnOrder[state.activeIndex];
-	const activeName = participantName(bundle, activeParticipantId, fallbacks);
+	const activeName = participantName(
+		bundle,
+		activeParticipantId,
+		messages.games.hitster.bits,
+	);
 	const isActive = activeParticipantId === participantId;
 	const myTokens =
 		state.tokens.find((entry) => entry.participantId === participantId)
 			?.tokens ?? 0;
-	const myTimeline = config.shared
-		? state.timelines[0]
-		: state.timelines.find((entry) => entry.participantId === participantId);
+	const myTimeline = hitsterTimelineFor(state, participantId);
 	const myClaim = state.stealClaims.some(
 		(claim) => claim.participantId === participantId,
 	);

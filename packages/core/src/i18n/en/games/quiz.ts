@@ -11,8 +11,6 @@ export const quiz = {
 	questionNumber: "Question {number}",
 	questionsCount: { one: "{count} question", other: "{count} questions" },
 	hostView: {
-		joinCode: "Join code",
-		joinCodePlaceholder: "------",
 		playersInRoom: "{players} in the room",
 		readyWhenYouAre: "Ready when you are",
 		questionProgress: "Question {current} of {total}",
@@ -30,6 +28,7 @@ export const quiz = {
 		shareTextNoWinner:
 			"Live Quiz on Arcade Club — quiz complete ({count} players).",
 		hostAnotherQuiz: "Host another quiz",
+		actionFailed: "Action failed",
 	},
 	playerView: {
 		joinNeeded: "Join needed",

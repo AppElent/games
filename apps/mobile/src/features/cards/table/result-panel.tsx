@@ -3,6 +3,7 @@
  * table rather than in a Modal, so it can't race a sheet that is already open,
  * and the header stays reachable to read the rules or leave.
  */
+import { isRedSuit } from "@arcadeclub/core/cards/art";
 import { SUITS, type Suit } from "@arcadeclub/core/cards/deck";
 import { useRouter } from "expo-router";
 import { type ReactNode, useEffect, useRef } from "react";
@@ -77,9 +78,7 @@ function FallingSuit({
 			<SuitIcon
 				suit={suit}
 				size={size}
-				color={
-					suit === "H" || suit === "D" ? cardColors.suitRed : cardColors.ivory
-				}
+				color={isRedSuit(suit) ? cardColors.suitRed : cardColors.ivory}
 			/>
 		</Animated.View>
 	);

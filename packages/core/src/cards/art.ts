@@ -3,7 +3,7 @@
  * draw the same cards. Our own design: Art Deco courts and a jester, not a copy
  * of any commercial deck. Each client only renders these shapes.
  */
-import { type CardId, parseCard, type Rank, type Suit } from "./deck";
+import { type CardId, cardCopy, parseCard, type Rank, type Suit } from "./deck";
 
 export const CARD_ASPECT = 140 / 100;
 
@@ -27,8 +27,13 @@ export const SUIT_PATHS: Record<Suit, string> = {
 	C: "M50 5a21 21 0 0 1 18 32 21 21 0 1 1-13 37c1 9 4 16 10 23H35c6-7 9-14 10-23a21 21 0 1 1-13-37A21 21 0 0 1 50 5Z",
 };
 
+export function isRedSuit(suit: Suit) {
+	return suit === "H" || suit === "D";
+}
+
+/** The ink a suit is printed in. */
 export function suitColor(suit: Suit) {
-	return suit === "H" || suit === "D" ? RED : INK;
+	return isRedSuit(suit) ? RED : INK;
 }
 
 export type ArtShape =
@@ -331,7 +336,7 @@ export function cardFaceArt(card: CardId, glyph: string): ArtShape[] {
 	};
 	const parsed = parseCard(card);
 	if (parsed.joker) {
-		const red = Number(card.split("#")[1]) % 2 === 1;
+		const red = cardCopy(card) % 2 === 1;
 		return [edge, ...jokerArt(red ? RED : INK)];
 	}
 	const { suit, rank } = parsed;

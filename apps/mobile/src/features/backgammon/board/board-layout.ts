@@ -6,7 +6,7 @@
  * Black's board is White's with the rows swapped.
  */
 import type { BackgammonColor } from "@arcadeclub/core/backgammon";
-import { type as typeRamp } from "../../../theme/tokens";
+import { type as typeRamp } from "../../../theme";
 
 /** Point numbers per row, left to right, as seen by `viewer`. */
 export function boardRows(viewer: BackgammonColor) {
@@ -29,7 +29,7 @@ export const MAX_STACK = 5;
  * until a two-digit point number fills its column (or a stack count fills
  * its checker); the band between the halves grows to fit both label rows.
  */
-export function boardText(unit: number, fontScale: number) {
+function boardText(unit: number, fontScale: number) {
 	const label = Math.min(typeRamp.boardLabel.fontSize * fontScale, unit * 0.78);
 	const count = Math.min(
 		typeRamp.checkerCount.fontSize * fontScale,

@@ -12,7 +12,7 @@ import { api, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
 import { haptics } from "../../../feedback/haptics";
 import { useI18n } from "../../../i18n";
-import { findSeat, forgetSeat } from "../../sessions/session-seats";
+import { findSeat, forgetSeat, type Seat } from "../../sessions/session-seats";
 
 export type CardTableBundle = NonNullable<
 	FunctionReturnType<typeof api.cardGames.getTable>
@@ -21,11 +21,15 @@ export type CardTableBundle = NonNullable<
 const HEARTBEAT_MS = 20_000;
 const ERROR_VISIBLE_MS = 4_000;
 
-function storedSeat(sessionId: string) {
+/** This phone's seat at the table, with the secret that proves it. */
+type CardSeat = Seat & { seatSecret: string };
+
+function storedSeat(sessionId: string): CardSeat | null {
 	const seat = findSeat(sessionId);
 	return seat?.seatSecret
 		? {
-				participantId: seat.participantId as Id<"sessionParticipants">,
+				sessionId: seat.sessionId,
+				participantId: seat.participantId,
 				seatSecret: seat.seatSecret,
 			}
 		: null;
@@ -65,7 +69,6 @@ export function useCardTable(sessionId: string) {
 
 	const participantId = seat?.participantId;
 	const seatSecret = seat?.seatSecret;
-	const creds = seat ? { sessionId: id, ...seat } : null;
 
 	const showError = useCallback((message: string) => {
 		setError(message);
@@ -141,10 +144,10 @@ export function useCardTable(sessionId: string) {
 	}
 
 	function withSeat(
-		move: (seated: NonNullable<typeof creds>) => Promise<unknown>,
+		move: (seated: NonNullable<typeof seat>) => Promise<unknown>,
 		fallback: string,
 	) {
-		if (creds) void run(() => move(creds), fallback);
+		if (seat) void run(() => move(seat), fallback);
 	}
 
 	return {

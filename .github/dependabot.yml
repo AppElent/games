@@ -4,7 +4,7 @@
 version: 2
 updates:
   - package-ecosystem: npm # pnpm workspace
-    directories: ["/", "/apps/mobile", "/packages/core"]
+    directories: ["/", "/apps/mobile", "/packages/core", "/packages/chess"]
     schedule: { interval: weekly, day: monday }
     # Must stay >= minimumReleaseAge in pnpm-workspace.yaml (3 days), or the
     # proposed lockfile fails `pnpm install --frozen-lockfile`.
@@ -55,7 +55,8 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
 
   - package-ecosystem: github-actions
-    directory: "/"
+    # Workflows plus the local composite actions they call.
+    directories: ["/", "/.github/actions/*"]
     schedule: { interval: monthly }
     commit-message: { prefix: "chore(ci)" }
     labels: [dependencies]

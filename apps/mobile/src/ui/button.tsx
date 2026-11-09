@@ -1,7 +1,7 @@
 /**
  * The app's buttons. `primary` is the one main action on a screen;
- * `secondary` sits beside it; `plain` is a text link; `danger` confirms a
- * destructive step. Every button has a 44pt minimum hit target.
+ * `secondary` sits beside it; `plain` is a text link. Every button has a
+ * 44pt minimum hit target.
  */
 import type { ReactNode } from "react";
 import {
@@ -23,7 +23,7 @@ import {
 } from "../theme";
 import { AppText } from "./text";
 
-type Variant = "primary" | "secondary" | "plain" | "danger";
+type Variant = "primary" | "secondary" | "plain";
 
 type Props = {
 	label: string;
@@ -32,8 +32,6 @@ type Props = {
 	disabled?: boolean;
 	busy?: boolean;
 	icon?: ReactNode;
-	accessibilityLabel?: string;
-	accessibilityHint?: string;
 	testID?: string;
 	style?: StyleProp<ViewStyle>;
 	compact?: boolean;
@@ -54,8 +52,6 @@ export function Button({
 	disabled = false,
 	busy = false,
 	icon,
-	accessibilityLabel,
-	accessibilityHint,
 	testID,
 	style,
 	compact = false,
@@ -64,17 +60,11 @@ export function Button({
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const inactive = disabled || busy;
-	const ink =
-		variant === "primary"
-			? tokens.onAccent
-			: variant === "danger"
-				? tokens.danger
-				: tokens.accent;
+	const ink = variant === "primary" ? tokens.onAccent : tokens.accent;
 	return (
 		<Pressable
 			accessibilityRole="button"
-			accessibilityLabel={accessibilityLabel ?? label}
-			accessibilityHint={accessibilityHint}
+			accessibilityLabel={label}
 			accessibilityState={{ disabled: inactive, busy }}
 			disabled={inactive}
 			onPress={onPress}
@@ -148,7 +138,6 @@ const createStyles = (colors: Tokens) =>
 			paddingHorizontal: spacing.sm,
 			backgroundColor: "transparent",
 		},
-		danger: { backgroundColor: colors.dangerDim },
 		pressed: { opacity: opacity.pressed },
 		disabled: { opacity: opacity.disabled },
 	});

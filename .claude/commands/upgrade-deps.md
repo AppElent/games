@@ -13,7 +13,7 @@ allowed-tools: Bash(pnpm:*), Bash(git:*), Read, Edit
 
 Upgrade this TanStack Start app's dependencies safely. The package manager is **pnpm** — use it consistently for all commands.
 
-1. **Check outdated packages** (`pnpm outdated`). Upgrade dependencies, prioritizing the TanStack ecosystem (`@tanstack/react-start`, `@tanstack/react-router`, `@tanstack/router-plugin`, `@tanstack/react-query`, etc.) and keeping them on compatible versions with each other. Apply minor/patch upgrades freely; for major version bumps, check release notes / breaking changes and only proceed if the migration is straightforward — otherwise list them for me to decide.
+1. **Check outdated packages** (`pnpm outdated`). Upgrade dependencies, prioritizing the TanStack ecosystem (`@tanstack/react-start`, `@tanstack/react-router`, etc.) and keeping them on compatible versions with each other. Apply minor/patch upgrades freely; for major version bumps, check release notes / breaking changes and only proceed if the migration is straightforward — otherwise list them for me to decide.
 
 2. **Install** the updated dependencies (`pnpm install`).
 

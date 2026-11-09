@@ -1,7 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, Volume2, VolumeX, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useMessages } from "#/lib/i18n";
+
+/**
+ * Top padding that clears the floating menu button below (`h-11` inside `p-3`).
+ * `SHELL_INSET` sits content just under the button row; `SHELL_PAGE_INSET`
+ * leaves a little air for scrolling pages and overlays. Change with the button.
+ */
+export const SHELL_INSET = "pt-14";
+export const SHELL_PAGE_INSET = "pt-16";
 
 type FullscreenGameShellProps = {
 	title: string;
@@ -11,8 +19,6 @@ type FullscreenGameShellProps = {
 	onRestart?: () => void;
 	/** Fired when the menu overlay opens/closes so the game loop can pause. */
 	onPauseChange?: (paused: boolean) => void;
-	soundOn?: boolean;
-	onSoundToggle?: () => void;
 };
 
 /**
@@ -26,8 +32,6 @@ export function FullscreenGameShell({
 	hud,
 	onRestart,
 	onPauseChange,
-	soundOn,
-	onSoundToggle,
 }: FullscreenGameShellProps) {
 	const messages = useMessages();
 	const [menuOpen, setMenuOpen] = useState(false);
@@ -63,7 +67,7 @@ export function FullscreenGameShell({
 					) : null}
 				</div>
 				{menuOpen ? (
-					<div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+					<div className="club-overlay">
 						<div className="club-panel w-full max-w-xs rounded-2xl p-6">
 							<p className="club-kicker mb-1">
 								{messages.common.gameShell.paused}
@@ -86,25 +90,9 @@ export function FullscreenGameShell({
 											setMenu(false);
 											onRestart();
 										}}
-										className="min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
+										className="min-h-11 club-btn-secondary"
 									>
 										{messages.common.gameShell.restart}
-									</button>
-								) : null}
-								{onSoundToggle ? (
-									<button
-										type="button"
-										onClick={onSoundToggle}
-										className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
-									>
-										{soundOn ? (
-											<Volume2 className="h-4 w-4" />
-										) : (
-											<VolumeX className="h-4 w-4" />
-										)}
-										{soundOn
-											? messages.common.gameShell.soundOn
-											: messages.common.gameShell.soundOff}
 									</button>
 								) : null}
 								<Link

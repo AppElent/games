@@ -1,0 +1,71 @@
+/**
+ * Who this phone is when it joins or hosts a game.
+ *
+ * A guest id is created once per install and kept in the synchronous
+ * local store (the web keeps the same shape in localStorage), so a guest
+ * who reopens the app reclaims the same participant row and seat. The display
+ * name is a phone-local preference: a signed-in player defaults to their
+ * Clerk first name, a guest to "Player 123" in the player's language.
+ */
+
+import { messages } from "@arcadeclub/core/messages";
+import {
+	createGuestIdentity,
+	getGuestDisplayName,
+	type LocalGuestIdentity,
+} from "@arcadeclub/core/sessions";
+import { useUser } from "@clerk/expo";
+import { useCallback, useState } from "react";
+import { useI18n } from "../../../i18n";
+import {
+	readJson,
+	readText,
+	STORAGE_KEYS,
+	writeJson,
+	writeText,
+} from "../../../storage/local-store";
+
+export const PLAYER_NAME_MAX = 32;
+
+function parseGuestIdentity(value: unknown): LocalGuestIdentity | null {
+	const guest = value as LocalGuestIdentity | null;
+	return typeof guest?.id === "string" && typeof guest.displayName === "string"
+		? guest
+		: null;
+}
+
+/** The install's guest identity, created on first read. */
+function readGuestIdentity(): LocalGuestIdentity {
+	const saved = readJson(STORAGE_KEYS.guest, parseGuestIdentity);
+	if (saved) return saved;
+	const identity = createGuestIdentity(messages.en.common.session.guestName);
+	writeJson(STORAGE_KEYS.guest, identity);
+	return identity;
+}
+
+export function usePlayerIdentity() {
+	const { user } = useUser();
+	const { t } = useI18n();
+	const [guest] = useState(readGuestIdentity);
+	const [savedName, setSavedName] = useState(() =>
+		readText(STORAGE_KEYS.displayName),
+	);
+	const defaultName =
+		user?.firstName?.trim() ||
+		getGuestDisplayName(guest.id, t.common.session.guestName);
+	const displayName = savedName?.trim() || defaultName;
+
+	const setDisplayName = useCallback((next: string) => {
+		const trimmed = next.trim().slice(0, PLAYER_NAME_MAX);
+		writeText(STORAGE_KEYS.displayName, trimmed);
+		setSavedName(trimmed);
+	}, []);
+
+	return {
+		guestId: guest.id,
+		displayName,
+		defaultName,
+		savedName: savedName ?? "",
+		setDisplayName,
+	};
+}

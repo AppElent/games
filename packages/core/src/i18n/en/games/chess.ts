@@ -12,8 +12,6 @@ export const chess = {
 		black: "Black",
 		colorWhite: "white",
 		colorBlack: "black",
-		openSeat: "Open seat",
-		turnBadge: "Turn",
 	},
 	status: {
 		gameOver: "Game over",
@@ -55,18 +53,10 @@ export const chess = {
 		youWin: "You win!",
 		betterLuck: "Better luck in the rematch.",
 		shareText: "Chess on Arcade Club — {status} after {count} half-moves.",
-		rematchLabel: "Rematch (colors swap)",
-		rematchError: "Could not start rematch",
 	},
 	moveList: {
 		heading: "Moves",
 		empty: "No moves yet.",
-	},
-	info: {
-		button: "Info",
-	},
-	share: {
-		challengeLinkLabel: "Challenge link",
 	},
 	session: {
 		matchNotFound: "Match not found.",
@@ -76,6 +66,10 @@ export const chess = {
 		heading: "Start a match",
 		defaultTitle: "Chess Match",
 		timeControlLegend: "Time control",
+		timeControlOptions: {
+			untimed: "Untimed",
+			minutes: "{minutes} minutes",
+		},
 		colorLegend: "Your color",
 		colorOptions: {
 			random: "random",

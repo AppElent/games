@@ -13,8 +13,9 @@ import {
 	getMoveHighlights,
 	planBackgammonMove,
 } from "@arcadeclub/core/backgammon";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
+import { useResetOnChange } from "../../../ui/use-reset-on-change";
 
 const NO_HIGHLIGHTS = { points: new Set<number>(), off: false };
 
@@ -47,11 +48,7 @@ export function useBoardSelection({
 		: null;
 
 	// A new roll or a new player starts without a pick.
-	const turnKey = `${color}:${state.dice.join(",")}`;
-	useEffect(() => {
-		void turnKey;
-		setPicked(null);
-	}, [turnKey]);
+	useResetOnChange(`${color}:${state.dice.join(",")}`, () => setPicked(null));
 
 	const highlights = useMemo(
 		() =>
@@ -90,5 +87,5 @@ export function useBoardSelection({
 		if (movable && !commit("off") && selected != null) haptics.moveRejected();
 	};
 
-	return { selected, highlights, movable, tapPoint, tapOff };
+	return { selected, highlights, tapPoint, tapOff };
 }

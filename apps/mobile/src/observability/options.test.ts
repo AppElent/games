@@ -6,8 +6,6 @@ import {
 	FEEDBACK_OPTIONS,
 	feedbackLabels,
 	routeName,
-	sanitizeBreadcrumb,
-	sanitizeEvent,
 	sanitizeFeedbackEvent,
 	shouldInitSentry,
 } from "./options";
@@ -43,8 +41,13 @@ describe("privacy", () => {
 		expect(options.attachScreenshot).toBe(false);
 	});
 
+	const { beforeSend, beforeBreadcrumb } = buildSentryOptions({
+		dsn: "x",
+		environment: "production",
+	});
+
 	it("drops the user and query strings from events", () => {
-		const event = sanitizeEvent({
+		const event = beforeSend({
 			type: undefined,
 			user: { id: "u1", email: "a@b.c" },
 			request: { url: "arcadeclub://join?token=secret", cookies: { a: "b" } },
@@ -55,14 +58,14 @@ describe("privacy", () => {
 
 	it("strips console arguments and URL queries from breadcrumbs", () => {
 		expect(
-			sanitizeBreadcrumb({
+			beforeBreadcrumb({
 				category: "console",
 				message: "m",
 				data: { arguments: ["Ann"] },
 			}),
 		).toEqual({ category: "console", message: "m" });
 		expect(
-			sanitizeBreadcrumb({
+			beforeBreadcrumb({
 				category: "fetch",
 				data: { url: "https://x.dev/a?code=ABC" },
 			})?.data,

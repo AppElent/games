@@ -1,32 +1,28 @@
 import { colOf, digitsInMask, rowOf } from "@arcadeclub/core/sudoku";
 import type { SudokuBoardState } from "@arcadeclub/core/sudoku-board";
 import { effectiveGrid } from "@arcadeclub/core/sudoku-board";
-import type { KillerCage } from "@arcadeclub/core/sudoku-killer";
+import {
+	type KillerCage,
+	killerCageLayout,
+} from "@arcadeclub/core/sudoku-killer";
 import { useMemo } from "react";
 import { fmt, useMessages } from "#/lib/i18n";
 
-export const SUDOKU_COLOR_CLASSES = [
-	"", // 0 = none
-	"bg-sky-500/40",
-	"bg-emerald-500/40",
-	"bg-amber-500/40",
-	"bg-rose-500/40",
-	"bg-violet-500/40",
-	"bg-teal-500/40",
-	"bg-orange-500/40",
-	"bg-pink-500/40",
-];
-
-export const SUDOKU_COLOR_SWATCHES = [
-	"bg-sky-500",
-	"bg-emerald-500",
-	"bg-amber-500",
-	"bg-rose-500",
-	"bg-violet-500",
-	"bg-teal-500",
-	"bg-orange-500",
-	"bg-pink-500",
-];
+/**
+ * Cell colours 1-8, in the order boards store them: entry `i` is colour
+ * `i + 1` (0 = none). `tint` fills a board cell, `swatch` draws its keypad
+ * button. Saved boards keep these numbers, so append, never reorder.
+ */
+export const SUDOKU_COLORS = [
+	{ tint: "bg-sky-500/40", swatch: "bg-sky-500" },
+	{ tint: "bg-emerald-500/40", swatch: "bg-emerald-500" },
+	{ tint: "bg-amber-500/40", swatch: "bg-amber-500" },
+	{ tint: "bg-rose-500/40", swatch: "bg-rose-500" },
+	{ tint: "bg-violet-500/40", swatch: "bg-violet-500" },
+	{ tint: "bg-teal-500/40", swatch: "bg-teal-500" },
+	{ tint: "bg-orange-500/40", swatch: "bg-orange-500" },
+	{ tint: "bg-pink-500/40", swatch: "bg-pink-500" },
+] as const;
 
 const CORNER_SLOTS = [
 	"left-0.5 top-0",
@@ -39,29 +35,16 @@ const CORNER_SLOTS = [
 	"right-0.5 top-1/2 -translate-y-1/2",
 ];
 
-export type SudokuHighlightSettings = {
-	peers: boolean;
-	matchingDigits: boolean;
-};
-
-export type SudokuBoardProps = {
+type SudokuBoardProps = {
 	board: SudokuBoardState;
 	selectedCell: number | null;
 	onSelectCell?: (cell: number) => void;
 	conflicts?: ReadonlySet<number>;
 	hintCells?: ReadonlySet<number>;
-	highlight?: SudokuHighlightSettings;
 	hidden?: boolean;
 	className?: string;
 	/** Killer sudoku cages: dashed outlines plus a sum in each cage's corner. */
 	cages?: KillerCage[];
-};
-
-type CageInfo = {
-	/** Cage index per cell, -1 when uncaged. */
-	byCell: number[];
-	/** Sum label for the cage's top-left-most cell. */
-	sumAt: Map<number, number>;
 };
 
 export function SudokuBoard({
@@ -70,7 +53,6 @@ export function SudokuBoard({
 	onSelectCell,
 	conflicts,
 	hintCells,
-	highlight = { peers: true, matchingDigits: true },
 	hidden = false,
 	className = "",
 	cages,
@@ -78,20 +60,7 @@ export function SudokuBoard({
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
 	const grid = effectiveGrid(board);
-	const cageInfo = useMemo<CageInfo | null>(() => {
-		if (!cages || cages.length === 0) {
-			return null;
-		}
-		const byCell = new Array<number>(81).fill(-1);
-		const sumAt = new Map<number, number>();
-		cages.forEach((cage, index) => {
-			for (const cell of cage.cells) {
-				byCell[cell] = index;
-			}
-			sumAt.set(Math.min(...cage.cells), cage.sum);
-		});
-		return { byCell, sumAt };
-	}, [cages]);
+	const cageInfo = useMemo(() => killerCageLayout(cages), [cages]);
 	const selectedDigit =
 		selectedCell !== null && grid[selectedCell] !== 0 ? grid[selectedCell] : 0;
 	const selRow = selectedCell !== null ? rowOf(selectedCell) : -1;
@@ -109,7 +78,6 @@ export function SudokuBoard({
 				const isGiven = board.givens[cell] !== 0;
 				const isSelected = cell === selectedCell;
 				const isPeer =
-					highlight.peers &&
 					!isSelected &&
 					selectedCell !== null &&
 					(row === selRow ||
@@ -117,13 +85,10 @@ export function SudokuBoard({
 						(Math.floor(row / 3) === selBoxRow &&
 							Math.floor(col / 3) === selBoxCol));
 				const sameDigit =
-					highlight.matchingDigits &&
-					selectedDigit !== 0 &&
-					value === selectedDigit &&
-					!isSelected;
+					selectedDigit !== 0 && value === selectedDigit && !isSelected;
 				const isConflict = conflicts?.has(cell) ?? false;
 				const isHint = hintCells?.has(cell) ?? false;
-				const colorClass = SUDOKU_COLOR_CLASSES[board.colors[cell]] ?? "";
+				const colorClass = SUDOKU_COLORS[board.colors[cell] - 1]?.tint ?? "";
 
 				const borders = [
 					col % 3 === 0
@@ -150,15 +115,7 @@ export function SudokuBoard({
 								? "bg-slate-200 dark:bg-slate-700/40"
 								: "";
 
-				const cage = cageInfo ? cageInfo.byCell[cell] : -1;
-				const cageEdges = cageInfo
-					? {
-							top: row === 0 || cageInfo.byCell[cell - 9] !== cage,
-							bottom: row === 8 || cageInfo.byCell[cell + 9] !== cage,
-							left: col === 0 || cageInfo.byCell[cell - 1] !== cage,
-							right: col === 8 || cageInfo.byCell[cell + 1] !== cage,
-						}
-					: null;
+				const cageEdges = cageInfo ? cageInfo.edges[cell] : null;
 				const cageSum = cageInfo?.sumAt.get(cell);
 
 				return (

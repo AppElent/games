@@ -2,6 +2,8 @@
  * Above the board: the clock and a one-line status, and the solved banner
  * once the puzzle is done.
  */
+
+import type { SudokuStatus } from "@arcadeclub/core/sudoku";
 import { StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
 import {
@@ -14,7 +16,6 @@ import {
 import { Button } from "../../../ui/button";
 import { Icon } from "../../../ui/icon";
 import { AppText } from "../../../ui/text";
-import type { SudokuStatus } from "../saves/sudoku-save-store";
 import { formatElapsed } from "./game-clock";
 
 export function PuzzleStatus({

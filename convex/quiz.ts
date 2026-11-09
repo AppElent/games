@@ -1,11 +1,30 @@
-import { calculateAnswerScore, isCorrectAnswer } from "@arcadeclub/core/quiz";
+import {
+	calculateAnswerScore,
+	getNextQuizPhase,
+	isCorrectAnswer,
+	summarizeScores,
+} from "@arcadeclub/core/quiz";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { requireUserId } from "./lib/auth";
-import { completeSession } from "./lib/completion";
-import { quizQuestionValidator } from "./schema";
+import { getOptionalUserId, requireOwned, requireUserId } from "./lib/auth";
 import { gameError } from "./lib/errors";
+import {
+	findGameState,
+	finishSession,
+	loadBundle,
+	loadSession,
+	requireParticipant,
+	startSession,
+} from "./lib/gameSession";
+import {
+	createdSession,
+	createdSessionValidator,
+	hostedSessionArgs,
+	hostGame,
+} from "./lib/hostedSession";
+import { quizQuestionValidator } from "./schema";
 
 const SAMPLE_QUESTIONS = [
 	{
@@ -95,10 +114,11 @@ export const updateSet = mutation({
 	},
 	handler: async (ctx, args) => {
 		const ownerUserId = await requireUserId(ctx);
-		const quizSet = await ctx.db.get(args.quizSetId);
-		if (!quizSet || quizSet.ownerUserId !== ownerUserId) {
-			throw gameError("quizSetNotFound");
-		}
+		requireOwned(
+			await ctx.db.get(args.quizSetId),
+			ownerUserId,
+			"quizSetNotFound",
+		);
 		await ctx.db.patch(args.quizSetId, {
 			title: args.title,
 			description: args.description,
@@ -111,10 +131,11 @@ export const deleteSet = mutation({
 	args: { quizSetId: v.id("quizSets") },
 	handler: async (ctx, args) => {
 		const ownerUserId = await requireUserId(ctx);
-		const quizSet = await ctx.db.get(args.quizSetId);
-		if (!quizSet || quizSet.ownerUserId !== ownerUserId) {
-			throw gameError("quizSetNotFound");
-		}
+		requireOwned(
+			await ctx.db.get(args.quizSetId),
+			ownerUserId,
+			"quizSetNotFound",
+		);
 		await ctx.db.delete(args.quizSetId);
 	},
 });
@@ -128,8 +149,8 @@ export const getSet = query({
 		}
 		// Sample sets are public; owned sets are private to their owner.
 		if (!quizSet.isSample) {
-			const identity = await ctx.auth.getUserIdentity();
-			if (!identity || quizSet.ownerUserId !== identity.subject) {
+			const userId = await getOptionalUserId(ctx);
+			if (!userId || quizSet.ownerUserId !== userId) {
 				return null;
 			}
 		}
@@ -158,52 +179,37 @@ export const listMine = query({
 	},
 });
 
-export const startForSession = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		quizSetId: v.id("quizSets"),
-	},
+async function insertLobbyState(
+	ctx: MutationCtx,
+	sessionId: Id<"gameSessions">,
+	quizSetId: Id<"quizSets">,
+) {
+	return await ctx.db.insert("liveQuizStates", {
+		sessionId,
+		quizSetId,
+		phase: "lobby",
+		currentQuestionIndex: 0,
+		showCorrectAnswer: false,
+	});
+}
+
+export const create = mutation({
+	args: { ...hostedSessionArgs, quizSetId: v.id("quizSets") },
+	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session || session.gameType !== "live-quiz") {
-			throw gameError("sessionNotFound");
-		}
-		const quizSet = await ctx.db.get(args.quizSetId);
-		if (!quizSet) {
+		const hosted = await hostGame(ctx, "live-quiz", args);
+		if (!(await ctx.db.get(args.quizSetId))) {
 			throw gameError("quizSetNotFound");
 		}
-
-		const existing = await ctx.db
-			.query("liveQuizStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
-		if (existing) {
-			await ctx.db.patch(existing._id, {
-				quizSetId: args.quizSetId,
-				phase: "lobby",
-				currentQuestionIndex: 0,
-				questionStartedAt: undefined,
-				showCorrectAnswer: false,
-			});
-			return existing._id;
-		}
-		return await ctx.db.insert("liveQuizStates", {
-			sessionId: args.sessionId,
-			quizSetId: args.quizSetId,
-			phase: "lobby",
-			currentQuestionIndex: 0,
-			showCorrectAnswer: false,
-		});
+		await insertLobbyState(ctx, hosted.session._id, args.quizSetId);
+		return createdSession(hosted);
 	},
 });
 
 export const advancePhase = mutation({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const quizState = await ctx.db
-			.query("liveQuizStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const quizState = await findGameState(ctx, "live-quiz", args.sessionId);
 		if (!quizState) {
 			throw gameError("quizNotPrepared");
 		}
@@ -215,67 +221,30 @@ export const advancePhase = mutation({
 		}
 
 		const now = Date.now();
+		const next = getNextQuizPhase(quizState, quizSet.questions.length, now);
+		if (!next) {
+			return "finished";
+		}
 		if (quizState.phase === "lobby") {
-			await ctx.db.patch(quizState._id, {
-				phase: "question",
-				questionStartedAt: now,
-				showCorrectAnswer: false,
-			});
-			await ctx.db.patch(args.sessionId, {
-				status: "active",
-				startedAt: now,
-			});
-			return "question";
+			await startSession(
+				ctx,
+				await loadSession(ctx, "live-quiz", args.sessionId),
+				now,
+			);
 		}
-		if (quizState.phase === "question") {
-			await ctx.db.patch(quizState._id, {
-				phase: "reveal",
-				showCorrectAnswer: true,
+		if (next.phase === "finished") {
+			const answers = await ctx.db
+				.query("liveQuizAnswers")
+				.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+				.collect();
+			await finishSession(ctx, quizState, next, {
+				now,
+				winners: summarizeScores(answers).winners,
 			});
-			return "reveal";
+		} else {
+			await ctx.db.patch(quizState._id, next);
 		}
-		if (quizState.phase === "reveal") {
-			await ctx.db.patch(quizState._id, { phase: "scoreboard" });
-			return "scoreboard";
-		}
-		if (quizState.phase === "scoreboard") {
-			const nextQuestionIndex = quizState.currentQuestionIndex + 1;
-			if (nextQuestionIndex >= quizSet.questions.length) {
-				await ctx.db.patch(quizState._id, {
-					phase: "finished",
-					questionStartedAt: undefined,
-					showCorrectAnswer: true,
-				});
-				const answers = await ctx.db
-					.query("liveQuizAnswers")
-					.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-					.collect();
-				const totals = new Map<Id<"sessionParticipants">, number>();
-				for (const answer of answers) {
-					totals.set(
-						answer.participantId,
-						(totals.get(answer.participantId) ?? 0) + answer.score,
-					);
-				}
-				const topScore = Math.max(0, ...totals.values());
-				const winners = [...totals.entries()]
-					.filter(([, score]) => score === topScore && topScore > 0)
-					.map(([participantId]) => participantId);
-				await completeSession(ctx, args.sessionId, {
-					endedAt: now,
-					winnerParticipantIds: winners,
-				});
-				return "finished";
-			}
-			await ctx.db.patch(quizState._id, {
-				phase: "question",
-				currentQuestionIndex: nextQuestionIndex,
-				questionStartedAt: now,
-				showCorrectAnswer: false,
-			});
-			return "question";
-		}
-		return "finished";
+		return next.phase;
 	},
 });
 
@@ -286,21 +255,16 @@ export const submitAnswer = mutation({
 		selectedChoiceIds: v.array(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const participant = await ctx.db.get(args.participantId);
-		if (
-			!participant ||
-			participant.sessionId !== args.sessionId ||
-			participant.kickedAt
-		) {
-			throw gameError("participantNotFound");
-		}
+		const participant = await requireParticipant(
+			ctx,
+			args.sessionId,
+			args.participantId,
+			"participantNotFound",
+		);
 		if (participant.role === "watcher") {
 			throw gameError("spectatorsCannotAnswer");
 		}
-		const quizState = await ctx.db
-			.query("liveQuizStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const quizState = await findGameState(ctx, "live-quiz", args.sessionId);
 		if (!quizState || quizState.phase !== "question" || !quizState.quizSetId) {
 			throw gameError("questionClosed");
 		}
@@ -318,7 +282,8 @@ export const submitAnswer = mutation({
 			.collect();
 		const existing = existingAnswers.find(
 			(answer) =>
-				answer.sessionId === args.sessionId && answer.questionId === question.id,
+				answer.sessionId === args.sessionId &&
+				answer.questionId === question.id,
 		);
 		if (existing) {
 			return {
@@ -357,18 +322,11 @@ export const submitAnswer = mutation({
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
+		const bundle = await loadBundle(ctx, "live-quiz", args.sessionId);
+		if (!bundle) {
 			return null;
 		}
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const quizState = await ctx.db
-			.query("liveQuizStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
+		const { session, participants, state: quizState } = bundle;
 		const quizSet = quizState?.quizSetId
 			? await ctx.db.get(quizState.quizSetId)
 			: null;

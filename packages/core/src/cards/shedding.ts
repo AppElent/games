@@ -4,22 +4,21 @@
  * Mau-Mau, Crazy Eights) is `SheddingRules` data.
  */
 import { GameRuleError } from "../errors";
+import { type Rng, shuffle } from "../random";
 import {
 	buildDeck,
 	type CardId,
 	clone,
 	deal,
-	drawCards,
 	isJoker,
 	parseCard,
-	type Random,
 	type Rank,
 	removeCard,
 	SUITS,
 	type Suit,
-	shuffle,
 } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
+import { type BotMove, drawWithReshuffle, publicTable } from "./table";
 
 export type CardPower =
 	/** Next player draws `amount` unless they can stack. */
@@ -33,7 +32,7 @@ export type CardPower =
 	/** Playable on anything; the player names the next suit. */
 	| { kind: "chooseSuit" };
 
-export type PowerKey = Rank | "joker";
+type PowerKey = Rank | "joker";
 
 export type SheddingRules = {
 	/** First matching entry from the top wins: `from` is a minimum seat count. */
@@ -88,6 +87,15 @@ export type SheddingAction =
 	| { type: "callLast" }
 	| { type: "catch"; target: number };
 
+/** Keyed by action type, so a new action cannot be left out. */
+export const SHEDDING_ACTIONS: Record<SheddingAction["type"], true> = {
+	play: true,
+	draw: true,
+	pass: true,
+	callLast: true,
+	catch: true,
+};
+
 export type SheddingView = {
 	family: "shedding";
 	phase: SheddingState["phase"];
@@ -122,7 +130,7 @@ function isWild(power: CardPower | undefined) {
 	return power?.kind === "chooseSuit" || (power?.kind === "draw" && power.wild);
 }
 
-export function canPlaySheddingCard(
+function canPlaySheddingCard(
 	rules: SheddingRules,
 	state: SheddingState,
 	card: CardId,
@@ -169,16 +177,8 @@ function moveTurn(state: SheddingState, steps = 1) {
 	state.drawnCard = null;
 }
 
-function draw(
-	state: SheddingState,
-	seat: number,
-	count: number,
-	random: Random,
-) {
-	const { drawn, reshuffled } = drawCards(state, count, random);
-	if (reshuffled) {
-		pushEvent(state, { type: "reshuffle" });
-	}
+function draw(state: SheddingState, seat: number, count: number, random: Rng) {
+	const drawn = drawWithReshuffle(state, count, random);
 	state.hands[seat].push(...drawn);
 	return drawn;
 }
@@ -213,7 +213,7 @@ function finishIfDeadlocked(rules: SheddingRules, state: SheddingState) {
 export function createShedding(
 	rules: SheddingRules,
 	seats: number,
-	random: Random,
+	random: Rng,
 	starter = 0,
 ): SheddingState {
 	const decks = rules.decks.find((entry) => seats >= entry.from)?.decks ?? 1;
@@ -248,12 +248,17 @@ export function createShedding(
 	return state;
 }
 
+/** Who leads the rematch: the next seat along. */
+export function nextSheddingStarter(state: SheddingState) {
+	return (state.starter + 1) % state.hands.length;
+}
+
 function applyPlay(
 	rules: SheddingRules,
 	state: SheddingState,
 	seat: number,
 	action: Extract<SheddingAction, { type: "play" }>,
-	random: Random,
+	random: Rng,
 ) {
 	if (state.drawnCard && action.card !== state.drawnCard) {
 		throw new GameRuleError("cardsOnlyDrawnCard");
@@ -341,7 +346,7 @@ function applyDraw(
 	rules: SheddingRules,
 	state: SheddingState,
 	seat: number,
-	random: Random,
+	random: Rng,
 ) {
 	if (state.drawnCard) {
 		throw new GameRuleError("cardsAlreadyDrew");
@@ -381,7 +386,7 @@ export function applyShedding(
 	previous: SheddingState,
 	seat: number,
 	action: SheddingAction,
-	random: Random,
+	random: Rng,
 ): SheddingState {
 	const state = clone(previous);
 	if (state.phase !== "playing") {
@@ -456,13 +461,11 @@ export function viewShedding(
 		turn: state.turn,
 		direction: state.direction,
 		top: state.discard[state.discard.length - 1],
-		underTop: state.discard.slice(-4, -1),
-		stockCount: state.stock.length,
+		...publicTable(state),
 		activeSuit: state.activeSuit,
 		openTable: state.openTable,
 		pendingDraw: state.pendingDraw,
 		mustContinue: state.mustContinue,
-		handCounts: state.hands.map((cards) => cards.length),
 		hand,
 		legal,
 		drawnCard: isTurn ? state.drawnCard : null,
@@ -477,13 +480,6 @@ export function viewShedding(
 		events: state.events,
 	};
 }
-
-export type BotMove<Action> = {
-	seat: number;
-	action: Action;
-	/** A new turn, the rest of a turn already under way, or a reply to someone else. */
-	pace: "turn" | "followUp" | "reaction";
-};
 
 function chooseSuitFor(hand: CardId[], excluding: CardId): Suit {
 	const counts = new Map<Suit, number>();
@@ -518,7 +514,7 @@ export function botSheddingMove(
 	rules: SheddingRules,
 	state: SheddingState,
 	bots: readonly number[],
-	random: Random,
+	random: Rng,
 ): BotMove<SheddingAction> | null {
 	if (state.phase !== "playing") {
 		return null;

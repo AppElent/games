@@ -1,61 +1,68 @@
 /**
  * The one pass-and-play match kept on this phone. Stored whole in the
- * synchronous key-value store, so it survives a restart and works offline.
+ * synchronous local store, so it survives a restart and works offline.
  */
-import Storage from "expo-sqlite/kv-store";
+
+import { getBackgammonWinner } from "@arcadeclub/core/backgammon";
 import {
-	DEFAULT_BACKGAMMON_OPTIONS,
-	HISTORY_LIMIT,
 	type LocalMatch,
-} from "./local-match";
+	newLocalMatch,
+	parseLocalMatch,
+} from "@arcadeclub/core/backgammon-local";
+import type { Href } from "expo-router";
+import {
+	readText,
+	remove,
+	STORAGE_KEYS,
+	writeJson,
+} from "../../../storage/local-store";
 
-const KEY = "arcade:backgammon:local";
-
-function isMatch(value: unknown): value is LocalMatch {
-	const match = value as LocalMatch | null;
-	return (
-		typeof match === "object" &&
-		match !== null &&
-		Array.isArray(match.state?.points) &&
-		match.state.points.length === 24 &&
-		Array.isArray(match.history) &&
-		Array.isArray(match.future)
-	);
-}
+export const LOCAL_MATCH_HREF: Href = "/backgammon/local";
 
 export function readLocalMatch(): LocalMatch | null {
-	try {
-		const raw = Storage.getItemSync(KEY);
-		if (!raw) return null;
-		const parsed: unknown = JSON.parse(raw);
-		if (!isMatch(parsed)) return null;
-		return {
-			...parsed,
-			options: { ...DEFAULT_BACKGAMMON_OPTIONS, ...parsed.options },
-		};
-	} catch {
-		return null;
-	}
+	const raw = readText(STORAGE_KEYS.backgammonLocal);
+	return raw ? parseLocalMatch(raw) : null;
 }
 
 export function writeLocalMatch(match: LocalMatch) {
-	try {
-		Storage.setItemSync(
-			KEY,
-			JSON.stringify({
-				...match,
-				history: match.history.slice(-HISTORY_LIMIT),
-			}),
-		);
-	} catch {
-		// Best-effort: the running match keeps working in memory.
-	}
+	writeJson(STORAGE_KEYS.backgammonLocal, match);
 }
 
 export function clearLocalMatch() {
-	try {
-		Storage.removeItemSync(KEY);
-	} catch {
-		// Nothing stored, or the store is unavailable.
-	}
+	remove(STORAGE_KEYS.backgammonLocal);
+}
+
+/** Replaces the saved match with a new one, back on the default options. */
+export function startNewLocalMatch() {
+	writeLocalMatch(newLocalMatch(Date.now()));
+}
+
+/** The backgammon hub offers Continue once anyone has rolled or moved. */
+export function hubOffersContinue(match: LocalMatch) {
+	return (
+		getBackgammonWinner(match.state.off) === null &&
+		(match.history.length > 0 || match.state.dice.length > 0)
+	);
+}
+
+/** The Play tab lists the match only once someone has moved, not just rolled. */
+export function playHomeListsMatch(match: LocalMatch) {
+	return (
+		getBackgammonWinner(match.state.off) === null && match.history.length > 0
+	);
+}
+
+/** The match, if the Play tab lists it. Removing it deletes the match. */
+export function resumableItems() {
+	const match = readLocalMatch();
+	if (!match || !playHomeListsMatch(match)) return [];
+	return [
+		{
+			id: "backgammon:local",
+			gameType: "backgammon" as const,
+			href: LOCAL_MATCH_HREF,
+			updatedAt: match.updatedAt,
+			remove: clearLocalMatch,
+		},
+	];
 }

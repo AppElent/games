@@ -1,10 +1,7 @@
-import type { GameCatalogItem } from "#/lib/games/catalog";
-import { useMessages } from "#/lib/i18n";
+import type { LocalizedGame } from "#/lib/games/catalog";
 
-export function GameCard({ game }: { game: GameCatalogItem }) {
-	const messages = useMessages();
+export function GameCard({ game }: { game: LocalizedGame }) {
 	const Icon = game.icon;
-	const disabled = game.availability !== "playable";
 
 	return (
 		<article className="club-panel group flex min-h-[260px] flex-col justify-between rounded-lg p-5">
@@ -31,13 +28,9 @@ export function GameCard({ game }: { game: GameCatalogItem }) {
 			</div>
 			<a
 				href={game.route}
-				className={`mt-6 inline-flex items-center justify-center rounded-md px-4 py-2.5 text-sm font-bold no-underline ${
-					disabled
-						? "border border-[var(--club-line)] bg-[var(--club-line)] text-[var(--club-soft)]"
-						: "bg-[var(--club-text)] text-[color:var(--club-bg)] hover:-translate-y-0.5"
-				}`}
+				className="mt-6 inline-flex items-center justify-center rounded-md bg-[var(--club-text)] px-4 py-2.5 text-sm font-bold text-[color:var(--club-bg)] no-underline hover:-translate-y-0.5"
 			>
-				{disabled ? messages.common.gameCard.comingSoon : game.primaryAction}
+				{game.primaryAction}
 			</a>
 		</article>
 	);

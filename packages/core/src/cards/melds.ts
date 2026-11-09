@@ -26,13 +26,11 @@ export type MeldRules = {
 	jokerPoints: number;
 };
 
-export type Meld =
-	| { id: number; kind: "set"; cards: CardId[]; rank: Rank }
-	| { id: number; kind: "run"; cards: CardId[]; suit: Suit; low: number };
-
 export type MeldShape =
 	| { kind: "set"; cards: CardId[]; rank: Rank }
 	| { kind: "run"; cards: CardId[]; suit: Suit; low: number };
+
+export type Meld = MeldShape & { id: number };
 
 /** 1 for an ace, up to 13 for a king. */
 function rankValue(rank: Rank) {

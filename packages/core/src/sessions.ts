@@ -1,3 +1,23 @@
+import { fmt } from "./i18n/format";
+
+export const SESSION_STATUSES = [
+	"lobby",
+	"active",
+	"completed",
+	"cancelled",
+] as const;
+
+export const COMPLETED_REASONS = [
+	"finished",
+	"cancelled",
+	"abandoned",
+] as const;
+
+export const PARTICIPANT_ROLES = ["host", "player", "watcher"] as const;
+
+/** The longest session title the server stores. */
+export const MAX_TITLE_LENGTH = 80;
+
 export type LocalGuestIdentity = {
 	id: string;
 	displayName: string;
@@ -16,25 +36,34 @@ export function formatJoinCode(value: string) {
 	return `${normalized.slice(0, 3)} ${normalized.slice(3)}`;
 }
 
+/** Room codes the server makes: no 0/O or 1/I, which read alike. */
+export const JOIN_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export const JOIN_CODE_LENGTH = 6;
+
+const JOIN_CODE_MAX_LENGTH = 8;
+
+/** The longest code `isJoinCodeLike` accepts, as `formatJoinCode` prints it. */
+export const FORMATTED_JOIN_CODE_MAX_LENGTH = JOIN_CODE_MAX_LENGTH + 1;
+
 export function isJoinCodeLike(value: string) {
 	const normalized = normalizeJoinCode(value);
-	return normalized.length >= 4 && normalized.length <= 8;
+	return normalized.length >= 4 && normalized.length <= JOIN_CODE_MAX_LENGTH;
 }
 
-/** "Player 123" from a guest id; pass the localized `{number}` template to translate it. */
-export function getGuestDisplayName(
-	guestId: string,
-	template = "Player {number}",
-) {
+/** A guest's name from their id, in the given `common.session.guestName` template. */
+export function getGuestDisplayName(guestId: string, template: string) {
 	const digits = guestId.replace(/\D/g, "").slice(-3).padStart(3, "0");
-	return template.replace("{number}", digits);
+	return fmt(template, { number: digits });
 }
 
 /** Web Crypto when the runtime has it (browsers, Node, Hermes with a polyfill). */
 const runtimeCrypto = (globalThis as { crypto?: { randomUUID?: () => string } })
 	.crypto;
 
-export function createGuestIdentity(now = Date.now()): LocalGuestIdentity {
+export function createGuestIdentity(
+	nameTemplate: string,
+	now = Date.now(),
+): LocalGuestIdentity {
 	const suffix = runtimeCrypto?.randomUUID
 		? runtimeCrypto.randomUUID().slice(0, 8)
 		: Math.floor(Math.random() * 1_000_000)
@@ -43,17 +72,22 @@ export function createGuestIdentity(now = Date.now()): LocalGuestIdentity {
 	const id = `guest_${suffix}`;
 	return {
 		id,
-		displayName: getGuestDisplayName(id),
+		displayName: getGuestDisplayName(id, nameTemplate),
 		createdAt: now,
 	};
 }
 
-export function buildShareUrl(origin: string, token: string) {
-	const base = origin.replace(/\/$/, "");
-	return `${base}/join?token=${encodeURIComponent(token)}`;
-}
-
 export type Invite = { token: string } | { code: string };
+
+/** The `/join` link for an invite. Pass `""` as origin for a same-site link. */
+export function buildInviteUrl(origin: string, invite: Invite) {
+	const base = origin.replace(/\/+$/, "");
+	const query =
+		"token" in invite
+			? `token=${encodeURIComponent(invite.token)}`
+			: `code=${encodeURIComponent(invite.code)}`;
+	return `${base}/join?${query}`;
+}
 
 function queryParam(query: string, name: string) {
 	for (const pair of query.split("&")) {
@@ -89,4 +123,21 @@ export function parseInvite(text: string): Invite | null {
 	return /^[a-z0-9 -]+$/i.test(value) && isJoinCodeLike(value)
 		? { code: normalizeJoinCode(value) }
 		: null;
+}
+
+/**
+ * The secret a device keeps for a card-table seat after joining. A returning
+ * seat keeps the one it holds; a seat the join just claimed, or one this
+ * device never held, takes the new one, so an account's seat can move here.
+ */
+export function seatSecretAfterJoin<
+	Held extends { participantId: string; seatSecret?: string },
+>(
+	held: Held | null | undefined,
+	joined: { participantId: string; seatClaimed: boolean },
+	newSecret: string,
+): Held["seatSecret"] | string {
+	return held?.participantId === joined.participantId && !joined.seatClaimed
+		? held.seatSecret
+		: newSecret;
 }

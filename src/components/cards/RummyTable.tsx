@@ -1,9 +1,5 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
-import {
-	type CardGameDefinition,
-	type CardGameId,
-	resolvedRules,
-} from "@arcadeclub/core/cards/engine";
+import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import type { Meld } from "@arcadeclub/core/cards/melds";
 import type { RummyView } from "@arcadeclub/core/cards/rummy";
 import {
@@ -21,17 +17,24 @@ import { Sheet } from "./Chrome";
 import { EndOverlay } from "./EndOverlay";
 import { PlayingCard, useCardName } from "./PlayingCard";
 import {
-	AutopilotBack,
-	EventTicker,
 	Hand,
 	Piles,
 	SeatRow,
 	TableFrame,
+	TurnStatus,
 	useFreshCards,
 } from "./Table";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
 import { useCardWords } from "./useCardWords";
 import { useFlights } from "./useFlights";
+import {
+	cardAttr,
+	findCard,
+	findMeldTarget,
+	meldTargetAttr,
+	meldZone,
+	zoneAttr,
+} from "./zones";
 
 function ScoreBoard({
 	table,
@@ -81,7 +84,7 @@ export function RummyTable({
 	view,
 	controls,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	table: CardTableBundle;
 	view: RummyView;
 	controls: CardTableControls;
@@ -110,12 +113,12 @@ export function RummyTable({
 		meldCard,
 	);
 
-	const resolved = resolvedRules(game, table.options);
-	if (resolved.family !== "rummy") {
+	const rummyRules = familyRules(game, table.options, "rummy");
+	if (!rummyRules) {
 		throw new Error("RummyTable needs a rummy game");
 	}
-	const rules = resolved.rules;
-	const name = cards.games[game.id as CardGameId].name;
+	const rules = rummyRules;
+	const name = cards.games[game.id].name;
 	const you = table.you;
 	const turn = rummyTurn({ view, rules, you, selected, staged });
 	const {
@@ -160,9 +163,10 @@ export function RummyTable({
 	const selectionKey = liveSelection.join();
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs when the selection changes.
 	useEffect(() => {
-		rootRef.current
-			?.querySelector('.meld-area [data-target="true"]')
-			?.scrollIntoView({ block: "nearest" });
+		const root = rootRef.current;
+		if (root) {
+			findMeldTarget(root)?.scrollIntoView({ block: "nearest" });
+		}
 	}, [selectionKey]);
 
 	function toggle(card: CardId) {
@@ -177,22 +181,19 @@ export function RummyTable({
 		meld: Meld,
 		action: NonNullable<ReturnType<typeof rummyMeldAction>>,
 	) {
-		const element = document.querySelector<HTMLElement>(
-			`[data-card-id="${liveSelection[0]}"]`,
-		);
-		if (element) {
-			flights.noteOrigin(liveSelection[0], element);
-		}
-		controls.act(
-			action.type === "add"
-				? {
-						type: "layDown",
-						additions: [{ meldId: meld.id, cards: action.order }],
-					}
-				: {
-						type: "layDown",
-						swaps: [{ meldId: meld.id, card: liveSelection[0] }],
-					},
+		const card = liveSelection[0];
+		flights.playFrom(card, findCard(document, card), () =>
+			controls.act(
+				action.type === "add"
+					? {
+							type: "layDown",
+							additions: [{ meldId: meld.id, cards: action.order }],
+						}
+					: {
+							type: "layDown",
+							swaps: [{ meldId: meld.id, card }],
+						},
+			),
 		);
 		setSelected([]);
 	}
@@ -223,13 +224,9 @@ export function RummyTable({
 		if (!singleCard) {
 			return;
 		}
-		const element = document.querySelector<HTMLElement>(
-			`[data-card-id="${singleCard}"]`,
+		flights.playFrom(singleCard, findCard(document, singleCard), () =>
+			controls.act({ type: "discard", card: singleCard }),
 		);
-		if (element) {
-			flights.noteOrigin(singleCard, element);
-		}
-		controls.act({ type: "discard", card: singleCard });
 		setSelected([]);
 	}
 
@@ -361,8 +358,8 @@ export function RummyTable({
 									key={meld.id}
 									type="button"
 									className="meld"
-									data-target="true"
-									data-zone={`meld-${meld.id}`}
+									{...meldTargetAttr}
+									{...zoneAttr(meldZone(meld.id))}
 									aria-label={`${fmt(
 										action.type === "add"
 											? cards.rummy.addToMeld
@@ -377,7 +374,7 @@ export function RummyTable({
 								<section
 									key={meld.id}
 									className="meld"
-									data-zone={`meld-${meld.id}`}
+									{...zoneAttr(meldZone(meld.id))}
 									aria-label={meldKind(meld)}
 								>
 									{content}
@@ -421,18 +418,15 @@ export function RummyTable({
 							</div>
 						</>
 					) : null}
-					<p className="status-line" data-mine={mine} aria-live="polite">
-						{!live
-							? null
-							: mine
-								? cards.table.yourTurn
-								: fmt(cards.table.theirTurn, {
-										name: seatName(cards, table, view.turn),
-									})}
-					</p>
-					{hint ? <p className="status-hint">{hint}</p> : null}
-					<EventTicker events={view.events} table={table} />
-					<div className="table-actions">
+					<TurnStatus
+						table={table}
+						controls={controls}
+						events={view.events}
+						turn={view.turn}
+						live={live}
+						mine={mine}
+						hint={hint}
+					>
 						{canOpenNow ? (
 							<button
 								type="button"
@@ -502,42 +496,35 @@ export function RummyTable({
 								{cards.rummy.clearSelection}
 							</button>
 						) : null}
-						{you !== null && table.seats[you]?.autopilot ? (
-							<AutopilotBack controls={controls} seat={you} />
-						) : null}
-					</div>
+					</TurnStatus>
 				</>
 			}
 			hand={
-				you === null ? (
-					<div className="h-4" />
-				) : (
-					<Hand
-						cards={handShown}
-						label={cards.table.handLabel}
-						fresh={fresh}
-						render={(card, style) => (
-							<button
-								type="button"
-								className="hand-card"
-								style={style}
-								data-card-id={card}
-								aria-label={cardName(card)}
-								aria-pressed={liveSelection.includes(card)}
-								aria-disabled={!playing}
-								data-selected={liveSelection.includes(card)}
-								data-new={fresh.has(card)}
-								onClick={() => {
-									if (playing) {
-										toggle(card);
-									}
-								}}
-							>
-								<PlayingCard card={card} />
-							</button>
-						)}
-					/>
-				)
+				<Hand
+					cards={handShown}
+					label={cards.table.handLabel}
+					fresh={fresh}
+					render={(card, style) => (
+						<button
+							type="button"
+							className="hand-card"
+							style={style}
+							{...cardAttr(card)}
+							aria-label={cardName(card)}
+							aria-pressed={liveSelection.includes(card)}
+							aria-disabled={!playing}
+							data-selected={liveSelection.includes(card)}
+							data-new={fresh.has(card)}
+							onClick={() => {
+								if (playing) {
+									toggle(card);
+								}
+							}}
+						>
+							<PlayingCard card={card} />
+						</button>
+					)}
+				/>
 			}
 			overlays={
 				<>

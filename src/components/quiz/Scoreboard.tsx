@@ -41,7 +41,7 @@ export function Scoreboard({
 
 	return (
 		<section className="club-panel rounded-lg p-4">
-			<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-300">
+			<h2 className="mb-3 club-panel-heading">
 				{messages.common.results.scoreboard}
 			</h2>
 			{rows.length === 0 ? (

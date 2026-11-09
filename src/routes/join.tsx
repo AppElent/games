@@ -1,15 +1,9 @@
 import { useUser } from "@clerk/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
-import { useErrorMessage } from "#/lib/games/errors";
-import {
-	getOrCreateGuestIdentity,
-	normalizeJoinCode,
-} from "#/lib/games/sessions";
+import { useJoinSession } from "#/lib/games/join";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { useMessages } from "#/lib/i18n";
-import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/join")({
 	validateSearch: (search): { code?: string; token?: string } => {
@@ -26,14 +20,12 @@ export const Route = createFileRoute("/join")({
 });
 
 function JoinPage() {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const search = Route.useSearch();
-	const joinByCode = useMutation(api.sessions.joinByCode);
-	const joinByToken = useMutation(api.sessions.joinByToken);
+	const join = useJoinSession();
 	const [code, setCode] = useState(search.code ?? "");
 	const [name, setName] = useState("");
-	const [error, setError] = useState("");
+	const { error, run } = useGameAction();
 	const [asSpectator, setAsSpectator] = useState(false);
 	const joiningByLink = Boolean(search.token);
 
@@ -54,85 +46,19 @@ function JoinPage() {
 				className="club-panel w-full max-w-md rounded-lg p-6"
 				onSubmit={async (event) => {
 					event.preventDefault();
-					setError("");
-					const guest = getOrCreateGuestIdentity();
-					const seatSecret = newCardSeatSecret();
-					try {
-						const result = joiningByLink
-							? await joinByToken({
-									shareToken: search.token ?? "",
-									displayName: name.trim() || guest.displayName,
-									guestId: guest.id,
-									asSpectator,
-								})
-							: await joinByCode({
-									joinCode: normalizeJoinCode(code),
-									displayName: name.trim() || guest.displayName,
-									guestId: guest.id,
-									asSpectator,
-									seatSecret,
-								});
-						if (result.gameType === "live-quiz") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/quiz/${result.sessionId}/play?participantId=${result.participantId}`;
+					await run(async () => {
+						const path = await join({
+							code,
+							token: search.token,
+							name,
+							asSpectator,
+						});
+						if (!path) {
+							// No screen to open: shown as the generic join error.
+							throw new Error("Joined a session with no screen to open.");
 						}
-						if (result.gameType === "hitster") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/hitster/${result.sessionId}/play?participantId=${result.participantId}`;
-						}
-						if (result.gameType === "backgammon") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/backgammon/${result.sessionId}`;
-						}
-						if (result.gameType === "card-games") {
-							rememberCardSeat(
-								result.sessionId,
-								result.participantId,
-								seatSecret,
-								"seatClaimed" in result && result.seatClaimed === true,
-							);
-							window.location.href = `/cards/table/${result.sessionId}`;
-						}
-						if (result.gameType === "bluff-dice") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/bluff-dice/${result.sessionId}`;
-						}
-						if (result.gameType === "signal-words") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/signal-words/${result.sessionId}`;
-						}
-						if (result.gameType === "connect-four") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/connect-four/${result.sessionId}`;
-						}
-						if (result.gameType === "chess") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/chess/${result.sessionId}`;
-						}
-					} catch (caught) {
-						setError(errorMessage(caught, messages.common.joinPanel.joinError));
-					}
+						window.location.href = path;
+					}, messages.common.joinPanel.joinError);
 				}}
 			>
 				<p className="club-kicker mb-2">{messages.common.joinPanel.kicker}</p>

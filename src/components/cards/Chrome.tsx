@@ -7,7 +7,7 @@ import { useMessages } from "#/lib/i18n";
 import "./cards.css";
 import { CardSprite } from "./PlayingCard";
 
-export type Crumb = {
+type Crumb = {
 	label: string;
 	to?: "/cards" | "/cards/$gameId";
 	params?: { gameId: string };
@@ -59,6 +59,19 @@ export function CardsPage({
 				</div>
 			</div>
 		</FullscreenGameShell>
+	);
+}
+
+/** A panel saying what could not be found, with the way back to the card games. */
+export function CardsNotFound({ heading }: { heading: string }) {
+	const cards = useMessages().games.cards;
+	return (
+		<div className="cards-panel mt-10 p-6 text-center">
+			<h1 className="cards-title mb-3 text-2xl">{heading}</h1>
+			<Link to="/cards" className="btn-gold">
+				{cards.session.backToGames}
+			</Link>
+		</div>
 	);
 }
 

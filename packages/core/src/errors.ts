@@ -5,6 +5,7 @@
  * `messages.serverErrors` with `gameErrorMessage`.
  */
 import type { Messages } from "./i18n/en";
+import { fmt } from "./i18n/format";
 
 export type GameErrorCode = keyof Messages["serverErrors"];
 export type GameErrorParams = Record<string, string | number>;
@@ -23,7 +24,7 @@ export class GameRuleError extends Error {
 	}
 }
 
-export function isGameErrorData(value: unknown): value is GameErrorData {
+function isGameErrorData(value: unknown): value is GameErrorData {
 	return (
 		typeof value === "object" &&
 		value !== null &&
@@ -53,8 +54,5 @@ export function gameErrorMessage(
 	const data = gameErrorData(caught);
 	const template = data ? messages.serverErrors[data.code] : undefined;
 	if (!data || typeof template !== "string") return fallback;
-	const params = data.params ?? {};
-	return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-		key in params ? String(params[key]) : match,
-	);
+	return fmt(template, data.params ?? {});
 }

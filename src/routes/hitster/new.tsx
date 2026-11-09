@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import { HostGate } from "#/components/games/HostGate";
 import { HitsterSetupForm } from "#/components/hitster/HitsterSetupForm";
 import { useMessages } from "#/lib/i18n";
 
@@ -12,15 +13,19 @@ function HitsterNewPage() {
 	const messages = useMessages();
 	const hitster = messages.games.hitster;
 	return (
-		<FullscreenGamePage title="Hitster">
-			<p className="club-kicker mb-2">{hitster.musicTimelineKicker}</p>
+		<FullscreenGamePage
+			title={messages.catalog.hitster.title}
+			kicker={hitster.musicTimelineKicker}
+		>
 			<h1 className="club-title mb-4 text-4xl font-bold text-[var(--club-text)]">
 				{hitster.newGame.heading}
 			</h1>
 			<p className="mb-6 max-w-2xl text-[var(--club-muted)]">
 				{hitster.newGame.intro}
 			</p>
-			<HitsterSetupForm />
+			<HostGate>
+				<HitsterSetupForm />
+			</HostGate>
 		</FullscreenGamePage>
 	);
 }

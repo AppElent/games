@@ -1,3 +1,4 @@
+import { isRedSuit } from "@arcadeclub/core/cards/art";
 import { SUITS } from "@arcadeclub/core/cards/deck";
 import { Link } from "@tanstack/react-router";
 import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
@@ -60,10 +61,7 @@ export function EndOverlay({
 									"--d": `${item.duration}s`,
 									"--w": `${item.wait}s`,
 									"--r": `${item.spin}deg`,
-									"--c":
-										item.suit === "H" || item.suit === "D"
-											? "#ef5a65"
-											: "#f8f2e2",
+									"--c": isRedSuit(item.suit) ? "#ef5a65" : "#f8f2e2",
 								} as CSSProperties
 							}
 						>

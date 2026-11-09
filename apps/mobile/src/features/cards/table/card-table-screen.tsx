@@ -1,10 +1,9 @@
 /** Picks the screen for a table's state; the rule family picks the table itself. */
 import { getCardGame } from "@arcadeclub/core/cards/engine";
 import { useKeepAwake } from "expo-keep-awake";
-import { Stack, useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useRouter } from "expo-router";
 import { useI18n } from "../../../i18n";
-import { CenteredState } from "../../../ui/centered-state";
+import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
 import { LobbyPanel } from "./lobby-panel";
 import { RummyTable } from "./rummy-table";
 import { SheddingTable } from "./shedding-table";
@@ -17,25 +16,19 @@ export function CardTableScreen({ sessionId }: { sessionId: string }) {
 	const cards = t.games.cards;
 	const controls = useCardTable(sessionId);
 	const { table, loading } = controls;
-	const title = t.catalog["card-games"].title;
-	const waitingOptions = useMemo(() => ({ title }), [title]);
 
 	if (loading || !table) {
 		return (
-			<>
-				<Stack.Screen options={waitingOptions} />
-				{loading ? (
-					<CenteredState loading message={cards.session.loading} />
-				) : (
-					<CenteredState
-						title={cards.session.notFound}
-						action={{
-							label: cards.session.backToGames,
-							onPress: () => router.dismissTo("/cards"),
-						}}
-					/>
-				)}
-			</>
+			<OnlineScreenFrame
+				title={t.catalog["card-games"].title}
+				loading={loading}
+				loadingMessage={cards.session.loading}
+				blocked={cards.session.notFound}
+				blockedAction={{
+					label: cards.session.backToGames,
+					onPress: () => router.dismissTo("/cards"),
+				}}
+			/>
 		);
 	}
 

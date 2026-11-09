@@ -2,7 +2,6 @@
  * The app query module (`retention` flavor of the Convex query caching
  * standard). Screens import query hooks from here, never from `convex/react`.
  */
-import { usePaginatedQuery } from "convex/react";
 import {
 	ConvexQueryCacheProvider,
 	useQueries,
@@ -11,7 +10,7 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 import { AppState } from "react-native";
 
-export { usePaginatedQuery, useQueries, useQuery };
+export { useQueries, useQuery };
 
 const EXPIRATION_MS = 5 * 60_000;
 const MAX_IDLE_ENTRIES = 20;

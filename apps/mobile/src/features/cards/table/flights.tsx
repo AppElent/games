@@ -9,6 +9,7 @@ import type { CardEvent } from "@arcadeclub/core/cards/events";
 import {
 	cardTilt,
 	eventsSince,
+	newestSeq,
 	planFlights,
 } from "@arcadeclub/core/cards/table-view";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -151,12 +152,13 @@ export function useFlights(
 	const origins = useRef(new Map<CardId, Spot>());
 	const [flights, setFlights] = useState<Flight[]>([]);
 	const [flash, setFlash] = useState<number | null>(null);
-	const newestSeq = events.at(-1)?.seq ?? 0;
+	// An empty log counts as 0, so the first events after it fly.
+	const newest = newestSeq(events) ?? 0;
 
 	useLayoutEffect(() => {
 		const previous = lastSeq.current;
-		lastSeq.current = newestSeq;
-		if (previous === null || newestSeq === previous || quiet) return;
+		lastSeq.current = newest;
+		if (previous === null || newest === previous || quiet) return;
 		const plan = planFlights(eventsSince(events, previous), {
 			you,
 			seatCount,
@@ -185,7 +187,7 @@ export function useFlights(
 		if (plan.flash !== null) setFlash(plan.flash);
 		origins.current.clear();
 		if (planned.length > 0) setFlights((current) => [...current, ...planned]);
-	}, [newestSeq, events, you, seatCount, meldCard, quiet, zones]);
+	}, [newest, events, you, seatCount, meldCard, quiet, zones]);
 
 	useEffect(() => {
 		if (flash === null) return;

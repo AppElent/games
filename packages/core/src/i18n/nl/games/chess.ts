@@ -9,8 +9,6 @@ export const chess = {
 		black: "Zwart",
 		colorWhite: "wit",
 		colorBlack: "zwart",
-		openSeat: "Open plek",
-		turnBadge: "Beurt",
 	},
 	status: {
 		gameOver: "Partij afgelopen",
@@ -52,18 +50,10 @@ export const chess = {
 		youWin: "Je wint!",
 		betterLuck: "Meer geluk bij de rematch.",
 		shareText: "Schaken op Arcade Club — {status} na {count} halve zetten.",
-		rematchLabel: "Rematch (kleuren wisselen)",
-		rematchError: "Kon rematch niet starten",
 	},
 	moveList: {
 		heading: "Zetten",
 		empty: "Nog geen zetten.",
-	},
-	info: {
-		button: "Info",
-	},
-	share: {
-		challengeLinkLabel: "Uitdagingslink",
 	},
 	session: {
 		matchNotFound: "Partij niet gevonden.",
@@ -73,6 +63,10 @@ export const chess = {
 		heading: "Start een partij",
 		defaultTitle: "Schaakpartij",
 		timeControlLegend: "Bedenktijd",
+		timeControlOptions: {
+			untimed: "Zonder klok",
+			minutes: "{minutes} minuten",
+		},
 		colorLegend: "Jouw kleur",
 		colorOptions: {
 			random: "willekeurig",

@@ -15,9 +15,13 @@ export function gameError(code: GameErrorCode, params?: GameErrorParams) {
 	return new ConvexError(data);
 }
 
-/** Rethrow a shared-rule violation as a keyed error; anything else as is. */
-export function toGameError(caught: unknown): unknown {
-	return caught instanceof GameRuleError
-		? gameError(caught.code, caught.params)
-		: caught;
+/** Runs shared rules, turning a rule violation into a keyed error. */
+export function rules<T>(apply: () => T): T {
+	try {
+		return apply();
+	} catch (caught) {
+		throw caught instanceof GameRuleError
+			? gameError(caught.code, caught.params)
+			: caught;
+	}
 }

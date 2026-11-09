@@ -11,6 +11,9 @@ import { cardName } from "@arcadeclub/core/cards/table-view";
 import { memo } from "react";
 import { useMessages } from "#/lib/i18n";
 
+/** The class on every drawn card; measuring code finds cards by it. */
+export const CARD_FACE_CLASS = "pc";
+
 function Pip({
 	suit,
 	x,
@@ -144,7 +147,7 @@ export const PlayingCard = memo(function PlayingCard({
 	const parsed = card ? parseCard(card) : null;
 	const glyph = parsed?.rank ? (glyphs[parsed.rank] ?? parsed.rank) : "";
 	return (
-		<span className={`pc ${className ?? ""}`}>
+		<span className={`${CARD_FACE_CLASS} ${className ?? ""}`}>
 			<svg
 				viewBox="0 0 100 140"
 				focusable="false"

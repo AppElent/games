@@ -437,6 +437,16 @@ export function rummyHint(
 	return staged.length > 0 ? stagedNote() : cards.rummy.discardHint;
 }
 
+/** The newest event number, or null for an empty log. */
+export function newestSeq(events: readonly CardEvent[]): number | null {
+	return events.at(-1)?.seq ?? null;
+}
+
+/** A rematch restarts the event log, so its newest number drops below the last one seen. */
+export function logRestarted(newest: number | null, previous: number | null) {
+	return newest !== null && previous !== null && newest < previous;
+}
+
 export type FreshCardsMemory = {
 	hand: readonly CardId[] | null;
 	mine: boolean;
@@ -464,12 +474,10 @@ export function nextFreshCards(
 	const dealSeq = [...events]
 		.reverse()
 		.find((event) => event.type === "deal")?.seq;
-	const newestSeq = events.at(-1)?.seq ?? null;
+	const newest = newestSeq(events);
 	const dealt =
 		(dealSeq !== undefined && dealSeq !== memory.dealSeq) ||
-		(newestSeq !== null &&
-			memory.newestSeq !== null &&
-			newestSeq < memory.newestSeq);
+		logRestarted(newest, memory.newestSeq);
 	const before = memory.hand;
 	const added =
 		before && !dealt ? hand.filter((card) => !before.includes(card)) : [];
@@ -481,7 +489,7 @@ export function nextFreshCards(
 		hand,
 		mine,
 		dealSeq: dealSeq ?? memory.dealSeq,
-		newestSeq,
+		newestSeq: newest,
 		fresh: [...kept, ...added],
 	};
 }
@@ -513,8 +521,7 @@ export function eventsSince(
 	events: readonly CardEvent[],
 	previousSeq: number,
 ): readonly CardEvent[] {
-	const newest = events.at(-1)?.seq ?? 0;
-	return newest < previousSeq
+	return logRestarted(newestSeq(events) ?? 0, previousSeq)
 		? events
 		: events.filter((event) => event.seq > previousSeq);
 }

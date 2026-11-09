@@ -11,11 +11,12 @@ import {
 } from "expo-camera";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Linking, Platform, StyleSheet, View } from "react-native";
+import { Linking, StyleSheet, View } from "react-native";
 import { haptics } from "../../../feedback/haptics";
 import { useI18n } from "../../../i18n";
 import { radius, spacing, type Tokens, useThemedStyles } from "../../../theme";
-import { Button, HeaderButton } from "../../../ui/button";
+import { Button } from "../../../ui/button";
+import { modalCloseHeaderRight } from "../../../ui/modal-close-button";
 import { Notice } from "../../../ui/notice";
 import { AppText } from "../../../ui/text";
 
@@ -58,15 +59,7 @@ export function ScanInviteScreen() {
 			<Stack.Screen
 				options={{
 					title: copy.scan,
-					headerRight:
-						Platform.OS === "ios"
-							? () => (
-									<HeaderButton
-										label={t.common.actions.close}
-										onPress={() => router.back()}
-									/>
-								)
-							: undefined,
+					headerRight: modalCloseHeaderRight(() => router.back()),
 				}}
 			/>
 			{denied ? (

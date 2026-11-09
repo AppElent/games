@@ -3,14 +3,12 @@ import {
 	applyHitsterTokenDelta,
 	evaluateHitsterRound,
 	getHitsterCoopOutcome,
-	getHitsterModeConfig,
 	HITSTER_MODES,
-	hitsterStealRequirementMet,
+	type HitsterMode,
 	matchesHitsterArtist,
 	matchesHitsterTitle,
 	normalizeHitsterAnswer,
 	resolveHitsterSteals,
-	shuffleHitsterDeck,
 	validateHitsterPlacement,
 } from "../hitster";
 import {
@@ -18,6 +16,7 @@ import {
 	getPlayableHitsterCards,
 	listHitsterPacks,
 } from "../hitster-packs";
+import { shuffle } from "../random";
 
 const allCorrect = {
 	placementCorrect: true,
@@ -124,13 +123,6 @@ describe("mode-specific scoring", () => {
 			evaluateHitsterRound("expert", { ...allCorrect, yearCorrect: false }),
 		).toEqual({ cardWon: false, tokenDelta: 0 });
 	});
-
-	it("configures start tokens per mode", () => {
-		expect(getHitsterModeConfig("original").startTokens).toBe(2);
-		expect(getHitsterModeConfig("pro").startTokens).toBe(5);
-		expect(getHitsterModeConfig("expert").startTokens).toBe(3);
-		expect(getHitsterModeConfig("coop").startTokens).toBe(5);
-	});
 });
 
 describe("token cap", () => {
@@ -144,16 +136,22 @@ describe("token cap", () => {
 
 describe("steal claims", () => {
 	it("only apply when the active player missed", () => {
-		expect(
-			resolveHitsterSteals("original", true, [
-				{ participantId: "p2", submittedAt: 1, flags: allCorrect },
-			]),
-		).toBeUndefined();
+		const judged = resolveHitsterSteals(
+			"original",
+			true,
+			[{ participantId: "p2", submittedAt: 1, flags: allCorrect }],
+			(claim) => claim.flags,
+		);
+		expect(judged.map(({ correct, wonCard }) => [correct, wonCard])).toEqual([
+			[true, false],
+		]);
 	});
 
 	it("earliest qualifying claim wins", () => {
-		expect(
-			resolveHitsterSteals("original", false, [
+		const judged = resolveHitsterSteals(
+			"original",
+			false,
+			[
 				{
 					participantId: "late",
 					submittedAt: 20,
@@ -165,8 +163,20 @@ describe("steal claims", () => {
 					flags: { ...allCorrect, placementCorrect: false },
 				},
 				{ participantId: "early", submittedAt: 10, flags: allCorrect },
+			],
+			(claim) => claim.flags,
+		);
+		expect(
+			judged.map(({ claim, correct, wonCard }) => [
+				claim.participantId,
+				correct,
+				wonCard,
 			]),
-		).toBe("early");
+		).toEqual([
+			["wrong", false, false],
+			["early", true, true],
+			["late", true, false],
+		]);
 	});
 
 	it("pro steals require artist and title, expert also the year", () => {
@@ -176,16 +186,19 @@ describe("steal claims", () => {
 			titleCorrect: false,
 			yearCorrect: false,
 		};
-		expect(hitsterStealRequirementMet("original", placementOnly)).toBe(true);
-		expect(hitsterStealRequirementMet("pro", placementOnly)).toBe(false);
-		expect(hitsterStealRequirementMet("pro", allCorrect)).toBe(true);
-		expect(
-			hitsterStealRequirementMet("expert", {
-				...allCorrect,
-				yearCorrect: false,
-			}),
-		).toBe(false);
-		expect(hitsterStealRequirementMet("coop", allCorrect)).toBe(false);
+		const wins = (mode: HitsterMode, flags: typeof allCorrect) =>
+			resolveHitsterSteals(
+				mode,
+				false,
+				[{ submittedAt: 1, flags }],
+				(claim) => claim.flags,
+			)[0].wonCard;
+		expect(wins("original", placementOnly)).toBe(true);
+		expect(wins("pro", placementOnly)).toBe(false);
+		expect(wins("pro", allCorrect)).toBe(true);
+		expect(wins("expert", { ...allCorrect, yearCorrect: false })).toBe(false);
+		expect(wins("expert", allCorrect)).toBe(true);
+		expect(wins("coop", allCorrect)).toBe(false);
 	});
 });
 
@@ -258,7 +271,7 @@ describe("packs", () => {
 
 describe("deck shuffle", () => {
 	it("keeps all items and honours the injected rng", () => {
-		const deck = shuffleHitsterDeck([1, 2, 3, 4], () => 0);
+		const deck = shuffle([1, 2, 3, 4], () => 0);
 		expect([...deck].sort()).toEqual([1, 2, 3, 4]);
 		expect(HITSTER_MODES).toContain("coop");
 	});

@@ -1,3 +1,4 @@
+import { ONLINE_OPTION_KEYS } from "@arcadeclub/core/backgammon-local";
 /**
  * An online match: the board from this player's side, whose turn it is,
  * and the invite while the second seat is empty. Every action goes to
@@ -5,62 +6,78 @@
  */
 
 import {
+	BACKGAMMON_COLORS,
 	type BackgammonColor,
 	type BackgammonMovePlan,
-	canEndBackgammonTurn,
-	createInitialBackgammonState,
 	getBackgammonWinner,
 } from "@arcadeclub/core/backgammon";
+import {
+	DEFAULT_ONLINE_OPTIONS,
+	type OnlineOptions,
+} from "@arcadeclub/core/backgammon-local";
+import { occupant, opponent } from "@arcadeclub/core/duel";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
-import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
-import { radius, spacing, useThemedStyles } from "../../../theme";
+import { spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
-import { CenteredState } from "../../../ui/centered-state";
 import { Notice } from "../../../ui/notice";
-import { QrCode } from "../../../ui/qr-code";
 import { AppText } from "../../../ui/text";
+import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
+import { InviteQr } from "../../sessions/host/invite-qr";
 import { shareInvite } from "../../sessions/host/share-invite";
-import { hasWebOrigin, webJoinUrl } from "../../sessions/session-links";
+import { webJoinUrl } from "../../sessions/session-links";
 import { BackgammonBoard } from "../board/backgammon-board";
 import { useBoardSelection } from "../board/use-board-selection";
 import { BoardScreen } from "../components/board-screen";
 import { colorLabel } from "../components/color-label";
+import { MatchPanel } from "../components/match-panel";
 import { OptionsPanel } from "../components/options-panel";
 import { TURN_HINT_MESSAGE, turnHint } from "../components/turn-hint";
-import { TurnPanel } from "../components/turn-panel";
 import {
-	type BackgammonOptions,
-	DEFAULT_BACKGAMMON_OPTIONS,
-} from "../local/local-match";
-import { useOnlineMatch } from "./use-online-match";
-
-const OPTION_KEYS = ["showNumbers", "autoSwitchTurn", "autoCombine"] as const;
-const NO_HIGHLIGHTS = { points: new Set<number>(), off: false };
-/** Stands in for the turn while the bundle loads; never interactive. */
-const PLACEHOLDER_TURN = createInitialBackgammonState();
+	type LiveMatch,
+	type OnlineMatch,
+	useOnlineMatch,
+} from "./use-online-match";
 
 export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 	const { t } = useI18n();
+	const match = useOnlineMatch(sessionId);
+	if (!match.live) {
+		return (
+			<OnlineScreenFrame
+				title={t.games.backgammon.waitingRoom.onlineTitle}
+				loading={match.loading}
+				blocked={t.common.session.unavailable}
+			/>
+		);
+	}
+	return <OnlineMatchLoaded match={match} live={match.live} />;
+}
+
+function OnlineMatchLoaded({
+	match,
+	live,
+}: {
+	match: OnlineMatch;
+	live: LiveMatch;
+}) {
+	const { t } = useI18n();
 	const copy = t.games.backgammon;
-	const styles = useThemedStyles(createStyles);
-	const [options, setOptions] = useState<BackgammonOptions>(
-		DEFAULT_BACKGAMMON_OPTIONS,
-	);
-	const match = useOnlineMatch(sessionId, options.autoSwitchTurn);
-	const turn = match.turn;
-	const winner = turn ? getBackgammonWinner(turn.off) : null;
+	const [options, setOptions] = useState<OnlineOptions>(DEFAULT_ONLINE_OPTIONS);
+	const { turn, state } = live;
+	const { session } = live.bundle;
+	const winner = getBackgammonWinner(turn.off);
 
 	const onPlan = (plan: BackgammonMovePlan) => {
 		haptics.moveMade();
-		void match.play(plan);
+		void match.play(plan, { autoSwitchTurn: options.autoSwitchTurn });
 	};
 	const selection = useBoardSelection({
-		state: turn ?? PLACEHOLDER_TURN,
+		state: turn,
 		interactive: match.isMyTurn && !match.busy,
 		autoCombine: options.autoCombine,
 		onPlan,
@@ -71,58 +88,18 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 		if (won) haptics.gameWon();
 	}, [won]);
 
-	const title = (
-		<Stack.Screen options={{ title: copy.waitingRoom.onlineTitle }} />
-	);
-
-	if (match.loading) {
-		return (
-			<>
-				{title}
-				<CenteredState loading message={t.common.errors.loading} />
-			</>
-		);
-	}
-	if (!match.bundle || !turn || !match.bundle.state) {
-		return (
-			<>
-				{title}
-				<CenteredState title={t.common.session.unavailable} />
-			</>
-		);
-	}
-
-	const { session, state } = match.bundle;
 	const viewer: BackgammonColor = match.myColor ?? "white";
-	const opponentId =
-		viewer === "white" ? state.blackParticipantId : state.whiteParticipantId;
-	const opponentSeatName = match.nameOf(opponentId);
-	const opponentName =
-		opponentSeatName ??
-		colorLabel(copy, viewer === "white" ? "black" : "white");
+	const opponentColor = opponent(BACKGAMMON_COLORS, viewer);
+	const opponentSeatName = match.nameOf(occupant(state, opponentColor));
+	const opponentName = opponentSeatName ?? colorLabel(copy, opponentColor);
 	const activeName =
-		match.nameOf(
-			turn.activeColor === "white"
-				? state.whiteParticipantId
-				: state.blackParticipantId,
-		) ?? colorLabel(copy, turn.activeColor);
-	const waiting = match.phase === "waiting";
-
-	const heading = winner
-		? match.myColor
-			? won
-				? copy.waitingRoom.youWon
-				: fmt(copy.waitingRoom.winsTheMatch, { name: opponentName })
-			: fmt(copy.waitingRoom.winsTheMatch, { name: colorLabel(copy, winner) })
-		: match.isMyTurn
-			? t.common.session.yourTurn
-			: fmt(copy.waitingRoom.waitingForPlayerToPlay, { name: activeName });
+		match.nameOf(occupant(state, turn.activeColor)) ??
+		colorLabel(copy, turn.activeColor);
+	const waiting = state.phase === "waiting";
 
 	const hint = match.isMyTurn ? turnHint(turn, selection.selected) : null;
-	const inviteUrl =
-		session.shareToken && hasWebOrigin()
-			? webJoinUrl({ token: session.shareToken })
-			: null;
+	const invite = session.shareToken ? { token: session.shareToken } : null;
+	const inviteUrl = invite && webJoinUrl(invite);
 
 	return (
 		<BoardScreen
@@ -134,7 +111,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 					width={width}
 					showNumbers={options.showNumbers}
 					selected={selection.selected}
-					highlights={match.isMyTurn ? selection.highlights : NO_HIGHLIGHTS}
+					highlights={selection.highlights}
 					onPointPress={selection.tapPoint}
 					onOffPress={selection.tapOff}
 					testID="bg-board"
@@ -150,21 +127,13 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 						<AppText variant="secondary">
 							{copy.waitingRoom.shareToClaimBlackSeat}
 						</AppText>
-						{inviteUrl ? (
+						{invite && inviteUrl ? (
 							<>
-								<View style={styles.qr}>
-									<QrCode
-										value={inviteUrl}
-										size={160}
-										accessibilityLabel={t.common.joinPanel.scanQrLabel}
-									/>
-								</View>
+								<InviteQr value={inviteUrl} size={160} />
 								<Button
 									label={copy.waitingRoom.sendInvite}
 									onPress={() =>
-										void shareInvite(t, t.catalog.backgammon.title, {
-											token: session.shareToken,
-										})
+										void shareInvite(t, t.catalog.backgammon.title, invite)
 									}
 									testID="bg-share-invite"
 								/>
@@ -175,9 +144,22 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 					</View>
 				</Card>
 			) : (
-				<TurnPanel
-					color={winner ?? turn.activeColor}
-					heading={heading}
+				<MatchPanel
+					turn={turn}
+					winner={
+						winner && {
+							color: winner,
+							name: match.myColor ? opponentName : colorLabel(copy, winner),
+							isYou: won,
+						}
+					}
+					heading={
+						match.isMyTurn
+							? t.common.session.yourTurn
+							: fmt(copy.waitingRoom.waitingForPlayerToPlay, {
+									name: activeName,
+								})
+					}
 					message={
 						hint
 							? copy.board[TURN_HINT_MESSAGE[hint]]
@@ -185,37 +167,21 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 								? null
 								: copy.waitingRoom.bothSeatsClaimed
 					}
-					dice={turn.dice}
-					used={turn.used}
-				>
-					{winner && match.myColor ? (
-						<Button
-							label={copy.waitingRoom.rematchLabel}
-							onPress={() => void match.rematch()}
-							busy={match.busy}
-							testID="bg-rematch"
-						/>
-					) : null}
-					{!winner && match.isMyTurn && turn.dice.length === 0 ? (
-						<Button
-							label={copy.board.rollButton}
-							onPress={() => {
-								haptics.valueEntered();
-								void match.roll();
-							}}
-							busy={match.busy}
-							testID="bg-roll"
-						/>
-					) : null}
-					{!winner && match.isMyTurn && canEndBackgammonTurn(turn) ? (
-						<Button
-							label={copy.board.endTurnButton}
-							onPress={() => void match.endTurn()}
-							busy={match.busy}
-							testID="bg-end-turn"
-						/>
-					) : null}
-				</TurnPanel>
+					canAct={match.isMyTurn}
+					busy={match.busy}
+					onRoll={() => void match.roll()}
+					onEndTurn={() => void match.endTurn()}
+					finishedAction={
+						match.myColor ? (
+							<Button
+								label={t.common.match.rematch}
+								onPress={() => void match.rematch()}
+								busy={match.busy}
+								testID="bg-rematch"
+							/>
+						) : null
+					}
+				/>
 			)}
 			<Notice
 				message={
@@ -242,7 +208,7 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 			) : null}
 			<OptionsPanel
 				options={options}
-				keys={OPTION_KEYS}
+				keys={ONLINE_OPTION_KEYS}
 				onChange={(key, value) =>
 					setOptions((current) => ({ ...current, [key]: value }))
 				}
@@ -251,10 +217,8 @@ export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 	);
 }
 
-const createStyles = () =>
-	StyleSheet.create({
-		section: { gap: spacing.md },
-		qr: { alignSelf: "center", borderRadius: radius.sm, overflow: "hidden" },
-		/** Lines up with the text inside the cards above and below. */
-		inset: { paddingHorizontal: spacing.lg },
-	});
+const styles = StyleSheet.create({
+	section: { gap: spacing.md },
+	/** Lines up with the text inside the cards above and below. */
+	inset: { paddingHorizontal: spacing.lg },
+});

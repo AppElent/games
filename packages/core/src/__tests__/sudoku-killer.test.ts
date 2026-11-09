@@ -1,16 +1,21 @@
 import { describe, expect, it } from "vitest";
+import { mulberry32 } from "../random";
 import {
+	emptyGrid,
 	findConflicts,
 	generateSolvedGrid,
-	mulberry32,
 	SUDOKU_CELL_COUNT,
 } from "../sudoku";
+import { createBoardState } from "../sudoku-board";
 import {
+	boardConflictsWithCages,
 	countKillerSolutions,
 	findKillerConflicts,
 	generateKillerCages,
 	generateKillerPuzzle,
+	isBoardSolved,
 	isKillerSolved,
+	killerCageLayout,
 	validateKillerCages,
 } from "../sudoku-killer";
 
@@ -110,5 +115,75 @@ describe("validateKillerCages", () => {
 		}));
 		full[0] = { sum: 10, cells: [0] }; // single cell can't sum to 10
 		expect(validateKillerCages(full)).toBe(false);
+	});
+});
+
+describe("board verdicts", () => {
+	const solution = generateSolvedGrid(mulberry32(5));
+	const cages = generateKillerCages(solution, mulberry32(6));
+
+	it("adds cage conflicts to peer conflicts only when there are cages", () => {
+		const givens = emptyGrid();
+		givens[0] = 5;
+		givens[1] = 5;
+		const board = createBoardState(givens);
+		expect(boardConflictsWithCages(board)).toEqual(new Set([0, 1]));
+
+		const overSum = createBoardState(emptyGrid());
+		overSum.digits[40] = 9;
+		const cage = { sum: 5, cells: [40, 41] };
+		expect(boardConflictsWithCages(overSum)).toEqual(new Set());
+		expect(boardConflictsWithCages(overSum, [cage])).toEqual(new Set([40]));
+	});
+
+	it("calls a board solved when it is complete and no cage objects", () => {
+		const board = createBoardState(solution);
+		expect(isBoardSolved(board)).toBe(true);
+		expect(isBoardSolved(board, cages)).toBe(true);
+		expect(isBoardSolved(board, [{ ...cages[0], sum: cages[0].sum + 1 }])).toBe(
+			false,
+		);
+		expect(isBoardSolved(createBoardState(emptyGrid()))).toBe(false);
+	});
+});
+
+describe("killerCageLayout", () => {
+	it("has nothing to draw without cages", () => {
+		expect(killerCageLayout(undefined)).toBeNull();
+		expect(killerCageLayout([])).toBeNull();
+	});
+
+	it("labels each cage on its first cell and outlines it", () => {
+		const layout = killerCageLayout([
+			{ sum: 7, cells: [0, 1, 9] },
+			{ sum: 3, cells: [10] },
+		]);
+		expect(layout?.sumAt).toEqual(
+			new Map([
+				[0, 7],
+				[10, 3],
+			]),
+		);
+		expect(layout?.byCell.slice(0, 2)).toEqual([0, 0]);
+		expect(layout?.byCell[2]).toBe(-1);
+		expect(layout?.byCell[10]).toBe(1);
+		expect(layout?.edges[0]).toEqual({
+			top: true,
+			bottom: false,
+			left: true,
+			right: false,
+		});
+		expect(layout?.edges[1]).toEqual({
+			top: true,
+			bottom: true,
+			left: false,
+			right: true,
+		});
+		expect(layout?.edges[10]).toEqual({
+			top: true,
+			bottom: true,
+			left: true,
+			right: true,
+		});
 	});
 });

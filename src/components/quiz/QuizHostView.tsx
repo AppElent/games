@@ -1,66 +1,32 @@
+import { summarizeScores } from "@arcadeclub/core/quiz";
 import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { ChevronRight, Eye, Trophy } from "lucide-react";
-import { useEffect, useState } from "react";
 import { GameEndScreen } from "#/components/games/GameEndScreen";
+import { JoinCodePanel } from "#/components/games/JoinCodePanel";
+import { ModerationActions } from "#/components/games/ModerationActions";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { SessionHostControls } from "#/components/games/SessionHostControls";
-import { formatJoinCode } from "#/lib/games/sessions";
+import { useSessionModeration } from "#/components/games/useSessionModeration";
+import { getGameRoute } from "#/lib/games/catalog";
+import { useSeat } from "#/lib/games/seat";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 import { Scoreboard } from "./Scoreboard";
 
-type QuizBundle = {
-	session: {
-		_id: Id<"gameSessions">;
-		title: string;
-		joinCode?: string;
-		hostParticipantId?: Id<"sessionParticipants">;
-		locked?: boolean;
-	};
-	participants: Array<{
-		_id: string;
-		displayName: string;
-		role: "host" | "player" | "watcher";
-		seat?: string;
-		connected: boolean;
-		kickedAt?: number;
-	}>;
-	quizState: {
-		phase: "lobby" | "question" | "reveal" | "scoreboard" | "finished";
-		currentQuestionIndex: number;
-		showCorrectAnswer: boolean;
-	} | null;
-	quizSet: {
-		title: string;
-		questions: Array<{
-			id: string;
-			prompt: string;
-			choices: Array<{ id: string; label: string }>;
-			correctChoiceIds: string[];
-		}>;
-	} | null;
-	answers: Array<{
-		participantId: string;
-		questionId: string;
-		score: number;
-		correct: boolean;
-	}>;
-};
+type QuizBundle = NonNullable<FunctionReturnType<typeof api.quiz.getBundle>>;
 
 export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 	const { messages, locale } = useI18n();
 	const advancePhase = useMutation(api.quiz.advancePhase);
-	const kickParticipant = useMutation(api.sessions.kickParticipant);
-	const transferHost = useMutation(api.sessions.transferHost);
-	const [participantId, setParticipantId] = useState<string>();
-	useEffect(() => {
-		setParticipantId(
-			window.sessionStorage.getItem("arcade-club.hostParticipantId") ??
-				window.sessionStorage.getItem("arcade-club.participantId") ??
-				undefined,
-		);
-	}, []);
+	const participantId = useSeat(bundle.session._id);
+	const { error, run } = useGameAction();
+	const actionFailed = messages.games.quiz.hostView.actionFailed;
+	const moderation = useSessionModeration(
+		bundle.session._id,
+		bundle.session.hostParticipantId,
+	);
 	const state = bundle.quizState;
 	const question = state
 		? bundle.quizSet?.questions[state.currentQuestionIndex]
@@ -76,17 +42,10 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 		bundle.session.hostParticipantId === participantId;
 
 	const finished = state?.phase === "finished";
-	const totals = new Map<string, number>();
-	for (const answer of bundle.answers) {
-		totals.set(
-			answer.participantId,
-			(totals.get(answer.participantId) ?? 0) + answer.score,
-		);
-	}
-	const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]);
-	const winner = ranked.length
+	const leader = summarizeScores(bundle.answers).ranking[0];
+	const winner = leader
 		? bundle.participants.find(
-				(participant) => participant._id === ranked[0][0],
+				(participant) => participant._id === leader.participantId,
 			)
 		: undefined;
 	const phaseLabel = state ? messages.games.quiz.phase[state.phase] : "";
@@ -103,16 +62,7 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 							{bundle.session.title}
 						</h1>
 					</div>
-					<div className="rounded-md border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-right">
-						<span className="block text-xs font-bold uppercase tracking-wide text-cyan-100">
-							{messages.games.quiz.hostView.joinCode}
-						</span>
-						<span className="club-title text-3xl font-bold text-white">
-							{bundle.session.joinCode
-								? formatJoinCode(bundle.session.joinCode)
-								: messages.games.quiz.hostView.joinCodePlaceholder}
-						</span>
-					</div>
+					<JoinCodePanel tone="quiz" joinCode={bundle.session.joinCode} />
 				</div>
 
 				{state?.phase === "lobby" ? (
@@ -181,7 +131,12 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 					<button
 						type="button"
 						className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2.5 font-bold text-slate-950"
-						onClick={() => void advancePhase({ sessionId: bundle.session._id })}
+						onClick={() =>
+							run(
+								() => advancePhase({ sessionId: bundle.session._id }),
+								actionFailed,
+							)
+						}
 					>
 						{state?.phase === "finished" ? (
 							<>
@@ -196,6 +151,7 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 						)}
 					</button>
 				</div>
+				{error ? <p className="mt-3 club-error">{error}</p> : null}
 			</section>
 			<aside className="space-y-4">
 				{finished ? (
@@ -210,7 +166,7 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 						subtitle={
 							winner
 								? fmt(messages.games.quiz.hostView.pointsWon, {
-										points: ranked[0][1],
+										points: leader.score,
 									})
 								: messages.games.quiz.hostView.thanksForPlaying
 						}
@@ -218,49 +174,42 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 							winner
 								? fmt(messages.games.quiz.hostView.shareTextWinner, {
 										name: winner.displayName,
-										points: ranked[0][1],
+										points: leader.score,
 										count: playerCount,
 									})
 								: fmt(messages.games.quiz.hostView.shareTextNoWinner, {
 										count: playerCount,
 									})
 						}
-						newGameRoute="/quiz/new"
+						newGameRoute={getGameRoute("live-quiz")}
 						newGameLabel={messages.games.quiz.hostView.hostAnotherQuiz}
 					/>
 				) : null}
-				{isHost && bundle.session.hostParticipantId ? (
+				{isHost && moderation ? (
 					<SessionHostControls
-						sessionId={bundle.session._id}
-						hostParticipantId={
-							bundle.session.hostParticipantId as Id<"sessionParticipants">
-						}
+						moderation={moderation}
 						title={bundle.session.title}
 						locked={Boolean(bundle.session.locked)}
 					/>
 				) : null}
 				<ParticipantList
 					participants={bundle.participants}
-					hostControls={
-						isHost && bundle.session.hostParticipantId
-							? {
-									onKick: (targetId) =>
-										void kickParticipant({
-											sessionId: bundle.session._id,
-											hostParticipantId: bundle.session
-												.hostParticipantId as Id<"sessionParticipants">,
-											targetParticipantId:
-												targetId as Id<"sessionParticipants">,
-										}),
-									onTransferHost: (targetId) =>
-										void transferHost({
-											sessionId: bundle.session._id,
-											hostParticipantId: bundle.session
-												.hostParticipantId as Id<"sessionParticipants">,
-											targetParticipantId:
-												targetId as Id<"sessionParticipants">,
-										}),
-								}
+					renderActions={
+						isHost && moderation
+							? (participant) => (
+									<ModerationActions
+										participant={participant}
+										onTransferHost={() =>
+											run(
+												() => moderation.transferHost(participant._id),
+												actionFailed,
+											)
+										}
+										onKick={() =>
+											run(() => moderation.kick(participant._id), actionFailed)
+										}
+									/>
+								)
 							: undefined
 					}
 				/>

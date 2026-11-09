@@ -100,7 +100,6 @@ export const hitster = {
 		packSummaryWithTracks:
 			"{packTitle} pack · first to {target} cards · {count} tracks left",
 		packSummaryNoTracks: "{packTitle} pack · first to {target} cards",
-		joinCodeLabel: "Join code",
 		lobbyInstructionsShared:
 			"Share the join code. Everyone who joins before the start plays on one shared team timeline.",
 		lobbyInstructionsSolo:

@@ -1,20 +1,16 @@
-/**
- * The pass-and-play match as React state, saved to the phone after every
- * change. Dice are rolled here, outside the pure transitions.
- */
-import { rollBackgammonDice } from "@arcadeclub/core/backgammon";
-import { useCallback, useEffect, useState } from "react";
+/** The pass-and-play match as React state, saved to the phone after every change. */
 import {
 	type LocalMatch,
 	type LocalMatchAction,
 	newLocalMatch,
 	reduceLocalMatch,
-} from "./local-match";
+} from "@arcadeclub/core/backgammon-local";
+import { useCallback, useEffect, useState } from "react";
 import { readLocalMatch, writeLocalMatch } from "./local-match-store";
 
 export function useLocalMatch() {
 	const [match, setMatch] = useState<LocalMatch>(
-		() => readLocalMatch() ?? newLocalMatch(),
+		() => readLocalMatch() ?? newLocalMatch(Date.now()),
 	);
 
 	useEffect(() => {
@@ -22,13 +18,13 @@ export function useLocalMatch() {
 	}, [match]);
 
 	const dispatch = useCallback((action: LocalMatchAction) => {
-		const dice = rollBackgammonDice();
-		setMatch((current) => reduceLocalMatch(current, action, dice));
+		setMatch((current) => reduceLocalMatch(current, action, Date.now()));
 	}, []);
 
-	const restart = useCallback(() => {
-		setMatch((current) => newLocalMatch(current.options));
+	/** A restart from the board keeps the options; `startNewLocalMatch` does not. */
+	const restartKeepingOptions = useCallback(() => {
+		setMatch((current) => newLocalMatch(Date.now(), current.options));
 	}, []);
 
-	return { match, dispatch, restart };
+	return { match, dispatch, restartKeepingOptions };
 }

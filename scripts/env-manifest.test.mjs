@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	CONSUMERS,
+	CONVEX_DEPLOYMENTS,
 	destinationFor,
 	ENTRIES,
 	ENV_CONFIG,
@@ -12,12 +13,7 @@ const byKey = (key) => ENTRIES.find((entry) => entry.key === key);
 
 describe("Arcade Club environment routing", () => {
 	it("uses the app's real environment and provider identities", () => {
-		expect(ENVIRONMENTS).toEqual([
-			"local",
-			"preview",
-			"dev",
-			"production",
-		]);
+		expect(ENVIRONMENTS).toEqual(["local", "preview", "dev", "production"]);
 		expect(ENV_CONFIG.source.paths).toEqual(["/", "/arcade-club"]);
 		expect(ENV_CONFIG.source.environments).toEqual({
 			local: "dev",
@@ -29,11 +25,11 @@ describe("Arcade Club environment routing", () => {
 		expect(ENV_CONFIG.github.repository).toBe("AppElent/games");
 		expect(destinationFor("convex-functions", "dev")).toMatchObject({
 			kind: "convex",
-			deployment: "zany-parakeet-507",
+			deployment: CONVEX_DEPLOYMENTS.dev,
 		});
 		expect(destinationFor("convex-functions", "production")).toMatchObject({
 			kind: "convex",
-			deployment: "chatty-ram-217",
+			deployment: CONVEX_DEPLOYMENTS.production,
 		});
 	});
 
@@ -156,21 +152,34 @@ describe("Arcade Club environment routing", () => {
 				placement.entry.key.startsWith("sentry"),
 			);
 			expect(sentry.every((placement) => placement.entry.optional)).toBe(true);
-			expect(
-				sentry.filter((placement) => placement.entry.secret),
-			).toEqual([
-				...(environment === "local" ? [expect.objectContaining({
-					name: "SENTRY_AUTH_TOKEN", consumer: "local-tooling",
-					destination: { kind: "file", path: ".env.local" },
-				})] : []),
-				...(environment === "preview" ? [expect.objectContaining({
-					name: "SENTRY_AUTH_TOKEN", consumer: "workflow",
-					destination: { kind: "github", scope: "repo" },
-				})] : []),
-				...(environment === "production" ? [expect.objectContaining({
-					name: "SENTRY_AUTH_TOKEN", consumer: "workflow",
-					destination: { kind: "github", scope: "production" },
-				})] : []),
+			expect(sentry.filter((placement) => placement.entry.secret)).toEqual([
+				...(environment === "local"
+					? [
+							expect.objectContaining({
+								name: "SENTRY_AUTH_TOKEN",
+								consumer: "local-tooling",
+								destination: { kind: "file", path: ".env.local" },
+							}),
+						]
+					: []),
+				...(environment === "preview"
+					? [
+							expect.objectContaining({
+								name: "SENTRY_AUTH_TOKEN",
+								consumer: "workflow",
+								destination: { kind: "github", scope: "repo" },
+							}),
+						]
+					: []),
+				...(environment === "production"
+					? [
+							expect.objectContaining({
+								name: "SENTRY_AUTH_TOKEN",
+								consumer: "workflow",
+								destination: { kind: "github", scope: "production" },
+							}),
+						]
+					: []),
 				expect.objectContaining({
 					name: "SENTRY_AUTH_TOKEN",
 					consumer: "eas-tooling",

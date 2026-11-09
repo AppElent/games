@@ -1,10 +1,6 @@
 /** A table for the rummy family: build sets and runs, keep your hand light. */
 import type { CardId } from "@arcadeclub/core/cards/deck";
-import {
-	type CardGameDefinition,
-	type CardGameId,
-	resolvedRules,
-} from "@arcadeclub/core/cards/engine";
+import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import type { Meld } from "@arcadeclub/core/cards/melds";
 import type { RummyView } from "@arcadeclub/core/cards/rummy";
 import {
@@ -129,7 +125,7 @@ export function RummyTable({
 	view,
 	controls,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	table: CardTableBundle;
 	view: RummyView;
 	controls: CardTableControls;
@@ -157,12 +153,11 @@ export function RummyTable({
 		meldCard,
 	);
 
-	const resolved = resolvedRules(game, table.options);
-	if (resolved.family !== "rummy") {
+	const rules = familyRules(game, table.options, "rummy");
+	if (!rules) {
 		throw new Error("RummyTable needs a rummy game");
 	}
-	const rules = resolved.rules;
-	const name = cards.games[game.id as CardGameId].name;
+	const name = cards.games[game.id].name;
 	const you = table.you;
 	const turn = rummyTurn({ view, rules, you, selected, staged });
 	const {

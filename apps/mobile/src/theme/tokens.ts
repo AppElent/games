@@ -30,7 +30,6 @@ export const darkColors = {
 	orangeDim: "rgba(251, 146, 60, 0.16)",
 	danger: "#fb7185",
 	dangerDim: "rgba(251, 113, 133, 0.14)",
-	scrim: "rgba(0, 0, 0, 0.6)",
 } as const;
 
 export type Tokens = { readonly [K in keyof typeof darkColors]: string };
@@ -57,7 +56,6 @@ export const lightColors: Tokens = {
 	orangeDim: "rgba(194, 65, 12, 0.10)",
 	danger: "#be123c",
 	dangerDim: "rgba(190, 18, 60, 0.09)",
-	scrim: "rgba(0, 0, 0, 0.4)",
 };
 
 /**
@@ -168,11 +166,6 @@ export const metrics = {
 	contentMaxWidth: 640,
 } as const;
 
-export const motion = {
-	durFast: 150,
-	durBase: 250,
-} as const;
-
 export const opacity = {
 	pressed: 0.7,
 	disabled: 0.45,
@@ -192,7 +185,6 @@ export const type = {
 	label: { fontSize: 13, fontWeight: "700", letterSpacing: 0.6 },
 	caption: { fontSize: 12, fontWeight: "500" },
 	control: { fontSize: 16, fontWeight: "700" },
-	metric: { fontSize: 28, fontWeight: "800" },
 	code: { fontSize: 30, fontWeight: "800", letterSpacing: 6 },
 	cellLarge: { fontSize: 24, fontWeight: "600" },
 	cellMedium: { fontSize: 18, fontWeight: "600" },
@@ -214,7 +206,6 @@ function dynamic(dark: string, light: string): ColorValue {
  * these; content reads `useTokens()`.
  */
 export const chrome = {
-	text: dynamic(darkColors.text, lightColors.text),
 	textMuted: dynamic(darkColors.textMuted, lightColors.textMuted),
 	accent: dynamic(darkColors.accent, lightColors.accent),
 } as const;

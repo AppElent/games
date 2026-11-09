@@ -1,8 +1,10 @@
+import { CARD_ASPECT } from "@arcadeclub/core/cards/art";
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import type { CardEvent } from "@arcadeclub/core/cards/events";
 import {
 	cardTilt,
 	eventsSince,
+	newestSeq,
 	planFlights,
 } from "@arcadeclub/core/cards/table-view";
 import {
@@ -13,6 +15,7 @@ import {
 	useState,
 } from "react";
 import { PlayingCard } from "./PlayingCard";
+import { findCardFace, findZone, isSeatZone, type Zone } from "./zones";
 
 type Spot = { x: number; y: number; width: number };
 type Flight = {
@@ -28,25 +31,28 @@ type Flight = {
 const DURATION_MS = 340;
 const FALLBACK_WIDTH = 40;
 
-function zoneOf(root: HTMLElement, zone: string) {
-	return root.querySelector<HTMLElement>(`[data-zone="${zone}"]`);
-}
-
-function spotOf(root: HTMLElement, zone: string): Spot | null {
-	const element = zoneOf(root, zone);
-	if (!element) {
-		return null;
-	}
+/** Where `element` sits inside `root`, at its own width. */
+function spotIn(root: HTMLElement, element: HTMLElement, width: number): Spot {
 	const base = root.getBoundingClientRect();
 	const rect = element.getBoundingClientRect();
-	const card = zone.startsWith("seat")
-		? null
-		: element.querySelector<HTMLElement>(".pc");
 	return {
 		x: rect.left + rect.width / 2 - base.left,
 		y: rect.top + rect.height / 2 - base.top,
-		width: card?.getBoundingClientRect().width ?? FALLBACK_WIDTH,
+		width,
 	};
+}
+
+function spotOf(root: HTMLElement, zone: Zone): Spot | null {
+	const element = findZone(root, zone);
+	if (!element) {
+		return null;
+	}
+	const card = isSeatZone(zone) ? null : findCardFace(element);
+	return spotIn(
+		root,
+		element,
+		card?.getBoundingClientRect().width ?? FALLBACK_WIDTH,
+	);
 }
 
 function FlightCard({
@@ -56,7 +62,7 @@ function FlightCard({
 	flight: Flight;
 	onDone: (flight: Flight) => void;
 }) {
-	const height = (flight.to.width * 140) / 100;
+	const height = flight.to.width * CARD_ASPECT;
 	return (
 		<div
 			className="flight"
@@ -117,21 +123,30 @@ export function useFlights(
 	layer: ReactNode;
 	landing: boolean;
 	flash: number | null;
-	noteOrigin: (card: CardId, element: HTMLElement) => void;
+	/**
+	 * Runs `move` for a card the player just played from `element`, so its
+	 * flight starts where the card was rather than at the hand's centre.
+	 */
+	playFrom: (
+		card: CardId,
+		element: HTMLElement | null,
+		move: () => void,
+	) => void;
 } {
 	const lastSeq = useRef<number | null>(null);
 	const nextId = useRef(0);
 	const origins = useRef(new Map<CardId, Spot>());
 	const [flights, setFlights] = useState<Flight[]>([]);
 	const [flash, setFlash] = useState<number | null>(null);
-	const newestSeq = events.at(-1)?.seq ?? 0;
+	// An empty log counts as 0, so the first events after it fly.
+	const newest = newestSeq(events) ?? 0;
 
 	useLayoutEffect(() => {
 		const previous = lastSeq.current;
-		lastSeq.current = newestSeq;
+		lastSeq.current = newest;
 		const root = rootRef.current;
 		const quiet = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-		if (previous === null || newestSeq === previous || !root || quiet) {
+		if (previous === null || newest === previous || !root || quiet) {
 			return;
 		}
 		const plan = planFlights(eventsSince(events, previous), {
@@ -166,7 +181,7 @@ export function useFlights(
 		if (planned.length > 0) {
 			setFlights((current) => [...current, ...planned]);
 		}
-	}, [newestSeq, events, you, seatCount, rootRef, meldCard]);
+	}, [newest, events, you, seatCount, rootRef, meldCard]);
 
 	useLayoutEffect(() => {
 		if (flash === null) {
@@ -183,18 +198,15 @@ export function useFlights(
 	return {
 		landing: flights.some((flight) => flight.toDiscard),
 		flash,
-		noteOrigin: (card, element) => {
+		playFrom: (card, element, move) => {
 			const root = rootRef.current;
-			if (!root) {
-				return;
+			if (root && element) {
+				origins.current.set(
+					card,
+					spotIn(root, element, element.getBoundingClientRect().width),
+				);
 			}
-			const base = root.getBoundingClientRect();
-			const rect = element.getBoundingClientRect();
-			origins.current.set(card, {
-				x: rect.left + rect.width / 2 - base.left,
-				y: rect.top + rect.height / 2 - base.top,
-				width: rect.width,
-			});
+			move();
 		},
 		layer: (
 			<div className="flight-layer" aria-hidden="true">

@@ -1,99 +1,56 @@
-import { v } from "convex/values";
 import {
 	applyConnectFourDrop,
+	CONNECT_FOUR_COLORS,
 	createConnectFourBoard,
 	getConnectFourWinner,
-	switchConnectFourColor,
-	type ConnectFourColor,
-} from "../src/lib/games/connect-four";
-import type { Doc, Id } from "./_generated/dataModel";
+} from "@arcadeclub/core/connect-four";
+import { opponent } from "@arcadeclub/core/duel";
+import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { completeSession, reopenSession } from "./lib/completion";
-import { gameError, toGameError } from "./lib/errors";
+import {
+	CONNECT_FOUR_DUEL,
+	finishDuel,
+	rematchDuel,
+	requireResign,
+	requireTurn,
+	seatHost,
+} from "./lib/duel";
+import { rules } from "./lib/errors";
+import { loadBundle, loadGame, startSession } from "./lib/gameSession";
+import {
+	createdSession,
+	createdSessionValidator,
+	hostedSessionArgs,
+	hostGame,
+} from "./lib/hostedSession";
 
-async function getState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
-	const session = await ctx.db.get(sessionId);
-	if (!session || session.gameType !== "connect-four") {
-		throw gameError("gameNotFound");
-	}
-	const state = await ctx.db
-		.query("connectFourStates")
-		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-		.unique();
-	if (!state) {
-		throw gameError("gameNotFound");
-	}
-	return { session, state };
-}
-
-function getParticipantColor(
-	state: Doc<"connectFourStates">,
-	participantId: Id<"sessionParticipants">,
-): ConnectFourColor {
-	if (state.redParticipantId === participantId) {
-		return "red";
-	}
-	if (state.yellowParticipantId === participantId) {
-		return "yellow";
-	}
-	throw gameError("notSeated");
-}
-
-async function finishGame(
+async function insertState(
 	ctx: MutationCtx,
-	state: Doc<"connectFourStates">,
-	outcome: "connect" | "draw" | "resignation",
-	winner: ConnectFourColor | undefined,
-	now: number,
+	sessionId: Id<"gameSessions">,
+	hostParticipantId: Id<"sessionParticipants">,
 ) {
-	const winnerParticipantId =
-		winner === "red"
-			? state.redParticipantId
-			: winner === "yellow"
-				? state.yellowParticipantId
-				: undefined;
-	await ctx.db.patch(state._id, {
-		phase: "finished",
-		resultOutcome: outcome,
-		resultWinner: winner,
-		winnerParticipantId,
+	const hostSeat = await seatHost(ctx, CONNECT_FOUR_DUEL, hostParticipantId);
+	const now = Date.now();
+	return await ctx.db.insert("connectFourStates", {
+		sessionId,
+		phase: "waiting",
+		...hostSeat,
+		board: createConnectFourBoard(),
+		activeColor: "red",
+		createdAt: now,
 		updatedAt: now,
 	});
-	await completeSession(ctx, state.sessionId, {
-		endedAt: now,
-		winnerParticipantIds: winnerParticipantId ? [winnerParticipantId] : [],
-	});
 }
 
-export const createState = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		hostParticipantId: v.id("sessionParticipants"),
-	},
+export const create = mutation({
+	args: hostedSessionArgs,
+	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session || session.gameType !== "connect-four") {
-			throw gameError("sessionNotFound");
-		}
-		const existing = await ctx.db
-			.query("connectFourStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
-		if (existing) {
-			return existing._id;
-		}
-		await ctx.db.patch(args.hostParticipantId, { seat: "red" });
-		const now = Date.now();
-		return await ctx.db.insert("connectFourStates", {
-			sessionId: args.sessionId,
-			phase: "waiting",
-			redParticipantId: args.hostParticipantId,
-			board: createConnectFourBoard(),
-			activeColor: "red",
-			createdAt: now,
-			updatedAt: now,
-		});
+		const hosted = await hostGame(ctx, "connect-four", args);
+		await insertState(ctx, hosted.session._id, hosted.participantId);
+		return createdSession(hosted);
 	},
 });
 
@@ -104,45 +61,36 @@ export const drop = mutation({
 		column: v.number(),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await getState(ctx, args.sessionId);
-		if (state.phase === "finished") {
-			throw gameError("gameAlreadyFinished");
-		}
-		if (!state.redParticipantId || !state.yellowParticipantId) {
-			throw gameError("waitingForOpponent");
-		}
-		const color = getParticipantColor(state, args.participantId);
-		if (state.activeColor !== color) {
-			throw gameError("notYourTurn");
-		}
-		let next: ReturnType<typeof applyConnectFourDrop>;
-		try {
-			next = applyConnectFourDrop(state.board, color, args.column);
-		} catch (caught) {
-			throw toGameError(caught);
-		}
+		const { session, state } = await loadGame(
+			ctx,
+			"connect-four",
+			args.sessionId,
+		);
+		const color = requireTurn(CONNECT_FOUR_DUEL, state, args.participantId);
+		const next = rules(() =>
+			applyConnectFourDrop(state.board, color, args.column),
+		);
 		const now = Date.now();
 		const winner = getConnectFourWinner(next.board);
 		await ctx.db.patch(state._id, {
 			phase: "active",
 			board: next.board,
-			activeColor: switchConnectFourColor(color),
+			activeColor: opponent(CONNECT_FOUR_COLORS, color),
 			updatedAt: now,
 		});
-		if (session.status === "lobby") {
-			await ctx.db.patch(args.sessionId, { status: "active", startedAt: now });
-		}
+		await startSession(ctx, session, now);
 		if (winner) {
-			const fresh = await ctx.db.get(state._id);
-			if (fresh) {
-				await finishGame(
-					ctx,
-					fresh,
-					winner === "draw" ? "draw" : "connect",
-					winner === "draw" ? undefined : winner,
-					now,
-				);
-			}
+			const winningColor = winner === "draw" ? undefined : winner;
+			await finishDuel(
+				ctx,
+				state,
+				winningColor,
+				{
+					resultOutcome: winner === "draw" ? "draw" : "connect",
+					resultWinner: winningColor,
+				},
+				now,
+			);
 		}
 	},
 });
@@ -153,16 +101,13 @@ export const resign = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getState(ctx, args.sessionId);
-		if (state.phase === "finished") {
-			throw gameError("gameAlreadyFinished");
-		}
-		const color = getParticipantColor(state, args.participantId);
-		await finishGame(
+		const { state } = await loadGame(ctx, "connect-four", args.sessionId);
+		const winner = requireResign(CONNECT_FOUR_DUEL, state, args.participantId);
+		await finishDuel(
 			ctx,
 			state,
-			"resignation",
-			switchConnectFourColor(color),
+			winner,
+			{ resultOutcome: "resignation", resultWinner: winner },
 			Date.now(),
 		);
 	},
@@ -174,51 +119,26 @@ export const rematch = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await getState(ctx, args.sessionId);
-		if (state.phase !== "finished") {
-			throw gameError("currentGameNotFinished");
-		}
-		getParticipantColor(state, args.participantId);
-		const now = Date.now();
-		// Swap colors for the rematch.
-		const red = state.yellowParticipantId;
-		const yellow = state.redParticipantId;
-		if (red) {
-			await ctx.db.patch(red, { seat: "red" });
-		}
-		if (yellow) {
-			await ctx.db.patch(yellow, { seat: "yellow" });
-		}
-		await ctx.db.patch(state._id, {
-			phase: "active",
-			redParticipantId: red,
-			yellowParticipantId: yellow,
-			board: createConnectFourBoard(),
-			activeColor: "red",
-			resultOutcome: undefined,
-			resultWinner: undefined,
-			winnerParticipantId: undefined,
-			updatedAt: now,
-		});
-		await reopenSession(ctx, args.sessionId);
+		const { state } = await loadGame(ctx, "connect-four", args.sessionId);
+		await rematchDuel(
+			ctx,
+			CONNECT_FOUR_DUEL,
+			state,
+			args.participantId,
+			() => ({
+				phase: "active",
+				board: createConnectFourBoard(),
+				activeColor: "red",
+				resultOutcome: undefined,
+				resultWinner: undefined,
+			}),
+		);
 	},
 });
 
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
-			return null;
-		}
-		const participants = await ctx.db
-			.query("sessionParticipants")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.collect();
-		const state = await ctx.db
-			.query("connectFourStates")
-			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-			.unique();
-		return { session, participants, state };
+		return await loadBundle(ctx, "connect-four", args.sessionId);
 	},
 });

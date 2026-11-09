@@ -1,11 +1,10 @@
-import type {
-	CardGameDefinition,
-	CardGameId,
-} from "@arcadeclub/core/cards/engine";
+import type { CardGame } from "@arcadeclub/core/cards/engine";
 import { seatName } from "@arcadeclub/core/cards/table-view";
+import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { Bot, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
+import { sessionInviteUrl } from "#/lib/games/invite";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { CardsPage } from "./Chrome";
 import { RulesSheet } from "./RulesSheet";
@@ -17,22 +16,20 @@ export function Lobby({
 	table,
 	controls,
 }: {
-	game: CardGameDefinition;
+	game: CardGame;
 	table: CardTableBundle;
 	controls: CardTableControls;
 }) {
 	const { locale } = useI18n();
-	const cards = useMessages().games.cards;
-	const text = cards.games[game.id as CardGameId];
+	const messages = useMessages();
+	const cards = messages.games.cards;
+	const text = cards.games[game.id];
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const code = table.session.joinCode ?? "";
 	const optionText = text.options as Record<string, { label: string }>;
 	const missing = Math.max(0, game.players.min - table.seats.length);
 	const canAdd = table.seats.length < game.players.max;
-	const url =
-		typeof window === "undefined"
-			? ""
-			: `${window.location.origin}/join?code=${code}`;
+	const url = sessionInviteUrl({ joinCode: code });
 
 	return (
 		<CardsPage
@@ -49,7 +46,7 @@ export function Lobby({
 			{table.you === null && canAdd ? (
 				<div className="cards-panel mb-4 flex flex-wrap items-center gap-3 p-4">
 					<p className="min-w-0 flex-1 text-sm">{cards.lobby.joinPrompt}</p>
-					<a href={`/join?code=${code}`} className="btn-gold">
+					<a href={buildInviteUrl("", { code })} className="btn-gold">
 						{cards.lobby.joinButton}
 					</a>
 				</div>
@@ -62,7 +59,7 @@ export function Lobby({
 							{code}
 						</p>
 					</section>
-					<QrSharePanel url={url} label={cards.lobby.inviteLabel} />
+					<QrSharePanel url={url} label={messages.common.room.invitePlayers} />
 				</div>
 				<section className="cards-panel flex flex-col gap-3 p-5">
 					<div className="flex items-baseline justify-between gap-2">

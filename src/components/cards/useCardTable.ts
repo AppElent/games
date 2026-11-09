@@ -44,9 +44,7 @@ export function useCardTable(sessionId: Id<"gameSessions">) {
 		hydrated
 			? {
 					sessionId,
-					participantId: seat?.participantId as
-						| Id<"sessionParticipants">
-						| undefined,
+					participantId: seat?.participantId,
 					seatSecret: seat?.seatSecret,
 				}
 			: "skip",
@@ -68,7 +66,7 @@ export function useCardTable(sessionId: Id<"gameSessions">) {
 	const creds = seat
 		? {
 				sessionId,
-				participantId: seat.participantId as Id<"sessionParticipants">,
+				participantId: seat.participantId,
 				seatSecret: seat.seatSecret,
 			}
 		: null;

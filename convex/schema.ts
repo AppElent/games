@@ -1,21 +1,55 @@
+import {
+	CHESS_COLORS,
+	CHESS_OUTCOMES,
+	CHESS_PHASES,
+	CHESS_TIME_CONTROL_IDS,
+} from "@arcadeclub/chess/enums";
+import {
+	BACKGAMMON_COLORS,
+	BACKGAMMON_MOVE_TYPES,
+	BACKGAMMON_PHASES,
+} from "@arcadeclub/core/backgammon";
+import { BLUFF_PHASES } from "@arcadeclub/core/bluff-dice";
+import { CARD_TABLE_STATUSES } from "@arcadeclub/core/cards/table";
+import {
+	CONNECT_FOUR_CELLS,
+	CONNECT_FOUR_COLORS,
+	CONNECT_FOUR_OUTCOMES,
+	CONNECT_FOUR_PHASES,
+} from "@arcadeclub/core/connect-four";
+import { CONTENT_DRAFT_KINDS } from "@arcadeclub/core/content-drafts";
+import { AUTH_POLICIES, GAME_TYPES, JOIN_MODES } from "@arcadeclub/core/games";
+import {
+	HITSTER_MODES,
+	HITSTER_PHASES,
+	HITSTER_PLAYBACK_MODES,
+} from "@arcadeclub/core/hitster";
+import { QUIZ_PHASES } from "@arcadeclub/core/quiz";
+import {
+	COMPLETED_REASONS,
+	PARTICIPANT_ROLES,
+	SESSION_STATUSES,
+} from "@arcadeclub/core/sessions";
+import {
+	SIGNAL_CARD_ROLES,
+	SIGNAL_PHASES,
+	SIGNAL_TEAMS,
+} from "@arcadeclub/core/signal-words";
+import {
+	SUDOKU_DIFFICULTIES,
+	SUDOKU_SOURCES,
+	SUDOKU_STATUSES,
+	SUDOKU_VARIANTS,
+} from "@arcadeclub/core/sudoku";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { literals } from "./lib/validators";
 
-export const gameTypeValidator = v.union(
-	v.literal("live-quiz"),
-	v.literal("backgammon"),
-	v.literal("sudoku"),
-	v.literal("chess"),
-	v.literal("hitster"),
-	v.literal("word-links"),
-	v.literal("connect-four"),
-	v.literal("signal-words"),
-	v.literal("bluff-dice"),
-	v.literal("squad-surge"),
-	v.literal("card-games"),
-);
+export const gameTypeValidator = literals(GAME_TYPES);
 
-export const cardSeatValidator = v.object({
+export const contentDraftKindValidator = literals(CONTENT_DRAFT_KINDS);
+
+const cardSeatValidator = v.object({
 	/** Empty for computer players, who only have a `botIndex`. */
 	participantId: v.optional(v.id("sessionParticipants")),
 	/** Proves a human owns this seat. Never returned by a query. */
@@ -25,98 +59,39 @@ export const cardSeatValidator = v.object({
 	autopilot: v.boolean(),
 });
 
-export const bluffPhaseValidator = v.union(
-	v.literal("lobby"),
-	v.literal("claim"),
-	v.literal("finished"),
-);
+const bluffPhaseValidator = literals(BLUFF_PHASES);
 
-export const bluffClaimValidator = v.object({
+const bluffClaimValidator = v.object({
 	quantity: v.number(),
 	face: v.number(),
 	byParticipantId: v.id("sessionParticipants"),
 });
 
-export const signalTeamValidator = v.union(
-	v.literal("red"),
-	v.literal("blue"),
-);
+export const signalTeamValidator = literals(SIGNAL_TEAMS);
 
-export const signalRoleValidator = v.union(
-	v.literal("red"),
-	v.literal("blue"),
-	v.literal("neutral"),
-	v.literal("trap"),
-);
+const signalRoleValidator = literals(SIGNAL_CARD_ROLES);
 
-export const signalPhaseValidator = v.union(
-	v.literal("lobby"),
-	v.literal("clue"),
-	v.literal("guess"),
-	v.literal("finished"),
-);
+const signalPhaseValidator = literals(SIGNAL_PHASES);
 
-export const connectFourColorValidator = v.union(
-	v.literal("red"),
-	v.literal("yellow"),
-);
+const connectFourColorValidator = literals(CONNECT_FOUR_COLORS);
 
-export const connectFourCellValidator = v.union(
-	v.literal("red"),
-	v.literal("yellow"),
-	v.literal("empty"),
-);
+const connectFourCellValidator = literals(CONNECT_FOUR_CELLS);
 
-export const connectFourPhaseValidator = v.union(
-	v.literal("waiting"),
-	v.literal("active"),
-	v.literal("finished"),
-);
+const connectFourPhaseValidator = literals(CONNECT_FOUR_PHASES);
 
-export const connectFourOutcomeValidator = v.union(
-	v.literal("connect"),
-	v.literal("draw"),
-	v.literal("resignation"),
-);
+const connectFourOutcomeValidator = literals(CONNECT_FOUR_OUTCOMES);
 
-export const joinModeValidator = v.union(
-	v.literal("room"),
-	v.literal("challenge"),
-	v.literal("solo"),
-);
+export const joinModeValidator = literals(JOIN_MODES);
 
-export const authPolicyValidator = v.union(
-	v.literal("guestAllowed"),
-	v.literal("signedInRequired"),
-	v.literal("hostChoice"),
-);
+export const authPolicyValidator = literals(AUTH_POLICIES);
 
-export const sessionStatusValidator = v.union(
-	v.literal("lobby"),
-	v.literal("active"),
-	v.literal("completed"),
-	v.literal("cancelled"),
-);
+const sessionStatusValidator = literals(SESSION_STATUSES);
 
-export const completedReasonValidator = v.union(
-	v.literal("finished"),
-	v.literal("cancelled"),
-	v.literal("abandoned"),
-);
+const completedReasonValidator = literals(COMPLETED_REASONS);
 
-export const participantRoleValidator = v.union(
-	v.literal("host"),
-	v.literal("player"),
-	v.literal("watcher"),
-);
+const participantRoleValidator = literals(PARTICIPANT_ROLES);
 
-export const quizPhaseValidator = v.union(
-	v.literal("lobby"),
-	v.literal("question"),
-	v.literal("reveal"),
-	v.literal("scoreboard"),
-	v.literal("finished"),
-);
+const quizPhaseValidator = literals(QUIZ_PHASES);
 
 export const quizQuestionValidator = v.object({
 	id: v.string(),
@@ -132,85 +107,43 @@ export const quizQuestionValidator = v.object({
 	points: v.number(),
 });
 
-export const backgammonColorValidator = v.union(
-	v.literal("white"),
-	v.literal("black"),
-);
+const backgammonColorValidator = literals(BACKGAMMON_COLORS);
 
-export const backgammonPhaseValidator = v.union(
-	v.literal("waiting"),
-	v.literal("ready"),
-	v.literal("active"),
-	v.literal("finished"),
-);
+const backgammonPhaseValidator = literals(BACKGAMMON_PHASES);
 
-export const backgammonMoveTypeValidator = v.union(
-	v.literal("roll"),
-	v.literal("move"),
-	v.literal("endTurn"),
-);
+const backgammonMoveTypeValidator = literals(BACKGAMMON_MOVE_TYPES);
 
-export const backgammonPointValidator = v.object({
+const backgammonPointValidator = v.object({
 	point: v.number(),
 	color: v.optional(backgammonColorValidator),
 	count: v.number(),
 });
 
-export const backgammonCountersValidator = v.object({
+const backgammonCountersValidator = v.object({
 	white: v.number(),
 	black: v.number(),
 });
 
-export const sudokuDifficultyValidator = v.union(
-	v.literal("easy"),
-	v.literal("medium"),
-	v.literal("hard"),
-	v.literal("expert"),
-);
+export const sudokuDifficultyValidator = literals(SUDOKU_DIFFICULTIES);
 
-export const sudokuSourceValidator = v.union(
-	v.literal("generated"),
-	v.literal("scan"),
-);
+export const sudokuSourceValidator = literals(SUDOKU_SOURCES);
 
-export const sudokuStatusValidator = v.union(
-	v.literal("active"),
-	v.literal("paused"),
-	v.literal("completed"),
-);
+const sudokuStatusValidator = literals(SUDOKU_STATUSES);
 
-export const sudokuVariantValidator = v.union(
-	v.literal("classic"),
-	v.literal("killer"),
-	v.literal("binary"),
-);
+export const sudokuVariantValidator = literals(SUDOKU_VARIANTS);
 
 export const sudokuCageValidator = v.object({
 	sum: v.number(),
 	cells: v.array(v.number()),
 });
 
-export const hitsterModeValidator = v.union(
-	v.literal("instant"),
-	v.literal("original"),
-	v.literal("pro"),
-	v.literal("expert"),
-	v.literal("coop"),
-);
+export const hitsterModeValidator = literals(HITSTER_MODES);
 
-export const hitsterPhaseValidator = v.union(
-	v.literal("lobby"),
-	v.literal("nowPlaying"),
-	v.literal("reveal"),
-	v.literal("finished"),
-);
+const hitsterPhaseValidator = literals(HITSTER_PHASES);
 
-export const hitsterPlaybackModeValidator = v.union(
-	v.literal("hostDevice"),
-	v.literal("preview"),
-);
+export const hitsterPlaybackModeValidator = literals(HITSTER_PLAYBACK_MODES);
 
-export const hitsterGuessValidator = v.object({
+const hitsterGuessValidator = v.object({
 	participantId: v.id("sessionParticipants"),
 	dropIndex: v.number(),
 	artistGuess: v.optional(v.string()),
@@ -219,18 +152,18 @@ export const hitsterGuessValidator = v.object({
 	submittedAt: v.number(),
 });
 
-export const hitsterTimelineValidator = v.object({
+const hitsterTimelineValidator = v.object({
 	// Undefined participantId marks the shared cooperative timeline.
 	participantId: v.optional(v.id("sessionParticipants")),
 	cardIds: v.array(v.string()),
 });
 
-export const hitsterTokensValidator = v.object({
+const hitsterTokensValidator = v.object({
 	participantId: v.id("sessionParticipants"),
 	tokens: v.number(),
 });
 
-export const hitsterRecapValidator = v.object({
+const hitsterRecapValidator = v.object({
 	roundNumber: v.number(),
 	cardId: v.string(),
 	activeParticipantId: v.id("sessionParticipants"),
@@ -255,32 +188,13 @@ export const hitsterRecapValidator = v.object({
 	),
 });
 
-export const chessColorValidator = v.union(
-	v.literal("white"),
-	v.literal("black"),
-);
+const chessColorValidator = literals(CHESS_COLORS);
 
-export const chessPhaseValidator = v.union(
-	v.literal("waiting"),
-	v.literal("active"),
-	v.literal("finished"),
-);
+const chessPhaseValidator = literals(CHESS_PHASES);
 
-export const chessTimeControlValidator = v.union(
-	v.literal("untimed"),
-	v.literal("10+0"),
-);
+export const chessTimeControlValidator = literals(CHESS_TIME_CONTROL_IDS);
 
-export const chessOutcomeValidator = v.union(
-	v.literal("checkmate"),
-	v.literal("timeout"),
-	v.literal("resignation"),
-	v.literal("stalemate"),
-	v.literal("insufficientMaterial"),
-	v.literal("threefoldRepetition"),
-	v.literal("fiftyMoveRule"),
-	v.literal("drawAgreed"),
-);
+const chessOutcomeValidator = literals(CHESS_OUTCOMES);
 
 export default defineSchema({
 	gameSessions: defineTable({
@@ -305,9 +219,7 @@ export default defineSchema({
 		locked: v.optional(v.boolean()),
 	})
 		.index("by_joinCode", ["joinCode"])
-		.index("by_shareToken", ["shareToken"])
-		.index("by_hostUser", ["hostUserId"])
-		.index("by_game_status", ["gameType", "status"]),
+		.index("by_shareToken", ["shareToken"]),
 
 	sessionParticipants: defineTable({
 		sessionId: v.id("gameSessions"),
@@ -321,18 +233,12 @@ export default defineSchema({
 		kickedAt: v.optional(v.number()),
 	})
 		.index("by_session", ["sessionId"])
-		.index("by_session_seat", ["sessionId", "seat"])
-		.index("by_user", ["userId"])
-		.index("by_guest", ["guestId"]),
+		.index("by_user", ["userId"]),
 
 	contentDrafts: defineTable({
 		ownerUserId: v.string(),
 		gameType: gameTypeValidator,
-		kind: v.union(
-			v.literal("word-links-puzzle"),
-			v.literal("signal-words-pack"),
-			v.literal("quiz-set"),
-		),
+		kind: contentDraftKindValidator,
 		title: v.string(),
 		// JSON-encoded draft payload; validated before approval.
 		payload: v.string(),
@@ -343,9 +249,7 @@ export default defineSchema({
 		),
 		validationErrors: v.array(v.string()),
 		reviewedAt: v.optional(v.number()),
-	})
-		.index("by_owner", ["ownerUserId"])
-		.index("by_status", ["status"]),
+	}).index("by_owner", ["ownerUserId"]),
 
 	quizSets: defineTable({
 		ownerUserId: v.optional(v.string()),
@@ -362,9 +266,7 @@ export default defineSchema({
 		currentQuestionIndex: v.number(),
 		questionStartedAt: v.optional(v.number()),
 		showCorrectAnswer: v.boolean(),
-	})
-		.index("by_session", ["sessionId"])
-		.index("by_quizSet", ["quizSetId"]),
+	}).index("by_session", ["sessionId"]),
 
 	liveQuizAnswers: defineTable({
 		sessionId: v.id("gameSessions"),
@@ -376,7 +278,6 @@ export default defineSchema({
 		answeredAt: v.number(),
 	})
 		.index("by_session", ["sessionId"])
-		.index("by_session_question", ["sessionId", "questionId"])
 		.index("by_participant", ["participantId"]),
 
 	backgammonGameStates: defineTable({
@@ -393,11 +294,7 @@ export default defineSchema({
 		winnerParticipantId: v.optional(v.id("sessionParticipants")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
-	})
-		.index("by_session", ["sessionId"])
-		.index("by_white", ["whiteParticipantId"])
-		.index("by_black", ["blackParticipantId"])
-		.index("by_phase", ["phase"]),
+	}).index("by_session", ["sessionId"]),
 
 	sudokuStates: defineTable({
 		sessionId: v.id("gameSessions"),
@@ -509,11 +406,7 @@ export default defineSchema({
 		gameId: v.string(),
 		options: v.array(v.string()),
 		seats: v.array(cardSeatValidator),
-		status: v.union(
-			v.literal("lobby"),
-			v.literal("playing"),
-			v.literal("finished"),
-		),
+		status: literals(CARD_TABLE_STATUSES),
 		// Engine state, including every hand: read it only through viewCardGame.
 		// Its shape belongs to the rule family, so Convex cannot validate it here.
 		game: v.optional(v.any()),
@@ -564,7 +457,5 @@ export default defineSchema({
 		to: v.optional(v.union(v.number(), v.literal("off"))),
 		dice: v.array(v.number()),
 		createdAt: v.number(),
-	})
-		.index("by_session", ["sessionId"])
-		.index("by_participant", ["participantId"]),
+	}).index("by_session", ["sessionId"]),
 });

@@ -14,9 +14,8 @@ function QuizSetNewPage() {
 	return (
 		<FullscreenGamePage
 			title={messages.games.quiz.sets.newSetTitle}
-			maxWidthClassName="max-w-3xl"
+			kicker={messages.catalog["live-quiz"].title}
 		>
-			<p className="club-kicker mb-2">{messages.catalog["live-quiz"].title}</p>
 			<h1 className="club-title mb-6 text-4xl font-bold text-white">
 				{messages.games.quiz.sets.newSetTitle}
 			</h1>

@@ -10,7 +10,7 @@ import {
 	hasLegalBackgammonMove,
 } from "@arcadeclub/core/backgammon";
 
-export type TurnHint =
+type TurnHint =
 	| "rollPrompt"
 	| "turnDone"
 	| "noMoves"

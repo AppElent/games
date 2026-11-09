@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDeck, parseCard, RANKS, type Random } from "../cards/deck";
+import { buildDeck, parseCard, RANKS } from "../cards/deck";
 import {
 	applyCardAction,
 	botMove,
@@ -38,8 +38,9 @@ import {
 	type SheddingState,
 } from "../cards/shedding";
 import { GameRuleError } from "../errors";
+import type { Rng } from "../random";
 
-function seeded(seed: number): Random {
+function seeded(seed: number): Rng {
 	let value = seed;
 	return () => {
 		value = (value * 1664525 + 1013904223) % 4294967296;

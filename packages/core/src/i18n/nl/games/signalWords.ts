@@ -1,10 +1,6 @@
 import type { signalWords as enSignalWords } from "../../en/games/signalWords";
 
 export const signalWords = {
-	loading: {
-		kicker: "Klaarzetten",
-		heading: "Kamer wordt geladen",
-	},
 	teams: {
 		nameRed: "Rood",
 		nameBlue: "Blauw",
@@ -42,7 +38,6 @@ export const signalWords = {
 		passTurn: "Beurt doorgeven",
 		passError: "Kon beurt niet doorgeven",
 		playAgain: "Opnieuw spelen (nieuw bord)",
-		rematchError: "Kon rematch niet starten",
 	},
 	clueForm: {
 		label: "Hint van één woord",
@@ -50,9 +45,6 @@ export const signalWords = {
 		countLabel: "Aantal",
 		submit: "Hint versturen",
 		error: "Kon hint niet versturen",
-	},
-	share: {
-		invitePlayers: "Spelers uitnodigen",
 	},
 	howToPlay: {
 		heading: "Hoe te spelen",

@@ -9,24 +9,27 @@ import {
 	getMoveHighlights,
 	planBackgammonMove,
 } from "@arcadeclub/core/backgammon";
+import type {
+	BackgammonOptions,
+	OnlineOptions,
+} from "@arcadeclub/core/backgammon-local";
 import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 
 /**
- * Backgammon board from the Claude Design handoff, converted to a controlled
- * component: all rules live in #/lib/games/backgammon and the game state is
+ * The backgammon board as a controlled component: all rules live in
+ * @arcadeclub/core/backgammon and the game state is
  * owned by the caller (local hook or Convex bundle). Supports click and drag
  * (mouse + touch) and combined two-die moves.
  */
 
-export type BackgammonBoardOptions = {
-	showNumbers: boolean;
-	autoRoll: boolean;
-	autoSwitchTurn: boolean;
-	autoCombine: boolean;
-};
+/** Auto-roll is local play only; online games never offer it. */
+export type BackgammonBoardOptions = OnlineOptions & Partial<BackgammonOptions>;
 
-export type BackgammonOptionKey = keyof BackgammonBoardOptions;
+export type BackgammonOptionKey = keyof BackgammonOptions;
+
+/** The board's natural width: screens scale it down from here to fit. */
+export const BACKGAMMON_DESIGN_WIDTH = 1060;
 
 type Props = {
 	state: BackgammonTurnState;
@@ -36,20 +39,23 @@ type Props = {
 	canEndTurn: boolean;
 	options: BackgammonBoardOptions;
 	/** Which options appear in the gear menu; menu hidden when empty. */
-	optionKeys?: BackgammonOptionKey[];
+	optionKeys?: readonly BackgammonOptionKey[];
 	onToggleOption?: (key: BackgammonOptionKey) => void;
 	onPlan: (plan: BackgammonMovePlan) => void | Promise<void>;
-	onRoll?: () => void | Promise<void>;
-	onEndTurn?: () => void | Promise<void>;
+	/** Unset for a viewer without a seat: the button still shows, disabled. */
+	onRoll?: () => unknown;
+	/** Unset for a viewer without a seat: the button still shows, disabled. */
+	onEndTurn?: () => unknown;
 	onUndo?: () => void;
 	onRedo?: () => void;
 	onReset?: () => void;
 	canUndo?: boolean;
 	canRedo?: boolean;
 	statusOverride?: string;
-	lightPoint?: string;
-	darkPoint?: string;
 };
+
+const LIGHT_POINT = "#e7d2a4";
+const DARK_POINT = "#a54c38";
 
 const PIPS: Record<number, number[]> = {
 	1: [4],
@@ -179,8 +185,6 @@ export function BackgammonBoard({
 	canUndo = false,
 	canRedo = false,
 	statusOverride,
-	lightPoint = "#e7d2a4",
-	darkPoint = "#a54c38",
 }: Props) {
 	const { locale, messages } = useI18n();
 	const backgammon = messages.games.backgammon;
@@ -198,6 +202,8 @@ export function BackgammonBoard({
 
 	const active = state.activeColor;
 	const movable = interactive && canMoveNow(state);
+	const rollEnabled = canRoll && Boolean(onRoll);
+	const endTurnEnabled = canEndTurn && Boolean(onEndTurn);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: clear stale selection when the turn changes hands
 	useEffect(() => {
@@ -356,7 +362,7 @@ export function BackgammonBoard({
 	) {
 		const point = state.points[n - 1];
 		const isDark = (colIndex + rowParity) % 2 === 0;
-		const triColor = isDark ? darkPoint : lightPoint;
+		const triColor = isDark ? DARK_POINT : LIGHT_POINT;
 		const selected = selectedSource === n;
 		const highlighted = highlights.points.has(n);
 		const selectable =
@@ -579,7 +585,7 @@ export function BackgammonBoard({
 		<div
 			style={{
 				width: "100%",
-				maxWidth: 1060,
+				maxWidth: BACKGAMMON_DESIGN_WIDTH,
 				display: "flex",
 				flexDirection: "column",
 				gap: 18,
@@ -672,44 +678,40 @@ export function BackgammonBoard({
 							))
 						)}
 					</div>
-					{onRoll ? (
-						<button
-							type="button"
-							onClick={() => void onRoll()}
-							disabled={!canRoll}
-							style={{
-								...btnBase,
-								color: "#1a1610",
-								background: "linear-gradient(180deg,#e7cf9d,#cbab72)",
-								border: "1px solid #7c5f34",
-								padding: "9px 16px",
-								opacity: canRoll ? 1 : 0.4,
-								cursor: canRoll ? "pointer" : "not-allowed",
-								boxShadow:
-									"0 2px 5px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)",
-							}}
-						>
-							{backgammon.board.rollButton}
-						</button>
-					) : null}
-					{onEndTurn ? (
-						<button
-							type="button"
-							onClick={() => void onEndTurn()}
-							disabled={!canEndTurn}
-							style={{
-								...btnBase,
-								color: "#d9cbb2",
-								background: "rgba(255,255,255,0.05)",
-								border: "1px solid rgba(233,217,189,0.22)",
-								padding: "9px 16px",
-								opacity: canEndTurn ? 1 : 0.4,
-								cursor: canEndTurn ? "pointer" : "not-allowed",
-							}}
-						>
-							{backgammon.board.endTurnButton}
-						</button>
-					) : null}
+					<button
+						type="button"
+						onClick={() => void onRoll?.()}
+						disabled={!rollEnabled}
+						style={{
+							...btnBase,
+							color: "#1a1610",
+							background: "linear-gradient(180deg,#e7cf9d,#cbab72)",
+							border: "1px solid #7c5f34",
+							padding: "9px 16px",
+							opacity: rollEnabled ? 1 : 0.4,
+							cursor: rollEnabled ? "pointer" : "not-allowed",
+							boxShadow:
+								"0 2px 5px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)",
+						}}
+					>
+						{backgammon.board.rollButton}
+					</button>
+					<button
+						type="button"
+						onClick={() => void onEndTurn?.()}
+						disabled={!endTurnEnabled}
+						style={{
+							...btnBase,
+							color: "#d9cbb2",
+							background: "rgba(255,255,255,0.05)",
+							border: "1px solid rgba(233,217,189,0.22)",
+							padding: "9px 16px",
+							opacity: endTurnEnabled ? 1 : 0.4,
+							cursor: endTurnEnabled ? "pointer" : "not-allowed",
+						}}
+					>
+						{backgammon.board.endTurnButton}
+					</button>
 					{onUndo ? (
 						<button
 							type="button"
@@ -899,7 +901,6 @@ export function BackgammonBoard({
 						boxShadow: "inset 0 10px 24px rgba(0,0,0,0.4)",
 					}}
 				>
-					{/* left half */}
 					<div style={halfStyle}>
 						<div style={rowStyle}>
 							{topLeft.map((n, i) => renderCell(n, "down", i, 0))}
@@ -909,7 +910,6 @@ export function BackgammonBoard({
 						</div>
 					</div>
 
-					{/* bar */}
 					{/* biome-ignore lint/a11y/noStaticElementInteractions: board surface */}
 					{/* biome-ignore lint/a11y/useKeyWithClickEvents: board surface */}
 					<div
@@ -988,7 +988,6 @@ export function BackgammonBoard({
 						</div>
 					</div>
 
-					{/* right half */}
 					<div style={halfStyle}>
 						<div style={rowStyle}>
 							{topRight.map((n, i) => renderCell(n, "down", i, 0))}

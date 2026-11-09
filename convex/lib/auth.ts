@@ -1,5 +1,6 @@
-import { gameError } from "./errors";
+import type { GameErrorCode } from "@arcadeclub/core/errors";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { gameError } from "./errors";
 
 type Ctx = MutationCtx | QueryCtx;
 
@@ -14,4 +15,16 @@ export async function requireUserId(ctx: Ctx) {
 		throw gameError("signInRequired");
 	}
 	return userId;
+}
+
+/** A row this user owns. Someone else's looks exactly like a missing one. */
+export function requireOwned<Row extends { ownerUserId?: string }>(
+	row: Row | null,
+	ownerUserId: string,
+	notFound: GameErrorCode,
+) {
+	if (!row || row.ownerUserId !== ownerUserId) {
+		throw gameError(notFound);
+	}
+	return row;
 }

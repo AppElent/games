@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import {
+	pageShell,
+	SessionBundleRoute,
+} from "#/components/games/SessionBundleRoute";
 import { SignalWordsRoom } from "#/components/signal-words/SignalWordsRoom";
+import { sessionInviteUrl } from "#/lib/games/invite";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -13,43 +18,26 @@ export const Route = createFileRoute("/signal-words/$sessionId")({
 
 function SignalWordsSessionPage() {
 	const messages = useMessages();
-	const signalWords = messages.games.signalWords;
+	const title = messages.catalog["signal-words"].title;
 	const { sessionId } = Route.useParams();
 	const bundle = useQuery(api.signalWords.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 	});
-
-	if (bundle === undefined) {
-		return (
-			<FullscreenGamePage
-				title={messages.catalog["signal-words"].title}
-				className="text-slate-300"
-			>
-				{signalWords.session.loading}
-			</FullscreenGamePage>
-		);
-	}
-	if (bundle === null) {
-		return (
-			<FullscreenGamePage
-				title={messages.catalog["signal-words"].title}
-				className="text-orange-200"
-			>
-				{signalWords.session.notFound}
-			</FullscreenGamePage>
-		);
-	}
-
-	const joinUrl = bundle.session.joinCode
-		? `${window.location.origin}/join?code=${bundle.session.joinCode}`
-		: window.location.href;
-
 	return (
-		<FullscreenGamePage
-			title={messages.catalog["signal-words"].title}
-			maxWidthClassName="max-w-5xl"
+		<SessionBundleRoute
+			bundle={bundle}
+			shell={pageShell(title)}
+			loading={messages.games.signalWords.session.loading}
+			notFound={messages.games.signalWords.session.notFound}
 		>
-			<SignalWordsRoom bundle={bundle} joinUrl={joinUrl} />
-		</FullscreenGamePage>
+			{(loaded) => (
+				<FullscreenGamePage title={title} maxWidthClassName="max-w-5xl">
+					<SignalWordsRoom
+						bundle={loaded}
+						joinUrl={sessionInviteUrl(loaded.session)}
+					/>
+				</FullscreenGamePage>
+			)}
+		</SessionBundleRoute>
 	);
 }

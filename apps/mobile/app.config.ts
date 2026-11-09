@@ -8,9 +8,8 @@
  */
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
-export type AppVariant = "development" | "preview" | "production";
-
-const VARIANTS = {
+/** Every build this app has; also its EAS Update channel and Sentry environment. */
+const APP_VARIANTS = {
 	production: {
 		suffix: "",
 		name: "Arcade Club",
@@ -29,21 +28,24 @@ const VARIANTS = {
 		scheme: "arcadeclub-dev",
 		icon: "-dev",
 	},
-} as const satisfies Record<AppVariant, object>;
+} as const;
 
-export function appVariant(value = process.env.APP_VARIANT): AppVariant {
+export type AppVariant = keyof typeof APP_VARIANTS;
+
+function appVariant(value = process.env.APP_VARIANT): AppVariant {
 	if (!value) return "development";
-	if (value in VARIANTS) return value as AppVariant;
+	if (value in APP_VARIANTS) return value as AppVariant;
 	throw new Error(`Unknown APP_VARIANT "${value}"`);
 }
 
 export default ({ config }: ConfigContext): ExpoConfig => {
 	const variant = appVariant();
-	const { suffix, name, scheme, icon } = VARIANTS[variant];
+	const { suffix, name, scheme, icon } = APP_VARIANTS[variant];
 	const id = `com.appelent.arcadeclub${suffix}`;
 	return {
 		...config,
 		name,
+		// ExpoConfig requires it; `config` types every field as optional.
 		slug: "arcadeclub",
 		scheme,
 		icon: `./assets/icon${icon}.png`,

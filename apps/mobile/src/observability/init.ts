@@ -3,13 +3,13 @@
  * rest of module evaluation is still reported. A no-op without
  * `EXPO_PUBLIC_SENTRY_DSN`, and in a development bundle unless
  * `EXPO_PUBLIC_SENTRY_DEBUG=1`. Also owns the player feedback form.
- *
- * Static dot access on `process.env` is load-bearing: Metro inlines
- * `EXPO_PUBLIC_*` textually at bundle time.
  */
 import { type Locale, messages } from "@arcadeclub/core/messages";
 import * as Sentry from "@sentry/react-native";
 import * as Updates from "expo-updates";
+import { env } from "../env";
+// tokens.ts, not the theme index: the index loads the appearance store, which
+// must not run before Sentry starts.
 import { darkColors, lightColors } from "../theme/tokens";
 import {
 	buildSentryOptions,
@@ -21,17 +21,20 @@ import {
 	shouldInitSentry,
 } from "./options";
 
-const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+/** The DSN this bundle reports to, or `null` when it does not report. */
+const dsn = shouldInitSentry({
+	dsn: env.sentryDsn,
+	dev: __DEV__,
+	debug: env.sentryDebug,
+})
+	? (env.sentryDsn ?? null)
+	: null;
 
-/** Whether this bundle reports to Sentry; gate `Sentry.wrap` on it. */
-export const sentryEnabled = Boolean(
-	dsn &&
-		shouldInitSentry({
-			dsn,
-			dev: __DEV__,
-			debug: process.env.EXPO_PUBLIC_SENTRY_DEBUG,
-		}),
-);
+/**
+ * Whether this bundle reports to Sentry: the one check for `Sentry.wrap`
+ * and for offering the feedback form.
+ */
+export const sentryEnabled = dsn !== null;
 
 const feedback = Sentry.feedbackIntegration({
 	...FEEDBACK_OPTIONS,
@@ -48,14 +51,12 @@ export function setFeedbackLocale(locale: Locale) {
 	);
 }
 
-/** Opens the feedback form; false when this build doesn't report. */
-export function openFeedbackForm(): boolean {
-	if (!sentryEnabled) return false;
+/** Opens the feedback form; offer it only when `sentryEnabled`. */
+export function openFeedbackForm() {
 	Sentry.showFeedbackForm();
-	return true;
 }
 
-if (dsn && sentryEnabled) {
+if (dsn) {
 	Sentry.init({
 		...buildSentryOptions({
 			dsn,

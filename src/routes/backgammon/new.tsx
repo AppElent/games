@@ -1,10 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
-import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { useErrorMessage } from "#/lib/games/errors";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { HostGate } from "#/components/games/HostGate";
+import { useHostSession } from "#/lib/games/use-host-session";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
@@ -14,22 +12,18 @@ export const Route = createFileRoute("/backgammon/new")({
 });
 
 function BackgammonNewPage() {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const backgammon = messages.games.backgammon;
-	const createSession = useMutation(api.sessions.create);
-	const createState = useMutation(api.backgammon.createState);
-	const hostName = useHostDisplayName();
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState("");
+	const create = useMutation(api.backgammon.create);
+	const { busy, error, host } = useHostSession("backgammon");
 
 	return (
-		<FullscreenGamePage title={messages.catalog.backgammon.title}>
-			<p className="club-kicker mb-2">{messages.catalog.backgammon.title}</p>
-			<h1 className="club-title mb-4 text-4xl font-bold text-white">
-				{backgammon.newGame.heading}
-			</h1>
-			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
+		<FullscreenGamePage
+			title={messages.catalog.backgammon.title}
+			kicker={messages.catalog.backgammon.title}
+			heading={backgammon.newGame.heading}
+		>
+			{error ? <p className="mb-4 club-error">{error}</p> : null}
 			<div className="grid max-w-3xl gap-4 md:grid-cols-2">
 				<div className="club-panel flex flex-col rounded-lg p-6">
 					<h2 className="club-title text-2xl font-bold text-white">
@@ -57,39 +51,17 @@ function BackgammonNewPage() {
 							type="button"
 							disabled={busy}
 							className="mt-5 rounded-md border border-white/20 bg-white/10 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
-							onClick={async () => {
-								setBusy(true);
-								setError("");
-								try {
-									const guest = getOrCreateGuestIdentity();
-									const result = await createSession({
-										gameType: "backgammon",
-										joinMode: "challenge",
-										authPolicy: "guestAllowed",
-										title: messages.catalog.backgammon.title,
-										displayName: hostName,
-										guestId: guest.id,
-									});
-									await createState({
-										sessionId: result.sessionId,
-										hostParticipantId: result.participantId,
-									});
-									window.sessionStorage.setItem(
-										"arcade-club.participantId",
-										result.participantId,
-									);
-									window.location.href = `/backgammon/${result.sessionId}`;
-								} catch (caught) {
-									setError(
-										errorMessage(
-											caught,
-											backgammon.newGame.createChallengeError,
-										),
-									);
-								} finally {
-									setBusy(false);
-								}
-							}}
+							onClick={() =>
+								host(
+									({ displayName, guestId }) =>
+										create({
+											title: messages.catalog.backgammon.title,
+											displayName,
+											guestId,
+										}),
+									backgammon.newGame.createChallengeError,
+								)
+							}
 						>
 							{busy
 								? backgammon.newGame.creatingChallenge

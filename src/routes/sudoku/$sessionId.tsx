@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import {
+	pageShell,
+	SessionBundleRoute,
+} from "#/components/games/SessionBundleRoute";
 import { BinaryGame } from "#/components/sudoku/BinaryGame";
 import { SudokuGame } from "#/components/sudoku/SudokuGame";
 import { useMessages } from "#/lib/i18n";
@@ -18,48 +22,32 @@ function SudokuSessionPage() {
 	const bundle = useQuery(api.sudoku.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 	});
-
-	if (bundle === undefined) {
-		return (
-			<FullscreenGamePage title={messages.catalog.sudoku.title}>
-				<p className="text-slate-300">
-					{messages.games.sudoku.session.loadingPuzzle}
-				</p>
-			</FullscreenGamePage>
-		);
-	}
-	if (bundle === null) {
-		return (
-			<FullscreenGamePage title={messages.catalog.sudoku.title}>
-				<p className="text-orange-200">
-					{messages.games.sudoku.session.puzzleNotFound}
-				</p>
-			</FullscreenGamePage>
-		);
-	}
-
 	return (
-		<FullscreenGamePage
-			title={bundle.session.title}
-			maxWidthClassName="max-w-2xl"
+		<SessionBundleRoute
+			bundle={bundle}
+			shell={pageShell(messages.catalog.sudoku.title)}
+			loading={messages.games.sudoku.session.loadingPuzzle}
+			notFound={messages.games.sudoku.session.puzzleNotFound}
 		>
-			{bundle.state.variant === "binary" ? (
-				<BinaryGame
-					// Remount when switching sessions so local state resets.
-					key={bundle.session._id}
-					sessionId={bundle.session._id}
-					title={bundle.session.title}
-					state={bundle.state}
-				/>
-			) : (
-				<SudokuGame
-					// Remount when switching sessions so local history resets.
-					key={bundle.session._id}
-					sessionId={bundle.session._id}
-					title={bundle.session.title}
-					state={bundle.state}
-				/>
-			)}
-		</FullscreenGamePage>
+			{(loaded) => {
+				// Both boards take the same props; only binary draws its own grid.
+				const Game =
+					loaded.state.variant === "binary" ? BinaryGame : SudokuGame;
+				return (
+					<FullscreenGamePage
+						title={loaded.session.title}
+						maxWidthClassName="max-w-2xl"
+					>
+						<Game
+							// Remount when switching sessions so local state resets.
+							key={loaded.session._id}
+							sessionId={loaded.session._id}
+							title={loaded.session.title}
+							state={loaded.state}
+						/>
+					</FullscreenGamePage>
+				);
+			}}
+		</SessionBundleRoute>
 	);
 }

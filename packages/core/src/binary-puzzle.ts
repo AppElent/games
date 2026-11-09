@@ -1,4 +1,5 @@
-import { mulberry32, type SudokuRng } from "./sudoku";
+import { digitsFromString, type PuzzleDifficulty, removeClues } from "./puzzle";
+import { type Rng, shuffle } from "./random";
 
 /**
  * Binary puzzle (Binairo / Takuzu). Cells hold 0s and 1s:
@@ -9,16 +10,9 @@ import { mulberry32, type SudokuRng } from "./sudoku";
  * Grid encoding: 0 = empty, 1 = the digit "0", 2 = the digit "1". This keeps
  * the shared "0 means empty" convention used by the sudoku persistence layer.
  */
-export type BinaryGrid = number[];
+type BinaryGrid = number[];
 
-export type BinaryDifficulty = "easy" | "medium" | "hard" | "expert";
-
-export const BINARY_DIFFICULTIES: readonly BinaryDifficulty[] = [
-	"easy",
-	"medium",
-	"hard",
-	"expert",
-];
+type BinaryDifficulty = PuzzleDifficulty;
 
 export const BINARY_SIZES: Record<BinaryDifficulty, number> = {
 	easy: 6,
@@ -26,6 +20,12 @@ export const BINARY_SIZES: Record<BinaryDifficulty, number> = {
 	hard: 10,
 	expert: 10,
 };
+
+/**
+ * Board sides a stored game may have. Wider than what `BINARY_SIZES` generates:
+ * nothing generates 12, but the server has always accepted it.
+ */
+export const BINARY_ACCEPTED_SIZES: readonly number[] = [6, 8, 10, 12];
 
 /** Fraction of cells kept as givens. */
 const CLUE_FRACTIONS: Record<BinaryDifficulty, number> = {
@@ -40,7 +40,12 @@ export function binaryDigitLabel(value: number) {
 	return value === 1 ? "0" : value === 2 ? "1" : "";
 }
 
-export function emptyBinaryGrid(size: number): BinaryGrid {
+/** The value a tap leaves in a cell: empty → 0 → 1 → empty (encoded 0 → 1 → 2 → 0). */
+export function nextBinaryCell(value: number) {
+	return (value + 1) % 3;
+}
+
+function emptyBinaryGrid(size: number): BinaryGrid {
 	return new Array(size * size).fill(0);
 }
 
@@ -87,7 +92,6 @@ export function findBinaryConflicts(
 	const conflicts = new Set<number>();
 
 	const scanLine = (cells: number[]) => {
-		// triples
 		for (let i = 2; i < size; i += 1) {
 			const value = grid[cells[i]];
 			if (
@@ -100,7 +104,6 @@ export function findBinaryConflicts(
 				conflicts.add(cells[i - 2]);
 			}
 		}
-		// counts
 		let zeros = 0;
 		let ones = 0;
 		for (const cell of cells) {
@@ -233,7 +236,7 @@ export function countBinarySolutions(
 	return found.count;
 }
 
-function generateSolvedBinaryGrid(size: number, rng: SudokuRng): BinaryGrid {
+function generateSolvedBinaryGrid(size: number, rng: Rng): BinaryGrid {
 	const grid = emptyBinaryGrid(size);
 	const solve = (): boolean => {
 		const cell = grid.indexOf(0);
@@ -256,7 +259,7 @@ function generateSolvedBinaryGrid(size: number, rng: SudokuRng): BinaryGrid {
 	return grid;
 }
 
-export type GeneratedBinaryPuzzle = {
+type GeneratedBinaryPuzzle = {
 	size: number;
 	givens: BinaryGrid;
 	solution: BinaryGrid;
@@ -266,52 +269,26 @@ export type GeneratedBinaryPuzzle = {
 
 export function generateBinaryPuzzle(
 	difficulty: BinaryDifficulty,
-	rng: SudokuRng = Math.random,
+	rng: Rng = Math.random,
 ): GeneratedBinaryPuzzle {
 	const size = BINARY_SIZES[difficulty];
 	const solution = generateSolvedBinaryGrid(size, rng);
-	const givens = [...solution];
 	const total = size * size;
-	const target = Math.round(total * CLUE_FRACTIONS[difficulty]);
-	let clueCount = total;
-
-	const order = Array.from({ length: total }, (_, i) => i);
-	for (let i = order.length - 1; i > 0; i -= 1) {
-		const j = Math.floor(rng() * (i + 1));
-		[order[i], order[j]] = [order[j], order[i]];
-	}
-	for (const cell of order) {
-		if (clueCount <= target) {
-			break;
-		}
-		const saved = givens[cell];
-		givens[cell] = 0;
-		if (countBinarySolutions(givens, size, 2) === 1) {
-			clueCount -= 1;
-		} else {
-			givens[cell] = saved;
-		}
-	}
+	const { givens, clueCount } = removeClues(
+		solution,
+		shuffle(
+			Array.from({ length: total }, (_, i) => i),
+			rng,
+		),
+		Math.round(total * CLUE_FRACTIONS[difficulty]),
+		(grid) => countBinarySolutions(grid, size, 2) === 1,
+	);
 	return { size, givens, solution, difficulty, clueCount };
-}
-
-export function seededBinaryPuzzle(seed: number, difficulty: BinaryDifficulty) {
-	return generateBinaryPuzzle(difficulty, mulberry32(seed));
-}
-
-// --- serialization (shared with the Convex sudoku module) ---
-
-export function binaryGridToString(grid: BinaryGrid) {
-	return grid.join("");
 }
 
 export function parseBinaryGrid(text: string, size: number): BinaryGrid {
 	if (!new RegExp(`^[0-2]{${size * size}}$`).test(text)) {
 		throw new Error("Invalid binary grid");
 	}
-	return [...text].map(Number);
-}
-
-export function isBinaryDifficulty(value: string): value is BinaryDifficulty {
-	return (BINARY_DIFFICULTIES as readonly string[]).includes(value);
+	return digitsFromString(text);
 }

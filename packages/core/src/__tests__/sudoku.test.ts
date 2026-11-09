@@ -1,18 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { digitsToString } from "../puzzle";
+import { mulberry32 } from "../random";
 import {
-	cellAt,
 	computeCandidates,
 	countSolutions,
 	digitsInMask,
 	emptyGrid,
 	findConflicts,
 	generatePuzzle,
-	gridToString,
 	isGridSolved,
-	mulberry32,
 	parseGrid,
 	SUDOKU_CELL_COUNT,
-	solve,
 } from "../sudoku";
 import {
 	applyAction,
@@ -32,13 +30,15 @@ import {
 const KNOWN_PUZZLE =
 	"530070000600195000098000060800060003400803001700020006060000280000419005000080079";
 
+const cellAt = (row: number, col: number) => row * 9 + col;
+
 describe("sudoku rules", () => {
 	it("parses and serializes grids", () => {
 		const grid = parseGrid(KNOWN_PUZZLE);
 		expect(grid).toHaveLength(SUDOKU_CELL_COUNT);
 		expect(grid[0]).toBe(5);
 		expect(grid[2]).toBe(0);
-		expect(gridToString(grid)).toBe(KNOWN_PUZZLE);
+		expect(digitsToString(grid)).toBe(KNOWN_PUZZLE);
 	});
 
 	it("finds row, column, and box conflicts", () => {
@@ -65,18 +65,9 @@ describe("sudoku rules", () => {
 		expect(candidates[cellAt(0, 1)]).toBe(0); // filled cell
 	});
 
-	it("solves a known puzzle with a unique solution", () => {
+	it("counts one solution for a known puzzle with a unique solution", () => {
 		const grid = parseGrid(KNOWN_PUZZLE);
 		expect(countSolutions(grid, 2)).toBe(1);
-		const solution = solve(grid);
-		expect(solution).not.toBeNull();
-		expect(isGridSolved(solution ?? [])).toBe(true);
-		// givens preserved
-		grid.forEach((value, cell) => {
-			if (value !== 0) {
-				expect(solution?.[cell]).toBe(value);
-			}
-		});
 	});
 
 	it("reports zero solutions for contradictory grids", () => {
@@ -84,7 +75,6 @@ describe("sudoku rules", () => {
 		grid[cellAt(0, 0)] = 1;
 		grid[cellAt(0, 1)] = 1;
 		expect(countSolutions(grid)).toBe(0);
-		expect(solve(grid)).toBeNull();
 	});
 });
 
