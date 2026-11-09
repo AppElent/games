@@ -2,7 +2,7 @@ import { SUITS } from "@arcadeclub/core/cards/deck";
 import { Link } from "@tanstack/react-router";
 import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
 import { useMessages } from "#/lib/i18n";
-import { SuitIcon } from "./PlayingCard";
+import { isRedSuit, SuitIcon } from "./PlayingCard";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
 
 const CASCADE = Array.from({ length: 16 }, (_, index) => ({
@@ -60,10 +60,7 @@ export function EndOverlay({
 									"--d": `${item.duration}s`,
 									"--w": `${item.wait}s`,
 									"--r": `${item.spin}deg`,
-									"--c":
-										item.suit === "H" || item.suit === "D"
-											? "#ef5a65"
-											: "#f8f2e2",
+									"--c": isRedSuit(item.suit) ? "#ef5a65" : "#f8f2e2",
 								} as CSSProperties
 							}
 						>

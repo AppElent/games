@@ -16,6 +16,7 @@ import {
 	saveWordLinkAttempt,
 } from "#/lib/games/word-links-local";
 import { useMessages } from "#/lib/i18n";
+import { useCopyFeedback } from "#/lib/use-copy-feedback";
 
 const GROUP_STYLES: Record<WordLinkDifficulty, string> = {
 	easy: "bg-emerald-500/80 text-emerald-950",
@@ -23,6 +24,26 @@ const GROUP_STYLES: Record<WordLinkDifficulty, string> = {
 	hard: "bg-sky-400/80 text-sky-950",
 	tricky: "bg-purple-400/80 text-purple-950",
 };
+
+type WordLinkGroup = WordLinkPuzzle["groups"][number];
+
+/** A found (or, after a loss, revealed and dimmed) group with its four words. */
+function GroupBlock({
+	group,
+	revealed = false,
+}: {
+	group: WordLinkGroup;
+	revealed?: boolean;
+}) {
+	return (
+		<div
+			className={`rounded-md px-3 py-2 text-center ${revealed ? "opacity-70 " : ""}${GROUP_STYLES[group.difficulty]}`}
+		>
+			<p className="text-sm font-bold uppercase tracking-wide">{group.label}</p>
+			<p className="text-sm">{group.terms.join(", ")}</p>
+		</div>
+	);
+}
 
 type Props = {
 	puzzle: WordLinkPuzzle;
@@ -38,7 +59,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 	});
 	const [selected, setSelected] = useState<string[]>([]);
 	const [message, setMessage] = useState("");
-	const [copied, setCopied] = useState(false);
+	const { copied, copy } = useCopyFeedback();
 	const [order, setOrder] = useState<string[]>(() => [...puzzle.terms]);
 
 	const solvedTerms = getSolvedTerms(puzzle, attempt);
@@ -98,12 +119,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 	}
 
 	async function share() {
-		const text = buildWordLinkShareText(puzzle, attempt);
-		try {
-			await navigator.clipboard.writeText(text);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
-		} catch {
+		if (!(await copy(buildWordLinkShareText(puzzle, attempt)))) {
 			setMessage(wordLinks.game.copyError);
 		}
 	}
@@ -138,15 +154,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 
 			<div className="space-y-2">
 				{solvedGroups.map((group) => (
-					<div
-						key={group.id}
-						className={`rounded-md px-3 py-2 text-center ${GROUP_STYLES[group.difficulty]}`}
-					>
-						<p className="text-sm font-bold uppercase tracking-wide">
-							{group.label}
-						</p>
-						<p className="text-sm">{group.terms.join(", ")}</p>
-					</div>
+					<GroupBlock key={group.id} group={group} />
 				))}
 			</div>
 
@@ -176,23 +184,13 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 			{revealGroups.length > 0 ? (
 				<div className="mt-2 space-y-2">
 					{revealGroups.map((group) => (
-						<div
-							key={group.id}
-							className={`rounded-md px-3 py-2 text-center opacity-70 ${GROUP_STYLES[group.difficulty]}`}
-						>
-							<p className="text-sm font-bold uppercase tracking-wide">
-								{group.label}
-							</p>
-							<p className="text-sm">{group.terms.join(", ")}</p>
-						</div>
+						<GroupBlock key={group.id} group={group} revealed />
 					))}
 				</div>
 			) : null}
 
 			{message ? (
-				<output className="mt-3 block text-center text-sm text-orange-200">
-					{message}
-				</output>
+				<output className="mt-3 block text-center club-error">{message}</output>
 			) : null}
 
 			<div className="mt-4 flex flex-wrap justify-center gap-3">
@@ -202,7 +200,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 							type="button"
 							disabled={selected.length !== 4}
 							onClick={submit}
-							className="min-h-11 rounded-md bg-white px-5 py-2 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+							className="min-h-11 club-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{wordLinks.game.submit}
 						</button>
@@ -226,7 +224,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 					<button
 						type="button"
 						onClick={share}
-						className="min-h-11 rounded-md bg-white px-5 py-2 font-bold text-slate-950"
+						className="min-h-11 club-btn-primary"
 					>
 						{copied
 							? messages.common.actions.copied

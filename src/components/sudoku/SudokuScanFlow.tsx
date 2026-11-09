@@ -4,10 +4,7 @@ import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useErrorMessage } from "#/lib/games/errors";
-import {
-	autoSessionTitle,
-	rememberLocalSudokuSession,
-} from "#/lib/games/sudoku-local";
+import { autoSessionTitle } from "#/lib/games/sudoku-local";
 import type { ScanCell, ScanCellType } from "#/lib/games/sudoku-scan";
 import {
 	clearScanCell,
@@ -25,6 +22,7 @@ import {
 	recognizeGrid,
 	warpToSquare,
 } from "#/lib/games/sudoku-scan-image";
+import { createSudokuSession } from "#/lib/games/sudoku-session";
 import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -87,7 +85,7 @@ export function SudokuScanFlow() {
 
 	return (
 		<div className="flex flex-col gap-4">
-			{error ? <p className="text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="club-error">{error}</p> : null}
 			{step.id === "upload" ? <UploadStep onFile={onFile} /> : null}
 			{step.id === "corners" ? (
 				<CornerStep
@@ -269,11 +267,7 @@ function CornerStep({
 				>
 					{messages.common.actions.back}
 				</button>
-				<button
-					type="button"
-					onClick={onConfirm}
-					className="rounded-md bg-white px-5 py-2 font-bold text-slate-950"
-				>
+				<button type="button" onClick={onConfirm} className="club-btn-primary">
 					{sudoku.scan.readGrid}
 				</button>
 			</div>
@@ -346,7 +340,7 @@ function VerifyStep({
 		host(async ({ guestId, guestName }) => {
 			const title = autoSessionTitle(undefined, "scan");
 			const board = scanResultToBoardState(cells);
-			const created = await create({
+			return createSudokuSession(create, {
 				title,
 				displayName: guestName,
 				guestId,
@@ -356,13 +350,6 @@ function VerifyStep({
 				cornerNotes: board.corner,
 				centerNotes: board.center,
 			});
-			rememberLocalSudokuSession({
-				sessionId: created.sessionId,
-				title,
-				source: "scan",
-				createdAt: Date.now(),
-			});
-			return created;
 		}, sudoku.scan.couldNotCreateSession);
 
 	const cell = selected !== null ? cells[selected] : null;
@@ -549,7 +536,7 @@ function VerifyStep({
 
 			<div className="max-w-xl">
 				{validation.errors.length > 0 ? (
-					<ul className="mb-3 space-y-1 rounded-md border border-orange-400/40 bg-orange-500/10 px-4 py-3 text-sm text-orange-200">
+					<ul className="mb-3 space-y-1 rounded-md border border-orange-400/40 bg-orange-500/10 px-4 py-3 club-error">
 						{validation.errors.map((message) => (
 							<li key={message}>{message}</li>
 						))}
@@ -575,7 +562,7 @@ function VerifyStep({
 						type="button"
 						disabled={!validation.ok || busy}
 						onClick={confirm}
-						className="inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+						className="inline-flex items-center gap-2 club-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<Check className="h-4 w-4" />
 						{busy ? sudoku.scan.creatingPuzzle : sudoku.scan.confirmAndPlay}

@@ -8,8 +8,9 @@ import {
 import { memo } from "react";
 import { useMessages } from "#/lib/i18n";
 
-const INK = "#17181f";
-const RED = "#b81f2d";
+/** Ink for black suits and red suits, as printed on a card. */
+export const INK = "#17181f";
+export const RED = "#b81f2d";
 const GOLD = "#c6962f";
 const NAVY = "#1d2f6b";
 const SKIN = "#f4dfc6";
@@ -22,9 +23,20 @@ const SUIT_PATHS: Record<Suit, string> = {
 	C: "M50 5a21 21 0 0 1 18 32 21 21 0 1 1-13 37c1 9 4 16 10 23H35c6-7 9-14 10-23a21 21 0 1 1-13-37A21 21 0 0 1 50 5Z",
 };
 
-function suitColor(suit: Suit) {
-	return suit === "H" || suit === "D" ? RED : INK;
+export function isRedSuit(suit: Suit) {
+	return suit === "H" || suit === "D";
 }
+
+/** The ink a suit is printed in. */
+export function suitColor(suit: Suit) {
+	return isRedSuit(suit) ? RED : INK;
+}
+
+/** The class on every drawn card; measuring code finds cards by it. */
+export const CARD_FACE_CLASS = "pc";
+/** A card's drawing box: 100 wide, 140 high. */
+export const CARD_WIDTH = 100;
+export const CARD_HEIGHT = 140;
 
 /** Pip centres on the 100x140 card; the lower half is drawn upside down. */
 const PIPS: Partial<Record<Rank, ReadonlyArray<readonly [number, number]>>> = {
@@ -436,17 +448,20 @@ export function CardSprite() {
 	);
 }
 
-/** The text a screen reader hears for a card, from the current locale. */
+/**
+ * The text a screen reader hears for a card, from the current locale. Takes a
+ * card, or the face a joker stands in for.
+ */
 export function useCardName() {
 	const cards = useMessages().games.cards;
-	return (id: CardId) => {
-		const card = parseCard(id);
-		if (card.joker) {
+	return (card: CardId | { rank: Rank; suit: Suit }) => {
+		const face = typeof card === "string" ? parseCard(card) : card;
+		if (face.rank === null) {
 			return cards.joker;
 		}
 		return cards.cardName
-			.replace("{rank}", cards.ranks[card.rank])
-			.replace("{suit}", cards.suits[card.suit]);
+			.replace("{rank}", cards.ranks[face.rank])
+			.replace("{suit}", cards.suits[face.suit]);
 	};
 }
 
@@ -467,9 +482,9 @@ export const PlayingCard = memo(function PlayingCard({
 	const glyphs = useMessages().games.cards.rankGlyphs as Record<string, string>;
 	const parsed = card ? parseCard(card) : null;
 	return (
-		<span className={`pc ${className ?? ""}`}>
+		<span className={`${CARD_FACE_CLASS} ${className ?? ""}`}>
 			<svg
-				viewBox="0 0 100 140"
+				viewBox={`0 0 ${CARD_WIDTH} ${CARD_HEIGHT}`}
 				focusable="false"
 				role={label ? "img" : undefined}
 				aria-label={label}

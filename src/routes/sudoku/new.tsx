@@ -1,8 +1,4 @@
-import { generateBinaryPuzzle } from "@arcadeclub/core/binary-puzzle";
-import { digitsToString } from "@arcadeclub/core/puzzle";
-import type { SudokuDifficulty } from "@arcadeclub/core/sudoku";
-import { generatePuzzle } from "@arcadeclub/core/sudoku";
-import { generateKillerPuzzle } from "@arcadeclub/core/sudoku-killer";
+import type { SudokuDifficulty, SudokuVariant } from "@arcadeclub/core/sudoku";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Camera, X } from "lucide-react";
@@ -13,8 +9,11 @@ import {
 	autoSessionTitle,
 	forgetLocalSudokuSession,
 	listLocalSudokuSessions,
-	rememberLocalSudokuSession,
 } from "#/lib/games/sudoku-local";
+import {
+	createSudokuSession,
+	generatedPuzzle,
+} from "#/lib/games/sudoku-session";
 import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -23,35 +22,6 @@ export const Route = createFileRoute("/sudoku/new")({
 	component: SudokuNewPage,
 	staticData: { fullscreen: true },
 });
-
-type SudokuVariant = "classic" | "killer" | "binary";
-
-/** A fresh puzzle in the shape `sudoku.create` stores. */
-function generatedPuzzle(variant: SudokuVariant, difficulty: SudokuDifficulty) {
-	if (variant === "binary") {
-		const puzzle = generateBinaryPuzzle(difficulty);
-		return {
-			variant,
-			size: puzzle.size,
-			givens: digitsToString(puzzle.givens),
-			solution: digitsToString(puzzle.solution),
-		};
-	}
-	if (variant === "killer") {
-		const puzzle = generateKillerPuzzle(difficulty);
-		return {
-			variant,
-			cages: puzzle.cages,
-			givens: digitsToString(puzzle.givens),
-			solution: digitsToString(puzzle.solution),
-		};
-	}
-	const puzzle = generatePuzzle(difficulty);
-	return {
-		givens: digitsToString(puzzle.givens),
-		solution: digitsToString(puzzle.solution),
-	};
-}
 
 function SudokuNewPage() {
 	const messages = useMessages();
@@ -117,7 +87,7 @@ function SudokuNewPage() {
 			const title =
 				name.trim() ||
 				autoSessionTitle(difficulty, "generated", new Date(), variant);
-			const created = await create({
+			return createSudokuSession(create, {
 				title,
 				displayName: guestName,
 				guestId,
@@ -125,14 +95,6 @@ function SudokuNewPage() {
 				difficulty,
 				...generatedPuzzle(variant, difficulty),
 			});
-			rememberLocalSudokuSession({
-				sessionId: created.sessionId,
-				title,
-				difficulty,
-				source: "generated",
-				createdAt: Date.now(),
-			});
-			return created;
 		}, sudoku.newGame.couldNotStart);
 	};
 
@@ -143,7 +105,7 @@ function SudokuNewPage() {
 				{sudoku.newGame.heading}
 			</h1>
 			<p className="mb-6 max-w-2xl text-slate-300">{sudoku.newGame.intro}</p>
-			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="mb-4 club-error">{error}</p> : null}
 
 			<label className="mb-6 block max-w-md">
 				<span className="mb-1 block text-sm font-semibold text-slate-300">
@@ -223,12 +185,13 @@ function SudokuNewPage() {
 								key={entry.sessionId}
 								className="flex items-center justify-between gap-3 rounded-md border border-slate-700/70 bg-slate-800/40 px-4 py-2"
 							>
-								<a
-									href={`/sudoku/${entry.sessionId}`}
+								<Link
+									to="/sudoku/$sessionId"
+									params={{ sessionId: entry.sessionId }}
 									className="min-w-0 flex-1 truncate font-semibold text-slate-200 hover:text-sky-300"
 								>
 									{entry.title}
-								</a>
+								</Link>
 								<span className="text-xs text-slate-500">
 									{new Date(entry.createdAt).toLocaleDateString()}
 								</span>

@@ -16,6 +16,10 @@ export type QuizQuestionDraft = {
 	points: number;
 };
 
+/** What a new or imported question gets when it names no time or points. */
+export const DEFAULT_QUESTION_SECONDS = 20;
+export const DEFAULT_QUESTION_POINTS = 1000;
+
 const CHOICE_IDS = ["a", "b", "c", "d"] as const;
 
 /**
@@ -100,8 +104,11 @@ export function parseQuizQuestionsTsv(input: string): {
 			durationSeconds:
 				Number.isFinite(durationSeconds) && durationSeconds > 0
 					? durationSeconds
-					: 20,
-			points: Number.isFinite(points) && points > 0 ? points : 1000,
+					: DEFAULT_QUESTION_SECONDS,
+			points:
+				Number.isFinite(points) && points > 0
+					? points
+					: DEFAULT_QUESTION_POINTS,
 		});
 	});
 	return { questions, errors };

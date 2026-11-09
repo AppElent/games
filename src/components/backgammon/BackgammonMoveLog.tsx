@@ -1,5 +1,4 @@
 import type {
-	BackgammonColor,
 	BackgammonMoveDestination,
 	BackgammonMoveSource,
 } from "@arcadeclub/core/backgammon";
@@ -7,6 +6,7 @@ import type { FunctionReturnType } from "convex/server";
 import type { Messages } from "#/lib/i18n";
 import { fmt, useI18n } from "#/lib/i18n";
 import type { api } from "../../../convex/_generated/api";
+import { colorLabel } from "./color-label";
 
 type BackgammonMove = NonNullable<
 	FunctionReturnType<typeof api.backgammon.getBundle>
@@ -18,16 +18,10 @@ export function BackgammonMoveLog({ moves }: { moves: BackgammonMove[] }) {
 	const newestMoves = [...moves].sort(
 		(left, right) => right.createdAt - left.createdAt,
 	);
-	const colorLabel = (color: BackgammonColor) =>
-		color === "white"
-			? backgammon.board.colorWhite
-			: backgammon.board.colorBlack;
 
 	return (
 		<div className="club-panel rounded-lg p-4">
-			<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-300">
-				{backgammon.moveLog.heading}
-			</h2>
+			<h2 className="mb-3 club-panel-heading">{backgammon.moveLog.heading}</h2>
 			{newestMoves.length === 0 ? (
 				<p className="rounded-md bg-white/5 px-3 py-2 text-sm text-slate-400">
 					{backgammon.moveLog.empty}
@@ -41,7 +35,7 @@ export function BackgammonMoveLog({ moves }: { moves: BackgammonMove[] }) {
 						>
 							<div className="flex items-center justify-between gap-3">
 								<span className="font-bold capitalize text-white">
-									{colorLabel(move.color)}
+									{colorLabel(backgammon.board, move.color)}
 								</span>
 								<span className="text-xs text-slate-500">
 									{new Date(move.createdAt).toLocaleTimeString(locale, {

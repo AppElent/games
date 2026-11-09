@@ -3,9 +3,8 @@ import handler from "@tanstack/react-start/server-entry";
 import {
 	DEFAULT_SENTRY_DSN,
 	isLocalSentryUrl,
-	SENTRY_DATA_COLLECTION,
+	SHARED_SENTRY_OPTIONS,
 } from "./lib/observability/config";
-import { sanitizeBreadcrumb, sanitizeEvent } from "./lib/observability/privacy";
 
 type SentryEnv = {
 	SENTRY_DSN?: string;
@@ -19,11 +18,7 @@ const instrumentedHandler = Sentry.withSentry(
 		enabled: !import.meta.env.DEV,
 		environment: env.environment_name || import.meta.env.MODE,
 		release: import.meta.env.VITE_SENTRY_RELEASE,
-		dataCollection: { ...SENTRY_DATA_COLLECTION, httpBodies: [] },
-		integrations: (defaults) =>
-			defaults.filter((integration) => integration.name !== "Console"),
-		beforeSend: sanitizeEvent,
-		beforeBreadcrumb: sanitizeBreadcrumb,
+		...SHARED_SENTRY_OPTIONS,
 	}),
 	{
 		async fetch(request: Request, _env: SentryEnv, _ctx: ExecutionContext) {

@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import {
+	FullscreenGameShell,
+	SHELL_PAGE_INSET,
+} from "#/components/games/FullscreenGameShell";
 
 type FullscreenGamePageProps = {
 	title: string;
@@ -26,7 +29,7 @@ export function FullscreenGamePage({
 		<FullscreenGameShell title={title}>
 			<div className="h-full touch-pan-y overflow-y-auto overscroll-contain">
 				<div
-					className={`mx-auto w-full px-4 pt-16 pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
+					className={`mx-auto w-full px-4 ${SHELL_PAGE_INSET} pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
 				>
 					{children}
 				</div>

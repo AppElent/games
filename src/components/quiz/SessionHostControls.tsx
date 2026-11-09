@@ -1,36 +1,30 @@
-import { useMutation } from "convex/react";
 import { Lock, LockOpen, Pencil } from "lucide-react";
 import { useState } from "react";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { useMessages } from "#/lib/i18n";
-import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { QuizModeration } from "./useQuizModeration";
 
 /**
  * Host-only room controls: lock the room against new joiners and rename
  * the session. Render only when the local participant is the host.
  */
 export function SessionHostControls({
-	sessionId,
-	hostParticipantId,
+	moderation,
 	title,
 	locked,
 }: {
-	sessionId: Id<"gameSessions">;
-	hostParticipantId: Id<"sessionParticipants">;
+	moderation: QuizModeration;
 	title: string;
 	locked: boolean;
 }) {
 	const messages = useMessages();
-	const setLocked = useMutation(api.sessions.setLocked);
-	const rename = useMutation(api.sessions.rename);
 	const [editing, setEditing] = useState(false);
 	const [draftTitle, setDraftTitle] = useState(title);
 	const { error, run } = useGameAction();
 
 	return (
 		<div className="club-panel rounded-lg p-4">
-			<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-300">
+			<h2 className="mb-3 club-panel-heading">
 				{messages.common.roomControls.heading}
 			</h2>
 			<div className="flex flex-wrap gap-2">
@@ -39,12 +33,7 @@ export function SessionHostControls({
 					className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm font-bold text-white hover:bg-white/10"
 					onClick={() =>
 						void run(
-							() =>
-								setLocked({
-									sessionId,
-									hostParticipantId,
-									locked: !locked,
-								}),
+							() => moderation.setLocked(!locked),
 							messages.common.roomControls.lockError,
 						)
 					}
@@ -79,7 +68,7 @@ export function SessionHostControls({
 					onSubmit={(event) => {
 						event.preventDefault();
 						void run(
-							() => rename({ sessionId, hostParticipantId, title: draftTitle }),
+							() => moderation.rename(draftTitle),
 							messages.common.roomControls.renameError,
 						).then((renamed) => {
 							if (renamed) {
@@ -102,7 +91,7 @@ export function SessionHostControls({
 					</button>
 				</form>
 			) : null}
-			{error ? <p className="mt-2 text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="mt-2 club-error">{error}</p> : null}
 		</div>
 	);
 }

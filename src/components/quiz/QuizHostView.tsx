@@ -5,25 +5,28 @@ import type { FunctionReturnType } from "convex/server";
 import { ChevronRight, Eye, Trophy } from "lucide-react";
 import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
-import { SessionHostControls } from "#/components/games/SessionHostControls";
 import { getGameRoute } from "#/lib/games/catalog";
 import { useSeat } from "#/lib/games/seat";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
+import { ModerationActions } from "./ModerationActions";
 import { Scoreboard } from "./Scoreboard";
+import { SessionHostControls } from "./SessionHostControls";
+import { useQuizModeration } from "./useQuizModeration";
 
 type QuizBundle = NonNullable<FunctionReturnType<typeof api.quiz.getBundle>>;
 
 export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 	const { messages, locale } = useI18n();
 	const advancePhase = useMutation(api.quiz.advancePhase);
-	const kickParticipant = useMutation(api.sessions.kickParticipant);
-	const transferHost = useMutation(api.sessions.transferHost);
 	const participantId = useSeat(bundle.session._id);
 	const { error, run } = useGameAction();
 	const actionFailed = messages.games.quiz.hostView.actionFailed;
-	const hostParticipantId = bundle.session.hostParticipantId;
+	const moderation = useQuizModeration(
+		bundle.session._id,
+		bundle.session.hostParticipantId,
+	);
 	const state = bundle.quizState;
 	const question = state
 		? bundle.quizSet?.questions[state.currentQuestionIndex]
@@ -157,7 +160,7 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 						)}
 					</button>
 				</div>
-				{error ? <p className="mt-3 text-sm text-orange-200">{error}</p> : null}
+				{error ? <p className="mt-3 club-error">{error}</p> : null}
 			</section>
 			<aside className="space-y-4">
 				{finished ? (
@@ -191,40 +194,31 @@ export function QuizHostView({ bundle }: { bundle: QuizBundle }) {
 						newGameLabel={messages.games.quiz.hostView.hostAnotherQuiz}
 					/>
 				) : null}
-				{isHost && hostParticipantId ? (
+				{isHost && moderation ? (
 					<SessionHostControls
-						sessionId={bundle.session._id}
-						hostParticipantId={hostParticipantId}
+						moderation={moderation}
 						title={bundle.session.title}
 						locked={Boolean(bundle.session.locked)}
 					/>
 				) : null}
 				<ParticipantList
 					participants={bundle.participants}
-					hostControls={
-						isHost && hostParticipantId
-							? {
-									onKick: (targetParticipantId) =>
-										run(
-											() =>
-												kickParticipant({
-													sessionId: bundle.session._id,
-													hostParticipantId,
-													targetParticipantId,
-												}),
-											actionFailed,
-										),
-									onTransferHost: (targetParticipantId) =>
-										run(
-											() =>
-												transferHost({
-													sessionId: bundle.session._id,
-													hostParticipantId,
-													targetParticipantId,
-												}),
-											actionFailed,
-										),
-								}
+					renderActions={
+						isHost && moderation
+							? (participant) => (
+									<ModerationActions
+										participant={participant}
+										onTransferHost={() =>
+											run(
+												() => moderation.transferHost(participant._id),
+												actionFailed,
+											)
+										}
+										onKick={() =>
+											run(() => moderation.kick(participant._id), actionFailed)
+										}
+									/>
+								)
 							: undefined
 					}
 				/>

@@ -2,6 +2,7 @@ import { Copy, Link as LinkIcon } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { useMessages } from "#/lib/i18n";
+import { copyToClipboard } from "#/lib/use-copy-feedback";
 
 export function QrSharePanel({ url, label }: { url: string; label: string }) {
 	const messages = useMessages();
@@ -50,7 +51,7 @@ export function QrSharePanel({ url, label }: { url: string; label: string }) {
 			</div>
 			<button
 				type="button"
-				onClick={() => void navigator.clipboard.writeText(url)}
+				onClick={() => void copyToClipboard(url)}
 				className="mt-4 inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-bold text-slate-950"
 			>
 				<Copy className="h-4 w-4" />

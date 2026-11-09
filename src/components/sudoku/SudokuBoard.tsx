@@ -8,28 +8,21 @@ import {
 import { useMemo } from "react";
 import { fmt, useMessages } from "#/lib/i18n";
 
-const SUDOKU_COLOR_CLASSES = [
-	"", // 0 = none
-	"bg-sky-500/40",
-	"bg-emerald-500/40",
-	"bg-amber-500/40",
-	"bg-rose-500/40",
-	"bg-violet-500/40",
-	"bg-teal-500/40",
-	"bg-orange-500/40",
-	"bg-pink-500/40",
-];
-
-export const SUDOKU_COLOR_SWATCHES = [
-	"bg-sky-500",
-	"bg-emerald-500",
-	"bg-amber-500",
-	"bg-rose-500",
-	"bg-violet-500",
-	"bg-teal-500",
-	"bg-orange-500",
-	"bg-pink-500",
-];
+/**
+ * Cell colours 1-8, in the order boards store them: entry `i` is colour
+ * `i + 1` (0 = none). `tint` fills a board cell, `swatch` draws its keypad
+ * button. Saved boards keep these numbers, so append, never reorder.
+ */
+export const SUDOKU_COLORS = [
+	{ tint: "bg-sky-500/40", swatch: "bg-sky-500" },
+	{ tint: "bg-emerald-500/40", swatch: "bg-emerald-500" },
+	{ tint: "bg-amber-500/40", swatch: "bg-amber-500" },
+	{ tint: "bg-rose-500/40", swatch: "bg-rose-500" },
+	{ tint: "bg-violet-500/40", swatch: "bg-violet-500" },
+	{ tint: "bg-teal-500/40", swatch: "bg-teal-500" },
+	{ tint: "bg-orange-500/40", swatch: "bg-orange-500" },
+	{ tint: "bg-pink-500/40", swatch: "bg-pink-500" },
+] as const;
 
 const CORNER_SLOTS = [
 	"left-0.5 top-0",
@@ -95,7 +88,7 @@ export function SudokuBoard({
 					selectedDigit !== 0 && value === selectedDigit && !isSelected;
 				const isConflict = conflicts?.has(cell) ?? false;
 				const isHint = hintCells?.has(cell) ?? false;
-				const colorClass = SUDOKU_COLOR_CLASSES[board.colors[cell]] ?? "";
+				const colorClass = SUDOKU_COLORS[board.colors[cell] - 1]?.tint ?? "";
 
 				const borders = [
 					col % 3 === 0

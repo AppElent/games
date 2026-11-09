@@ -1,6 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import {
+	clampDifficulty,
+	SQUAD_SURGE_DIFFICULTIES,
+} from "#/lib/games/squad-surge";
 import { loadSquadSurgeProgress } from "#/lib/games/squad-surge-local";
 import { fmt, useMessages } from "#/lib/i18n";
 
@@ -17,15 +21,12 @@ function SquadSurgeStart() {
 	const navigate = useNavigate();
 	const progress = useMemo(() => loadSquadSurgeProgress(), []);
 	const [difficulty, setDifficulty] = useState(() =>
-		Math.min(5, Math.max(1, progress.highestCleared + 1)),
+		clampDifficulty(progress.highestCleared + 1),
 	);
-	const difficulties = [
-		{ value: 1, label: start.difficulties.recruit },
-		{ value: 2, label: start.difficulties.regular },
-		{ value: 3, label: start.difficulties.veteran },
-		{ value: 4, label: start.difficulties.elite },
-		{ value: 5, label: start.difficulties.legend },
-	];
+	const difficulties = SQUAD_SURGE_DIFFICULTIES.map((name, index) => ({
+		value: index + 1,
+		label: start.difficulties[name],
+	}));
 
 	return (
 		<FullscreenGameShell title={title}>

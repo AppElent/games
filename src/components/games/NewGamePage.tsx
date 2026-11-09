@@ -42,7 +42,7 @@ export function NewGamePage({
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
 				{heading}
 			</h1>
-			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="mb-4 club-error">{error}</p> : null}
 			<HostGate>
 				<div className="club-panel max-w-xl rounded-lg p-6">
 					<p className="mb-5 text-sm text-slate-300">{description}</p>

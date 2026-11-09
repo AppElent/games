@@ -123,6 +123,23 @@ function makeGatePair(rng: Rng, difficulty: number): [Gate, Gate] {
 }
 
 /**
+ * The difficulties a run starts at, easiest first: difficulty `n` is entry
+ * `n - 1`. The names are message keys.
+ */
+export const SQUAD_SURGE_DIFFICULTIES = [
+	"recruit",
+	"regular",
+	"veteran",
+	"elite",
+	"legend",
+] as const;
+
+/** `n` held to a difficulty a run can start at. */
+export function clampDifficulty(n: number): number {
+	return Math.min(SQUAD_SURGE_DIFFICULTIES.length, Math.max(1, n));
+}
+
+/**
  * Deterministic level for a (seed, difficulty). Higher difficulty means more
  * gate pairs and waves, stronger waves, and a larger boss. The boss is scaled
  * off a near-optimal playthrough so winning stays possible.

@@ -1,8 +1,7 @@
 import { type CardId, SUITS, type Suit } from "@arcadeclub/core/cards/deck";
-import {
-	type CardGameDefinition,
-	type CardGameId,
-	resolvedRules,
+import type {
+	CardGameDefinition,
+	CardGameId,
 } from "@arcadeclub/core/cards/engine";
 import { powerOf, type SheddingView } from "@arcadeclub/core/cards/shedding";
 import { RotateCcw, RotateCw } from "lucide-react";
@@ -10,19 +9,28 @@ import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
 import { EndOverlay } from "./EndOverlay";
+import { familyRules } from "./family";
 import { seatName, sortCards } from "./format";
-import { PlayingCard, SuitIcon, useCardName } from "./PlayingCard";
 import {
-	AutopilotBack,
-	EventTicker,
+	isRedSuit,
+	PlayingCard,
+	SuitIcon,
+	suitColor,
+	useCardName,
+} from "./PlayingCard";
+import {
 	Hand,
 	Piles,
 	SeatRow,
 	TableFrame,
+	TurnStatus,
 	useFreshCards,
 } from "./Table";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
 import { useFlights } from "./useFlights";
+import { cardAttr } from "./zones";
+
+const SHAKE_MS = 300;
 
 const NO_MELD = () => null;
 
@@ -44,6 +52,7 @@ export function SheddingTable({
 	const [picking, setPicking] = useState<CardId | null>(null);
 	const [armed, setArmed] = useState(false);
 	const [shake, setShake] = useState<CardId | null>(null);
+	const shakeTimers = useRef(new Set<number>());
 	const flights = useFlights(
 		rootRef,
 		view.events,
@@ -52,8 +61,7 @@ export function SheddingTable({
 		NO_MELD,
 	);
 
-	const resolved = resolvedRules(game, table.options);
-	const rules = resolved.family === "shedding" ? resolved.rules : null;
+	const rules = familyRules(game, table.options, "shedding");
 	const name = cards.games[game.id as CardGameId].name;
 	const you = table.you;
 	const playing = view.phase === "playing";
@@ -72,6 +80,15 @@ export function SheddingTable({
 		}
 	}, [callable]);
 
+	useEffect(() => {
+		const timers = shakeTimers.current;
+		return () => {
+			for (const timer of timers) {
+				window.clearTimeout(timer);
+			}
+		};
+	}, []);
+
 	function play(card: CardId, suit?: Suit) {
 		controls.act({
 			type: "play",
@@ -85,15 +102,20 @@ export function SheddingTable({
 	function tap(card: CardId, element: HTMLElement) {
 		if (!mine || !legal.has(card) || controls.pending) {
 			setShake(card);
-			window.setTimeout(() => setShake(null), 300);
+			const timer = window.setTimeout(() => {
+				shakeTimers.current.delete(timer);
+				setShake(null);
+			}, SHAKE_MS);
+			shakeTimers.current.add(timer);
 			return;
 		}
-		flights.noteOrigin(card, element);
-		if (rules && powerOf(rules, card)?.kind === "chooseSuit") {
-			setPicking(card);
-			return;
-		}
-		play(card);
+		flights.playFrom(card, element, () => {
+			if (rules && powerOf(rules, card)?.kind === "chooseSuit") {
+				setPicking(card);
+				return;
+			}
+			play(card);
+		});
 	}
 
 	const hint = !mine
@@ -189,11 +211,7 @@ export function SheddingTable({
 						{view.activeSuit ? (
 							<span
 								className="flag"
-								data-tone={
-									view.activeSuit === "H" || view.activeSuit === "D"
-										? "red"
-										: undefined
-								}
+								data-tone={isRedSuit(view.activeSuit) ? "red" : undefined}
 							>
 								<SuitIcon suit={view.activeSuit} />
 								{fmt(cards.shedding.chosenSuit, {
@@ -208,99 +226,87 @@ export function SheddingTable({
 				</>
 			}
 			status={
-				<>
-					<p className="status-line" data-mine={mine} aria-live="polite">
-						{!playing
-							? null
-							: mine
-								? cards.table.yourTurn
-								: fmt(cards.table.theirTurn, {
-										name: seatName(cards, table, view.turn),
-									})}
-					</p>
-					{hint ? <p className="status-hint">{hint}</p> : null}
-					<EventTicker events={view.events} table={table} />
-					<div className="table-actions">
-						{view.canCallLast ? (
-							<button
-								type="button"
-								className="btn-gold call-pulse"
-								onClick={() => controls.act({ type: "callLast" })}
-							>
-								{cards.shedding.callLast}
-							</button>
-						) : null}
-						{callable ? (
-							<button
-								type="button"
-								className="btn-ghost toggle-chip"
-								aria-pressed={armed}
-								title={cards.shedding.callLastHint}
-								onClick={() => setArmed((current) => !current)}
-							>
-								{armed ? cards.shedding.callLastArmed : cards.shedding.callLast}
-							</button>
-						) : null}
-						{canDraw ? (
-							<button
-								type="button"
-								className={
-									view.legal.length === 0 || view.pendingDraw > 0
-										? "btn-gold"
-										: "btn-ghost"
-								}
-								disabled={controls.pending}
-								onClick={() => controls.act({ type: "draw" })}
-							>
-								{drawLabel()}
-							</button>
-						) : null}
-						{mine && view.canPass ? (
-							<button
-								type="button"
-								className="btn-ghost"
-								disabled={controls.pending}
-								onClick={() => controls.act({ type: "pass" })}
-							>
-								{cards.shedding.pass}
-							</button>
-						) : null}
-						{you !== null && table.seats[you]?.autopilot ? (
-							<AutopilotBack controls={controls} seat={you} />
-						) : null}
-					</div>
-				</>
+				<TurnStatus
+					table={table}
+					controls={controls}
+					events={view.events}
+					turn={view.turn}
+					live={playing}
+					mine={mine}
+					hint={hint}
+				>
+					{view.canCallLast ? (
+						<button
+							type="button"
+							className="btn-gold call-pulse"
+							onClick={() => controls.act({ type: "callLast" })}
+						>
+							{cards.shedding.callLast}
+						</button>
+					) : null}
+					{callable ? (
+						<button
+							type="button"
+							className="btn-ghost toggle-chip"
+							aria-pressed={armed}
+							title={cards.shedding.callLastHint}
+							onClick={() => setArmed((current) => !current)}
+						>
+							{armed ? cards.shedding.callLastArmed : cards.shedding.callLast}
+						</button>
+					) : null}
+					{canDraw ? (
+						<button
+							type="button"
+							className={
+								view.legal.length === 0 || view.pendingDraw > 0
+									? "btn-gold"
+									: "btn-ghost"
+							}
+							disabled={controls.pending}
+							onClick={() => controls.act({ type: "draw" })}
+						>
+							{drawLabel()}
+						</button>
+					) : null}
+					{mine && view.canPass ? (
+						<button
+							type="button"
+							className="btn-ghost"
+							disabled={controls.pending}
+							onClick={() => controls.act({ type: "pass" })}
+						>
+							{cards.shedding.pass}
+						</button>
+					) : null}
+				</TurnStatus>
 			}
 			hand={
-				you === null ? (
-					<div className="h-4" />
-				) : (
-					<Hand
-						cards={sortCards(view.hand, "suit")}
-						label={cards.table.handLabel}
-						fresh={fresh}
-						render={(card, style) => {
-							const canPlay = mine && legal.has(card);
-							return (
-								<button
-									type="button"
-									className="hand-card"
-									style={style}
-									data-card-id={card}
-									aria-label={cardName(card)}
-									aria-disabled={!canPlay}
-									data-legal={canPlay}
-									data-dim={mine && !canPlay}
-									data-new={fresh.has(card)}
-									data-shake={shake === card}
-									onClick={(event) => tap(card, event.currentTarget)}
-								>
-									<PlayingCard card={card} />
-								</button>
-							);
-						}}
-					/>
-				)
+				<Hand
+					cards={sortCards(view.hand, "suit")}
+					label={cards.table.handLabel}
+					fresh={fresh}
+					render={(card, style) => {
+						const canPlay = mine && legal.has(card);
+						return (
+							<button
+								type="button"
+								className="hand-card"
+								style={style}
+								{...cardAttr(card)}
+								aria-label={cardName(card)}
+								aria-disabled={!canPlay}
+								data-legal={canPlay}
+								data-dim={mine && !canPlay}
+								data-new={fresh.has(card)}
+								data-shake={shake === card}
+								onClick={(event) => tap(card, event.currentTarget)}
+							>
+								<PlayingCard card={card} />
+							</button>
+						);
+					}}
+				/>
 			}
 			overlays={
 				<>
@@ -315,9 +321,7 @@ export function SheddingTable({
 									key={suit}
 									type="button"
 									className="suit-choice"
-									style={{
-										color: suit === "H" || suit === "D" ? "#b81f2d" : "#17181f",
-									}}
+									style={{ color: suitColor(suit) }}
 									onClick={() => {
 										if (picking) {
 											play(picking, suit);

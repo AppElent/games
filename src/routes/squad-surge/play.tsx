@@ -115,7 +115,7 @@ function SquadSurgePlay() {
 				</div>
 			)}
 			{endState && level ? (
-				<div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+				<div className="club-overlay">
 					<div className="club-panel w-full max-w-xs rounded-2xl p-6 text-center">
 						<p className="club-kicker mb-1">
 							{endState.status === "won"
@@ -146,16 +146,10 @@ function SquadSurgePlay() {
 							>
 								{messages.common.actions.playAgain}
 							</button>
-							<Link
-								to="/squad-surge"
-								className="min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
-							>
+							<Link to="/squad-surge" className="min-h-11 club-btn-secondary">
 								{play.changeDifficultyButton}
 							</Link>
-							<Link
-								to="/"
-								className="min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white"
-							>
+							<Link to="/" className="min-h-11 club-btn-secondary">
 								{messages.common.gameShell.returnToGames}
 							</Link>
 						</div>

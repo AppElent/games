@@ -2,8 +2,12 @@ import { describeBluffClaim } from "@arcadeclub/core/bluff-dice";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
-import { QrSharePanel } from "#/components/games/QrSharePanel";
-import { SeatBanner } from "#/components/games/SeatBanner";
+import {
+	RoomFrame,
+	RoomLoading,
+	RoomPlayAgain,
+	RoomStartButton,
+} from "#/components/games/RoomFrame";
 import { useSeat } from "#/lib/games/seat";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
@@ -45,12 +49,10 @@ export function BluffDiceRoom({
 
 	if (!state) {
 		return (
-			<div className="club-panel rounded-lg p-6 text-center">
-				<p className="club-kicker mb-2">{bluffDice.room.loadingKicker}</p>
-				<h2 className="club-title text-2xl font-bold text-white">
-					{bluffDice.room.loadingHeading}
-				</h2>
-			</div>
+			<RoomLoading
+				kicker={bluffDice.room.loadingKicker}
+				heading={bluffDice.room.loadingHeading}
+			/>
 		);
 	}
 
@@ -83,34 +85,25 @@ export function BluffDiceRoom({
 				: fmt(bluffDice.room.waitingForPlayer, { name: nameOf(activeId) });
 
 	return (
-		<div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-			<section className="space-y-4">
-				<div className="club-panel rounded-lg p-5">
-					<div className="flex flex-wrap items-start justify-between gap-4">
-						<div>
-							<p className="club-kicker mb-2">
-								{messages.catalog["bluff-dice"].title}
-							</p>
-							<h1 className="club-title text-3xl font-bold text-white">
-								{bundle.session.title}
-							</h1>
-						</div>
-						{bundle.session.joinCode ? (
-							<span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-bold tracking-widest text-white">
-								{bundle.session.joinCode}
-							</span>
-						) : null}
-					</div>
-					<div className="mt-4">
-						<SeatBanner
-							tone={inLobby ? "warning" : "success"}
-							label={statusLabel}
-						/>
-					</div>
-					{error ? (
-						<p className="mt-3 text-sm text-orange-200">{error}</p>
-					) : null}
-
+		<RoomFrame
+			gameTitle={messages.catalog["bluff-dice"].title}
+			title={bundle.session.title}
+			joinCode={bundle.session.joinCode}
+			status={{ label: statusLabel, tone: inLobby ? "warning" : "success" }}
+			error={error}
+			inviteLabel={bluffDice.share.invitePlayers}
+			joinUrl={joinUrl}
+			howToPlay={{
+				heading: bluffDice.room.howToPlayKicker,
+				steps: [
+					bluffDice.room.howToPlayRollDice,
+					bluffDice.room.howToPlayClaim,
+					bluffDice.room.howToPlayOutrank,
+					bluffDice.room.howToPlayLoseDie,
+				],
+			}}
+			panel={
+				<>
 					<ul className="mt-4 grid gap-2 sm:grid-cols-2">
 						{(inLobby
 							? bundle.participants.map((participant) => ({
@@ -142,9 +135,8 @@ export function BluffDiceRoom({
 					</ul>
 
 					{inLobby && isHost && participantId ? (
-						<button
-							type="button"
-							className="mt-4 min-h-11 w-full rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
+						<RoomStartButton
+							label={bluffDice.room.startGameButton}
 							onClick={() =>
 								run(
 									() =>
@@ -155,191 +147,170 @@ export function BluffDiceRoom({
 									bluffDice.room.couldNotStartGame,
 								)
 							}
-						>
-							{bluffDice.room.startGameButton}
-						</button>
+						/>
 					) : null}
-				</div>
-
-				{state.lastReveal ? (
-					<div className="club-panel rounded-lg p-4">
-						<p className="club-kicker mb-2">
-							{bluffDice.room.lastChallengeKicker}
-						</p>
-						<p className="text-sm text-slate-200">
-							{fmt(bluffDice.room.challengeSummary, {
-								challenger: nameOf(state.lastReveal.challengerParticipantId),
-								claimant: nameOf(state.lastReveal.claim.byParticipantId),
-								claim: describeBluffClaim(state.lastReveal.claim),
-								actual: state.lastReveal.actualCount,
-							})}{" "}
-							<span className="font-bold text-orange-200">
-								{fmt(bluffDice.room.loserLosesDie, {
-									name: nameOf(state.lastReveal.loserParticipantId),
-								})}
-							</span>
-						</p>
-						<div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-300">
-							{state.lastReveal.hands.map((hand) => (
-								<span key={hand.participantId}>
-									{nameOf(hand.participantId)}:{" "}
-									<span className="text-lg text-white">
-										{hand.values.map((value) => DIE_FACES[value]).join(" ")}
-									</span>
+				</>
+			}
+		>
+			{state.lastReveal ? (
+				<div className="club-panel rounded-lg p-4">
+					<p className="club-kicker mb-2">
+						{bluffDice.room.lastChallengeKicker}
+					</p>
+					<p className="text-sm text-slate-200">
+						{fmt(bluffDice.room.challengeSummary, {
+							challenger: nameOf(state.lastReveal.challengerParticipantId),
+							claimant: nameOf(state.lastReveal.claim.byParticipantId),
+							claim: describeBluffClaim(state.lastReveal.claim),
+							actual: state.lastReveal.actualCount,
+						})}{" "}
+						<span className="font-bold text-orange-200">
+							{fmt(bluffDice.room.loserLosesDie, {
+								name: nameOf(state.lastReveal.loserParticipantId),
+							})}
+						</span>
+					</p>
+					<div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-300">
+						{state.lastReveal.hands.map((hand) => (
+							<span key={hand.participantId}>
+								{nameOf(hand.participantId)}:{" "}
+								<span className="text-lg text-white">
+									{hand.values.map((value) => DIE_FACES[value]).join(" ")}
 								</span>
-							))}
+							</span>
+						))}
+					</div>
+				</div>
+			) : null}
+
+			{!inLobby && !finished ? (
+				<div className="club-panel rounded-lg p-4">
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div>
+							<p className="club-kicker mb-1">
+								{bluffDice.room.yourDiceKicker}
+							</p>
+							<p className="text-3xl text-white">
+								{myDice
+									? myDice.map((value) => DIE_FACES[value]).join(" ")
+									: "—"}
+							</p>
+						</div>
+						<div className="text-right text-sm text-slate-300">
+							<p>
+								{fmt(bluffDice.room.roundLabel, {
+									number: state.roundNumber,
+								})}
+							</p>
+							<p>{plural(locale, totalDice, bluffDice.room.diceOnTable)}</p>
 						</div>
 					</div>
-				) : null}
-
-				{!inLobby && !finished ? (
-					<div className="club-panel rounded-lg p-4">
-						<div className="flex flex-wrap items-center justify-between gap-3">
-							<div>
-								<p className="club-kicker mb-1">
-									{bluffDice.room.yourDiceKicker}
-								</p>
-								<p className="text-3xl text-white">
-									{myDice
-										? myDice.map((value) => DIE_FACES[value]).join(" ")
-										: "—"}
-								</p>
-							</div>
-							<div className="text-right text-sm text-slate-300">
-								<p>
-									{fmt(bluffDice.room.roundLabel, {
-										number: state.roundNumber,
-									})}
-								</p>
-								<p>{plural(locale, totalDice, bluffDice.room.diceOnTable)}</p>
-							</div>
-						</div>
-						{lastClaim ? (
-							<p className="mt-3 text-sm text-slate-200">
-								{fmt(bluffDice.room.currentClaimBy, {
-									name: nameOf(lastClaim.byParticipantId),
-								})}{" "}
-								<span className="font-bold text-white">
-									{describeBluffClaim(lastClaim)}
+					{lastClaim ? (
+						<p className="mt-3 text-sm text-slate-200">
+							{fmt(bluffDice.room.currentClaimBy, {
+								name: nameOf(lastClaim.byParticipantId),
+							})}{" "}
+							<span className="font-bold text-white">
+								{describeBluffClaim(lastClaim)}
+							</span>
+						</p>
+					) : (
+						<p className="mt-3 text-sm text-slate-400">
+							{bluffDice.room.noClaimYet}
+						</p>
+					)}
+					{myTurn && participantId ? (
+						<div className="mt-4 flex flex-wrap items-end gap-3">
+							<label>
+								<span className="mb-1 club-field-label">
+									{bluffDice.room.quantityLabel}
 								</span>
-							</p>
-						) : (
-							<p className="mt-3 text-sm text-slate-400">
-								{bluffDice.room.noClaimYet}
-							</p>
-						)}
-						{myTurn && participantId ? (
-							<div className="mt-4 flex flex-wrap items-end gap-3">
-								<label>
-									<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-										{bluffDice.room.quantityLabel}
-									</span>
-									<select
-										value={quantity}
-										onChange={(event) =>
-											setQuantity(Number(event.target.value))
-										}
-										className="rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-white"
-									>
-										{Array.from({ length: totalDice }, (_, i) => i + 1).map(
-											(value) => (
-												<option key={value} value={value}>
-													{value}
-												</option>
-											),
-										)}
-									</select>
-								</label>
-								<label>
-									<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-										{bluffDice.room.faceLabel}
-									</span>
-									<select
-										value={face}
-										onChange={(event) => setFace(Number(event.target.value))}
-										className="rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-white"
-									>
-										{[1, 2, 3, 4, 5, 6].map((value) => (
+								<select
+									value={quantity}
+									onChange={(event) => setQuantity(Number(event.target.value))}
+									className="rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-white"
+								>
+									{Array.from({ length: totalDice }, (_, i) => i + 1).map(
+										(value) => (
 											<option key={value} value={value}>
 												{value}
 											</option>
-										))}
-									</select>
-								</label>
+										),
+									)}
+								</select>
+							</label>
+							<label>
+								<span className="mb-1 club-field-label">
+									{bluffDice.room.faceLabel}
+								</span>
+								<select
+									value={face}
+									onChange={(event) => setFace(Number(event.target.value))}
+									className="rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-white"
+								>
+									{[1, 2, 3, 4, 5, 6].map((value) => (
+										<option key={value} value={value}>
+											{value}
+										</option>
+									))}
+								</select>
+							</label>
+							<button
+								type="button"
+								className="min-h-11 club-btn-primary"
+								onClick={() =>
+									run(
+										() =>
+											submitClaim({
+												sessionId: bundle.session._id,
+												participantId,
+												quantity,
+												face,
+											}),
+										bluffDice.room.couldNotClaim,
+									)
+								}
+							>
+								{bluffDice.room.claimButton}
+							</button>
+							{lastClaim ? (
 								<button
 									type="button"
-									className="min-h-11 rounded-md bg-white px-5 py-2 font-bold text-slate-950"
+									className="min-h-11 rounded-md border border-orange-300/40 bg-orange-300/10 px-5 py-2 font-bold text-orange-100"
 									onClick={() =>
 										run(
 											() =>
-												submitClaim({
+												challenge({
 													sessionId: bundle.session._id,
 													participantId,
-													quantity,
-													face,
 												}),
-											bluffDice.room.couldNotClaim,
+											bluffDice.room.couldNotChallenge,
 										)
 									}
 								>
-									{bluffDice.room.claimButton}
+									{bluffDice.room.challengeButton}
 								</button>
-								{lastClaim ? (
-									<button
-										type="button"
-										className="min-h-11 rounded-md border border-orange-300/40 bg-orange-300/10 px-5 py-2 font-bold text-orange-100"
-										onClick={() =>
-											run(
-												() =>
-													challenge({
-														sessionId: bundle.session._id,
-														participantId,
-													}),
-												bluffDice.room.couldNotChallenge,
-											)
-										}
-									>
-										{bluffDice.room.challengeButton}
-									</button>
-								) : null}
-							</div>
-						) : null}
-					</div>
-				) : null}
-
-				{finished && isHost && participantId ? (
-					<div className="flex justify-center">
-						<button
-							type="button"
-							className="rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
-							onClick={() =>
-								run(
-									() =>
-										rematch({
-											sessionId: bundle.session._id,
-											participantId,
-										}),
-									bluffDice.room.couldNotStartRematch,
-								)
-							}
-						>
-							{messages.common.actions.playAgain}
-						</button>
-					</div>
-				) : null}
-			</section>
-			<aside className="space-y-4">
-				<QrSharePanel label={bluffDice.share.invitePlayers} url={joinUrl} />
-				<div className="club-panel rounded-lg p-4">
-					<p className="club-kicker mb-2">{bluffDice.room.howToPlayKicker}</p>
-					<ul className="space-y-1.5 text-sm text-slate-300">
-						<li>{bluffDice.room.howToPlayRollDice}</li>
-						<li>{bluffDice.room.howToPlayClaim}</li>
-						<li>{bluffDice.room.howToPlayOutrank}</li>
-						<li>{bluffDice.room.howToPlayLoseDie}</li>
-					</ul>
+							) : null}
+						</div>
+					) : null}
 				</div>
-			</aside>
-		</div>
+			) : null}
+
+			{finished && isHost && participantId ? (
+				<RoomPlayAgain
+					label={messages.common.actions.playAgain}
+					onClick={() =>
+						run(
+							() =>
+								rematch({
+									sessionId: bundle.session._id,
+									participantId,
+								}),
+							bluffDice.room.couldNotStartRematch,
+						)
+					}
+				/>
+			) : null}
+		</RoomFrame>
 	);
 }

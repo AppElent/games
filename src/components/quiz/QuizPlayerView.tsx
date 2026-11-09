@@ -125,7 +125,7 @@ export function QuizPlayerView({
 					})}
 				</p>
 			) : null}
-			{error ? <p className="mt-4 text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="mt-4 club-error">{error}</p> : null}
 		</section>
 	);
 }

@@ -7,8 +7,12 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
-import { QrSharePanel } from "#/components/games/QrSharePanel";
-import { SeatBanner } from "#/components/games/SeatBanner";
+import {
+	RoomFrame,
+	RoomLoading,
+	RoomPlayAgain,
+	RoomStartButton,
+} from "#/components/games/RoomFrame";
 import { useSeat } from "#/lib/games/seat";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
@@ -70,12 +74,10 @@ export function SignalWordsRoom({
 
 	if (!state) {
 		return (
-			<div className="club-panel rounded-lg p-6 text-center">
-				<p className="club-kicker mb-2">{signalWords.loading.kicker}</p>
-				<h2 className="club-title text-2xl font-bold text-white">
-					{signalWords.loading.heading}
-				</h2>
-			</div>
+			<RoomLoading
+				kicker={signalWords.loading.kicker}
+				heading={signalWords.loading.heading}
+			/>
 		);
 	}
 
@@ -126,34 +128,28 @@ export function SignalWordsRoom({
 	}
 
 	return (
-		<div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-			<section className="space-y-4">
-				<div className="club-panel rounded-lg p-5">
-					<div className="flex flex-wrap items-start justify-between gap-4">
-						<div>
-							<p className="club-kicker mb-2">
-								{messages.catalog["signal-words"].title}
-							</p>
-							<h1 className="club-title text-3xl font-bold text-white">
-								{bundle.session.title}
-							</h1>
-						</div>
-						{bundle.session.joinCode ? (
-							<span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-bold tracking-widest text-white">
-								{bundle.session.joinCode}
-							</span>
-						) : null}
-					</div>
-					<div className="mt-4">
-						<SeatBanner
-							tone={finished ? "success" : inLobby ? "warning" : "success"}
-							label={statusLabel}
-						/>
-					</div>
-					{error ? (
-						<p className="mt-3 text-sm text-orange-200">{error}</p>
-					) : null}
-
+		<RoomFrame
+			gameTitle={messages.catalog["signal-words"].title}
+			title={bundle.session.title}
+			joinCode={bundle.session.joinCode}
+			status={{
+				label: statusLabel,
+				tone: finished ? "success" : inLobby ? "warning" : "success",
+			}}
+			error={error}
+			inviteLabel={signalWords.share.invitePlayers}
+			joinUrl={joinUrl}
+			howToPlay={{
+				heading: signalWords.howToPlay.heading,
+				steps: [
+					signalWords.howToPlay.step1,
+					signalWords.howToPlay.step2,
+					signalWords.howToPlay.step3,
+					signalWords.howToPlay.step4,
+				],
+			}}
+			panel={
+				<>
 					<div className="mt-4 grid gap-3 md:grid-cols-2">
 						{(["red", "blue"] as const).map((team) => (
 							<div
@@ -231,9 +227,8 @@ export function SignalWordsRoom({
 					</div>
 
 					{inLobby && isHost && participantId ? (
-						<button
-							type="button"
-							className="mt-4 min-h-11 w-full rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
+						<RoomStartButton
+							label={signalWords.actions.startGame}
 							onClick={() =>
 								run(
 									() =>
@@ -244,169 +239,147 @@ export function SignalWordsRoom({
 									signalWords.actions.startGameError,
 								)
 							}
-						>
-							{signalWords.actions.startGame}
-						</button>
+						/>
 					) : null}
+				</>
+			}
+		>
+			{!inLobby ? (
+				<div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+					{state.words.map((word, index) => {
+						const revealedRole = state.revealedRoles[index];
+						const keyRole = key?.[index];
+						const clickable = myGuessTurn && !state.revealed[index];
+						return (
+							<button
+								key={word}
+								type="button"
+								disabled={!clickable}
+								onClick={() => {
+									if (!participantId) {
+										return;
+									}
+									run(
+										() =>
+											submitGuess({
+												sessionId: bundle.session._id,
+												participantId,
+												cardIndex: index,
+											}),
+										signalWords.actions.guessError,
+									);
+								}}
+								className={`relative flex min-h-11 items-center justify-center rounded-md border px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide sm:py-4 sm:text-xs ${
+									revealedRole && state.revealed[index]
+										? `${ROLE_STYLES[revealedRole]} opacity-90`
+										: revealedRole
+											? `${ROLE_STYLES[revealedRole]}`
+											: "border-white/15 bg-white/10 text-white"
+								} ${clickable ? "hover:bg-white/25" : ""}`}
+							>
+								{word}
+								{keyRole && !state.revealed[index] && !finished ? (
+									<span
+										className={`absolute right-1 top-1 h-2 w-2 rounded-full ${KEY_DOT[keyRole]}`}
+										title={signalWords.roles[keyRole]}
+									/>
+								) : null}
+							</button>
+						);
+					})}
 				</div>
+			) : null}
 
-				{!inLobby ? (
-					<div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-						{state.words.map((word, index) => {
-							const revealedRole = state.revealedRoles[index];
-							const keyRole = key?.[index];
-							const clickable = myGuessTurn && !state.revealed[index];
-							return (
-								<button
-									key={word}
-									type="button"
-									disabled={!clickable}
-									onClick={() => {
-										if (!participantId) {
-											return;
-										}
-										run(
-											() =>
-												submitGuess({
-													sessionId: bundle.session._id,
-													participantId,
-													cardIndex: index,
-												}),
-											signalWords.actions.guessError,
-										);
-									}}
-									className={`relative flex min-h-11 items-center justify-center rounded-md border px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide sm:py-4 sm:text-xs ${
-										revealedRole && state.revealed[index]
-											? `${ROLE_STYLES[revealedRole]} opacity-90`
-											: revealedRole
-												? `${ROLE_STYLES[revealedRole]}`
-												: "border-white/15 bg-white/10 text-white"
-									} ${clickable ? "hover:bg-white/25" : ""}`}
-								>
-									{word}
-									{keyRole && !state.revealed[index] && !finished ? (
-										<span
-											className={`absolute right-1 top-1 h-2 w-2 rounded-full ${KEY_DOT[keyRole]}`}
-											title={signalWords.roles[keyRole]}
-										/>
-									) : null}
-								</button>
-							);
-						})}
-					</div>
-				) : null}
+			{myClueTurn && participantId ? (
+				<form
+					className="club-panel flex flex-wrap items-end gap-3 rounded-lg p-4"
+					onSubmit={(event) => {
+						event.preventDefault();
+						run(
+							() =>
+								submitClue({
+									sessionId: bundle.session._id,
+									participantId,
+									clue,
+									count,
+								}),
+							signalWords.clueForm.error,
+						).then((sent) => {
+							if (sent) {
+								setClue("");
+							}
+						});
+					}}
+				>
+					<label className="flex-1">
+						<span className="mb-1 club-field-label">
+							{signalWords.clueForm.label}
+						</span>
+						<input
+							value={clue}
+							onChange={(event) => setClue(event.target.value)}
+							className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white"
+							placeholder={signalWords.clueForm.placeholder}
+						/>
+					</label>
+					<label>
+						<span className="mb-1 club-field-label">
+							{signalWords.clueForm.countLabel}
+						</span>
+						<select
+							value={count}
+							onChange={(event) => setCount(Number(event.target.value))}
+							className="rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-white"
+						>
+							{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
+								<option key={value} value={value}>
+									{value}
+								</option>
+							))}
+						</select>
+					</label>
+					<button type="submit" className="min-h-11 club-btn-primary">
+						{signalWords.clueForm.submit}
+					</button>
+				</form>
+			) : null}
 
-				{myClueTurn && participantId ? (
-					<form
-						className="club-panel flex flex-wrap items-end gap-3 rounded-lg p-4"
-						onSubmit={(event) => {
-							event.preventDefault();
+			{myGuessTurn && participantId ? (
+				<div className="flex justify-center">
+					<button
+						type="button"
+						className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white"
+						onClick={() =>
 							run(
 								() =>
-									submitClue({
+									pass({
 										sessionId: bundle.session._id,
 										participantId,
-										clue,
-										count,
 									}),
-								signalWords.clueForm.error,
-							).then((sent) => {
-								if (sent) {
-									setClue("");
-								}
-							});
-						}}
+								signalWords.actions.passError,
+							)
+						}
 					>
-						<label className="flex-1">
-							<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-								{signalWords.clueForm.label}
-							</span>
-							<input
-								value={clue}
-								onChange={(event) => setClue(event.target.value)}
-								className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white"
-								placeholder={signalWords.clueForm.placeholder}
-							/>
-						</label>
-						<label>
-							<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
-								{signalWords.clueForm.countLabel}
-							</span>
-							<select
-								value={count}
-								onChange={(event) => setCount(Number(event.target.value))}
-								className="rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-white"
-							>
-								{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
-									<option key={value} value={value}>
-										{value}
-									</option>
-								))}
-							</select>
-						</label>
-						<button
-							type="submit"
-							className="min-h-11 rounded-md bg-white px-5 py-2 font-bold text-slate-950"
-						>
-							{signalWords.clueForm.submit}
-						</button>
-					</form>
-				) : null}
-
-				{myGuessTurn && participantId ? (
-					<div className="flex justify-center">
-						<button
-							type="button"
-							className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white"
-							onClick={() =>
-								run(
-									() =>
-										pass({
-											sessionId: bundle.session._id,
-											participantId,
-										}),
-									signalWords.actions.passError,
-								)
-							}
-						>
-							{signalWords.actions.passTurn}
-						</button>
-					</div>
-				) : null}
-
-				{finished && isHost && participantId ? (
-					<div className="flex justify-center">
-						<button
-							type="button"
-							className="rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
-							onClick={() =>
-								run(
-									() =>
-										rematch({
-											sessionId: bundle.session._id,
-											participantId,
-										}),
-									signalWords.actions.rematchError,
-								)
-							}
-						>
-							{signalWords.actions.playAgain}
-						</button>
-					</div>
-				) : null}
-			</section>
-			<aside className="space-y-4">
-				<QrSharePanel label={signalWords.share.invitePlayers} url={joinUrl} />
-				<div className="club-panel rounded-lg p-4">
-					<p className="club-kicker mb-2">{signalWords.howToPlay.heading}</p>
-					<ul className="space-y-1.5 text-sm text-slate-300">
-						<li>{signalWords.howToPlay.step1}</li>
-						<li>{signalWords.howToPlay.step2}</li>
-						<li>{signalWords.howToPlay.step3}</li>
-						<li>{signalWords.howToPlay.step4}</li>
-					</ul>
+						{signalWords.actions.passTurn}
+					</button>
 				</div>
-			</aside>
-		</div>
+			) : null}
+
+			{finished && isHost && participantId ? (
+				<RoomPlayAgain
+					label={signalWords.actions.playAgain}
+					onClick={() =>
+						run(
+							() =>
+								rematch({
+									sessionId: bundle.session._id,
+									participantId,
+								}),
+							signalWords.actions.rematchError,
+						)
+					}
+				/>
+			) : null}
+		</RoomFrame>
 	);
 }

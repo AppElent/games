@@ -3,7 +3,8 @@ import { useMutation, useQuery } from "convex/react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate } from "#/components/games/HostGate";
-import { fmt, plural, useI18n } from "#/lib/i18n";
+import { useQuizSetText } from "#/components/quiz/quiz-set-text";
+import { fmt, useI18n } from "#/lib/i18n";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
@@ -34,7 +35,8 @@ function QuizSetsPage() {
 }
 
 function QuizSetsList() {
-	const { messages, locale } = useI18n();
+	const { messages } = useI18n();
+	const { summary } = useQuizSetText();
 	const mySets = useQuery(api.quiz.listMine);
 	const sampleSets = useQuery(api.quiz.listSampleSets);
 	const deleteSet = useMutation(api.quiz.deleteSet);
@@ -50,7 +52,7 @@ function QuizSetsList() {
 			</Link>
 
 			<div className="club-panel rounded-lg p-5">
-				<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-300">
+				<h2 className="mb-3 club-panel-heading">
 					{messages.games.quiz.sets.mySets}
 				</h2>
 				{mySets === undefined ? (
@@ -71,16 +73,7 @@ function QuizSetsList() {
 								<div className="min-w-0">
 									<p className="truncate font-bold text-white">{set.title}</p>
 									<p className="truncate text-sm text-slate-400">
-										{plural(
-											locale,
-											set.questions.length,
-											messages.games.quiz.questionsCount,
-										)}
-										{set.description
-											? fmt(messages.games.quiz.sets.descriptionSuffix, {
-													description: set.description,
-												})
-											: ""}
+										{summary(set)}
 									</p>
 								</div>
 								<div className="flex shrink-0 items-center gap-1">
@@ -124,7 +117,7 @@ function QuizSetsList() {
 			</div>
 
 			<div className="club-panel rounded-lg p-5">
-				<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-300">
+				<h2 className="mb-3 club-panel-heading">
 					{messages.games.quiz.sets.builtInSets}
 				</h2>
 				{sampleSets === undefined ? (
@@ -136,18 +129,7 @@ function QuizSetsList() {
 						{sampleSets.map((set) => (
 							<li key={set._id} className="rounded-md bg-white/5 px-4 py-3">
 								<p className="font-bold text-white">{set.title}</p>
-								<p className="text-sm text-slate-400">
-									{plural(
-										locale,
-										set.questions.length,
-										messages.games.quiz.questionsCount,
-									)}
-									{set.description
-										? fmt(messages.games.quiz.sets.descriptionSuffix, {
-												description: set.description,
-											})
-										: ""}
-								</p>
+								<p className="text-sm text-slate-400">{summary(set)}</p>
 							</li>
 						))}
 					</ul>

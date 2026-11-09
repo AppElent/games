@@ -44,7 +44,7 @@ function ChessNewPage() {
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
 				{chess.newGame.heading}
 			</h1>
-			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="mb-4 club-error">{error}</p> : null}
 			<HostGate>
 				<div className="club-panel max-w-xl rounded-lg p-6">
 					<fieldset className="mb-5">

@@ -7,8 +7,17 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { eventsSince } from "./events";
 import { cardTilt } from "./format";
-import { PlayingCard } from "./PlayingCard";
+import { CARD_HEIGHT, CARD_WIDTH, PlayingCard } from "./PlayingCard";
+import {
+	findCardFace,
+	findZone,
+	isSeatZone,
+	meldZone,
+	seatZone as otherSeatZone,
+	type Zone,
+} from "./zones";
 
 type Spot = { x: number; y: number; width: number };
 type Flight = {
@@ -27,25 +36,28 @@ const FALLBACK_WIDTH = 40;
 const MAX_CARDS_PER_EVENT = 6;
 const DEAL_CARDS_PER_SEAT = 3;
 
-function zoneOf(root: HTMLElement, zone: string) {
-	return root.querySelector<HTMLElement>(`[data-zone="${zone}"]`);
-}
-
-function spotOf(root: HTMLElement, zone: string): Spot | null {
-	const element = zoneOf(root, zone);
-	if (!element) {
-		return null;
-	}
+/** Where `element` sits inside `root`, at its own width. */
+function spotIn(root: HTMLElement, element: HTMLElement, width: number): Spot {
 	const base = root.getBoundingClientRect();
 	const rect = element.getBoundingClientRect();
-	const card = zone.startsWith("seat")
-		? null
-		: element.querySelector<HTMLElement>(".pc");
 	return {
 		x: rect.left + rect.width / 2 - base.left,
 		y: rect.top + rect.height / 2 - base.top,
-		width: card?.getBoundingClientRect().width ?? FALLBACK_WIDTH,
+		width,
 	};
+}
+
+function spotOf(root: HTMLElement, zone: Zone): Spot | null {
+	const element = findZone(root, zone);
+	if (!element) {
+		return null;
+	}
+	const card = isSeatZone(zone) ? null : findCardFace(element);
+	return spotIn(
+		root,
+		element,
+		card?.getBoundingClientRect().width ?? FALLBACK_WIDTH,
+	);
 }
 
 function FlightCard({
@@ -55,7 +67,7 @@ function FlightCard({
 	flight: Flight;
 	onDone: (flight: Flight) => void;
 }) {
-	const height = (flight.to.width * 140) / 100;
+	const height = (flight.to.width * CARD_HEIGHT) / CARD_WIDTH;
 	return (
 		<div
 			className="flight"
@@ -116,7 +128,15 @@ export function useFlights(
 	layer: ReactNode;
 	landing: boolean;
 	flash: number | null;
-	noteOrigin: (card: CardId, element: HTMLElement) => void;
+	/**
+	 * Runs `move` for a card the player just played from `element`, so its
+	 * flight starts where the card was rather than at the hand's centre.
+	 */
+	playFrom: (
+		card: CardId,
+		element: HTMLElement | null,
+		move: () => void,
+	) => void;
 } {
 	const lastSeq = useRef<number | null>(null);
 	const nextId = useRef(0);
@@ -133,17 +153,16 @@ export function useFlights(
 		if (previous === null || newestSeq === previous || !root || quiet) {
 			return;
 		}
-		// A rematch restarts the count: everything in the log is then new.
-		const fresh =
-			newestSeq < previous ? events : events.filter((e) => e.seq > previous);
-		const seatZone = (seat: number) => (seat === you ? "hand" : `seat-${seat}`);
+		const fresh = eventsSince(events, previous);
+		const seatZone = (seat: number): Zone =>
+			seat === you ? "hand" : otherSeatZone(seat);
 		const planned: Flight[] = [];
 		let delay = 0;
 
 		const fly = (
 			card: CardId | null,
-			fromZone: string,
-			toZone: string,
+			fromZone: Zone,
+			toZone: Zone,
 			from?: Spot,
 		) => {
 			const start = from ?? spotOf(root, fromZone);
@@ -162,7 +181,7 @@ export function useFlights(
 			});
 			delay += STEP_MS;
 		};
-		const flyBacks = (count: number, fromZone: string, seat: number) => {
+		const flyBacks = (count: number, fromZone: Zone, seat: number) => {
 			for (let i = 0; i < Math.min(count, MAX_CARDS_PER_EVENT); i += 1) {
 				fly(null, fromZone, seatZone(seat));
 			}
@@ -201,18 +220,18 @@ export function useFlights(
 					break;
 				case "meld":
 					for (const id of event.meldIds) {
-						fly(meldCard(id), seatZone(event.seat), `meld-${id}`);
+						fly(meldCard(id), seatZone(event.seat), meldZone(id));
 					}
 					break;
 				case "layoff":
 					fly(
 						event.cards[0] ?? null,
 						seatZone(event.seat),
-						`meld-${event.meldId}`,
+						meldZone(event.meldId),
 					);
 					break;
 				case "swap":
-					fly(event.card, seatZone(event.seat), `meld-${event.meldId}`);
+					fly(event.card, seatZone(event.seat), meldZone(event.meldId));
 					break;
 				case "skip":
 				case "again":
@@ -243,18 +262,15 @@ export function useFlights(
 	return {
 		landing: flights.some((flight) => flight.toDiscard),
 		flash,
-		noteOrigin: (card, element) => {
+		playFrom: (card, element, move) => {
 			const root = rootRef.current;
-			if (!root) {
-				return;
+			if (root && element) {
+				origins.current.set(
+					card,
+					spotIn(root, element, element.getBoundingClientRect().width),
+				);
 			}
-			const base = root.getBoundingClientRect();
-			const rect = element.getBoundingClientRect();
-			origins.current.set(card, {
-				x: rect.left + rect.width / 2 - base.left,
-				y: rect.top + rect.height / 2 - base.top,
-				width: rect.width,
-			});
+			move();
 		},
 		layer: (
 			<div className="flight-layer" aria-hidden="true">

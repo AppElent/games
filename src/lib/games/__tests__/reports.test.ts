@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { toCsv } from "../csv";
+import { buildGameStats } from "../game-stats";
 import {
-	buildGameStats,
 	buildQuestionStats,
 	buildQuizResultsCsv,
 	buildScoreboard,
-	toCsv,
-} from "../results";
+} from "../quiz-report";
 
 const PARTICIPANTS = [
 	{ _id: "host", displayName: "Eric", role: "host" as const },

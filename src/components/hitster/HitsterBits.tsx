@@ -15,14 +15,17 @@ export type HitsterState = NonNullable<HitsterBundle["state"]>;
 export function participantName(
 	bundle: HitsterBundle,
 	participantId: string | undefined,
-	fallbacks: { team: string; player: string },
+	fallbacks: {
+		participantFallbackTeam: string;
+		participantFallbackPlayer: string;
+	},
 ) {
 	if (!participantId) {
-		return fallbacks.team;
+		return fallbacks.participantFallbackTeam;
 	}
 	return (
 		bundle.participants.find((entry) => entry._id === participantId)
-			?.displayName ?? fallbacks.player
+			?.displayName ?? fallbacks.participantFallbackPlayer
 	);
 }
 
@@ -130,10 +133,6 @@ export function TokenPips({ tokens }: { tokens: number }) {
 export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 	const { locale, messages } = useI18n();
 	const scoreboard = messages.games.hitster.bits.scoreboard;
-	const fallbacks = {
-		team: messages.games.hitster.bits.participantFallbackTeam,
-		player: messages.games.hitster.bits.participantFallbackPlayer,
-	};
 	const state = bundle.state;
 	if (!state) {
 		return null;
@@ -161,7 +160,11 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 	const rows = state.timelines
 		.map((timeline) => ({
 			participantId: timeline.participantId,
-			name: participantName(bundle, timeline.participantId, fallbacks),
+			name: participantName(
+				bundle,
+				timeline.participantId,
+				messages.games.hitster.bits,
+			),
 			cards: timeline.cardIds.length,
 			tokens:
 				state.tokens.find(
@@ -283,10 +286,6 @@ export function RulesPanel({ state }: { state: HitsterState }) {
 export function RecapPanel({ bundle }: { bundle: HitsterBundle }) {
 	const messages = useMessages();
 	const recapText = messages.games.hitster.bits.recap;
-	const fallbacks = {
-		team: messages.games.hitster.bits.participantFallbackTeam,
-		player: messages.games.hitster.bits.participantFallbackPlayer,
-	};
 	const resultWord = (correct: boolean) =>
 		correct ? recapText.correctWord : recapText.wrongWord;
 	const state = bundle.state;
@@ -298,10 +297,14 @@ export function RecapPanel({ bundle }: { bundle: HitsterBundle }) {
 	const activeName = participantName(
 		bundle,
 		recap.activeParticipantId,
-		fallbacks,
+		messages.games.hitster.bits,
 	);
 	const wonBy = recap.cardWonByParticipantId
-		? participantName(bundle, recap.cardWonByParticipantId, fallbacks)
+		? participantName(
+				bundle,
+				recap.cardWonByParticipantId,
+				messages.games.hitster.bits,
+			)
 		: undefined;
 	return (
 		<div className="rounded-3xl border border-[var(--club-line)] bg-[var(--club-panel)] p-6">
@@ -372,7 +375,11 @@ export function RecapPanel({ bundle }: { bundle: HitsterBundle }) {
 					{recap.stealResults.map((steal) => (
 						<li key={steal.participantId}>
 							{fmt(recapText.stealByLine, {
-								name: participantName(bundle, steal.participantId, fallbacks),
+								name: participantName(
+									bundle,
+									steal.participantId,
+									messages.games.hitster.bits,
+								),
 								result: steal.wonCard
 									? recapText.stealWonCard
 									: steal.correct

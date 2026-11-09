@@ -1,4 +1,6 @@
 import {
+	DEFAULT_QUESTION_POINTS,
+	DEFAULT_QUESTION_SECONDS,
 	parseQuizQuestionsTsv,
 	type QuizQuestionDraft,
 } from "@arcadeclub/core/quiz";
@@ -22,8 +24,8 @@ function emptyQuestion(index: number): QuizQuestionDraft {
 			{ id: "b", label: "" },
 		],
 		correctChoiceIds: [],
-		durationSeconds: 20,
-		points: 1000,
+		durationSeconds: DEFAULT_QUESTION_SECONDS,
+		points: DEFAULT_QUESTION_POINTS,
 	};
 }
 
@@ -139,7 +141,7 @@ export function QuizSetEditor({
 					value={title}
 					onChange={(event) => setTitle(event.target.value)}
 					placeholder={messages.games.quiz.setEditor.titlePlaceholder}
-					className="mb-4 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300"
+					className="mb-4 w-full club-input-dark"
 				/>
 				<label
 					className="mb-2 block text-sm font-bold text-slate-200"
@@ -152,13 +154,13 @@ export function QuizSetEditor({
 					value={description}
 					onChange={(event) => setDescription(event.target.value)}
 					placeholder={messages.games.quiz.setEditor.descriptionPlaceholder}
-					className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300"
+					className="w-full club-input-dark"
 				/>
 			</div>
 
 			<div className="club-panel rounded-lg p-5">
 				<div className="mb-4 flex items-center justify-between">
-					<h2 className="text-sm font-bold uppercase tracking-wide text-slate-300">
+					<h2 className="club-panel-heading">
 						{messages.games.quiz.setEditor.importHeading}
 					</h2>
 					<button
@@ -189,7 +191,7 @@ export function QuizSetEditor({
 							className="mb-3 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-sm text-white outline-none focus:border-cyan-300"
 						/>
 						{importErrors.length > 0 ? (
-							<ul className="mb-3 space-y-1 text-sm text-orange-200">
+							<ul className="mb-3 space-y-1 club-error">
 								{importErrors.map((importError) => (
 									<li key={importError}>{importError}</li>
 								))}
@@ -234,7 +236,7 @@ export function QuizSetEditor({
 				{questions.map((question, index) => (
 					<div key={question.id} className="club-panel rounded-lg p-5">
 						<div className="mb-3 flex items-center justify-between">
-							<h3 className="text-sm font-bold uppercase tracking-wide text-slate-300">
+							<h3 className="club-panel-heading">
 								{fmt(messages.games.quiz.questionNumber, { number: index + 1 })}
 							</h3>
 							<button
@@ -261,7 +263,7 @@ export function QuizSetEditor({
 								patchQuestion(index, { prompt: event.target.value })
 							}
 							placeholder={messages.games.quiz.setEditor.promptPlaceholder}
-							className="mb-4 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300"
+							className="mb-4 w-full club-input-dark"
 						/>
 						<div className="mb-4 grid gap-2 sm:grid-cols-2">
 							{question.choices.map((choice, choiceIndex) => {
@@ -312,7 +314,7 @@ export function QuizSetEditor({
 												messages.games.quiz.setEditor.choicePlaceholder,
 												{ number: choiceIndex + 1 },
 											)}
-											className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300"
+											className="min-w-0 flex-1 club-input-dark"
 										/>
 									</div>
 								);
@@ -348,7 +350,8 @@ export function QuizSetEditor({
 									onChange={(event) =>
 										patchQuestion(index, {
 											durationSeconds:
-												Number.parseInt(event.target.value, 10) || 20,
+												Number.parseInt(event.target.value, 10) ||
+												DEFAULT_QUESTION_SECONDS,
 										})
 									}
 									className="w-20 rounded-md border border-white/10 bg-black/30 px-2 py-1.5 text-white outline-none focus:border-cyan-300"
@@ -364,7 +367,9 @@ export function QuizSetEditor({
 									value={question.points}
 									onChange={(event) =>
 										patchQuestion(index, {
-											points: Number.parseInt(event.target.value, 10) || 1000,
+											points:
+												Number.parseInt(event.target.value, 10) ||
+												DEFAULT_QUESTION_POINTS,
 										})
 									}
 									className="w-24 rounded-md border border-white/10 bg-black/30 px-2 py-1.5 text-white outline-none focus:border-cyan-300"
@@ -375,7 +380,7 @@ export function QuizSetEditor({
 				))}
 			</div>
 
-			{error ? <p className="text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="club-error">{error}</p> : null}
 			<div className="flex flex-wrap gap-3">
 				<button
 					type="button"

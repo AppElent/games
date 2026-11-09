@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Check, Copy, Home, RotateCcw, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { useMessages } from "#/lib/i18n";
+import { useCopyFeedback } from "#/lib/use-copy-feedback";
 
 /**
  * Shared end-of-game panel: result headline, rematch, next actions, and a
@@ -28,7 +28,7 @@ export function GameEndScreen({
 	children?: ReactNode;
 }) {
 	const messages = useMessages();
-	const [copied, setCopied] = useState(false);
+	const { copied, copy } = useCopyFeedback();
 	const resolvedRematchLabel =
 		rematchLabel ?? messages.common.endScreen.rematch;
 	const resolvedNewGameLabel =
@@ -65,11 +65,7 @@ export function GameEndScreen({
 					<button
 						type="button"
 						className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-5 py-2.5 font-bold text-white hover:bg-white/15"
-						onClick={() => {
-							void navigator.clipboard.writeText(shareText);
-							setCopied(true);
-							window.setTimeout(() => setCopied(false), 2000);
-						}}
+						onClick={() => void copy(shareText)}
 					>
 						{copied ? (
 							<Check className="h-4 w-4 text-emerald-300" />

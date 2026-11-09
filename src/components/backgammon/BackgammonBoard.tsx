@@ -9,9 +9,11 @@ import {
 	getMoveHighlights,
 	planBackgammonMove,
 } from "@arcadeclub/core/backgammon";
-import type {
-	BackgammonOptions,
-	OnlineOptions,
+import {
+	type BackgammonOptions,
+	DEFAULT_BACKGAMMON_OPTIONS,
+	DEFAULT_ONLINE_OPTIONS,
+	type OnlineOptions,
 } from "@arcadeclub/core/backgammon-local";
 import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n } from "#/lib/i18n";
@@ -27,6 +29,17 @@ import { fmt, plural, useI18n } from "#/lib/i18n";
 export type BackgammonBoardOptions = OnlineOptions & Partial<BackgammonOptions>;
 
 export type BackgammonOptionKey = keyof BackgammonOptions;
+
+/** The gear menu's options, in the order of each mode's defaults. */
+export const LOCAL_OPTION_KEYS = Object.keys(
+	DEFAULT_BACKGAMMON_OPTIONS,
+) as BackgammonOptionKey[];
+export const ONLINE_OPTION_KEYS = Object.keys(
+	DEFAULT_ONLINE_OPTIONS,
+) as BackgammonOptionKey[];
+
+/** The board's natural width: screens scale it down from here to fit. */
+export const BACKGAMMON_DESIGN_WIDTH = 1060;
 
 type Props = {
 	state: BackgammonTurnState;
@@ -578,7 +591,7 @@ export function BackgammonBoard({
 		<div
 			style={{
 				width: "100%",
-				maxWidth: 1060,
+				maxWidth: BACKGAMMON_DESIGN_WIDTH,
 				display: "flex",
 				flexDirection: "column",
 				gap: 18,

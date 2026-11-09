@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { BackgammonWaitingRoom } from "#/components/backgammon/BackgammonWaitingRoom";
+import { BackgammonMatch } from "#/components/backgammon/BackgammonMatch";
 import {
 	boardShell,
 	SessionBundleRoute,
@@ -29,7 +29,7 @@ function BackgammonSessionPage() {
 			notFound={messages.games.backgammon.session.matchNotFound}
 		>
 			{(loaded) => (
-				<BackgammonWaitingRoom
+				<BackgammonMatch
 					bundle={loaded}
 					shareUrl={sessionInviteUrl(loaded.session)}
 				/>

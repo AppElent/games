@@ -2,12 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { useHostSession } from "#/lib/games/use-host-session";
-import { plural, useI18n } from "#/lib/i18n";
+import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { QuizSetOptions } from "./quiz-set-text";
 
 export function QuizSetupForm() {
-	const { messages, locale } = useI18n();
+	const messages = useMessages();
 	const ensureSampleSet = useMutation(api.quiz.ensureSampleSet);
 	const create = useMutation(api.quiz.create);
 	const { busy, error, host } = useHostSession("live-quiz");
@@ -42,35 +43,15 @@ export function QuizSetupForm() {
 				id="quiz-set"
 				value={selectedSetId}
 				onChange={(event) => setSelectedSetId(event.target.value)}
-				className="mb-2 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300"
+				className="mb-2 w-full club-input-dark"
 			>
 				{mySets?.length ? (
 					<optgroup label={messages.games.quiz.sets.mySets}>
-						{mySets.map((set) => (
-							<option key={set._id} value={set._id}>
-								{set.title} (
-								{plural(
-									locale,
-									set.questions.length,
-									messages.games.quiz.questionsCount,
-								)}
-								)
-							</option>
-						))}
+						<QuizSetOptions sets={mySets} />
 					</optgroup>
 				) : null}
 				<optgroup label={messages.games.quiz.setupForm.builtIn}>
-					{sampleSets?.map((set) => (
-						<option key={set._id} value={set._id}>
-							{set.title} (
-							{plural(
-								locale,
-								set.questions.length,
-								messages.games.quiz.questionsCount,
-							)}
-							)
-						</option>
-					))}
+					{sampleSets ? <QuizSetOptions sets={sampleSets} /> : null}
 					{!sampleSets?.length ? (
 						<option value="">
 							{messages.games.quiz.setupForm.starterQuizFallback}
@@ -84,7 +65,7 @@ export function QuizSetupForm() {
 					{messages.games.quiz.setupForm.manageQuizSets}
 				</Link>
 			</p>
-			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="mb-4 club-error">{error}</p> : null}
 			<button
 				type="button"
 				disabled={busy}

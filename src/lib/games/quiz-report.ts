@@ -1,4 +1,8 @@
-type ResultParticipant = {
+// The live quiz's host report: ranked totals, the per-question CSV and
+// per-question accuracy, from the session's participants and answers.
+import { toCsv } from "#/lib/games/csv";
+
+export type ResultParticipant = {
 	_id: string;
 	displayName: string;
 	role: "host" | "player" | "watcher";
@@ -19,19 +23,6 @@ type ResultQuestion = {
 	choices: { id: string; label: string }[];
 	correctChoiceIds: string[];
 };
-
-/** Escapes a CSV cell per RFC 4180. */
-function csvCell(value: string | number): string {
-	const text = String(value);
-	if (/[",\n\r]/.test(text)) {
-		return `"${text.replace(/"/g, '""')}"`;
-	}
-	return text;
-}
-
-export function toCsv(rows: (string | number)[][]): string {
-	return rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
-}
 
 /** Ranked totals per participant (watchers and kicked players excluded). */
 export function buildScoreboard(
@@ -119,58 +110,4 @@ export function buildQuestionStats(
 					: Math.round((correct / questionAnswers.length) * 100),
 		};
 	});
-}
-
-type GameStatsRow = {
-	gameType: string;
-	played: number;
-	completed: number;
-	won: number;
-};
-
-/**
- * Aggregates a user's participation rows into per-game stats. `won` counts
- * sessions whose winnerParticipantIds include the user's participant row.
- */
-export function buildGameStats(
-	rows: {
-		session: {
-			gameType: string;
-			status: string;
-			winnerParticipantIds?: string[];
-		};
-		participant: { _id: string };
-	}[],
-): GameStatsRow[] {
-	const byGame = new Map<string, GameStatsRow>();
-	for (const row of rows) {
-		const entry = byGame.get(row.session.gameType) ?? {
-			gameType: row.session.gameType,
-			played: 0,
-			completed: 0,
-			won: 0,
-		};
-		entry.played += 1;
-		if (row.session.status === "completed") {
-			entry.completed += 1;
-			if (row.session.winnerParticipantIds?.includes(row.participant._id)) {
-				entry.won += 1;
-			}
-		}
-		byGame.set(row.session.gameType, entry);
-	}
-	return [...byGame.values()].sort((a, b) => b.played - a.played);
-}
-
-/** Triggers a client-side download of CSV content. */
-export function downloadCsv(filename: string, csv: string) {
-	const blob = new Blob([`﻿${csv}`], {
-		type: "text/csv;charset=utf-8",
-	});
-	const url = URL.createObjectURL(blob);
-	const anchor = document.createElement("a");
-	anchor.href = url;
-	anchor.download = filename;
-	anchor.click();
-	URL.revokeObjectURL(url);
 }

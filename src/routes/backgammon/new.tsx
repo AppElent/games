@@ -23,7 +23,7 @@ function BackgammonNewPage() {
 			<h1 className="club-title mb-4 text-4xl font-bold text-white">
 				{backgammon.newGame.heading}
 			</h1>
-			{error ? <p className="mb-4 text-sm text-orange-200">{error}</p> : null}
+			{error ? <p className="mb-4 club-error">{error}</p> : null}
 			<div className="grid max-w-3xl gap-4 md:grid-cols-2">
 				<div className="club-panel flex flex-col rounded-lg p-6">
 					<h2 className="club-title text-2xl font-bold text-white">

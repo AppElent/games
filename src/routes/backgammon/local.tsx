@@ -13,11 +13,15 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
+	BACKGAMMON_DESIGN_WIDTH,
 	BackgammonBoard,
 	type BackgammonOptionKey,
+	LOCAL_OPTION_KEYS,
 } from "#/components/backgammon/BackgammonBoard";
-import { FitScale, RotateHint } from "#/components/games/FitScale";
+import { colorLabel } from "#/components/backgammon/color-label";
+import { RotateHint } from "#/components/games/FitScale";
 import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import { MatchLoading, MatchStage } from "#/components/games/match/MatchStage";
 import {
 	loadLocalBackgammonGame,
 	saveLocalBackgammonGame,
@@ -50,11 +54,10 @@ function BackgammonLocalPage() {
 
 	if (!match) {
 		return (
-			<FullscreenGameShell title={backgammon.localPlay.title}>
-				<div className="flex h-full items-center justify-center text-slate-300">
-					{backgammon.localPlay.settingUp}
-				</div>
-			</FullscreenGameShell>
+			<MatchLoading
+				title={backgammon.localPlay.title}
+				text={backgammon.localPlay.settingUp}
+			/>
 		);
 	}
 
@@ -107,45 +110,39 @@ function BackgammonLocalPage() {
 			title={backgammon.localPlay.title}
 			onRestart={handleReset}
 		>
-			<div className="flex h-full flex-col">
-				<div className="min-h-0 flex-1 px-2 pt-14 pb-1 landscape:pt-1 landscape:pl-14">
-					<FitScale designWidth={1060} align="top">
-						<BackgammonBoard
-							state={state}
-							interactive={!winner}
-							canRoll={!winner && state.dice.length === 0 && !options.autoRoll}
-							canEndTurn={!winner && canEndBackgammonTurn(state)}
-							options={options}
-							optionKeys={[
-								"showNumbers",
-								"autoRoll",
-								"autoSwitchTurn",
-								"autoCombine",
-							]}
-							onToggleOption={handleToggleOption}
-							onPlan={handlePlan}
-							onRoll={handleRoll}
-							onEndTurn={handleEndTurn}
-							onUndo={handleUndo}
-							onRedo={handleRedo}
-							onReset={handleReset}
-							canUndo={history.length > 0}
-							canRedo={future.length > 0}
-							statusOverride={
-								winner
-									? fmt(backgammon.localPlay.bornOffAll, {
-											color:
-												winner === "white"
-													? backgammon.localPlay.colorWhite
-													: backgammon.localPlay.colorBlack,
-										})
-									: undefined
-							}
-						/>
-					</FitScale>
-				</div>
+			<MatchStage
+				designWidth={BACKGAMMON_DESIGN_WIDTH}
+				align="top"
+				insetClassName="landscape:pt-1 landscape:pl-14"
+				board={
+					<BackgammonBoard
+						state={state}
+						interactive={!winner}
+						canRoll={!winner && state.dice.length === 0 && !options.autoRoll}
+						canEndTurn={!winner && canEndBackgammonTurn(state)}
+						options={options}
+						optionKeys={LOCAL_OPTION_KEYS}
+						onToggleOption={handleToggleOption}
+						onPlan={handlePlan}
+						onRoll={handleRoll}
+						onEndTurn={handleEndTurn}
+						onUndo={handleUndo}
+						onRedo={handleRedo}
+						onReset={handleReset}
+						canUndo={history.length > 0}
+						canRedo={future.length > 0}
+						statusOverride={
+							winner
+								? fmt(backgammon.localPlay.bornOffAll, {
+										color: colorLabel(backgammon.localPlay, winner),
+									})
+								: undefined
+						}
+					/>
+				}
+			>
 				<RotateHint />
-			</div>
+			</MatchStage>
 		</FullscreenGameShell>
 	);
 }

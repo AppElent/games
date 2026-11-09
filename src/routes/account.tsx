@@ -1,9 +1,7 @@
-import { Show } from "@clerk/react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { RequireSignedIn } from "#/components/RequireSignedIn";
 import { ProfilePanel } from "#/lib/auth";
 import { ReportProblem } from "../components/ReportProblem";
-import { authConfig } from "../lib/auth-config";
 
 export const Route = createFileRoute("/account")({
 	component: AccountPage,
@@ -11,26 +9,11 @@ export const Route = createFileRoute("/account")({
 
 function AccountPage() {
 	return (
-		<>
-			<Show when="signed-in">
-				<main className="club-wrap py-10">
-					<ProfilePanel />
-					<ReportProblem />
-				</main>
-			</Show>
-			<Show when="signed-out">
-				<RedirectToSignIn />
-			</Show>
-		</>
+		<RequireSignedIn>
+			<main className="club-wrap py-10">
+				<ProfilePanel />
+				<ReportProblem />
+			</main>
+		</RequireSignedIn>
 	);
-}
-
-function RedirectToSignIn() {
-	const navigate = useNavigate();
-
-	useEffect(() => {
-		navigate({ to: authConfig.paths.signIn });
-	}, [navigate]);
-
-	return null;
 }

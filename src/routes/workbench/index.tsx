@@ -95,9 +95,7 @@ function Workbench() {
 	return (
 		<div className="space-y-6">
 			<div className="club-panel rounded-lg p-5">
-				<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-300">
-					New draft
-				</h2>
+				<h2 className="mb-3 club-panel-heading">New draft</h2>
 				<div className="mb-3 flex flex-wrap gap-2">
 					{CONTENT_DRAFT_KINDS.map((option) => (
 						<button
@@ -118,7 +116,7 @@ function Workbench() {
 					value={title}
 					onChange={(event) => setTitle(event.target.value)}
 					placeholder="Draft title"
-					className="mb-3 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300"
+					className="mb-3 w-full club-input-dark"
 				/>
 				<textarea
 					value={payload}
@@ -127,7 +125,7 @@ function Workbench() {
 					placeholder={KIND_PLACEHOLDERS[kind]}
 					className="mb-3 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
 				/>
-				{error ? <p className="mb-3 text-sm text-orange-200">{error}</p> : null}
+				{error ? <p className="mb-3 club-error">{error}</p> : null}
 				<button
 					type="button"
 					disabled={busyId === "new"}
@@ -225,7 +223,7 @@ function Workbench() {
 							</div>
 						</div>
 						{draft.validationErrors.length > 0 ? (
-							<ul className="mb-2 space-y-1 text-sm text-orange-200">
+							<ul className="mb-2 space-y-1 club-error">
 								{draft.validationErrors.map((message) => (
 									<li key={message}>{message}</li>
 								))}

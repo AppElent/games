@@ -157,6 +157,37 @@ body {
   overflow: hidden;
 }
 
+/* Repeated Tailwind blocks, named so they change together. Each holds exactly
+   the classes it replaced; near-variants keep their own class lists. */
+@utility club-input-dark {
+  @apply rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300;
+}
+
+@utility club-field-label {
+  @apply block text-xs font-bold uppercase tracking-wide text-slate-400;
+}
+
+@utility club-panel-heading {
+  @apply text-sm font-bold uppercase tracking-wide text-slate-300;
+}
+
+@utility club-btn-primary {
+  @apply rounded-md bg-white px-5 py-2 font-bold text-slate-950;
+}
+
+@utility club-btn-secondary {
+  @apply rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white;
+}
+
+/* A dimmed layer over a game surface, centering a menu or end panel. */
+@utility club-overlay {
+  @apply absolute inset-0 z-10 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm;
+}
+
+@utility club-error {
+  @apply text-sm text-orange-200;
+}
+
 code {
   border: 1px solid var(--club-line);
   border-radius: 6px;

@@ -6,9 +6,10 @@ import {
 	hitsterTimelineFor,
 } from "@arcadeclub/core/hitster";
 import { useMutation } from "convex/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
+import { useNow } from "#/lib/use-now";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -29,14 +30,7 @@ function useCountdown(state: HitsterState) {
 		state.phase === "nowPlaying" &&
 		state.turnTimerSeconds &&
 		state.roundStartedAt;
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		if (!active) {
-			return;
-		}
-		const interval = window.setInterval(() => setNow(Date.now()), 1000);
-		return () => window.clearInterval(interval);
-	}, [active]);
+	const now = useNow(1000, Boolean(active));
 	if (!active || !state.turnTimerSeconds || !state.roundStartedAt) {
 		return null;
 	}
@@ -199,10 +193,6 @@ export function HitsterStage({
 }) {
 	const { locale, messages } = useI18n();
 	const stage = messages.games.hitster.stage;
-	const fallbacks = {
-		team: messages.games.hitster.bits.participantFallbackTeam,
-		player: messages.games.hitster.bits.participantFallbackPlayer,
-	};
 	const state = bundle.state;
 	const [stealOpen, setStealOpen] = useState(false);
 	const remaining = useCountdown((state ?? { phase: "lobby" }) as HitsterState);
@@ -214,7 +204,11 @@ export function HitsterStage({
 	const mode = state.mode;
 	const config = getHitsterModeConfig(mode);
 	const activeParticipantId = state.turnOrder[state.activeIndex];
-	const activeName = participantName(bundle, activeParticipantId, fallbacks);
+	const activeName = participantName(
+		bundle,
+		activeParticipantId,
+		messages.games.hitster.bits,
+	);
 	const isActive = activeParticipantId === participantId;
 	const myTokens =
 		state.tokens.find((entry) => entry.participantId === participantId)
