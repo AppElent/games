@@ -45,7 +45,7 @@ type BluffChallengeOutcome = {
 	loser: "claimant" | "challenger";
 };
 
-export function resolveBluffChallenge(
+function resolveBluffChallenge(
 	allDice: readonly number[][],
 	claim: BluffClaim,
 ): BluffChallengeOutcome {
@@ -75,7 +75,7 @@ export function nextActiveIndex(
 	return fromIndex;
 }
 
-export function getBluffWinnerIndex(diceCounts: readonly number[]) {
+function getBluffWinnerIndex(diceCounts: readonly number[]) {
 	const alive = diceCounts
 		.map((count, index) => ({ count, index }))
 		.filter((entry) => entry.count > 0);

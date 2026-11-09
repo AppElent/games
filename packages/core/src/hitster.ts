@@ -234,7 +234,7 @@ export function applyHitsterTokenDelta(
 }
 
 /** Requirements for a steal claim to win the card, per mode. */
-export function hitsterStealRequirementMet(
+function hitsterStealRequirementMet(
 	mode: HitsterMode,
 	flags: HitsterAnswerFlags,
 ): boolean {

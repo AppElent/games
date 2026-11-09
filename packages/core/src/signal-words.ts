@@ -110,7 +110,7 @@ const CLUE_ERROR_CODES = {
 	matchesBoardWord: "clueMatchesBoardWord",
 } as const satisfies Record<SignalClueError, GameErrorCode>;
 
-export function validateSignalClue(
+function validateSignalClue(
 	state: SignalGameState,
 	clue: string,
 	count: number,
