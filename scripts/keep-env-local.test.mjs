@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -33,4 +33,30 @@ it("removes a .env.local the command created", () => {
 	run(cwd);
 
 	expect(existsSync(join(cwd, ".env.local"))).toBe(false);
+});
+
+it("passes SIGTERM to the command, restores .env.local and fails", async () => {
+	const cwd = mkdtempSync(join(tmpdir(), "keep-env-local-"));
+	const original = Buffer.from("CONVEX_DEPLOYMENT=dev:worktree\n");
+	writeFileSync(join(cwd, ".env.local"), original);
+	const wrapper = spawn(
+		process.execPath,
+		[
+			script,
+			"--",
+			process.execPath,
+			"-e",
+			"require('fs').writeFileSync('.env.local', 'x'); console.log('ready'); setInterval(() => {}, 1000)",
+		],
+		{ cwd },
+	);
+	await new Promise((resolve) => wrapper.stdout.once("data", resolve));
+
+	wrapper.kill("SIGTERM");
+	const [code] = await new Promise((resolve) =>
+		wrapper.on("exit", (...exit) => resolve(exit)),
+	);
+
+	expect(code).toBe(143);
+	expect(readFileSync(join(cwd, ".env.local")).equals(original)).toBe(true);
 });

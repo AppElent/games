@@ -10,8 +10,9 @@
  * flag for this: `--env-file` changes which deployment is chosen, not which
  * file is written.
  */
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { constants } from "node:os";
 
 const FILE = ".env.local";
 
@@ -25,17 +26,24 @@ if (!command) {
 
 const snapshot = existsSync(FILE) ? readFileSync(FILE) : null;
 
-// The child gets Ctrl-C itself; the wrapper waits so it can still restore.
-for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"])
-	process.on(signal, () => {});
-
-const result = spawnSync(command, args, { stdio: "inherit" });
-
-if (snapshot === null) rmSync(FILE, { force: true });
-else writeFileSync(FILE, snapshot);
-
-if (result.error) {
-	console.error(`${command}: ${result.error.message}`);
-	process.exit(1);
+function restore() {
+	if (snapshot === null) rmSync(FILE, { force: true });
+	else writeFileSync(FILE, snapshot);
 }
-process.exit(result.status ?? 1);
+
+const child = spawn(command, args, { stdio: "inherit" });
+
+// Pass signals on and wait for the child, so the file is restored and a
+// cancelled push fails instead of letting the next deploy step run.
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"])
+	process.on(signal, () => child.kill(signal));
+
+child.on("error", (error) => {
+	restore();
+	console.error(`${command}: ${error.message}`);
+	process.exit(1);
+});
+child.on("exit", (code, signal) => {
+	restore();
+	process.exit(code ?? 128 + (constants.signals[signal] ?? 0));
+});
