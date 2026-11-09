@@ -309,6 +309,7 @@ export async function requireHost(ctx: ReadCtx, seat: SeatArgs) {
 	if (!session) {
 		throw gameError("gameNotFound");
 	}
+	await requireParticipant(ctx, seat.sessionId, seat.participantId);
 	requireHostByParticipantId(session, seat.participantId);
 	await requireOwnParticipant(ctx, seat, "hostOnly");
 	return session;

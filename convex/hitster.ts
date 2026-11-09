@@ -26,7 +26,7 @@ import {
 	listPlayersIncludingKicked,
 	loadBundle,
 	loadSession,
-	requireHostByParticipantId,
+	requireHost,
 	requireOwnParticipant,
 	seatArgs,
 	startSession,
@@ -127,8 +127,7 @@ export const setup = mutation({
 	},
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
-		await requireOwnParticipant(ctx, args);
-		requireHostByParticipantId(session, args.participantId);
+		await requireHost(ctx, args);
 		if (session.status !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
@@ -145,8 +144,7 @@ export const start = mutation({
 	args: seatArgs,
 	handler: async (ctx, args) => {
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
-		await requireOwnParticipant(ctx, args);
-		requireHostByParticipantId(session, args.participantId);
+		await requireHost(ctx, args);
 		if (state?.phase !== "lobby") {
 			throw gameError("gameNotReady");
 		}
@@ -268,9 +266,8 @@ export const submitSteal = mutation({
 export const reveal = mutation({
 	args: seatArgs,
 	handler: async (ctx, args) => {
-		const { session, state } = await getSessionAndState(ctx, args.sessionId);
-		await requireOwnParticipant(ctx, args);
-		requireHostByParticipantId(session, args.participantId);
+		const { state } = await getSessionAndState(ctx, args.sessionId);
+		await requireHost(ctx, args);
 		if (state?.phase !== "nowPlaying" || !state.currentCardId) {
 			throw gameError("nothingToReveal");
 		}
@@ -292,9 +289,8 @@ export const reveal = mutation({
 export const nextRound = mutation({
 	args: seatArgs,
 	handler: async (ctx, args) => {
-		const { session, state } = await getSessionAndState(ctx, args.sessionId);
-		await requireOwnParticipant(ctx, args);
-		requireHostByParticipantId(session, args.participantId);
+		const { state } = await getSessionAndState(ctx, args.sessionId);
+		await requireHost(ctx, args);
 		if (state?.phase !== "reveal") {
 			throw gameError("finishRevealFirst");
 		}
@@ -327,7 +323,7 @@ export const getBundle = query({
 		participantId: v.optional(v.id("sessionParticipants")),
 		guestId: v.optional(v.string()),
 	},
-	handler: async (ctx, { participantId: named, ...args }) => {
+	handler: async (ctx, args) => {
 		const bundle = await loadBundle(ctx, "hitster", args.sessionId);
 		if (!bundle) {
 			return null;
@@ -337,6 +333,7 @@ export const getBundle = query({
 			return { session, participants, state: null, hostPlayback: null };
 		}
 
+		const { participantId: named } = args;
 		const viewer =
 			named &&
 			(await findOwnParticipant(ctx, { ...args, participantId: named }));

@@ -421,23 +421,20 @@ describe("submitAnswer", () => {
 		});
 	});
 
-	it("answers participantNotFound to an outsider and a kicked player", async () => {
+	it("answers notInGame to an outsider and a kicked player", async () => {
 		const t = setup();
 		const { host, sessionId, hostId, player } = await quizWithPlayer(t);
 		await advancePhase(t, sessionId);
 		await expectCode(
 			answer(t, sessionId, await outsider(t), ["a"]),
-			"participantNotFound",
+			"notInGame",
 		);
 		await host.mutation(api.sessions.kickParticipant, {
 			sessionId,
 			hostParticipantId: hostId,
 			targetParticipantId: player,
 		});
-		await expectCode(
-			answer(t, sessionId, player, ["a"]),
-			"participantNotFound",
-		);
+		await expectCode(answer(t, sessionId, player, ["a"]), "notInGame");
 	});
 
 	it("answers spectatorsCannotAnswer to a watcher", async () => {
@@ -557,21 +554,15 @@ describe("create", () => {
 });
 
 describe("ownership", () => {
-	it("answers participantNotFound to anyone answering for another player", async () => {
+	it("answers notInGame to anyone answering for another player", async () => {
 		const t = setup();
 		const { sessionId, hostId, player } = await quizWithPlayer(t);
 		await advancePhase(t, sessionId);
 		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
-			await expectCode(
-				answer(caller, sessionId, player, ["a"]),
-				"participantNotFound",
-			);
+			await expectCode(answer(caller, sessionId, player, ["a"]), "notInGame");
 		}
 		for (const caller of impostors(t, { guestIds: ["guest_player"] })) {
-			await expectCode(
-				answer(caller, sessionId, hostId, ["a"]),
-				"participantNotFound",
-			);
+			await expectCode(answer(caller, sessionId, hostId, ["a"]), "notInGame");
 		}
 		expect((await bundle(t, sessionId)).answers).toEqual([]);
 	});

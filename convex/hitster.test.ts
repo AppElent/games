@@ -1196,12 +1196,12 @@ describe("create", () => {
 });
 
 describe("ownership", () => {
-	it("answers notInGame to anyone acting for another player's seat", async () => {
+	it("refuses anyone acting for another player's seat", async () => {
 		const t = setup();
 		const { sessionId, hostId, guest } = await startedGame(t);
 		for (const caller of impostors(t, { guestIds: ["guest_0"] })) {
 			await expectCode(submitGuess(caller, sessionId, hostId, 0), "notInGame");
-			await expectCode(reveal(caller, sessionId, hostId), "notInGame");
+			await expectCode(reveal(caller, sessionId, hostId), "hostOnly");
 		}
 		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
 			await expectCode(submitSteal(caller, sessionId, guest, 0), "notInGame");

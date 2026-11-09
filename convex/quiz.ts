@@ -257,11 +257,7 @@ export const submitAnswer = mutation({
 		selectedChoiceIds: v.array(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const participant = await requireOwnParticipant(
-			ctx,
-			args,
-			"participantNotFound",
-		);
+		const participant = await requireOwnParticipant(ctx, args);
 		if (participant.role === "watcher") {
 			throw gameError("spectatorsCannotAnswer");
 		}
