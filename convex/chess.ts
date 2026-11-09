@@ -7,6 +7,7 @@ import {
 } from "@arcadeclub/chess/chess";
 import {
 	CHESS_COLORS,
+	CHESS_HOST_COLORS,
 	CHESS_PROMOTIONS,
 	type ChessColor,
 	type ChessOutcome,
@@ -17,22 +18,15 @@ import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import {
 	CHESS_DUEL,
-	requireRematch,
+	finishDuel,
+	rematchDuel,
 	requireResign,
 	requireSeat,
 	requireTurn,
 	seatHost,
-	swapSeats,
-	winnerOf,
 } from "./lib/duel";
 import { gameError, rules } from "./lib/errors";
-import {
-	finishSession,
-	loadBundle,
-	loadGame,
-	reopenSession,
-	startSession,
-} from "./lib/gameSession";
+import { loadBundle, loadGame, startSession } from "./lib/gameSession";
 import {
 	createdSession,
 	createdSessionValidator,
@@ -64,25 +58,18 @@ async function finishGame(
 	winner: ChessColor | undefined,
 	now: number,
 ) {
-	const winnerParticipantId = winnerOf(state, winner);
-	await finishSession(
+	await finishDuel(
 		ctx,
 		state,
-		{
-			phase: "finished",
-			resultOutcome: outcome,
-			resultWinner: winner,
-			winnerParticipantId,
-			drawOfferBy: undefined,
-			updatedAt: now,
-		},
-		{ now, winners: [winnerParticipantId] },
+		winner,
+		{ resultOutcome: outcome, resultWinner: winner, drawOfferBy: undefined },
+		now,
 	);
 }
 
 const matchArgs = {
 	timeControl: chessTimeControlValidator,
-	hostColor: literals([...CHESS_COLORS, "random"]),
+	hostColor: literals(CHESS_HOST_COLORS),
 };
 
 async function insertState(
@@ -91,11 +78,9 @@ async function insertState(
 	hostParticipantId: Id<"sessionParticipants">,
 	match: ObjectType<typeof matchArgs>,
 ) {
-	const hostColor: ChessColor =
+	const hostColor =
 		match.hostColor === "random"
-			? Math.random() < 0.5
-				? "white"
-				: "black"
+			? CHESS_COLORS[Math.random() < 0.5 ? 0 : 1]
 			: match.hostColor;
 	const hostSeat = await seatHost(
 		ctx,
@@ -283,25 +268,20 @@ export const rematch = mutation({
 	},
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "chess", args.sessionId);
-		requireRematch(CHESS_DUEL, state, args.participantId);
-		const now = Date.now();
-		const clock = initialClock(state.timeControl);
-		const seats = await swapSeats(ctx, CHESS_DUEL, state);
-		await ctx.db.patch(state._id, {
-			phase: "active",
-			...seats,
-			fen: CHESS_INITIAL_FEN,
-			sanHistory: [],
-			activeColor: "white",
-			...clock,
-			turnStartedAt: clock.remainingWhiteMs === undefined ? undefined : now,
-			drawOfferBy: undefined,
-			resultOutcome: undefined,
-			resultWinner: undefined,
-			winnerParticipantId: undefined,
-			updatedAt: now,
+		await rematchDuel(ctx, CHESS_DUEL, state, args.participantId, (now) => {
+			const clock = initialClock(state.timeControl);
+			return {
+				phase: "active",
+				fen: CHESS_INITIAL_FEN,
+				sanHistory: [],
+				activeColor: "white",
+				...clock,
+				turnStartedAt: clock.remainingWhiteMs === undefined ? undefined : now,
+				drawOfferBy: undefined,
+				resultOutcome: undefined,
+				resultWinner: undefined,
+			};
 		});
-		await reopenSession(ctx, args.sessionId);
 	},
 });
 

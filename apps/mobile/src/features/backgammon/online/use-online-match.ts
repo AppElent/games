@@ -8,13 +8,13 @@
  */
 import {
 	applyBackgammonPlan,
+	BACKGAMMON_COLORS,
 	type BackgammonMovePlan,
 	type BackgammonTurnState,
-	backgammonColorOf,
-	isMyTurn,
 	shouldAutoEndTurn,
 	toTurnState,
 } from "@arcadeclub/core/backgammon";
+import { duelTurn, seatOf } from "@arcadeclub/core/duel";
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useCallback, useMemo } from "react";
@@ -48,7 +48,7 @@ export function useOnlineMatch(sessionId: string) {
 
 	const server = live?.state;
 	const myColor =
-		(server && backgammonColorOf(server, seat?.participantId)) ?? null;
+		(server && seatOf(BACKGAMMON_COLORS, server, seat?.participantId)) ?? null;
 
 	const nameOf = useCallback(
 		(participant?: Id<"sessionParticipants">) =>
@@ -74,7 +74,9 @@ export function useOnlineMatch(sessionId: string) {
 		loading: bundle === undefined,
 		live,
 		myColor,
-		isMyTurn: server ? isMyTurn(server, myColor) : false,
+		isMyTurn: server
+			? duelTurn(BACKGAMMON_COLORS, server, seat?.participantId).ok
+			: false,
 		nameOf,
 		busy: session.busy,
 		error: session.error,

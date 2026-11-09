@@ -28,12 +28,6 @@ export function getCell(board: ConnectFourBoard, row: number, col: number) {
 	return board[row * CONNECT_FOUR_COLS + col];
 }
 
-export function switchConnectFourColor(
-	color: ConnectFourColor,
-): ConnectFourColor {
-	return color === "red" ? "yellow" : "red";
-}
-
 /**
  * Drop a disc into a column. Returns the new board and landing row.
  * Throws on invalid column or full column; the input board is not mutated.

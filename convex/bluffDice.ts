@@ -1,19 +1,16 @@
 import {
-	BLUFF_MAX_PLAYERS,
-	BLUFF_MIN_PLAYERS,
-	BLUFF_STARTING_DICE,
 	bluffDiceCounts,
 	isClaimHigher,
 	isValidBluffClaim,
 	nextActiveIndex,
 	resolveBluffRound,
-	rollBluffDice,
+	startBluffGame,
 } from "@arcadeclub/core/bluff-dice";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { gameError } from "./lib/errors";
+import { gameError, rules } from "./lib/errors";
 import {
 	findGameState,
 	finishSession,
@@ -85,27 +82,11 @@ export const start = mutation({
 		}
 		requireHostByParticipantId(session, args.participantId, "hostOnlyStart");
 		const players = await listPlayersIncludingKicked(ctx, args.sessionId);
-		if (players.length < BLUFF_MIN_PLAYERS) {
-			throw gameError("needTwoPlayers");
-		}
-		if (players.length > BLUFF_MAX_PLAYERS) {
-			throw gameError("bluffDiceMaxPlayers");
-		}
+		const game = rules(() =>
+			startBluffGame(players.map((player) => player._id)),
+		);
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase: "claim",
-			turnOrder: players.map((player) => player._id),
-			hands: players.map((player) => ({
-				participantId: player._id,
-				values: rollBluffDice(BLUFF_STARTING_DICE),
-			})),
-			activeIndex: 0,
-			roundNumber: 1,
-			claimHistory: [],
-			lastReveal: undefined,
-			winnerParticipantId: undefined,
-			updatedAt: now,
-		});
+		await ctx.db.patch(state._id, { ...game, updatedAt: now });
 		await startSession(ctx, session, now);
 	},
 });
@@ -185,20 +166,9 @@ export const rematch = mutation({
 			throw gameError("currentGameNotFinished");
 		}
 		requireHostByParticipantId(session, args.participantId, "hostOnlyRematch");
+		const game = rules(() => startBluffGame(state.turnOrder));
 		const now = Date.now();
-		await ctx.db.patch(state._id, {
-			phase: "claim",
-			hands: state.turnOrder.map((participantId) => ({
-				participantId,
-				values: rollBluffDice(BLUFF_STARTING_DICE),
-			})),
-			activeIndex: 0,
-			roundNumber: 1,
-			claimHistory: [],
-			lastReveal: undefined,
-			winnerParticipantId: undefined,
-			updatedAt: now,
-		});
+		await ctx.db.patch(state._id, { ...game, updatedAt: now });
 		await reopenSession(ctx, args.sessionId);
 	},
 });

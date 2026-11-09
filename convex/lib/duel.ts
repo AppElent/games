@@ -10,21 +10,28 @@ import {
 import {
 	type SeatColumns as CoreSeatColumns,
 	seatOf as coreSeatOf,
+	type DuelTurnBlock,
+	duelTurn,
 	occupant,
 	opponent,
 } from "@arcadeclub/core/duel";
 import type { GameErrorCode } from "@arcadeclub/core/errors";
+import type { SessionGameType } from "@arcadeclub/core/games";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { gameError } from "./errors";
-import { findGameState } from "./gameSession";
+import {
+	findGameState,
+	finishSession,
+	reopenSession,
+	type StateTable,
+} from "./gameSession";
 
 type ParticipantId = Id<"sessionParticipants">;
-type DuelGame = "backgammon" | "chess" | "connect-four";
 
 /** What differs between the two-seat games. Everything else here is shared. */
 export type Duel<Seat extends string> = {
-	gameType: DuelGame;
+	gameType: SessionGameType;
 	/** In the order a joiner fills them. */
 	seats: readonly [Seat, Seat];
 	errors: {
@@ -37,7 +44,7 @@ export type Duel<Seat extends string> = {
 };
 
 /** Installed mobile builds show the invite while `phase === "waiting"`, so a full table must leave it. */
-export const BACKGAMMON_DUEL: Duel<BackgammonColor> = {
+export const BACKGAMMON_DUEL = {
 	gameType: "backgammon",
 	seats: BACKGAMMON_COLORS,
 	errors: {
@@ -46,9 +53,9 @@ export const BACKGAMMON_DUEL: Duel<BackgammonColor> = {
 		waitingForSecondPlayer: "waitingForBothPlayers",
 	},
 	onFull: { phase: "ready" },
-};
+} satisfies Duel<BackgammonColor>;
 
-export const CHESS_DUEL: Duel<ChessColor> = {
+export const CHESS_DUEL = {
 	gameType: "chess",
 	seats: CHESS_COLORS,
 	errors: {
@@ -56,9 +63,9 @@ export const CHESS_DUEL: Duel<ChessColor> = {
 		rematchNotSeated: "notSeated",
 		waitingForSecondPlayer: "waitingForOpponent",
 	},
-};
+} satisfies Duel<ChessColor>;
 
-export const CONNECT_FOUR_DUEL: Duel<ConnectFourColor> = {
+export const CONNECT_FOUR_DUEL = {
 	gameType: "connect-four",
 	seats: CONNECT_FOUR_COLORS,
 	errors: {
@@ -66,7 +73,11 @@ export const CONNECT_FOUR_DUEL: Duel<ConnectFourColor> = {
 		rematchNotSeated: "notSeated",
 		waitingForSecondPlayer: "waitingForOpponent",
 	},
-};
+} satisfies Duel<ConnectFourColor>;
+
+/** Every two-seat game. */
+export const DUELS = [BACKGAMMON_DUEL, CHESS_DUEL, CONNECT_FOUR_DUEL] as const;
+export type DuelGame = (typeof DUELS)[number]["gameType"];
 
 type SeatColumns<Seat extends string> = CoreSeatColumns<Seat, ParticipantId>;
 
@@ -116,20 +127,20 @@ export function requireTurn<Seat extends string>(
 	state: TurnState<NoInfer<Seat>>,
 	participantId: ParticipantId,
 ): Seat {
-	if (state.phase === "finished") {
-		throw gameError("gameAlreadyFinished");
+	const turn = duelTurn(duel.seats, state, participantId);
+	if (!turn.ok) {
+		const errors: Record<DuelTurnBlock, GameErrorCode> = {
+			finished: "gameAlreadyFinished",
+			waitingForOpponent: duel.errors.waitingForSecondPlayer,
+			notSeated: duel.errors.notSeated,
+			notYourTurn: "notYourTurn",
+		};
+		throw gameError(errors[turn.blocked]);
 	}
-	if (duel.seats.some((seat) => !occupant(state, seat))) {
-		throw gameError(duel.errors.waitingForSecondPlayer);
-	}
-	const seat = requireSeat(duel, state, participantId);
-	if (state.activeColor !== seat) {
-		throw gameError("notYourTurn");
-	}
-	return seat;
+	return turn.seat;
 }
 
-export function requireRematch<Seat extends string>(
+function requireRematch<Seat extends string>(
 	duel: Duel<Seat>,
 	state: SeatColumns<NoInfer<Seat>> & { phase: string },
 	participantId: ParticipantId,
@@ -152,15 +163,70 @@ export function requireResign<Seat extends string>(
 	return opponent(duel.seats, requireSeat(duel, state, participantId));
 }
 
-export function winnerOf<Seat extends string>(
-	state: SeatColumns<Seat>,
+type DuelStateRow<Seat extends string> = SeatColumns<Seat> & {
+	_id: Id<StateTable>;
+	sessionId: Id<"gameSessions">;
+	phase: string;
+};
+
+/**
+ * Ends a two-seat game: writes `terminal` with the finished phase and the
+ * winning seat's participant (none for a draw), and completes the session.
+ */
+export async function finishDuel<
+	Seat extends string,
+	State extends DuelStateRow<Seat>,
+>(
+	ctx: MutationCtx,
+	state: State,
 	winner: Seat | undefined,
+	terminal: Partial<NoInfer<State>>,
+	now: number,
 ) {
-	return winner ? occupant(state, winner) : undefined;
+	const winnerParticipantId = winner
+		? occupant<Seat, ParticipantId>(state, winner)
+		: undefined;
+	await finishSession(
+		ctx,
+		state,
+		{
+			...terminal,
+			phase: "finished",
+			winnerParticipantId,
+			updatedAt: now,
+		},
+		{ now, winners: [winnerParticipantId] },
+	);
+}
+
+/**
+ * Starts the next game at a finished table: the players swap seats, the state
+ * takes `fresh(now)` with no winner, and the session is open again.
+ */
+export async function rematchDuel<
+	Seat extends string,
+	State extends DuelStateRow<Seat>,
+>(
+	ctx: MutationCtx,
+	duel: Duel<Seat>,
+	state: State,
+	participantId: ParticipantId,
+	fresh: (now: number) => Partial<NoInfer<State>>,
+) {
+	requireRematch(duel, state, participantId);
+	const now = Date.now();
+	const seats = await swapSeats(ctx, duel, state);
+	await ctx.db.patch(state._id, {
+		...fresh(now),
+		...seats,
+		winnerParticipantId: undefined,
+		updatedAt: now,
+	} as never);
+	await reopenSession(ctx, state.sessionId);
 }
 
 /** Swaps both players' stored seats; returns the state columns to write with it. */
-export async function swapSeats<Seat extends string>(
+async function swapSeats<Seat extends string>(
 	ctx: MutationCtx,
 	duel: Duel<Seat>,
 	state: SeatColumns<NoInfer<Seat>>,

@@ -37,3 +37,44 @@ export function opponent<Seat extends string>(
 ): Seat {
 	return seat === seats[0] ? seats[1] : seats[0];
 }
+
+/** Why a participant may not move now, in the order the server checks. */
+export type DuelTurnBlock =
+	| "finished"
+	| "waitingForOpponent"
+	| "notSeated"
+	| "notYourTurn";
+
+type DuelTurnState<Seat extends string, Id extends string> = SeatColumns<
+	Seat,
+	Id
+> & {
+	phase: string;
+	activeColor: Seat;
+};
+
+/**
+ * Whether this participant may move now: the game is not over, both seats are
+ * taken, they hold one and it is that seat's turn. The server enforces the
+ * same rule, so clients use it to decide when to offer a move.
+ */
+export function duelTurn<Seat extends string, Id extends string>(
+	seats: readonly [Seat, Seat],
+	state: DuelTurnState<NoInfer<Seat>, Id>,
+	participantId: NoInfer<Id> | null | undefined,
+): { ok: true; seat: Seat } | { ok: false; blocked: DuelTurnBlock } {
+	if (state.phase === "finished") {
+		return { ok: false, blocked: "finished" };
+	}
+	if (seats.some((seat) => !occupant(state, seat))) {
+		return { ok: false, blocked: "waitingForOpponent" };
+	}
+	const seat = seatOf(seats, state, participantId);
+	if (!seat) {
+		return { ok: false, blocked: "notSeated" };
+	}
+	if (state.activeColor !== seat) {
+		return { ok: false, blocked: "notYourTurn" };
+	}
+	return { ok: true, seat };
+}

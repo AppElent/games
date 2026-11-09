@@ -188,7 +188,7 @@ const hitsterRecapValidator = v.object({
 	),
 });
 
-export const chessColorValidator = literals(CHESS_COLORS);
+const chessColorValidator = literals(CHESS_COLORS);
 
 const chessPhaseValidator = literals(CHESS_PHASES);
 

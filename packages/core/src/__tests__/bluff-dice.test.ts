@@ -7,7 +7,9 @@ import {
 	nextActiveIndex,
 	resolveBluffRound,
 	rollBluffDice,
+	startBluffGame,
 } from "../bluff-dice";
+import { GameRuleError } from "../errors";
 
 describe("rollBluffDice", () => {
 	it("rolls the requested number of dice in 1-6", () => {
@@ -145,5 +147,36 @@ describe("resolveBluffRound", () => {
 		expect(next.phase).toBe("finished");
 		expect(next.winnerParticipantId).toBe("b");
 		expect(next.activeIndex).toBe(1);
+	});
+});
+
+describe("startBluffGame", () => {
+	it("deals every player five dice in turn order, the first to claim", () => {
+		const game = startBluffGame(["a", "b", "c"], () => 0);
+		expect(game).toEqual({
+			phase: "claim",
+			turnOrder: ["a", "b", "c"],
+			hands: ["a", "b", "c"].map((participantId) => ({
+				participantId,
+				values: [1, 1, 1, 1, 1],
+			})),
+			activeIndex: 0,
+			roundNumber: 1,
+			claimHistory: [],
+			lastReveal: undefined,
+			winnerParticipantId: undefined,
+		});
+	});
+
+	it("needs two to eight players", () => {
+		expect(() => startBluffGame(["a"])).toThrow(
+			new GameRuleError("needTwoPlayers"),
+		);
+		expect(startBluffGame(["a", "b"]).hands).toHaveLength(2);
+		const nine = Array.from({ length: 9 }, (_, index) => `p${index}`);
+		expect(() => startBluffGame(nine)).toThrow(
+			new GameRuleError("bluffDiceMaxPlayers"),
+		);
+		expect(startBluffGame(nine.slice(0, 8)).hands).toHaveLength(8);
 	});
 });

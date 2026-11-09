@@ -1,4 +1,3 @@
-import { type SeatColumns, seatOf } from "./duel";
 import { GameRuleError } from "./errors";
 import type { Rng } from "./random";
 
@@ -114,10 +113,6 @@ function rollBackgammonDie(random: Rng) {
 /** A fresh set of dice, none of them spent. */
 export function withBackgammonDice(state: BackgammonTurnState, dice: number[]) {
 	return { ...state, dice, used: dice.map(() => false) };
-}
-
-export function switchBackgammonColor(color: BackgammonColor): BackgammonColor {
-	return color === "white" ? "black" : "white";
 }
 
 /**
@@ -491,24 +486,6 @@ export function toTurnState(stored: StoredBackgammonTurn): BackgammonTurnState {
 		dice: stored.dice,
 		used: computeUsedFlags(stored.dice, stored.usedDice),
 	};
-}
-
-/** The colour this participant plays online, if they hold a seat. */
-export function backgammonColorOf<Id extends string>(
-	state: SeatColumns<BackgammonColor, Id>,
-	participantId: Id | null | undefined,
-) {
-	return seatOf(BACKGAMMON_COLORS, state, participantId);
-}
-
-/** Whether `color` is to play in a game that is not over. */
-export function isMyTurn(
-	state: { phase: string; activeColor: BackgammonColor },
-	color: BackgammonColor | null | undefined,
-) {
-	return (
-		Boolean(color) && state.phase !== "finished" && state.activeColor === color
-	);
 }
 
 /** Whether a client ends the turn for the player after `after`, a move just made. */

@@ -1,3 +1,4 @@
+import { GameRuleError } from "./errors";
 import type { Rng } from "./random";
 
 export const BLUFF_PHASES = ["lobby", "claim", "finished"] as const;
@@ -13,6 +14,36 @@ export const BLUFF_MAX_PLAYERS = 8;
 
 export function rollBluffDice(count: number, random: Rng = Math.random) {
 	return Array.from({ length: count }, () => 1 + Math.floor(random() * 6));
+}
+
+/**
+ * The first round of a game for `players`, in turn order: everyone rolls a
+ * full hand and the first player claims first. Throws below two players or
+ * above eight.
+ */
+export function startBluffGame<P extends string>(
+	players: readonly P[],
+	random: Rng = Math.random,
+) {
+	if (players.length < BLUFF_MIN_PLAYERS) {
+		throw new GameRuleError("needTwoPlayers");
+	}
+	if (players.length > BLUFF_MAX_PLAYERS) {
+		throw new GameRuleError("bluffDiceMaxPlayers");
+	}
+	return {
+		phase: "claim" as const,
+		turnOrder: [...players],
+		hands: players.map((participantId) => ({
+			participantId,
+			values: rollBluffDice(BLUFF_STARTING_DICE, random),
+		})),
+		activeIndex: 0,
+		roundNumber: 1,
+		claimHistory: [],
+		lastReveal: undefined,
+		winnerParticipantId: undefined,
+	};
 }
 
 export function isValidBluffClaim(claim: BluffClaim, totalDice: number) {

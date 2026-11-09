@@ -1,3 +1,4 @@
+import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import type { SudokuDifficulty, SudokuVariant } from "@arcadeclub/core/sudoku";
 import { Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
@@ -111,7 +112,7 @@ export function SudokuNewPage() {
 					value={name}
 					onChange={(event) => setName(event.target.value)}
 					placeholder={sudoku.newGame.namePlaceholder}
-					maxLength={80}
+					maxLength={MAX_TITLE_LENGTH}
 					className="w-full rounded-md border border-slate-600 bg-slate-800/70 px-3 py-2 text-white placeholder:text-slate-500"
 				/>
 			</label>

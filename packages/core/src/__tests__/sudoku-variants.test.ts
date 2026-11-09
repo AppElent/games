@@ -9,20 +9,13 @@ import {
 	SUDOKU_VARIANT_RULES,
 } from "../sudoku-variants";
 
-function shapeOf(puzzle: ReturnType<typeof generateVariantPuzzle>) {
-	return {
-		size: puzzle.variant === "binary" ? puzzle.size : undefined,
-		cages: puzzle.variant === "killer" ? puzzle.cages : undefined,
-	};
-}
-
 describe("generateVariantPuzzle", () => {
 	it.each(
 		SUDOKU_VARIANTS,
 	)("makes a %s puzzle its own rules call solved by its solution", (variant) => {
 		const puzzle = generateVariantPuzzle(variant, "easy", mulberry32(7));
 		const rules = SUDOKU_VARIANT_RULES[variant];
-		const shape = shapeOf(puzzle);
+		const shape = rules.stored(puzzle);
 		expect(puzzle.variant).toBe(variant);
 		expect(puzzle.givens).toHaveLength(rules.cells(shape));
 		expect(rules.solved(puzzle.solution, shape)).toBe(true);
@@ -74,5 +67,66 @@ describe("SUDOKU_VARIANT_RULES", () => {
 		expect(
 			SUDOKU_VARIANT_RULES.binary.conflicts(triple, { size: 6 }).size,
 		).toBeGreaterThan(0);
+	});
+});
+
+describe("SUDOKU_VARIANT_RULES validate", () => {
+	const killer = generateVariantPuzzle("killer", "easy", mulberry32(5));
+	const cages = killer.variant === "killer" ? killer.cages : [];
+
+	it("accepts any classic or binary shape", () => {
+		expect(() =>
+			SUDOKU_VARIANT_RULES.classic.validate({}, undefined),
+		).not.toThrow();
+		expect(() =>
+			SUDOKU_VARIANT_RULES.binary.validate({ size: 6 }, undefined),
+		).not.toThrow();
+	});
+
+	it("accepts killer cages that cover the board and fit the solution", () => {
+		expect(() =>
+			SUDOKU_VARIANT_RULES.killer.validate({ cages }, killer.solution),
+		).not.toThrow();
+		expect(() =>
+			SUDOKU_VARIANT_RULES.killer.validate({ cages }, undefined),
+		).not.toThrow();
+	});
+
+	it("refuses missing or partial killer cages", () => {
+		expect(() => SUDOKU_VARIANT_RULES.killer.validate({}, undefined)).toThrow(
+			new GameRuleError("invalidKillerCages"),
+		);
+		expect(() =>
+			SUDOKU_VARIANT_RULES.killer.validate(
+				{ cages: [{ sum: 3, cells: [0, 1] }] },
+				undefined,
+			),
+		).toThrow(new GameRuleError("invalidKillerCages"));
+	});
+
+	it("refuses a solution that breaks a cage sum", () => {
+		const wrongSums = cages.map((cage, index) =>
+			index === 0 ? { ...cage, sum: cage.sum + 1 } : cage,
+		);
+		expect(() =>
+			SUDOKU_VARIANT_RULES.killer.validate(
+				{ cages: wrongSums },
+				killer.solution,
+			),
+		).toThrow(new GameRuleError("cagesUnsatisfied"));
+	});
+});
+
+describe("SUDOKU_VARIANT_RULES stored", () => {
+	const cages = [{ sum: 3, cells: [0, 1] }];
+
+	it("keeps only what each variant stores beside its grids", () => {
+		expect(SUDOKU_VARIANT_RULES.classic.stored({ size: 6, cages })).toEqual({});
+		expect(SUDOKU_VARIANT_RULES.killer.stored({ size: 6, cages })).toEqual({
+			cages,
+		});
+		expect(SUDOKU_VARIANT_RULES.binary.stored({ size: 6, cages })).toEqual({
+			size: 6,
+		});
 	});
 });

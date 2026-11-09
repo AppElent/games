@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { opponent } from "../duel";
 import {
 	applySignalClue,
 	applySignalGuess,
@@ -6,8 +7,8 @@ import {
 	createSignalGameState,
 	generateSignalBoard,
 	isSignalClueGiver,
-	otherTeam,
 	SIGNAL_BOARD_SIZE,
+	SIGNAL_TEAMS,
 	type SignalCardRole,
 	type SignalGameState,
 	signalSeat,
@@ -65,7 +66,7 @@ describe("generateSignalBoard", () => {
 			counts[role] += 1;
 		}
 		expect(counts[board.startingTeam]).toBe(9);
-		expect(counts[otherTeam(board.startingTeam)]).toBe(8);
+		expect(counts[opponent(SIGNAL_TEAMS, board.startingTeam)]).toBe(8);
 		expect(counts.neutral).toBe(7);
 		expect(counts.trap).toBe(1);
 	});
@@ -139,7 +140,7 @@ describe("applySignalGuess", () => {
 			({ state } = applySignalGuess(state, index));
 		}
 		expect(state.phase).toBe("clue");
-		expect(state.currentTeam).toBe(otherTeam(team));
+		expect(state.currentTeam).toBe(opponent(SIGNAL_TEAMS, team));
 		expect(state.guessesLeft).toBeUndefined();
 		expect(state.clueWord).toBeUndefined();
 		expect(state.clueCount).toBeUndefined();
@@ -151,15 +152,15 @@ describe("applySignalGuess", () => {
 		const { state: next, result } = applySignalGuess(state, index);
 		expect(result).toEqual({ type: "neutral" });
 		expect(next.phase).toBe("clue");
-		expect(next.currentTeam).toBe(otherTeam(state.currentTeam));
+		expect(next.currentTeam).toBe(opponent(SIGNAL_TEAMS, state.currentTeam));
 	});
 
 	it("ends the turn on an opponent card", () => {
 		const state = stateWithClue();
-		const index = findIndex(state, otherTeam(state.currentTeam));
+		const index = findIndex(state, opponent(SIGNAL_TEAMS, state.currentTeam));
 		const { state: next, result } = applySignalGuess(state, index);
 		expect(result).toEqual({ type: "opponent", opponentWon: false });
-		expect(next.currentTeam).toBe(otherTeam(state.currentTeam));
+		expect(next.currentTeam).toBe(opponent(SIGNAL_TEAMS, state.currentTeam));
 	});
 
 	it("finishes the game when the trap is picked", () => {
@@ -168,7 +169,7 @@ describe("applySignalGuess", () => {
 		const { state: next, result } = applySignalGuess(state, index);
 		expect(result).toEqual({ type: "trap" });
 		expect(next.phase).toBe("finished");
-		expect(next.winnerTeam).toBe(otherTeam(state.currentTeam));
+		expect(next.winnerTeam).toBe(opponent(SIGNAL_TEAMS, state.currentTeam));
 		expect(next.trapHitBy).toBe(state.currentTeam);
 	});
 
@@ -196,9 +197,9 @@ describe("applySignalGuess", () => {
 
 	it("hands the opponent the win when their last card is picked", () => {
 		let state = stateWithClue();
-		const opponent = otherTeam(state.currentTeam);
+		const other = opponent(SIGNAL_TEAMS, state.currentTeam);
 		const opponentIndexes = state.assignments
-			.map((role, index) => (role === opponent ? index : -1))
+			.map((role, index) => (role === other ? index : -1))
 			.filter((index) => index >= 0);
 		state = {
 			...state,
@@ -212,7 +213,7 @@ describe("applySignalGuess", () => {
 		const { state: next, result } = applySignalGuess(state, last);
 		expect(result).toEqual({ type: "opponent", opponentWon: true });
 		expect(next.phase).toBe("finished");
-		expect(next.winnerTeam).toBe(opponent);
+		expect(next.winnerTeam).toBe(other);
 	});
 
 	it("rejects revealed cards, bad indexes and out-of-phase guesses", () => {
@@ -236,7 +237,7 @@ describe("pass and counters", () => {
 		const state = stateWithClue();
 		const next = applySignalPass(state);
 		expect(next.phase).toBe("clue");
-		expect(next.currentTeam).toBe(otherTeam(state.currentTeam));
+		expect(next.currentTeam).toBe(opponent(SIGNAL_TEAMS, state.currentTeam));
 	});
 
 	it("rejects passing outside the guess phase", () => {

@@ -1,3 +1,4 @@
+import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import { Lock, LockOpen, Pencil } from "lucide-react";
 import { useState } from "react";
 import { useGameAction } from "#/lib/games/use-game-action";
@@ -80,7 +81,7 @@ export function SessionHostControls({
 					<input
 						value={draftTitle}
 						onChange={(event) => setDraftTitle(event.target.value)}
-						maxLength={80}
+						maxLength={MAX_TITLE_LENGTH}
 						className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300"
 					/>
 					<button

@@ -1,31 +1,30 @@
 import {
 	applyBackgammonMove,
+	BACKGAMMON_COLORS,
 	canEndBackgammonTurn,
 	createInitialBackgammonState,
 	getBackgammonWinner,
 	rollBackgammonDice,
-	switchBackgammonColor,
 	toTurnState,
 } from "@arcadeclub/core/backgammon";
+import { opponent } from "@arcadeclub/core/duel";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import {
 	BACKGAMMON_DUEL,
-	requireRematch,
+	finishDuel,
+	rematchDuel,
 	requireTurn,
 	seatHost,
-	swapSeats,
 } from "./lib/duel";
 import { gameError, rules } from "./lib/errors";
 import {
 	findGameState,
-	finishSession,
 	loadBundle,
 	loadGame,
 	loadSession,
-	reopenSession,
 	startSession,
 } from "./lib/gameSession";
 import {
@@ -148,16 +147,7 @@ export const applyMove = mutation({
 			updatedAt: now,
 		};
 		if (winner) {
-			await finishSession(
-				ctx,
-				state,
-				{
-					...played,
-					phase: "finished",
-					winnerParticipantId: args.participantId,
-				},
-				{ now, winners: [args.participantId] },
-			);
+			await finishDuel(ctx, state, color, played, now);
 		} else {
 			await ctx.db.patch(state._id, played);
 		}
@@ -190,7 +180,7 @@ export const endTurn = mutation({
 		}
 		const now = Date.now();
 		await ctx.db.patch(state._id, {
-			activeColor: switchBackgammonColor(state.activeColor),
+			activeColor: opponent(BACKGAMMON_COLORS, state.activeColor),
 			dice: [],
 			usedDice: [],
 			updatedAt: now,
@@ -213,23 +203,18 @@ export const rematch = mutation({
 	},
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "backgammon", args.sessionId);
-		requireRematch(BACKGAMMON_DUEL, state, args.participantId);
-		const now = Date.now();
-		const seats = await swapSeats(ctx, BACKGAMMON_DUEL, state);
-		const initialState = createInitialBackgammonState();
-		await ctx.db.patch(state._id, {
-			phase: "ready",
-			...seats,
-			activeColor: initialState.activeColor,
-			points: initialState.points,
-			bar: initialState.bar,
-			off: initialState.off,
-			dice: initialState.dice,
-			usedDice: [],
-			winnerParticipantId: undefined,
-			updatedAt: now,
+		await rematchDuel(ctx, BACKGAMMON_DUEL, state, args.participantId, () => {
+			const initialState = createInitialBackgammonState();
+			return {
+				phase: "ready",
+				activeColor: initialState.activeColor,
+				points: initialState.points,
+				bar: initialState.bar,
+				off: initialState.off,
+				dice: initialState.dice,
+				usedDice: [],
+			};
 		});
-		await reopenSession(ctx, args.sessionId);
 	},
 });
 

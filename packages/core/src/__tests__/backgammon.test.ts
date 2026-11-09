@@ -4,7 +4,6 @@ import {
 	applyBackgammonPlan,
 	type BackgammonColor,
 	type BackgammonTurnState,
-	backgammonColorOf,
 	canBearOff,
 	canEndBackgammonTurn,
 	computeUsedFlags,
@@ -13,12 +12,10 @@ import {
 	getBackgammonWinner,
 	getMoveHighlights,
 	hasLegalBackgammonMove,
-	isMyTurn,
 	isTurnSpent,
 	planBackgammonMove,
 	rollBackgammonDice,
 	shouldAutoEndTurn,
-	switchBackgammonColor,
 	toTurnState,
 } from "../backgammon";
 
@@ -271,11 +268,6 @@ describe("backgammon engine", () => {
 		expect(getBackgammonWinner({ white: 15, black: 3 })).toBe("white");
 		expect(getBackgammonWinner({ white: 14, black: 15 })).toBe("black");
 		expect(getBackgammonWinner({ white: 0, black: 0 })).toBeNull();
-	});
-
-	it("switches active colors", () => {
-		expect(switchBackgammonColor("white")).toBe("black");
-		expect(switchBackgammonColor("black")).toBe("white");
 	});
 });
 
@@ -932,24 +924,6 @@ describe("online turn helpers", () => {
 			...stored,
 			used: [true, true, false, false],
 		});
-	});
-
-	it("gives a seated participant their colour", () => {
-		const seats = { whiteParticipantId: "w", blackParticipantId: "b" };
-		expect(backgammonColorOf(seats, "w")).toBe("white");
-		expect(backgammonColorOf(seats, "b")).toBe("black");
-		expect(backgammonColorOf(seats, "x")).toBeUndefined();
-		expect(backgammonColorOf({ whiteParticipantId: "w" }, undefined)).toBe(
-			undefined,
-		);
-	});
-
-	it("lets a colour play only on its own turn of an unfinished game", () => {
-		const turn = { phase: "active", activeColor: "white" as const };
-		expect(isMyTurn(turn, "white")).toBe(true);
-		expect(isMyTurn(turn, "black")).toBe(false);
-		expect(isMyTurn(turn, undefined)).toBe(false);
-		expect(isMyTurn({ ...turn, phase: "finished" }, "white")).toBe(false);
 	});
 
 	it("ends the turn for the player only when asked and every die is spent", () => {

@@ -68,17 +68,7 @@ async function patchGameState(
 	next: SignalGameState,
 	now: number,
 ) {
-	const patch = {
-		phase: next.phase,
-		revealed: next.revealed,
-		currentTeam: next.currentTeam,
-		clueWord: next.clueWord,
-		clueCount: next.clueCount,
-		guessesLeft: next.guessesLeft,
-		winnerTeam: next.winnerTeam,
-		trapHitBy: next.trapHitBy,
-		updatedAt: now,
-	};
+	const patch = { ...next, updatedAt: now };
 	if (next.phase !== "finished") {
 		await ctx.db.patch(state._id, patch);
 		return;
@@ -97,16 +87,8 @@ async function patchGameState(
 
 /** A new board, with everything from the previous game cleared. */
 function freshBoardPatch(now: number) {
-	const gameState = createSignalGameState(
-		generateSignalBoard(SIGNAL_WORDS_DEFAULT_PACK),
-	);
 	return {
-		phase: "clue" as const,
-		words: gameState.words,
-		assignments: gameState.assignments,
-		revealed: gameState.revealed,
-		startingTeam: gameState.startingTeam,
-		currentTeam: gameState.currentTeam,
+		...createSignalGameState(generateSignalBoard(SIGNAL_WORDS_DEFAULT_PACK)),
 		clueWord: undefined,
 		clueCount: undefined,
 		guessesLeft: undefined,

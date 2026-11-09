@@ -22,29 +22,33 @@ import {
 	type SudokuVariant,
 } from "./sudoku";
 import {
+	findKillerConflicts,
 	generateKillerPuzzle,
 	isKillerSolved,
 	type KillerCage,
+	validateKillerCages,
 } from "./sudoku-killer";
 
 /** The parts of a stored puzzle a variant may need besides its digits. */
-type VariantShape = { size?: number; cages?: KillerCage[] };
+export type VariantShape = { size?: number; cages?: KillerCage[] };
 
 /** A freshly generated puzzle, with what its variant stores beside the grids. */
-export type VariantPuzzle =
-	| { variant: "classic"; givens: SudokuGrid; solution: SudokuGrid }
-	| {
-			variant: "killer";
-			givens: SudokuGrid;
-			solution: SudokuGrid;
-			cages: KillerCage[];
-	  }
-	| {
-			variant: "binary";
-			givens: number[];
-			solution: number[];
-			size: number;
-	  };
+type VariantPuzzle = VariantShape &
+	(
+		| { variant: "classic"; givens: SudokuGrid; solution: SudokuGrid }
+		| {
+				variant: "killer";
+				givens: SudokuGrid;
+				solution: SudokuGrid;
+				cages: KillerCage[];
+		  }
+		| {
+				variant: "binary";
+				givens: number[];
+				solution: number[];
+				size: number;
+		  }
+	);
 
 type VariantRules = {
 	/** Cell count; throws `invalidBinarySize` for a binary board of a size it never makes. */
@@ -54,6 +58,13 @@ type VariantRules = {
 	/** Cells whose digits break the row, column and box (or binary) rules. Cage sums are not checked. */
 	conflicts(grid: number[], shape: VariantShape): Set<number>;
 	solved(grid: number[], shape: VariantShape): boolean;
+	/**
+	 * Throws when the shape cannot hold a puzzle, or when `solution` breaks a
+	 * rule the grid checks above do not cover (killer cage sums).
+	 */
+	validate(shape: VariantShape, solution: number[] | undefined): void;
+	/** What this variant stores beside the grids; nothing of another variant's. */
+	stored(shape: VariantShape): VariantShape;
 	generate(difficulty: SudokuDifficulty, rng: Rng): VariantPuzzle;
 };
 
@@ -63,6 +74,8 @@ export const SUDOKU_VARIANT_RULES: Record<SudokuVariant, VariantRules> = {
 		maxDigit: 9,
 		conflicts: (grid) => findConflicts(grid),
 		solved: (grid) => isGridSolved(grid),
+		validate: () => {},
+		stored: () => ({}),
 		generate: (difficulty, rng) => {
 			const { givens, solution } = generatePuzzle(difficulty, rng);
 			return { variant: "classic", givens, solution };
@@ -73,6 +86,15 @@ export const SUDOKU_VARIANT_RULES: Record<SudokuVariant, VariantRules> = {
 		maxDigit: 9,
 		conflicts: (grid) => findConflicts(grid),
 		solved: (grid, { cages }) => isKillerSolved(grid, cages ?? []),
+		validate: ({ cages }, solution) => {
+			if (!cages || !validateKillerCages(cages)) {
+				throw new GameRuleError("invalidKillerCages");
+			}
+			if (solution && findKillerConflicts(solution, cages).size > 0) {
+				throw new GameRuleError("cagesUnsatisfied");
+			}
+		},
+		stored: ({ cages }) => ({ cages }),
 		generate: (difficulty, rng) => {
 			const { givens, solution, cages } = generateKillerPuzzle(difficulty, rng);
 			return { variant: "killer", givens, solution, cages };
@@ -89,6 +111,8 @@ export const SUDOKU_VARIANT_RULES: Record<SudokuVariant, VariantRules> = {
 		maxDigit: 2,
 		conflicts: (grid, { size }) => findBinaryConflicts(grid, size ?? 0),
 		solved: (grid, { size }) => isBinarySolved(grid, size ?? 0),
+		validate: () => {},
+		stored: ({ size }) => ({ size }),
 		generate: (difficulty, rng) => {
 			const { givens, solution, size } = generateBinaryPuzzle(difficulty, rng);
 			return { variant: "binary", givens, solution, size };

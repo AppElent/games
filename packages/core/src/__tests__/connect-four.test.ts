@@ -9,7 +9,6 @@ import {
 	getCell,
 	getConnectFourWinner,
 	isColumnFull,
-	switchConnectFourColor,
 } from "../connect-four";
 
 function play(moves: Array<[ConnectFourColor, number]>) {
@@ -165,11 +164,6 @@ describe("getConnectFourWinner", () => {
 });
 
 describe("helpers", () => {
-	it("switches colors", () => {
-		expect(switchConnectFourColor("red")).toBe("yellow");
-		expect(switchConnectFourColor("yellow")).toBe("red");
-	});
-
 	it("creates a 7x6 empty board", () => {
 		const board = createConnectFourBoard();
 		expect(board.length).toBe(42);

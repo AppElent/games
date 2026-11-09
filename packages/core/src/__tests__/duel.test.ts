@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { occupant, opponent, seatOf } from "../duel";
+import { duelTurn, occupant, opponent, seatOf } from "../duel";
 
 const SEATS = ["red", "yellow"] as const;
 
@@ -21,5 +21,53 @@ describe("duel seats", () => {
 	it("names the other seat", () => {
 		expect(opponent(SEATS, "red")).toBe("yellow");
 		expect(opponent(SEATS, "yellow")).toBe("red");
+	});
+});
+
+describe("duelTurn", () => {
+	const full = {
+		phase: "active",
+		activeColor: "red" as const,
+		redParticipantId: "p1",
+		yellowParticipantId: "p2",
+	};
+
+	it("lets the seated player whose colour is active move", () => {
+		expect(duelTurn(SEATS, full, "p1")).toEqual({ ok: true, seat: "red" });
+	});
+
+	it("blocks the other seat, a stranger and a tab with no seat", () => {
+		expect(duelTurn(SEATS, full, "p2")).toEqual({
+			ok: false,
+			blocked: "notYourTurn",
+		});
+		expect(duelTurn(SEATS, full, "p3")).toEqual({
+			ok: false,
+			blocked: "notSeated",
+		});
+		expect(duelTurn(SEATS, full, undefined)).toEqual({
+			ok: false,
+			blocked: "notSeated",
+		});
+	});
+
+	it("waits for the second seat before anyone moves", () => {
+		const waiting = { ...full, yellowParticipantId: undefined };
+		expect(duelTurn(SEATS, waiting, "p1")).toEqual({
+			ok: false,
+			blocked: "waitingForOpponent",
+		});
+	});
+
+	it("blocks every move once the game is finished, first of all", () => {
+		const finished = {
+			...full,
+			phase: "finished",
+			yellowParticipantId: undefined,
+		};
+		expect(duelTurn(SEATS, finished, "p1")).toEqual({
+			ok: false,
+			blocked: "finished",
+		});
 	});
 });

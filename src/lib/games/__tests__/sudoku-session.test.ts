@@ -78,14 +78,14 @@ describe("generatedPuzzle", () => {
 	it("stores a killer puzzle with its cages", () => {
 		const puzzle = generatedPuzzle("killer", "easy");
 		expect(puzzle).toMatchObject({ variant: "killer" });
-		expect("cages" in puzzle && puzzle.cages.length).toBeGreaterThan(0);
+		expect(puzzle.cages?.length).toBeGreaterThan(0);
 		expect(puzzle.solution).toMatch(/^[1-9]{81}$/);
 	});
 
 	it("stores a binary puzzle with its board size", () => {
 		const puzzle = generatedPuzzle("binary", "easy");
 		expect(puzzle).toMatchObject({ variant: "binary" });
-		const size = "size" in puzzle ? puzzle.size : 0;
+		const size = puzzle.size ?? 0;
 		expect(puzzle.solution).toMatch(new RegExp(`^[12]{${size * size}}$`));
 	});
 });

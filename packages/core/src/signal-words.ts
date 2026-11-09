@@ -1,3 +1,4 @@
+import { opponent } from "./duel";
 import { type GameErrorCode, GameRuleError } from "./errors";
 import { type Rng, shuffle } from "./random";
 
@@ -55,10 +56,6 @@ export type SignalGameState = {
 	trapHitBy?: SignalTeam;
 };
 
-export function otherTeam(team: SignalTeam): SignalTeam {
-	return team === "red" ? "blue" : "red";
-}
-
 /**
  * Build a 25-card board from a word pack: 9 for the starting team,
  * 8 for the other team, 7 decoys, 1 trap tile.
@@ -75,7 +72,9 @@ export function generateSignalBoard(
 	const startingTeam: SignalTeam = random() < 0.5 ? "red" : "blue";
 	const roles: SignalCardRole[] = [
 		...Array<SignalCardRole>(SIGNAL_STARTING_CARDS).fill(startingTeam),
-		...Array<SignalCardRole>(SIGNAL_SECOND_CARDS).fill(otherTeam(startingTeam)),
+		...Array<SignalCardRole>(SIGNAL_SECOND_CARDS).fill(
+			opponent(SIGNAL_TEAMS, startingTeam),
+		),
 		...Array<SignalCardRole>(SIGNAL_NEUTRAL_CARDS).fill("neutral"),
 		...Array<SignalCardRole>(SIGNAL_TRAP_CARDS).fill("trap"),
 	];
@@ -170,7 +169,7 @@ function endTurn(state: SignalGameState): SignalGameState {
 	return {
 		...state,
 		phase: "clue",
-		currentTeam: otherTeam(state.currentTeam),
+		currentTeam: opponent(SIGNAL_TEAMS, state.currentTeam),
 		clueWord: undefined,
 		clueCount: undefined,
 		guessesLeft: undefined,
@@ -209,7 +208,7 @@ export function applySignalGuess(
 			state: {
 				...base,
 				phase: "finished",
-				winnerTeam: otherTeam(state.currentTeam),
+				winnerTeam: opponent(SIGNAL_TEAMS, state.currentTeam),
 				trapHitBy: state.currentTeam,
 			},
 			result: { type: "trap" },
@@ -242,10 +241,10 @@ export function applySignalGuess(
 		return { state: endTurn(base), result: { type: "neutral" } };
 	}
 	// Opponent card: helps the other team, may even finish their board.
-	const opponent = otherTeam(state.currentTeam);
-	if (teamCleared(base, opponent)) {
+	const other = opponent(SIGNAL_TEAMS, state.currentTeam);
+	if (teamCleared(base, other)) {
 		return {
-			state: { ...base, phase: "finished", winnerTeam: opponent },
+			state: { ...base, phase: "finished", winnerTeam: other },
 			result: { type: "opponent", opponentWon: true },
 		};
 	}

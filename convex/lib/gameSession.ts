@@ -1,5 +1,5 @@
 import type { GameErrorCode } from "@arcadeclub/core/errors";
-import type { GameType } from "@arcadeclub/core/games";
+import type { GameType, SessionGameType } from "@arcadeclub/core/games";
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { getOptionalUserId } from "./auth";
@@ -23,13 +23,12 @@ const STATE_TABLES = {
 	"live-quiz": "liveQuizStates",
 	"signal-words": "signalWordsStates",
 	sudoku: "sudokuStates",
-} as const satisfies Partial<Record<GameType, TableNames>>;
+} as const satisfies Record<SessionGameType, TableNames>;
 
-type StatefulGame = keyof typeof STATE_TABLES;
-export type StateTable = (typeof STATE_TABLES)[StatefulGame];
+export type StateTable = (typeof STATE_TABLES)[SessionGameType];
 
 /** A game's state row, or null. Reads no session, so a query can use it too. */
-export async function findGameState<G extends StatefulGame>(
+export async function findGameState<G extends SessionGameType>(
 	ctx: ReadCtx,
 	gameType: G,
 	sessionId: SessionId,
@@ -47,7 +46,7 @@ export async function findGameState<G extends StatefulGame>(
  * What every `getBundle` starts from: the session, everyone in it and the
  * game's state. Null when the session does not exist.
  */
-export async function loadBundle<G extends StatefulGame>(
+export async function loadBundle<G extends SessionGameType>(
 	ctx: ReadCtx,
 	gameType: G,
 	sessionId: SessionId,
@@ -76,7 +75,7 @@ export async function loadSession(
 }
 
 /** Session and state, both required: what nearly every game mutation starts with. */
-export async function loadGame<G extends StatefulGame>(
+export async function loadGame<G extends SessionGameType>(
 	ctx: ReadCtx,
 	gameType: G,
 	sessionId: SessionId,

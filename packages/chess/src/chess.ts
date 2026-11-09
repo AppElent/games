@@ -36,10 +36,6 @@ export const CHESS_TIME_CONTROLS: Record<
 	"10+0": { initialSeconds: 600 },
 };
 
-export function switchChessColor(color: ChessColor): ChessColor {
-	return color === "white" ? "black" : "white";
-}
-
 /** Both clocks at the start of a game; unset for an untimed one. */
 export function initialClock(timeControl: ChessTimeControl) {
 	const { initialSeconds } = CHESS_TIME_CONTROLS[timeControl];

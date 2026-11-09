@@ -4,13 +4,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { getOptionalUserId } from "./auth";
 import { claimSeatOnJoin } from "./cardSeats";
-import {
-	BACKGAMMON_DUEL,
-	CHESS_DUEL,
-	CONNECT_FOUR_DUEL,
-	type Duel,
-	seatChallenger,
-} from "./duel";
+import { DUELS, type Duel, type DuelGame, seatChallenger } from "./duel";
 import { gameError } from "./errors";
 import {
 	insertParticipant,
@@ -116,10 +110,12 @@ function seatChallengerByShareToken<Seat extends string>(
 	};
 }
 
+const DUEL_ON_JOIN = Object.fromEntries(
+	DUELS.map((duel) => [duel.gameType, seatChallengerByShareToken(duel)]),
+) as Record<DuelGame, OnJoin>;
+
 const ON_JOIN: Partial<Record<GameType, OnJoin>> = {
-	backgammon: seatChallengerByShareToken(BACKGAMMON_DUEL),
-	chess: seatChallengerByShareToken(CHESS_DUEL),
-	"connect-four": seatChallengerByShareToken(CONNECT_FOUR_DUEL),
+	...DUEL_ON_JOIN,
 	"card-games": async (ctx, session, participantId, route) =>
 		route.via === "joinCode"
 			? await claimSeatOnJoin(ctx, session, participantId, route.seatSecret)

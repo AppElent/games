@@ -3,13 +3,9 @@ import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import { FULL_MASK, type SudokuVariant } from "@arcadeclub/core/sudoku";
 import { effectiveGrid } from "@arcadeclub/core/sudoku-board";
 import {
-	findKillerConflicts,
-	type KillerCage,
-	validateKillerCages,
-} from "@arcadeclub/core/sudoku-killer";
-import {
 	isVariantGridString,
 	SUDOKU_VARIANT_RULES,
+	type VariantShape,
 } from "@arcadeclub/core/sudoku-variants";
 import { type ObjectType, v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
@@ -36,11 +32,7 @@ import {
 	sudokuVariantValidator,
 } from "./schema";
 
-type Puzzle = {
-	variant?: SudokuVariant;
-	size?: number;
-	cages?: KillerCage[];
-};
+type Puzzle = VariantShape & { variant?: SudokuVariant };
 
 /** The grid format a stored puzzle checks its strings against. */
 function gridOf(puzzle: Puzzle) {
@@ -116,22 +108,18 @@ async function insertPuzzle(
 	if (puzzle.solution) {
 		grid.assert(puzzle.solution);
 	}
+	const variantRules = SUDOKU_VARIANT_RULES[variant];
 	const merged = mergedGrid(puzzle.givens, digits);
-	if (SUDOKU_VARIANT_RULES[variant].conflicts(merged, puzzle).size > 0) {
+	if (variantRules.conflicts(merged, puzzle).size > 0) {
 		throw gameError("puzzleConflictingDigits");
 	}
-	if (variant === "killer") {
-		if (!puzzle.cages || !validateKillerCages(puzzle.cages)) {
-			throw gameError("invalidKillerCages");
-		}
-		if (
-			puzzle.solution &&
-			findKillerConflicts(digitsFromString(puzzle.solution), puzzle.cages)
-				.size > 0
-		) {
-			throw gameError("cagesUnsatisfied");
-		}
-	}
+	const { solution } = puzzle;
+	rules(() =>
+		variantRules.validate(
+			puzzle,
+			solution ? digitsFromString(solution) : undefined,
+		),
+	);
 	const cornerNotes = puzzle.cornerNotes ?? new Array(cells).fill(0);
 	const centerNotes = puzzle.centerNotes ?? new Array(cells).fill(0);
 	assertMaskArray(cornerNotes, cells);
@@ -144,8 +132,7 @@ async function insertPuzzle(
 		source: puzzle.source,
 		status: "active",
 		variant: puzzle.variant,
-		cages: variant === "killer" ? puzzle.cages : undefined,
-		size: variant === "binary" ? puzzle.size : undefined,
+		...variantRules.stored(puzzle),
 		givens: puzzle.givens,
 		digits,
 		solution: puzzle.solution,

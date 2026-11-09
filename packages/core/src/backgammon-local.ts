@@ -15,9 +15,9 @@ import {
 	createInitialBackgammonState,
 	getBackgammonWinner,
 	isTurnSpent,
-	switchBackgammonColor,
 	withBackgammonDice,
 } from "./backgammon";
+import { opponent } from "./duel";
 
 export type BackgammonOptions = {
 	showNumbers: boolean;
@@ -82,7 +82,7 @@ function passTurn(
 	dice: number[],
 ): BackgammonTurnState {
 	return withBackgammonDice(
-		{ ...state, activeColor: switchBackgammonColor(state.activeColor) },
+		{ ...state, activeColor: opponent(BACKGAMMON_COLORS, state.activeColor) },
 		options.autoRoll ? dice : [],
 	);
 }

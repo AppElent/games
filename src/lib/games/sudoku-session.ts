@@ -1,6 +1,9 @@
 import { digitsToString } from "@arcadeclub/core/puzzle";
 import type { SudokuDifficulty, SudokuVariant } from "@arcadeclub/core/sudoku";
-import { generateVariantPuzzle } from "@arcadeclub/core/sudoku-variants";
+import {
+	generateVariantPuzzle,
+	SUDOKU_VARIANT_RULES,
+} from "@arcadeclub/core/sudoku-variants";
 import type { FunctionArgs } from "convex/server";
 import { rememberLocalSudokuSession } from "#/lib/games/sudoku-local";
 import type { api } from "../../../convex/_generated/api";
@@ -18,18 +21,12 @@ export function generatedPuzzle(
 	difficulty: SudokuDifficulty,
 ) {
 	const puzzle = generateVariantPuzzle(variant, difficulty);
-	const grids = {
+	return {
+		...(variant === "classic" ? {} : { variant }),
+		...SUDOKU_VARIANT_RULES[variant].stored(puzzle),
 		givens: digitsToString(puzzle.givens),
 		solution: digitsToString(puzzle.solution),
 	};
-	switch (puzzle.variant) {
-		case "binary":
-			return { variant: puzzle.variant, size: puzzle.size, ...grids };
-		case "killer":
-			return { variant: puzzle.variant, cages: puzzle.cages, ...grids };
-		case "classic":
-			return grids;
-	}
 }
 
 /**

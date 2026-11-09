@@ -1,3 +1,4 @@
+import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import type {
 	SudokuAction,
 	SudokuHistory,
@@ -303,7 +304,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 									}
 								}}
 								className="w-full rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-sm text-white"
-								maxLength={80}
+								maxLength={MAX_TITLE_LENGTH}
 							/>
 						) : (
 							<button

@@ -1,60 +1,30 @@
 import {
 	applyConnectFourDrop,
-	type ConnectFourColor,
-	type ConnectFourOutcome,
+	CONNECT_FOUR_COLORS,
 	createConnectFourBoard,
 	getConnectFourWinner,
-	switchConnectFourColor,
 } from "@arcadeclub/core/connect-four";
+import { opponent } from "@arcadeclub/core/duel";
 import { v } from "convex/values";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import {
 	CONNECT_FOUR_DUEL,
-	requireRematch,
+	finishDuel,
+	rematchDuel,
 	requireResign,
 	requireTurn,
 	seatHost,
-	swapSeats,
-	winnerOf,
 } from "./lib/duel";
 import { rules } from "./lib/errors";
-import {
-	finishSession,
-	loadBundle,
-	loadGame,
-	reopenSession,
-	startSession,
-} from "./lib/gameSession";
+import { loadBundle, loadGame, startSession } from "./lib/gameSession";
 import {
 	createdSession,
 	createdSessionValidator,
 	hostedSessionArgs,
 	hostGame,
 } from "./lib/hostedSession";
-
-async function finishGame(
-	ctx: MutationCtx,
-	state: Doc<"connectFourStates">,
-	outcome: ConnectFourOutcome,
-	winner: ConnectFourColor | undefined,
-	now: number,
-) {
-	const winnerParticipantId = winnerOf(state, winner);
-	await finishSession(
-		ctx,
-		state,
-		{
-			phase: "finished",
-			resultOutcome: outcome,
-			resultWinner: winner,
-			winnerParticipantId,
-			updatedAt: now,
-		},
-		{ now, winners: [winnerParticipantId] },
-	);
-}
 
 async function insertState(
 	ctx: MutationCtx,
@@ -105,16 +75,20 @@ export const drop = mutation({
 		await ctx.db.patch(state._id, {
 			phase: "active",
 			board: next.board,
-			activeColor: switchConnectFourColor(color),
+			activeColor: opponent(CONNECT_FOUR_COLORS, color),
 			updatedAt: now,
 		});
 		await startSession(ctx, session, now);
 		if (winner) {
-			await finishGame(
+			const winningColor = winner === "draw" ? undefined : winner;
+			await finishDuel(
 				ctx,
 				state,
-				winner === "draw" ? "draw" : "connect",
-				winner === "draw" ? undefined : winner,
+				winningColor,
+				{
+					resultOutcome: winner === "draw" ? "draw" : "connect",
+					resultWinner: winningColor,
+				},
 				now,
 			);
 		}
@@ -129,7 +103,13 @@ export const resign = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "connect-four", args.sessionId);
 		const winner = requireResign(CONNECT_FOUR_DUEL, state, args.participantId);
-		await finishGame(ctx, state, "resignation", winner, Date.now());
+		await finishDuel(
+			ctx,
+			state,
+			winner,
+			{ resultOutcome: "resignation", resultWinner: winner },
+			Date.now(),
+		);
 	},
 });
 
@@ -140,20 +120,19 @@ export const rematch = mutation({
 	},
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "connect-four", args.sessionId);
-		requireRematch(CONNECT_FOUR_DUEL, state, args.participantId);
-		const now = Date.now();
-		const seats = await swapSeats(ctx, CONNECT_FOUR_DUEL, state);
-		await ctx.db.patch(state._id, {
-			phase: "active",
-			...seats,
-			board: createConnectFourBoard(),
-			activeColor: "red",
-			resultOutcome: undefined,
-			resultWinner: undefined,
-			winnerParticipantId: undefined,
-			updatedAt: now,
-		});
-		await reopenSession(ctx, args.sessionId);
+		await rematchDuel(
+			ctx,
+			CONNECT_FOUR_DUEL,
+			state,
+			args.participantId,
+			() => ({
+				phase: "active",
+				board: createConnectFourBoard(),
+				activeColor: "red",
+				resultOutcome: undefined,
+				resultWinner: undefined,
+			}),
+		);
 	},
 });
 

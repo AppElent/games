@@ -11,7 +11,6 @@ import {
 	initialClock,
 	isInCheck,
 	isPromotionMove,
-	switchChessColor,
 	tickClockAfterMove,
 } from "../chess";
 
@@ -132,13 +131,6 @@ describe("clock", () => {
 		expect(formatClockMs(600_000)).toBe("10:00");
 		expect(formatClockMs(61_000)).toBe("1:01");
 		expect(formatClockMs(-5)).toBe("0:00");
-	});
-});
-
-describe("switchChessColor", () => {
-	it("gives the other color", () => {
-		expect(switchChessColor("white")).toBe("black");
-		expect(switchChessColor("black")).toBe("white");
 	});
 });
 
