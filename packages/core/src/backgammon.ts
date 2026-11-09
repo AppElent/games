@@ -1,3 +1,4 @@
+import { type SeatColumns, seatOf } from "./duel";
 import { GameRuleError } from "./errors";
 import type { Rng } from "./random";
 
@@ -474,4 +475,46 @@ export function isTurnSpent(state: BackgammonTurnState) {
 		state.used.every(Boolean) &&
 		getBackgammonWinner(state.off) === null
 	);
+}
+
+/** A turn as Convex stores it: the used dice by value rather than by index. */
+type StoredBackgammonTurn = Omit<BackgammonTurnState, "used"> & {
+	usedDice: number[];
+};
+
+export function toTurnState(stored: StoredBackgammonTurn): BackgammonTurnState {
+	return {
+		points: stored.points,
+		bar: stored.bar,
+		off: stored.off,
+		activeColor: stored.activeColor,
+		dice: stored.dice,
+		used: computeUsedFlags(stored.dice, stored.usedDice),
+	};
+}
+
+/** The colour this participant plays online, if they hold a seat. */
+export function backgammonColorOf<Id extends string>(
+	state: SeatColumns<BackgammonColor, Id>,
+	participantId: Id | null | undefined,
+) {
+	return seatOf(BACKGAMMON_COLORS, state, participantId);
+}
+
+/** Whether `color` is to play in a game that is not over. */
+export function isMyTurn(
+	state: { phase: string; activeColor: BackgammonColor },
+	color: BackgammonColor | null | undefined,
+) {
+	return (
+		Boolean(color) && state.phase !== "finished" && state.activeColor === color
+	);
+}
+
+/** Whether a client ends the turn for the player after `after`, a move just made. */
+export function shouldAutoEndTurn(
+	after: BackgammonTurnState,
+	autoSwitchTurn: boolean,
+) {
+	return autoSwitchTurn && isTurnSpent(after);
 }

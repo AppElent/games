@@ -20,6 +20,7 @@ export const CHESS_OUTCOMES = [
 	"fiftyMoveRule",
 	"drawAgreed",
 ] as const;
+export type ChessOutcome = (typeof CHESS_OUTCOMES)[number];
 
 export const CHESS_PROMOTIONS = ["q", "r", "b", "n"] as const;
 export type ChessPromotion = (typeof CHESS_PROMOTIONS)[number];

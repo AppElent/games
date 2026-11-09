@@ -25,8 +25,8 @@ const STATE_TABLES = {
 	sudoku: "sudokuStates",
 } as const satisfies Partial<Record<GameType, TableNames>>;
 
-export type StatefulGame = keyof typeof STATE_TABLES;
-type StateTable = (typeof STATE_TABLES)[StatefulGame];
+type StatefulGame = keyof typeof STATE_TABLES;
+export type StateTable = (typeof STATE_TABLES)[StatefulGame];
 
 /** A game's state row, or null. Reads no session, so a query can use it too. */
 export async function findGameState<G extends StatefulGame>(
@@ -41,6 +41,24 @@ export async function findGameState<G extends StatefulGame>(
 		.withIndex("by_session", (q) => q.eq("sessionId", sessionId))
 		.unique();
 	return state as Doc<(typeof STATE_TABLES)[G]> | null;
+}
+
+/**
+ * What every `getBundle` starts from: the session, everyone in it and the
+ * game's state. Null when the session does not exist.
+ */
+export async function loadBundle<G extends StatefulGame>(
+	ctx: ReadCtx,
+	gameType: G,
+	sessionId: SessionId,
+) {
+	const session = await ctx.db.get(sessionId);
+	if (!session) {
+		return null;
+	}
+	const participants = await listParticipants(ctx, sessionId);
+	const state = await findGameState(ctx, gameType, sessionId);
+	return { session, participants, state };
 }
 
 /** The session if it exists and plays this game; `notFound` otherwise. */
@@ -80,7 +98,7 @@ export async function listParticipants(ctx: ReadCtx, sessionId: SessionId) {
 }
 
 /** Everyone not kicked, watchers included. */
-export async function listActivePlayers(ctx: ReadCtx, sessionId: SessionId) {
+async function listActivePlayers(ctx: ReadCtx, sessionId: SessionId) {
 	const participants = await listParticipants(ctx, sessionId);
 	return participants.filter((participant) => !participant.kickedAt);
 }

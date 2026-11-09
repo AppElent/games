@@ -23,3 +23,28 @@ export const AUTH_POLICIES = [
 	"hostChoice",
 ] as const;
 export type AuthPolicy = (typeof AUTH_POLICIES)[number];
+
+/** Games played in an online session. Word Links and Squad Surge play locally. */
+export type SessionGameType = Exclude<GameType, "word-links" | "squad-surge">;
+
+type SessionPolicy = {
+	readonly joinMode: JoinMode;
+	readonly authPolicy: AuthPolicy;
+};
+
+/**
+ * How each game's sessions are hosted: how others get in, and whether they
+ * need an account. A card table is solo or a room, as its host picks; it is
+ * listed as a room.
+ */
+export const GAME_SESSION_POLICY = {
+	"live-quiz": { joinMode: "room", authPolicy: "hostChoice" },
+	backgammon: { joinMode: "challenge", authPolicy: "guestAllowed" },
+	sudoku: { joinMode: "solo", authPolicy: "guestAllowed" },
+	chess: { joinMode: "challenge", authPolicy: "guestAllowed" },
+	hitster: { joinMode: "room", authPolicy: "hostChoice" },
+	"connect-four": { joinMode: "challenge", authPolicy: "guestAllowed" },
+	"signal-words": { joinMode: "room", authPolicy: "guestAllowed" },
+	"bluff-dice": { joinMode: "room", authPolicy: "guestAllowed" },
+	"card-games": { joinMode: "room", authPolicy: "guestAllowed" },
+} as const satisfies Record<SessionGameType, SessionPolicy>;

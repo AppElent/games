@@ -181,4 +181,18 @@ describe("parseLocalMatch", () => {
 			expect(parseLocalMatch(raw)).toBeNull();
 		}
 	});
+
+	it("rejects a save whose turn the screens could not read", () => {
+		const broken = [
+			{ ...saved, state: { ...state, bar: undefined } },
+			{ ...saved, state: { ...state, off: { white: 0 } } },
+			{ ...saved, state: { ...state, activeColor: "red" } },
+			{ ...saved, state: { ...state, dice: undefined } },
+			{ ...saved, state: { ...state, used: null } },
+			{ ...saved, updatedAt: "yesterday" },
+		];
+		for (const save of broken) {
+			expect(parseLocalMatch(JSON.stringify(save))).toBeNull();
+		}
+	});
 });

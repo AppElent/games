@@ -4,6 +4,7 @@ import {
 	applyBackgammonPlan,
 	type BackgammonColor,
 	type BackgammonTurnState,
+	backgammonColorOf,
 	canBearOff,
 	canEndBackgammonTurn,
 	computeUsedFlags,
@@ -12,10 +13,13 @@ import {
 	getBackgammonWinner,
 	getMoveHighlights,
 	hasLegalBackgammonMove,
+	isMyTurn,
 	isTurnSpent,
 	planBackgammonMove,
 	rollBackgammonDice,
+	shouldAutoEndTurn,
 	switchBackgammonColor,
+	toTurnState,
 } from "../backgammon";
 
 function withDice(
@@ -916,5 +920,44 @@ describe("isTurnSpent", () => {
 			off: { white: 15, black: 0 },
 		};
 		expect(isTurnSpent(won)).toBe(false);
+	});
+});
+
+describe("online turn helpers", () => {
+	const start = createInitialBackgammonState();
+
+	it("reads which dice are used from the stored die values", () => {
+		const { used, ...stored } = withDice(start, [6, 6, 6, 6]);
+		expect(toTurnState({ ...stored, usedDice: [6, 6] })).toEqual({
+			...stored,
+			used: [true, true, false, false],
+		});
+	});
+
+	it("gives a seated participant their colour", () => {
+		const seats = { whiteParticipantId: "w", blackParticipantId: "b" };
+		expect(backgammonColorOf(seats, "w")).toBe("white");
+		expect(backgammonColorOf(seats, "b")).toBe("black");
+		expect(backgammonColorOf(seats, "x")).toBeUndefined();
+		expect(backgammonColorOf({ whiteParticipantId: "w" }, undefined)).toBe(
+			undefined,
+		);
+	});
+
+	it("lets a colour play only on its own turn of an unfinished game", () => {
+		const turn = { phase: "active", activeColor: "white" as const };
+		expect(isMyTurn(turn, "white")).toBe(true);
+		expect(isMyTurn(turn, "black")).toBe(false);
+		expect(isMyTurn(turn, undefined)).toBe(false);
+		expect(isMyTurn({ ...turn, phase: "finished" }, "white")).toBe(false);
+	});
+
+	it("ends the turn for the player only when asked and every die is spent", () => {
+		const spent = withDice(start, [3, 1], [true, true]);
+		expect(shouldAutoEndTurn(spent, true)).toBe(true);
+		expect(shouldAutoEndTurn(spent, false)).toBe(false);
+		expect(
+			shouldAutoEndTurn(withDice(start, [3, 1], [true, false]), true),
+		).toBe(false);
 	});
 });

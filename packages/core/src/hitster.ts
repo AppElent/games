@@ -130,6 +130,42 @@ export function hitsterTimelineFor<T extends { participantId?: string }>(
 }
 
 /**
+ * What one participant sees of a running game: whose turn it is, whether they
+ * play in it, their tokens, whether they already claimed a steal this round,
+ * and the timeline they play on.
+ */
+export function hitsterPlayerView<
+	P extends string,
+	T extends { participantId?: P; cardIds: readonly string[] },
+>(
+	state: {
+		mode: HitsterMode;
+		turnOrder: readonly P[];
+		activeIndex: number;
+		tokens: ReadonlyArray<{ participantId: P; tokens: number }>;
+		stealClaims: ReadonlyArray<{ participantId: P }>;
+		timelines: readonly T[];
+	},
+	participantId: P | undefined,
+) {
+	const activeParticipantId: P | undefined = state.turnOrder[state.activeIndex];
+	const isPlaying =
+		participantId !== undefined && state.turnOrder.includes(participantId);
+	return {
+		activeParticipantId,
+		isPlaying,
+		isActive: isPlaying && activeParticipantId === participantId,
+		myTokens:
+			state.tokens.find((entry) => entry.participantId === participantId)
+				?.tokens ?? 0,
+		hasClaimed: state.stealClaims.some(
+			(claim) => claim.participantId === participantId,
+		),
+		myTimeline: hitsterTimelineFor(state, participantId),
+	};
+}
+
+/**
  * A drop at index i in a chronologically sorted list of years is correct when
  * the new year fits between its neighbours. Equal years are valid on either
  * side of each other.

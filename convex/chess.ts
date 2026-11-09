@@ -4,13 +4,13 @@ import {
 	CHESS_INITIAL_FEN,
 	hasFlagFallen,
 	initialClock,
-	switchChessColor,
 	tickClockAfterMove,
 } from "@arcadeclub/chess/chess";
 import {
 	CHESS_COLORS,
 	CHESS_PROMOTIONS,
 	type ChessColor,
+	type ChessOutcome,
 } from "@arcadeclub/chess/enums";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -19,24 +19,26 @@ import { chessTimeControlValidator } from "./schema";
 import {
 	CHESS_DUEL,
 	requireRematch,
+	requireResign,
 	requireSeat,
 	requireTurn,
+	seatHost,
 	swapSeats,
 	winnerOf,
 } from "./lib/duel";
 import { gameError, rules } from "./lib/errors";
 import {
-	findGameState,
 	finishSession,
-	listParticipants,
+	loadBundle,
 	loadGame,
 	reopenSession,
 	startSession,
 } from "./lib/gameSession";
 import {
+	createdSession,
 	createdSessionValidator,
-	createHostedSession,
 	hostedSessionArgs,
+	hostGame,
 } from "./lib/hostedSession";
 import { literals } from "./lib/validators";
 
@@ -58,7 +60,7 @@ function getClock(state: Doc<"chessGameStates">) {
 async function finishGame(
 	ctx: MutationCtx,
 	state: Doc<"chessGameStates">,
-	outcome: Doc<"chessGameStates">["resultOutcome"],
+	outcome: ChessOutcome,
 	winner: ChessColor | undefined,
 	now: number,
 ) {
@@ -95,13 +97,12 @@ async function insertState(
 				? "white"
 				: "black"
 			: match.hostColor;
-	await ctx.db.patch(hostParticipantId, { seat: hostColor });
+	const hostSeat = await seatHost(ctx, CHESS_DUEL, hostParticipantId, hostColor);
 	const now = Date.now();
 	return await ctx.db.insert("chessGameStates", {
 		sessionId,
 		phase: "waiting",
-		whiteParticipantId: hostColor === "white" ? hostParticipantId : undefined,
-		blackParticipantId: hostColor === "black" ? hostParticipantId : undefined,
+		...hostSeat,
 		fen: CHESS_INITIAL_FEN,
 		sanHistory: [],
 		activeColor: "white",
@@ -116,14 +117,9 @@ export const create = mutation({
 	args: { ...hostedSessionArgs, ...matchArgs },
 	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const hosted = await createHostedSession(ctx, {
-			...args,
-			gameType: "chess",
-			joinMode: "challenge",
-			authPolicy: "guestAllowed",
-		});
-		await insertState(ctx, hosted.sessionId, hosted.participantId, args);
-		return hosted;
+		const hosted = await hostGame(ctx, "chess", args);
+		await insertState(ctx, hosted.session._id, hosted.participantId, args);
+		return createdSession(hosted);
 	},
 });
 
@@ -196,17 +192,8 @@ export const resign = mutation({
 	},
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "chess", args.sessionId);
-		if (state.phase === "finished") {
-			throw gameError("gameAlreadyFinished");
-		}
-		const color = requireSeat(CHESS_DUEL, state, args.participantId);
-		await finishGame(
-			ctx,
-			state,
-			"resignation",
-			switchChessColor(color),
-			Date.now(),
-		);
+		const winner = requireResign(CHESS_DUEL, state, args.participantId);
+		await finishGame(ctx, state, "resignation", winner, Date.now());
 	},
 });
 
@@ -316,12 +303,6 @@ export const rematch = mutation({
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
-			return null;
-		}
-		const participants = await listParticipants(ctx, args.sessionId);
-		const state = await findGameState(ctx, "chess", args.sessionId);
-		return { session, participants, state };
+		return await loadBundle(ctx, "chess", args.sessionId);
 	},
 });

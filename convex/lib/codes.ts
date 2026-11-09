@@ -1,9 +1,13 @@
-const JOIN_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+import {
+	JOIN_CODE_ALPHABET,
+	JOIN_CODE_LENGTH,
+} from "@arcadeclub/core/sessions";
 
-export function makeJoinCode(length = 6) {
+export function makeJoinCode() {
 	let code = "";
-	for (let index = 0; index < length; index += 1) {
-		code += JOIN_ALPHABET[Math.floor(Math.random() * JOIN_ALPHABET.length)];
+	for (let index = 0; index < JOIN_CODE_LENGTH; index += 1) {
+		code +=
+			JOIN_CODE_ALPHABET[Math.floor(Math.random() * JOIN_CODE_ALPHABET.length)];
 	}
 	return code;
 }

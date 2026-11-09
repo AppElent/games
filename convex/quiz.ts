@@ -14,15 +14,16 @@ import { gameError } from "./lib/errors";
 import {
 	findGameState,
 	finishSession,
-	listParticipants,
+	loadBundle,
 	loadSession,
 	requireParticipant,
 	startSession,
 } from "./lib/gameSession";
 import {
+	createdSession,
 	createdSessionValidator,
-	createHostedSession,
 	hostedSessionArgs,
+	hostGame,
 } from "./lib/hostedSession";
 
 const SAMPLE_QUESTIONS = [
@@ -196,17 +197,12 @@ export const create = mutation({
 	args: { ...hostedSessionArgs, quizSetId: v.id("quizSets") },
 	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const hosted = await createHostedSession(ctx, {
-			...args,
-			gameType: "live-quiz",
-			joinMode: "room",
-			authPolicy: "hostChoice",
-		});
+		const hosted = await hostGame(ctx, "live-quiz", args);
 		if (!(await ctx.db.get(args.quizSetId))) {
 			throw gameError("quizSetNotFound");
 		}
-		await insertLobbyState(ctx, hosted.sessionId, args.quizSetId);
-		return hosted;
+		await insertLobbyState(ctx, hosted.session._id, args.quizSetId);
+		return createdSession(hosted);
 	},
 });
 
@@ -325,12 +321,11 @@ export const submitAnswer = mutation({
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
+		const bundle = await loadBundle(ctx, "live-quiz", args.sessionId);
+		if (!bundle) {
 			return null;
 		}
-		const participants = await listParticipants(ctx, args.sessionId);
-		const quizState = await findGameState(ctx, "live-quiz", args.sessionId);
+		const { session, participants, state: quizState } = bundle;
 		const quizSet = quizState?.quizSetId
 			? await ctx.db.get(quizState.quizSetId)
 			: null;

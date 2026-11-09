@@ -76,6 +76,10 @@ export const chess = {
 		heading: "Start a match",
 		defaultTitle: "Chess Match",
 		timeControlLegend: "Time control",
+		timeControlOptions: {
+			untimed: "Untimed",
+			minutes: "{minutes} minutes",
+		},
 		colorLegend: "Your color",
 		colorOptions: {
 			random: "random",

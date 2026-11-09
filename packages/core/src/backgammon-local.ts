@@ -8,6 +8,7 @@
  */
 import {
 	applyBackgammonPlan,
+	BACKGAMMON_COLORS,
 	type BackgammonMovePlan,
 	type BackgammonTurnState,
 	canEndBackgammonTurn,
@@ -35,11 +36,8 @@ export const DEFAULT_BACKGAMMON_OPTIONS: BackgammonOptions = {
 /** The server rolls when the player asks, so online games never auto-roll. */
 export type OnlineOptions = Omit<BackgammonOptions, "autoRoll">;
 
-export const DEFAULT_ONLINE_OPTIONS: OnlineOptions = {
-	showNumbers: true,
-	autoSwitchTurn: true,
-	autoCombine: true,
-};
+const { autoRoll: _autoRoll, ...onlineDefaults } = DEFAULT_BACKGAMMON_OPTIONS;
+export const DEFAULT_ONLINE_OPTIONS: OnlineOptions = onlineDefaults;
 
 const HISTORY_LIMIT = 60;
 
@@ -153,15 +151,29 @@ export function reduceLocalMatch(
 	}
 }
 
+function isCounters(value: unknown) {
+	const counters = value as BackgammonTurnState["off"] | null | undefined;
+	return (
+		typeof counters?.white === "number" && typeof counters.black === "number"
+	);
+}
+
+/** A save the screens can read before any move: the whole turn, not just the board. */
 function isLocalMatch(value: unknown): value is LocalMatch {
 	const match = value as LocalMatch | null;
+	if (typeof match !== "object" || match === null) return false;
+	const { state } = match;
 	return (
-		typeof match === "object" &&
-		match !== null &&
-		Array.isArray(match.state?.points) &&
-		match.state.points.length === 24 &&
+		Array.isArray(state?.points) &&
+		state.points.length === 24 &&
+		isCounters(state.bar) &&
+		isCounters(state.off) &&
+		(BACKGAMMON_COLORS as readonly string[]).includes(state.activeColor) &&
+		Array.isArray(state.dice) &&
+		Array.isArray(state.used) &&
 		Array.isArray(match.history) &&
-		Array.isArray(match.future)
+		Array.isArray(match.future) &&
+		typeof match.updatedAt === "number"
 	);
 }
 

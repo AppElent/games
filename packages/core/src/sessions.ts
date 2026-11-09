@@ -12,9 +12,11 @@ export const COMPLETED_REASONS = [
 	"cancelled",
 	"abandoned",
 ] as const;
-export type CompletedReason = (typeof COMPLETED_REASONS)[number];
 
 export const PARTICIPANT_ROLES = ["host", "player", "watcher"] as const;
+
+/** The longest session title the server stores. */
+export const MAX_TITLE_LENGTH = 80;
 
 export type LocalGuestIdentity = {
 	id: string;
@@ -33,6 +35,10 @@ export function formatJoinCode(value: string) {
 	}
 	return `${normalized.slice(0, 3)} ${normalized.slice(3)}`;
 }
+
+/** Room codes the server makes: no 0/O or 1/I, which read alike. */
+export const JOIN_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export const JOIN_CODE_LENGTH = 6;
 
 const JOIN_CODE_MAX_LENGTH = 8;
 

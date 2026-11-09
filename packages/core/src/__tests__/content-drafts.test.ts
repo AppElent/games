@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-	getDraftGameType,
-	validateContentDraft,
-	validateQuizSetDraft,
-	validateSignalWordsPack,
-} from "../content-drafts";
+import { getDraftGameType, validateContentDraft } from "../content-drafts";
+
+const validateQuizSet = (payload: unknown) =>
+	validateContentDraft("quiz-set", JSON.stringify(payload));
+const validateSignalWordsPack = (payload: unknown) =>
+	validateContentDraft("signal-words-pack", JSON.stringify(payload));
 
 const VALID_PUZZLE = {
 	id: "draft-1",
@@ -101,8 +101,8 @@ describe("content draft validation", () => {
 	});
 
 	it("accepts a valid quiz set draft and rejects broken questions", () => {
-		expect(validateQuizSetDraft(VALID_QUIZ)).toEqual([]);
-		const broken = validateQuizSetDraft({
+		expect(validateQuizSet(VALID_QUIZ)).toEqual([]);
+		const broken = validateQuizSet({
 			title: "",
 			questions: [
 				{
@@ -125,7 +125,7 @@ describe("content draft validation", () => {
 	});
 
 	it("flags duplicate question ids", () => {
-		const errors = validateQuizSetDraft({
+		const errors = validateQuizSet({
 			title: "Quiz",
 			questions: [VALID_QUIZ.questions[0], VALID_QUIZ.questions[0]],
 		});

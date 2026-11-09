@@ -12,7 +12,7 @@ import { type Rng, shuffle } from "./random";
  */
 type BinaryGrid = number[];
 
-export type BinaryDifficulty = PuzzleDifficulty;
+type BinaryDifficulty = PuzzleDifficulty;
 
 export const BINARY_SIZES: Record<BinaryDifficulty, number> = {
 	easy: 6,

@@ -8,7 +8,7 @@ type ChessMoveInput = {
 	promotion?: ChessPromotion;
 };
 
-export type ChessGameResult =
+type ChessGameResult =
 	| { outcome: "checkmate"; winner: ChessColor }
 	| { outcome: "timeout"; winner: ChessColor }
 	| { outcome: "resignation"; winner: ChessColor }
@@ -30,10 +30,10 @@ export const CHESS_INITIAL_FEN =
 
 export const CHESS_TIME_CONTROLS: Record<
 	ChessTimeControl,
-	{ label: string; initialSeconds?: number }
+	{ initialSeconds?: number }
 > = {
-	untimed: { label: "Untimed" },
-	"10+0": { label: "10 minutes", initialSeconds: 600 },
+	untimed: {},
+	"10+0": { initialSeconds: 600 },
 };
 
 export function switchChessColor(color: ChessColor): ChessColor {

@@ -2,48 +2,38 @@ import { v } from "convex/values";
 import {
 	applyBackgammonMove,
 	canEndBackgammonTurn,
-	computeUsedFlags,
 	createInitialBackgammonState,
 	getBackgammonWinner,
 	rollBackgammonDice,
 	switchBackgammonColor,
-	type BackgammonTurnState,
+	toTurnState,
 } from "@arcadeclub/core/backgammon";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import {
 	BACKGAMMON_DUEL,
 	requireRematch,
 	requireTurn,
+	seatHost,
 	swapSeats,
 } from "./lib/duel";
 import { gameError, rules } from "./lib/errors";
 import {
 	findGameState,
 	finishSession,
-	listParticipants,
+	loadBundle,
 	loadGame,
 	loadSession,
 	reopenSession,
 	startSession,
 } from "./lib/gameSession";
 import {
+	createdSession,
 	createdSessionValidator,
-	createHostedSession,
 	hostedSessionArgs,
+	hostGame,
 } from "./lib/hostedSession";
-
-function toTurnState(state: Doc<"backgammonGameStates">): BackgammonTurnState {
-	return {
-		points: state.points,
-		bar: state.bar,
-		off: state.off,
-		activeColor: state.activeColor,
-		dice: state.dice,
-		used: computeUsedFlags(state.dice, state.usedDice),
-	};
-}
 
 async function insertState(
 	ctx: MutationCtx,
@@ -52,11 +42,11 @@ async function insertState(
 ) {
 	const now = Date.now();
 	const initialState = createInitialBackgammonState();
-	await ctx.db.patch(hostParticipantId, { seat: "white" });
+	const hostSeat = await seatHost(ctx, BACKGAMMON_DUEL, hostParticipantId);
 	return await ctx.db.insert("backgammonGameStates", {
 		sessionId,
 		phase: "waiting",
-		whiteParticipantId: hostParticipantId,
+		...hostSeat,
 		activeColor: initialState.activeColor,
 		points: initialState.points,
 		bar: initialState.bar,
@@ -72,14 +62,9 @@ export const create = mutation({
 	args: hostedSessionArgs,
 	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const hosted = await createHostedSession(ctx, {
-			...args,
-			gameType: "backgammon",
-			joinMode: "challenge",
-			authPolicy: "guestAllowed",
-		});
-		await insertState(ctx, hosted.sessionId, hosted.participantId);
-		return hosted;
+		const hosted = await hostGame(ctx, "backgammon", args);
+		await insertState(ctx, hosted.session._id, hosted.participantId);
+		return createdSession(hosted);
 	},
 });
 
@@ -251,16 +236,14 @@ export const rematch = mutation({
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
+		const bundle = await loadBundle(ctx, "backgammon", args.sessionId);
+		if (!bundle) {
 			return null;
 		}
-		const participants = await listParticipants(ctx, args.sessionId);
-		const state = await findGameState(ctx, "backgammon", args.sessionId);
 		const moves = await ctx.db
 			.query("backgammonMoves")
 			.withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
 			.collect();
-		return { session, participants, state, moves };
+		return { ...bundle, moves };
 	},
 });

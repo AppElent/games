@@ -1,4 +1,6 @@
 import type { GameType } from "./games";
+import type { QuizQuestionDraft } from "./quiz";
+import { SIGNAL_BOARD_SIZE } from "./signal-words";
 import { validateWordLinkPuzzle, type WordLinkPuzzle } from "./word-links";
 
 export const CONTENT_DRAFT_KINDS = [
@@ -25,18 +27,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function validateSignalWordsPack(
-	payload: unknown,
-): ContentValidationError[] {
+function validateSignalWordsPack(payload: unknown): ContentValidationError[] {
 	const errors: ContentValidationError[] = [];
 	if (!isRecord(payload) || !Array.isArray(payload.words)) {
 		return [{ path: "words", message: "Pack must be { words: string[] }" }];
 	}
 	const words = payload.words;
-	if (words.length < 25) {
+	if (words.length < SIGNAL_BOARD_SIZE) {
 		errors.push({
 			path: "words",
-			message: `A pack needs at least 25 words (got ${words.length})`,
+			message: `A pack needs at least ${SIGNAL_BOARD_SIZE} words (got ${words.length})`,
 		});
 	}
 	const seen = new Set<string>();
@@ -66,9 +66,14 @@ export function validateSignalWordsPack(
 	return errors;
 }
 
-export function validateQuizSetDraft(
-	payload: unknown,
-): ContentValidationError[] {
+/** A quiz-set draft's payload once `validateQuizSetDraft` finds nothing wrong. */
+export type QuizSetDraft = {
+	title: string;
+	description?: string;
+	questions: QuizQuestionDraft[];
+};
+
+function validateQuizSetDraft(payload: unknown): ContentValidationError[] {
 	const errors: ContentValidationError[] = [];
 	if (!isRecord(payload)) {
 		return [{ path: "", message: "Draft must be a JSON object" }];

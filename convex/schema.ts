@@ -4,6 +4,7 @@ import {
 	BACKGAMMON_PHASES,
 } from "@arcadeclub/core/backgammon";
 import { BLUFF_PHASES } from "@arcadeclub/core/bluff-dice";
+import { CARD_TABLE_STATUSES } from "@arcadeclub/core/cards/table";
 import {
 	CONNECT_FOUR_CELLS,
 	CONNECT_FOUR_COLORS,
@@ -409,11 +410,7 @@ export default defineSchema({
 		gameId: v.string(),
 		options: v.array(v.string()),
 		seats: v.array(cardSeatValidator),
-		status: v.union(
-			v.literal("lobby"),
-			v.literal("playing"),
-			v.literal("finished"),
-		),
+		status: literals(CARD_TABLE_STATUSES),
 		// Engine state, including every hand: read it only through viewCardGame.
 		// Its shape belongs to the rule family, so Convex cannot validate it here.
 		game: v.optional(v.any()),

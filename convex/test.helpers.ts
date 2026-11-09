@@ -9,6 +9,8 @@ import { ConvexError, type Value } from "convex/values";
 import { afterEach, beforeEach, expect, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
+import type { StateTable } from "./lib/gameSession";
+import { createHostedSession } from "./lib/hostedSession";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -24,15 +26,6 @@ export type T = ReturnType<typeof setup>;
 export type SessionId = Id<"gameSessions">;
 export type ParticipantId = Id<"sessionParticipants">;
 export type GameType = Doc<"gameSessions">["gameType"];
-type StateTable =
-	| "backgammonGameStates"
-	| "bluffDiceStates"
-	| "chessGameStates"
-	| "connectFourStates"
-	| "hitsterGameStates"
-	| "liveQuizStates"
-	| "signalWordsStates"
-	| "sudokuStates";
 
 /** Freezes the clock at `T0` for each test and undoes any `Math.random` mock. */
 export function useFixedClock() {
@@ -149,7 +142,10 @@ export async function deletedParticipantId(
 
 export const HOST_USER = "user_host";
 
-/** `sessions.create` as a signed-in host, which every shared mode requires. */
+/**
+ * A session and its signed-in host (every shared mode requires one) with no
+ * game state yet, as a game's `create` makes them before inserting its state.
+ */
 export async function hostSession(
 	t: T,
 	gameType: GameType,
@@ -157,19 +153,14 @@ export async function hostSession(
 	authPolicy: "guestAllowed" | "hostChoice" | "signedInRequired" = "guestAllowed",
 ) {
 	const host = t.withIdentity({ subject: HOST_USER });
-	const created = await host.mutation(api.sessions.create, {
-		gameType,
-		joinMode,
-		authPolicy,
-		title: "Game",
-		displayName: "Host",
-		guestId: "guest_host",
-	});
+	const { session, participantId } = await host.run((ctx) =>
+		createHostedSession(ctx, { gameType, joinMode, authPolicy, ...HOSTED }),
+	);
 	return {
 		host,
-		sessionId: created.sessionId,
-		hostId: created.participantId,
-		joinCode: created.joinCode,
+		sessionId: session._id,
+		hostId: participantId,
+		joinCode: session.joinCode,
 	};
 }
 

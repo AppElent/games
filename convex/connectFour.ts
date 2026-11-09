@@ -2,9 +2,10 @@ import { v } from "convex/values";
 import {
 	applyConnectFourDrop,
 	createConnectFourBoard,
+	type ConnectFourColor,
+	type ConnectFourOutcome,
 	getConnectFourWinner,
 	switchConnectFourColor,
-	type ConnectFourColor,
 } from "@arcadeclub/core/connect-four";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -12,30 +13,31 @@ import { mutation, query } from "./_generated/server";
 import {
 	CONNECT_FOUR_DUEL,
 	requireRematch,
-	requireSeat,
+	requireResign,
 	requireTurn,
+	seatHost,
 	swapSeats,
 	winnerOf,
 } from "./lib/duel";
-import { gameError, rules } from "./lib/errors";
+import { rules } from "./lib/errors";
 import {
-	findGameState,
 	finishSession,
-	listParticipants,
+	loadBundle,
 	loadGame,
 	reopenSession,
 	startSession,
 } from "./lib/gameSession";
 import {
+	createdSession,
 	createdSessionValidator,
-	createHostedSession,
 	hostedSessionArgs,
+	hostGame,
 } from "./lib/hostedSession";
 
 async function finishGame(
 	ctx: MutationCtx,
 	state: Doc<"connectFourStates">,
-	outcome: "connect" | "draw" | "resignation",
+	outcome: ConnectFourOutcome,
 	winner: ConnectFourColor | undefined,
 	now: number,
 ) {
@@ -59,12 +61,12 @@ async function insertState(
 	sessionId: Id<"gameSessions">,
 	hostParticipantId: Id<"sessionParticipants">,
 ) {
-	await ctx.db.patch(hostParticipantId, { seat: "red" });
+	const hostSeat = await seatHost(ctx, CONNECT_FOUR_DUEL, hostParticipantId);
 	const now = Date.now();
 	return await ctx.db.insert("connectFourStates", {
 		sessionId,
 		phase: "waiting",
-		redParticipantId: hostParticipantId,
+		...hostSeat,
 		board: createConnectFourBoard(),
 		activeColor: "red",
 		createdAt: now,
@@ -76,14 +78,9 @@ export const create = mutation({
 	args: hostedSessionArgs,
 	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const hosted = await createHostedSession(ctx, {
-			...args,
-			gameType: "connect-four",
-			joinMode: "challenge",
-			authPolicy: "guestAllowed",
-		});
-		await insertState(ctx, hosted.sessionId, hosted.participantId);
-		return hosted;
+		const hosted = await hostGame(ctx, "connect-four", args);
+		await insertState(ctx, hosted.session._id, hosted.participantId);
+		return createdSession(hosted);
 	},
 });
 
@@ -127,17 +124,8 @@ export const resign = mutation({
 	},
 	handler: async (ctx, args) => {
 		const { state } = await loadGame(ctx, "connect-four", args.sessionId);
-		if (state.phase === "finished") {
-			throw gameError("gameAlreadyFinished");
-		}
-		const color = requireSeat(CONNECT_FOUR_DUEL, state, args.participantId);
-		await finishGame(
-			ctx,
-			state,
-			"resignation",
-			switchConnectFourColor(color),
-			Date.now(),
-		);
+		const winner = requireResign(CONNECT_FOUR_DUEL, state, args.participantId);
+		await finishGame(ctx, state, "resignation", winner, Date.now());
 	},
 });
 
@@ -168,12 +156,6 @@ export const rematch = mutation({
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
-			return null;
-		}
-		const participants = await listParticipants(ctx, args.sessionId);
-		const state = await findGameState(ctx, "connect-four", args.sessionId);
-		return { session, participants, state };
+		return await loadBundle(ctx, "connect-four", args.sessionId);
 	},
 });

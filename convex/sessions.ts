@@ -1,3 +1,4 @@
+import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import {
@@ -13,11 +14,8 @@ import {
 	markConnected,
 	requireHostByIdentity,
 } from "./lib/gameSession";
-import {
-	assertCreatableWithoutState,
-	createHostedSession,
-} from "./lib/hostedSession";
-import { admitParticipant, findOpenSession, ON_JOIN } from "./lib/join";
+import { createHostedSession } from "./lib/hostedSession";
+import { findOpenSession, joinSession } from "./lib/join";
 
 // Installed mobile builds call this: remove once no installed build predates backgammon.create and hitster.create.
 export const create = mutation({
@@ -30,12 +28,13 @@ export const create = mutation({
 		guestId: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		assertCreatableWithoutState(args.gameType);
-		const { sessionId, participantId, joinCode } = await createHostedSession(
-			ctx,
-			args,
-		);
-		return { sessionId, participantId, joinCode };
+		// A card table needs its host's seat secret from the first moment, so
+		// only `cardGames.createTable` creates one.
+		if (args.gameType === "card-games") {
+			throw gameError("gameUnavailable");
+		}
+		const { session, participantId } = await createHostedSession(ctx, args);
+		return { sessionId: session._id, participantId, joinCode: session.joinCode };
 	},
 });
 
@@ -62,28 +61,8 @@ export const joinByCode = mutation({
 		asSpectator: v.optional(v.boolean()),
 		seatSecret: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
-		const session = await findOpenSession(ctx, { joinCode: args.joinCode });
-		if (!session) {
-			throw gameError("roomNotFound");
-		}
-		const participantId = await admitParticipant(ctx, session, args);
-		const seatClaimed =
-			!args.asSpectator &&
-			((await ON_JOIN[session.gameType]?.afterJoinCodeJoin?.(
-				ctx,
-				session,
-				participantId,
-				args.seatSecret,
-			)) ??
-				false);
-		return {
-			sessionId: session._id,
-			participantId,
-			gameType: session.gameType,
-			seatClaimed,
-		};
-	},
+	handler: async (ctx, { joinCode, ...args }) =>
+		await joinSession(ctx, { joinCode }, args),
 });
 
 export const joinByToken = mutation({
@@ -93,26 +72,8 @@ export const joinByToken = mutation({
 		guestId: v.optional(v.string()),
 		asSpectator: v.optional(v.boolean()),
 	},
-	handler: async (ctx, args) => {
-		const session = await findOpenSession(ctx, { shareToken: args.shareToken });
-		if (!session) {
-			throw gameError("gameUnavailable");
-		}
-		const participantId = await admitParticipant(ctx, session, args);
-		if (!args.asSpectator) {
-			await ON_JOIN[session.gameType]?.afterShareTokenJoin?.(
-				ctx,
-				session,
-				participantId,
-			);
-		}
-		return {
-			sessionId: session._id,
-			participantId,
-			gameType: session.gameType,
-			seatClaimed: false,
-		};
-	},
+	handler: async (ctx, { shareToken, ...args }) =>
+		await joinSession(ctx, { shareToken }, args),
 });
 
 export const getBundle = query({
@@ -202,7 +163,7 @@ export const rename = mutation({
 	handler: async (ctx, args) => {
 		await requireHostByIdentity(ctx, args.sessionId, args.hostParticipantId);
 		const title = args.title.trim();
-		if (!title || title.length > 80) {
+		if (!title || title.length > MAX_TITLE_LENGTH) {
 			throw gameError("titleLength");
 		}
 		await ctx.db.patch(args.sessionId, { title });

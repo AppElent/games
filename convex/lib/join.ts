@@ -49,7 +49,7 @@ export async function findOpenSession(
  * Lets a caller into a session past its auth policy, kicks and lock. This
  * identity's existing row is reclaimed (and with it, its seat), not duplicated.
  */
-export async function admitParticipant(
+async function admitParticipant(
 	ctx: MutationCtx,
 	session: Doc<"gameSessions">,
 	args: { displayName: string; guestId?: string; asSpectator?: boolean },
@@ -83,38 +83,79 @@ export async function admitParticipant(
 	});
 }
 
+/** How a joiner came in: a room code (with a card seat secret, if any) or a share link. */
+type JoinRoute =
+	| { via: "joinCode"; seatSecret: string | undefined }
+	| { via: "shareToken" };
+
 /**
- * What a game does when someone other than a spectator joins, by the route they
- * came through. The routes differ: a duel seats only share-link joiners, and a
- * card table seats only room-code joiners, who alone hold a seat secret.
+ * What a game does when someone other than a spectator joins. Routes differ:
+ * a duel seats only share-link joiners, and a card table seats only room-code
+ * joiners, who alone hold a seat secret. Resolves to whether this joiner now
+ * holds a seat secret's seat.
  */
-export type OnJoin = {
-	afterShareTokenJoin?: (
-		ctx: MutationCtx,
-		session: Doc<"gameSessions">,
-		participantId: ParticipantId,
-	) => Promise<void>;
-	/** Resolves to whether this joiner now holds a seat. */
-	afterJoinCodeJoin?: (
-		ctx: MutationCtx,
-		session: Doc<"gameSessions">,
-		participantId: ParticipantId,
-		seatSecret: string | undefined,
-	) => Promise<boolean>;
-};
+type OnJoin = (
+	ctx: MutationCtx,
+	session: Doc<"gameSessions">,
+	participantId: ParticipantId,
+	route: JoinRoute,
+) => Promise<boolean>;
 
 function seatChallengerByShareToken<Seat extends string>(
 	duel: Duel<Seat>,
 ): OnJoin {
-	return {
-		afterShareTokenJoin: (ctx, session, participantId) =>
-			seatChallenger(ctx, duel, session, participantId),
+	return async (ctx, session, participantId, route) => {
+		if (route.via === "shareToken") {
+			await seatChallenger(ctx, duel, session, participantId);
+		}
+		return false;
 	};
 }
 
-export const ON_JOIN: Partial<Record<GameType, OnJoin>> = {
+const ON_JOIN: Partial<Record<GameType, OnJoin>> = {
 	backgammon: seatChallengerByShareToken(BACKGAMMON_DUEL),
 	chess: seatChallengerByShareToken(CHESS_DUEL),
 	"connect-four": seatChallengerByShareToken(CONNECT_FOUR_DUEL),
-	"card-games": { afterJoinCodeJoin: claimSeatOnJoin },
+	"card-games": async (ctx, session, participantId, route) =>
+		route.via === "joinCode"
+			? await claimSeatOnJoin(ctx, session, participantId, route.seatSecret)
+			: false,
 };
+
+/**
+ * Joins the session behind an invite: admits the caller, then lets the game
+ * seat them. A closed or unknown room code is `roomNotFound`, a share link
+ * `gameUnavailable`.
+ */
+export async function joinSession(
+	ctx: MutationCtx,
+	invite: { joinCode: string } | { shareToken: string },
+	args: {
+		displayName: string;
+		guestId?: string;
+		asSpectator?: boolean;
+		seatSecret?: string;
+	},
+) {
+	const session = await findOpenSession(ctx, invite);
+	const route: JoinRoute =
+		"shareToken" in invite
+			? { via: "shareToken" }
+			: { via: "joinCode", seatSecret: args.seatSecret };
+	if (!session) {
+		throw gameError(
+			route.via === "joinCode" ? "roomNotFound" : "gameUnavailable",
+		);
+	}
+	const participantId = await admitParticipant(ctx, session, args);
+	const seatClaimed =
+		!args.asSpectator &&
+		((await ON_JOIN[session.gameType]?.(ctx, session, participantId, route)) ??
+			false);
+	return {
+		sessionId: session._id,
+		participantId,
+		gameType: session.gameType,
+		seatClaimed,
+	};
+}

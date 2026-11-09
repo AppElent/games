@@ -6,7 +6,7 @@ import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import { HostGate } from "#/components/games/HostGate";
 import { useHostSession } from "#/lib/games/use-host-session";
-import { useMessages } from "#/lib/i18n";
+import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/chess/new")({
@@ -23,6 +23,14 @@ function ChessNewPage() {
 	const { busy, error, host } = useHostSession("chess");
 	const [timeControl, setTimeControl] = useState<ChessTimeControl>("untimed");
 	const [hostColor, setHostColor] = useState<HostColor>("random");
+
+	function timeControlLabel(control: ChessTimeControl) {
+		const { initialSeconds } = CHESS_TIME_CONTROLS[control];
+		const options = chess.newGame.timeControlOptions;
+		return initialSeconds === undefined
+			? options.untimed
+			: fmt(options.minutes, { minutes: initialSeconds / 60 });
+	}
 
 	function handleCreate() {
 		return host(
@@ -65,7 +73,7 @@ function ChessNewPage() {
 												: "border border-white/20 bg-white/10 text-white"
 										}`}
 									>
-										{CHESS_TIME_CONTROLS[control].label}
+										{timeControlLabel(control)}
 									</button>
 								),
 							)}

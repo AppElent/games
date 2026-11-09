@@ -6,10 +6,13 @@ import {
 	createSignalGameState,
 	generateSignalBoard,
 	isSignalClueGiver,
+	SIGNAL_TEAMS,
 	type SignalGameState,
+	type SignalTeam,
 	signalSeat,
 	signalSeatTeam,
 } from "@arcadeclub/core/signal-words";
+import type { GameErrorCode } from "@arcadeclub/core/errors";
 import { SIGNAL_WORDS_DEFAULT_PACK } from "@arcadeclub/core/signal-words-packs";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -20,6 +23,7 @@ import {
 	findGameState,
 	finishSession,
 	listParticipants,
+	loadBundle,
 	loadGame,
 	reopenSession,
 	requireHostByParticipantId,
@@ -27,10 +31,20 @@ import {
 	startSession,
 } from "./lib/gameSession";
 import {
+	createdSession,
 	createdSessionValidator,
-	createHostedSession,
 	hostedSessionArgs,
+	hostGame,
 } from "./lib/hostedSession";
+
+/** Installed mobile builds map these codes, so each team keeps its own. */
+const TEAM_ERRORS: Record<
+	SignalTeam,
+	{ hasClueGiver: GameErrorCode; notReady: GameErrorCode }
+> = {
+	red: { hasClueGiver: "redHasClueGiver", notReady: "redTeamNotReady" },
+	blue: { hasClueGiver: "blueHasClueGiver", notReady: "blueTeamNotReady" },
+};
 
 function toGameState(state: Doc<"signalWordsStates">): SignalGameState {
 	return {
@@ -119,14 +133,9 @@ export const create = mutation({
 	args: hostedSessionArgs,
 	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const hosted = await createHostedSession(ctx, {
-			...args,
-			gameType: "signal-words",
-			joinMode: "room",
-			authPolicy: "guestAllowed",
-		});
-		await insertState(ctx, hosted.sessionId);
-		return hosted;
+		const hosted = await hostGame(ctx, "signal-words", args);
+		await insertState(ctx, hosted.session._id);
+		return createdSession(hosted);
 	},
 });
 
@@ -151,7 +160,7 @@ export const joinTeam = mutation({
 					participant.seat === seat && participant._id !== args.participantId,
 			);
 			if (taken) {
-				throw gameError(args.team === "red" ? "redHasClueGiver" : "blueHasClueGiver");
+				throw gameError(TEAM_ERRORS[args.team].hasClueGiver);
 			}
 		}
 		await ctx.db.patch(args.participantId, { seat });
@@ -170,7 +179,7 @@ export const start = mutation({
 		}
 		requireHostByParticipantId(session, args.participantId, "hostOnlyStart");
 		const participants = await listParticipants(ctx, args.sessionId);
-		for (const team of ["red", "blue"] as const) {
+		for (const team of SIGNAL_TEAMS) {
 			const clueGiver = participants.some(
 				(participant) => participant.seat === signalSeat(team, true),
 			);
@@ -178,7 +187,7 @@ export const start = mutation({
 				(participant) => participant.seat === signalSeat(team, false),
 			);
 			if (!clueGiver || !guesser) {
-				throw gameError(team === "red" ? "redTeamNotReady" : "blueTeamNotReady");
+				throw gameError(TEAM_ERRORS[team].notReady);
 			}
 		}
 		const now = Date.now();
@@ -291,12 +300,11 @@ export const rematch = mutation({
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
+		const bundle = await loadBundle(ctx, "signal-words", args.sessionId);
+		if (!bundle) {
 			return null;
 		}
-		const participants = await listParticipants(ctx, args.sessionId);
-		const state = await findGameState(ctx, "signal-words", args.sessionId);
+		const { session, participants, state } = bundle;
 		if (!state) {
 			return { session, participants, state: null };
 		}

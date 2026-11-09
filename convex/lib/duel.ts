@@ -1,7 +1,19 @@
-import type { BackgammonColor } from "@arcadeclub/core/backgammon";
-import type { ConnectFourColor } from "@arcadeclub/core/connect-four";
+import {
+	BACKGAMMON_COLORS,
+	type BackgammonColor,
+} from "@arcadeclub/core/backgammon";
+import {
+	CONNECT_FOUR_COLORS,
+	type ConnectFourColor,
+} from "@arcadeclub/core/connect-four";
+import {
+	occupant,
+	opponent,
+	type SeatColumns as CoreSeatColumns,
+	seatOf as coreSeatOf,
+} from "@arcadeclub/core/duel";
 import type { GameErrorCode } from "@arcadeclub/core/errors";
-import type { ChessColor } from "@arcadeclub/chess/enums";
+import { CHESS_COLORS, type ChessColor } from "@arcadeclub/chess/enums";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { gameError } from "./errors";
@@ -27,7 +39,7 @@ export type Duel<Seat extends string> = {
 /** Installed mobile builds show the invite while `phase === "waiting"`, so a full table must leave it. */
 export const BACKGAMMON_DUEL: Duel<BackgammonColor> = {
 	gameType: "backgammon",
-	seats: ["white", "black"],
+	seats: BACKGAMMON_COLORS,
 	errors: {
 		notSeated: "notYourTurn",
 		rematchNotSeated: "playersOnlyRematch",
@@ -38,7 +50,7 @@ export const BACKGAMMON_DUEL: Duel<BackgammonColor> = {
 
 export const CHESS_DUEL: Duel<ChessColor> = {
 	gameType: "chess",
-	seats: ["white", "black"],
+	seats: CHESS_COLORS,
 	errors: {
 		notSeated: "notSeated",
 		rematchNotSeated: "notSeated",
@@ -48,7 +60,7 @@ export const CHESS_DUEL: Duel<ChessColor> = {
 
 export const CONNECT_FOUR_DUEL: Duel<ConnectFourColor> = {
 	gameType: "connect-four",
-	seats: ["red", "yellow"],
+	seats: CONNECT_FOUR_COLORS,
 	errors: {
 		notSeated: "notSeated",
 		rematchNotSeated: "notSeated",
@@ -56,32 +68,33 @@ export const CONNECT_FOUR_DUEL: Duel<ConnectFourColor> = {
 	},
 };
 
-type SeatField<Seat extends string> = `${Seat}ParticipantId`;
-
-/** The seat columns of a state row, as `seat` names them: `whiteParticipantId`. */
-type SeatColumns<Seat extends string> = {
-	[Field in SeatField<Seat>]?: ParticipantId;
-};
+type SeatColumns<Seat extends string> = CoreSeatColumns<Seat, ParticipantId>;
 
 type TurnState<Seat extends string> = SeatColumns<Seat> & {
 	phase: string;
 	activeColor: Seat;
 };
 
-export function occupant<Seat extends string>(
-	state: SeatColumns<Seat>,
-	seat: Seat,
-) {
-	const field = `${seat}ParticipantId` as SeatField<Seat>;
-	return state[field] as ParticipantId | undefined;
-}
-
-export function seatOf<Seat extends string>(
+function seatOf<Seat extends string>(
 	duel: Duel<Seat>,
 	state: SeatColumns<NoInfer<Seat>>,
 	participantId: ParticipantId,
 ) {
-	return duel.seats.find((seat) => occupant(state, seat) === participantId);
+	return coreSeatOf(duel.seats, state, participantId);
+}
+
+/**
+ * Seats the host as the game is created: in the first seat unless they chose
+ * another. Returns the state column to insert with it.
+ */
+export async function seatHost<Seat extends string>(
+	ctx: MutationCtx,
+	duel: Duel<Seat>,
+	participantId: ParticipantId,
+	seat: NoInfer<Seat> = duel.seats[0],
+) {
+	await ctx.db.patch(participantId, { seat });
+	return { [`${seat}ParticipantId`]: participantId } as SeatColumns<Seat>;
 }
 
 export function requireSeat<Seat extends string>(
@@ -125,6 +138,18 @@ export function requireRematch<Seat extends string>(
 		throw gameError("currentGameNotFinished");
 	}
 	requireSeat(duel, state, participantId, duel.errors.rematchNotSeated);
+}
+
+/** The seat a resignation hands the game to. */
+export function requireResign<Seat extends string>(
+	duel: Duel<Seat>,
+	state: SeatColumns<NoInfer<Seat>> & { phase: string },
+	participantId: ParticipantId,
+) {
+	if (state.phase === "finished") {
+		throw gameError("gameAlreadyFinished");
+	}
+	return opponent(duel.seats, requireSeat(duel, state, participantId));
 }
 
 export function winnerOf<Seat extends string>(

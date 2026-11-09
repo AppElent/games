@@ -1,5 +1,9 @@
 import { readFileSync } from "node:fs";
-import { GAME_TYPES } from "@arcadeclub/core/games";
+import {
+	GAME_SESSION_POLICY,
+	GAME_TYPES,
+	type SessionGameType,
+} from "@arcadeclub/core/games";
 import { messages } from "@arcadeclub/core/messages";
 import { describe, expect, it } from "vitest";
 import {
@@ -52,7 +56,10 @@ describe("game catalog", () => {
 		for (const game of getVisibleGames()) {
 			const joined = getSessionPath(game.type, "s1", "p1");
 			const hosted = getHostPath(game.type, "s1", "p1");
-			if (game.joinMode !== "solo") {
+			const othersJoin =
+				game.type in GAME_SESSION_POLICY &&
+				GAME_SESSION_POLICY[game.type as SessionGameType].joinMode !== "solo";
+			if (othersJoin) {
 				expect(joined, game.type).not.toBeNull();
 			}
 			for (const path of [joined, hosted]) {

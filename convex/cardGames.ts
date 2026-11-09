@@ -11,6 +11,7 @@ import {
 	nextStarter,
 } from "@arcadeclub/core/cards/engine";
 import { SUITS } from "@arcadeclub/core/cards/deck";
+import { CARD_TABLE_STATUSES } from "@arcadeclub/core/cards/table";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -32,16 +33,16 @@ import {
 	finishSession,
 	kickParticipant,
 	loadGame,
-	loadSession,
 	reopenSession,
 	requireHostByParticipantId,
 	requireParticipant,
 	startSession,
 } from "./lib/gameSession";
 import {
+	createdSession,
 	createdSessionValidator,
-	createHostedSession,
 	hostedSessionArgs,
+	hostGame,
 } from "./lib/hostedSession";
 import { joinModeValidator } from "./schema";
 import { literals } from "./lib/validators";
@@ -110,11 +111,7 @@ const tableEnvelopeValidator = v.object({
 	}),
 	gameId: v.string(),
 	options: v.array(v.string()),
-	status: v.union(
-		v.literal("lobby"),
-		v.literal("playing"),
-		v.literal("finished"),
-	),
+	status: literals(CARD_TABLE_STATUSES),
 	seats: v.array(
 		v.object({
 			participantId: v.union(v.id("sessionParticipants"), v.null()),
@@ -136,11 +133,6 @@ const credential = {
 	seatSecret: v.string(),
 };
 
-async function requireTable(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
-	const { session, state } = await loadGame(ctx, "card-games", sessionId);
-	return { session, table: state };
-}
-
 async function requireSeat(
 	ctx: MutationCtx,
 	args: {
@@ -149,7 +141,11 @@ async function requireSeat(
 		seatSecret: string;
 	},
 ) {
-	const { session, table } = await requireTable(ctx, args.sessionId);
+	const { session, state: table } = await loadGame(
+		ctx,
+		"card-games",
+		args.sessionId,
+	);
 	const seat = seatIndexOf(table, args.participantId, args.seatSecret);
 	if (seat === null) {
 		throw gameError("cardsNotSeated");
@@ -279,20 +275,11 @@ export const createTable = mutation({
 		) {
 			throw gameError("cardsTableFull");
 		}
-		const { sessionId, participantId, joinCode } = await createHostedSession(
-			ctx,
-			{
-				gameType: "card-games",
-				joinMode: args.joinMode,
-				authPolicy: "guestAllowed",
-				title: args.title,
-				displayName: args.displayName,
-				guestId: args.guestId,
-			},
-		);
+		const hosted = await hostGame(ctx, "card-games", args, args.joinMode);
+		const { session, participantId } = hosted;
 		const now = Date.now();
 		const row = {
-			sessionId,
+			sessionId: session._id,
 			gameId: args.gameId,
 			options,
 			seats: [
@@ -310,13 +297,9 @@ export const createTable = mutation({
 		const tableId = await ctx.db.insert("cardGameStates", row);
 		if (args.start) {
 			await deal(ctx, { ...row, _id: tableId });
-			await startSession(
-				ctx,
-				await loadSession(ctx, "card-games", sessionId),
-				now,
-			);
+			await startSession(ctx, session, now);
 		}
-		return { sessionId, participantId, joinCode };
+		return createdSession(hosted);
 	},
 });
 
@@ -326,7 +309,7 @@ export const takeSeat = mutation({
 	returns: v.union(v.number(), v.null()),
 	handler: async (ctx, args) => {
 		requireSeatSecret(args.seatSecret);
-		const { table } = await requireTable(ctx, args.sessionId);
+		const { state: table } = await loadGame(ctx, "card-games", args.sessionId);
 		const participant = await requireParticipant(
 			ctx,
 			args.sessionId,

@@ -73,6 +73,10 @@ export const chess = {
 		heading: "Start een partij",
 		defaultTitle: "Schaakpartij",
 		timeControlLegend: "Bedenktijd",
+		timeControlOptions: {
+			untimed: "Zonder klok",
+			minutes: "{minutes} minuten",
+		},
 		colorLegend: "Jouw kleur",
 		colorOptions: {
 			random: "willekeurig",

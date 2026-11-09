@@ -1,8 +1,6 @@
+import { digitsToString } from "@arcadeclub/core/puzzle";
+import { generateVariantPuzzle } from "@arcadeclub/core/sudoku-variants";
 import { describe, expect, it } from "vitest";
-import {
-	createSudokuSession,
-	generatedPuzzle,
-} from "../src/lib/games/sudoku-session";
 import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
@@ -595,25 +593,27 @@ describe("create", () => {
 		"classic",
 		"killer",
 		"binary",
-	] as const)("stores a %s puzzle the new-puzzle page generates, solvable by its solution", async (variant) => {
+	] as const)("stores a %s puzzle from the shared generator, solvable by its solution", async (variant) => {
 		const t = setup();
-		const puzzle = generatedPuzzle(variant, "easy");
-		const { sessionId } = await createSudokuSession(
-			(args) => t.mutation(api.sudoku.create, args),
-			{
-				title: "Puzzle",
-				displayName: "Solver",
-				guestId: "guest_solver",
-				source: "generated",
-				difficulty: "easy",
-				...puzzle,
-			},
-		);
+		const puzzle = generateVariantPuzzle(variant, "easy");
+		const givens = digitsToString(puzzle.givens);
+		const { sessionId } = await t.mutation(api.sudoku.create, {
+			title: "Puzzle",
+			displayName: "Solver",
+			guestId: "guest_solver",
+			source: "generated",
+			difficulty: "easy",
+			variant: puzzle.variant,
+			size: puzzle.variant === "binary" ? puzzle.size : undefined,
+			cages: puzzle.variant === "killer" ? puzzle.cages : undefined,
+			givens,
+			solution: digitsToString(puzzle.solution),
+		});
 		const stored = await storedState(t, sessionId);
 		expect(stored.variant ?? "classic").toBe(variant);
-		expect(stored.givens).toBe(puzzle.givens);
+		expect(stored.givens).toBe(givens);
 		await expect(
-			complete(t, sessionId, puzzle.solution),
+			complete(t, sessionId, digitsToString(puzzle.solution)),
 		).resolves.toEqual({ completed: true });
 	});
 

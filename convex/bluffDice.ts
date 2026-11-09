@@ -17,8 +17,8 @@ import { gameError } from "./lib/errors";
 import {
 	findGameState,
 	finishSession,
-	listParticipants,
 	listPlayersIncludingKicked,
+	loadBundle,
 	loadGame,
 	reopenSession,
 	requireHostByParticipantId,
@@ -26,9 +26,10 @@ import {
 	startSession,
 } from "./lib/gameSession";
 import {
+	createdSession,
 	createdSessionValidator,
-	createHostedSession,
 	hostedSessionArgs,
+	hostGame,
 } from "./lib/hostedSession";
 
 function requireActive(
@@ -62,14 +63,9 @@ export const create = mutation({
 	args: hostedSessionArgs,
 	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const hosted = await createHostedSession(ctx, {
-			...args,
-			gameType: "bluff-dice",
-			joinMode: "room",
-			authPolicy: "guestAllowed",
-		});
-		await insertState(ctx, hosted.sessionId);
-		return hosted;
+		const hosted = await hostGame(ctx, "bluff-dice", args);
+		await insertState(ctx, hosted.session._id);
+		return createdSession(hosted);
 	},
 });
 
@@ -206,12 +202,11 @@ export const rematch = mutation({
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
+		const bundle = await loadBundle(ctx, "bluff-dice", args.sessionId);
+		if (!bundle) {
 			return null;
 		}
-		const participants = await listParticipants(ctx, args.sessionId);
-		const state = await findGameState(ctx, "bluff-dice", args.sessionId);
+		const { session, participants, state } = bundle;
 		if (!state) {
 			return { session, participants, state: null };
 		}

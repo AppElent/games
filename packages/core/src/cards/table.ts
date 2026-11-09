@@ -3,6 +3,9 @@ import type { Rng } from "../random";
 import { type CardId, drawCards } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
 
+/** Where a stored table is: seating players, dealt and playing, or done. */
+export const CARD_TABLE_STATUSES = ["lobby", "playing", "finished"] as const;
+
 type Table = {
 	hands: CardId[][];
 	stock: CardId[];

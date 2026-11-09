@@ -4,7 +4,10 @@ import {
 	validateContentDraft,
 } from "@arcadeclub/core/content-drafts";
 import { mutation, query } from "./_generated/server";
-import type { ContentDraftKind } from "@arcadeclub/core/content-drafts";
+import type {
+	ContentDraftKind,
+	QuizSetDraft,
+} from "@arcadeclub/core/content-drafts";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { requireOwned, requireUserId } from "./lib/auth";
@@ -88,18 +91,7 @@ export const approveDraft = mutation({
 
 		// Approved quiz sets become playable immediately.
 		if (draft.kind === "quiz-set") {
-			const payload = JSON.parse(draft.payload) as {
-				title: string;
-				description?: string;
-				questions: {
-					id: string;
-					prompt: string;
-					choices: { id: string; label: string }[];
-					correctChoiceIds: string[];
-					durationSeconds: number;
-					points: number;
-				}[];
-			};
+			const payload = JSON.parse(draft.payload) as QuizSetDraft;
 			const quizSetId = await ctx.db.insert("quizSets", {
 				ownerUserId,
 				title: payload.title,

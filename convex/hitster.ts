@@ -3,8 +3,7 @@ import {
 	getHitsterModeConfig,
 	HITSTER_SPARE_TRACKS,
 	HITSTER_TARGET_CARDS_RANGE,
-	hitsterMinPlayers,
-	hitsterTimelineFor,
+	hitsterPlayerView,
 } from "@arcadeclub/core/hitster";
 import {
 	buildSpotifySearchUrl,
@@ -12,22 +11,26 @@ import {
 	getPlayableHitsterCards,
 } from "@arcadeclub/core/hitster-packs";
 import { resolveHitsterReveal } from "@arcadeclub/core/hitster-reveal";
-import { shuffle } from "@arcadeclub/core/random";
-import type { Doc, Id } from "./_generated/dataModel";
+import {
+	advanceHitsterRound,
+	startHitsterGame,
+} from "@arcadeclub/core/hitster-round";
+import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { hitsterModeValidator, hitsterPlaybackModeValidator } from "./schema";
 import { gameError, rules } from "./lib/errors";
 import {
+	createdSession,
 	createdSessionValidator,
-	createHostedSession,
 	hostedSessionArgs,
+	hostGame,
 } from "./lib/hostedSession";
 import {
 	findGameState,
 	finishSession,
-	listParticipants,
 	listPlayersIncludingKicked,
+	loadBundle,
 	loadSession,
 	requireHostByParticipantId,
 	requireParticipant,
@@ -44,15 +47,11 @@ async function getSessionAndState(
 	return { session, state };
 }
 
-function findTimeline(
-	state: Doc<"hitsterGameStates">,
-	participantId: Id<"sessionParticipants">,
-) {
-	const timeline = hitsterTimelineFor(state, participantId);
-	if (!timeline) {
+function requireTimeline<T>(view: { myTimeline: T | undefined }) {
+	if (!view.myTimeline) {
 		throw gameError("timelineNotFound");
 	}
-	return timeline;
+	return view.myTimeline;
 }
 
 const gameConfigArgs = {
@@ -108,18 +107,13 @@ export const create = mutation({
 	args: { ...hostedSessionArgs, ...gameConfigArgs },
 	returns: createdSessionValidator,
 	handler: async (ctx, args) => {
-		const hosted = await createHostedSession(ctx, {
-			...args,
-			gameType: "hitster",
-			joinMode: "room",
-			authPolicy: "hostChoice",
-		});
+		const hosted = await hostGame(ctx, "hitster", args);
 		await insertLobbyState(
 			ctx,
-			hosted.sessionId,
+			hosted.session._id,
 			checkedConfig(args, Date.now()),
 		);
-		return hosted;
+		return createdSession(hosted);
 	},
 });
 
@@ -158,46 +152,19 @@ export const start = mutation({
 		if (!state || state.phase !== "lobby") {
 			throw gameError("gameNotReady");
 		}
-		const config = getHitsterModeConfig(state.mode);
 		const players = await listPlayersIncludingKicked(ctx, args.sessionId);
-		if (players.length < hitsterMinPlayers(config)) {
-			throw gameError("notEnoughPlayers");
-		}
-
 		const playable = getPlayableHitsterCards(state.packId, state.playbackMode);
-		const deck = shuffle(playable.map((card) => card.id));
-		const turnOrder = players.map((player) => player._id);
-
-		// Deal one revealed start card per timeline, then draw the first
-		// mystery card.
-		const timelines = config.shared
-			? [{ participantId: undefined, cardIds: [deck.pop() as string] }]
-			: turnOrder.map((participantId) => ({
-					participantId,
-					cardIds: [deck.pop() as string],
-				}));
-		const currentCardId = deck.pop();
+		const dealt = rules(() =>
+			startHitsterGame(
+				state.mode,
+				playable.map((card) => card.id),
+				players.map((player) => player._id),
+			),
+		);
 		const now = Date.now();
-
 		await ctx.db.patch(state._id, {
-			phase: "nowPlaying",
-			deck,
-			roundNumber: 1,
-			currentCardId,
+			...dealt,
 			roundStartedAt: now,
-			turnOrder,
-			activeIndex: 0,
-			timelines,
-			tokens: config.shared
-				? []
-				: turnOrder.map((participantId) => ({
-						participantId,
-						tokens: config.startTokens,
-					})),
-			coopTokens: config.shared ? config.startTokens : undefined,
-			pendingGuess: undefined,
-			stealClaims: [],
-			lastRecap: undefined,
 			updatedAt: now,
 		});
 		await startSession(ctx, session, now);
@@ -219,13 +186,14 @@ export const submitGuess = mutation({
 		if (!state || state.phase !== "nowPlaying") {
 			throw gameError("guessesClosed");
 		}
-		if (state.turnOrder[state.activeIndex] !== args.participantId) {
+		const view = hitsterPlayerView(state, args.participantId);
+		if (!view.isActive) {
 			throw gameError("notYourTurn");
 		}
 		if (state.pendingGuess) {
 			throw gameError("guessAlreadyLocked");
 		}
-		const timeline = findTimeline(state, args.participantId);
+		const timeline = requireTimeline(view);
 		if (args.dropIndex < 0 || args.dropIndex > timeline.cardIds.length) {
 			throw gameError("invalidDropPosition");
 		}
@@ -262,26 +230,20 @@ export const submitSteal = mutation({
 		if (!config.stealsEnabled) {
 			throw gameError("stealsUnavailable");
 		}
-		if (state.turnOrder[state.activeIndex] === args.participantId) {
+		const view = hitsterPlayerView(state, args.participantId);
+		if (view.isActive) {
 			throw gameError("activePlayerCannotSteal");
 		}
-		if (!state.turnOrder.includes(args.participantId)) {
+		if (!view.isPlaying) {
 			throw gameError("notPlaying");
 		}
-		if (
-			state.stealClaims.some(
-				(claim) => claim.participantId === args.participantId,
-			)
-		) {
+		if (view.hasClaimed) {
 			throw gameError("stealAlreadyClaimed");
 		}
-		const tokenEntry = state.tokens.find(
-			(entry) => entry.participantId === args.participantId,
-		);
-		if (!tokenEntry || tokenEntry.tokens < 1) {
+		if (view.myTokens < 1) {
 			throw gameError("stealNeedsToken");
 		}
-		const timeline = findTimeline(state, args.participantId);
+		const timeline = requireTimeline(view);
 		if (args.dropIndex < 0 || args.dropIndex > timeline.cardIds.length) {
 			throw gameError("invalidDropPosition");
 		}
@@ -346,41 +308,20 @@ export const nextRound = mutation({
 		if (!state || state.phase !== "reveal") {
 			throw gameError("finishRevealFirst");
 		}
-		const deck = [...state.deck];
-		const currentCardId = deck.pop();
+		const next = advanceHitsterRound(state);
 		const now = Date.now();
-		if (!currentCardId) {
-			// Deck exhausted: longest timeline wins (competitive) or coop loses.
-			const config = getHitsterModeConfig(state.mode);
-			const leader = config.shared
-				? undefined
-				: [...state.timelines].sort(
-						(a, b) => b.cardIds.length - a.cardIds.length,
-					)[0];
+		if (next.phase === "finished") {
 			await finishSession(
 				ctx,
 				state,
-				{
-					phase: "finished",
-					deck,
-					currentCardId: undefined,
-					winnerParticipantId: leader?.participantId,
-					coopResult: config.shared ? "lost" : undefined,
-					updatedAt: now,
-				},
-				{ now, winners: [leader?.participantId] },
+				{ ...next, updatedAt: now },
+				{ now, winners: [next.winnerParticipantId] },
 			);
 			return;
 		}
 		await ctx.db.patch(state._id, {
-			phase: "nowPlaying",
-			deck,
-			roundNumber: state.roundNumber + 1,
-			currentCardId,
+			...next,
 			roundStartedAt: now,
-			activeIndex: (state.activeIndex + 1) % state.turnOrder.length,
-			pendingGuess: undefined,
-			stealClaims: [],
 			updatedAt: now,
 		});
 	},
@@ -392,12 +333,11 @@ export const getBundle = query({
 		participantId: v.optional(v.id("sessionParticipants")),
 	},
 	handler: async (ctx, args) => {
-		const session = await ctx.db.get(args.sessionId);
-		if (!session) {
+		const bundle = await loadBundle(ctx, "hitster", args.sessionId);
+		if (!bundle) {
 			return null;
 		}
-		const participants = await listParticipants(ctx, args.sessionId);
-		const state = await findGameState(ctx, "hitster", args.sessionId);
+		const { session, participants, state } = bundle;
 		if (!state) {
 			return { session, participants, state: null, hostPlayback: null };
 		}
