@@ -86,10 +86,14 @@ Local deploys and over-the-air publishes take their values from Infisical throug
 `env:exec`, which writes nothing:
 
 ```sh
-pnpm deploy:dev          # convex dev --once, build games-dev (CLOUDFLARE_ENV=dev), wrangler deploy
+pnpm deploy:dev          # push Convex to the shared dev deployment (zany-parakeet-507), build games-dev (CLOUDFLARE_ENV=dev), wrangler deploy
 pnpm deploy:production   # same as CI: convex deploy + build, wrangler deploy
 pnpm mobile:update:preview
 ```
+
+`ship:dev` names the dev deployment itself and clears `CONVEX_DEPLOY_KEY`. Without that,
+the Convex CLI would push to whatever `.env.local` selects, which in a prepared worktree
+is the worktree backend and its scoped key.
 
 ## Supplied values
 

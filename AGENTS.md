@@ -29,7 +29,7 @@ pnpm run lint:fix          # biome check --write
 # pre-commit (lefthook, installed by pnpm install) runs biome check --staged;
 # bypass with git commit --no-verify or LEFTHOOK=0
 pnpm run build
-pnpm run deploy:dev        # convex dev --once, build the games-dev Worker (CLOUDFLARE_ENV=dev), wrangler deploy; values from Infisical via env:exec
+pnpm run deploy:dev        # push Convex to the shared dev deployment (zany-parakeet-507, never the worktree backend), build the games-dev Worker (CLOUDFLARE_ENV=dev), wrangler deploy; values from Infisical via env:exec
 pnpm run deploy:production # production from this machine, values from Infisical (= `pnpm run deploy`); CI does this on merge
 ```
 
