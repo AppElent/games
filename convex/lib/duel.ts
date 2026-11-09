@@ -43,7 +43,11 @@ export type Duel<Seat extends string> = {
 	onFull?: { phase: "ready" };
 };
 
-/** Installed mobile builds show the invite while `phase === "waiting"`, so a full table must leave it. */
+/**
+ * Installed mobile builds show the invite while `phase === "waiting"`, so a full
+ * table must leave it: drop `onFull` once no installed build predates the
+ * mobile screen reading `duelTurn`.
+ */
 export const BACKGAMMON_DUEL = {
 	gameType: "backgammon",
 	seats: BACKGAMMON_COLORS,

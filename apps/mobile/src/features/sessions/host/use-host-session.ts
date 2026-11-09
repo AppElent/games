@@ -8,14 +8,11 @@
  * decides the join mode and auth policy; the seat is remembered under that
  * game, with a fresh seat secret when the game's seats need one.
  */
+import { seatsCarrySecret } from "@arcadeclub/core/games";
 import { useMutation } from "convex/react";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useCallback } from "react";
-import {
-	APP_GAMES,
-	type OnlineGameType,
-	usesSeatSecret,
-} from "../../play/app-games";
+import { APP_GAMES, type OnlineGameType } from "../../play/app-games";
 import { usePlayerIdentity } from "../../players/identity/use-player-identity";
 import { newSeatSecret } from "../seat-secret";
 import { rememberSeat } from "../session-seats";
@@ -44,7 +41,7 @@ export function useHostSession<G extends OnlineGameType>(gameType: G) {
 	const host = useCallback(
 		(options: HostOptions<G>) =>
 			run(async () => {
-				const seatSecret = usesSeatSecret(gameType)
+				const seatSecret = seatsCarrySecret(gameType)
 					? newSeatSecret()
 					: undefined;
 				const session = await create({

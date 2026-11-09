@@ -22,8 +22,6 @@ type AppGame<G extends GameType = GameType> = {
 	titledBySession?: true;
 	online?: {
 		create: unknown;
-		/** A seat is proven by a secret this phone keeps: participant ids are public. */
-		seatSecret?: true;
 		sessionHref: (sessionId: string) => Href;
 	};
 };
@@ -77,7 +75,6 @@ export const APP_GAMES = {
 		titledBySession: true,
 		online: {
 			create: api.cardGames.createTable,
-			seatSecret: true,
 			sessionHref: (sessionId: string) => ({
 				pathname: "/cards/table/[sessionId]",
 				params: { sessionId },
@@ -102,11 +99,6 @@ export function isOnlineAppGame(
 	gameType: GameType,
 ): gameType is OnlineGameType {
 	return Boolean(BY_TYPE[gameType]?.online);
-}
-
-/** Whether this game's seats carry a secret this phone must keep. */
-export function usesSeatSecret(gameType: GameType) {
-	return Boolean(BY_TYPE[gameType]?.online?.seatSecret);
 }
 
 /** The in-app screen for an online session. */

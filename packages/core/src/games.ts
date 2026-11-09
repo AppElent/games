@@ -30,6 +30,8 @@ export type SessionGameType = Exclude<GameType, "word-links" | "squad-surge">;
 type SessionPolicy = {
 	readonly joinMode: JoinMode;
 	readonly authPolicy: AuthPolicy;
+	/** A seat is proven by a secret the player's device keeps: participant ids are public. */
+	readonly seatSecret?: true;
 };
 
 /**
@@ -46,5 +48,16 @@ export const GAME_SESSION_POLICY = {
 	"connect-four": { joinMode: "challenge", authPolicy: "guestAllowed" },
 	"signal-words": { joinMode: "room", authPolicy: "guestAllowed" },
 	"bluff-dice": { joinMode: "room", authPolicy: "guestAllowed" },
-	"card-games": { joinMode: "room", authPolicy: "guestAllowed" },
+	"card-games": {
+		joinMode: "room",
+		authPolicy: "guestAllowed",
+		seatSecret: true,
+	},
 } as const satisfies Record<SessionGameType, SessionPolicy>;
+
+/** Whether this game's seats carry a secret the player's device must keep. */
+export function seatsCarrySecret(gameType: GameType) {
+	const policy: SessionPolicy | undefined =
+		GAME_SESSION_POLICY[gameType as SessionGameType];
+	return policy?.seatSecret === true;
+}

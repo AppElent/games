@@ -1,7 +1,8 @@
+import { seatsCarrySecret } from "@arcadeclub/core/games";
 import { normalizeJoinCode } from "@arcadeclub/core/sessions";
 import { useMutation } from "convex/react";
 import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
-import { getSessionPath, joinsWithSeatSecret } from "#/lib/games/catalog";
+import { getSessionPath } from "#/lib/games/catalog";
 import { rememberSeat } from "#/lib/games/seat";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
@@ -45,7 +46,7 @@ export function useJoinSession() {
 					seatSecret,
 				});
 		const { sessionId, participantId, gameType } = result;
-		if (joinsWithSeatSecret(gameType) && seatSecret) {
+		if (seatsCarrySecret(gameType) && seatSecret) {
 			rememberCardSeat(
 				sessionId,
 				participantId,

@@ -56,7 +56,6 @@ export type SudokuHint = {
 
 type TechniqueDetector = {
 	id: string;
-	name: string;
 	level: HintTechniqueLevel;
 	detect: (grid: SudokuGrid, candidates: number[]) => SudokuHint | null;
 };
@@ -75,7 +74,6 @@ function allUnits(): UnitRef[] {
 
 const nakedSingle: TechniqueDetector = {
 	id: "naked-single",
-	name: "Naked single",
 	level: "beginner",
 	detect: (grid, candidates) => {
 		for (let cell = 0; cell < 81; cell += 1) {
@@ -99,7 +97,6 @@ const nakedSingle: TechniqueDetector = {
 
 const hiddenSingle: TechniqueDetector = {
 	id: "hidden-single",
-	name: "Hidden single",
 	level: "beginner",
 	detect: (grid, candidates) => {
 		for (const unit of allUnits()) {
@@ -179,14 +176,12 @@ function findPointing(
 
 const pointing: TechniqueDetector = {
 	id: "pointing",
-	name: "Pointing pair/triple",
 	level: "intermediate",
 	detect: findPointing,
 };
 
 const boxLineReduction: TechniqueDetector = {
 	id: "box-line-reduction",
-	name: "Box-line reduction",
 	level: "intermediate",
 	detect: (grid, candidates) => {
 		const lines: UnitRef[] = [];
@@ -341,28 +336,24 @@ function findHiddenSet(
 
 const nakedPair: TechniqueDetector = {
 	id: "naked-pair",
-	name: "Naked pair",
 	level: "intermediate",
 	detect: (grid, candidates) => findNakedSet(grid, candidates, 2),
 };
 
 const nakedTriple: TechniqueDetector = {
 	id: "naked-triple",
-	name: "Naked triple",
 	level: "intermediate",
 	detect: (grid, candidates) => findNakedSet(grid, candidates, 3),
 };
 
 const hiddenPair: TechniqueDetector = {
 	id: "hidden-pair",
-	name: "Hidden pair",
 	level: "intermediate",
 	detect: (grid, candidates) => findHiddenSet(grid, candidates, 2),
 };
 
 const hiddenTriple: TechniqueDetector = {
 	id: "hidden-triple",
-	name: "Hidden triple",
 	level: "intermediate",
 	detect: (grid, candidates) => findHiddenSet(grid, candidates, 3),
 };
@@ -374,7 +365,6 @@ const hiddenTriple: TechniqueDetector = {
  */
 const snyderSuggestion: TechniqueDetector = {
 	id: "snyder-pair",
-	name: "Snyder notation",
 	level: "beginner",
 	detect: (grid, candidates) => {
 		for (let box = 0; box < 9; box += 1) {

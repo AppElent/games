@@ -6,11 +6,11 @@
  * Waits for Convex to hold the Clerk token when someone is signed in, so a
  * signed-in player is joined as their account rather than as a guest.
  */
+import { seatsCarrySecret } from "@arcadeclub/core/games";
 import { type Invite, seatSecretAfterJoin } from "@arcadeclub/core/sessions";
 import { useMutation } from "convex/react";
 import { useCallback } from "react";
 import { api } from "../../convex/api";
-import { usesSeatSecret } from "../play/app-games";
 import { usePlayerIdentity } from "../players/identity/use-player-identity";
 import { newSeatSecret } from "./seat-secret";
 import { findSeat, rememberSeat } from "./session-seats";
@@ -45,7 +45,7 @@ export function useJoinSession() {
 					sessionId: result.sessionId,
 					participantId: result.participantId,
 					gameType: result.gameType,
-					seatSecret: usesSeatSecret(result.gameType)
+					seatSecret: seatsCarrySecret(result.gameType)
 						? seatSecretAfterJoin(
 								findSeat(result.sessionId),
 								result,

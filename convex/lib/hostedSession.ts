@@ -5,7 +5,7 @@ import {
 	type JoinMode,
 	type SessionGameType,
 } from "@arcadeclub/core/games";
-import { v } from "convex/values";
+import { type ObjectType, v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { getOptionalUserId } from "./auth";
@@ -28,7 +28,7 @@ export const createdSessionValidator = v.object({
 	shareToken: v.optional(v.string()),
 });
 
-type HostedArgs = { title: string; displayName: string; guestId?: string };
+type HostedArgs = ObjectType<typeof hostedSessionArgs>;
 
 type HostedSession = {
 	session: Doc<"gameSessions">;
