@@ -7,6 +7,6 @@ runs:
       shell: bash
       run: |
         if [ -z "$EXPO_TOKEN" ]; then
-          echo "::error::No EXPO_TOKEN secret. Create a token at expo.dev → Access tokens, store it in Infisical as expo-token, then run pnpm env:apply preview --only github."
+          echo "::error::No PREVIEW_EXPO_TOKEN secret. Create a token at expo.dev → Access tokens, store it in Infisical staging as expo-token, then run pnpm env:apply preview --only github."
           exit 1
         fi

@@ -6,15 +6,14 @@ import {
 	SHARED_SENTRY_OPTIONS,
 } from "./lib/observability/config";
 
+// environment_name is a Wrangler var: set for PR previews (wrangler.jsonc `pr`).
 type SentryEnv = {
-	SENTRY_DSN?: string;
 	environment_name?: string;
 };
 
 const instrumentedHandler = Sentry.withSentry(
 	(env: SentryEnv) => ({
-		dsn:
-			env.SENTRY_DSN || import.meta.env.VITE_SENTRY_DSN || DEFAULT_SENTRY_DSN,
+		dsn: import.meta.env.VITE_SENTRY_DSN || DEFAULT_SENTRY_DSN,
 		enabled: !import.meta.env.DEV,
 		environment: env.environment_name || import.meta.env.MODE,
 		release: import.meta.env.VITE_SENTRY_RELEASE,

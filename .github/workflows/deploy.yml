@@ -4,7 +4,7 @@ name: Deploy
 # the ruleset), then Convex functions and schema, then the Worker built against
 # them. "Run workflow" redeploys main by hand. Then the preview app's
 # over-the-air update, whose builds call the production backend. Builds stay
-# separate (mobile-build.yml).
+# separate (mobile-build.yml). There is no staging environment.
 on:
   push:
     branches: [main]
@@ -23,17 +23,23 @@ jobs:
   deploy:
     needs: checks
     runs-on: ubuntu-latest
-    # Every value below is scoped to the `production` GitHub Environment and
-    # written there by `pnpm env:apply production`.
+    # Every value is scoped to the `production` GitHub Environment, written
+    # there by `pnpm env:apply production --only github`.
     environment: production
     permissions: { contents: read }
     env:
+      ENVIRONMENT_NAME: production
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
       VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+      # The Cloudflare Vite plugin picks the Wrangler env at build time and
+      # `wrangler deploy` follows dist/server/wrangler.json; --env is ignored.
+      # Production is the top-level Worker, so no Wrangler env is selected.
+      CLOUDFLARE_ENV: ""
+      EXPECTED_WORKER: games
     steps:
       - name: Guard production ref
         if: github.ref != 'refs/heads/main'
@@ -44,43 +50,48 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
-      # Fails before anything ships when the environment is half configured.
-      # An Environment without its own CONVEX_DEPLOY_KEY silently inherits the
-      # repo-level preview key, so insist on a production key explicitly.
+      # An Environment without its own CONVEX_DEPLOY_KEY silently inherits a
+      # repo-level one of the same name, so insist on a production key first.
       - name: Check environment
         run: |
           case "$CONVEX_DEPLOY_KEY" in
             prod:*) ;;
-            *) echo "::error::CONVEX_DEPLOY_KEY in the production Environment is missing or not a production key."; exit 1 ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY in the $ENVIRONMENT_NAME Environment is missing or not a prod: key."; exit 1 ;;
           esac
-          node scripts/env.mjs check production --ci
+          node scripts/env.mjs check "$ENVIRONMENT_NAME" --ci
 
-      # The deploy key alone picks the production deployment; see the
-      # deploy:production script, which local `pnpm deploy:prod` runs too.
-      - name: Deploy Convex, build, deploy Worker
-        run: pnpm run deploy:production
-
-      # The Cloudflare plugin picks the Worker at build time (CLOUDFLARE_ENV);
-      # fail if the build targeted anything but production.
-      - name: Check deployed Worker
+      # The deploy key alone picks the Convex deployment, which exposes its URL
+      # to --cmd as $CONVEX_URL; the build reads VITE_CONVEX_URL.
+      - name: Convex deploy + build
         run: |
-          name=$(jq -r .name dist/server/wrangler.json)
-          if [ "$name" != games ]; then
-            echo "::error::Built Worker is $name, expected games."
+          pnpm exec convex deploy \
+            --cmd-url-env-var-name CONVEX_URL \
+            --cmd "VITE_CONVEX_URL=\$CONVEX_URL pnpm build"
+
+      # A build for the wrong env would replace another environment's Worker.
+      - name: Guard Worker name
+        run: |
+          built=$(jq -r .name dist/server/wrangler.json)
+          if [ "$built" != "$EXPECTED_WORKER" ]; then
+            echo "::error::Built Worker is $built, expected $EXPECTED_WORKER. Check CLOUDFLARE_ENV."
             exit 1
           fi
+
+      - name: Deploy Worker
+        run: pnpm exec wrangler deploy
 
   # Publishes the merged JavaScript to the preview channel once its backend is
   # live, only when an installed build can load it; otherwise the run summary
   # says a rebuild is due. See apps/mobile/scripts/ci-publish-update.mjs.
+  # Preview values live in repository scope as PREVIEW_<name>.
   mobile-update:
     needs: deploy
     runs-on: ubuntu-latest
     # Moves the mobile-update/preview tag after publishing.
     permissions: { contents: write }
     env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      EXPO_TOKEN: ${{ secrets.PREVIEW_EXPO_TOKEN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.PREVIEW_SENTRY_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }

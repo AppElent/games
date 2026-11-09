@@ -5,6 +5,14 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   "env": {
-    "dev": { "name": "games-dev", "workers_dev": true }
+    "dev": { "name": "games-dev", "workers_dev": true },
+    // PR previews (CLOUDFLARE_ENV=pr): no routes, so a preview never claims
+    // the production domain; environment_name tags the Worker's Sentry reports.
+    "pr": {
+      "name": "games-pr",
+      "workers_dev": true,
+      "routes": [],
+      "vars": { "environment_name": "preview" }
+    }
   }
 }

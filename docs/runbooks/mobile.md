@@ -24,16 +24,16 @@ Icon changes need a new build; an EAS Update can't change the home-screen icon.
 
 ## Environment
 
-`apps/mobile/.env.local` (template: `apps/mobile/.env.example`):
+`apps/mobile/.env.local` is generated from [`env.manifest.ts`](../../env.manifest.ts) by workspace prepare or `pnpm env:apply local --only file` (see [environment.md](environment.md)); don't edit it by hand:
 
 | Variable | Value |
 | --- | --- |
-| `EXPO_PUBLIC_CONVEX_URL` | The dev deployment (`https://zany-parakeet-507.eu-west-1.convex.cloud`, as in the EAS `development` environment), or a local backend the device can reach |
+| `EXPO_PUBLIC_CONVEX_URL` | The worktree's backend, written by workspace prepare. On a physical device use a deployment it can reach, such as the dev deployment (`https://zany-parakeet-507.eu-west-1.convex.cloud`, as in the EAS `development` environment) |
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Same Clerk instance as the web app; its Native API must be enabled |
 | `EXPO_PUBLIC_WEB_ORIGIN` | Web origin for share links. Unset: invites share the room code only and challenge links are hidden |
 | `EXPO_PUBLIC_TEST_USER_EMAIL` / `_PASSWORD` | Optional, `pk_test_` only: prefill sign-in |
 | `EXPO_PUBLIC_SENTRY_DSN` | Optional locally; EAS builds get it from the EAS environment (`pnpm env:apply`, see [environment.md](environment.md)) |
-| `EXPO_PUBLIC_SENTRY_DEBUG` | `1` to report from a development bundle |
+| `EXPO_PUBLIC_SENTRY_DEBUG` | `1` to report from a development bundle (Infisical `dev` `sentry-debug`, optional) |
 
 ## Run locally
 
@@ -95,7 +95,7 @@ The **Mobile Build** workflow runs `eas build --local` on a GitHub runner, so it
 no EAS Build credits. Add the `build:ios` or `build:android` label to a PR to build the
 `development` profile on every push while the label stays, or start it from the Actions
 tab with a platform and profile (`development` or `preview-internal`). The `.ipa`/`.apk`
-is a workflow artifact for 14 days. It uses the `EXPO_TOKEN` repo secret (Infisical
+is a workflow artifact for 14 days. It uses the `PREVIEW_EXPO_TOKEN` repo secret (Infisical
 `expo-token`, written by `pnpm env:apply preview --only github`) and skips the Sentry
 source-map upload; builds you ship stay on EAS cloud builds. For an iPhone, an EAS cloud
 build is still the easiest install: its build page has an install QR code.
