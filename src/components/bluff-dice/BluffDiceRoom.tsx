@@ -1,57 +1,16 @@
 import { describeBluffClaim } from "@arcadeclub/core/bluff-dice";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import type { FunctionReturnType } from "convex/server";
+import { useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import { useErrorMessage } from "#/lib/games/errors";
+import { useSeat } from "#/lib/games/seat";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-type Participant = {
-	_id: Id<"sessionParticipants">;
-	displayName: string;
-	role: "host" | "player" | "watcher";
-	connected: boolean;
-};
-
-type Claim = {
-	quantity: number;
-	face: number;
-	byParticipantId: Id<"sessionParticipants">;
-};
-
-type Bundle = {
-	session: {
-		_id: Id<"gameSessions">;
-		title: string;
-		joinCode?: string;
-		hostParticipantId?: Id<"sessionParticipants">;
-	};
-	participants: Participant[];
-	state: {
-		phase: "lobby" | "claim" | "finished";
-		turnOrder: Id<"sessionParticipants">[];
-		diceCounts: Array<{
-			participantId: Id<"sessionParticipants">;
-			count: number;
-		}>;
-		activeIndex: number;
-		roundNumber: number;
-		claimHistory: Claim[];
-		lastReveal?: {
-			claim: Claim;
-			challengerParticipantId: Id<"sessionParticipants">;
-			actualCount: number;
-			loserParticipantId: Id<"sessionParticipants">;
-			hands: Array<{
-				participantId: Id<"sessionParticipants">;
-				values: number[];
-			}>;
-		};
-		winnerParticipantId?: Id<"sessionParticipants">;
-	} | null;
-};
+type Bundle = NonNullable<FunctionReturnType<typeof api.bluffDice.getBundle>>;
 
 const DIE_FACES = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
@@ -62,23 +21,16 @@ export function BluffDiceRoom({
 	bundle: Bundle;
 	joinUrl: string;
 }) {
-	const errorMessage = useErrorMessage();
 	const { messages, locale } = useI18n();
 	const bluffDice = messages.games.bluffDice;
 	const start = useMutation(api.bluffDice.start);
 	const submitClaim = useMutation(api.bluffDice.submitClaim);
 	const challenge = useMutation(api.bluffDice.challenge);
 	const rematch = useMutation(api.bluffDice.rematch);
-	const [participantId, setParticipantId] = useState<string>();
-	const [error, setError] = useState("");
+	const participantId = useSeat(bundle.session._id);
+	const { error, run } = useGameAction();
 	const [quantity, setQuantity] = useState(2);
 	const [face, setFace] = useState(3);
-
-	useEffect(() => {
-		setParticipantId(
-			window.sessionStorage.getItem("arcade-club.participantId") ?? undefined,
-		);
-	}, []);
 
 	const state = bundle.state;
 	const myDice = useQuery(
@@ -86,19 +38,10 @@ export function BluffDiceRoom({
 		participantId && state && state.phase !== "lobby"
 			? {
 					sessionId: bundle.session._id,
-					participantId: participantId as Id<"sessionParticipants">,
+					participantId,
 				}
 			: "skip",
 	);
-
-	async function run(action: () => Promise<unknown>, fallback: string) {
-		setError("");
-		try {
-			await action();
-		} catch (caught) {
-			setError(errorMessage(caught, fallback));
-		}
-	}
 
 	if (!state) {
 		return (
@@ -198,7 +141,7 @@ export function BluffDiceRoom({
 						))}
 					</ul>
 
-					{inLobby && isHost ? (
+					{inLobby && isHost && participantId ? (
 						<button
 							type="button"
 							className="mt-4 min-h-11 w-full rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
@@ -207,7 +150,7 @@ export function BluffDiceRoom({
 									() =>
 										start({
 											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
+											participantId,
 										}),
 									bluffDice.room.couldNotStartGame,
 								)
@@ -285,7 +228,7 @@ export function BluffDiceRoom({
 								{bluffDice.room.noClaimYet}
 							</p>
 						)}
-						{myTurn ? (
+						{myTurn && participantId ? (
 							<div className="mt-4 flex flex-wrap items-end gap-3">
 								<label>
 									<span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
@@ -331,8 +274,7 @@ export function BluffDiceRoom({
 											() =>
 												submitClaim({
 													sessionId: bundle.session._id,
-													participantId:
-														participantId as Id<"sessionParticipants">,
+													participantId,
 													quantity,
 													face,
 												}),
@@ -351,8 +293,7 @@ export function BluffDiceRoom({
 												() =>
 													challenge({
 														sessionId: bundle.session._id,
-														participantId:
-															participantId as Id<"sessionParticipants">,
+														participantId,
 													}),
 												bluffDice.room.couldNotChallenge,
 											)
@@ -366,7 +307,7 @@ export function BluffDiceRoom({
 					</div>
 				) : null}
 
-				{finished && isHost ? (
+				{finished && isHost && participantId ? (
 					<div className="flex justify-center">
 						<button
 							type="button"
@@ -376,7 +317,7 @@ export function BluffDiceRoom({
 									() =>
 										rematch({
 											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
+											participantId,
 										}),
 									bluffDice.room.couldNotStartRematch,
 								)

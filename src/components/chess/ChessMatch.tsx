@@ -1,5 +1,4 @@
 import {
-	type ChessGameResult,
 	formatClockMs,
 	getChessBoard,
 	getLegalMoves,
@@ -9,6 +8,7 @@ import {
 } from "@arcadeclub/chess/chess";
 import type { ChessColor } from "@arcadeclub/chess/enums";
 import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { useEffect, useMemo, useState } from "react";
 import { FitScale } from "#/components/games/FitScale";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
@@ -17,43 +17,13 @@ import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import { useErrorMessage } from "#/lib/games/errors";
+import { getGameRoute } from "#/lib/games/catalog";
+import { useSeat } from "#/lib/games/seat";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 
-type Participant = {
-	_id: Id<"sessionParticipants">;
-	displayName: string;
-	role: "host" | "player" | "watcher";
-	seat?: string;
-	connected: boolean;
-};
-
-type Bundle = {
-	session: {
-		_id: Id<"gameSessions">;
-		title: string;
-		shareToken?: string;
-	};
-	participants: Participant[];
-	state: {
-		phase: "waiting" | "active" | "finished";
-		whiteParticipantId?: Id<"sessionParticipants">;
-		blackParticipantId?: Id<"sessionParticipants">;
-		fen: string;
-		sanHistory: string[];
-		activeColor: ChessColor;
-		timeControl: "untimed" | "10+0";
-		remainingWhiteMs?: number;
-		remainingBlackMs?: number;
-		turnStartedAt?: number;
-		drawOfferBy?: ChessColor;
-		resultOutcome?: ChessGameResult["outcome"];
-		resultWinner?: ChessColor;
-		winnerParticipantId?: Id<"sessionParticipants">;
-	} | null;
-};
+type Bundle = NonNullable<FunctionReturnType<typeof api.chess.getBundle>>;
 
 const PIECE_GLYPHS: Record<string, string> = {
 	wp: "♙",
@@ -79,7 +49,6 @@ export function ChessMatch({
 	bundle: Bundle;
 	shareUrl: string;
 }) {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const chess = messages.games.chess;
 	const applyMove = useMutation(api.chess.applyMove);
@@ -88,17 +57,11 @@ export function ChessMatch({
 	const respondDraw = useMutation(api.chess.respondDraw);
 	const claimTimeout = useMutation(api.chess.claimTimeout);
 	const rematch = useMutation(api.chess.rematch);
-	const [participantId, setParticipantId] = useState<string>();
+	const participantId = useSeat(bundle.session._id);
+	const { error, run } = useGameAction();
 	const [selected, setSelected] = useState<string>();
-	const [error, setError] = useState("");
 	const [showInfo, setShowInfo] = useState(false);
 	const [now, setNow] = useState(() => Date.now());
-
-	useEffect(() => {
-		setParticipantId(
-			window.sessionStorage.getItem("arcade-club.participantId") ?? undefined,
-		);
-	}, []);
 
 	const state = bundle.state;
 	const timed = state?.remainingWhiteMs !== undefined;
@@ -187,15 +150,6 @@ export function ChessMatch({
 		state.activeColor !== localColor &&
 		(clockFor(state.activeColor) ?? 1) <= 0;
 
-	async function run(action: () => Promise<unknown>, fallback: string) {
-		setError("");
-		try {
-			await action();
-		} catch (caught) {
-			setError(errorMessage(caught, fallback));
-		}
-	}
-
 	async function handleSquareClick(square: string, piece?: string) {
 		if (!myTurn || !participantId || !state) {
 			return;
@@ -208,7 +162,7 @@ export function ChessMatch({
 				() =>
 					applyMove({
 						sessionId: bundle.session._id,
-						participantId: participantId as Id<"sessionParticipants">,
+						participantId,
 						from,
 						to: square,
 						promotion: isPromotionMove(state.fen, from, square)
@@ -276,7 +230,7 @@ export function ChessMatch({
 			<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-200">
 				{state.drawOfferBy === localColor ? (
 					<span>{chess.drawOffer.waitingForOpponent}</span>
-				) : localColor ? (
+				) : localColor && participantId ? (
 					<>
 						<span>{chess.drawOffer.opponentOffers}</span>
 						<button
@@ -287,7 +241,7 @@ export function ChessMatch({
 									() =>
 										respondDraw({
 											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
+											participantId,
 											accept: true,
 										}),
 									chess.drawOffer.acceptError,
@@ -304,7 +258,7 @@ export function ChessMatch({
 									() =>
 										respondDraw({
 											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
+											participantId,
 											accept: false,
 										}),
 									chess.drawOffer.declineError,
@@ -374,7 +328,7 @@ export function ChessMatch({
 	const actionRows = (
 		<>
 			{drawOfferRow}
-			{localColor && !finished && opponentJoined ? (
+			{participantId && localColor && !finished && opponentJoined ? (
 				<div className="flex flex-wrap justify-center gap-3">
 					<button
 						type="button"
@@ -384,7 +338,7 @@ export function ChessMatch({
 								() =>
 									offerDraw({
 										sessionId: bundle.session._id,
-										participantId: participantId as Id<"sessionParticipants">,
+										participantId,
 									}),
 								chess.actions.offerDrawError,
 							)
@@ -400,7 +354,7 @@ export function ChessMatch({
 								() =>
 									resign({
 										sessionId: bundle.session._id,
-										participantId: participantId as Id<"sessionParticipants">,
+										participantId,
 									}),
 								chess.actions.resignError,
 							)
@@ -417,7 +371,7 @@ export function ChessMatch({
 									() =>
 										claimTimeout({
 											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
+											participantId,
 										}),
 									chess.actions.claimTimeoutError,
 								)
@@ -445,21 +399,20 @@ export function ChessMatch({
 						count: state.sanHistory.length,
 					})}
 					onRematch={
-						localColor
+						localColor && participantId
 							? () =>
 									run(
 										() =>
 											rematch({
 												sessionId: bundle.session._id,
-												participantId:
-													participantId as Id<"sessionParticipants">,
+												participantId,
 											}),
 										chess.endScreen.rematchError,
 									)
 							: undefined
 					}
 					rematchLabel={chess.endScreen.rematchLabel}
-					newGameRoute="/chess/new"
+					newGameRoute={getGameRoute("chess")}
 				/>
 			) : null}
 		</>

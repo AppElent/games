@@ -8,8 +8,6 @@ import { useMutation } from "convex/react";
 import { Camera, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
-import { useErrorMessage } from "#/lib/games/errors";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import type { LocalSudokuSession } from "#/lib/games/sudoku-local";
 import {
 	autoSessionTitle,
@@ -17,6 +15,7 @@ import {
 	listLocalSudokuSessions,
 	rememberLocalSudokuSession,
 } from "#/lib/games/sudoku-local";
+import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
@@ -27,8 +26,34 @@ export const Route = createFileRoute("/sudoku/new")({
 
 type SudokuVariant = "classic" | "killer" | "binary";
 
+/** A fresh puzzle in the shape `sudoku.create` stores. */
+function generatedPuzzle(variant: SudokuVariant, difficulty: SudokuDifficulty) {
+	if (variant === "binary") {
+		const puzzle = generateBinaryPuzzle(difficulty);
+		return {
+			variant,
+			size: puzzle.size,
+			givens: digitsToString(puzzle.givens),
+			solution: digitsToString(puzzle.solution),
+		};
+	}
+	if (variant === "killer") {
+		const puzzle = generateKillerPuzzle(difficulty);
+		return {
+			variant,
+			cages: puzzle.cages,
+			givens: digitsToString(puzzle.givens),
+			solution: digitsToString(puzzle.solution),
+		};
+	}
+	const puzzle = generatePuzzle(difficulty);
+	return {
+		givens: digitsToString(puzzle.givens),
+		solution: digitsToString(puzzle.solution),
+	};
+}
+
 function SudokuNewPage() {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
 	const VARIANTS: { id: SudokuVariant; label: string; blurb: string }[] = [
@@ -74,11 +99,11 @@ function SudokuNewPage() {
 			blurb: sudoku.newGame.difficultyBlurbs.expert,
 		},
 	];
-	const createSession = useMutation(api.sessions.create);
-	const createState = useMutation(api.sudoku.createState);
+	const create = useMutation(api.sudoku.create);
+	const { busy: hosting, error, host } = useHostSession("sudoku");
 	const [variant, setVariant] = useState<SudokuVariant>("classic");
-	const [busy, setBusy] = useState<SudokuDifficulty | null>(null);
-	const [error, setError] = useState("");
+	const [pending, setPending] = useState<SudokuDifficulty | null>(null);
+	const busy = hosting ? pending : null;
 	const [name, setName] = useState("");
 	const [recent, setRecent] = useState<LocalSudokuSession[]>([]);
 
@@ -86,66 +111,29 @@ function SudokuNewPage() {
 		setRecent(listLocalSudokuSessions());
 	}, []);
 
-	const start = async (difficulty: SudokuDifficulty) => {
-		setBusy(difficulty);
-		setError("");
-		try {
-			const guest = getOrCreateGuestIdentity();
+	const start = (difficulty: SudokuDifficulty) => {
+		setPending(difficulty);
+		return host(async ({ guestId, guestName }) => {
 			const title =
 				name.trim() ||
 				autoSessionTitle(difficulty, "generated", new Date(), variant);
-			const result = await createSession({
-				gameType: "sudoku",
-				joinMode: "solo",
-				authPolicy: "guestAllowed",
+			const created = await create({
 				title,
-				displayName: guest.displayName,
-				guestId: guest.id,
+				displayName: guestName,
+				guestId,
+				source: "generated",
+				difficulty,
+				...generatedPuzzle(variant, difficulty),
 			});
-			if (variant === "binary") {
-				const puzzle = generateBinaryPuzzle(difficulty);
-				await createState({
-					sessionId: result.sessionId,
-					source: "generated",
-					difficulty,
-					variant: "binary",
-					size: puzzle.size,
-					givens: digitsToString(puzzle.givens),
-					solution: digitsToString(puzzle.solution),
-				});
-			} else if (variant === "killer") {
-				const puzzle = generateKillerPuzzle(difficulty);
-				await createState({
-					sessionId: result.sessionId,
-					source: "generated",
-					difficulty,
-					variant: "killer",
-					cages: puzzle.cages,
-					givens: digitsToString(puzzle.givens),
-					solution: digitsToString(puzzle.solution),
-				});
-			} else {
-				const puzzle = generatePuzzle(difficulty);
-				await createState({
-					sessionId: result.sessionId,
-					source: "generated",
-					difficulty,
-					givens: digitsToString(puzzle.givens),
-					solution: digitsToString(puzzle.solution),
-				});
-			}
 			rememberLocalSudokuSession({
-				sessionId: result.sessionId,
+				sessionId: created.sessionId,
 				title,
 				difficulty,
 				source: "generated",
 				createdAt: Date.now(),
 			});
-			window.location.href = `/sudoku/${result.sessionId}`;
-		} catch (caught) {
-			setError(errorMessage(caught, sudoku.newGame.couldNotStart));
-			setBusy(null);
-		}
+			return created;
+		}, sudoku.newGame.couldNotStart);
 	};
 
 	return (

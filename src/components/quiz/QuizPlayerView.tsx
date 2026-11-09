@@ -1,47 +1,25 @@
 import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
-import { useErrorMessage } from "#/lib/games/errors";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-type QuizBundle = {
-	session: { _id: Id<"gameSessions">; title: string };
-	quizState: {
-		phase: "lobby" | "question" | "reveal" | "scoreboard" | "finished";
-		currentQuestionIndex: number;
-		showCorrectAnswer: boolean;
-	} | null;
-	quizSet: {
-		questions: Array<{
-			id: string;
-			prompt: string;
-			choices: Array<{ id: string; label: string }>;
-			correctChoiceIds: string[];
-		}>;
-	} | null;
-	answers: Array<{
-		participantId: string;
-		questionId: string;
-		selectedChoiceIds: string[];
-		correct: boolean;
-		score: number;
-	}>;
-};
+type QuizBundle = NonNullable<FunctionReturnType<typeof api.quiz.getBundle>>;
 
 export function QuizPlayerView({
 	bundle,
 	participantId,
 }: {
 	bundle: QuizBundle;
-	participantId?: string;
+	participantId: Id<"sessionParticipants"> | "";
 }) {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const submitAnswer = useMutation(api.quiz.submitAnswer);
 	const [pendingChoice, setPendingChoice] = useState("");
-	const [error, setError] = useState("");
+	const { error, run } = useGameAction();
 	const state = bundle.quizState;
 	const question = state
 		? bundle.quizSet?.questions[state.currentQuestionIndex]
@@ -114,23 +92,17 @@ export function QuizPlayerView({
 							key={choice.id}
 							type="button"
 							disabled={!!existingAnswer || state.phase !== "question"}
-							onClick={async () => {
+							onClick={() => {
 								setPendingChoice(choice.id);
-								setError("");
-								try {
-									await submitAnswer({
-										sessionId: bundle.session._id,
-										participantId: participantId as Id<"sessionParticipants">,
-										selectedChoiceIds: [choice.id],
-									});
-								} catch (caught) {
-									setError(
-										errorMessage(
-											caught,
-											messages.games.quiz.playerView.submitError,
-										),
-									);
-								}
+								run(
+									() =>
+										submitAnswer({
+											sessionId: bundle.session._id,
+											participantId,
+											selectedChoiceIds: [choice.id],
+										}),
+									messages.games.quiz.playerView.submitError,
+								);
 							}}
 							className={`flex min-h-14 items-center justify-between rounded-md border px-4 py-3 text-left font-bold ${
 								reveal

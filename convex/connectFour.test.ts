@@ -3,7 +3,6 @@ import { api } from "./_generated/api";
 import {
 	advance,
 	arrange,
-	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
@@ -28,18 +27,14 @@ useFixedClock();
 
 const emptyBoard = () => new Array(42).fill("empty");
 
-/** The client flow: challenge session, then its state, host seated red. */
+/** A new challenge, host seated red. */
 async function newMatch(t: T) {
-	const { host, sessionId, hostId } = await hostSession(
-		t,
-		"connect-four",
-		"challenge",
+	const host = signedInHost(t);
+	const { sessionId, participantId } = await host.mutation(
+		api.connectFour.create,
+		HOSTED,
 	);
-	await host.mutation(api.connectFour.createState, {
-		sessionId,
-		hostParticipantId: hostId,
-	});
-	return { host, sessionId, red: hostId };
+	return { host, sessionId, red: participantId };
 }
 
 async function fullMatch(t: T) {
@@ -83,7 +78,7 @@ async function redWinsVertically(
 	await drop(t, sessionId, red, 0);
 }
 
-describe("createState", () => {
+describe("new game", () => {
 	it("seats the host red on an empty board", async () => {
 		const t = setup();
 		const { sessionId, red } = await newMatch(t);
@@ -101,35 +96,6 @@ describe("createState", () => {
 		expect((await getDoc(t, red))?.seat).toBe("red");
 		expect(session.status).toBe("lobby");
 	});
-
-	it("returns the existing state on a double submit", async () => {
-		const t = setup();
-		const { host, sessionId, red } = await newMatch(t);
-		const { state } = await bundle(t, sessionId);
-		await expect(
-			host.mutation(api.connectFour.createState, {
-				sessionId,
-				hostParticipantId: red,
-			}),
-		).resolves.toBe(state._id);
-	});
-
-	it("answers sessionNotFound for another game's session or a missing one", async () => {
-		const t = setup();
-		const { hostId } = await hostSession(t, "connect-four", "challenge");
-		for (const sessionId of [
-			await otherGameSession(t),
-			await deletedSessionId(t),
-		]) {
-			await expectCode(
-				t.mutation(api.connectFour.createState, {
-					sessionId,
-					hostParticipantId: hostId,
-				}),
-				"sessionNotFound",
-			);
-		}
-	});
 });
 
 describe("joining", () => {
@@ -146,6 +112,7 @@ describe("joining", () => {
 			sessionId,
 			participantId: joined.participantId,
 			gameType: "connect-four",
+			seatClaimed: false,
 		});
 		const { state } = await bundle(t, sessionId);
 		expect(state.phase).toBe("waiting");
@@ -233,16 +200,9 @@ describe("joining", () => {
 
 	it("pins that a room-code join never seats the joiner", async () => {
 		const t = setup();
-		const { host, sessionId, hostId, joinCode } = await hostSession(
-			t,
-			"connect-four",
-			"room",
-		);
-		await host.mutation(api.connectFour.createState, {
-			sessionId,
-			hostParticipantId: hostId,
-		});
-		const joined = await joinWithCode(t, joinCode as string, "guest_code");
+		const { sessionId } = await newMatch(t);
+		await arrange(t, sessionId, { joinMode: "room", joinCode: "ROOM01" });
+		const joined = await joinWithCode(t, "ROOM01", "guest_code");
 		const row = await getDoc(t, joined.participantId);
 		expect(row?.role).toBe("player");
 		expect(row?.seat).toBeUndefined();
@@ -505,7 +465,7 @@ describe("getBundle", () => {
 		expect(result?.participants.map((row) => row._id)).toEqual([red, yellow]);
 	});
 
-	it("is null for a missing session, and state is null ahead of createState", async () => {
+	it("is null for a missing session, and state is null for a session without one", async () => {
 		const t = setup();
 		await expect(
 			t.query(api.connectFour.getBundle, {
@@ -520,15 +480,6 @@ describe("getBundle", () => {
 });
 
 describe("create", () => {
-	it("stores what sessions.create and createState store together", async () => {
-		const t = setup();
-		const twoStep = await newMatch(t);
-		const created = await signedInHost(t).mutation(api.connectFour.create, HOSTED);
-		expect(await createdRows(t, created.sessionId, "connectFourStates")).toEqual(
-			await createdRows(t, twoStep.sessionId, "connectFourStates"),
-		);
-	});
-
 	it("returns a link a guest can follow, and no room code", async () => {
 		const t = setup();
 		const created = await signedInHost(t).mutation(api.connectFour.create, HOSTED);

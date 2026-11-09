@@ -7,7 +7,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Check, FlaskConical, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { HostGate } from "#/components/games/HostGate";
-import { useErrorMessage } from "#/lib/games/errors";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -73,7 +73,7 @@ function WorkbenchPage() {
 }
 
 function Workbench() {
-	const errorMessage = useErrorMessage();
+	const { error, run: runAction } = useGameAction();
 	const drafts = useQuery(api.workbench.listMine);
 	const createDraft = useMutation(api.workbench.createDraft);
 	const updateDraft = useMutation(api.workbench.updateDraft);
@@ -84,19 +84,12 @@ function Workbench() {
 	const [kind, setKind] = useState<ContentDraftKind>("word-links-puzzle");
 	const [title, setTitle] = useState("");
 	const [payload, setPayload] = useState("");
-	const [error, setError] = useState("");
 	const [busyId, setBusyId] = useState<string>();
 
 	async function run(id: string | undefined, action: () => Promise<unknown>) {
 		setBusyId(id);
-		setError("");
-		try {
-			await action();
-		} catch (caught) {
-			setError(errorMessage(caught, "That action failed"));
-		} finally {
-			setBusyId(undefined);
-		}
+		await runAction(action, "That action failed");
+		setBusyId(undefined);
 	}
 
 	return (

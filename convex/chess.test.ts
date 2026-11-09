@@ -3,7 +3,6 @@ import { api } from "./_generated/api";
 import {
 	advance,
 	arrange,
-	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
@@ -38,14 +37,13 @@ async function newMatch(
 		hostColor?: "white" | "black" | "random";
 	} = {},
 ) {
-	const { host, sessionId, hostId } = await hostSession(t, "chess", "challenge");
-	await host.mutation(api.chess.createState, {
-		sessionId,
-		hostParticipantId: hostId,
+	const host = signedInHost(t);
+	const { sessionId, participantId } = await host.mutation(api.chess.create, {
+		...HOSTED,
 		timeControl: options.timeControl ?? "untimed",
 		hostColor: options.hostColor ?? "white",
 	});
-	return { host, sessionId, hostId };
+	return { host, sessionId, hostId: participantId };
 }
 
 /** The host plays white and a guest follows the link as black. */
@@ -127,7 +125,7 @@ async function expectFinished(
 	);
 }
 
-describe("createState", () => {
+describe("new game", () => {
 	it("seats a white host in an untimed game", async () => {
 		const t = setup();
 		const { sessionId, hostId } = await newMatch(t);
@@ -171,40 +169,6 @@ describe("createState", () => {
 		const second = await newMatch(t, { hostColor: "random" });
 		expect((await getDoc(t, second.hostId))?.seat).toBe("black");
 	});
-
-	it("returns the existing state on a double submit", async () => {
-		const t = setup();
-		const { host, sessionId, hostId } = await newMatch(t);
-		const { state } = await bundle(t, sessionId);
-		await expect(
-			host.mutation(api.chess.createState, {
-				sessionId,
-				hostParticipantId: hostId,
-				timeControl: "10+0",
-				hostColor: "black",
-			}),
-		).resolves.toBe(state._id);
-		expect((await bundle(t, sessionId)).state.timeControl).toBe("untimed");
-	});
-
-	it("answers sessionNotFound for another game's session or a missing one", async () => {
-		const t = setup();
-		const { hostId } = await hostSession(t, "chess", "challenge");
-		for (const sessionId of [
-			await otherGameSession(t),
-			await deletedSessionId(t),
-		]) {
-			await expectCode(
-				t.mutation(api.chess.createState, {
-					sessionId,
-					hostParticipantId: hostId,
-					timeControl: "untimed",
-					hostColor: "white",
-				}),
-				"sessionNotFound",
-			);
-		}
-	});
 });
 
 describe("joining", () => {
@@ -221,6 +185,7 @@ describe("joining", () => {
 			sessionId,
 			participantId: joined.participantId,
 			gameType: "chess",
+			seatClaimed: false,
 		});
 		const { state } = await bundle(t, sessionId);
 		expect(state.phase).toBe("waiting");
@@ -304,18 +269,9 @@ describe("joining", () => {
 
 	it("pins that a room-code join never seats the joiner", async () => {
 		const t = setup();
-		const { host, sessionId, hostId, joinCode } = await hostSession(
-			t,
-			"chess",
-			"room",
-		);
-		await host.mutation(api.chess.createState, {
-			sessionId,
-			hostParticipantId: hostId,
-			timeControl: "untimed",
-			hostColor: "white",
-		});
-		const joined = await joinWithCode(t, joinCode as string, "guest_code");
+		const { sessionId } = await newMatch(t);
+		await arrange(t, sessionId, { joinMode: "room", joinCode: "ROOM01" });
+		const joined = await joinWithCode(t, "ROOM01", "guest_code");
 		const row = await getDoc(t, joined.participantId);
 		expect(row?.role).toBe("player");
 		expect(row?.seat).toBeUndefined();
@@ -789,7 +745,7 @@ describe("getBundle", () => {
 		expect(result?.participants.map((row) => row._id)).toEqual([white, black]);
 	});
 
-	it("is null for a missing session, and state is null ahead of createState", async () => {
+	it("is null for a missing session, and state is null for a session without one", async () => {
 		const t = setup();
 		await expect(
 			t.query(api.chess.getBundle, { sessionId: await deletedSessionId(t) }),
@@ -806,15 +762,6 @@ const ARGS = {
 } as const;
 
 describe("create", () => {
-	it("stores what sessions.create and createState store together", async () => {
-		const t = setup();
-		const twoStep = await newMatch(t);
-		const created = await signedInHost(t).mutation(api.chess.create, ARGS);
-		expect(await createdRows(t, created.sessionId, "chessGameStates")).toEqual(
-			await createdRows(t, twoStep.sessionId, "chessGameStates"),
-		);
-	});
-
 	it("returns a link a guest can follow, and no room code", async () => {
 		const t = setup();
 		const created = await signedInHost(t).mutation(api.chess.create, ARGS);
@@ -847,21 +794,5 @@ describe("create", () => {
 		expect((await getDoc(t, participantId))?.seat).toBe(color);
 		const state = await t.query(api.chess.getBundle, { sessionId });
 		expect(state?.state?.[`${color}ParticipantId`]).toBe(participantId);
-	});
-
-	it("starts the clock settings the host chose, in the color they chose", async () => {
-		const t = setup();
-		const twoStep = await newMatch(t, {
-			timeControl: "10+0",
-			hostColor: "black",
-		});
-		const created = await signedInHost(t).mutation(api.chess.create, {
-			...HOSTED,
-			timeControl: "10+0",
-			hostColor: "black",
-		});
-		expect(await createdRows(t, created.sessionId, "chessGameStates")).toEqual(
-			await createdRows(t, twoStep.sessionId, "chessGameStates"),
-		);
 	});
 });

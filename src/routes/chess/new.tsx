@@ -4,9 +4,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
-import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { useErrorMessage } from "#/lib/games/errors";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { HostGate } from "#/components/games/HostGate";
+import { useHostSession } from "#/lib/games/use-host-session";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
@@ -18,45 +17,25 @@ export const Route = createFileRoute("/chess/new")({
 type HostColor = "white" | "black" | "random";
 
 function ChessNewPage() {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const chess = messages.games.chess;
-	const createSession = useMutation(api.sessions.create);
-	const createState = useMutation(api.chess.createState);
-	const hostName = useHostDisplayName();
+	const create = useMutation(api.chess.create);
+	const { busy, error, host } = useHostSession("chess");
 	const [timeControl, setTimeControl] = useState<ChessTimeControl>("untimed");
 	const [hostColor, setHostColor] = useState<HostColor>("random");
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState("");
 
-	async function handleCreate() {
-		setBusy(true);
-		setError("");
-		try {
-			const guest = getOrCreateGuestIdentity();
-			const result = await createSession({
-				gameType: "chess",
-				joinMode: "challenge",
-				authPolicy: "guestAllowed",
-				title: chess.newGame.defaultTitle,
-				displayName: hostName,
-				guestId: guest.id,
-			});
-			await createState({
-				sessionId: result.sessionId,
-				hostParticipantId: result.participantId,
-				timeControl,
-				hostColor,
-			});
-			window.sessionStorage.setItem(
-				"arcade-club.participantId",
-				result.participantId,
-			);
-			window.location.href = `/chess/${result.sessionId}`;
-		} catch (caught) {
-			setError(errorMessage(caught, chess.newGame.createChallengeError));
-			setBusy(false);
-		}
+	function handleCreate() {
+		return host(
+			({ hostName, guestId }) =>
+				create({
+					title: chess.newGame.defaultTitle,
+					displayName: hostName,
+					guestId,
+					timeControl,
+					hostColor,
+				}),
+			chess.newGame.createChallengeError,
+		);
 	}
 
 	return (

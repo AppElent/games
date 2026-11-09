@@ -23,7 +23,6 @@ import {
 	finishSession,
 	listParticipants,
 	loadGame,
-	loadSession,
 	reopenSession,
 	startSession,
 } from "./lib/gameSession";
@@ -85,22 +84,6 @@ export const create = mutation({
 		});
 		await insertState(ctx, hosted.sessionId, hosted.participantId);
 		return hosted;
-	},
-});
-
-/** @deprecated Use connectFour.create. */
-export const createState = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		hostParticipantId: v.id("sessionParticipants"),
-	},
-	handler: async (ctx, args) => {
-		await loadSession(ctx, "connect-four", args.sessionId, "sessionNotFound");
-		const existing = await findGameState(ctx, "connect-four", args.sessionId);
-		if (existing) {
-			return existing._id;
-		}
-		return await insertState(ctx, args.sessionId, args.hostParticipantId);
 	},
 });
 

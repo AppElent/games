@@ -5,44 +5,16 @@ import {
 	signalSeatTeam,
 } from "@arcadeclub/core/signal-words";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import type { FunctionReturnType } from "convex/server";
+import { useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import { useErrorMessage } from "#/lib/games/errors";
+import { useSeat } from "#/lib/games/seat";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 
-type Participant = {
-	_id: Id<"sessionParticipants">;
-	displayName: string;
-	role: "host" | "player" | "watcher";
-	seat?: string;
-	connected: boolean;
-};
-
-type Bundle = {
-	session: {
-		_id: Id<"gameSessions">;
-		title: string;
-		joinCode?: string;
-		hostParticipantId?: Id<"sessionParticipants">;
-	};
-	participants: Participant[];
-	state: {
-		phase: "lobby" | "clue" | "guess" | "finished";
-		words: string[];
-		revealed: boolean[];
-		revealedRoles: Array<SignalCardRole | null>;
-		startingTeam: SignalTeam;
-		currentTeam: SignalTeam;
-		clueWord?: string;
-		clueCount?: number;
-		guessesLeft?: number;
-		winnerTeam?: SignalTeam;
-		trapHitBy?: SignalTeam;
-	} | null;
-};
+type Bundle = NonNullable<FunctionReturnType<typeof api.signalWords.getBundle>>;
 
 const ROLE_STYLES: Record<SignalCardRole, string> = {
 	red: "bg-rose-500/80 text-rose-50 border-rose-400/50",
@@ -65,7 +37,6 @@ export function SignalWordsRoom({
 	bundle: Bundle;
 	joinUrl: string;
 }) {
-	const errorMessage = useErrorMessage();
 	const { messages, locale } = useI18n();
 	const signalWords = messages.games.signalWords;
 	const joinTeam = useMutation(api.signalWords.joinTeam);
@@ -74,16 +45,10 @@ export function SignalWordsRoom({
 	const submitGuess = useMutation(api.signalWords.submitGuess);
 	const pass = useMutation(api.signalWords.pass);
 	const rematch = useMutation(api.signalWords.rematch);
-	const [participantId, setParticipantId] = useState<string>();
-	const [error, setError] = useState("");
+	const participantId = useSeat(bundle.session._id);
+	const { error, run } = useGameAction();
 	const [clue, setClue] = useState("");
 	const [count, setCount] = useState(2);
-
-	useEffect(() => {
-		setParticipantId(
-			window.sessionStorage.getItem("arcade-club.participantId") ?? undefined,
-		);
-	}, []);
 
 	const me = bundle.participants.find(
 		(participant) => participant._id === participantId,
@@ -98,19 +63,10 @@ export function SignalWordsRoom({
 		amClueGiver && participantId && state && state.phase !== "lobby"
 			? {
 					sessionId: bundle.session._id,
-					participantId: participantId as Id<"sessionParticipants">,
+					participantId,
 				}
 			: "skip",
 	);
-
-	async function run(action: () => Promise<unknown>, fallback: string) {
-		setError("");
-		try {
-			await action();
-		} catch (caught) {
-			setError(errorMessage(caught, fallback));
-		}
-	}
 
 	if (!state) {
 		return (
@@ -230,7 +186,7 @@ export function SignalWordsRoom({
 										</li>
 									) : null}
 								</ul>
-								{inLobby && me ? (
+								{inLobby && me && participantId ? (
 									<div className="mt-3 flex gap-2">
 										<button
 											type="button"
@@ -240,8 +196,7 @@ export function SignalWordsRoom({
 													() =>
 														joinTeam({
 															sessionId: bundle.session._id,
-															participantId:
-																participantId as Id<"sessionParticipants">,
+															participantId,
 															team,
 															clueGiver: false,
 														}),
@@ -259,8 +214,7 @@ export function SignalWordsRoom({
 													() =>
 														joinTeam({
 															sessionId: bundle.session._id,
-															participantId:
-																participantId as Id<"sessionParticipants">,
+															participantId,
 															team,
 															clueGiver: true,
 														}),
@@ -276,7 +230,7 @@ export function SignalWordsRoom({
 						))}
 					</div>
 
-					{inLobby && isHost ? (
+					{inLobby && isHost && participantId ? (
 						<button
 							type="button"
 							className="mt-4 min-h-11 w-full rounded-md bg-white px-5 py-2.5 font-bold text-slate-950"
@@ -285,7 +239,7 @@ export function SignalWordsRoom({
 									() =>
 										start({
 											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
+											participantId,
 										}),
 									signalWords.actions.startGameError,
 								)
@@ -307,18 +261,20 @@ export function SignalWordsRoom({
 									key={word}
 									type="button"
 									disabled={!clickable}
-									onClick={() =>
+									onClick={() => {
+										if (!participantId) {
+											return;
+										}
 										run(
 											() =>
 												submitGuess({
 													sessionId: bundle.session._id,
-													participantId:
-														participantId as Id<"sessionParticipants">,
+													participantId,
 													cardIndex: index,
 												}),
 											signalWords.actions.guessError,
-										)
-									}
+										);
+									}}
 									className={`relative flex min-h-11 items-center justify-center rounded-md border px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide sm:py-4 sm:text-xs ${
 										revealedRole && state.revealed[index]
 											? `${ROLE_STYLES[revealedRole]} opacity-90`
@@ -340,7 +296,7 @@ export function SignalWordsRoom({
 					</div>
 				) : null}
 
-				{myClueTurn ? (
+				{myClueTurn && participantId ? (
 					<form
 						className="club-panel flex flex-wrap items-end gap-3 rounded-lg p-4"
 						onSubmit={(event) => {
@@ -349,12 +305,16 @@ export function SignalWordsRoom({
 								() =>
 									submitClue({
 										sessionId: bundle.session._id,
-										participantId: participantId as Id<"sessionParticipants">,
+										participantId,
 										clue,
 										count,
 									}),
 								signalWords.clueForm.error,
-							).then(() => setClue(""));
+							).then((sent) => {
+								if (sent) {
+									setClue("");
+								}
+							});
 						}}
 					>
 						<label className="flex-1">
@@ -393,7 +353,7 @@ export function SignalWordsRoom({
 					</form>
 				) : null}
 
-				{myGuessTurn ? (
+				{myGuessTurn && participantId ? (
 					<div className="flex justify-center">
 						<button
 							type="button"
@@ -403,7 +363,7 @@ export function SignalWordsRoom({
 									() =>
 										pass({
 											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
+											participantId,
 										}),
 									signalWords.actions.passError,
 								)
@@ -414,7 +374,7 @@ export function SignalWordsRoom({
 					</div>
 				) : null}
 
-				{finished && isHost ? (
+				{finished && isHost && participantId ? (
 					<div className="flex justify-center">
 						<button
 							type="button"
@@ -424,7 +384,7 @@ export function SignalWordsRoom({
 									() =>
 										rematch({
 											sessionId: bundle.session._id,
-											participantId: participantId as Id<"sessionParticipants">,
+											participantId,
 										}),
 									signalWords.actions.rematchError,
 								)

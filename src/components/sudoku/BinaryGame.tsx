@@ -3,23 +3,19 @@ import {
 	findBinaryConflicts,
 	isBinarySolved,
 } from "@arcadeclub/core/binary-puzzle";
-import { digitsToString, type PuzzleDifficulty } from "@arcadeclub/core/puzzle";
+import { digitsToString } from "@arcadeclub/core/puzzle";
 import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { Pause, Play, RotateCcw, Timer, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-type BinaryStateDoc = {
-	givens: string;
-	digits: string;
-	size?: number;
-	status: "active" | "paused" | "completed";
-	difficulty?: PuzzleDifficulty;
-	elapsedSeconds: number;
-	lastResumedAt?: number;
-};
+/** The stored puzzle, minus the solution the server never sends. */
+type BinaryStateDoc = NonNullable<
+	FunctionReturnType<typeof api.sudoku.getBundle>
+>["state"];
 
 type BinaryGameProps = {
 	sessionId: Id<"gameSessions">;

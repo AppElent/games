@@ -11,35 +11,21 @@ import {
 } from "@arcadeclub/core/hitster-packs";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { useErrorMessage } from "#/lib/games/errors";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
 export function HitsterSetupForm() {
-	return (
-		<HostGate>
-			<HitsterSetupFormInner />
-		</HostGate>
-	);
-}
-
-function HitsterSetupFormInner() {
-	const errorMessage = useErrorMessage();
 	const { locale, messages } = useI18n();
 	const setupForm = messages.games.hitster.setupForm;
-	const createSession = useMutation(api.sessions.create);
-	const hostName = useHostDisplayName();
-	const setup = useMutation(api.hitster.setup);
+	const create = useMutation(api.hitster.create);
+	const { busy, error, host } = useHostSession("hitster");
 	const [mode, setMode] = useState<HitsterMode>(HITSTER_SETUP_DEFAULTS.mode);
 	const [packId, setPackId] = useState<string>(HITSTER_SETUP_DEFAULTS.packId);
 	const [targetCards, setTargetCards] = useState<number>(
 		HITSTER_SETUP_DEFAULTS.targetCards,
 	);
 	const [timer, setTimer] = useState<number>(HITSTER_SETUP_DEFAULTS.timer);
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState("");
 
 	const packs = listHitsterPacks();
 	const playableCount = getPlayableHitsterCards(
@@ -129,39 +115,22 @@ function HitsterSetupFormInner() {
 				type="button"
 				disabled={busy}
 				className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-[#fff] disabled:cursor-not-allowed disabled:opacity-50"
-				onClick={async () => {
-					setBusy(true);
-					setError("");
-					try {
-						const guest = getOrCreateGuestIdentity();
-						const result = await createSession({
-							gameType: "hitster",
-							joinMode: "room",
-							authPolicy: "hostChoice",
-							title: messages.games.hitster.musicTimelineKicker,
-							displayName: hostName,
-							guestId: guest.id,
-						});
-						await setup({
-							sessionId: result.sessionId,
-							participantId: result.participantId,
-							mode,
-							packId,
-							targetCards,
-							turnTimerSeconds: timer > 0 ? timer : undefined,
-							playbackMode: HITSTER_SETUP_DEFAULTS.playbackMode,
-						});
-						window.sessionStorage.setItem(
-							"arcade-club.hostParticipantId",
-							result.participantId,
-						);
-						window.location.href = `/hitster/${result.sessionId}/host`;
-					} catch (caught) {
-						setError(errorMessage(caught, setupForm.createRoomError));
-					} finally {
-						setBusy(false);
-					}
-				}}
+				onClick={() =>
+					host(
+						({ hostName, guestId }) =>
+							create({
+								title: messages.games.hitster.musicTimelineKicker,
+								displayName: hostName,
+								guestId,
+								mode,
+								packId,
+								targetCards,
+								turnTimerSeconds: timer > 0 ? timer : undefined,
+								playbackMode: HITSTER_SETUP_DEFAULTS.playbackMode,
+							}),
+						setupForm.createRoomError,
+					)
+				}
 			>
 				{busy ? setupForm.creatingRoom : setupForm.createRoom}
 			</button>

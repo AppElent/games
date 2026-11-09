@@ -1,8 +1,11 @@
-import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { BackgammonWaitingRoom } from "#/components/backgammon/BackgammonWaitingRoom";
-import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import {
+	boardShell,
+	SessionBundleRoute,
+} from "#/components/games/SessionBundleRoute";
+import { sessionInviteUrl } from "#/lib/games/invite";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -18,26 +21,19 @@ function BackgammonSessionPage() {
 	const bundle = useQuery(api.backgammon.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 	});
-
-	if (bundle === undefined || bundle === null) {
-		return (
-			<FullscreenGameShell title={messages.catalog.backgammon.title}>
-				<div className="flex h-full items-center justify-center">
-					<p className={bundle === null ? "text-orange-200" : "text-slate-300"}>
-						{bundle === null
-							? messages.games.backgammon.session.matchNotFound
-							: messages.games.backgammon.session.loadingMatch}
-					</p>
-				</div>
-			</FullscreenGameShell>
-		);
-	}
-
-	const shareUrl = bundle.session.shareToken
-		? buildInviteUrl(window.location.origin, {
-				token: bundle.session.shareToken,
-			})
-		: window.location.href;
-
-	return <BackgammonWaitingRoom bundle={bundle} shareUrl={shareUrl} />;
+	return (
+		<SessionBundleRoute
+			bundle={bundle}
+			shell={boardShell(messages.catalog.backgammon.title)}
+			loading={messages.games.backgammon.session.loadingMatch}
+			notFound={messages.games.backgammon.session.matchNotFound}
+		>
+			{(loaded) => (
+				<BackgammonWaitingRoom
+					bundle={loaded}
+					shareUrl={sessionInviteUrl(loaded.session)}
+				/>
+			)}
+		</SessionBundleRoute>
+	);
 }

@@ -1,7 +1,7 @@
 import { useMutation } from "convex/react";
 import { Lock, LockOpen, Pencil } from "lucide-react";
 import { useState } from "react";
-import { useErrorMessage } from "#/lib/games/errors";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -21,22 +21,12 @@ export function SessionHostControls({
 	title: string;
 	locked: boolean;
 }) {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const setLocked = useMutation(api.sessions.setLocked);
 	const rename = useMutation(api.sessions.rename);
 	const [editing, setEditing] = useState(false);
 	const [draftTitle, setDraftTitle] = useState(title);
-	const [error, setError] = useState("");
-
-	async function run(action: () => Promise<unknown>, fallback: string) {
-		setError("");
-		try {
-			await action();
-		} catch (caught) {
-			setError(errorMessage(caught, fallback));
-		}
-	}
+	const { error, run } = useGameAction();
 
 	return (
 		<div className="club-panel rounded-lg p-4">
@@ -91,7 +81,11 @@ export function SessionHostControls({
 						void run(
 							() => rename({ sessionId, hostParticipantId, title: draftTitle }),
 							messages.common.roomControls.renameError,
-						).then(() => setEditing(false));
+						).then((renamed) => {
+							if (renamed) {
+								setEditing(false);
+							}
+						});
 					}}
 				>
 					<input

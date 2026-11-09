@@ -1,4 +1,4 @@
-import { digitsToString, type PuzzleDifficulty } from "@arcadeclub/core/puzzle";
+import { digitsToString } from "@arcadeclub/core/puzzle";
 import type {
 	SudokuAction,
 	SudokuHistory,
@@ -19,9 +19,9 @@ import { describeHint, findHint } from "@arcadeclub/core/sudoku-hints";
 import {
 	boardConflictsWithCages,
 	isBoardSolved,
-	type KillerCage,
 } from "@arcadeclub/core/sudoku-killer";
 import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { Pause, Play, RotateCcw, Timer } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { renameLocalSudokuSession } from "#/lib/games/sudoku-local";
@@ -31,21 +31,10 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { SudokuBoard } from "./SudokuBoard";
 import { SudokuKeypad } from "./SudokuKeypad";
 
-type SudokuStateDoc = {
-	givens: string;
-	digits: string;
-	cornerNotes: number[];
-	centerNotes: number[];
-	colors: number[];
-	status: "active" | "paused" | "completed";
-	difficulty?: PuzzleDifficulty;
-	source: "generated" | "scan";
-	variant?: "classic" | "killer" | "binary";
-	cages?: KillerCage[];
-	autoCleanup: boolean;
-	elapsedSeconds: number;
-	lastResumedAt?: number;
-};
+/** The stored puzzle, minus the solution the server never sends. */
+type SudokuStateDoc = NonNullable<
+	FunctionReturnType<typeof api.sudoku.getBundle>
+>["state"];
 
 type SudokuGameProps = {
 	sessionId: Id<"gameSessions">;

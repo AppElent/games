@@ -1,32 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
-import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
-import { useErrorMessage } from "#/lib/games/errors";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { useHostSession } from "#/lib/games/use-host-session";
 import { plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 export function QuizSetupForm() {
-	return (
-		<HostGate>
-			<QuizSetupFormInner />
-		</HostGate>
-	);
-}
-
-function QuizSetupFormInner() {
-	const errorMessage = useErrorMessage();
 	const { messages, locale } = useI18n();
-	const createSession = useMutation(api.sessions.create);
 	const ensureSampleSet = useMutation(api.quiz.ensureSampleSet);
-	const startQuiz = useMutation(api.quiz.startForSession);
+	const create = useMutation(api.quiz.create);
+	const { busy, error, host } = useHostSession("live-quiz");
 	const mySets = useQuery(api.quiz.listMine);
 	const sampleSets = useQuery(api.quiz.listSampleSets);
-	const hostName = useHostDisplayName();
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState("");
 	const [selectedSetId, setSelectedSetId] = useState("");
 
 	// Default to your newest own set, otherwise the sample set.
@@ -103,42 +89,20 @@ function QuizSetupFormInner() {
 				type="button"
 				disabled={busy}
 				className="rounded-md bg-cyan-300 px-5 py-3 font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-				onClick={async () => {
-					setBusy(true);
-					setError("");
-					try {
-						const guest = getOrCreateGuestIdentity();
-						const quizSetId = selectedSetId
-							? (selectedSetId as Id<"quizSets">)
-							: await ensureSampleSet();
-						const result = await createSession({
-							gameType: "live-quiz",
-							joinMode: "room",
-							authPolicy: "hostChoice",
-							title: messages.catalog["live-quiz"].title,
-							displayName: hostName,
-							guestId: guest.id,
-						});
-						await startQuiz({
-							sessionId: result.sessionId,
-							quizSetId,
-						});
-						window.sessionStorage.setItem(
-							"arcade-club.hostParticipantId",
-							result.participantId,
-						);
-						window.location.href = `/quiz/${result.sessionId}/host`;
-					} catch (caught) {
-						setError(
-							errorMessage(
-								caught,
-								messages.games.quiz.setupForm.createRoomError,
-							),
-						);
-					} finally {
-						setBusy(false);
-					}
-				}}
+				onClick={() =>
+					host(
+						async ({ hostName, guestId }) =>
+							create({
+								title: messages.catalog["live-quiz"].title,
+								displayName: hostName,
+								guestId,
+								quizSetId: selectedSetId
+									? (selectedSetId as Id<"quizSets">)
+									: await ensureSampleSet(),
+							}),
+						messages.games.quiz.setupForm.createRoomError,
+					)
+				}
 			>
 				{busy
 					? messages.games.quiz.setupForm.creatingRoom

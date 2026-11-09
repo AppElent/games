@@ -36,7 +36,6 @@ export const serverErrors = {
 	sessionNotFound: "Dit spel bestaat niet meer.",
 	gameNotFound: "Spel niet gevonden.",
 	gameUnavailable: "Dit spel is niet meer beschikbaar.",
-	gameAlreadyExists: "Dit spel is al ingesteld.",
 	roomNotFound: "Kamer niet gevonden. Controleer de code.",
 	roomLocked: "Deze kamer is vergrendeld door de host.",
 	joinCodeFailed: "Kon geen deelnamecode maken.",

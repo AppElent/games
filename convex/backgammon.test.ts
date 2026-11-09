@@ -33,8 +33,18 @@ useFixedClock();
 const DIE_ONE = 0;
 const DIE_FOUR = 0.5;
 
-/** The client flow: challenge session, then its state, host seated white. */
+/** The client flow: one `create`, host seated white. */
 async function newMatch(t: T) {
+	const host = signedInHost(t);
+	const { sessionId, participantId } = await host.mutation(
+		api.backgammon.create,
+		HOSTED,
+	);
+	return { host, sessionId, white: participantId };
+}
+
+/** What installed mobile builds still do: challenge session, then its state. */
+async function twoStepMatch(t: T) {
 	const { host, sessionId, hostId } = await hostSession(
 		t,
 		"backgammon",
@@ -102,7 +112,7 @@ async function finishedMatch(t: T) {
 describe("createState", () => {
 	it("seats the host white on the opening board, waiting for an opponent", async () => {
 		const t = setup();
-		const { sessionId, white } = await newMatch(t);
+		const { sessionId, white } = await twoStepMatch(t);
 		const opening = createInitialBackgammonState();
 		const result = await bundle(t, sessionId);
 		expect(fields(result.state)).toEqual({
@@ -125,7 +135,7 @@ describe("createState", () => {
 
 	it("returns the existing state on a double submit and leaves it alone", async () => {
 		const t = setup();
-		const { host, sessionId, white } = await newMatch(t);
+		const { host, sessionId, white } = await twoStepMatch(t);
 		const { state } = await bundle(t, sessionId);
 		advance(1000);
 		await expect(
@@ -171,6 +181,7 @@ describe("joining", () => {
 			sessionId,
 			participantId: joined.participantId,
 			gameType: "backgammon",
+			seatClaimed: false,
 		});
 		const result = await bundle(t, sessionId);
 		expect(result.state.phase).toBe("ready");
@@ -816,7 +827,7 @@ describe("getBundle", () => {
 describe("create", () => {
 	it("stores what sessions.create and createState store together", async () => {
 		const t = setup();
-		const twoStep = await newMatch(t);
+		const twoStep = await twoStepMatch(t);
 		const created = await signedInHost(t).mutation(api.backgammon.create, HOSTED);
 		expect(await createdRows(t, created.sessionId, "backgammonGameStates")).toEqual(
 			await createdRows(t, twoStep.sessionId, "backgammonGameStates"),

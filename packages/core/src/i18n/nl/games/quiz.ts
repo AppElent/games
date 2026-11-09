@@ -30,6 +30,7 @@ export const quiz = {
 		shareTextNoWinner:
 			"Live quiz op Arcade Club — quiz afgerond ({count} spelers).",
 		hostAnotherQuiz: "Host nog een quiz",
+		actionFailed: "Actie mislukt",
 	},
 	playerView: {
 		joinNeeded: "Meedoen nodig",

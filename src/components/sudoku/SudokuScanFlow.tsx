@@ -4,7 +4,6 @@ import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useErrorMessage } from "#/lib/games/errors";
-import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import {
 	autoSessionTitle,
 	rememberLocalSudokuSession,
@@ -26,6 +25,7 @@ import {
 	recognizeGrid,
 	warpToSquare,
 } from "#/lib/games/sudoku-scan-image";
+import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import { SudokuBoard } from "./SudokuBoard";
@@ -307,7 +307,6 @@ function VerifyStep({
 	onRescan: () => void;
 	onError: (message: string) => void;
 }) {
-	const errorMessage = useErrorMessage();
 	const { locale, messages } = useI18n();
 	const sudoku = messages.games.sudoku;
 	const CELL_TYPES: { id: ScanCellType; label: string }[] = [
@@ -317,10 +316,15 @@ function VerifyStep({
 		{ id: "centerNotes", label: sudoku.scan.cellTypeCenterNotes },
 		{ id: "empty", label: sudoku.scan.cellTypeEmpty },
 	];
-	const createSession = useMutation(api.sessions.create);
-	const createState = useMutation(api.sudoku.createState);
+	const create = useMutation(api.sudoku.create);
+	const { busy, error, host } = useHostSession("sudoku");
 	const [selected, setSelected] = useState<number | null>(null);
-	const [busy, setBusy] = useState(false);
+
+	useEffect(() => {
+		if (error) {
+			onError(error);
+		}
+	}, [error, onError]);
 
 	const validation = useMemo(() => validateScanResult(cells), [cells]);
 	const previewBoard = useMemo(() => scanResultToBoardState(cells), [cells]);
@@ -338,22 +342,14 @@ function VerifyStep({
 		);
 	}, [cells]);
 
-	const confirm = async () => {
-		setBusy(true);
-		try {
-			const guest = getOrCreateGuestIdentity();
+	const confirm = () =>
+		host(async ({ guestId, guestName }) => {
 			const title = autoSessionTitle(undefined, "scan");
 			const board = scanResultToBoardState(cells);
-			const result = await createSession({
-				gameType: "sudoku",
-				joinMode: "solo",
-				authPolicy: "guestAllowed",
+			const created = await create({
 				title,
-				displayName: guest.displayName,
-				guestId: guest.id,
-			});
-			await createState({
-				sessionId: result.sessionId,
+				displayName: guestName,
+				guestId,
 				source: "scan",
 				givens: digitsToString(board.givens),
 				digits: digitsToString(board.digits),
@@ -361,17 +357,13 @@ function VerifyStep({
 				centerNotes: board.center,
 			});
 			rememberLocalSudokuSession({
-				sessionId: result.sessionId,
+				sessionId: created.sessionId,
 				title,
 				source: "scan",
 				createdAt: Date.now(),
 			});
-			window.location.href = `/sudoku/${result.sessionId}`;
-		} catch (caught) {
-			onError(errorMessage(caught, sudoku.scan.couldNotCreateSession));
-			setBusy(false);
-		}
-	};
+			return created;
+		}, sudoku.scan.couldNotCreateSession);
 
 	const cell = selected !== null ? cells[selected] : null;
 

@@ -3,18 +3,14 @@ import type {
 	BackgammonMoveDestination,
 	BackgammonMoveSource,
 } from "@arcadeclub/core/backgammon";
+import type { FunctionReturnType } from "convex/server";
 import type { Messages } from "#/lib/i18n";
 import { fmt, useI18n } from "#/lib/i18n";
+import type { api } from "../../../convex/_generated/api";
 
-type BackgammonMove = {
-	_id: string;
-	moveType: "roll" | "move" | "endTurn";
-	color: BackgammonColor;
-	from?: BackgammonMoveSource;
-	to?: BackgammonMoveDestination;
-	dice: number[];
-	createdAt: number;
-};
+type BackgammonMove = NonNullable<
+	FunctionReturnType<typeof api.backgammon.getBundle>
+>["moves"][number];
 
 export function BackgammonMoveLog({ moves }: { moves: BackgammonMove[] }) {
 	const { locale, messages } = useI18n();

@@ -36,8 +36,25 @@ const ROLLING_STONE = { id: "normal-2", year: 1965 };
 const DANCING_QUEEN = { id: "normal-3", year: 1976 };
 const ROLLING_DEEP = { id: "normal-4", year: 2010 };
 
-/** The client flow: room session, then `setup` as the host. */
+/** The client flow: one `create`. */
 async function newRoom(t: T, mode: Mode = "original", targetCards = 5) {
+	const host = signedInHost(t);
+	const { sessionId, participantId, joinCode } = await host.mutation(
+		api.hitster.create,
+		{
+			...HOSTED,
+			mode,
+			packId: PACK,
+			targetCards,
+			turnTimerSeconds: 30,
+			playbackMode: "hostDevice",
+		},
+	);
+	return { host, sessionId, hostId: participantId, joinCode: joinCode as string };
+}
+
+/** What installed mobile builds still do: room session, then `setup` as the host. */
+async function twoStepRoom(t: T, mode: Mode = "original", targetCards = 5) {
 	const { host, sessionId, hostId, joinCode } = await hostSession(
 		t,
 		"hitster",
@@ -161,7 +178,7 @@ async function bundle(
 describe("setup", () => {
 	it("creates a lobby state with the host's settings", async () => {
 		const t = setup();
-		const { sessionId } = await newRoom(t, "original", 7);
+		const { sessionId } = await twoStepRoom(t, "original", 7);
 		expect(fields(await storedState(t, sessionId))).toEqual({
 			sessionId,
 			mode: "original",
@@ -184,7 +201,7 @@ describe("setup", () => {
 
 	it("patches the settings when run again in the lobby", async () => {
 		const t = setup();
-		const { host, sessionId, hostId } = await newRoom(t);
+		const { host, sessionId, hostId } = await twoStepRoom(t);
 		const { _id } = await storedState(t, sessionId);
 		advance(1000);
 		await expect(
@@ -1104,9 +1121,9 @@ const ARGS = {
 } as const;
 
 describe("create", () => {
-	it("stores what sessions.create and createState store together", async () => {
+	it("stores what sessions.create and setup store together", async () => {
 		const t = setup();
-		const twoStep = await newRoom(t);
+		const twoStep = await twoStepRoom(t);
 		const created = await signedInHost(t).mutation(api.hitster.create, ARGS);
 		expect(await createdRows(t, created.sessionId, "hitsterGameStates")).toEqual(
 			await createdRows(t, twoStep.sessionId, "hitsterGameStates"),

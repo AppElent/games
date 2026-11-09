@@ -7,7 +7,7 @@ import {
 } from "@arcadeclub/core/hitster";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
-import { useErrorMessage } from "#/lib/games/errors";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -124,7 +124,6 @@ function PlacementForm({
 	participantId: Id<"sessionParticipants">;
 	forSteal: boolean;
 }) {
-	const errorMessage = useErrorMessage();
 	const { messages } = useI18n();
 	const stage = messages.games.hitster.stage;
 	const state = bundle.state as HitsterState;
@@ -134,7 +133,7 @@ function PlacementForm({
 	const [artist, setArtist] = useState("");
 	const [title, setTitle] = useState("");
 	const [year, setYear] = useState("");
-	const [error, setError] = useState("");
+	const { error, run } = useGameAction();
 	const [busy, setBusy] = useState(false);
 
 	const timeline = hitsterTimelineFor(state, participantId);
@@ -151,7 +150,7 @@ function PlacementForm({
 				onSelectDrop={setDropIndex}
 			/>
 			<AnswerInputs
-				mode={state.mode as HitsterMode}
+				mode={state.mode}
 				forSteal={forSteal}
 				artist={artist}
 				title={title}
@@ -170,26 +169,19 @@ function PlacementForm({
 						return;
 					}
 					setBusy(true);
-					setError("");
-					try {
-						const payload = {
-							sessionId: bundle.session._id,
-							participantId,
-							dropIndex,
-							artistGuess: artist.trim() || undefined,
-							titleGuess: title.trim() || undefined,
-							yearGuess: year.trim() ? Number(year.trim()) : undefined,
-						};
-						if (forSteal) {
-							await submitSteal(payload);
-						} else {
-							await submitGuess(payload);
-						}
-					} catch (caught) {
-						setError(errorMessage(caught, stage.submitError));
-					} finally {
-						setBusy(false);
-					}
+					const payload = {
+						sessionId: bundle.session._id,
+						participantId,
+						dropIndex,
+						artistGuess: artist.trim() || undefined,
+						titleGuess: title.trim() || undefined,
+						yearGuess: year.trim() ? Number(year.trim()) : undefined,
+					};
+					await run(
+						() => (forSteal ? submitSteal(payload) : submitGuess(payload)),
+						stage.submitError,
+					);
+					setBusy(false);
 				}}
 			>
 				{forSteal ? stage.stealSubmit : stage.lockPlacement}
@@ -219,7 +211,7 @@ export function HitsterStage({
 			<p className="text-[var(--club-muted)]">{stage.hostStillSettingUp}</p>
 		);
 	}
-	const mode = state.mode as HitsterMode;
+	const mode = state.mode;
 	const config = getHitsterModeConfig(mode);
 	const activeParticipantId = state.turnOrder[state.activeIndex];
 	const activeName = participantName(bundle, activeParticipantId, fallbacks);

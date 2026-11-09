@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import { HostGate } from "#/components/games/HostGate";
 import { HitsterSetupForm } from "#/components/hitster/HitsterSetupForm";
 import { useMessages } from "#/lib/i18n";
 
@@ -20,7 +21,9 @@ function HitsterNewPage() {
 			<p className="mb-6 max-w-2xl text-[var(--club-muted)]">
 				{hitster.newGame.intro}
 			</p>
-			<HitsterSetupForm />
+			<HostGate>
+				<HitsterSetupForm />
+			</HostGate>
 		</FullscreenGamePage>
 	);
 }

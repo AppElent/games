@@ -21,7 +21,6 @@ import {
 	finishSession,
 	listParticipants,
 	loadGame,
-	loadSession,
 	reopenSession,
 	requireHostByParticipantId,
 	requireParticipant,
@@ -128,22 +127,6 @@ export const create = mutation({
 		});
 		await insertState(ctx, hosted.sessionId);
 		return hosted;
-	},
-});
-
-/** @deprecated Use signalWords.create. */
-export const createState = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		hostParticipantId: v.id("sessionParticipants"),
-	},
-	handler: async (ctx, args) => {
-		await loadSession(ctx, "signal-words", args.sessionId, "sessionNotFound");
-		const existing = await findGameState(ctx, "signal-words", args.sessionId);
-		if (existing) {
-			return existing._id;
-		}
-		return await insertState(ctx, args.sessionId);
 	},
 });
 

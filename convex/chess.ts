@@ -30,7 +30,6 @@ import {
 	finishSession,
 	listParticipants,
 	loadGame,
-	loadSession,
 	reopenSession,
 	startSession,
 } from "./lib/gameSession";
@@ -125,23 +124,6 @@ export const create = mutation({
 		});
 		await insertState(ctx, hosted.sessionId, hosted.participantId, args);
 		return hosted;
-	},
-});
-
-/** @deprecated Use chess.create. */
-export const createState = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		hostParticipantId: v.id("sessionParticipants"),
-		...matchArgs,
-	},
-	handler: async (ctx, args) => {
-		await loadSession(ctx, "chess", args.sessionId, "sessionNotFound");
-		const existing = await findGameState(ctx, "chess", args.sessionId);
-		if (existing) {
-			return existing._id;
-		}
-		return await insertState(ctx, args.sessionId, args.hostParticipantId, args);
 	},
 });
 

@@ -1,8 +1,11 @@
-import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { ChessMatch } from "#/components/chess/ChessMatch";
-import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import {
+	boardShell,
+	SessionBundleRoute,
+} from "#/components/games/SessionBundleRoute";
+import { sessionInviteUrl } from "#/lib/games/invite";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -18,26 +21,19 @@ function ChessSessionPage() {
 	const bundle = useQuery(api.chess.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 	});
-
-	if (bundle === undefined || bundle === null) {
-		return (
-			<FullscreenGameShell title={messages.catalog.chess.title}>
-				<div className="flex h-full items-center justify-center">
-					<p className={bundle === null ? "text-orange-200" : "text-slate-300"}>
-						{bundle === null
-							? messages.games.chess.session.matchNotFound
-							: messages.games.chess.session.loadingMatch}
-					</p>
-				</div>
-			</FullscreenGameShell>
-		);
-	}
-
-	const shareUrl = bundle.session.shareToken
-		? buildInviteUrl(window.location.origin, {
-				token: bundle.session.shareToken,
-			})
-		: window.location.href;
-
-	return <ChessMatch bundle={bundle} shareUrl={shareUrl} />;
+	return (
+		<SessionBundleRoute
+			bundle={bundle}
+			shell={boardShell(messages.catalog.chess.title)}
+			loading={messages.games.chess.session.loadingMatch}
+			notFound={messages.games.chess.session.matchNotFound}
+		>
+			{(loaded) => (
+				<ChessMatch
+					bundle={loaded}
+					shareUrl={sessionInviteUrl(loaded.session)}
+				/>
+			)}
+		</SessionBundleRoute>
+	);
 }

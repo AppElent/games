@@ -1,17 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
 	advance,
 	arrange,
-	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
 	HOSTED,
 	hostSession,
 	joinWithCode,
-	otherGameSession,
 	outsider,
 	type ParticipantId,
 	sessionCount,
@@ -62,26 +60,22 @@ function createSet(t: T, subject?: string) {
 	});
 }
 
-/** The client flow: room session, then `startForSession`. */
+/** The client flow: one `create`. */
 async function newQuiz(t: T) {
 	const quizSetId = await createSet(t);
-	const { host, sessionId, hostId, joinCode } = await hostSession(
-		t,
-		"live-quiz",
-		"room",
-		"hostChoice",
+	const host = signedInHost(t);
+	const { sessionId, participantId, joinCode } = await host.mutation(
+		api.quiz.create,
+		{ ...HOSTED, quizSetId },
 	);
-	const stateId = await host.mutation(api.quiz.startForSession, {
-		sessionId,
-		quizSetId,
-	});
+	const stored = await t.query(api.quiz.getBundle, { sessionId });
 	return {
 		host,
 		sessionId,
-		hostId,
+		hostId: participantId,
 		joinCode: joinCode as string,
 		quizSetId,
-		stateId,
+		stateId: stored?.quizState?._id as Id<"liveQuizStates">,
 	};
 }
 
@@ -225,7 +219,7 @@ describe("quiz sets", () => {
 	});
 });
 
-describe("startForSession", () => {
+describe("new quiz", () => {
 	it("prepares a lobby state and leaves the session in the lobby", async () => {
 		const t = setup();
 		const { sessionId, quizSetId, stateId } = await newQuiz(t);
@@ -242,46 +236,6 @@ describe("startForSession", () => {
 		expect(session.status).toBe("lobby");
 		expect(session.authPolicy).toBe("hostChoice");
 		expect(answers).toEqual([]);
-	});
-
-	it("pins that anyone can reset a running quiz back to the lobby", async () => {
-		const t = setup();
-		const { sessionId, stateId } = await newQuiz(t);
-		await advancePhase(t, sessionId);
-		const sample = await t.mutation(api.quiz.ensureSampleSet, {});
-		await expect(
-			t.mutation(api.quiz.startForSession, { sessionId, quizSetId: sample }),
-		).resolves.toBe(stateId);
-		const { quizState, session } = await bundle(t, sessionId);
-		expect(fields(quizState)).toEqual({
-			sessionId,
-			quizSetId: sample,
-			phase: "lobby",
-			currentQuestionIndex: 0,
-			showCorrectAnswer: false,
-		});
-		expect(session.status).toBe("active");
-	});
-
-	it("answers sessionNotFound and quizSetNotFound", async () => {
-		const t = setup();
-		const quizSetId = await createSet(t);
-		for (const sessionId of [
-			await otherGameSession(t),
-			await deletedSessionId(t),
-		]) {
-			await expectCode(
-				t.mutation(api.quiz.startForSession, { sessionId, quizSetId }),
-				"sessionNotFound",
-			);
-		}
-		const { sessionId } = await hostSession(t, "live-quiz", "room");
-		const gone = await createSet(t);
-		await owner(t).mutation(api.quiz.deleteSet, { quizSetId: gone });
-		await expectCode(
-			t.mutation(api.quiz.startForSession, { sessionId, quizSetId: gone }),
-			"quizSetNotFound",
-		);
 	});
 });
 
@@ -580,16 +534,6 @@ describe("getBundle", () => {
 });
 
 describe("create", () => {
-	it("stores what sessions.create and createState store together", async () => {
-		const t = setup();
-		const twoStep = await newQuiz(t);
-		const { quizSetId } = twoStep;
-		const created = await signedInHost(t).mutation(api.quiz.create, { ...HOSTED, quizSetId });
-		expect(await createdRows(t, created.sessionId, "liveQuizStates")).toEqual(
-			await createdRows(t, twoStep.sessionId, "liveQuizStates"),
-		);
-	});
-
 	it("returns a code a guest can type, and no link", async () => {
 		const t = setup();
 		const quizSetId = await createSet(t);

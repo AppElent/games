@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import { HostGate } from "#/components/games/HostGate";
 import { QuizSetupForm } from "#/components/quiz/QuizSetupForm";
 import { useMessages } from "#/lib/i18n";
 
@@ -19,7 +20,9 @@ function QuizNewPage() {
 			<p className="mb-6 max-w-2xl text-slate-300">
 				{messages.games.quiz.newPage.intro}
 			</p>
-			<QuizSetupForm />
+			<HostGate>
+				<QuizSetupForm />
+			</HostGate>
 		</FullscreenGamePage>
 	);
 }

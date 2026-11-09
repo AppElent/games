@@ -402,7 +402,7 @@ describe("joinByCode", () => {
 });
 
 describe("joinByToken", () => {
-	it("adds a player with no seat outside the duels, and no seatClaimed key", async () => {
+	it("adds a player with no seat outside the duels", async () => {
 		const t = setup();
 		const { sessionId, shareToken } = await challenge(t);
 		const joined = await joinWithToken(t, shareToken, "guest_one");
@@ -410,8 +410,8 @@ describe("joinByToken", () => {
 			sessionId,
 			participantId: joined.participantId,
 			gameType: GAME,
+			seatClaimed: false,
 		});
-		expect(joined).not.toHaveProperty("seatClaimed");
 		expect(fields(await getDoc(t, joined.participantId))).toEqual({
 			sessionId,
 			guestId: "guest_one",

@@ -210,34 +210,6 @@ export const create = mutation({
 	},
 });
 
-/** @deprecated Use quiz.create. */
-export const startForSession = mutation({
-	args: {
-		sessionId: v.id("gameSessions"),
-		quizSetId: v.id("quizSets"),
-	},
-	handler: async (ctx, args) => {
-		await loadSession(ctx, "live-quiz", args.sessionId, "sessionNotFound");
-		const quizSet = await ctx.db.get(args.quizSetId);
-		if (!quizSet) {
-			throw gameError("quizSetNotFound");
-		}
-
-		const existing = await findGameState(ctx, "live-quiz", args.sessionId);
-		if (existing) {
-			await ctx.db.patch(existing._id, {
-				quizSetId: args.quizSetId,
-				phase: "lobby",
-				currentQuestionIndex: 0,
-				questionStartedAt: undefined,
-				showCorrectAnswer: false,
-			});
-			return existing._id;
-		}
-		return await insertLobbyState(ctx, args.sessionId, args.quizSetId);
-	},
-});
-
 export const advancePhase = mutation({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {

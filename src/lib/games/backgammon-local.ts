@@ -2,6 +2,7 @@ import {
 	type LocalMatch,
 	parseLocalMatch,
 } from "@arcadeclub/core/backgammon-local";
+import { readStored, writeJson } from "#/lib/games/local-store";
 
 /**
  * Local (same device) backgammon matches live entirely in localStorage:
@@ -9,24 +10,10 @@ import {
  */
 const KEY = "arcade-club.backgammon.local";
 
-export function loadLocalBackgammonGame(
-	storage: Storage = window.localStorage,
-): LocalMatch | null {
-	try {
-		const raw = storage.getItem(KEY);
-		return raw ? parseLocalMatch(raw) : null;
-	} catch {
-		return null;
-	}
+export function loadLocalBackgammonGame(): LocalMatch | null {
+	return readStored(KEY, parseLocalMatch, null);
 }
 
-export function saveLocalBackgammonGame(
-	game: LocalMatch,
-	storage: Storage = window.localStorage,
-) {
-	try {
-		storage.setItem(KEY, JSON.stringify(game));
-	} catch {
-		// Quota or private mode — the running game keeps working in memory.
-	}
+export function saveLocalBackgammonGame(game: LocalMatch) {
+	writeJson(KEY, game);
 }

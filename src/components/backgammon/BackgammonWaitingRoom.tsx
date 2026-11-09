@@ -1,10 +1,7 @@
 import {
 	applyBackgammonPlan,
 	type BackgammonColor,
-	type BackgammonMoveDestination,
 	type BackgammonMovePlan,
-	type BackgammonMoveSource,
-	type BackgammonPoint,
 	type BackgammonTurnState,
 	canEndBackgammonTurn,
 	computeUsedFlags,
@@ -12,7 +9,8 @@ import {
 } from "@arcadeclub/core/backgammon";
 import { DEFAULT_ONLINE_OPTIONS } from "@arcadeclub/core/backgammon-local";
 import { useMutation } from "convex/react";
-import { useEffect, useState } from "react";
+import type { FunctionReturnType } from "convex/server";
+import { useState } from "react";
 import {
 	BackgammonBoard,
 	type BackgammonBoardOptions,
@@ -25,49 +23,14 @@ import { GameEndScreen } from "#/components/games/GameEndScreen";
 import { ParticipantList } from "#/components/games/ParticipantList";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
 import { SeatBanner } from "#/components/games/SeatBanner";
-import { useErrorMessage } from "#/lib/games/errors";
+import { getGameRoute } from "#/lib/games/catalog";
+import { useSeat } from "#/lib/games/seat";
+import { useGameAction } from "#/lib/games/use-game-action";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 import { BackgammonMoveLog } from "./BackgammonMoveLog";
 
-type Participant = {
-	_id: Id<"sessionParticipants">;
-	displayName: string;
-	role: "host" | "player" | "watcher";
-	seat?: string;
-	connected: boolean;
-};
-
-type Bundle = {
-	session: {
-		_id: Id<"gameSessions">;
-		title: string;
-		shareToken?: string;
-	};
-	participants: Participant[];
-	state: {
-		phase: "waiting" | "ready" | "active" | "finished";
-		whiteParticipantId?: Id<"sessionParticipants">;
-		blackParticipantId?: Id<"sessionParticipants">;
-		winnerParticipantId?: Id<"sessionParticipants">;
-		activeColor: BackgammonColor;
-		points: BackgammonPoint[];
-		bar: { white: number; black: number };
-		off: { white: number; black: number };
-		dice: number[];
-		usedDice: number[];
-	} | null;
-	moves: Array<{
-		_id: string;
-		moveType: "roll" | "move" | "endTurn";
-		color: BackgammonColor;
-		from?: BackgammonMoveSource;
-		to?: BackgammonMoveDestination;
-		dice: number[];
-		createdAt: number;
-	}>;
-};
+type Bundle = NonNullable<FunctionReturnType<typeof api.backgammon.getBundle>>;
 
 export function BackgammonWaitingRoom({
 	bundle,
@@ -76,25 +39,18 @@ export function BackgammonWaitingRoom({
 	bundle: Bundle;
 	shareUrl: string;
 }) {
-	const errorMessage = useErrorMessage();
 	const messages = useMessages();
 	const backgammon = messages.games.backgammon;
 	const rollDice = useMutation(api.backgammon.rollDice);
 	const applyMove = useMutation(api.backgammon.applyMove);
 	const endTurn = useMutation(api.backgammon.endTurn);
 	const rematch = useMutation(api.backgammon.rematch);
-	const [participantId, setParticipantId] = useState<string>();
-	const [error, setError] = useState("");
+	const participantId = useSeat(bundle.session._id);
+	const { error, setError, run } = useGameAction();
 	const [showInfo, setShowInfo] = useState(false);
 	const [options, setOptions] = useState<BackgammonBoardOptions>(
 		DEFAULT_ONLINE_OPTIONS,
 	);
-
-	useEffect(() => {
-		setParticipantId(
-			window.sessionStorage.getItem("arcade-club.participantId") ?? undefined,
-		);
-	}, []);
 
 	const white = bundle.participants.find(
 		(participant) => participant._id === bundle.state?.whiteParticipantId,
@@ -131,32 +87,26 @@ export function BackgammonWaitingRoom({
 			}
 		: null;
 
-	async function handleRoll() {
+	function handleRoll() {
 		if (!participantId) {
 			setError(backgammon.waitingRoom.joinBeforeRolling);
 			return;
 		}
-		setError("");
-		try {
-			await rollDice({
-				sessionId: bundle.session._id,
-				participantId: participantId as Id<"sessionParticipants">,
-			});
-		} catch (caught) {
-			setError(errorMessage(caught, backgammon.waitingRoom.rollError));
-		}
+		run(
+			() => rollDice({ sessionId: bundle.session._id, participantId }),
+			backgammon.waitingRoom.rollError,
+		);
 	}
 
-	async function handlePlan(plan: BackgammonMovePlan) {
+	function handlePlan(plan: BackgammonMovePlan) {
 		if (!participantId || !turnState) {
 			return;
 		}
-		setError("");
-		try {
+		run(async () => {
 			for (const step of plan.steps) {
 				await applyMove({
 					sessionId: bundle.session._id,
-					participantId: participantId as Id<"sessionParticipants">,
+					participantId,
 					from: step.from,
 					to: step.to,
 				});
@@ -164,30 +114,20 @@ export function BackgammonWaitingRoom({
 			// End the turn automatically once every die is spent.
 			const after = applyBackgammonPlan(turnState, plan);
 			if (options.autoSwitchTurn && isTurnSpent(after)) {
-				await endTurn({
-					sessionId: bundle.session._id,
-					participantId: participantId as Id<"sessionParticipants">,
-				});
+				await endTurn({ sessionId: bundle.session._id, participantId });
 			}
-		} catch (caught) {
-			setError(errorMessage(caught, backgammon.waitingRoom.moveError));
-		}
+		}, backgammon.waitingRoom.moveError);
 	}
 
-	async function handleEndTurn() {
+	function handleEndTurn() {
 		if (!participantId) {
 			setError(backgammon.waitingRoom.joinBeforeEndingTurn);
 			return;
 		}
-		setError("");
-		try {
-			await endTurn({
-				sessionId: bundle.session._id,
-				participantId: participantId as Id<"sessionParticipants">,
-			});
-		} catch (caught) {
-			setError(errorMessage(caught, backgammon.waitingRoom.endTurnError));
-		}
+		run(
+			() => endTurn({ sessionId: bundle.session._id, participantId }),
+			backgammon.waitingRoom.endTurnError,
+		);
 	}
 
 	function handleToggleOption(key: BackgammonOptionKey) {
@@ -338,25 +278,20 @@ export function BackgammonWaitingRoom({
 										backgammon.waitingRoom.someoneFallbackLower,
 								})}
 								onRematch={
-									localColor
-										? () => {
-												void rematch({
-													sessionId: bundle.session._id,
-													participantId:
-														participantId as Id<"sessionParticipants">,
-												}).catch((caught) =>
-													setError(
-														errorMessage(
-															caught,
-															backgammon.waitingRoom.rematchError,
-														),
-													),
-												);
-											}
+									localColor && participantId
+										? () =>
+												run(
+													() =>
+														rematch({
+															sessionId: bundle.session._id,
+															participantId,
+														}),
+													backgammon.waitingRoom.rematchError,
+												)
 										: undefined
 								}
 								rematchLabel={backgammon.waitingRoom.rematchLabel}
-								newGameRoute="/backgammon/new"
+								newGameRoute={getGameRoute("backgammon")}
 							/>
 						</div>
 					</div>

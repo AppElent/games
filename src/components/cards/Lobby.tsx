@@ -6,6 +6,7 @@ import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { Bot, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { QrSharePanel } from "#/components/games/QrSharePanel";
+import { sessionInviteUrl } from "#/lib/games/invite";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { CardsPage } from "./Chrome";
 import { seatName } from "./format";
@@ -30,10 +31,7 @@ export function Lobby({
 	const optionText = text.options as Record<string, { label: string }>;
 	const missing = Math.max(0, game.players.min - table.seats.length);
 	const canAdd = table.seats.length < game.players.max;
-	const url =
-		typeof window === "undefined"
-			? ""
-			: buildInviteUrl(window.location.origin, { code });
+	const url = sessionInviteUrl({ joinCode: code });
 
 	return (
 		<CardsPage

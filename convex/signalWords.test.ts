@@ -4,7 +4,6 @@ import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
 	arrange,
-	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
@@ -27,18 +26,14 @@ useFixedClock();
 
 type Team = "red" | "blue";
 
-/** The client flow: room session, then its state. */
+/** The client flow: one `create`. */
 async function newRoom(t: T) {
-	const { host, sessionId, hostId, joinCode } = await hostSession(
-		t,
-		"signal-words",
-		"room",
+	const host = signedInHost(t);
+	const { sessionId, participantId, joinCode } = await host.mutation(
+		api.signalWords.create,
+		HOSTED,
 	);
-	await host.mutation(api.signalWords.createState, {
-		sessionId,
-		hostParticipantId: hostId,
-	});
-	return { host, sessionId, hostId, joinCode: joinCode as string };
+	return { host, sessionId, hostId: participantId, joinCode: joinCode as string };
 }
 
 function joinTeam(
@@ -154,7 +149,7 @@ async function finishedOnTrap(t: T) {
 	return game;
 }
 
-describe("createState", () => {
+describe("new room", () => {
 	it("creates an empty lobby board", async () => {
 		const t = setup();
 		const { sessionId } = await newRoom(t);
@@ -171,34 +166,6 @@ describe("createState", () => {
 			updatedAt: T0,
 		});
 		expect(session.status).toBe("lobby");
-	});
-
-	it("returns the existing state on a double submit", async () => {
-		const t = setup();
-		const { host, sessionId, hostId } = await newRoom(t);
-		await expect(
-			host.mutation(api.signalWords.createState, {
-				sessionId,
-				hostParticipantId: hostId,
-			}),
-		).resolves.toBe((await storedState(t, sessionId))._id);
-	});
-
-	it("answers sessionNotFound for another game's session or a missing one", async () => {
-		const t = setup();
-		const { hostId } = await hostSession(t, "signal-words", "room");
-		for (const sessionId of [
-			await otherGameSession(t),
-			await deletedSessionId(t),
-		]) {
-			await expectCode(
-				t.mutation(api.signalWords.createState, {
-					sessionId,
-					hostParticipantId: hostId,
-				}),
-				"sessionNotFound",
-			);
-		}
 	});
 });
 
@@ -694,7 +661,7 @@ describe("getBundle", () => {
 		expect(result?.state?.revealedRoles).toEqual(Array(25).fill(null));
 	});
 
-	it("is null for a missing session, and state is null ahead of createState", async () => {
+	it("is null for a missing session, and state is null on a session without one", async () => {
 		const t = setup();
 		await expect(
 			t.query(api.signalWords.getBundle, {
@@ -758,15 +725,6 @@ describe("getKey", () => {
 });
 
 describe("create", () => {
-	it("stores what sessions.create and createState store together", async () => {
-		const t = setup();
-		const twoStep = await newRoom(t);
-		const created = await signedInHost(t).mutation(api.signalWords.create, HOSTED);
-		expect(await createdRows(t, created.sessionId, "signalWordsStates")).toEqual(
-			await createdRows(t, twoStep.sessionId, "signalWordsStates"),
-		);
-	});
-
 	it("returns a code a guest can type, and no link", async () => {
 		const t = setup();
 		const created = await signedInHost(t).mutation(api.signalWords.create, HOSTED);

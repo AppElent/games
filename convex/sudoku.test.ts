@@ -3,7 +3,6 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
-	createdRows,
 	deletedSessionId,
 	expectCode,
 	fields,
@@ -43,7 +42,7 @@ const CAGES = [
 	})),
 ];
 
-/** Sudoku is solo, so a guest hosts it. */
+/** A solo session with no puzzle yet, which `create` never leaves behind. */
 async function soloSession(t: T) {
 	return await t.mutation(api.sessions.create, {
 		gameType: "sudoku",
@@ -55,20 +54,9 @@ async function soloSession(t: T) {
 	});
 }
 
-async function newPuzzle(
+/** Sudoku is solo, so a guest hosts it. */
+function createPuzzle(
 	t: T,
-	overrides: Partial<Parameters<typeof createArgs>[1]> = {},
-) {
-	const { sessionId, participantId } = await soloSession(t);
-	const { stateId } = await t.mutation(
-		api.sudoku.createState,
-		createArgs(sessionId, overrides),
-	);
-	return { sessionId, participantId, stateId };
-}
-
-function createArgs(
-	sessionId: SessionId,
 	overrides: {
 		variant?: "classic" | "killer" | "binary";
 		cages?: { sum: number; cells: number[] }[];
@@ -81,18 +69,20 @@ function createArgs(
 		autoCleanup?: boolean;
 	} = {},
 ) {
-	return {
-		sessionId,
-		source: "generated" as const,
-		difficulty: "easy" as const,
+	return t.mutation(api.sudoku.create, {
+		title: "Puzzle",
+		displayName: "Solver",
+		guestId: "guest_solver",
+		source: "generated",
+		difficulty: "easy",
 		givens: GIVENS,
 		solution: SOLVED,
 		...overrides,
-	};
+	});
 }
 
 function killerPuzzle(t: T) {
-	return newPuzzle(t, {
+	return createPuzzle(t, {
 		variant: "killer",
 		cages: CAGES,
 		givens: EMPTY,
@@ -101,7 +91,7 @@ function killerPuzzle(t: T) {
 }
 
 function binaryPuzzle(t: T, size = 6) {
-	return newPuzzle(t, {
+	return createPuzzle(t, {
 		variant: "binary",
 		size,
 		givens: "0".repeat(size * size),
@@ -147,12 +137,11 @@ async function bundle(t: T, sessionId: SessionId) {
 	return result;
 }
 
-describe("createState", () => {
+describe("new puzzle", () => {
 	it("stores a classic puzzle and starts the session at once", async () => {
 		const t = setup();
-		const { sessionId, stateId, participantId } = await newPuzzle(t);
+		const { sessionId, participantId } = await createPuzzle(t);
 		const stored = await storedState(t, sessionId);
-		expect(stored._id).toBe(stateId);
 		expect(fields(stored)).toEqual({
 			sessionId,
 			difficulty: "easy",
@@ -187,7 +176,7 @@ describe("createState", () => {
 		const notes = ZEROES();
 		notes[0] = 0x1ff;
 		const digits = `5${EMPTY.slice(1)}`;
-		const { sessionId } = await newPuzzle(t, {
+		const { sessionId } = await createPuzzle(t, {
 			givens: EMPTY,
 			digits,
 			solution: undefined,
@@ -209,7 +198,7 @@ describe("createState", () => {
 		const stored = await storedState(t, killer.sessionId);
 		expect(stored.variant).toBe("killer");
 		expect(stored.cages).toEqual(CAGES);
-		const classic = await newPuzzle(t, { cages: CAGES });
+		const classic = await createPuzzle(t, { cages: CAGES });
 		expect((await storedState(t, classic.sessionId)).cages).toBeUndefined();
 	});
 
@@ -222,7 +211,7 @@ describe("createState", () => {
 		expect(stored.digits).toBe(BINARY_EMPTY);
 		expect(stored.cornerNotes).toHaveLength(36);
 		expect(stored.colors).toHaveLength(36);
-		const classic = await newPuzzle(t, { size: 6 });
+		const classic = await createPuzzle(t, { size: 6 });
 		expect((await storedState(t, classic.sessionId)).size).toBeUndefined();
 	});
 
@@ -232,31 +221,8 @@ describe("createState", () => {
 		expect((await storedState(t, sessionId)).size).toBe(12);
 	});
 
-	it("answers gameAlreadyExists on a double submit", async () => {
-		const t = setup();
-		const { sessionId } = await newPuzzle(t);
-		await expectCode(
-			t.mutation(api.sudoku.createState, createArgs(sessionId)),
-			"gameAlreadyExists",
-		);
-	});
-
-	it("answers sessionNotFound for another game's session or a missing one", async () => {
-		const t = setup();
-		for (const sessionId of [
-			await otherGameSession(t, "chess"),
-			await deletedSessionId(t),
-		]) {
-			await expectCode(
-				t.mutation(api.sudoku.createState, createArgs(sessionId)),
-				"sessionNotFound",
-			);
-		}
-	});
-
 	it("answers invalidPuzzleData for bad grids and note masks", async () => {
 		const t = setup();
-		const { sessionId } = await soloSession(t);
 		for (const overrides of [
 			{ givens: "123" },
 			{ givens: `x${GIVENS.slice(1)}` },
@@ -269,27 +235,23 @@ describe("createState", () => {
 			{ centerNotes: [0.5, ...ZEROES().slice(1)] },
 		]) {
 			await expectCode(
-				t.mutation(api.sudoku.createState, createArgs(sessionId, overrides)),
+				createPuzzle(t, overrides),
 				"invalidPuzzleData",
 			);
 		}
 		await expectCode(
-			t.mutation(
-				api.sudoku.createState,
-				createArgs(sessionId, {
+			createPuzzle(t, {
 					variant: "binary",
 					size: 6,
 					givens: `3${BINARY_EMPTY.slice(1)}`,
 					solution: undefined,
 				}),
-			),
 			"invalidPuzzleData",
 		);
 	});
 
 	it("answers puzzleConflictingDigits for a clash in givens or digits", async () => {
 		const t = setup();
-		const { sessionId } = await soloSession(t);
 		for (const overrides of [
 			{ givens: `55${EMPTY.slice(2)}` },
 			{ givens: `5${EMPTY.slice(1)}`, digits: `05${EMPTY.slice(2)}` },
@@ -301,7 +263,7 @@ describe("createState", () => {
 			},
 		]) {
 			await expectCode(
-				t.mutation(api.sudoku.createState, createArgs(sessionId, overrides)),
+				createPuzzle(t, overrides),
 				"puzzleConflictingDigits",
 			);
 		}
@@ -309,18 +271,14 @@ describe("createState", () => {
 
 	it("answers invalidBinarySize", async () => {
 		const t = setup();
-		const { sessionId } = await soloSession(t);
 		for (const size of [undefined, 7, 14]) {
 			await expectCode(
-				t.mutation(
-					api.sudoku.createState,
-					createArgs(sessionId, {
+				createPuzzle(t, {
 						variant: "binary",
 						size,
 						givens: BINARY_EMPTY,
 						solution: undefined,
 					}),
-				),
 				"invalidBinarySize",
 			);
 		}
@@ -328,25 +286,18 @@ describe("createState", () => {
 
 	it("answers invalidKillerCages and cagesUnsatisfied", async () => {
 		const t = setup();
-		const { sessionId } = await soloSession(t);
 		for (const cages of [undefined, CAGES.slice(1)]) {
 			await expectCode(
-				t.mutation(
-					api.sudoku.createState,
-					createArgs(sessionId, { variant: "killer", givens: EMPTY, cages }),
-				),
+				createPuzzle(t, { variant: "killer", givens: EMPTY, cages }),
 				"invalidKillerCages",
 			);
 		}
 		await expectCode(
-			t.mutation(
-				api.sudoku.createState,
-				createArgs(sessionId, {
+			createPuzzle(t, {
 					variant: "killer",
 					givens: EMPTY,
 					cages: [{ sum: 9, cells: [0, 1] }, ...CAGES.slice(1)],
 				}),
-			),
 			"cagesUnsatisfied",
 		);
 	});
@@ -355,7 +306,7 @@ describe("createState", () => {
 describe("getBundle", () => {
 	it("strips the solution and returns no participants", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		const result = await bundle(t, sessionId);
 		expect(Object.keys(result).sort()).toEqual(["session", "state"]);
 		expect(result.state).not.toHaveProperty("solution");
@@ -377,7 +328,7 @@ describe("getBundle", () => {
 describe("saveProgress", () => {
 	it("stores the board and restarts the timer base", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		const corner = ZEROES();
 		corner[3] = 5;
 		const digits = `5${EMPTY.slice(1)}`;
@@ -403,7 +354,7 @@ describe("saveProgress", () => {
 
 	it("leaves the timer stopped while paused", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		await t.mutation(api.sudoku.setPaused, { sessionId, paused: true });
 		await t.mutation(api.sudoku.saveProgress, progress(sessionId));
 		const stored = await storedState(t, sessionId);
@@ -413,7 +364,7 @@ describe("saveProgress", () => {
 
 	it("does nothing once completed", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		await complete(t, sessionId);
 		await t.mutation(
 			api.sudoku.saveProgress,
@@ -426,7 +377,7 @@ describe("saveProgress", () => {
 
 	it("answers invalidPuzzleData for bad digits, notes, or colours", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		for (const overrides of [
 			{ digits: "123" },
 			{ cornerNotes: [0] },
@@ -443,7 +394,7 @@ describe("saveProgress", () => {
 
 	it("pins that any caller can write to a session, with no identity", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		await t
 			.withIdentity({ subject: "user_stranger" })
 			.mutation(api.sudoku.saveProgress, progress(sessionId));
@@ -468,7 +419,7 @@ describe("saveProgress", () => {
 describe("setPaused", () => {
 	it("folds running time into elapsed on pause, rounding to seconds", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		advance(65_600);
 		await t.mutation(api.sudoku.setPaused, { sessionId, paused: true });
 		const paused = await storedState(t, sessionId);
@@ -480,7 +431,7 @@ describe("setPaused", () => {
 
 	it("does not add time on a second pause, and restarts the timer on resume", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		advance(1000);
 		await t.mutation(api.sudoku.setPaused, { sessionId, paused: true });
 		advance(5000);
@@ -495,7 +446,7 @@ describe("setPaused", () => {
 
 	it("does nothing once completed", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		await complete(t, sessionId);
 		await t.mutation(api.sudoku.setPaused, { sessionId, paused: true });
 		expect((await storedState(t, sessionId)).status).toBe("completed");
@@ -505,7 +456,7 @@ describe("setPaused", () => {
 describe("complete", () => {
 	it("marks state and session complete", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		advance(1000);
 		await expect(complete(t, sessionId)).resolves.toEqual({ completed: true });
 		const stored = await storedState(t, sessionId);
@@ -524,7 +475,7 @@ describe("complete", () => {
 
 	it("lets givens fill the cells the digits leave blank", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		const onlyFirstRow = SOLVED.slice(0, 9) + EMPTY.slice(9);
 		await expect(complete(t, sessionId, onlyFirstRow)).resolves.toEqual({
 			completed: true,
@@ -533,7 +484,7 @@ describe("complete", () => {
 
 	it("is idempotent, without validating again", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		await complete(t, sessionId);
 		advance(1000);
 		await expect(complete(t, sessionId, "nonsense", 1)).resolves.toEqual({
@@ -547,7 +498,7 @@ describe("complete", () => {
 
 	it("answers gridNotSolved for a blank or conflicting grid", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		await expectCode(complete(t, sessionId, EMPTY), "gridNotSolved");
 		const clash = `55${SOLVED.slice(2)}`;
 		await expectCode(complete(t, sessionId, clash), "gridNotSolved");
@@ -556,13 +507,13 @@ describe("complete", () => {
 
 	it("answers invalidPuzzleData for a malformed grid", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t);
+		const { sessionId } = await createPuzzle(t);
 		await expectCode(complete(t, sessionId, "123"), "invalidPuzzleData");
 	});
 
 	it("accepts a valid grid that differs from the stored solution", async () => {
 		const t = setup();
-		const { sessionId } = await newPuzzle(t, { givens: EMPTY });
+		const { sessionId } = await createPuzzle(t, { givens: EMPTY });
 		await expect(complete(t, sessionId, SOLVED_RELABELLED)).resolves.toEqual({
 			completed: true,
 		});
@@ -625,28 +576,9 @@ describe("rename", () => {
 });
 
 describe("create", () => {
-	const NAMES = { title: "Puzzle", displayName: "Solver", guestId: "guest_solver" };
-
-	it("stores what sessions.create and createState store together", async () => {
-		const t = setup();
-		const twoStep = await newPuzzle(t);
-		const { sessionId: _, ...puzzle } = createArgs(twoStep.sessionId);
-		const created = await t.mutation(api.sudoku.create, {
-			...NAMES,
-			...puzzle,
-		});
-		expect(await createdRows(t, created.sessionId, "sudokuStates")).toEqual(
-			await createdRows(t, twoStep.sessionId, "sudokuStates"),
-		);
-	});
-
 	it("lets a guest solve alone, already started, with no way in for others", async () => {
 		const t = setup();
-		const { sessionId: _, ...puzzle } = createArgs(await deletedSessionId(t));
-		const created = await t.mutation(api.sudoku.create, {
-			...NAMES,
-			...puzzle,
-		});
+		const created = await createPuzzle(t);
 		expect(created.joinCode).toBeUndefined();
 		expect(created.shareToken).toBeUndefined();
 		const session = await getDoc(t, created.sessionId);
@@ -657,11 +589,8 @@ describe("create", () => {
 
 	it("leaves no session behind when the puzzle is rejected", async () => {
 		const t = setup();
-		const { sessionId: _, ...puzzle } = createArgs(await deletedSessionId(t), {
-			variant: "killer",
-		});
 		await expectCode(
-			t.mutation(api.sudoku.create, { ...NAMES, ...puzzle }),
+			createPuzzle(t, { variant: "killer" }),
 			"invalidKillerCages",
 		);
 		expect(await sessionCount(t)).toBe(0);

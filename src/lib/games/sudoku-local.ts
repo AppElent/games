@@ -1,4 +1,5 @@
 import type { SudokuDifficulty } from "@arcadeclub/core/sudoku";
+import { readJson, writeJson } from "#/lib/games/local-store";
 
 /**
  * Local index of the user's Sudoku sessions so guests (and signed-in
@@ -42,56 +43,32 @@ export function autoSessionTitle(
 	return `${level} ${kind} · ${stamp}`;
 }
 
-export function listLocalSudokuSessions(
-	storage: Storage = window.localStorage,
-): LocalSudokuSession[] {
-	try {
-		const raw = storage.getItem(KEY);
-		if (!raw) {
-			return [];
-		}
-		const parsed = JSON.parse(raw) as LocalSudokuSession[];
-		return Array.isArray(parsed) ? parsed : [];
-	} catch {
-		return [];
-	}
+export function listLocalSudokuSessions(): LocalSudokuSession[] {
+	const stored = readJson<LocalSudokuSession[]>(KEY, []);
+	return Array.isArray(stored) ? stored : [];
 }
 
-function save(sessions: LocalSudokuSession[], storage: Storage) {
-	storage.setItem(KEY, JSON.stringify(sessions.slice(0, 30)));
+function save(sessions: LocalSudokuSession[]) {
+	writeJson(KEY, sessions.slice(0, 30));
 }
 
-export function rememberLocalSudokuSession(
-	session: LocalSudokuSession,
-	storage: Storage = window.localStorage,
-) {
-	const rest = listLocalSudokuSessions(storage).filter(
+export function rememberLocalSudokuSession(session: LocalSudokuSession) {
+	const rest = listLocalSudokuSessions().filter(
 		(entry) => entry.sessionId !== session.sessionId,
 	);
-	save([session, ...rest], storage);
+	save([session, ...rest]);
 }
 
-export function renameLocalSudokuSession(
-	sessionId: string,
-	title: string,
-	storage: Storage = window.localStorage,
-) {
+export function renameLocalSudokuSession(sessionId: string, title: string) {
 	save(
-		listLocalSudokuSessions(storage).map((entry) =>
+		listLocalSudokuSessions().map((entry) =>
 			entry.sessionId === sessionId ? { ...entry, title } : entry,
 		),
-		storage,
 	);
 }
 
-export function forgetLocalSudokuSession(
-	sessionId: string,
-	storage: Storage = window.localStorage,
-) {
+export function forgetLocalSudokuSession(sessionId: string) {
 	save(
-		listLocalSudokuSessions(storage).filter(
-			(entry) => entry.sessionId !== sessionId,
-		),
-		storage,
+		listLocalSudokuSessions().filter((entry) => entry.sessionId !== sessionId),
 	);
 }

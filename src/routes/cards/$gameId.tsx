@@ -10,10 +10,11 @@ import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { CardsPage } from "#/components/cards/Chrome";
 import { RulesSheet } from "#/components/cards/RulesSheet";
-import { HostGate, useHostDisplayName } from "#/components/games/HostGate";
+import { HostGate } from "#/components/games/HostGate";
 import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
 import { useErrorMessage } from "#/lib/games/errors";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { useHostDisplayName } from "#/lib/games/use-host-session";
 import { plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 

@@ -1,16 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
+import {
+	pageShell,
+	SessionBundleRoute,
+} from "#/components/games/SessionBundleRoute";
 import { HitsterStage } from "#/components/hitster/HitsterStage";
+import { parseSeatSearch, useSeat } from "#/lib/games/seat";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/hitster/$sessionId/play")({
-	validateSearch: (search) => ({
-		participantId:
-			typeof search.participantId === "string" ? search.participantId : "",
-	}),
+	validateSearch: parseSeatSearch,
 	component: HitsterPlayerPage,
 	staticData: { fullscreen: true },
 });
@@ -19,47 +21,35 @@ function HitsterPlayerPage() {
 	const messages = useMessages();
 	const hitster = messages.games.hitster;
 	const { sessionId } = Route.useParams();
-	const search = Route.useSearch();
-	const participantId =
-		search.participantId ||
-		(typeof window !== "undefined"
-			? (window.sessionStorage.getItem("arcade-club.participantId") ?? "")
-			: "");
+	const linked = Route.useSearch().participantId;
+	const stored = useSeat(sessionId);
+	// A join link names the seat; otherwise this tab's remembered one.
+	const participantId = linked || stored;
 	const bundle = useQuery(api.hitster.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
-		participantId: participantId
-			? (participantId as Id<"sessionParticipants">)
-			: undefined,
+		participantId,
 	});
-
-	if (bundle === undefined) {
-		return (
-			<FullscreenGamePage title="Hitster" className="text-[var(--club-muted)]">
-				{hitster.session.loadingGame}
-			</FullscreenGamePage>
-		);
-	}
-	if (bundle === null) {
-		return (
-			<FullscreenGamePage title="Hitster" className="text-orange-500">
-				{hitster.session.gameNotFound}
-			</FullscreenGamePage>
-		);
-	}
-	if (!participantId) {
-		return (
-			<FullscreenGamePage title="Hitster" className="text-orange-500">
-				{hitster.session.joinFirst}
-			</FullscreenGamePage>
-		);
-	}
+	const shell = pageShell("Hitster", {
+		loading: "text-[var(--club-muted)]",
+		notFound: "text-orange-500",
+	});
 	return (
-		<FullscreenGamePage title="Hitster" maxWidthClassName="max-w-5xl">
-			<p className="club-kicker mb-2">{hitster.musicTimelineKicker}</p>
-			<HitsterStage
-				bundle={bundle}
-				participantId={participantId as Id<"sessionParticipants">}
-			/>
-		</FullscreenGamePage>
+		<SessionBundleRoute
+			bundle={bundle}
+			shell={shell}
+			loading={hitster.session.loadingGame}
+			notFound={hitster.session.gameNotFound}
+		>
+			{(loaded) =>
+				participantId ? (
+					<FullscreenGamePage title="Hitster" maxWidthClassName="max-w-5xl">
+						<p className="club-kicker mb-2">{hitster.musicTimelineKicker}</p>
+						<HitsterStage bundle={loaded} participantId={participantId} />
+					</FullscreenGamePage>
+				) : (
+					shell(hitster.session.joinFirst, "notFound")
+				)
+			}
+		</SessionBundleRoute>
 	);
 }

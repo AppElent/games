@@ -1,7 +1,4 @@
-import {
-	getHitsterModeConfig,
-	type HitsterMode,
-} from "@arcadeclub/core/hitster";
+import { getHitsterModeConfig } from "@arcadeclub/core/hitster";
 import {
 	getHitsterCard,
 	type HitsterCard,
@@ -141,7 +138,7 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 	if (!state) {
 		return null;
 	}
-	const config = getHitsterModeConfig(state.mode as HitsterMode);
+	const config = getHitsterModeConfig(state.mode);
 	if (config.shared) {
 		const cards = state.timelines[0]?.cardIds.length ?? 0;
 		return (
@@ -204,8 +201,7 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 								<span className="font-bold">
 									{plural(locale, row.cards, scoreboard.cardsCount)}
 								</span>
-								{getHitsterModeConfig(state.mode as HitsterMode).tokenCap >
-								0 ? (
+								{getHitsterModeConfig(state.mode).tokenCap > 0 ? (
 									<span
 										className={
 											winner ? "opacity-70" : "text-[var(--club-soft)]"
@@ -226,7 +222,7 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 export function RulesPanel({ state }: { state: HitsterState }) {
 	const messages = useMessages();
 	const rulesText = messages.games.hitster.bits.rules;
-	const config = getHitsterModeConfig(state.mode as HitsterMode);
+	const config = getHitsterModeConfig(state.mode);
 	const rules: Array<{ heading: string; body: string }> = [
 		{
 			heading: rulesText.listenTogetherHeading,

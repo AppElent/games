@@ -4,7 +4,6 @@ import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
 	arrange,
-	createdRows,
 	deletedParticipantId,
 	deletedSessionId,
 	expectCode,
@@ -31,18 +30,14 @@ useFixedClock();
 const ALL_FOURS = 0.5;
 const FOURS = [4, 4, 4, 4, 4];
 
-/** The client flow: room session, then its state. */
+/** The client flow: one `create`. */
 async function newRoom(t: T) {
-	const { host, sessionId, hostId, joinCode } = await hostSession(
-		t,
-		"bluff-dice",
-		"room",
+	const host = signedInHost(t);
+	const { sessionId, participantId, joinCode } = await host.mutation(
+		api.bluffDice.create,
+		HOSTED,
 	);
-	await host.mutation(api.bluffDice.createState, {
-		sessionId,
-		hostParticipantId: hostId,
-	});
-	return { host, sessionId, hostId, joinCode: joinCode as string };
+	return { host, sessionId, hostId: participantId, joinCode: joinCode as string };
 }
 
 /** A started game with the host first in turn order, and all dice on fours. */
@@ -118,7 +113,7 @@ async function finishedGame(t: T) {
 	return { ...game, host, guest };
 }
 
-describe("createState", () => {
+describe("new room", () => {
 	it("creates an empty lobby state", async () => {
 		const t = setup();
 		const { sessionId } = await newRoom(t);
@@ -136,35 +131,6 @@ describe("createState", () => {
 		});
 		expect(session.status).toBe("lobby");
 		expect(session.joinCode).toMatch(/^[A-Z2-9]{6}$/);
-	});
-
-	it("returns the existing state on a double submit", async () => {
-		const t = setup();
-		const { host, sessionId, hostId } = await newRoom(t);
-		const stored = await storedState(t, sessionId);
-		await expect(
-			host.mutation(api.bluffDice.createState, {
-				sessionId,
-				hostParticipantId: hostId,
-			}),
-		).resolves.toBe(stored._id);
-	});
-
-	it("answers sessionNotFound for another game's session or a missing one", async () => {
-		const t = setup();
-		const { hostId } = await hostSession(t, "bluff-dice", "room");
-		for (const sessionId of [
-			await otherGameSession(t),
-			await deletedSessionId(t),
-		]) {
-			await expectCode(
-				t.mutation(api.bluffDice.createState, {
-					sessionId,
-					hostParticipantId: hostId,
-				}),
-				"sessionNotFound",
-			);
-		}
 	});
 });
 
@@ -547,7 +513,7 @@ describe("getBundle", () => {
 		]);
 	});
 
-	it("is null for a missing session, and state is null ahead of createState", async () => {
+	it("is null for a missing session, and state is null on a session without one", async () => {
 		const t = setup();
 		await expect(
 			t.query(api.bluffDice.getBundle, { sessionId: await deletedSessionId(t) }),
@@ -666,15 +632,6 @@ it("lets a true claim on the last dice win the game for the claimant", async () 
 });
 
 describe("create", () => {
-	it("stores what sessions.create and createState store together", async () => {
-		const t = setup();
-		const twoStep = await newRoom(t);
-		const created = await signedInHost(t).mutation(api.bluffDice.create, HOSTED);
-		expect(await createdRows(t, created.sessionId, "bluffDiceStates")).toEqual(
-			await createdRows(t, twoStep.sessionId, "bluffDiceStates"),
-		);
-	});
-
 	it("returns a code a guest can type, and no link", async () => {
 		const t = setup();
 		const created = await signedInHost(t).mutation(api.bluffDice.create, HOSTED);

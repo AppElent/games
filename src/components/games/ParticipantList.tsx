@@ -1,8 +1,9 @@
 import { Crown, UserX } from "lucide-react";
 import { fmt, useMessages } from "#/lib/i18n";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 type Participant = {
-	_id: string;
+	_id: Id<"sessionParticipants">;
 	displayName: string;
 	role: "host" | "player" | "watcher";
 	seat?: string;
@@ -20,8 +21,8 @@ export function ParticipantList({
 }: {
 	participants: Participant[];
 	hostControls?: {
-		onKick: (participantId: string) => void;
-		onTransferHost: (participantId: string) => void;
+		onKick: (participantId: Id<"sessionParticipants">) => void;
+		onTransferHost: (participantId: Id<"sessionParticipants">) => void;
 	};
 }) {
 	const messages = useMessages();

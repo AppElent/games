@@ -106,7 +106,12 @@ export const joinByToken = mutation({
 				participantId,
 			);
 		}
-		return { sessionId: session._id, participantId, gameType: session.gameType };
+		return {
+			sessionId: session._id,
+			participantId,
+			gameType: session.gameType,
+			seatClaimed: false,
+		};
 	},
 });
 

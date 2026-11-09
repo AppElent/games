@@ -1,10 +1,12 @@
 import { normalizeJoinCode } from "@arcadeclub/core/sessions";
 import { useUser } from "@clerk/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
+import { getSessionPath } from "#/lib/games/catalog";
 import { useErrorMessage } from "#/lib/games/errors";
+import { rememberSeat } from "#/lib/games/seat";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../convex/_generated/api";
@@ -29,6 +31,7 @@ function JoinPage() {
 	const search = Route.useSearch();
 	const joinByCode = useMutation(api.sessions.joinByCode);
 	const joinByToken = useMutation(api.sessions.joinByToken);
+	const convex = useConvex();
 	const [code, setCode] = useState(search.code ?? "");
 	const [name, setName] = useState("");
 	const [error, setError] = useState("");
@@ -54,79 +57,46 @@ function JoinPage() {
 					event.preventDefault();
 					setError("");
 					const guest = getOrCreateGuestIdentity();
-					const seatSecret = newCardSeatSecret();
+					const displayName = name.trim() || guest.displayName;
 					try {
+						const joinCode = normalizeJoinCode(code);
+						// Only a card table binds its seat to a secret.
+						const seatSecret =
+							!joiningByLink &&
+							(await convex.query(api.sessions.inviteGameType, {
+								joinCode,
+							})) === "card-games"
+								? newCardSeatSecret()
+								: undefined;
 						const result = joiningByLink
 							? await joinByToken({
 									shareToken: search.token ?? "",
-									displayName: name.trim() || guest.displayName,
+									displayName,
 									guestId: guest.id,
 									asSpectator,
 								})
 							: await joinByCode({
-									joinCode: normalizeJoinCode(code),
-									displayName: name.trim() || guest.displayName,
+									joinCode,
+									displayName,
 									guestId: guest.id,
 									asSpectator,
 									seatSecret,
 								});
-						if (result.gameType === "live-quiz") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/quiz/${result.sessionId}/play?participantId=${result.participantId}`;
-						}
-						if (result.gameType === "hitster") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/hitster/${result.sessionId}/play?participantId=${result.participantId}`;
-						}
-						if (result.gameType === "backgammon") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/backgammon/${result.sessionId}`;
-						}
-						if (result.gameType === "card-games") {
+						const { sessionId, participantId, gameType } = result;
+						if (gameType === "card-games" && seatSecret) {
 							rememberCardSeat(
-								result.sessionId,
-								result.participantId,
+								sessionId,
+								participantId,
 								seatSecret,
-								"seatClaimed" in result && result.seatClaimed === true,
+								result.seatClaimed,
 							);
-							window.location.href = `/cards/table/${result.sessionId}`;
 						}
-						if (result.gameType === "bluff-dice") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/bluff-dice/${result.sessionId}`;
-						}
-						if (result.gameType === "signal-words") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/signal-words/${result.sessionId}`;
-						}
-						if (result.gameType === "connect-four") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/connect-four/${result.sessionId}`;
-						}
-						if (result.gameType === "chess") {
-							window.sessionStorage.setItem(
-								"arcade-club.participantId",
-								result.participantId,
-							);
-							window.location.href = `/chess/${result.sessionId}`;
+						rememberSeat(sessionId, participantId);
+						const path = getSessionPath(gameType, sessionId, participantId);
+						if (path) {
+							window.location.href = path;
+						} else {
+							setError(messages.common.joinPanel.joinError);
 						}
 					} catch (caught) {
 						setError(errorMessage(caught, messages.common.joinPanel.joinError));

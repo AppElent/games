@@ -212,24 +212,6 @@ export const create = mutation({
 	},
 });
 
-/** @deprecated Use sudoku.create. */
-export const createState = mutation({
-	args: { sessionId: v.id("gameSessions"), ...puzzleArgs },
-	handler: async (ctx, args) => {
-		const session = await loadSession(
-			ctx,
-			"sudoku",
-			args.sessionId,
-			"sessionNotFound",
-		);
-		const existing = await findGameState(ctx, "sudoku", args.sessionId);
-		if (existing) {
-			throw gameError("gameAlreadyExists");
-		}
-		return { stateId: await insertPuzzle(ctx, session, args) };
-	},
-});
-
 export const getBundle = query({
 	args: { sessionId: v.id("gameSessions") },
 	handler: async (ctx, args) => {

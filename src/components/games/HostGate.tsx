@@ -1,14 +1,7 @@
-import { Show, useUser } from "@clerk/react";
+import { Show } from "@clerk/react";
 import type { ReactNode } from "react";
 import { authConfig } from "#/lib/auth-config";
 import { useMessages } from "#/lib/i18n";
-
-/** Default host name: the signed-in account's first name. */
-export function useHostDisplayName(): string {
-	const { user } = useUser();
-	const messages = useMessages();
-	return user?.firstName || user?.username || messages.common.session.host;
-}
 
 /**
  * Hosting a multiplayer session requires an account (guests can still join).

@@ -34,7 +34,6 @@ export const serverErrors = {
 	sessionNotFound: "This game no longer exists.",
 	gameNotFound: "Game not found.",
 	gameUnavailable: "This game is no longer available.",
-	gameAlreadyExists: "This game has already been set up.",
 	roomNotFound: "Room not found. Check the code.",
 	roomLocked: "This room is locked by the host.",
 	joinCodeFailed: "Could not create a join code.",
