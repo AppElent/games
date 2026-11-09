@@ -38,31 +38,31 @@ Decide the `gameType` id (kebab-case), `joinMode`, `authPolicy` (`guestAllowed` 
 
 ## Step 2: Game identity, catalog and text
 
-1. Add the id to `GAME_TYPES` in `packages/core/src/games.ts`. Convex's `gameTypeValidator` derives from it.
-2. Add the `GAME_CATALOG` entry in `src/lib/games/catalog.ts` (it fails to compile until you do): `joinMode`, `authPolicy`, gradient `accent`, lucide `icon`, `route: "/<game-id>/new"`, `sessionPath` (where a seated player plays; `null` for a local-only game), and `hostPath` when the host's screen differs (room games). `/join` navigates through `sessionPath`, so it needs no per-game code.
-3. Add display text to `packages/core/src/i18n/{en,nl}/catalog.ts`, and screen text to `packages/core/src/i18n/{en,nl}/games/<game>.ts`, registered in both `index.ts` files. The message parity test fails until `nl` has every `en` key.
+1. Add the id to `GAME_TYPES` in `packages/core/src/games.ts`; Convex's `gameTypeValidator` derives from it. A game with online sessions also gets its `joinMode` and `authPolicy` in `GAME_SESSION_POLICY` in the same file (it fails to compile until you do); a local-only game is excluded from `SessionGameType` there instead.
+2. Add the `GAME_CATALOG` entry in `src/lib/games/catalog.ts` (it fails to compile until you do): gradient `accent`, lucide `icon`, `route: "/<game-id>/new"`, `sessionPath` (where a seated player plays; `null` for a local-only game), and `hostPath` when the host's screen differs (room games). `/join` navigates through `sessionPath`, so it needs no per-game code.
+3. Add display text to `packages/core/src/i18n/{en,nl}/catalog.ts`, and screen text to `packages/core/src/i18n/{en,nl}/games/<game>.ts`, registered in `packages/core/src/i18n/{en,nl}/index.ts`. The message parity test fails until `nl` has every `en` key.
 
 ## Step 3: Convex
 
-`convex/schema.ts`: add a `<game>States` table with `sessionId`, `createdAt`, `updatedAt` and `.index("by_session", ["sessionId"])`. Enums use `literals(<CORE_ARRAY>)` from `convex/lib/validators.ts`, never free strings. Add a moves table only if history matters. Register the table in `STATE_TABLES` in `convex/lib/gameSession.ts`.
+`convex/schema.ts`: add a `<game>States` table with `sessionId`, `createdAt`, `updatedAt` and `.index("by_session", ["sessionId"])`. Enums use `literals(<CORE_ARRAY>)` from `convex/lib/validators.ts`, never free strings. Add a moves table only if history matters. Register the table in `STATE_TABLES` in `convex/lib/gameSession.ts` (it fails to compile until you do).
 
 `convex/<game>.ts` (camelCase file name; it becomes the public `api.<game>` path):
 
-- `create` mutation: `args: hostedSessionArgs`, `returns: createdSessionValidator`. Call `createHostedSession` (`convex/lib/hostedSession.ts`) with the game's `gameType`, `joinMode` and `authPolicy`, then insert the state row (and seat the host) in the same mutation, so a session never exists without its state.
+- `create` mutation: `args: hostedSessionArgs` (plus the game's options), `returns: createdSessionValidator`. Call `hostGame(ctx, "<game-id>", args)` (`convex/lib/hostedSession.ts`), which opens the session and seats the host under the game's `GAME_SESSION_POLICY`; insert the state row in the same mutation, so a session never exists without its state; return `createdSession(hosted)`. Copy `create` in `convex/connectFour.ts`.
 - Action mutations start with `loadGame(ctx, "<game-id>", sessionId)`, check the actor, call core through `rules(() => ...)` (turns `GameRuleError` into a keyed `ConvexError`), and patch state. Throw `gameError(code)` from `convex/lib/errors.ts` for other refusals; never English text. The first real move calls `startSession`; the end calls `finishSession` with the winners; a rematch calls `reopenSession` (all `convex/lib/gameSession.ts`).
-- `getBundle` query returns `{ session, participants, state }` through `listParticipants` and `findGameState`. Strip private fields here and serve them through a separate participant-checked query.
+- `getBundle` query returns `loadBundle(ctx, "<game-id>", sessionId)` (`{ session, participants, state }`, or null). Strip private fields from it here and serve them through a separate participant-checked query.
 
-Two-seat games: add the id to `DuelGame` and a `Duel` descriptor to `convex/lib/duel.ts` (seat names and error codes, see `CONNECT_FOUR_DUEL`) and use its `requireTurn`, `requireSeat`, `requireRematch`, `swapSeats` and `winnerOf`. Add `"<game-id>": seatChallengerByShareToken(<GAME>_DUEL)` to `ON_JOIN` in `convex/lib/join.ts`; `convex/sessions.ts` names no game. Room games read participants and need no join hook.
+Two-seat games: the state row stores `phase`, `activeColor` and one `<seat>ParticipantId` column per seat, named after core's seat array (`CONNECT_FOUR_COLORS`), plus `winnerParticipantId`. Add a `Duel` descriptor to `convex/lib/duel.ts` (seats and error codes, see `CONNECT_FOUR_DUEL`) and list it in `DUELS`; `DuelGame` and the share-link join hook in `convex/lib/join.ts` derive from that list, so `convex/sessions.ts` and `ON_JOIN` need no edit. In the game file: `seatHost` while inserting the state, `requireTurn` before a move, `opponent(<COLORS>, seat)` from `@arcadeclub/core/duel` for the next turn, `requireResign`, `finishDuel` at the end and `rematchDuel` for the next game. Room games read participants and need no join hook.
 
 Run `pnpm exec convex dev --once` (or keep `pnpm run dev:watch` running) so codegen picks up the module before typechecking.
 
 ## Step 4: Web routes and components
 
-- `src/routes/<game-id>/new.tsx`: a game with no options renders `NewGamePage` (`src/components/games/NewGamePage.tsx`) with `create={useMutation(api.<game>.create)}`; copy `src/routes/connect-four/new.tsx`. A game with options calls `useHostSession` (`src/lib/games/use-host-session.ts`) itself, as `src/routes/sudoku/new.tsx` does. Either way the tab remembers its seat and lands on `sessionPath`.
+- `src/routes/<game-id>/new.tsx`: a game with no options renders `NewGamePage` (`src/components/games/NewGamePage.tsx`) with `create={useMutation(api.<game>.create)}`; copy `src/routes/connect-four/new.tsx`. A game with options gets its own page component that calls `useHostSession` (`src/lib/games/use-host-session.ts`), as `SudokuNewPage` (`src/components/sudoku/SudokuNewPage.tsx`) does; the route only renders it. Either way the tab remembers its seat and lands on `sessionPath`.
 - `src/routes/<game-id>/$sessionId.tsx`: subscribe to `api.<game>.getBundle` and render through `SessionBundleRoute` (loading, not found, game); copy `src/routes/connect-four/$sessionId.tsx`. Room games use a `$sessionId/` directory with a host and a player route.
 - `src/routes/<game-id>/index.tsx` redirects to `/<game-id>/new`. Every game route sets `staticData: { fullscreen: true }`.
 - Screens go in `src/components/<game-id>/`, built from `src/components/games/` the way the closest existing game's screen is. Type the bundle as `NonNullable<FunctionReturnType<typeof api.<game>.getBundle>>`.
-- The player's seat: `useSeat(sessionId)` from `src/lib/games/seat.ts`. Every mutation runs through `run(() => mutate(...), fallback)` from `useGameAction` (`src/lib/games/use-game-action.ts`), which shows a localized error and resolves to whether it succeeded.
+- The player's seat: `useSeat(sessionId)` from `src/lib/games/seat.ts`. Every mutation runs through `run(() => mutate(...), fallback)` from `useGameAction` (`src/lib/games/use-game-action.ts`), which shows a localized error and resolves to whether it succeeded. Two-seat screens get the seat, turn and actions from `useDuel` (`src/components/games/match/useDuel.ts`), as `ConnectFourMatch` does. A client offers a move only when core `duelTurn(seats, state, participantId)` allows it, the rule `requireTurn` enforces.
 - Styling: dark club theme (`club-wrap`, `club-panel`, `club-kicker`, `club-title`) with Tailwind; works at 360 px with 44 px touch targets.
 - After adding route files: `pnpm run generate-routes`.
 
@@ -70,10 +70,14 @@ Run `pnpm exec convex dev --once` (or keep `pnpm run dev:watch` running) so code
 
 The mobile app (`apps/mobile`) carries only Sudoku, Backgammon and Hitster. Adding a game there is its own task; read `apps/mobile/CODING_STANDARDS.md` first.
 
-1. Add the game to `APP_GAMES` in `apps/mobile/src/features/play/app-games.ts`: hub `href`, icon and tint, and for an online game `online` with its `create` mutation (`api.<game>.create`) and the screen a seated player opens. The Play tab, Continue, `/join` and the hosting hook (`useHostSession("<game-id>")`) all read it.
-2. Routes in `apps/mobile/app/<game-id>/` render one screen each from `apps/mobile/src/features/<game-id>/<subject>/`; the hub screen sets its own title. Online screens wrap their loading and missing states in `OnlineScreenFrame` (`src/features/sessions/components/`) and read the seat through `useSeatedSession`.
-3. A local save gets a store that validates parsed data and degrades to "no save", and a `resumableItems()` listed in `src/features/play/home/continue-items.ts`.
+1. Add the game to `APP_GAMES` in `apps/mobile/src/features/play/app-games.ts`: hub `href`, icon and tint, and for an online game `online` with its `create` mutation (`api.<game>.create`, exposed through `apps/mobile/src/convex/api.ts`) and the `sessionHref` a seated player opens. The Play tab, Continue, `/join` (through `isOnlineAppGame`) and the hosting hook (`useHostSession("<game-id>")`) all read it.
+2. Routes in `apps/mobile/app/<game-id>/` render one screen each from `apps/mobile/src/features/<game-id>/<subject>/`; the hub screen sets its own title. Online screens wrap their loading and missing states in `OnlineScreenFrame` (`src/features/sessions/components/`) and read the seat through `useSeatedSession`. A two-seat screen decides whether to offer a move with core `duelTurn`, as `src/features/backgammon/online/use-online-match.ts` does.
+3. Continue: online seats are listed by `src/features/sessions/session-seats.ts` with no per-game code. A local save gets a store that validates parsed data and degrades to "no save", and a `resumableItems()` that you add to `listContinueItems` in `src/features/play/home/continue-items.ts`.
 4. Add the Play-tab tagline under `taglines` in `packages/core/src/i18n/{en,nl}/play.ts`, and Jest tests next to the logic.
+
+## Grid puzzle variants
+
+A new kind of grid puzzle played on the Sudoku screens (as killer and binary are) is not a new game. Add its id to `SUDOKU_VARIANTS` in `packages/core/src/sudoku.ts` and its entry to `SUDOKU_VARIANT_RULES` in `packages/core/src/sudoku-variants.ts`: `cells`, `maxDigit`, `conflicts`, `solved`, `validate` (refusals the grid checks do not cover), `stored` (the fields it keeps beside the grids) and `generate`. A field it stores needs an optional column on `sudokuStates` in `convex/schema.ts` and a place in `VariantShape`. Convex and the web session go through these rules, so neither names the variant.
 
 ## Step 5: Tests
 

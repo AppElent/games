@@ -9,7 +9,11 @@ export async function upsertPrComment({ github, context }, marker, body) {
 		issue_number: context.issue.number,
 	};
 	const fullBody = `${marker}\n${body}`;
-	const { data: comments } = await github.rest.issues.listComments(issue);
+	// listComments returns one page of 30; a busy PR has more.
+	const comments = await github.paginate(github.rest.issues.listComments, {
+		...issue,
+		per_page: 100,
+	});
 	const existing = comments.find((c) => c.body?.includes(marker));
 	if (existing) {
 		await github.rest.issues.updateComment({

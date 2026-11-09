@@ -1,3 +1,9 @@
+---
+type: runbook
+description: Read when adding, changing or debugging an environment variable, or deploying to an Arcade Club environment.
+version: 1.0.0
+---
+
 # Environment contract
 
 [`env.manifest.ts`](../../env.manifest.ts) is the source of truth for which value each

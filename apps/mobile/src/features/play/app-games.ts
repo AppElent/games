@@ -76,7 +76,10 @@ export type OnlineGameType = {
 
 const BY_TYPE: { [G in GameType]?: AppGame } = APP_GAMES;
 
-export function hasAppScreen(gameType: GameType): gameType is OnlineGameType {
+/** Whether this app hosts and opens sessions of this game. */
+export function isOnlineAppGame(
+	gameType: GameType,
+): gameType is OnlineGameType {
 	return Boolean(BY_TYPE[gameType]?.online);
 }
 

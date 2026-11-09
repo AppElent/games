@@ -1,3 +1,9 @@
+---
+type: runbook
+description: Read when changing error reporting or investigating an Arcade Club error in Sentry.
+version: 1.0.0
+---
+
 # Sentry
 
 All surfaces report to one project, `appelent/arcadeclub` (id `4512351895552000`),

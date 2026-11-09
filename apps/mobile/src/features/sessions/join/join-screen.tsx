@@ -25,7 +25,7 @@ import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { TextField } from "../../../ui/text-field";
-import { hasAppScreen, onlineSessionHref } from "../../play/app-games";
+import { isOnlineAppGame, onlineSessionHref } from "../../play/app-games";
 import {
 	PLAYER_NAME_MAX,
 	usePlayerIdentity,
@@ -72,13 +72,13 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 					: { joinCode: invite.code },
 			)
 			.catch(() => null);
-		if (gameType && !hasAppScreen(gameType)) {
+		if (gameType && !isOnlineAppGame(gameType)) {
 			showUnsupported(gameType);
 			return;
 		}
 		const result = await join(invite, name);
 		if (!result) return;
-		if (!hasAppScreen(result.gameType)) {
+		if (!isOnlineAppGame(result.gameType)) {
 			showUnsupported(result.gameType);
 			return;
 		}

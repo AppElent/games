@@ -9,7 +9,7 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 /** Every build this app has; also its EAS Update channel and Sentry environment. */
-export const APP_VARIANTS = {
+const APP_VARIANTS = {
 	production: {
 		suffix: "",
 		name: "Arcade Club",

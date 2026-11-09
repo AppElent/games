@@ -9,11 +9,14 @@
 import { GAME_TYPES, type GameType } from "@arcadeclub/core/games";
 import type { Id } from "../../convex/api";
 import { readJson, STORAGE_KEYS, writeJson } from "../../storage/local-store";
-import { hasAppScreen, onlineSessionHref } from "../play/app-games";
+import { isOnlineAppGame, onlineSessionHref } from "../play/app-games";
 
 const LIMIT = 20;
 
-/** Finished online games drop out once the Play tab sees their status. */
+/**
+ * Seats older than this are not offered. A finished game stays stored; the
+ * Play tab hides it once it sees its status (`online-status`).
+ */
 const RESUMABLE_WINDOW_MS = 7 * 24 * 60 * 60_000;
 
 /** Who this phone is in one session. */
@@ -68,7 +71,7 @@ export function resumableItems(now = Date.now()) {
 	return listSeats().flatMap((seat) => {
 		const { sessionId, participantId, gameType } = seat;
 		if (now - seat.joinedAt > RESUMABLE_WINDOW_MS) return [];
-		if (!hasAppScreen(gameType)) return [];
+		if (!isOnlineAppGame(gameType)) return [];
 		return [
 			{
 				id: `online:${sessionId}`,
