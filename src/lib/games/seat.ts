@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { readTabValue, writeTabValue } from "#/lib/games/local-store";
+import {
+	readTabValue,
+	removeTabValue,
+	writeTabValue,
+} from "#/lib/games/local-store";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 type ParticipantId = Id<"sessionParticipants">;
@@ -12,6 +16,27 @@ type ParticipantId = Id<"sessionParticipants">;
  */
 const keyOf = (sessionId: string) => `arcade-club.seat.${sessionId}`;
 
+/**
+ * One-shot carry-over: before per-session seats a tab kept one global seat, the
+ * host's first. A tab open across that deploy moves it to the session it is on.
+ * sessionStorage dies with the tab, so remove after 2026-12-01.
+ */
+const LEGACY_SEAT_KEYS = [
+	"arcade-club.hostParticipantId",
+	"arcade-club.participantId",
+];
+
+function readSeat(sessionId: string): string | null {
+	const stored = readTabValue(keyOf(sessionId));
+	if (stored) return stored;
+	const legacy = LEGACY_SEAT_KEYS.map(readTabValue).find(Boolean) ?? null;
+	if (legacy) {
+		writeTabValue(keyOf(sessionId), legacy);
+		for (const key of LEGACY_SEAT_KEYS) removeTabValue(key);
+	}
+	return legacy;
+}
+
 export function rememberSeat(sessionId: string, participantId: ParticipantId) {
 	writeTabValue(keyOf(sessionId), participantId);
 }
@@ -20,7 +45,7 @@ export function rememberSeat(sessionId: string, participantId: ParticipantId) {
 export function useSeat(sessionId: string): ParticipantId | undefined {
 	const [seat, setSeat] = useState<ParticipantId>();
 	useEffect(() => {
-		const stored = readTabValue(keyOf(sessionId));
+		const stored = readSeat(sessionId);
 		setSeat(stored ? (stored as ParticipantId) : undefined);
 	}, [sessionId]);
 	return seat;

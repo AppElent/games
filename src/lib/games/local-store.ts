@@ -69,3 +69,11 @@ export function writeTabValue(key: string, value: string) {
 		// Quota or private mode.
 	}
 }
+
+export function removeTabValue(key: string) {
+	try {
+		storageArea("sessionStorage")?.removeItem(key);
+	} catch {
+		// Private mode.
+	}
+}

@@ -44,6 +44,24 @@ describe("seat", () => {
 		expect(result.current).toBe(bob);
 	});
 
+	it("moves a pre-deploy global seat to the session the tab is on, once", () => {
+		window.sessionStorage.setItem("arcade-club.participantId", alice);
+		expect(renderHook(() => useSeat("session_a")).result.current).toBe(alice);
+		expect(
+			window.sessionStorage.getItem("arcade-club.participantId"),
+		).toBeNull();
+		expect(
+			renderHook(() => useSeat("session_b")).result.current,
+		).toBeUndefined();
+		expect(renderHook(() => useSeat("session_a")).result.current).toBe(alice);
+	});
+
+	it("prefers the pre-deploy host seat, as host screens did", () => {
+		window.sessionStorage.setItem("arcade-club.participantId", bob);
+		window.sessionStorage.setItem("arcade-club.hostParticipantId", alice);
+		expect(renderHook(() => useSeat("session_a")).result.current).toBe(alice);
+	});
+
 	it("parses the participant id a join link carries", () => {
 		expect(parseSeatSearch({ participantId: alice })).toEqual({
 			participantId: alice,
