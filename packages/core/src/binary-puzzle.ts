@@ -40,6 +40,11 @@ export function binaryDigitLabel(value: number) {
 	return value === 1 ? "0" : value === 2 ? "1" : "";
 }
 
+/** The value a tap leaves in a cell: empty → 0 → 1 → empty (encoded 0 → 1 → 2 → 0). */
+export function nextBinaryCell(value: number) {
+	return (value + 1) % 3;
+}
+
 function emptyBinaryGrid(size: number): BinaryGrid {
 	return new Array(size * size).fill(0);
 }

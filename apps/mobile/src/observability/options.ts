@@ -5,9 +5,11 @@
  */
 import type { Messages } from "@arcadeclub/core/messages";
 import type { Breadcrumb, ErrorEvent, Event } from "@sentry/react-native";
+import type { AppVariant } from "../../app.config";
 import type { Tokens } from "../theme";
 
-export type SentryEnvironment = "development" | "preview" | "production";
+/** A build's Sentry environment is its variant. */
+type SentryEnvironment = AppVariant;
 
 /**
  * A DSN is required, and a development bundle stays silent unless
@@ -37,7 +39,7 @@ function stripQuery(url: unknown): unknown {
 }
 
 /** Drops request details and user identity; keeps the stack and tags. */
-export function sanitizeEvent(event: ErrorEvent): ErrorEvent {
+function sanitizeEvent(event: ErrorEvent): ErrorEvent {
 	const { user: _user, request, ...rest } = event;
 	return {
 		...rest,
@@ -115,7 +117,7 @@ export function feedbackLabels(text: Messages["common"]["feedback"]) {
  * query strings; console breadcrumbs keep the message but not its
  * arguments, which can hold player names or room codes.
  */
-export function sanitizeBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb | null {
+function sanitizeBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb | null {
 	if (breadcrumb.category === "console") {
 		const { data: _data, ...rest } = breadcrumb;
 		return rest;

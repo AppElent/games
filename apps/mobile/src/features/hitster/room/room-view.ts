@@ -5,8 +5,7 @@
  */
 import {
 	getHitsterModeConfig,
-	type HitsterMode,
-	hitsterTimelineFor,
+	hitsterPlayerView,
 } from "@arcadeclub/core/hitster";
 import {
 	getHitsterCard,
@@ -38,14 +37,6 @@ export function lobbyPlayers(bundle: Pick<HitsterBundle, "participants">) {
 	);
 }
 
-/** The timeline a participant plays on: the shared one in co-op. */
-export function timelineFor(
-	state: Pick<HitsterState, "mode" | "timelines">,
-	participantId: string | undefined,
-) {
-	return hitsterTimelineFor(state, participantId);
-}
-
 export function timelineCards(
 	state: Pick<HitsterState, "packId">,
 	cardIds: readonly string[],
@@ -64,25 +55,11 @@ export function roomView(bundle: HitsterBundle, participantId?: string) {
 	if (!state) {
 		return { isHost, state: null } as const;
 	}
-	const config = getHitsterModeConfig(state.mode as HitsterMode);
-	const activeParticipantId = state.turnOrder[state.activeIndex];
-	const isPlaying =
-		participantId !== undefined &&
-		state.turnOrder.some((entry) => entry === participantId);
 	return {
 		isHost,
 		state,
-		config,
-		activeParticipantId,
-		isActive: isPlaying && activeParticipantId === participantId,
-		isPlaying,
-		myTokens:
-			state.tokens.find((entry) => entry.participantId === participantId)
-				?.tokens ?? 0,
-		hasClaimed: state.stealClaims.some(
-			(claim) => claim.participantId === participantId,
-		),
-		myTimeline: timelineFor(state, participantId),
+		config: getHitsterModeConfig(state.mode),
+		...hitsterPlayerView(state, participantId),
 	} as const;
 }
 

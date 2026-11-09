@@ -3,10 +3,7 @@
  * synchronous local store, so it survives a restart and works offline.
  */
 
-import {
-	type BackgammonTurnState,
-	getBackgammonWinner,
-} from "@arcadeclub/core/backgammon";
+import { getBackgammonWinner } from "@arcadeclub/core/backgammon";
 import {
 	type LocalMatch,
 	newLocalMatch,
@@ -22,25 +19,9 @@ import {
 
 export const LOCAL_MATCH_HREF: Href = "/backgammon/local";
 
-const isCounters = (value: BackgammonTurnState["off"] | undefined) =>
-	typeof value?.white === "number" && typeof value.black === "number";
-
-/** Core checks the outline; the screens also read these before any move. */
-function hasPlayableTurn({ state, updatedAt }: LocalMatch) {
-	return (
-		isCounters(state.bar) &&
-		isCounters(state.off) &&
-		(state.activeColor === "white" || state.activeColor === "black") &&
-		Array.isArray(state.dice) &&
-		Array.isArray(state.used) &&
-		typeof updatedAt === "number"
-	);
-}
-
 export function readLocalMatch(): LocalMatch | null {
 	const raw = readText(STORAGE_KEYS.backgammonLocal);
-	const match = raw ? parseLocalMatch(raw) : null;
-	return match && hasPlayableTurn(match) ? match : null;
+	return raw ? parseLocalMatch(raw) : null;
 }
 
 export function writeLocalMatch(match: LocalMatch) {

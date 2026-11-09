@@ -5,6 +5,7 @@
 import {
 	findBinaryConflicts,
 	isBinarySolved,
+	nextBinaryCell,
 	parseBinaryGrid,
 } from "@arcadeclub/core/binary-puzzle";
 import { digitsToString } from "@arcadeclub/core/puzzle";
@@ -74,7 +75,7 @@ export function useBinaryGame(save: BinarySave) {
 				return;
 			}
 			const next = [...entries];
-			next[cell] = (entries[cell] + 1) % 3;
+			next[cell] = nextBinaryCell(entries[cell]);
 			replace(next);
 			haptics.selectionChanged();
 		},

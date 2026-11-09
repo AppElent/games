@@ -6,7 +6,6 @@
 import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { hitsterAsksArtistTitle } from "@arcadeclub/core/hitster";
 import { useKeepAwake } from "expo-keep-awake";
-import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { haptics } from "../../../feedback/haptics";
@@ -14,11 +13,11 @@ import { fmt, plural, useI18n } from "../../../i18n";
 import { spacing, useTokens } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
-import { CenteredState } from "../../../ui/centered-state";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { useResetOnChange } from "../../../ui/use-reset-on-change";
+import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
 import { DjPanel } from "./dj-panel";
 import { LobbyPanel } from "./lobby-panel";
 import { LobbyRoster } from "./lobby-roster";
@@ -41,56 +40,38 @@ export function HitsterRoomScreen({ sessionId }: { sessionId: string }) {
 	useKeepAwake();
 	const { t } = useI18n();
 	const room = useHitsterRoom(sessionId);
-	const header = (
-		<Stack.Screen options={{ title: t.games.hitster.session.roomTitle }} />
-	);
+	const title = t.games.hitster.session.roomTitle;
 
-	if (room.loading) {
+	if (!room.bundle || !room.participantId) {
 		return (
-			<>
-				{header}
-				<CenteredState loading message={t.common.errors.loading} />
-			</>
-		);
-	}
-	if (!room.bundle) {
-		return (
-			<>
-				{header}
-				<CenteredState title={t.common.session.unavailable} />
-			</>
-		);
-	}
-	if (!room.participantId) {
-		return (
-			<>
-				{header}
-				<CenteredState title={t.common.session.notSeated} />
-			</>
+			<OnlineScreenFrame
+				title={title}
+				loading={room.loading}
+				blocked={
+					room.bundle
+						? t.common.session.notSeated
+						: t.common.session.unavailable
+				}
+			/>
 		);
 	}
 
 	const bundle = room.bundle;
 	const view = roomView(bundle, room.participantId);
-	if (!view.state) {
-		// The host has not picked a mode yet (rooms made by older builds).
-		return (
-			<>
-				{header}
+	return (
+		<OnlineScreenFrame title={title}>
+			{view.state ? (
+				<HitsterRoomLoaded room={room} bundle={bundle} view={view} />
+			) : (
+				// The host has not picked a mode yet (rooms made by older builds).
 				<Screen>
 					<LobbyRoster bundle={bundle} />
 					<AppText variant="secondary">
 						{t.games.hitster.stage.statusWaitingForHost}
 					</AppText>
 				</Screen>
-			</>
-		);
-	}
-	return (
-		<>
-			{header}
-			<HitsterRoomLoaded room={room} bundle={bundle} view={view} />
-		</>
+			)}
+		</OnlineScreenFrame>
 	);
 }
 
@@ -121,8 +102,7 @@ function HitsterRoomLoaded({
 		if (phase === "reveal" || phase === "finished") haptics.answerRevealed();
 	}, [phase]);
 
-	const modeLabel =
-		copy.modes[live.mode as keyof typeof copy.modes]?.label ?? live.mode;
+	const modeLabel = copy.modes[live.mode].label;
 	const activeName = participantName(
 		bundle,
 		view.activeParticipantId,

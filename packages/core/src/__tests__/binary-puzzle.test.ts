@@ -5,6 +5,7 @@ import {
 	findBinaryConflicts,
 	generateBinaryPuzzle,
 	isBinarySolved,
+	nextBinaryCell,
 	parseBinaryGrid,
 } from "../binary-puzzle";
 import { digitsToString } from "../puzzle";
@@ -107,5 +108,11 @@ describe("serialization", () => {
 	it("rejects malformed grids", () => {
 		expect(() => parseBinaryGrid("012", 6)).toThrow();
 		expect(() => parseBinaryGrid("3".repeat(36), 6)).toThrow();
+	});
+});
+
+describe("nextBinaryCell", () => {
+	it("cycles empty, 0, 1 and back to empty", () => {
+		expect([0, 1, 2].map(nextBinaryCell)).toEqual([1, 2, 0]);
 	});
 });

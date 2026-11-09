@@ -11,6 +11,7 @@ import {
 	PUZZLE_DIFFICULTIES,
 	type PuzzleDifficulty,
 } from "@arcadeclub/core/puzzle";
+import type { SudokuStatus } from "@arcadeclub/core/sudoku";
 import {
 	parseGrid,
 	SUDOKU_CELL_COUNT,
@@ -26,7 +27,6 @@ import {
 	STORAGE_KEYS,
 	writeJson,
 } from "../../../storage/local-store";
-import type { SudokuStatus } from "../components/puzzle-types";
 
 type SaveBase = {
 	id: string;

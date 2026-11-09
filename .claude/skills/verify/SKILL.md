@@ -18,6 +18,7 @@ Session model: every game is a `gameSessions` row (`gameType` discriminator) + a
 | Route | Module |
 | --- | --- |
 | `/` | `src/routes/index.tsx` |
+| `/about` | `src/routes/about.tsx` |
 | `/dashboard` | `src/routes/dashboard/*` |
 | `/join` | `src/routes/join.tsx`, `convex/sessions.ts` (`joinByCode`/`joinByToken`), `convex/lib/join.ts` (`ON_JOIN`) |
 | `/quiz/*` | `src/routes/quiz/*`, `convex/quiz.ts` (`liveQuizStates`/`liveQuizAnswers`) |
@@ -35,3 +36,7 @@ Session model: every game is a `gameSessions` row (`gameType` discriminator) + a
 | `/sign-in`, `/sign-up`, `/forgot-password`, `/account` | thin `#/lib/auth` wrappers, see `AGENTS.md` Auth wiring |
 
 All game routes set `staticData: { fullscreen: true }` and render inside `FullscreenGameShell`/`FullscreenGamePage`/`FitScale` (`src/components/games/`) — if a change affects layout, check it in both fullscreen and the pause-menu state.
+
+## Mobile app
+
+A change under `apps/mobile/` or one it bundles (`packages/core`, a Convex function the app calls) is verified on a simulator or emulator: build, run and drive the app as [the mobile runbook](../../../docs/runbooks/mobile.md) describes, including its deep-link entry points and hosting from the CLI. Off-device, fall back to `pnpm --filter @arcadeclub/mobile typecheck` and `pnpm --filter @arcadeclub/mobile test`. Screens live in `apps/mobile/src/features/<game-or-area>/`, routes in `apps/mobile/app/`, and the games the app carries in `apps/mobile/src/features/play/app-games.ts`.

@@ -4,6 +4,8 @@
  * variant's controls, either under the board (`below`) or in their own
  * column (`beside`), which sits to the right on a wide screen.
  */
+
+import type { SudokuStatus } from "@arcadeclub/core/sudoku";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -12,7 +14,6 @@ import { metrics, spacing, type Tokens, useThemedStyles } from "../../../theme";
 import { PausedOverlay } from "./paused-overlay";
 import { PuzzleHeader } from "./puzzle-header";
 import { PuzzleStatus } from "./puzzle-status";
-import type { SudokuStatus } from "./puzzle-types";
 
 /** The width of the controls column beside the board on a wide screen. */
 const SIDE_COLUMN_WIDTH = 360;

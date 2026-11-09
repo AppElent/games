@@ -10,8 +10,9 @@
  * unmounts it before the blur-pause can re-render, so the final clock
  * reading is written there.
  */
+
+import type { SudokuStatus } from "@arcadeclub/core/sudoku";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { SudokuStatus } from "./puzzle-types";
 import { useGameClock } from "./use-game-clock";
 
 const ELAPSED_SAVE_EVERY = 15;

@@ -8,11 +8,12 @@
  */
 import {
 	applyBackgammonPlan,
-	type BackgammonColor,
 	type BackgammonMovePlan,
 	type BackgammonTurnState,
-	computeUsedFlags,
-	isTurnSpent,
+	backgammonColorOf,
+	isMyTurn,
+	shouldAutoEndTurn,
+	toTurnState,
 } from "@arcadeclub/core/backgammon";
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -42,29 +43,12 @@ export function useOnlineMatch(sessionId: string) {
 	const live = useMemo<LiveMatch | null>(() => {
 		const state = bundle?.state;
 		if (!bundle || !state) return null;
-		return {
-			bundle,
-			state,
-			turn: {
-				points: state.points,
-				bar: state.bar,
-				off: state.off,
-				activeColor: state.activeColor,
-				dice: state.dice,
-				used: computeUsedFlags(state.dice, state.usedDice),
-			},
-		};
+		return { bundle, state, turn: toTurnState(state) };
 	}, [bundle]);
 
 	const server = live?.state;
-	const myColor: BackgammonColor | null =
-		seat && server
-			? server.whiteParticipantId === seat.participantId
-				? "white"
-				: server.blackParticipantId === seat.participantId
-					? "black"
-					: null
-			: null;
+	const myColor =
+		(server && backgammonColorOf(server, seat?.participantId)) ?? null;
 
 	const nameOf = useCallback(
 		(participant?: Id<"sessionParticipants">) =>
@@ -80,7 +64,7 @@ export function useOnlineMatch(sessionId: string) {
 			for (const step of plan.steps) {
 				await applyMove({ ...seat, from: step.from, to: step.to });
 			}
-			if (autoSwitchTurn && isTurnSpent(after)) {
+			if (shouldAutoEndTurn(after, autoSwitchTurn)) {
 				await endTurnMutation(seat);
 			}
 		});
@@ -90,11 +74,7 @@ export function useOnlineMatch(sessionId: string) {
 		loading: bundle === undefined,
 		live,
 		myColor,
-		isMyTurn: Boolean(
-			myColor &&
-				server?.phase !== "finished" &&
-				live?.turn.activeColor === myColor,
-		),
+		isMyTurn: server ? isMyTurn(server, myColor) : false,
 		nameOf,
 		busy: session.busy,
 		error: session.error,

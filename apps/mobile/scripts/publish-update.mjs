@@ -22,6 +22,8 @@
 // Production refuses to publish without SENTRY_AUTH_TOKEN. Preview publishes
 // without it and says so, so the pipeline can be tried without the token.
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
 	appRoot,
 	fingerprint,
@@ -53,12 +55,17 @@ if (!upload) {
 	console.warn(`${message} Publishing to ${channel} without them.`);
 }
 
+// The project the @sentry/react-native plugin in app.json names.
+const { expo } = JSON.parse(readFileSync(join(appRoot, "app.json"), "utf8"));
+const [, sentry] = expo.plugins.find(
+	(plugin) => Array.isArray(plugin) && plugin[0] === "@sentry/react-native/expo",
+);
+
 const env = {
 	...process.env,
 	APP_VARIANT: channel,
-	// Same project as the @sentry/react-native plugin in app.json.
-	SENTRY_ORG: "appelent",
-	SENTRY_PROJECT: "arcadeclub",
+	SENTRY_ORG: sentry.organization,
+	SENTRY_PROJECT: sentry.project,
 };
 
 function run(command, args) {

@@ -156,10 +156,11 @@ from the device as a guest:
 
 ```bash
 ID='{"subject":"cli-host","issuer":"https://<CLERK_JWT_ISSUER_DOMAIN>","tokenIdentifier":"cli-host"}'
-pnpm exec convex run --identity "$ID" sessions:create \
-  '{"gameType":"hitster","joinMode":"room","authPolicy":"guestAllowed","title":"Test","displayName":"DJ CLI"}'
-# then hitster:setup / hitster:start / hitster:reveal / hitster:nextRound with the
-# returned sessionId and host participantId; backgammon:createState for a challenge.
+pnpm exec convex run --identity "$ID" hitster:create \
+  '{"title":"Test","displayName":"DJ CLI","mode":"original","packId":"normal","targetCards":10,"playbackMode":"hostDevice"}'
+# then hitster:start / hitster:reveal / hitster:nextRound with the returned
+# sessionId and participantId; backgammon:create '{"title":"Test","displayName":"CLI"}'
+# opens a challenge.
 ```
 
 ## Error reporting

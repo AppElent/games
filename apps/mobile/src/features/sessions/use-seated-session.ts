@@ -6,13 +6,8 @@
  */
 import { useCallback, useMemo, useState } from "react";
 import type { Id } from "../../convex/api";
-import { findSeat } from "./session-seats";
+import { findSeat, type Seat } from "./session-seats";
 import { useSessionAction } from "./use-session-action";
-
-type Seat = {
-	sessionId: Id<"gameSessions">;
-	participantId: Id<"sessionParticipants">;
-};
 
 export function useSeatedSession(sessionId: string) {
 	const id = sessionId as Id<"gameSessions">;
@@ -32,5 +27,3 @@ export function useSeatedSession(sessionId: string) {
 
 	return { id, seat, run, busy, error };
 }
-
-export type SeatedSession = ReturnType<typeof useSeatedSession>;

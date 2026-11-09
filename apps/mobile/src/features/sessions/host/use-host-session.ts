@@ -3,37 +3,47 @@
  * account to host anything but solo play, so callers gate on `canHost`
  * (signed in and the Clerk token already on the Convex client).
  *
- * Each game passes its own atomic `create` mutation, which opens the session
- * and its game state together and decides the join mode and auth policy.
+ * The hook calls the game's own atomic `create` mutation, named in
+ * `APP_GAMES`, which opens the session and its game state together and
+ * decides the join mode and auth policy; the seat is remembered under that
+ * game.
  */
-import type { GameType } from "@arcadeclub/core/games";
+import { useMutation } from "convex/react";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useCallback } from "react";
-import type { Id } from "../../../convex/api";
+import { APP_GAMES, type OnlineGameType } from "../../play/app-games";
 import { usePlayerIdentity } from "../../players/identity/use-player-identity";
 import { rememberSeat } from "../session-seats";
 import { useBackendAuthReady } from "../use-backend-auth-ready";
 import { useSessionAction } from "../use-session-action";
 
-type HostedSession = {
-	sessionId: Id<"gameSessions">;
-	participantId: Id<"sessionParticipants">;
-};
+type Create<G extends OnlineGameType> =
+	(typeof APP_GAMES)[G]["online"]["create"];
 
-export function useHostSession() {
+/** The game's `create` arguments besides who hosts. */
+type HostOptions<G extends OnlineGameType> = Omit<
+	FunctionArgs<Create<G>>,
+	"displayName" | "guestId"
+>;
+
+export function useHostSession<G extends OnlineGameType>(gameType: G) {
 	const backendAuth = useBackendAuthReady();
 	const { displayName, guestId } = usePlayerIdentity();
 	const { run, busy, error } = useSessionAction();
+	const mutate = useMutation(APP_GAMES[gameType].online.create);
+	// Each game's own args type; TypeScript can't relate the union to `G`.
+	const create = mutate as (
+		args: FunctionArgs<Create<G>>,
+	) => Promise<FunctionReturnType<Create<G>>>;
 
 	const host = useCallback(
-		(
-			gameType: GameType,
-			create: (host: {
-				displayName: string;
-				guestId: string;
-			}) => Promise<HostedSession>,
-		) =>
+		(options: HostOptions<G>) =>
 			run(async () => {
-				const session = await create({ displayName, guestId });
+				const session = await create({
+					...options,
+					displayName,
+					guestId,
+				} as FunctionArgs<Create<G>>);
 				rememberSeat({
 					sessionId: session.sessionId,
 					participantId: session.participantId,
@@ -41,7 +51,7 @@ export function useHostSession() {
 				});
 				return session;
 			}),
-		[displayName, guestId, run],
+		[create, displayName, gameType, guestId, run],
 	);
 
 	return {

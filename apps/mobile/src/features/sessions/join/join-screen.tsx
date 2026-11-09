@@ -25,11 +25,12 @@ import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { TextField } from "../../../ui/text-field";
+import { hasAppScreen, onlineSessionHref } from "../../play/app-games";
 import {
 	PLAYER_NAME_MAX,
 	usePlayerIdentity,
 } from "../../players/identity/use-player-identity";
-import { hasAppScreen, onlineSessionHref, webJoinUrl } from "../session-links";
+import { webJoinUrl } from "../session-links";
 import { useJoinSession } from "../use-join-session";
 
 type Props = { shareToken?: string; initialCode?: string };

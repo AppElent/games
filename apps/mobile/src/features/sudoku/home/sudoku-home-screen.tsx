@@ -8,7 +8,7 @@ import {
 	type SudokuDifficulty,
 	type SudokuVariant,
 } from "@arcadeclub/core/sudoku";
-import { useFocusEffect, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
 	ActivityIndicator,
@@ -87,125 +87,128 @@ export function SudokuHomeScreen() {
 	}
 
 	return (
-		<Screen>
-			<View style={styles.group}>
-				<AppText variant="label" accessibilityRole="header">
-					{copy.newGame.gameTypeLegend.toUpperCase()}
-				</AppText>
-				<Segmented
-					accessibilityLabel={copy.newGame.gameTypeLegend}
-					options={SUDOKU_VARIANTS.map((value) => ({
-						value,
-						label: copy.variant[value],
-					}))}
-					value={variant}
-					onChange={(next) => {
-						haptics.selectionChanged();
-						setVariant(next);
-					}}
-					testID="sudoku-variant"
-				/>
-				<AppText variant="secondary">
-					{copy.newGame.variantBlurbs[variant]}
-				</AppText>
-			</View>
-			<View style={styles.group}>
-				{SUDOKU_DIFFICULTIES.map((difficulty) => (
-					<Card
-						key={difficulty}
-						onPress={() => start(difficulty)}
-						accessibilityLabel={`${copy.difficulty[difficulty]}, ${copy.newGame.difficultyBlurbs[difficulty][variant]}`}
-						testID={`sudoku-start-${difficulty}`}
-					>
-						<View style={styles.row}>
-							<View style={styles.grow}>
-								<AppText variant="heading">
-									{copy.difficulty[difficulty]}
-								</AppText>
-								<AppText variant="secondary">
-									{copy.newGame.difficultyBlurbs[difficulty][variant]}
-								</AppText>
-							</View>
-							{busy === difficulty ? (
-								<ActivityIndicator color={tokens.accent} />
-							) : (
-								<Icon
-									ios="play.fill"
-									android="play_arrow"
-									size={18}
-									color={tokens.accent}
-								/>
-							)}
-						</View>
-					</Card>
-				))}
-				<Notice message={failed ? copy.newGame.couldNotStart : null} />
-				<AppText variant="caption">{copy.newGame.offlineNote}</AppText>
-			</View>
-			<View style={styles.group}>
-				<AppText variant="label" accessibilityRole="header">
-					{copy.newGame.yourPuzzles.toUpperCase()}
-				</AppText>
-				{saves.length === 0 ? (
-					<AppText variant="secondary">{copy.saved.empty}</AppText>
-				) : (
-					saves.map((save) => {
-						const time = formatElapsed(save.elapsedSeconds);
-						const progress =
-							save.status === "completed"
-								? fmt(copy.saved.solved, { time })
-								: fmt(copy.saved.inProgress, { time });
-						const title = puzzleTitle(copy, save);
-						const detail = `${progress} · ${relativeTime(t, locale, save.updatedAt)}`;
-						return (
-							<Card key={save.id} style={styles.savedCard}>
-								<View style={styles.row}>
-									<Pressable
-										accessibilityRole="button"
-										accessibilityLabel={`${title}, ${detail}`}
-										onPress={() => router.push(sudokuSaveHref(save.id))}
-										style={({ pressed }) => [
-											styles.savedMain,
-											pressed && { opacity: opacity.pressed },
-										]}
-									>
-										<View style={styles.grow}>
-											<AppText variant="body">{title}</AppText>
-											<AppText variant="caption">{detail}</AppText>
-										</View>
-										{save.status === "completed" ? (
-											<Icon
-												ios="checkmark.seal.fill"
-												android="verified"
-												size={20}
-												color={tokens.green}
-											/>
-										) : null}
-									</Pressable>
-									<Pressable
-										accessibilityRole="button"
-										accessibilityLabel={`${t.common.actions.delete}: ${title}`}
-										onPress={() => confirmDelete(save)}
-										hitSlop={8}
-										style={({ pressed }) => [
-											styles.deleteButton,
-											pressed && { opacity: opacity.pressed },
-										]}
-									>
-										<Icon
-											ios="trash"
-											android="delete"
-											size={18}
-											color={tokens.textMuted}
-										/>
-									</Pressable>
+		<>
+			<Stack.Screen options={{ title: t.catalog.sudoku.title }} />
+			<Screen>
+				<View style={styles.group}>
+					<AppText variant="label" accessibilityRole="header">
+						{copy.newGame.gameTypeLegend.toUpperCase()}
+					</AppText>
+					<Segmented
+						accessibilityLabel={copy.newGame.gameTypeLegend}
+						options={SUDOKU_VARIANTS.map((value) => ({
+							value,
+							label: copy.variant[value],
+						}))}
+						value={variant}
+						onChange={(next) => {
+							haptics.selectionChanged();
+							setVariant(next);
+						}}
+						testID="sudoku-variant"
+					/>
+					<AppText variant="secondary">
+						{copy.newGame.variantBlurbs[variant]}
+					</AppText>
+				</View>
+				<View style={styles.group}>
+					{SUDOKU_DIFFICULTIES.map((difficulty) => (
+						<Card
+							key={difficulty}
+							onPress={() => start(difficulty)}
+							accessibilityLabel={`${copy.difficulty[difficulty]}, ${copy.newGame.difficultyBlurbs[difficulty][variant]}`}
+							testID={`sudoku-start-${difficulty}`}
+						>
+							<View style={styles.row}>
+								<View style={styles.grow}>
+									<AppText variant="heading">
+										{copy.difficulty[difficulty]}
+									</AppText>
+									<AppText variant="secondary">
+										{copy.newGame.difficultyBlurbs[difficulty][variant]}
+									</AppText>
 								</View>
-							</Card>
-						);
-					})
-				)}
-			</View>
-		</Screen>
+								{busy === difficulty ? (
+									<ActivityIndicator color={tokens.accent} />
+								) : (
+									<Icon
+										ios="play.fill"
+										android="play_arrow"
+										size={18}
+										color={tokens.accent}
+									/>
+								)}
+							</View>
+						</Card>
+					))}
+					<Notice message={failed ? copy.newGame.couldNotStart : null} />
+					<AppText variant="caption">{copy.newGame.offlineNote}</AppText>
+				</View>
+				<View style={styles.group}>
+					<AppText variant="label" accessibilityRole="header">
+						{copy.newGame.yourPuzzles.toUpperCase()}
+					</AppText>
+					{saves.length === 0 ? (
+						<AppText variant="secondary">{copy.saved.empty}</AppText>
+					) : (
+						saves.map((save) => {
+							const time = formatElapsed(save.elapsedSeconds);
+							const progress =
+								save.status === "completed"
+									? fmt(copy.saved.solved, { time })
+									: fmt(copy.saved.inProgress, { time });
+							const title = puzzleTitle(copy, save);
+							const detail = `${progress} · ${relativeTime(t, locale, save.updatedAt)}`;
+							return (
+								<Card key={save.id} style={styles.savedCard}>
+									<View style={styles.row}>
+										<Pressable
+											accessibilityRole="button"
+											accessibilityLabel={`${title}, ${detail}`}
+											onPress={() => router.push(sudokuSaveHref(save.id))}
+											style={({ pressed }) => [
+												styles.savedMain,
+												pressed && { opacity: opacity.pressed },
+											]}
+										>
+											<View style={styles.grow}>
+												<AppText variant="body">{title}</AppText>
+												<AppText variant="caption">{detail}</AppText>
+											</View>
+											{save.status === "completed" ? (
+												<Icon
+													ios="checkmark.seal.fill"
+													android="verified"
+													size={20}
+													color={tokens.green}
+												/>
+											) : null}
+										</Pressable>
+										<Pressable
+											accessibilityRole="button"
+											accessibilityLabel={`${t.common.actions.delete}: ${title}`}
+											onPress={() => confirmDelete(save)}
+											hitSlop={8}
+											style={({ pressed }) => [
+												styles.deleteButton,
+												pressed && { opacity: opacity.pressed },
+											]}
+										>
+											<Icon
+												ios="trash"
+												android="delete"
+												size={18}
+												color={tokens.textMuted}
+											/>
+										</Pressable>
+									</View>
+								</Card>
+							);
+						})
+					)}
+				</View>
+			</Screen>
+		</>
 	);
 }
 

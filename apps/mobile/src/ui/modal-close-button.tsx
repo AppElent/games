@@ -6,7 +6,7 @@ import { Platform } from "react-native";
 import { useI18n } from "../i18n";
 import { HeaderButton } from "./button";
 
-export function ModalCloseButton({ onPress }: { onPress: () => void }) {
+function ModalCloseButton({ onPress }: { onPress: () => void }) {
 	const { t } = useI18n();
 	return <HeaderButton label={t.common.actions.close} onPress={onPress} />;
 }

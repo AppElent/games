@@ -4,18 +4,13 @@
  * `createSudokuSaveAfterPaint` yields a frame first to let the busy state
  * paint.
  */
-import { generateBinaryPuzzle } from "@arcadeclub/core/binary-puzzle";
 import { digitsToString } from "@arcadeclub/core/puzzle";
-import {
-	generatePuzzle,
-	type SudokuDifficulty,
-	type SudokuVariant,
-} from "@arcadeclub/core/sudoku";
+import type { SudokuDifficulty, SudokuVariant } from "@arcadeclub/core/sudoku";
 import {
 	createBoardState,
 	serializeBoard,
 } from "@arcadeclub/core/sudoku-board";
-import { generateKillerPuzzle } from "@arcadeclub/core/sudoku-killer";
+import { generateVariantPuzzle } from "@arcadeclub/core/sudoku-variants";
 import { newSaveId, type SudokuSave } from "../saves/sudoku-save-store";
 
 /** Long enough for the frame that shows the busy state to be drawn. */
@@ -49,24 +44,22 @@ function createSudokuSave(
 		elapsedSeconds: 0,
 		status: "active" as const,
 	};
-	if (variant === "binary") {
-		const puzzle = generateBinaryPuzzle(difficulty);
+	const puzzle = generateVariantPuzzle(variant, difficulty);
+	if (puzzle.variant === "binary") {
 		return {
 			...base,
-			variant,
+			variant: puzzle.variant,
 			size: puzzle.size,
 			givens: digitsToString(puzzle.givens),
 			entries: "0".repeat(puzzle.size * puzzle.size),
 		};
 	}
-	const killer = variant === "killer" ? generateKillerPuzzle(difficulty) : null;
-	const puzzle = killer ?? generatePuzzle(difficulty);
 	return {
 		...base,
-		variant,
+		variant: puzzle.variant,
 		board: serializeBoard(createBoardState(puzzle.givens)),
 		solution: digitsToString(puzzle.solution),
-		cages: killer?.cages,
+		cages: puzzle.variant === "killer" ? puzzle.cages : undefined,
 		autoCleanup: true,
 	};
 }

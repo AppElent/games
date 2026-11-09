@@ -14,8 +14,6 @@ export type { Tokens } from "./tokens";
 export {
 	backgammonColors,
 	chrome,
-	darkColors,
-	lightColors,
 	markerColors,
 	metrics,
 	opacity,

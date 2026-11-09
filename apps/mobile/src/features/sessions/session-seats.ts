@@ -9,19 +9,20 @@
 import { GAME_TYPES, type GameType } from "@arcadeclub/core/games";
 import type { Id } from "../../convex/api";
 import { readJson, STORAGE_KEYS, writeJson } from "../../storage/local-store";
-import { hasAppScreen, onlineSessionHref } from "./session-links";
+import { hasAppScreen, onlineSessionHref } from "../play/app-games";
 
 const LIMIT = 20;
 
 /** Finished online games drop out once the Play tab sees their status. */
 const RESUMABLE_WINDOW_MS = 7 * 24 * 60 * 60_000;
 
-type SessionSeat = {
+/** Who this phone is in one session. */
+export type Seat = {
 	sessionId: Id<"gameSessions">;
 	participantId: Id<"sessionParticipants">;
-	gameType: GameType;
-	joinedAt: number;
 };
+
+type SessionSeat = Seat & { gameType: GameType; joinedAt: number };
 
 function isSeat(value: unknown): value is SessionSeat {
 	const seat = value as Partial<SessionSeat> | null;

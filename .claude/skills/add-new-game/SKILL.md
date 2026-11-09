@@ -66,7 +66,14 @@ Run `pnpm exec convex dev --once` (or keep `pnpm run dev:watch` running) so code
 - Styling: dark club theme (`club-wrap`, `club-panel`, `club-kicker`, `club-title`) with Tailwind; works at 360 px with 44 px touch targets.
 - After adding route files: `pnpm run generate-routes`.
 
-The mobile app lists only Sudoku, Backgammon and Hitster. Adding a game there is a separate task (`apps/mobile/CODING_STANDARDS.md`); it hosts through the same `<game>.create`.
+## Step 4b (optional): Mobile app
+
+The mobile app (`apps/mobile`) carries only Sudoku, Backgammon and Hitster. Adding a game there is its own task; read `apps/mobile/CODING_STANDARDS.md` first.
+
+1. Add the game to `APP_GAMES` in `apps/mobile/src/features/play/app-games.ts`: hub `href`, icon and tint, and for an online game `online` with its `create` mutation (`api.<game>.create`) and the screen a seated player opens. The Play tab, Continue, `/join` and the hosting hook (`useHostSession("<game-id>")`) all read it.
+2. Routes in `apps/mobile/app/<game-id>/` render one screen each from `apps/mobile/src/features/<game-id>/<subject>/`; the hub screen sets its own title. Online screens wrap their loading and missing states in `OnlineScreenFrame` (`src/features/sessions/components/`) and read the seat through `useSeatedSession`.
+3. A local save gets a store that validates parsed data and degrades to "no save", and a `resumableItems()` listed in `src/features/play/home/continue-items.ts`.
+4. Add the Play-tab tagline under `taglines` in `packages/core/src/i18n/{en,nl}/play.ts`, and Jest tests next to the logic.
 
 ## Step 5: Tests
 

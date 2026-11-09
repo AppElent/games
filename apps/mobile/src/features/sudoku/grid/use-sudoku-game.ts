@@ -155,10 +155,7 @@ export function useSudokuGame(save: GridSave) {
 		haptics.selectionChanged();
 	}, [history, commit, statusRef]);
 
-	const restart = useCallback(() => {
-		if (statusRef.current === "completed") return;
-		dispatch({ type: "restart" });
-	}, [dispatch, statusRef]);
+	const restart = useCallback(() => dispatch({ type: "restart" }), [dispatch]);
 
 	const requestHint = useCallback(() => {
 		if (statusRef.current !== "active") return;

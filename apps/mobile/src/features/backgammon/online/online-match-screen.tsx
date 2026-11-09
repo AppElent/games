@@ -14,18 +14,17 @@ import {
 	type OnlineOptions,
 } from "@arcadeclub/core/backgammon-local";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
-import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
-import { radius, spacing } from "../../../theme";
+import { spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
-import { CenteredState } from "../../../ui/centered-state";
 import { Notice } from "../../../ui/notice";
-import { QrCode } from "../../../ui/qr-code";
 import { AppText } from "../../../ui/text";
+import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
+import { InviteQr } from "../../sessions/host/invite-qr";
 import { shareInvite } from "../../sessions/host/share-invite";
 import { webJoinUrl } from "../../sessions/session-links";
 import { BackgammonBoard } from "../board/backgammon-board";
@@ -46,26 +45,13 @@ const OPTION_KEYS = ["showNumbers", "autoSwitchTurn", "autoCombine"] as const;
 export function OnlineMatchScreen({ sessionId }: { sessionId: string }) {
 	const { t } = useI18n();
 	const match = useOnlineMatch(sessionId);
-	const title = (
-		<Stack.Screen
-			options={{ title: t.games.backgammon.waitingRoom.onlineTitle }}
-		/>
-	);
-
-	if (match.loading) {
-		return (
-			<>
-				{title}
-				<CenteredState loading message={t.common.errors.loading} />
-			</>
-		);
-	}
 	if (!match.live) {
 		return (
-			<>
-				{title}
-				<CenteredState title={t.common.session.unavailable} />
-			</>
+			<OnlineScreenFrame
+				title={t.games.backgammon.waitingRoom.onlineTitle}
+				loading={match.loading}
+				blocked={t.common.session.unavailable}
+			/>
 		);
 	}
 	return <OnlineMatchLoaded match={match} live={match.live} />;
@@ -148,13 +134,7 @@ function OnlineMatchLoaded({
 						</AppText>
 						{invite && inviteUrl ? (
 							<>
-								<View style={styles.qr}>
-									<QrCode
-										value={inviteUrl}
-										size={160}
-										accessibilityLabel={t.common.joinPanel.scanQrLabel}
-									/>
-								</View>
+								<InviteQr value={inviteUrl} size={160} />
 								<Button
 									label={copy.waitingRoom.sendInvite}
 									onPress={() =>
@@ -244,7 +224,6 @@ function OnlineMatchLoaded({
 
 const styles = StyleSheet.create({
 	section: { gap: spacing.md },
-	qr: { alignSelf: "center", borderRadius: radius.sm, overflow: "hidden" },
 	/** Lines up with the text inside the cards above and below. */
 	inset: { paddingHorizontal: spacing.lg },
 });

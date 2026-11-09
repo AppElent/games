@@ -1,8 +1,10 @@
-import { RESUME_CHECK_INTERVAL_MS, shouldCheckOnResume } from "./check-policy";
+import { shouldCheckOnResume } from "./check-policy";
+
+const HOUR = 60 * 60 * 1000;
 
 describe("shouldCheckOnResume", () => {
 	it("waits an hour between checks", () => {
-		expect(shouldCheckOnResume(0, RESUME_CHECK_INTERVAL_MS - 1)).toBe(false);
-		expect(shouldCheckOnResume(0, RESUME_CHECK_INTERVAL_MS)).toBe(true);
+		expect(shouldCheckOnResume(0, HOUR - 1)).toBe(false);
+		expect(shouldCheckOnResume(0, HOUR)).toBe(true);
 	});
 });

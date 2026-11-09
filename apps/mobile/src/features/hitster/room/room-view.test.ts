@@ -6,7 +6,6 @@ import {
 	roomView,
 	showsOwnTimeline,
 	timelineCards,
-	timelineFor,
 } from "./room-view";
 
 const pack = listHitsterPacks()[0];
@@ -62,8 +61,9 @@ describe("hitster room view", () => {
 	});
 
 	it("uses the shared timeline in co-op", () => {
-		const { state } = bundle("coop");
-		expect(timelineFor(state as never, "guest")?.cardIds).toEqual([first.id]);
+		const view = roomView(bundle("coop"), "guest");
+		if (!view.state) throw new Error("state");
+		expect(view.myTimeline?.cardIds).toEqual([first.id]);
 	});
 
 	it("resolves card ids and drops unknown ones", () => {

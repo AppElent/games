@@ -6,7 +6,7 @@
 import { Text, type TextProps } from "react-native";
 import { type as typeRamp, useTokens } from "../theme";
 
-export type TextVariant = keyof typeof typeRamp;
+type TextVariant = keyof typeof typeRamp;
 type Props = TextProps & { variant?: TextVariant; tone?: "default" | "muted" };
 
 const MUTED: ReadonlySet<TextVariant> = new Set<TextVariant>([

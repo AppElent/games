@@ -1,11 +1,11 @@
 /** The lobby's room code to share and who has joined so far. */
 import { StyleSheet, View } from "react-native";
 import { plural, useI18n } from "../../../i18n";
-import { radius, spacing } from "../../../theme";
+import { spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
-import { QrCode } from "../../../ui/qr-code";
 import { AppText } from "../../../ui/text";
+import { InviteQr } from "../../sessions/host/invite-qr";
 import { shareInvite } from "../../sessions/host/share-invite";
 import { webJoinUrl } from "../../sessions/session-links";
 import { type HitsterBundle, lobbyPlayers } from "./room-view";
@@ -25,13 +25,7 @@ export function LobbyRoster({ bundle }: { bundle: HitsterBundle }) {
 						<AppText variant="code" selectable testID="hitster-room-code">
 							{code}
 						</AppText>
-						<View style={styles.qr}>
-							<QrCode
-								value={webJoinUrl({ code }) ?? code}
-								size={176}
-								accessibilityLabel={t.common.joinPanel.scanQrLabel}
-							/>
-						</View>
+						<InviteQr value={webJoinUrl({ code }) ?? code} size={176} />
 						<Button
 							variant="secondary"
 							label={t.games.hitster.hostView.shareCode}
@@ -62,5 +56,4 @@ export function LobbyRoster({ bundle }: { bundle: HitsterBundle }) {
 
 const styles = StyleSheet.create({
 	section: { gap: spacing.sm },
-	qr: { alignSelf: "center", borderRadius: radius.sm, overflow: "hidden" },
 });

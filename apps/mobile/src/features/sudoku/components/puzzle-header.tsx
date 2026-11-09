@@ -3,10 +3,11 @@
  * pause/resume control on the right. The clock sits in the body, where it
  * can be read without competing with the title.
  */
+
+import type { SudokuStatus } from "@arcadeclub/core/sudoku";
 import { Stack } from "expo-router";
 import { useI18n } from "../../../i18n";
 import { HeaderButton } from "../../../ui/button";
-import type { SudokuStatus } from "./puzzle-types";
 
 export function PuzzleHeader({
 	title,

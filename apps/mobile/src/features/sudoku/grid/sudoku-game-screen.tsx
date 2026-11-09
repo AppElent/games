@@ -101,6 +101,7 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 					<PuzzleRestartButton
 						body={copy.game.restartBody}
 						onRestart={game.restart}
+						disabled={status !== "active"}
 					/>
 				</View>
 			</View>
