@@ -149,7 +149,7 @@ export const start = mutation({
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		requireHostByParticipantId(session, args.participantId);
-		if (!state || state.phase !== "lobby") {
+		if (state?.phase !== "lobby") {
 			throw gameError("gameNotReady");
 		}
 		const players = await listPlayersIncludingKicked(ctx, args.sessionId);
@@ -183,7 +183,7 @@ export const submitGuess = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		if (!state || state.phase !== "nowPlaying") {
+		if (state?.phase !== "nowPlaying") {
 			throw gameError("guessesClosed");
 		}
 		const view = hitsterPlayerView(state, args.participantId);
@@ -223,7 +223,7 @@ export const submitSteal = mutation({
 	handler: async (ctx, args) => {
 		const { state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
-		if (!state || state.phase !== "nowPlaying") {
+		if (state?.phase !== "nowPlaying") {
 			throw gameError("stealsClosed");
 		}
 		const config = getHitsterModeConfig(state.mode);
@@ -278,7 +278,7 @@ export const reveal = mutation({
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		requireHostByParticipantId(session, args.participantId);
-		if (!state || state.phase !== "nowPlaying" || !state.currentCardId) {
+		if (state?.phase !== "nowPlaying" || !state.currentCardId) {
 			throw gameError("nothingToReveal");
 		}
 		const { currentCardId } = state;
@@ -305,7 +305,7 @@ export const nextRound = mutation({
 		const { session, state } = await getSessionAndState(ctx, args.sessionId);
 		await requireParticipant(ctx, args.sessionId, args.participantId);
 		requireHostByParticipantId(session, args.participantId);
-		if (!state || state.phase !== "reveal") {
+		if (state?.phase !== "reveal") {
 			throw gameError("finishRevealFirst");
 		}
 		const next = advanceHitsterRound(state);

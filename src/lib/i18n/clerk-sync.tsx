@@ -20,6 +20,7 @@ export function createLanguageSync<L extends string, M>({
 	hasExplicitLocaleChoice,
 	locales,
 }: LanguageSyncDeps<L, M>) {
+	// biome-ignore lint/correctness/noComponentHookFactories: createLanguageSync runs once at module scope (LanguageSync.tsx), so the component keeps one identity.
 	return function LanguageSync() {
 		const { user } = useUser();
 		const { locale, setLocale } = useI18n();

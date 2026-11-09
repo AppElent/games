@@ -117,7 +117,7 @@ export function getLegalMoves(fen: string, square: string): string[] {
 export function isPromotionMove(fen: string, from: string, to: string) {
 	const game = new Chess(fen);
 	const piece = game.get(from as Parameters<Chess["get"]>[0]);
-	if (!piece || piece.type !== "p") {
+	if (piece?.type !== "p") {
 		return false;
 	}
 	const rank = to[1];
