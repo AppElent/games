@@ -7,6 +7,7 @@ import {
 	expectCode,
 	fields,
 	fixRandom,
+	freezeClock,
 	getDoc,
 	HOSTED,
 	hostSession,
@@ -14,17 +15,16 @@ import {
 	joinWithToken,
 	otherGameSession,
 	type ParticipantId,
-	sessionCount,
 	type SessionId,
+	sessionCount,
 	setup,
 	shareTokenOf,
 	signedInHost,
 	type T,
 	T0,
-	useFixedClock,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const TEN_MINUTES = 600_000;
@@ -248,7 +248,9 @@ describe("joining", () => {
 			{ asSpectator: true },
 		);
 		expect((await getDoc(t, spectator.participantId))?.role).toBe("watcher");
-		expect((await bundle(t, sessionId)).state.blackParticipantId).toBeUndefined();
+		expect(
+			(await bundle(t, sessionId)).state.blackParticipantId,
+		).toBeUndefined();
 	});
 
 	it("pins that a returning watcher takes the seat but keeps the watcher role", async () => {
@@ -275,7 +277,9 @@ describe("joining", () => {
 		const row = await getDoc(t, joined.participantId);
 		expect(row?.role).toBe("player");
 		expect(row?.seat).toBeUndefined();
-		expect((await bundle(t, sessionId)).state.blackParticipantId).toBeUndefined();
+		expect(
+			(await bundle(t, sessionId)).state.blackParticipantId,
+		).toBeUndefined();
 	});
 });
 
@@ -569,7 +573,10 @@ describe("draw offers", () => {
 		const t = setup();
 		const { sessionId, white } = await underway(t);
 		for (const _ of [1, 2]) {
-			await t.mutation(api.chess.offerDraw, { sessionId, participantId: white });
+			await t.mutation(api.chess.offerDraw, {
+				sessionId,
+				participantId: white,
+			});
 			const { state } = await bundle(t, sessionId);
 			expect(state.phase).toBe("active");
 			expect(state.drawOfferBy).toBe("white");
@@ -751,7 +758,9 @@ describe("getBundle", () => {
 			t.query(api.chess.getBundle, { sessionId: await deletedSessionId(t) }),
 		).resolves.toBeNull();
 		const { sessionId } = await hostSession(t, "chess", "challenge");
-		expect((await t.query(api.chess.getBundle, { sessionId }))?.state).toBeNull();
+		expect(
+			(await t.query(api.chess.getBundle, { sessionId }))?.state,
+		).toBeNull();
 	});
 });
 

@@ -84,7 +84,12 @@ export function inspectMobileSource(filename, source, resolveImport) {
 	const route = file.startsWith(routeRoot);
 	const issues = [];
 	if (!messages && /-copy\.tsx?$/.test(file))
-		issues.push({ file, line: 1, rule: "message-catalog", message: CATALOG_MESSAGE });
+		issues.push({
+			file,
+			line: 1,
+			rule: "message-catalog",
+			message: CATALOG_MESSAGE,
+		});
 	if (!route && !file.startsWith(sourceRoot)) return issues;
 	const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
 	const report = (node, rule, message) => {

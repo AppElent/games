@@ -12,7 +12,11 @@ import {
 	seatChallenger,
 } from "./duel";
 import { gameError } from "./errors";
-import { insertParticipant, listParticipants, markConnected } from "./gameSession";
+import {
+	insertParticipant,
+	listParticipants,
+	markConnected,
+} from "./gameSession";
 
 type ParticipantId = Id<"sessionParticipants">;
 

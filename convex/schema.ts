@@ -1,4 +1,10 @@
 import {
+	CHESS_COLORS,
+	CHESS_OUTCOMES,
+	CHESS_PHASES,
+	CHESS_TIME_CONTROL_IDS,
+} from "@arcadeclub/chess/enums";
+import {
 	BACKGAMMON_COLORS,
 	BACKGAMMON_MOVE_TYPES,
 	BACKGAMMON_PHASES,
@@ -12,11 +18,7 @@ import {
 	CONNECT_FOUR_PHASES,
 } from "@arcadeclub/core/connect-four";
 import { CONTENT_DRAFT_KINDS } from "@arcadeclub/core/content-drafts";
-import {
-	AUTH_POLICIES,
-	GAME_TYPES,
-	JOIN_MODES,
-} from "@arcadeclub/core/games";
+import { AUTH_POLICIES, GAME_TYPES, JOIN_MODES } from "@arcadeclub/core/games";
 import {
 	HITSTER_MODES,
 	HITSTER_PHASES,
@@ -39,12 +41,6 @@ import {
 	SUDOKU_STATUSES,
 	SUDOKU_VARIANTS,
 } from "@arcadeclub/core/sudoku";
-import {
-	CHESS_COLORS,
-	CHESS_OUTCOMES,
-	CHESS_PHASES,
-	CHESS_TIME_CONTROL_IDS,
-} from "@arcadeclub/chess/enums";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { literals } from "./lib/validators";

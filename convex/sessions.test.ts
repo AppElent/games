@@ -8,6 +8,7 @@ import {
 	expectCode,
 	fields,
 	fixRandom,
+	freezeClock,
 	getDoc,
 	HOST_USER,
 	hostSession,
@@ -17,12 +18,11 @@ import {
 	type SessionId,
 	setup,
 	shareTokenOf,
-	T0,
 	type T,
-	useFixedClock,
+	T0,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 /** Quiz sessions have no seats, so these rows show the session layer alone. */
 const GAME = "live-quiz";
@@ -182,14 +182,12 @@ describe("inviteGameType", () => {
 		await expect(
 			t.query(api.sessions.inviteGameType, { joinCode: typed }),
 		).resolves.toBe(GAME);
-		expect((await allParticipants(t, byCode.sessionId))).toHaveLength(1);
+		expect(await allParticipants(t, byCode.sessionId)).toHaveLength(1);
 	});
 
 	it("is null for no invite, an unknown invite, or a closed session", async () => {
 		const t = setup();
-		await expect(
-			t.query(api.sessions.inviteGameType, {}),
-		).resolves.toBeNull();
+		await expect(t.query(api.sessions.inviteGameType, {})).resolves.toBeNull();
 		await expect(
 			t.query(api.sessions.inviteGameType, { shareToken: "nope" }),
 		).resolves.toBeNull();
@@ -385,7 +383,10 @@ describe("joinByCode", () => {
 			hostParticipantId: hostId,
 			targetParticipantId: kicked.participantId,
 		});
-		await expectCode(joinWithCode(t, joinCode, "guest_kicked"), "removedByHost");
+		await expectCode(
+			joinWithCode(t, joinCode, "guest_kicked"),
+			"removedByHost",
+		);
 	});
 
 	it("answers signInToJoin to a guest of a members-only room", async () => {

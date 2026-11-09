@@ -166,8 +166,7 @@ describe("privacy", () => {
 			ctx.db.query("cardGameStates").unique(),
 		);
 		const game = stored?.game as { hands: string[][]; stock: string[] };
-		const mine = JSON.stringify(
-			await read(t, creds(sessionId, participantId)));
+		const mine = JSON.stringify(await read(t, creds(sessionId, participantId)));
 		for (const card of [...game.hands[1], ...game.stock]) {
 			expect(mine).not.toContain(`"${card}"`);
 		}
@@ -178,7 +177,10 @@ describe("privacy", () => {
 	it("treats a public participant id without the secret as a spectator", async () => {
 		const t = setup();
 		const { sessionId, participantId } = await soloTable(t);
-		const spoof = await read(t, creds(sessionId, participantId, "wrong-secret-123456"));
+		const spoof = await read(
+			t,
+			creds(sessionId, participantId, "wrong-secret-123456"),
+		);
 		expect(spoof.you).toBeNull();
 		expect(spoof.view.hand).toEqual([]);
 		const anonymous = await read(t, { sessionId });
@@ -219,7 +221,10 @@ describe("privacy", () => {
 				creds(sessionId, guestId, "attacker-secret-0123"),
 			),
 		).rejects.toThrow();
-		const peek = await read(t, creds(sessionId, guestId, "attacker-secret-0123"));
+		const peek = await read(
+			t,
+			creds(sessionId, guestId, "attacker-secret-0123"),
+		);
 		expect(peek.you).toBeNull();
 		expect(
 			await read(t, creds(sessionId, guestId, SECRET_B)).then((row) => row.you),
@@ -477,9 +482,7 @@ describe("play", () => {
 		}
 		await t.finishAllScheduledFunctions(vi.runAllTimers);
 		const after = await read(t, creds(sessionId, participantId));
-		expect(
-			after.view.phase === "finished" || after.view.turn === 0,
-		).toBe(true);
+		expect(after.view.phase === "finished" || after.view.turn === 0).toBe(true);
 		expect(after.view.events.length).toBeGreaterThan(2);
 	});
 

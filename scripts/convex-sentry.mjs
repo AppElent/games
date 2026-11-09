@@ -88,7 +88,9 @@ async function main(args) {
 			? args[index + 1]
 			: process.env.CONVEX_DEPLOYMENT;
 	if (!deployment) {
-		console.error("Select one deployment: --prod, --deployment <name>, or CONVEX_DEPLOYMENT.");
+		console.error(
+			"Select one deployment: --prod, --deployment <name>, or CONVEX_DEPLOYMENT.",
+		);
 		process.exit(1);
 	}
 	const dsn = process.env.SENTRY_CONVEX_DSN || process.env.SENTRY_DSN;
@@ -139,7 +141,10 @@ async function main(args) {
 		seen.add(result.eventId);
 		if (seen.size > SEEN_LIMIT) seen.delete(seen.values().next().value);
 		Sentry.withScope((scope) => {
-			scope.addEventProcessor((event) => ({ ...event, timestamp: result.timestamp }));
+			scope.addEventProcessor((event) => ({
+				...event,
+				timestamp: result.timestamp,
+			}));
 			Sentry.captureException(result.error, {
 				event_id: result.eventId,
 				tags: result.tags,
@@ -150,16 +155,28 @@ async function main(args) {
 		console.log(`Forwarding Convex failures (${deployment}) to Sentry.`);
 		child = spawn(
 			"pnpm",
-			["exec", "convex", "logs", "--jsonl", "--history", String(HISTORY), ...args],
+			[
+				"exec",
+				"convex",
+				"logs",
+				"--jsonl",
+				"--history",
+				String(HISTORY),
+				...args,
+			],
 			{ stdio: ["ignore", "pipe", "inherit"] },
 		);
 		const lines = createInterface({ input: child.stdout });
 		lines.on("line", forward);
-		child.on("error", () => console.error("Could not start the Convex log reader."));
+		child.on("error", () =>
+			console.error("Could not start the Convex log reader."),
+		);
 		child.on("close", (code) => {
 			lines.close();
 			if (stopping) return;
-			console.error(`Convex log reader exited (${code}); reconnecting in ${backoff / 1000}s.`);
+			console.error(
+				`Convex log reader exited (${code}); reconnecting in ${backoff / 1000}s.`,
+			);
 			setTimeout(start, backoff);
 			backoff = Math.min(backoff * 2, MAX_BACKOFF_MS);
 		});
@@ -176,5 +193,8 @@ async function main(args) {
 	start();
 }
 
-if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url))
+if (
+	process.argv[1] &&
+	realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)
+)
 	await main(process.argv.slice(2));

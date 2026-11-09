@@ -1,6 +1,6 @@
 import type { GameErrorCode } from "@arcadeclub/core/errors";
-import { gameError } from "./errors";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { gameError } from "./errors";
 
 type Ctx = MutationCtx | QueryCtx;
 

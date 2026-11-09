@@ -1,4 +1,7 @@
-import { buildSpotifySearchUrl, getHitsterCard } from "@arcadeclub/core/hitster-packs";
+import {
+	buildSpotifySearchUrl,
+	getHitsterCard,
+} from "@arcadeclub/core/hitster-packs";
 import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
@@ -9,22 +12,22 @@ import {
 	deletedSessionId,
 	expectCode,
 	fields,
+	freezeClock,
 	HOSTED,
 	hostSession,
 	joinWithCode,
 	otherGameSession,
 	outsider,
 	type ParticipantId,
-	sessionCount,
 	type SessionId,
+	sessionCount,
 	setup,
 	signedInHost,
 	type T,
 	T0,
-	useFixedClock,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 type Mode = "instant" | "original" | "pro" | "expert" | "coop";
 
@@ -50,7 +53,12 @@ async function newRoom(t: T, mode: Mode = "original", targetCards = 5) {
 			playbackMode: "hostDevice",
 		},
 	);
-	return { host, sessionId, hostId: participantId, joinCode: joinCode as string };
+	return {
+		host,
+		sessionId,
+		hostId: participantId,
+		joinCode: joinCode as string,
+	};
 }
 
 /** What installed mobile builds still do: room session, then `setup` as the host. */
@@ -274,10 +282,7 @@ describe("setup", () => {
 		const t = setup();
 		const { sessionId, joinCode } = await newRoom(t);
 		const guest = await joinWithCode(t, joinCode, "guest_two");
-		await expectCode(
-			runSetup(t, sessionId, guest.participantId),
-			"hostOnly",
-		);
+		await expectCode(runSetup(t, sessionId, guest.participantId), "hostOnly");
 		await expectCode(runSetup(t, sessionId, await outsider(t)), "notInGame");
 	});
 
@@ -500,7 +505,10 @@ describe("submitGuess", () => {
 			);
 		}
 		await submitGuess(t, sessionId, hostId, 0);
-		await expectCode(submitGuess(t, sessionId, hostId, 1), "guessAlreadyLocked");
+		await expectCode(
+			submitGuess(t, sessionId, hostId, 1),
+			"guessAlreadyLocked",
+		);
 	});
 
 	it("answers guessesClosed ahead of the start and after the reveal", async () => {
@@ -558,9 +566,9 @@ describe("submitSteal", () => {
 				submittedAt: T0 + 1000,
 			},
 		]);
-		expect(stored.tokens.find((entry) => entry.participantId === guest)).toEqual(
-			{ participantId: guest, tokens: 1 },
-		);
+		expect(
+			stored.tokens.find((entry) => entry.participantId === guest),
+		).toEqual({ participantId: guest, tokens: 1 });
 	});
 
 	it("answers stealsClosed ahead of the start and after the reveal", async () => {
@@ -579,7 +587,10 @@ describe("submitSteal", () => {
 		const t = setup();
 		for (const mode of ["instant", "coop"] as const) {
 			const { sessionId, guest } = await startedGame(t, { mode });
-			await expectCode(submitSteal(t, sessionId, guest, 0), "stealsUnavailable");
+			await expectCode(
+				submitSteal(t, sessionId, guest, 0),
+				"stealsUnavailable",
+			);
 		}
 	});
 
@@ -596,7 +607,10 @@ describe("submitSteal", () => {
 			"notPlaying",
 		);
 		await submitSteal(t, sessionId, guest, 0);
-		await expectCode(submitSteal(t, sessionId, guest, 0), "stealAlreadyClaimed");
+		await expectCode(
+			submitSteal(t, sessionId, guest, 0),
+			"stealAlreadyClaimed",
+		);
 	});
 
 	it("answers stealNeedsToken with no tokens and invalidDropPosition off the timeline", async () => {
@@ -915,10 +929,7 @@ describe("reveal", () => {
 			"nothingToReveal",
 		);
 		const bare = await hostSession(t, "hitster", "room");
-		await expectCode(
-			reveal(t, bare.sessionId, bare.hostId),
-			"nothingToReveal",
-		);
+		await expectCode(reveal(t, bare.sessionId, bare.hostId), "nothingToReveal");
 		const { sessionId, hostId, guest } = await startedGame(t);
 		await expectCode(reveal(t, sessionId, guest), "hostOnly");
 		await reveal(t, sessionId, hostId);
@@ -937,9 +948,7 @@ describe("reveal", () => {
 		const unknownTimeline = await startedGame(t);
 		await submitGuess(t, unknownTimeline.sessionId, unknownTimeline.hostId, 0);
 		await arrange(t, unknownTimeline.stateId, {
-			timelines: [
-				{ participantId: unknownTimeline.hostId, cardIds: ["nope"] },
-			],
+			timelines: [{ participantId: unknownTimeline.hostId, cardIds: ["nope"] }],
 		});
 		await expectCode(
 			reveal(t, unknownTimeline.sessionId, unknownTimeline.hostId),
@@ -1068,9 +1077,7 @@ describe("getBundle", () => {
 		expect(asHost.hostPlayback).toEqual({
 			title: "Billie Jean",
 			artistNames: ["Michael Jackson"],
-			spotifySearchUrl: buildSpotifySearchUrl(
-				card as NonNullable<typeof card>,
-			),
+			spotifySearchUrl: buildSpotifySearchUrl(card as NonNullable<typeof card>),
 		});
 		expect((await bundle(t, sessionId, guest)).hostPlayback).toBeNull();
 		expect((await bundle(t, sessionId)).hostPlayback).toBeNull();
@@ -1125,9 +1132,9 @@ describe("create", () => {
 		const t = setup();
 		const twoStep = await twoStepRoom(t);
 		const created = await signedInHost(t).mutation(api.hitster.create, ARGS);
-		expect(await createdRows(t, created.sessionId, "hitsterGameStates")).toEqual(
-			await createdRows(t, twoStep.sessionId, "hitsterGameStates"),
-		);
+		expect(
+			await createdRows(t, created.sessionId, "hitsterGameStates"),
+		).toEqual(await createdRows(t, twoStep.sessionId, "hitsterGameStates"));
 	});
 
 	it("returns a code a guest can type, and no link", async () => {

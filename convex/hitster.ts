@@ -1,4 +1,3 @@
-import { type ObjectType, v } from "convex/values";
 import {
 	getHitsterModeConfig,
 	HITSTER_SPARE_TRACKS,
@@ -15,17 +14,11 @@ import {
 	advanceHitsterRound,
 	startHitsterGame,
 } from "@arcadeclub/core/hitster-round";
+import { type ObjectType, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { hitsterModeValidator, hitsterPlaybackModeValidator } from "./schema";
 import { gameError, rules } from "./lib/errors";
-import {
-	createdSession,
-	createdSessionValidator,
-	hostedSessionArgs,
-	hostGame,
-} from "./lib/hostedSession";
 import {
 	findGameState,
 	finishSession,
@@ -36,6 +29,13 @@ import {
 	requireParticipant,
 	startSession,
 } from "./lib/gameSession";
+import {
+	createdSession,
+	createdSessionValidator,
+	hostedSessionArgs,
+	hostGame,
+} from "./lib/hostedSession";
+import { hitsterModeValidator, hitsterPlaybackModeValidator } from "./schema";
 
 /** Hitster's state may not exist yet: `setup` creates it, and callers word its absence. */
 async function getSessionAndState(

@@ -47,7 +47,8 @@ const easArgs = rest.filter((arg) => !OWN_FLAGS.includes(arg));
 const upload = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
 if (!upload) {
-	const message = "SENTRY_AUTH_TOKEN is not set, so source maps cannot be uploaded.";
+	const message =
+		"SENTRY_AUTH_TOKEN is not set, so source maps cannot be uploaded.";
 	if (channel === "production" || uploadOnly) {
 		console.error(`${message} Refusing to continue.`);
 		process.exit(1);
@@ -58,7 +59,8 @@ if (!upload) {
 // The project the @sentry/react-native plugin in app.json names.
 const { expo } = JSON.parse(readFileSync(join(appRoot, "app.json"), "utf8"));
 const [, sentry] = expo.plugins.find(
-	(plugin) => Array.isArray(plugin) && plugin[0] === "@sentry/react-native/expo",
+	(plugin) =>
+		Array.isArray(plugin) && plugin[0] === "@sentry/react-native/expo",
 );
 
 const env = {
@@ -103,6 +105,13 @@ if (!uploadOnly && !withoutBuild) {
 }
 
 if (!uploadOnly) {
-	run("eas", ["update", "--channel", channel, "--environment", channel, ...easArgs]);
+	run("eas", [
+		"update",
+		"--channel",
+		channel,
+		"--environment",
+		channel,
+		...easArgs,
+	]);
 }
 if (upload) run("sentry-expo-upload-sourcemaps", ["dist"]);

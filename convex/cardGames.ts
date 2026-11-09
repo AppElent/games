@@ -1,3 +1,4 @@
+import { SUITS } from "@arcadeclub/core/cards/deck";
 import {
 	applyCardAction,
 	botMove,
@@ -5,12 +6,11 @@ import {
 	type CardGameState,
 	createCardGame,
 	getCardGame,
-	normalizeOptions,
-	viewCardGame,
-	SEAT_SILENT_AFTER_MS,
 	nextStarter,
+	normalizeOptions,
+	SEAT_SILENT_AFTER_MS,
+	viewCardGame,
 } from "@arcadeclub/core/cards/engine";
-import { SUITS } from "@arcadeclub/core/cards/deck";
 import { CARD_TABLE_STATUSES } from "@arcadeclub/core/cards/table";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
@@ -44,8 +44,8 @@ import {
 	hostedSessionArgs,
 	hostGame,
 } from "./lib/hostedSession";
-import { joinModeValidator } from "./schema";
 import { literals } from "./lib/validators";
+import { joinModeValidator } from "./schema";
 
 /**
  * One backend for every card game: the game id selects a definition from
@@ -561,7 +561,9 @@ export const getTable = query({
 			status: table.status,
 			seats,
 			you,
-			isHost: you !== null && table.seats[you].participantId === session.hostParticipantId,
+			isHost:
+				you !== null &&
+				table.seats[you].participantId === session.hostParticipantId,
 			view: table.game
 				? viewCardGame(game, table.options, tableGame(table), you)
 				: null,

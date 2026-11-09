@@ -6,22 +6,22 @@ import {
 	deletedSessionId,
 	expectCode,
 	fields,
+	freezeClock,
 	HOSTED,
 	hostSession,
 	joinWithCode,
 	otherGameSession,
 	outsider,
 	type ParticipantId,
-	sessionCount,
 	type SessionId,
+	sessionCount,
 	setup,
 	signedInHost,
 	type T,
 	T0,
-	useFixedClock,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 type Team = "red" | "blue";
 
@@ -32,7 +32,12 @@ async function newRoom(t: T) {
 		api.signalWords.create,
 		HOSTED,
 	);
-	return { host, sessionId, hostId: participantId, joinCode: joinCode as string };
+	return {
+		host,
+		sessionId,
+		hostId: participantId,
+		joinCode: joinCode as string,
+	};
 }
 
 function joinTeam(
@@ -202,7 +207,9 @@ describe("joinTeam", () => {
 		await joinTeam(t, sessionId, seats["red-clue"], "red", true);
 		await joinTeam(t, sessionId, seats.red, "blue", false);
 		const { participants } = await bundle(t, sessionId);
-		expect(participants.find((row) => row._id === seats.red)?.seat).toBe("blue");
+		expect(participants.find((row) => row._id === seats.red)?.seat).toBe(
+			"blue",
+		);
 	});
 
 	it("answers redHasClueGiver and blueHasClueGiver when the seat is taken", async () => {
@@ -644,10 +651,12 @@ describe("getKey", () => {
 		const { participants } = await bundle(t, sessionId);
 		const clueSeat = participants.find((row) => row.seat === "blue-clue");
 		await expect(
-			t.withIdentity({ subject: "user_stranger" }).query(api.signalWords.getKey, {
-				sessionId,
-				participantId: clueSeat?._id as ParticipantId,
-			}),
+			t
+				.withIdentity({ subject: "user_stranger" })
+				.query(api.signalWords.getKey, {
+					sessionId,
+					participantId: clueSeat?._id as ParticipantId,
+				}),
 		).resolves.toEqual(stored.assignments);
 	});
 
@@ -670,7 +679,10 @@ describe("getKey", () => {
 describe("create", () => {
 	it("returns a code a guest can type, and no link", async () => {
 		const t = setup();
-		const created = await signedInHost(t).mutation(api.signalWords.create, HOSTED);
+		const created = await signedInHost(t).mutation(
+			api.signalWords.create,
+			HOSTED,
+		);
 		expect(created.shareToken).toBeUndefined();
 		const joined = await joinWithCode(
 			t,
@@ -682,7 +694,10 @@ describe("create", () => {
 
 	it("needs an account to host, and leaves nothing behind without one", async () => {
 		const t = setup();
-		await expectCode(t.mutation(api.signalWords.create, HOSTED), "signInToHost");
+		await expectCode(
+			t.mutation(api.signalWords.create, HOSTED),
+			"signInToHost",
+		);
 		expect(await sessionCount(t)).toBe(0);
 	});
 });

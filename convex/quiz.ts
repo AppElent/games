@@ -9,7 +9,6 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { getOptionalUserId, requireOwned, requireUserId } from "./lib/auth";
-import { quizQuestionValidator } from "./schema";
 import { gameError } from "./lib/errors";
 import {
 	findGameState,
@@ -25,6 +24,7 @@ import {
 	hostedSessionArgs,
 	hostGame,
 } from "./lib/hostedSession";
+import { quizQuestionValidator } from "./schema";
 
 const SAMPLE_QUESTIONS = [
 	{
@@ -282,7 +282,8 @@ export const submitAnswer = mutation({
 			.collect();
 		const existing = existingAnswers.find(
 			(answer) =>
-				answer.sessionId === args.sessionId && answer.questionId === question.id,
+				answer.sessionId === args.sessionId &&
+				answer.questionId === question.id,
 		);
 		if (existing) {
 			return {

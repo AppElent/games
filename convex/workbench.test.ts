@@ -6,14 +6,14 @@ import {
 	arrange,
 	expectCode,
 	fields,
+	freezeClock,
 	getDoc,
 	setup,
-	T0,
 	type T,
-	useFixedClock,
+	T0,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 const OWNER = "user_owner";
 

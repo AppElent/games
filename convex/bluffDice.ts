@@ -1,4 +1,3 @@
-import { v } from "convex/values";
 import {
 	BLUFF_MAX_PLAYERS,
 	BLUFF_MIN_PLAYERS,
@@ -10,6 +9,7 @@ import {
 	resolveBluffRound,
 	rollBluffDice,
 } from "@arcadeclub/core/bluff-dice";
+import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -75,7 +75,11 @@ export const start = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await loadGame(ctx, "bluff-dice", args.sessionId);
+		const { session, state } = await loadGame(
+			ctx,
+			"bluff-dice",
+			args.sessionId,
+		);
 		if (state.phase !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
@@ -172,7 +176,11 @@ export const rematch = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await loadGame(ctx, "bluff-dice", args.sessionId);
+		const { session, state } = await loadGame(
+			ctx,
+			"bluff-dice",
+			args.sessionId,
+		);
 		if (state.phase !== "finished") {
 			throw gameError("currentGameNotFinished");
 		}

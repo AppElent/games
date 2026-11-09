@@ -1,3 +1,4 @@
+import { CHESS_COLORS, type ChessColor } from "@arcadeclub/chess/enums";
 import {
 	BACKGAMMON_COLORS,
 	type BackgammonColor,
@@ -7,13 +8,12 @@ import {
 	type ConnectFourColor,
 } from "@arcadeclub/core/connect-four";
 import {
-	occupant,
-	opponent,
 	type SeatColumns as CoreSeatColumns,
 	seatOf as coreSeatOf,
+	occupant,
+	opponent,
 } from "@arcadeclub/core/duel";
 import type { GameErrorCode } from "@arcadeclub/core/errors";
-import { CHESS_COLORS, type ChessColor } from "@arcadeclub/chess/enums";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { gameError } from "./errors";

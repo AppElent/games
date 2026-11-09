@@ -45,7 +45,8 @@ it("uses a stable event ID for replayed history and distinct IDs for new executi
 		executionErrorEvent({ ...failure }, options).eventId,
 	);
 	expect(
-		executionErrorEvent({ ...failure, executionId: "execution-2" }, options).eventId,
+		executionErrorEvent({ ...failure, executionId: "execution-2" }, options)
+			.eventId,
 	).not.toBe(executionErrorEvent(failure, options).eventId);
 });
 

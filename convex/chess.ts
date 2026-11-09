@@ -1,4 +1,3 @@
-import { type ObjectType, v } from "convex/values";
 import {
 	applyChessMove,
 	CHESS_INITIAL_FEN,
@@ -12,10 +11,10 @@ import {
 	type ChessColor,
 	type ChessOutcome,
 } from "@arcadeclub/chess/enums";
+import { type ObjectType, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { chessTimeControlValidator } from "./schema";
 import {
 	CHESS_DUEL,
 	requireRematch,
@@ -41,6 +40,7 @@ import {
 	hostGame,
 } from "./lib/hostedSession";
 import { literals } from "./lib/validators";
+import { chessTimeControlValidator } from "./schema";
 
 function getClock(state: Doc<"chessGameStates">) {
 	if (
@@ -97,7 +97,12 @@ async function insertState(
 				? "white"
 				: "black"
 			: match.hostColor;
-	const hostSeat = await seatHost(ctx, CHESS_DUEL, hostParticipantId, hostColor);
+	const hostSeat = await seatHost(
+		ctx,
+		CHESS_DUEL,
+		hostParticipantId,
+		hostColor,
+	);
 	const now = Date.now();
 	return await ctx.db.insert("chessGameStates", {
 		sessionId,

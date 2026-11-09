@@ -6,6 +6,7 @@ import {
 	deletedSessionId,
 	expectCode,
 	fields,
+	freezeClock,
 	getDoc,
 	HOSTED,
 	hostSession,
@@ -13,17 +14,16 @@ import {
 	joinWithToken,
 	otherGameSession,
 	type ParticipantId,
-	sessionCount,
 	type SessionId,
+	sessionCount,
 	setup,
 	shareTokenOf,
 	signedInHost,
 	type T,
 	T0,
-	useFixedClock,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 const emptyBoard = () => new Array(42).fill("empty");
 
@@ -319,12 +319,48 @@ describe("drop", () => {
 			phase: "active",
 			board: [
 				// biome-ignore format: the board reads as rows
-				"empty", R, Y, R, Y, R, Y,
-				Y, Y, R, Y, Y, R, R,
-				Y, Y, Y, R, R, Y, R,
-				Y, R, Y, R, Y, R, R,
-				R, Y, Y, R, R, Y, Y,
-				R, Y, R, Y, R, R, Y,
+				"empty",
+				R,
+				Y,
+				R,
+				Y,
+				R,
+				Y,
+				Y,
+				Y,
+				R,
+				Y,
+				Y,
+				R,
+				R,
+				Y,
+				Y,
+				Y,
+				R,
+				R,
+				Y,
+				R,
+				Y,
+				R,
+				Y,
+				R,
+				Y,
+				R,
+				R,
+				R,
+				Y,
+				Y,
+				R,
+				R,
+				Y,
+				Y,
+				R,
+				Y,
+				R,
+				Y,
+				R,
+				R,
+				Y,
 			],
 		});
 		await drop(t, sessionId, red, 0);
@@ -482,7 +518,10 @@ describe("getBundle", () => {
 describe("create", () => {
 	it("returns a link a guest can follow, and no room code", async () => {
 		const t = setup();
-		const created = await signedInHost(t).mutation(api.connectFour.create, HOSTED);
+		const created = await signedInHost(t).mutation(
+			api.connectFour.create,
+			HOSTED,
+		);
 		expect(created.joinCode).toBeUndefined();
 		expect(created.shareToken).toBe(await shareTokenOf(t, created.sessionId));
 		const joined = await joinWithToken(
@@ -495,7 +534,10 @@ describe("create", () => {
 
 	it("needs an account to host, and leaves nothing behind without one", async () => {
 		const t = setup();
-		await expectCode(t.mutation(api.connectFour.create, HOSTED), "signInToHost");
+		await expectCode(
+			t.mutation(api.connectFour.create, HOSTED),
+			"signInToHost",
+		);
 		expect(await sessionCount(t)).toBe(0);
 	});
 });

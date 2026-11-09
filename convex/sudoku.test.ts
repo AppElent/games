@@ -8,17 +8,17 @@ import {
 	deletedSessionId,
 	expectCode,
 	fields,
+	freezeClock,
 	getDoc,
 	otherGameSession,
-	sessionCount,
 	type SessionId,
+	sessionCount,
 	setup,
 	type T,
 	T0,
-	useFixedClock,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 const SOLVED =
 	"534678912672195348198342567859761423426853791713924856961537284287419635345286179";
@@ -236,18 +236,15 @@ describe("new puzzle", () => {
 			{ cornerNotes: [-1, ...ZEROES().slice(1)] },
 			{ centerNotes: [0.5, ...ZEROES().slice(1)] },
 		]) {
-			await expectCode(
-				createPuzzle(t, overrides),
-				"invalidPuzzleData",
-			);
+			await expectCode(createPuzzle(t, overrides), "invalidPuzzleData");
 		}
 		await expectCode(
 			createPuzzle(t, {
-					variant: "binary",
-					size: 6,
-					givens: `3${BINARY_EMPTY.slice(1)}`,
-					solution: undefined,
-				}),
+				variant: "binary",
+				size: 6,
+				givens: `3${BINARY_EMPTY.slice(1)}`,
+				solution: undefined,
+			}),
 			"invalidPuzzleData",
 		);
 	});
@@ -264,10 +261,7 @@ describe("new puzzle", () => {
 				solution: undefined,
 			},
 		]) {
-			await expectCode(
-				createPuzzle(t, overrides),
-				"puzzleConflictingDigits",
-			);
+			await expectCode(createPuzzle(t, overrides), "puzzleConflictingDigits");
 		}
 	});
 
@@ -276,11 +270,11 @@ describe("new puzzle", () => {
 		for (const size of [undefined, 7, 14]) {
 			await expectCode(
 				createPuzzle(t, {
-						variant: "binary",
-						size,
-						givens: BINARY_EMPTY,
-						solution: undefined,
-					}),
+					variant: "binary",
+					size,
+					givens: BINARY_EMPTY,
+					solution: undefined,
+				}),
 				"invalidBinarySize",
 			);
 		}
@@ -296,10 +290,10 @@ describe("new puzzle", () => {
 		}
 		await expectCode(
 			createPuzzle(t, {
-					variant: "killer",
-					givens: EMPTY,
-					cages: [{ sum: 9, cells: [0, 1] }, ...CAGES.slice(1)],
-				}),
+				variant: "killer",
+				givens: EMPTY,
+				cages: [{ sum: 9, cells: [0, 1] }, ...CAGES.slice(1)],
+			}),
 			"cagesUnsatisfied",
 		);
 	});
@@ -524,7 +518,10 @@ describe("complete", () => {
 	it("checks the cages on a killer puzzle", async () => {
 		const t = setup();
 		const { sessionId } = await killerPuzzle(t);
-		await expectCode(complete(t, sessionId, SOLVED_RELABELLED), "gridNotSolved");
+		await expectCode(
+			complete(t, sessionId, SOLVED_RELABELLED),
+			"gridNotSolved",
+		);
 		await expect(complete(t, sessionId)).resolves.toEqual({ completed: true });
 	});
 

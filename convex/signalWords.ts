@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import type { GameErrorCode } from "@arcadeclub/core/errors";
 import {
 	applySignalClue,
 	applySignalGuess,
@@ -12,12 +12,11 @@ import {
 	signalSeat,
 	signalSeatTeam,
 } from "@arcadeclub/core/signal-words";
-import type { GameErrorCode } from "@arcadeclub/core/errors";
 import { SIGNAL_WORDS_DEFAULT_PACK } from "@arcadeclub/core/signal-words-packs";
+import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { signalTeamValidator } from "./schema";
 import { gameError, rules } from "./lib/errors";
 import {
 	findGameState,
@@ -36,6 +35,7 @@ import {
 	hostedSessionArgs,
 	hostGame,
 } from "./lib/hostedSession";
+import { signalTeamValidator } from "./schema";
 
 /** Installed mobile builds map these codes, so each team keeps its own. */
 const TEAM_ERRORS: Record<
@@ -87,7 +87,9 @@ async function patchGameState(
 	const { winnerTeam } = next;
 	const winners = winnerTeam
 		? participants
-				.filter((participant) => signalSeatTeam(participant.seat) === winnerTeam)
+				.filter(
+					(participant) => signalSeatTeam(participant.seat) === winnerTeam,
+				)
 				.map((participant) => participant._id)
 		: [];
 	await finishSession(ctx, state, patch, { now, winners });
@@ -173,7 +175,11 @@ export const start = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await loadGame(ctx, "signal-words", args.sessionId);
+		const { session, state } = await loadGame(
+			ctx,
+			"signal-words",
+			args.sessionId,
+		);
 		if (state.phase !== "lobby") {
 			throw gameError("gameAlreadyStarted");
 		}
@@ -282,7 +288,11 @@ export const rematch = mutation({
 		participantId: v.id("sessionParticipants"),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await loadGame(ctx, "signal-words", args.sessionId);
+		const { session, state } = await loadGame(
+			ctx,
+			"signal-words",
+			args.sessionId,
+		);
 		if (state.phase !== "finished") {
 			throw gameError("currentGameNotFinished");
 		}

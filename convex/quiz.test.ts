@@ -7,21 +7,21 @@ import {
 	deletedSessionId,
 	expectCode,
 	fields,
+	freezeClock,
 	HOSTED,
 	hostSession,
 	joinWithCode,
 	outsider,
 	type ParticipantId,
-	sessionCount,
 	type SessionId,
+	sessionCount,
 	setup,
 	signedInHost,
 	type T,
 	T0,
-	useFixedClock,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 const QUESTIONS = [
 	{
@@ -134,9 +134,7 @@ describe("quiz sets", () => {
 		const t = setup();
 		const quizSetId = await createSet(t);
 		expect(
-			fields(
-				await owner(t).query(api.quiz.getSet, { quizSetId }),
-			),
+			fields(await owner(t).query(api.quiz.getSet, { quizSetId })),
 		).toEqual({
 			ownerUserId: "user_owner",
 			title: "Set",
@@ -330,10 +328,7 @@ describe("advancePhase", () => {
 		});
 		await expect(advancePhase(t, sessionId)).resolves.toBe("finished");
 		const { session } = await bundle(t, sessionId);
-		expect(session.winnerParticipantIds).toEqual([
-			player,
-			tied.participantId,
-		]);
+		expect(session.winnerParticipantIds).toEqual([player, tied.participantId]);
 		expect(session.participantCount).toBe(4);
 	});
 
@@ -507,7 +502,10 @@ describe("create", () => {
 	it("returns a code a guest can type, and no link", async () => {
 		const t = setup();
 		const quizSetId = await createSet(t);
-		const created = await signedInHost(t).mutation(api.quiz.create, { ...HOSTED, quizSetId });
+		const created = await signedInHost(t).mutation(api.quiz.create, {
+			...HOSTED,
+			quizSetId,
+		});
 		expect(created.shareToken).toBeUndefined();
 		const joined = await joinWithCode(
 			t,
@@ -520,7 +518,10 @@ describe("create", () => {
 	it("needs an account to host, and leaves nothing behind without one", async () => {
 		const t = setup();
 		const quizSetId = await createSet(t);
-		await expectCode(t.mutation(api.quiz.create, { ...HOSTED, quizSetId }), "signInToHost");
+		await expectCode(
+			t.mutation(api.quiz.create, { ...HOSTED, quizSetId }),
+			"signInToHost",
+		);
 		expect(await sessionCount(t)).toBe(0);
 	});
 

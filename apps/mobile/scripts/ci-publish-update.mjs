@@ -74,9 +74,18 @@ function runtimeKnown(platform, runtime) {
 
 const last = git("rev-parse", "--verify", "--quiet", `refs/tags/${tag}`);
 if (last.status === 0) {
-	const changed = git("diff", "--quiet", last.stdout.trim(), "HEAD", "--", ...BUNDLED);
+	const changed = git(
+		"diff",
+		"--quiet",
+		last.stdout.trim(),
+		"HEAD",
+		"--",
+		...BUNDLED,
+	);
 	if (changed.status === 0) {
-		summary(`Mobile ${channel} update: nothing the app bundles changed since \`${tag}\`; skipped.`);
+		summary(
+			`Mobile ${channel} update: nothing the app bundles changed since \`${tag}\`; skipped.`,
+		);
 		process.exit(0);
 	}
 }
@@ -99,7 +108,13 @@ if (loadable.length === 0) {
 const subject = git("log", "-1", "--format=%s (%h)").stdout.trim();
 const publish = spawnSync(
 	"node",
-	[join(appRoot, "scripts/publish-update.mjs"), channel, "--without-build", "--message", subject],
+	[
+		join(appRoot, "scripts/publish-update.mjs"),
+		channel,
+		"--without-build",
+		"--message",
+		subject,
+	],
 	{ cwd: repoRoot, stdio: "inherit" },
 );
 if (publish.status !== 0) process.exit(publish.status || 1);

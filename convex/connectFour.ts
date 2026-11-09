@@ -1,12 +1,12 @@
-import { v } from "convex/values";
 import {
 	applyConnectFourDrop,
-	createConnectFourBoard,
 	type ConnectFourColor,
 	type ConnectFourOutcome,
+	createConnectFourBoard,
 	getConnectFourWinner,
 	switchConnectFourColor,
 } from "@arcadeclub/core/connect-four";
+import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -91,7 +91,11 @@ export const drop = mutation({
 		column: v.number(),
 	},
 	handler: async (ctx, args) => {
-		const { session, state } = await loadGame(ctx, "connect-four", args.sessionId);
+		const { session, state } = await loadGame(
+			ctx,
+			"connect-four",
+			args.sessionId,
+		);
 		const color = requireTurn(CONNECT_FOUR_DUEL, state, args.participantId);
 		const next = rules(() =>
 			applyConnectFourDrop(state.board, color, args.column),

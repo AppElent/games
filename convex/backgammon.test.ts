@@ -10,6 +10,7 @@ import {
 	expectCode,
 	fields,
 	fixRandom,
+	freezeClock,
 	getDoc,
 	HOST_USER,
 	HOSTED,
@@ -18,17 +19,16 @@ import {
 	joinWithToken,
 	otherGameSession,
 	type ParticipantId,
-	sessionCount,
 	type SessionId,
+	sessionCount,
 	setup,
 	shareTokenOf,
 	signedInHost,
 	type T,
 	T0,
-	useFixedClock,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 const DIE_ONE = 0;
 const DIE_FOUR = 0.5;
@@ -76,7 +76,10 @@ async function bundle(t: T, sessionId: SessionId) {
 }
 
 async function roll(t: T, sessionId: SessionId, participantId: ParticipantId) {
-	return await t.mutation(api.backgammon.rollDice, { sessionId, participantId });
+	return await t.mutation(api.backgammon.rollDice, {
+		sessionId,
+		participantId,
+	});
 }
 
 /** One white checker left, one die of 1 to bear it off. */
@@ -828,15 +831,21 @@ describe("create", () => {
 	it("stores what sessions.create and createState store together", async () => {
 		const t = setup();
 		const twoStep = await twoStepMatch(t);
-		const created = await signedInHost(t).mutation(api.backgammon.create, HOSTED);
-		expect(await createdRows(t, created.sessionId, "backgammonGameStates")).toEqual(
-			await createdRows(t, twoStep.sessionId, "backgammonGameStates"),
+		const created = await signedInHost(t).mutation(
+			api.backgammon.create,
+			HOSTED,
 		);
+		expect(
+			await createdRows(t, created.sessionId, "backgammonGameStates"),
+		).toEqual(await createdRows(t, twoStep.sessionId, "backgammonGameStates"));
 	});
 
 	it("returns a link a guest can follow, and no room code", async () => {
 		const t = setup();
-		const created = await signedInHost(t).mutation(api.backgammon.create, HOSTED);
+		const created = await signedInHost(t).mutation(
+			api.backgammon.create,
+			HOSTED,
+		);
 		expect(created.joinCode).toBeUndefined();
 		expect(created.shareToken).toBe(await shareTokenOf(t, created.sessionId));
 		const joined = await joinWithToken(

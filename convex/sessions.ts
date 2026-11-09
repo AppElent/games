@@ -1,11 +1,6 @@
 import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import {
-	authPolicyValidator,
-	gameTypeValidator,
-	joinModeValidator,
-} from "./schema";
 import { requireUserId } from "./lib/auth";
 import { gameError } from "./lib/errors";
 import {
@@ -16,6 +11,11 @@ import {
 } from "./lib/gameSession";
 import { createHostedSession } from "./lib/hostedSession";
 import { findOpenSession, joinSession } from "./lib/join";
+import {
+	authPolicyValidator,
+	gameTypeValidator,
+	joinModeValidator,
+} from "./schema";
 
 // Installed mobile builds call this: remove once no installed build predates backgammon.create and hitster.create.
 export const create = mutation({
@@ -34,7 +34,11 @@ export const create = mutation({
 			throw gameError("gameUnavailable");
 		}
 		const { session, participantId } = await createHostedSession(ctx, args);
-		return { sessionId: session._id, participantId, joinCode: session.joinCode };
+		return {
+			sessionId: session._id,
+			participantId,
+			joinCode: session.joinCode,
+		};
 	},
 });
 

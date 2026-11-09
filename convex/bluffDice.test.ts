@@ -8,22 +8,22 @@ import {
 	expectCode,
 	fields,
 	fixRandom,
+	freezeClock,
 	HOSTED,
 	hostSession,
 	joinWithCode,
 	otherGameSession,
 	outsider,
 	type ParticipantId,
-	sessionCount,
 	type SessionId,
+	sessionCount,
 	setup,
 	signedInHost,
 	type T,
 	T0,
-	useFixedClock,
 } from "./test.helpers";
 
-useFixedClock();
+freezeClock();
 
 /** Every die lands on this face while `fixRandom(ALL_FOURS)` is active. */
 const ALL_FOURS = 0.5;
@@ -36,7 +36,12 @@ async function newRoom(t: T) {
 		api.bluffDice.create,
 		HOSTED,
 	);
-	return { host, sessionId, hostId: participantId, joinCode: joinCode as string };
+	return {
+		host,
+		sessionId,
+		hostId: participantId,
+		joinCode: joinCode as string,
+	};
 }
 
 /** A started game with the host first in turn order, and all dice on fours. */
@@ -495,7 +500,9 @@ describe("getBundle", () => {
 	it("is null for a missing session, and state is null on a session without one", async () => {
 		const t = setup();
 		await expect(
-			t.query(api.bluffDice.getBundle, { sessionId: await deletedSessionId(t) }),
+			t.query(api.bluffDice.getBundle, {
+				sessionId: await deletedSessionId(t),
+			}),
 		).resolves.toBeNull();
 		const { sessionId } = await hostSession(t, "bluff-dice", "room");
 		const result = await t.query(api.bluffDice.getBundle, { sessionId });
@@ -591,7 +598,10 @@ describe("getMyDice", () => {
 describe("create", () => {
 	it("returns a code a guest can type, and no link", async () => {
 		const t = setup();
-		const created = await signedInHost(t).mutation(api.bluffDice.create, HOSTED);
+		const created = await signedInHost(t).mutation(
+			api.bluffDice.create,
+			HOSTED,
+		);
 		expect(created.shareToken).toBeUndefined();
 		const joined = await joinWithCode(
 			t,

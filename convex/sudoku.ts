@@ -1,4 +1,3 @@
-import { type ObjectType, v } from "convex/values";
 import { digitsFromString } from "@arcadeclub/core/puzzle";
 import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import { FULL_MASK, type SudokuVariant } from "@arcadeclub/core/sudoku";
@@ -12,15 +11,10 @@ import {
 	isVariantGridString,
 	SUDOKU_VARIANT_RULES,
 } from "@arcadeclub/core/sudoku-variants";
+import { type ObjectType, v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import {
-	sudokuCageValidator,
-	sudokuDifficultyValidator,
-	sudokuSourceValidator,
-	sudokuVariantValidator,
-} from "./schema";
 import { gameError, rules } from "./lib/errors";
 import {
 	finishSession,
@@ -35,6 +29,12 @@ import {
 	hostedSessionArgs,
 	hostGame,
 } from "./lib/hostedSession";
+import {
+	sudokuCageValidator,
+	sudokuDifficultyValidator,
+	sudokuSourceValidator,
+	sudokuVariantValidator,
+} from "./schema";
 
 type Puzzle = {
 	variant?: SudokuVariant;

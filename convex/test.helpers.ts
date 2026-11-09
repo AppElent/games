@@ -4,8 +4,8 @@
  * name keep it out of the Convex deployment, like the `.test.ts` files.
  */
 import type { GameErrorCode, GameErrorParams } from "@arcadeclub/core/errors";
-import { convexTest } from "convex-test";
 import { ConvexError, type Value } from "convex/values";
+import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
@@ -28,7 +28,7 @@ export type ParticipantId = Id<"sessionParticipants">;
 export type GameType = Doc<"gameSessions">["gameType"];
 
 /** Freezes the clock at `T0` for each test and undoes any `Math.random` mock. */
-export function useFixedClock() {
+export function freezeClock() {
 	beforeEach(() => {
 		vi.useFakeTimers({ now: T0 });
 	});
@@ -150,7 +150,10 @@ export async function hostSession(
 	t: T,
 	gameType: GameType,
 	joinMode: "room" | "challenge" | "solo",
-	authPolicy: "guestAllowed" | "hostChoice" | "signedInRequired" = "guestAllowed",
+	authPolicy:
+		| "guestAllowed"
+		| "hostChoice"
+		| "signedInRequired" = "guestAllowed",
 ) {
 	const host = t.withIdentity({ subject: HOST_USER });
 	const { session, participantId } = await host.run((ctx) =>
