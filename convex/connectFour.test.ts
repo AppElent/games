@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import {
 	advance,
+	afterCommits,
 	arrange,
 	deletedSessionId,
 	expectCode,
@@ -239,7 +240,7 @@ describe("drop", () => {
 		expect(state.board[5 * 7 + 3]).toBe("red");
 		expect(state.board[4 * 7 + 3]).toBe("yellow");
 		expect(state.activeColor).toBe("red");
-		expect(session.startedAt).toBe(T0);
+		expect(session.startedAt).toBe(afterCommits(T0));
 	});
 
 	it("waits for an opponent", async () => {
@@ -302,7 +303,7 @@ describe("drop", () => {
 		expect(state.winnerParticipantId).toBe(red);
 		expect(state.activeColor).toBe("yellow");
 		expect(session.status).toBe("completed");
-		expect(session.endedAt).toBe(T0 + 1000);
+		expect(session.endedAt).toBe(afterCommits(T0 + 1000));
 		expect(session.completedReason).toBe("finished");
 		expect(session.participantCount).toBe(2);
 		expect(session.winnerParticipantIds).toEqual([red]);

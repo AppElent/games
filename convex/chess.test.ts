@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import {
 	advance,
+	afterCommits,
 	arrange,
 	deletedSessionId,
 	expectCode,
@@ -109,6 +110,8 @@ async function expectFinished(
 		outcome: string;
 		winner?: "white" | "black";
 		winnerParticipantId?: ParticipantId;
+		/** When the finishing call ran; defaults to the frozen clock. */
+		endedAt?: number;
 	},
 ) {
 	const { state, session } = await bundle(t, sessionId);
@@ -119,7 +122,7 @@ async function expectFinished(
 	expect(state.drawOfferBy).toBeUndefined();
 	expect(session.status).toBe("completed");
 	expect(session.completedReason).toBe("finished");
-	expect(session.endedAt).toBe(Date.now());
+	expect(session.endedAt).toBe(expected.endedAt ?? Date.now());
 	expect(session.winnerParticipantIds).toEqual(
 		expected.winnerParticipantId ? [expected.winnerParticipantId] : [],
 	);
@@ -312,7 +315,9 @@ describe("applyMove", () => {
 		await move(t, sessionId, white, "e2", "e4");
 		advance(4000);
 		await move(t, sessionId, black, "e7", "e5");
-		expect((await bundle(t, sessionId)).session.startedAt).toBe(T0);
+		expect((await bundle(t, sessionId)).session.startedAt).toBe(
+			afterCommits(T0),
+		);
 	});
 
 	it("waits for an opponent", async () => {
@@ -389,6 +394,7 @@ describe("applyMove", () => {
 			outcome: "checkmate",
 			winner: "black",
 			winnerParticipantId: black,
+			endedAt: afterCommits(T0),
 		});
 		const { state, session } = await bundle(t, sessionId);
 		expect(state.sanHistory).toEqual(["f3", "e5", "g4", "Qh4#"]);
@@ -406,7 +412,10 @@ describe("applyMove", () => {
 		const { state } = await bundle(t, sessionId);
 		await arrange(t, state._id, { fen: "7k/8/6K1/5Q2/8/8/8/8 w - - 0 1" });
 		await move(t, sessionId, white, "f5", "f7");
-		await expectFinished(t, sessionId, { outcome: "stalemate" });
+		await expectFinished(t, sessionId, {
+			outcome: "stalemate",
+			endedAt: afterCommits(T0),
+		});
 	});
 });
 
@@ -428,15 +437,17 @@ describe("clock", () => {
 		await move(t, sessionId, white, "e2", "e4");
 		advance(7000);
 		await move(t, sessionId, black, "e7", "e5");
+		// Black's clock started when white's move ran, after the match's commits.
+		const blackSpent = T0 + 7000 - afterCommits(T0);
 		const first = (await bundle(t, sessionId)).state;
-		expect(first.remainingBlackMs).toBe(TEN_MINUTES - 7000);
+		expect(first.remainingBlackMs).toBe(TEN_MINUTES - blackSpent);
 		expect(first.remainingWhiteMs).toBe(TEN_MINUTES);
 		expect(first.turnStartedAt).toBe(T0 + 7000);
 		advance(2000);
 		await move(t, sessionId, white, "g1", "f3");
 		const second = (await bundle(t, sessionId)).state;
 		expect(second.remainingWhiteMs).toBe(TEN_MINUTES - 2000);
-		expect(second.remainingBlackMs).toBe(TEN_MINUTES - 7000);
+		expect(second.remainingBlackMs).toBe(TEN_MINUTES - blackSpent);
 	});
 
 	it("pins that a flag fall on a move throws timeRanOut and rolls the finish back", async () => {
@@ -588,7 +599,10 @@ describe("draw offers", () => {
 		const { sessionId, white, black } = await underway(t);
 		await t.mutation(api.chess.offerDraw, { sessionId, participantId: white });
 		await t.mutation(api.chess.offerDraw, { sessionId, participantId: black });
-		await expectFinished(t, sessionId, { outcome: "drawAgreed" });
+		await expectFinished(t, sessionId, {
+			outcome: "drawAgreed",
+			endedAt: afterCommits(T0),
+		});
 	});
 
 	it("draws on acceptance and clears the offer on refusal", async () => {
@@ -609,7 +623,10 @@ describe("draw offers", () => {
 			participantId: black,
 			accept: true,
 		});
-		await expectFinished(t, sessionId, { outcome: "drawAgreed" });
+		await expectFinished(t, sessionId, {
+			outcome: "drawAgreed",
+			endedAt: afterCommits(T0),
+		});
 	});
 
 	it("answers noActiveGame for an offer before the first move", async () => {

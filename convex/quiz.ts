@@ -265,7 +265,7 @@ export const submitAnswer = mutation({
 			throw gameError("spectatorsCannotAnswer");
 		}
 		const quizState = await findGameState(ctx, "live-quiz", args.sessionId);
-		if (!quizState || quizState.phase !== "question" || !quizState.quizSetId) {
+		if (quizState?.phase !== "question" || !quizState.quizSetId) {
 			throw gameError("questionClosed");
 		}
 		const quizSet = await ctx.db.get(quizState.quizSetId);

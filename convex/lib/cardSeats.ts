@@ -77,8 +77,7 @@ export async function claimSeatOnJoin(
 	requireSeatSecret(seatSecret);
 	const table = await findGameState(ctx, "card-games", session._id);
 	if (
-		!table ||
-		table.status !== "lobby" ||
+		table?.status !== "lobby" ||
 		isTableFull(table) ||
 		occupiedSeatIndex(table, participantId) >= 0
 	) {

@@ -79,24 +79,22 @@ describe("sudoku rules", () => {
 });
 
 describe("sudoku generation", () => {
-	it.each([
-		"easy",
-		"medium",
-		"hard",
-		"expert",
-	] as const)("generates a uniquely solvable %s puzzle", (difficulty) => {
-		const rng = mulberry32(42);
-		const puzzle = generatePuzzle(difficulty, rng);
-		expect(countSolutions(puzzle.givens, 2)).toBe(1);
-		expect(isGridSolved(puzzle.solution)).toBe(true);
-		puzzle.givens.forEach((value, cell) => {
-			if (value !== 0) {
-				expect(puzzle.solution[cell]).toBe(value);
-			}
-		});
-		expect(puzzle.clueCount).toBeGreaterThanOrEqual(17);
-		expect(puzzle.clueCount).toBeLessThan(SUDOKU_CELL_COUNT);
-	});
+	it.each(["easy", "medium", "hard", "expert"] as const)(
+		"generates a uniquely solvable %s puzzle",
+		(difficulty) => {
+			const rng = mulberry32(42);
+			const puzzle = generatePuzzle(difficulty, rng);
+			expect(countSolutions(puzzle.givens, 2)).toBe(1);
+			expect(isGridSolved(puzzle.solution)).toBe(true);
+			puzzle.givens.forEach((value, cell) => {
+				if (value !== 0) {
+					expect(puzzle.solution[cell]).toBe(value);
+				}
+			});
+			expect(puzzle.clueCount).toBeGreaterThanOrEqual(17);
+			expect(puzzle.clueCount).toBeLessThan(SUDOKU_CELL_COUNT);
+		},
+	);
 
 	it("gives easier puzzles more clues", () => {
 		const easy = generatePuzzle("easy", mulberry32(7));

@@ -3,6 +3,7 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
+	afterCommits,
 	deletedParticipantId,
 	deletedSessionId,
 	expectCode,
@@ -182,7 +183,7 @@ describe("start", () => {
 		expect(stored.roundNumber).toBe(1);
 		const { session } = await bundle(t, sessionId);
 		expect(session.status).toBe("active");
-		expect(session.startedAt).toBe(T0);
+		expect(session.startedAt).toBe(afterCommits(T0));
 		expect(session.endedAt).toBeUndefined();
 	});
 
@@ -423,7 +424,7 @@ describe("challenge", () => {
 		expect(state.activeIndex).toBe(1);
 		expect(session.status).toBe("completed");
 		expect(session.completedReason).toBe("finished");
-		expect(session.endedAt).toBe(T0);
+		expect(session.endedAt).toBe(afterCommits(T0));
 		expect(session.participantCount).toBe(2);
 		expect(session.winnerParticipantIds).toEqual([guest]);
 		await expectCode(claim(t, sessionId, guest, 1, 1), "noActiveRound");
@@ -454,7 +455,7 @@ describe("rematch", () => {
 		});
 		const { session } = await bundle(t, sessionId);
 		expect(session.status).toBe("active");
-		expect(session.startedAt).toBe(T0);
+		expect(session.startedAt).toBe(afterCommits(T0));
 		expect(session.endedAt).toBeUndefined();
 		expect(session.completedReason).toBeUndefined();
 		expect(session.winnerParticipantIds).toBeUndefined();

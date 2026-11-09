@@ -10,21 +10,22 @@ import {
 } from "../sudoku-variants";
 
 describe("generateVariantPuzzle", () => {
-	it.each(
-		SUDOKU_VARIANTS,
-	)("makes a %s puzzle its own rules call solved by its solution", (variant) => {
-		const puzzle = generateVariantPuzzle(variant, "easy", mulberry32(7));
-		const rules = SUDOKU_VARIANT_RULES[variant];
-		const shape = rules.stored(puzzle);
-		expect(puzzle.variant).toBe(variant);
-		expect(puzzle.givens).toHaveLength(rules.cells(shape));
-		expect(rules.solved(puzzle.solution, shape)).toBe(true);
-		expect(rules.solved(puzzle.givens, shape)).toBe(false);
-		expect(rules.conflicts(puzzle.givens, shape).size).toBe(0);
-		expect(
-			isVariantGridString(variant, shape, digitsToString(puzzle.solution)),
-		).toBe(true);
-	});
+	it.each(SUDOKU_VARIANTS)(
+		"makes a %s puzzle its own rules call solved by its solution",
+		(variant) => {
+			const puzzle = generateVariantPuzzle(variant, "easy", mulberry32(7));
+			const rules = SUDOKU_VARIANT_RULES[variant];
+			const shape = rules.stored(puzzle);
+			expect(puzzle.variant).toBe(variant);
+			expect(puzzle.givens).toHaveLength(rules.cells(shape));
+			expect(rules.solved(puzzle.solution, shape)).toBe(true);
+			expect(rules.solved(puzzle.givens, shape)).toBe(false);
+			expect(rules.conflicts(puzzle.givens, shape).size).toBe(0);
+			expect(
+				isVariantGridString(variant, shape, digitsToString(puzzle.solution)),
+			).toBe(true);
+		},
+	);
 
 	it("gives the same puzzle for the same seed", () => {
 		expect(generateVariantPuzzle("killer", "easy", mulberry32(3))).toEqual(

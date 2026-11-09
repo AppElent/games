@@ -43,6 +43,16 @@ export function advance(ms: number) {
 }
 
 /**
+ * What a call reads from `Date.now()` once two calls have committed in the
+ * frozen millisecond `at`. convex-test pins each call's clock at or after the
+ * last commit, as the backend does, and every commit after the first in a
+ * frozen millisecond lands just past it, so later calls read the next one.
+ */
+export function afterCommits(at: number) {
+	return at + 1;
+}
+
+/**
  * Pins `Math.random` to one value. A constant rather than a sequence, because
  * convex-test draws from it for request ids between calls.
  */

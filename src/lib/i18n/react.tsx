@@ -1,3 +1,4 @@
+// biome-ignore-all lint/correctness/noComponentHookFactories: createI18n runs once at module scope (src/lib/i18n/index.tsx), so the provider and hooks keep one identity.
 import { isLocale, resolveLocale } from "@arcadeclub/core/i18n/format";
 import {
 	createContext,

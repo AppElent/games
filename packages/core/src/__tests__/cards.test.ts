@@ -983,26 +983,28 @@ describe("full games between computer players", () => {
 		}));
 	});
 
-	it.each(cases)("$id with $seats seats finishes and conserves every card", ({
-		id,
-		seats,
-	}) => {
-		for (let seed = 1; seed <= 12; seed += 1) {
-			const final = playOut(getCardGame(id), [], seats, seed * 37);
-			expect(final.winners.length).toBeGreaterThan(0);
-		}
-	});
+	it.each(cases)(
+		"$id with $seats seats finishes and conserves every card",
+		({ id, seats }) => {
+			for (let seed = 1; seed <= 12; seed += 1) {
+				const final = playOut(getCardGame(id), [], seats, seed * 37);
+				expect(final.winners.length).toBeGreaterThan(0);
+			}
+		},
+	);
 
 	// A throwing bot move freezes a live table for good, so play plenty of matches.
-	it.each([
-		2, 3, 4,
-	])("jokeren bots never make an illegal move with %i seats", (seats) => {
-		for (let seed = 1; seed <= 150; seed += 1) {
-			expect(playOut(getCardGame("jokeren"), [], seats, seed).phase).toBe(
-				"finished",
-			);
-		}
-	}, 30_000);
+	it.each([2, 3, 4])(
+		"jokeren bots never make an illegal move with %i seats",
+		(seats) => {
+			for (let seed = 1; seed <= 150; seed += 1) {
+				expect(playOut(getCardGame("jokeren"), [], seats, seed).phase).toBe(
+					"finished",
+				);
+			}
+		},
+		30_000,
+	);
 
 	it.each([
 		["pesten", ["noFinishOnPower", "noStacking", "noLastCard"]],

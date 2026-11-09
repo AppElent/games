@@ -3,6 +3,7 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
+	afterCommits,
 	deletedSessionId,
 	expectCode,
 	fields,
@@ -288,7 +289,7 @@ describe("start", () => {
 		expect(indexesOf(stored, "trap")).toHaveLength(1);
 		const { session } = await bundle(t, sessionId);
 		expect(session.status).toBe("active");
-		expect(session.startedAt).toBe(T0);
+		expect(session.startedAt).toBe(afterCommits(T0));
 		expect(session.endedAt).toBeUndefined();
 	});
 
@@ -452,7 +453,7 @@ describe("submitGuess", () => {
 		expect(state.revealedRoles).toEqual(stored.assignments);
 		expect(session.status).toBe("completed");
 		expect(session.completedReason).toBe("finished");
-		expect(session.endedAt).toBe(T0);
+		expect(session.endedAt).toBe(afterCommits(T0));
 		expect(session.participantCount).toBe(4);
 		expect(new Set(session.winnerParticipantIds)).toEqual(
 			new Set([rivalClueGiver, rivalGuesser]),
@@ -569,7 +570,7 @@ describe("rematch", () => {
 		const { session, participants, state } = await bundle(t, sessionId);
 		expect(state.revealedRoles).toEqual(Array(25).fill(null));
 		expect(session.status).toBe("active");
-		expect(session.startedAt).toBe(T0);
+		expect(session.startedAt).toBe(afterCommits(T0));
 		expect(session.endedAt).toBeUndefined();
 		expect(session.completedReason).toBeUndefined();
 		expect(session.winnerParticipantIds).toBeUndefined();

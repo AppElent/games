@@ -7,6 +7,7 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
 	advance,
+	afterCommits,
 	arrange,
 	createdRows,
 	deletedSessionId,
@@ -343,7 +344,7 @@ describe("start", () => {
 		const stored = await storedState(t, sessionId);
 		expect(stored.phase).toBe("nowPlaying");
 		expect(stored.roundNumber).toBe(1);
-		expect(stored.roundStartedAt).toBe(T0);
+		expect(stored.roundStartedAt).toBe(afterCommits(T0));
 		expect(stored.turnOrder).toEqual([hostId, guest.participantId]);
 		expect(stored.activeIndex).toBe(0);
 		expect(stored.deck).toHaveLength(PACK_SIZE - 3);
@@ -367,7 +368,7 @@ describe("start", () => {
 		expect(new Set(dealt).size).toBe(PACK_SIZE);
 		const { session } = await bundle(t, sessionId);
 		expect(session.status).toBe("active");
-		expect(session.startedAt).toBe(T0);
+		expect(session.startedAt).toBe(afterCommits(T0));
 	});
 
 	it("gives each mode its starting tokens", async () => {
@@ -1092,7 +1093,7 @@ describe("getBundle", () => {
 		const masked = (participantId: ParticipantId, dropIndex: number) => ({
 			participantId,
 			dropIndex,
-			submittedAt: T0,
+			submittedAt: afterCommits(T0),
 		});
 		const full = (participantId: ParticipantId, dropIndex: number) => ({
 			...masked(participantId, dropIndex),
@@ -1131,9 +1132,14 @@ describe("create", () => {
 	it("stores what sessions.create and setup store together", async () => {
 		const t = setup();
 		const twoStep = await twoStepRoom(t);
-		const created = await signedInHost(t).mutation(api.hitster.create, ARGS);
+		// Its own backend, so both paths run at T0 on a fresh commit clock.
+		const oneStep = setup();
+		const created = await signedInHost(oneStep).mutation(
+			api.hitster.create,
+			ARGS,
+		);
 		expect(
-			await createdRows(t, created.sessionId, "hitsterGameStates"),
+			await createdRows(oneStep, created.sessionId, "hitsterGameStates"),
 		).toEqual(await createdRows(t, twoStep.sessionId, "hitsterGameStates"));
 	});
 

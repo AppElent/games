@@ -6,6 +6,7 @@
  * mirrors the web `.light` overrides. Components read `useTokens()`; nothing
  * outside this file spells a hex value or a `fontSize`.
  */
+// biome-ignore lint/correctness/useReactNativePlatformComponents: dynamic() calls it only when Platform.OS is "ios"; react-native exports it on every platform.
 import { type ColorValue, DynamicColorIOS, Platform } from "react-native";
 
 export const darkColors = {

@@ -49,13 +49,12 @@ describe("session seats", () => {
 		expect(listSeats().map((item) => item.sessionId)).toEqual(["b", "a"]);
 	});
 
-	it.each([
-		"{not json",
-		"12",
-		'{"sessionId":"s1"}',
-	])("reads %s as no seats", (raw) => {
-		writeText(STORAGE_KEYS.seats, raw);
-		expect(listSeats()).toEqual([]);
-		expect(resumableItems()).toEqual([]);
-	});
+	it.each(["{not json", "12", '{"sessionId":"s1"}'])(
+		"reads %s as no seats",
+		(raw) => {
+			writeText(STORAGE_KEYS.seats, raw);
+			expect(listSeats()).toEqual([]);
+			expect(resumableItems()).toEqual([]);
+		},
+	);
 });

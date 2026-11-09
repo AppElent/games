@@ -355,7 +355,8 @@
 	transition: transform 0.22s ease;
 }
 
-.game-tile:hover .tile-fan .pc {
+/* :where() keeps this at .tile-fan .pc specificity; source order makes it win. */
+:where(.game-tile:hover) .tile-fan .pc {
 	transform: rotate(calc((var(--i) - var(--mid)) * 15deg));
 }
 
@@ -1204,6 +1205,7 @@ button.pile:disabled {
 	border: 1.5px solid transparent;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: a meld card is never inside a .hand-card, so the hand-card .pc rules never compete with this one. */
 .meld .pc {
 	margin-left: calc(var(--card-w) * -0.54);
 }
@@ -1568,8 +1570,8 @@ button.meld[data-target="true"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.seat[data-active="true"] .seat-disc::after,
 	.seat-disc::after,
+	.seat[data-active="true"] .seat-disc::after,
 	.seat[data-flash="true"] .seat-disc,
 	.pile[data-pulse="true"],
 	.direction-mark,
