@@ -35,7 +35,7 @@ pnpm run deploy:production # production from this machine, values from Infisical
 
 `check`, `typecheck` and `test` also cover `packages/core` and `apps/mobile` (Jest).
 
-`pnpm exec convex env list` / `--prod` to inspect deployment env vars. `CLERK_JWT_ISSUER_DOMAIN` is required on every Convex deployment (dev, prod, and as a `preview` type default via `convex env default set ... --type preview`) — without it Convex never validates the Clerk JWT and `ctx.auth.getUserIdentity()` silently returns `undefined`.
+`pnpm exec convex env list` / `--prod` to inspect deployment env vars. `CLERK_JWT_ISSUER_DOMAIN` is required on every Convex deployment (dev, prod, and as a `preview` type default via `convex env default set ... --type preview`; previews trust the Clerk development issuer, written by `pnpm env:apply preview --only convex`) — without it Convex never validates the Clerk JWT and `ctx.auth.getUserIdentity()` silently returns `undefined`.
 
 ## Architecture
 

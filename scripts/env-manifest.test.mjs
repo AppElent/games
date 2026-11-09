@@ -41,6 +41,21 @@ describe("Arcade Club environment manifest", () => {
 		}
 	});
 
+	it("gives web PR previews development auth and the preview app production auth", () => {
+		const clerk = (environment) =>
+			placements(environment)
+				.filter(({ name }) => /CLERK/.test(name))
+				.map(({ consumer, entry }) => `${consumer} ${entry.infisicalKey}`);
+		expect(clerk("preview")).toEqual([
+			"expo-build clerk-publishable-key",
+			"vite-build pr-clerk-publishable-key",
+			"convex-functions pr-clerk-jwt-issuer-domain",
+		]);
+		for (const environment of ["local", "dev", "production"]) {
+			expect(clerk(environment).join()).not.toContain("pr-clerk");
+		}
+	});
+
 	it("names the values the preview and deploy workflows read", () => {
 		const github = (environment) =>
 			placements(environment)

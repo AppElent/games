@@ -78,7 +78,12 @@ export const ENTRIES = [
 		description: "pk_test_ in Infisical dev, pk_live_ in staging and prod.",
 		secret: false,
 		lands: {
-			"vite-build": { name: "VITE_CLERK_PUBLISHABLE_KEY", environments: ALL },
+			// Web PR previews are short-lived: they read prClerkPublishableKey.
+			"vite-build": {
+				name: "VITE_CLERK_PUBLISHABLE_KEY",
+				environments: ["local", "dev", "production"],
+			},
+			// The installed preview app is long-lived: production auth (pk_live_).
 			"expo-build": {
 				name: "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY",
 				environments: ALL,
@@ -97,7 +102,32 @@ export const ENTRIES = [
 		lands: {
 			"convex-functions": {
 				name: "CLERK_JWT_ISSUER_DOMAIN",
-				environments: ALL,
+				environments: ["local", "dev", "production"],
+			},
+		},
+	},
+	{
+		key: "prClerkPublishableKey",
+		infisicalKey: "pr-clerk-publishable-key",
+		description:
+			"Reference to the dev pk_test_ key: web PR previews are short-lived.",
+		secret: false,
+		lands: {
+			"vite-build": {
+				name: "VITE_CLERK_PUBLISHABLE_KEY",
+				environments: ["preview"],
+			},
+		},
+	},
+	{
+		key: "prClerkJwtIssuerDomain",
+		infisicalKey: "pr-clerk-jwt-issuer-domain",
+		description: "Reference to the dev issuer the per-PR backend trusts.",
+		secret: false,
+		lands: {
+			"convex-functions": {
+				name: "CLERK_JWT_ISSUER_DOMAIN",
+				environments: ["preview"],
 			},
 		},
 	},

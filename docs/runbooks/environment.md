@@ -23,10 +23,17 @@ and which Infisical tier each environment reads. This app has no exceptions to i
 Values live in the shared Infisical project (`.infisical.json` holds only its id). The
 lookup order is `/`, then `/arcade-club`; a value in the app folder overrides the root.
 `/arcade-club` holds the app's own values: `convex-url`, `convex-deploy-key`,
-`sentry-dsn`, `sentry-auth-token` and `web-origin`. `staging` carries the production
-Clerk instance, so PR web previews and the preview iOS app sign in against prod Clerk;
-`staging /arcade-club` holds the production backend URL and web origin for the iOS app,
-and a preview-kind `convex-deploy-key` for the per-PR web backends.
+`sentry-dsn`, `sentry-auth-token` and `web-origin`.
+
+Auth follows lifetime. Local, dev, cloud worktrees and web PR previews are short-lived
+and use the Clerk development instance; the installed preview iOS app and production are
+long-lived and use the production instance. So `staging` carries the production Clerk
+key and issuer for the iOS app, while web PR previews read `pr-clerk-publishable-key`
+and `pr-clerk-jwt-issuer-domain` (in `staging /`, secret references to the `dev`
+values): the per-PR web build gets `pk_test_` and every per-PR Convex backend trusts
+the development issuer (a Convex `preview` default). `staging /arcade-club` holds the
+production backend URL and web origin for the iOS app, and a preview-kind
+`convex-deploy-key` for the per-PR web backends.
 
 Static commands need no Infisical login:
 
