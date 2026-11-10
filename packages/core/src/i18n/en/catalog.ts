@@ -41,8 +41,8 @@ export const catalog = {
 		stats: "2 players",
 	},
 	hitster: {
-		title: "Hitster",
-		tagline: "Music timeline party",
+		title: "Music Timeline",
+		tagline: "Guess the year, build the timeline",
 		description:
 			"Host a music round and place songs on a shared timeline with friends.",
 		primaryAction: "Host room",
