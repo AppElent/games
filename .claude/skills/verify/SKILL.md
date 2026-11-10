@@ -13,7 +13,7 @@ The sign-in screen shows a "▶ Dev: log in as test user" button (`src/lib/auth`
 
 ## Route → module map
 
-Session model: every game is a `gameSessions` row (`gameType` discriminator) + a per-game state table, per `AGENTS.md`'s "Game session model" section. When verifying a change to a specific game, drive it through both the route and the Convex session flow (join by room code / challenge link / solo), not just the UI in isolation.
+Session model: every game is a `gameSessions` row (`gameType` discriminator) + a per-game state table, per the [game sessions contract](../../../docs/contracts/game-sessions.md). When verifying a change to a specific game, drive it through both the route and the Convex session flow (join by room code / challenge link / solo), not just the UI in isolation.
 
 | Route | Module |
 | --- | --- |
@@ -33,7 +33,7 @@ Session model: every game is a `gameSessions` row (`gameType` discriminator) + a
 | `/word-links/*` | `src/routes/word-links/*` (local-only, no Convex session) |
 | `/squad-surge/*` | `src/routes/squad-surge/*` (local-only, no Convex session) |
 | `/workbench` | `src/routes/workbench/*`, `convex/workbench.ts` |
-| `/sign-in`, `/sign-up`, `/forgot-password`, `/account` | thin `#/lib/auth` wrappers, see `AGENTS.md` Auth wiring |
+| `/sign-in`, `/sign-up`, `/forgot-password`, `/account` | thin `#/lib/auth` wrappers, see the [auth contract](../../../docs/contracts/auth.md) |
 
 All game routes set `staticData: { fullscreen: true }` and render inside `FullscreenGameShell`/`FullscreenGamePage`/`FitScale` (`src/components/games/`) — if a change affects layout, check it in both fullscreen and the pause-menu state.
 
