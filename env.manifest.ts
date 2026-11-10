@@ -8,8 +8,12 @@ export const ENV_CONFIG = {
 	source: { paths: ["/", "/arcade-club"] },
 	convex: {
 		project: "eric-jansen:games",
-		// staging: the staging web's own deployment; its name is added when it exists.
-		deployments: { dev: "zany-parakeet-507", production: "chatty-ram-217" },
+		deployments: {
+			dev: "zany-parakeet-507",
+			// The staging web's own prod-type deployment, eric-jansen:games:staging.
+			staging: "blessed-blackbird-8",
+			production: "chatty-ram-217",
+		},
 	},
 	worker: { name: "games" },
 	mobile: { path: "apps/mobile" },

@@ -41,15 +41,18 @@ describe("Arcade Club environment manifest", () => {
 		}
 	});
 
-	it("writes staging to the preview app and the staging GitHub Environment only", () => {
+	it("writes staging to the preview app, the staging GitHub Environment and the staging Convex deployment only", () => {
 		const destinations = (environment) =>
 			placements(environment).map(({ destination }) =>
-				[destination.kind, destination.environment ?? destination.scope].join(
-					" ",
-				),
+				[
+					destination.kind,
+					destination.environment ??
+						destination.scope ??
+						destination.deployment,
+				].join(" "),
 			);
 		expect(new Set(destinations("staging"))).toEqual(
-			new Set(["eas preview", "github staging"]),
+			new Set(["convex blessed-blackbird-8", "eas preview", "github staging"]),
 		);
 		expect(destinations("preview").join()).not.toContain("eas");
 	});

@@ -16,7 +16,7 @@ and which Infisical tier each environment reads. This app has no exceptions to i
 | `local` | `pnpm dev`, `.env.local` | the worktree's backend, else `zany-parakeet-507` | `development` | `dev` |
 | `dev` | Worker `games-dev` | `zany-parakeet-507` | `development` | `dev` |
 | `preview` | Worker `games-pr-<n>` | per-PR preview | | `staging` |
-| `staging` | Worker `games-staging` (`arcade-club-stg.appelent.nl`) | its own deployment (web); `chatty-ram-217` (preview app) | `preview` | `prod` |
+| `staging` | Worker `games-staging` (`arcade-club-stg.appelent.nl`) | `blessed-blackbird-8` (web); `chatty-ram-217` (preview app) | `preview` | `prod` |
 | `production` | Worker `games` | `chatty-ram-217` | `production` | `prod` |
 
 ## Source
