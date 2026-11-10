@@ -15,11 +15,20 @@ export const ENV_CONFIG = {
 	github: { repository: "AppElent/games" },
 };
 
-export const ENVIRONMENTS = ["local", "dev", "preview", "production"] as const;
+// "staging" is only the installed preview app (EAS preview); there is no staging web.
+export const ENVIRONMENTS = [
+	"local",
+	"dev",
+	"preview",
+	"staging",
+	"production",
+] as const;
 
 const ALL = ["local", "dev", "preview", "production"];
-const DEPLOYED = ["dev", "preview", "production"];
 const SHIPPED = ["preview", "production"];
+// Mobile builds: development, the preview app (staging) and the store app.
+const APP = ["local", "dev", "staging", "production"];
+const APP_DEPLOYED = ["dev", "staging", "production"];
 
 export const ENTRIES = [
 	{
@@ -38,7 +47,7 @@ export const ENTRIES = [
 					production: "convex deploy --cmd-url-env-var-name CONVEX_URL",
 				},
 			},
-			"expo-build": { name: "EXPO_PUBLIC_CONVEX_URL", environments: ALL },
+			"expo-build": { name: "EXPO_PUBLIC_CONVEX_URL", environments: APP },
 			"expo-local": {
 				name: "EXPO_PUBLIC_CONVEX_URL",
 				environments: ["local"],
@@ -75,18 +84,13 @@ export const ENTRIES = [
 	{
 		key: "clerkPublishableKey",
 		infisicalKey: "clerk-publishable-key",
-		description: "pk_test_ in Infisical dev, pk_live_ in staging and prod.",
+		description: "pk_test_ in Infisical dev and staging, pk_live_ in prod.",
 		secret: false,
 		lands: {
-			// Web PR previews are short-lived: they read prClerkPublishableKey.
-			"vite-build": {
-				name: "VITE_CLERK_PUBLISHABLE_KEY",
-				environments: ["local", "dev", "production"],
-			},
-			// The installed preview app is long-lived: production auth (pk_live_).
+			"vite-build": { name: "VITE_CLERK_PUBLISHABLE_KEY", environments: ALL },
 			"expo-build": {
 				name: "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY",
-				environments: ALL,
+				environments: APP,
 			},
 			"expo-local": {
 				name: "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY",
@@ -102,32 +106,7 @@ export const ENTRIES = [
 		lands: {
 			"convex-functions": {
 				name: "CLERK_JWT_ISSUER_DOMAIN",
-				environments: ["local", "dev", "production"],
-			},
-		},
-	},
-	{
-		key: "prClerkPublishableKey",
-		infisicalKey: "pr-clerk-publishable-key",
-		description:
-			"Reference to the dev pk_test_ key: web PR previews are short-lived.",
-		secret: false,
-		lands: {
-			"vite-build": {
-				name: "VITE_CLERK_PUBLISHABLE_KEY",
-				environments: ["preview"],
-			},
-		},
-	},
-	{
-		key: "prClerkJwtIssuerDomain",
-		infisicalKey: "pr-clerk-jwt-issuer-domain",
-		description: "Reference to the dev issuer the per-PR backend trusts.",
-		secret: false,
-		lands: {
-			"convex-functions": {
-				name: "CLERK_JWT_ISSUER_DOMAIN",
-				environments: ["preview"],
+				environments: ALL,
 			},
 		},
 	},
@@ -179,7 +158,10 @@ export const ENTRIES = [
 		description: "Web origin the mobile app uses for share links.",
 		secret: false,
 		lands: {
-			"expo-build": { name: "EXPO_PUBLIC_WEB_ORIGIN", environments: DEPLOYED },
+			"expo-build": {
+				name: "EXPO_PUBLIC_WEB_ORIGIN",
+				environments: APP_DEPLOYED,
+			},
 		},
 	},
 	{
@@ -191,7 +173,7 @@ export const ENTRIES = [
 		secret: false,
 		lands: {
 			"vite-build": { name: "VITE_SENTRY_DSN", environments: ALL },
-			"expo-build": { name: "EXPO_PUBLIC_SENTRY_DSN", environments: ALL },
+			"expo-build": { name: "EXPO_PUBLIC_SENTRY_DSN", environments: APP },
 			"expo-local": { name: "EXPO_PUBLIC_SENTRY_DSN", environments: ["local"] },
 			// scripts/convex-sentry.mjs, run through `pnpm env:exec local`.
 			"local-tooling": { name: "SENTRY_CONVEX_DSN", environments: ["local"] },
@@ -220,7 +202,7 @@ export const ENTRIES = [
 		lands: {
 			"local-tooling": { name: "SENTRY_AUTH_TOKEN", environments: ["local"] },
 			workflow: { name: "SENTRY_AUTH_TOKEN", environments: SHIPPED },
-			"eas-tooling": { name: "SENTRY_AUTH_TOKEN", environments: ALL },
+			"eas-tooling": { name: "SENTRY_AUTH_TOKEN", environments: APP },
 		},
 	},
 	{

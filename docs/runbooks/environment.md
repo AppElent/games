@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when adding, changing or debugging an environment variable, or deploying to an Arcade Club environment.
-version: 2.0.0
+version: 3.0.0
 ---
 
 # Environment contract
@@ -15,7 +15,8 @@ and which Infisical tier each environment reads. This app has no exceptions to i
 | --- | --- | --- | --- | --- |
 | `local` | `pnpm dev`, `.env.local` | the worktree's backend, else `zany-parakeet-507` | `development` | `dev` |
 | `dev` | Worker `games-dev` | `zany-parakeet-507` | `development` | `dev` |
-| `preview` | Worker `games-pr-<n>` | per-PR preview (web); `chatty-ram-217` (iOS app) | `preview` | `staging` |
+| `preview` | Worker `games-pr-<n>` | per-PR preview | | `staging` |
+| `staging` | | `chatty-ram-217` (preview app) | `preview` | `prod` |
 | `production` | Worker `games` | `chatty-ram-217` | `production` | `prod` |
 
 ## Source
@@ -25,15 +26,15 @@ lookup order is `/`, then `/arcade-club`; a value in the app folder overrides th
 `/arcade-club` holds the app's own values: `convex-url`, `convex-deploy-key`,
 `sentry-dsn`, `sentry-auth-token` and `web-origin`.
 
-Auth follows lifetime. Local, dev, cloud worktrees and web PR previews are short-lived
-and use the Clerk development instance; the installed preview iOS app and production are
-long-lived and use the production instance. So `staging` carries the production Clerk
-key and issuer for the iOS app, while web PR previews read `pr-clerk-publishable-key`
-and `pr-clerk-jwt-issuer-domain` (in `staging /`, secret references to the `dev`
-values): the per-PR web build gets `pk_test_` and every per-PR Convex backend trusts
-the development issuer (a Convex `preview` default). `staging /arcade-club` holds the
-production backend URL and web origin for the iOS app, and a preview-kind
-`convex-deploy-key` for the per-PR web backends.
+Infisical tiers follow lifetime. Local, dev, cloud worktrees and web PR previews are
+short-lived and use the Clerk development instance: Infisical `staging /` holds
+`clerk-publishable-key` and `clerk-jwt-issuer-domain` as secret references to the `dev`
+values, so the per-PR web build gets `pk_test_` and every per-PR Convex backend trusts
+the development issuer (a Convex `preview` default). `staging /arcade-club` holds a
+preview-kind `convex-deploy-key` for the per-PR web backends. The installed preview
+app is long-lived: this app has no staging web, so `staging` is only that app, and it
+reads Infisical `prod` like production (production Clerk, backend URL and web origin),
+written to EAS `preview` by `pnpm env:apply staging --only eas`.
 
 Static commands need no Infisical login:
 
