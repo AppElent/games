@@ -1,10 +1,11 @@
 name: Deploy
 
-# A merge to main ships production: the CI checks again (admins can bypass
-# the ruleset), then Convex functions and schema, then the Worker built against
-# them. "Run workflow" redeploys main by hand. Then the preview app's
-# over-the-air update, whose builds call the production backend. Builds stay
-# separate (mobile-build.yml). There is no staging environment.
+# A merge to main ships staging: the CI checks again (admins can bypass the
+# ruleset), then the staging Convex deployment, then the games-staging Worker
+# built against it. Production ships only from a manual "Run workflow" on main:
+# production Convex, the games Worker, then the preview app's over-the-air
+# update, whose builds call the production backend. Builds stay separate
+# (mobile-build.yml).
 on:
   push:
     branches: [main]
@@ -12,7 +13,7 @@ on:
 
 # Never cancel a deploy mid-flight; queue behind the previous one instead.
 concurrency:
-  group: deploy-production
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && 'production' || 'staging' }}
   cancel-in-progress: false
 
 jobs:
@@ -23,12 +24,12 @@ jobs:
   deploy:
     needs: checks
     runs-on: ubuntu-latest
-    # Every value is scoped to the `production` GitHub Environment, written
-    # there by `pnpm env:apply production --only github`.
-    environment: production
+    # Every value is scoped to the `staging` or `production` GitHub Environment,
+    # written there by `pnpm env:apply <environment> --only github`.
+    environment: ${{ github.event_name == 'workflow_dispatch' && 'production' || 'staging' }}
     permissions: { contents: read }
     env:
-      ENVIRONMENT_NAME: production
+      ENVIRONMENT_NAME: ${{ github.event_name == 'workflow_dispatch' && 'production' || 'staging' }}
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -37,12 +38,14 @@ jobs:
       VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
       # The Cloudflare Vite plugin picks the Wrangler env at build time and
       # `wrangler deploy` follows dist/server/wrangler.json; --env is ignored.
-      # Production is the top-level Worker, so no Wrangler env is selected.
-      CLOUDFLARE_ENV: ""
-      EXPECTED_WORKER: games
+      # wrangler.jsonc: top-level = games (production), env.staging = games-staging.
+      # Written `!= … && 'staging' || ''` because the other polarity would make
+      # production's empty string fall through to 'staging'.
+      CLOUDFLARE_ENV: ${{ github.event_name != 'workflow_dispatch' && 'staging' || '' }}
+      EXPECTED_WORKER: ${{ github.event_name == 'workflow_dispatch' && 'games' || 'games-staging' }}
     steps:
       - name: Guard production ref
-        if: github.ref != 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
         run: |
           echo "::error::Production deploys run from main only (got ${GITHUB_REF})."
           exit 1
@@ -51,7 +54,8 @@ jobs:
       - uses: ./.github/actions/setup
 
       # An Environment without its own CONVEX_DEPLOY_KEY silently inherits a
-      # repo-level one of the same name, so insist on a production key first.
+      # repo-level one of the same name, so insist on a prod: key first. Staging
+      # has its own prod: key, for its own Convex deployment.
       - name: Check environment
         run: |
           case "$CONVEX_DEPLOY_KEY" in
@@ -61,12 +65,14 @@ jobs:
           node scripts/env.mjs check "$ENVIRONMENT_NAME" --ci
 
       # The deploy key alone picks the Convex deployment, which exposes its URL
-      # to --cmd as $CONVEX_URL; the build reads VITE_CONVEX_URL.
+      # to --cmd as $CONVEX_URL; the build reads VITE_CONVEX_URL. Both targets
+      # run `pnpm build`, so staging exercises the bundle production ships;
+      # VITE_SENTRY_ENVIRONMENT tags its browser reports.
       - name: Convex deploy + build
         run: |
           pnpm exec convex deploy \
             --cmd-url-env-var-name CONVEX_URL \
-            --cmd "VITE_CONVEX_URL=\$CONVEX_URL pnpm build"
+            --cmd "VITE_CONVEX_URL=\$CONVEX_URL VITE_SENTRY_ENVIRONMENT=\$ENVIRONMENT_NAME pnpm build"
 
       # A build for the wrong env would replace another environment's Worker.
       - name: Guard Worker name
@@ -80,12 +86,14 @@ jobs:
       - name: Deploy Worker
         run: pnpm exec wrangler deploy
 
-  # Publishes the merged JavaScript to the preview channel once its backend is
-  # live, only when an installed build can load it; otherwise the run summary
+  # Publishes main's JavaScript to the preview channel once the production
+  # backend it calls is live (so only after a production deploy), and only when
+  # an installed build can load it; otherwise the run summary
   # says a rebuild is due. See apps/mobile/scripts/ci-publish-update.mjs.
   # Preview values live in repository scope as PREVIEW_<name>.
   mobile-update:
     needs: deploy
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Moves the mobile-update/preview tag after publishing.
     permissions: { contents: write }

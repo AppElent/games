@@ -135,8 +135,9 @@ runtime, since nothing would load the update; `--without-build` overrides that. 
 retry with `--upload-only`; don't publish again. A bare `eas update` resolves to the
 development variant, so no preview or production build would ever load it.
 
-A merge to `main` publishes the preview update from CI once the production backend has
-deployed (`deploy.yml` → `apps/mobile/scripts/ci-publish-update.mjs`). It publishes only
+A production deploy (a manual `deploy.yml` run on `main`) publishes the preview update
+from CI once the production backend is live
+(`apps/mobile/scripts/ci-publish-update.mjs`); a merge only ships staging web. It publishes only
 when a finished EAS build or an earlier update on `preview` has the runtime, and skips
 when nothing the app bundles changed since the `mobile-update/preview` tag. Otherwise
 the run summary says a rebuild is due. Local builds are not on EAS: after installing
