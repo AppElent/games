@@ -1,35 +1,40 @@
 ---
 type: runbook
 description: Read when adding, changing or debugging an environment variable, or deploying to an Arcade Club environment.
-version: 1.0.0
+version: 3.0.0
 ---
 
 # Environment contract
 
-[`env.manifest.ts`](../../env.manifest.ts) is the source of truth for which value each
-web, mobile, Convex and CI consumer reads. The `pnpm env:*` aliases run the
-`scripts/env.mjs` engine; see the [shared guide](../standards/environments.md).
+[`env.manifest.ts`](../../env.manifest.ts) is data only: which value each web, mobile,
+Convex and CI consumer reads, under which name, in which environment. The shared
+[environments standard](../standards/environments.md) decides where each value lands
+and which Infisical tier each environment reads. This app has no exceptions to it.
 
-The app has four environments:
-
-| Environment | Web | Convex | EAS |
-| --- | --- | --- | --- |
-| `local` | `pnpm dev`, `.env.local` | local backend (`convex dev`) | `development` |
-| `preview` | Worker `games-pr-<n>` | `eric-jansen:games` preview (web); `chatty-ram-217` (iOS app) | `preview` |
-| `dev` | Worker `games-dev` | `zany-parakeet-507` | `development` |
-| `production` | Worker `games` | `chatty-ram-217` | `production` |
+| Environment | Web | Convex | EAS | Infisical |
+| --- | --- | --- | --- | --- |
+| `local` | `pnpm dev`, `.env.local` | the worktree's backend, else `zany-parakeet-507` | `development` | `dev` |
+| `dev` | Worker `games-dev` | `zany-parakeet-507` | `development` | `dev` |
+| `preview` | Worker `games-pr-<n>` | per-PR preview | | `staging` |
+| `staging` | | `chatty-ram-217` (preview app) | `preview` | `prod` |
+| `production` | Worker `games` | `chatty-ram-217` | `production` | `prod` |
 
 ## Source
 
 Values live in the shared Infisical project (`.infisical.json` holds only its id). The
 lookup order is `/`, then `/arcade-club`; a value in the app folder overrides the root.
-`local` and `dev` read the Infisical `dev` environment, `preview` reads `staging` and
-`production` reads `prod`, as in the other Appelent apps. `staging` carries the production
-Clerk instance, so PR web previews and the preview iOS app sign in against prod Clerk;
-the iOS app also talks to the production Convex deployment and web origin
-(`staging /arcade-club` holds the prod values), while each web preview gets its own
-Convex preview deployment. `/arcade-club` holds the app's own values: `sentry-dsn`,
-`sentry-auth-token`, `convex-url` and `web-origin`.
+`/arcade-club` holds the app's own values: `convex-url`, `convex-deploy-key`,
+`sentry-dsn`, `sentry-auth-token` and `web-origin`.
+
+Infisical tiers follow lifetime. Local, dev, cloud worktrees and web PR previews are
+short-lived and use the Clerk development instance: Infisical `staging /` holds
+`clerk-publishable-key` and `clerk-jwt-issuer-domain` as secret references to the `dev`
+values, so the per-PR web build gets `pk_test_` and every per-PR Convex backend trusts
+the development issuer (a Convex `preview` default). `staging /arcade-club` holds a
+preview-kind `convex-deploy-key` for the per-PR web backends. The installed preview
+app is long-lived: this app has no staging web, so `staging` is only that app, and it
+reads Infisical `prod` like production (production Clerk, backend URL and web origin),
+written to EAS `preview` by `pnpm env:apply staging --only eas`.
 
 Static commands need no Infisical login:
 
@@ -45,32 +50,64 @@ pnpm env:plan production
 pnpm env:apply production --only eas
 ```
 
+## Local and worktrees
+
+Every worktree is prepared by `node scripts/workspace.mjs prepare --editor <host>`
+([workspaces](../standards/workspaces.md)); `t3.json` runs it when T3 Code creates a
+worktree. It writes `.env.local` and `apps/mobile/.env.local` from Infisical `dev`,
+then, per `appelent.json` (`backend.mode: "cloud"`), creates the worktree's own Convex
+deployment, applies its Convex values, pushes the functions and writes its URL into
+both files. `node scripts/workspace.mjs clean` removes what prepare created. Never copy
+dotenv files between checkouts; in the main checkout, `pnpm env:apply local --only
+file` regenerates them.
+
+Generated files hold only manifest values. To add one, add it to the manifest.
+`EXPO_PUBLIC_SENTRY_DEBUG` (Infisical `sentry-debug`, optional) is the one local-only
+toggle: `1` lets a development bundle report to Sentry.
+
+## Deployed environments
+
+Deployed environments read values from their destination, never from a
+`.env.<environment>.local` file.
+
+- `production`: `pnpm env:apply production --only github` writes the deploy workflow's
+  values into the `production` GitHub Environment: secrets `CONVEX_DEPLOY_KEY` (a
+  `prod:` key for `chatty-ram-217`), `CLOUDFLARE_API_TOKEN`, `SENTRY_AUTH_TOKEN`, and
+  variables `CLOUDFLARE_ACCOUNT_ID`, `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_SENTRY_DSN`.
+  The workflow refuses a key without the `prod:` prefix and a build whose Worker is
+  not `games`.
+- `preview`: `pnpm env:apply preview --only github` writes repository scope, always as
+  `PREVIEW_<name>`, so a missing Environment value never falls back to a preview one.
+  `preview.yml` maps them back (`CONVEX_DEPLOY_KEY: ${{ secrets.PREVIEW_CONVEX_DEPLOY_KEY }}`);
+  `deploy.yml`'s mobile update and `eas-local-build.yml` read `PREVIEW_EXPO_TOKEN`.
+- `dev`: the build values land in the `dev` GitHub Environment; no workflow deploys
+  dev.
+
+Local deploys and over-the-air publishes take their values from Infisical through
+`env:exec`, which writes nothing:
+
+```sh
+pnpm deploy:dev          # push Convex to the shared dev deployment (zany-parakeet-507), build games-dev (CLOUDFLARE_ENV=dev), wrangler deploy
+pnpm deploy:production   # same as CI: convex deploy + build, wrangler deploy
+pnpm mobile:update:preview
+```
+
+`ship:dev` names the dev deployment itself and clears `CONVEX_DEPLOY_KEY`. Without that,
+the Convex CLI would push to whatever `.env.local` selects, which in a prepared worktree
+is the worktree backend and its scoped key. `convex dev` also rewrites `.env.local` for
+the deployment it pushed to, so `ship:dev` runs it through `scripts/keep-env-local.mjs`,
+which puts the file back exactly as it was.
+
 ## Supplied values
 
 Some placements are produced by tools, not copied from Infisical:
 
-- `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` in the root `.env.local` come from
-  `pnpm exec convex dev`.
-- `EXPO_PUBLIC_CONVEX_URL` in `apps/mobile/.env.local` is set by hand: the dev
-  deployment for a phone, or a local backend a simulator can reach (see
-  [mobile.md](mobile.md)).
-- The preview and deploy workflows get `VITE_CONVEX_URL` from `convex deploy`. The
-  preview workflow uses the existing repo-level `CONVEX_DEPLOY_KEY` secret.
+- `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` in `.env.local`, and
+  `EXPO_PUBLIC_CONVEX_URL` in `apps/mobile/.env.local`, come from workspace prepare (or
+  `pnpm exec convex dev`). On a physical device, point the mobile URL at a deployment
+  the phone can reach (see [mobile.md](mobile.md)).
+- The preview and deploy workflows get `VITE_CONVEX_URL` from `convex deploy`.
 
-`pnpm env:apply production` writes the deploy workflow's values into the `production`
-GitHub Environment: `CONVEX_DEPLOY_KEY` (a `prod:` key for `chatty-ram-217`, from
-Infisical `prod` `/arcade-club` `convex-deploy-key`), `CLOUDFLARE_*`,
-`SENTRY_AUTH_TOKEN` and the public `VITE_*` values. The workflow refuses any key
-without the `prod:` prefix, since a missing Environment secret would otherwise fall
-back to the repo-level preview key. `pnpm deploy:prod` runs the same
-`deploy:production` script locally with those values from Infisical.
-
-`pnpm env:apply preview` writes the preview workflow's GitHub values: secrets for
-`SENTRY_AUTH_TOKEN` and `CLOUDFLARE_*`, and repo variables for the public values. The
-Clerk key keeps its workflow name, `PREVIEW_CLERK_PUBLISHABLE_KEY`. The test-user
-email and password are public client values (Vite and Metro inline them) and land only
-in local and dev builds.
-
-Existing hand-written `.env.local` files stay untouched; apply refuses to overwrite a
-file without the generated marker. The engine records only variable names in
+The test-user email and password are public client values (Vite and Metro inline
+them) and land only in local and dev. The engine records only variable names in
 `.appelent/env-state.json` (ignored by Git).

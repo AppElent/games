@@ -3,6 +3,8 @@ name: PR Preview
 # Opt-in: a PR gets a preview backend + Worker only while it carries the
 # `preview:web` label. Pushes to a labelled PR redeploy; removing the label or
 # closing the PR deletes the Worker. Other label changes are ignored.
+# Values come from repository scope as PREVIEW_<name>, written by
+# `pnpm env:apply preview --only github` (docs/runbooks/environment.md).
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled, closed]
@@ -30,14 +32,17 @@ jobs:
       pull-requests: write
       contents: read
     env:
-      # The `pr` wrangler env clears routes, so the build never carries the
-      # production custom domain onto this Worker.
-      CLOUDFLARE_ENV: pr
-      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.PREVIEW_CLERK_PUBLISHABLE_KEY }}
-      VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.PREVIEW_CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.PREVIEW_CLOUDFLARE_ACCOUNT_ID }}
+      CONVEX_DEPLOY_KEY: ${{ secrets.PREVIEW_CONVEX_DEPLOY_KEY }}
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.PREVIEW_VITE_CLERK_PUBLISHABLE_KEY }}
+      VITE_SENTRY_DSN: ${{ vars.PREVIEW_VITE_SENTRY_DSN }}
       # Uploads source maps; the Vite Sentry plugin is disabled without it.
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.PREVIEW_SENTRY_AUTH_TOKEN }}
+      # The Cloudflare Vite plugin picks the wrangler env at build time. `pr`
+      # clears the production routes, so a preview never claims the domain,
+      # and sets environment_name for the Worker's Sentry reports.
+      CLOUDFLARE_ENV: pr
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
@@ -45,37 +50,31 @@ jobs:
       # Convex provisions/refreshes preview backend pr-<N>, exposes its URL as
       # $CONVEX_URL inside --cmd, then runs the build (bridge CONVEX_URL ->
       # VITE_CONVEX_URL since the app reads the Vite-prefixed var at build
-      # time). VITE_SENTRY_ENVIRONMENT tags browser reports as preview, like the
-      # Worker's environment_name. No --preview-run seed: the games need no
-      # reference data (quiz.ensureSampleSet creates the sample quiz on demand).
+      # time). VITE_SENTRY_ENVIRONMENT tags browser reports as preview. No
+      # --preview-run seed: the games need no reference data
+      # (quiz.ensureSampleSet creates the sample quiz on demand).
       - name: Convex preview deploy + build
         run: |
           pnpm exec convex deploy \
             --preview-create pr-${{ github.event.pull_request.number }} \
             --cmd-url-env-var-name CONVEX_URL \
-            --cmd 'VITE_CONVEX_URL=$CONVEX_URL VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY VITE_SENTRY_ENVIRONMENT=preview pnpm build'
+            --cmd 'VITE_CONVEX_URL=$CONVEX_URL VITE_SENTRY_ENVIRONMENT=preview pnpm build'
 
       - name: Deploy Worker (per-PR)
         id: deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -o pipefail
-          # --var overrides the runtime bindings so the per-PR Worker matches
-          # the per-PR bundle — otherwise wrangler.jsonc's top-level `vars`
-          # bakes production Clerk/Convex values onto the preview Worker.
-          pnpm exec wrangler deploy \
-            --name "$WORKER_NAME" \
-            --var "VITE_CLERK_PUBLISHABLE_KEY:$VITE_CLERK_PUBLISHABLE_KEY" \
-            --var "environment_name:preview" \
-            2>&1 | tee /tmp/wrangler-deploy.log
-          if grep -qi 'custom domain' /tmp/wrangler-deploy.log; then
-            echo "::error::The preview deploy touched a custom domain; redeploy production to take it back."
+          pnpm exec wrangler deploy --name "$WORKER_NAME" 2>&1 | tee "$RUNNER_TEMP/wrangler-deploy.log"
+          URL=$(grep -oE 'https://[^ ]+workers\.dev' "$RUNNER_TEMP/wrangler-deploy.log" | head -1)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      # A preview that inherits production routes takes over the production domain.
+      - name: Guard against custom domains
+        run: |
+          if grep -qi 'custom domain' "$RUNNER_TEMP/wrangler-deploy.log"; then
+            echo "::error::The preview Worker claimed a custom domain. Redeploy production, then fix the wrangler pr env."
             exit 1
           fi
-          URL=$(grep -oE 'https://[^ ]+workers\.dev' /tmp/wrangler-deploy.log | head -1)
-          echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Upsert PR comment
         uses: actions/github-script@v7
@@ -100,15 +99,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.PREVIEW_CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.PREVIEW_CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      # Close always runs cleanup, so a PR that never deployed has no Worker.
+      # Tolerate only that (code 10007); any other failure must stay visible.
       - name: Delete Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        # Close always runs cleanup, so a PR that never deployed has no Worker.
-        # Tolerate only that (code 10007); any other failure must stay visible.
         run: |
           status=0; out=$(pnpm exec wrangler delete --name "$WORKER_NAME" 2>&1) || status=$?
           echo "$out"

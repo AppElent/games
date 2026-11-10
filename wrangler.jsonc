@@ -10,6 +10,12 @@
   // Every other env clears the routes, or its deploy takes the production domain.
   "env": {
     "dev": { "name": "games-dev", "workers_dev": true, "routes": [] },
-    "pr": { "name": "games-pr", "workers_dev": true, "routes": [] }
+    // PR previews (CLOUDFLARE_ENV=pr); environment_name tags the Worker's Sentry reports.
+    "pr": {
+      "name": "games-pr",
+      "workers_dev": true,
+      "routes": [],
+      "vars": { "environment_name": "preview" }
+    }
   }
 }

@@ -17,7 +17,8 @@ jobs:
     permissions:
       contents: read
     env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Repository scope holds preview values as PREVIEW_<name> (env:apply preview).
+      EXPO_TOKEN: ${{ secrets.PREVIEW_EXPO_TOKEN }}
       # Builds that need uploaded source maps stay on the EAS cloud flow.
       SENTRY_DISABLE_AUTO_UPLOAD: "true"
       ARTIFACT: arcadeclub-${{ inputs.platform }}-${{ inputs.profile }}.${{ inputs.platform == 'ios' && 'ipa' || 'apk' }}

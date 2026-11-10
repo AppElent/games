@@ -24,7 +24,7 @@ Arcade Club is a real-time games web app built with TanStack Start, Clerk, and C
 This project uses [pnpm](https://pnpm.io) — never npm or yarn.
 
 1. `pnpm install`
-2. `pnpm env:apply local` writes `.env.local` from Infisical, and `pnpm exec convex dev` adds the Convex deployment and URL. See `docs/runbooks/environment.md`.
+2. `pnpm env:apply local --only file` writes `.env.local` and `apps/mobile/.env.local` from Infisical, and `pnpm exec convex dev` adds the Convex deployment and URL. A worktree runs `node scripts/workspace.mjs prepare` instead (T3 Code does it on creation through `t3.json`), which also gives it its own Convex backend. See `docs/runbooks/environment.md`.
 
 ## Development
 
@@ -54,8 +54,8 @@ pnpm run build
 Deploys to Cloudflare Workers (`games` in prod, `games-dev` for the dev environment) via Wrangler:
 
 ```bash
-pnpm run deploy:dev    # builds and deploys the games-dev Worker
-pnpm run deploy:prod   # convex deploy && build && wrangler deploy
+pnpm run deploy:dev          # builds and deploys the games-dev Worker, values from Infisical
+pnpm run deploy:production   # convex deploy, build, wrangler deploy; CI does this on merge
 ```
 
 Pull requests labelled `preview:web` get an isolated preview (per-PR Convex backend + Cloudflare Worker) via `.github/workflows/preview.yml`.
