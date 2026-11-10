@@ -17,6 +17,13 @@ export default function Footer() {
 					>
 						{messages.common.footer.about}
 					</Link>
+					<Link
+						to="/privacy"
+						className="text-[var(--club-muted)] no-underline hover:text-[var(--club-text)] hover:underline"
+						activeProps={{ className: "text-[var(--club-text)] underline" }}
+					>
+						{messages.common.footer.privacy}
+					</Link>
 					<span className="m-0">{messages.common.footer.tagline}</span>
 				</div>
 			</div>

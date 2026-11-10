@@ -29,6 +29,10 @@ export const serverErrors = {
 	cardsPlayerStillActive: "That player is still active.",
 	cardsNotSeated: "Take a seat to play.",
 	signInRequired: "Sign in required.",
+	accountChanged:
+		"You switched accounts. Sign in to the account you want to delete and try again.",
+	accountInActiveGame:
+		"You're in a game with other players right now. Finish it first, or try again in {minutes} minutes.",
 	signInToHost: "Sign in to host a game.",
 	signInToJoin: "Sign in to join this game.",
 	sessionNotFound: "This game no longer exists.",

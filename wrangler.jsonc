@@ -4,7 +4,10 @@
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  "routes": [{ "pattern": "arcade-club.appelent.nl", "custom_domain": true }],
+  // Every other env clears the routes, or its deploy takes the production domain.
   "env": {
-    "dev": { "name": "games-dev", "workers_dev": true }
+    "dev": { "name": "games-dev", "workers_dev": true, "routes": [] },
+    "pr": { "name": "games-pr", "workers_dev": true, "routes": [] }
   }
 }

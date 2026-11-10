@@ -35,8 +35,8 @@ export const catalog = {
 		stats: "2 spelers",
 	},
 	hitster: {
-		title: "Hitster",
-		tagline: "Muziek-tijdlijnfeest",
+		title: "Muziektijdlijn",
+		tagline: "Raad het jaar, bouw de tijdlijn",
 		description:
 			"Host een muziekronde en plaats nummers op een gedeelde tijdlijn met vrienden.",
 		primaryAction: "Kamer openen",

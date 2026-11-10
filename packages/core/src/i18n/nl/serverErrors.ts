@@ -31,6 +31,10 @@ export const serverErrors = {
 	cardsPlayerStillActive: "Die speler is nog actief.",
 	cardsNotSeated: "Neem plaats om mee te spelen.",
 	signInRequired: "Inloggen vereist.",
+	accountChanged:
+		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",
+	accountInActiveGame:
+		"Je zit nu in een spel met andere spelers. Maak het eerst af, of probeer het over {minutes} minuten opnieuw.",
 	signInToHost: "Log in om een spel te hosten.",
 	signInToJoin: "Log in om mee te doen met dit spel.",
 	sessionNotFound: "Dit spel bestaat niet meer.",
