@@ -5,6 +5,8 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   "routes": [{ "pattern": "arcade-club.appelent.nl", "custom_domain": true }],
+  // Routes turn workers.dev off by default; installed builds still share links there.
+  "workers_dev": true,
   // Every other env clears the routes, or its deploy takes the production domain.
   "env": {
     "dev": { "name": "games-dev", "workers_dev": true, "routes": [] },
