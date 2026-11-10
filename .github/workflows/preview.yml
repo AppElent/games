@@ -30,6 +30,9 @@ jobs:
       pull-requests: write
       contents: read
     env:
+      # The `pr` wrangler env clears routes, so the build never carries the
+      # production custom domain onto this Worker.
+      CLOUDFLARE_ENV: pr
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.PREVIEW_CLERK_PUBLISHABLE_KEY }}
       VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
@@ -67,6 +70,10 @@ jobs:
             --var "VITE_CLERK_PUBLISHABLE_KEY:$VITE_CLERK_PUBLISHABLE_KEY" \
             --var "environment_name:preview" \
             2>&1 | tee /tmp/wrangler-deploy.log
+          if grep -qi 'custom domain' /tmp/wrangler-deploy.log; then
+            echo "::error::The preview deploy touched a custom domain; redeploy production to take it back."
+            exit 1
+          fi
           URL=$(grep -oE 'https://[^ ]+workers\.dev' /tmp/wrangler-deploy.log | head -1)
           echo "url=$URL" >> $GITHUB_OUTPUT
 

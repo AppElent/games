@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as BackgammonIndexRouteImport } from './routes/backgammon/index'
@@ -81,6 +82,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInRoute = SignInRouteImport.update({
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/join': typeof JoinRoute
+  '/privacy': typeof PrivacyRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
@@ -356,6 +363,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/join': typeof JoinRoute
+  '/privacy': typeof PrivacyRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
@@ -407,6 +415,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/join': typeof JoinRoute
+  '/privacy': typeof PrivacyRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
@@ -459,6 +468,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/forgot-password'
     | '/join'
+    | '/privacy'
     | '/sign-in'
     | '/sign-up'
     | '/backgammon/$sessionId'
@@ -509,6 +519,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/forgot-password'
     | '/join'
+    | '/privacy'
     | '/sign-in'
     | '/sign-up'
     | '/backgammon/$sessionId'
@@ -559,6 +570,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/forgot-password'
     | '/join'
+    | '/privacy'
     | '/sign-in'
     | '/sign-up'
     | '/backgammon/$sessionId'
@@ -610,6 +622,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   JoinRoute: typeof JoinRoute
+  PrivacyRoute: typeof PrivacyRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   BackgammonSessionIdRoute: typeof BackgammonSessionIdRoute
@@ -690,6 +703,13 @@ declare module '@tanstack/react-router' {
       path: '/join'
       fullPath: '/join'
       preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in': {
@@ -1002,6 +1022,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   JoinRoute: JoinRoute,
+  PrivacyRoute: PrivacyRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   BackgammonSessionIdRoute: BackgammonSessionIdRoute,

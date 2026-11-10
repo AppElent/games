@@ -16,6 +16,7 @@ export const common = {
 	footer: {
 		copyright: "© {year} Arcade Club.",
 		about: "About",
+		privacy: "Privacy",
 		tagline: "Live rooms, challenge links, and future game nights.",
 	},
 	home: {

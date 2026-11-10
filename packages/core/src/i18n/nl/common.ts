@@ -21,6 +21,7 @@ export const common = {
 	footer: {
 		copyright: "© {year} Arcade Club.",
 		about: "Over",
+		privacy: "Privacy",
 		tagline: "Live kamers, uitdagingslinks en toekomstige spelavonden.",
 	},
 	home: {

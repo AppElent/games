@@ -13,6 +13,7 @@ import { squadSurge } from "./games/squadSurge";
 import { sudoku } from "./games/sudoku";
 import { wordLinks } from "./games/wordLinks";
 import { play } from "./play";
+import { privacy } from "./privacy";
 import { profile } from "./profile";
 import { serverErrors } from "./serverErrors";
 
@@ -22,6 +23,7 @@ export const en = {
 	auth,
 	play,
 	profile,
+	privacy,
 	serverErrors,
 	games: {
 		quiz,
