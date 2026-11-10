@@ -24,7 +24,8 @@ and which Infisical tier each environment reads. This app has no exceptions to i
 Values live in the shared Infisical project (`.infisical.json` holds only its id). The
 lookup order is `/`, then `/arcade-club`; a value in the app folder overrides the root.
 `/arcade-club` holds the app's own values: `convex-url`, `convex-deploy-key`,
-`sentry-dsn`, `sentry-auth-token` and `web-origin`.
+`sentry-dsn`, `sentry-auth-token` and `web-origin`, plus `convex-staging-deploy-key`
+in `prod`.
 
 Infisical tiers follow lifetime. Local, dev, cloud worktrees and web PR previews are
 short-lived and use the Clerk development instance: Infisical `staging /` holds
