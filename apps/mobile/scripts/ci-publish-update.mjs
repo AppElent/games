@@ -1,6 +1,6 @@
-// CI half of the mobile distribution standard: after deploy.yml has shipped
-// the production backend, publish the merged JavaScript to the daily-driver
-// channel, but only where an installed app can load it.
+// CI half of the mobile distribution standard: after a production run of
+// deploy.yml has shipped the production backend, publish main's JavaScript to
+// the daily-driver channel, but only where an installed app can load it.
 //
 //   node apps/mobile/scripts/ci-publish-update.mjs preview
 //

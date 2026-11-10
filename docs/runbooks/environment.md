@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when adding, changing or debugging an environment variable, or deploying to an Arcade Club environment.
-version: 3.1.0
+version: 4.0.0
 ---
 
 # Environment contract
@@ -16,7 +16,7 @@ and which Infisical tier each environment reads. This app has no exceptions to i
 | `local` | `pnpm dev`, `.env.local` | the worktree's backend, else `zany-parakeet-507` | `development` | `dev` |
 | `dev` | Worker `games-dev` | `zany-parakeet-507` | `development` | `dev` |
 | `preview` | Worker `games-pr-<n>` | per-PR preview | | `staging` |
-| `staging` | | `chatty-ram-217` (preview app) | `preview` | `prod` |
+| `staging` | Worker `games-staging` (`arcade-club-stg.appelent.nl`) | `blessed-blackbird-8` (web); `chatty-ram-217` (preview app) | `preview` | `prod` |
 | `production` | Worker `games` | `chatty-ram-217` | `production` | `prod` |
 
 ## Source
@@ -24,17 +24,20 @@ and which Infisical tier each environment reads. This app has no exceptions to i
 Values live in the shared Infisical project (`.infisical.json` holds only its id). The
 lookup order is `/`, then `/arcade-club`; a value in the app folder overrides the root.
 `/arcade-club` holds the app's own values: `convex-url`, `convex-deploy-key`,
-`sentry-dsn`, `sentry-auth-token` and `web-origin`.
+`sentry-dsn`, `sentry-auth-token` and `web-origin`, plus `convex-staging-deploy-key`
+in `prod`.
 
 Infisical tiers follow lifetime. Local, dev, cloud worktrees and web PR previews are
 short-lived and use the Clerk development instance: Infisical `staging /` holds
 `clerk-publishable-key` and `clerk-jwt-issuer-domain` as secret references to the `dev`
 values, so the per-PR web build gets `pk_test_` and every per-PR Convex backend trusts
 the development issuer (a Convex `preview` default). `staging /arcade-club` holds a
-preview-kind `convex-deploy-key` for the per-PR web backends. The installed preview
-app is long-lived: this app has no staging web, so `staging` is only that app, and it
-reads Infisical `prod` like production (production Clerk, backend URL and web origin),
-written to EAS `preview` by `pnpm env:apply staging --only eas`.
+preview-kind `convex-deploy-key` for the per-PR web backends. `staging` is long-lived
+and reads Infisical `prod` like production (production Clerk, backend URL and web
+origin). It is two things: the staging web, a merge's first stop, on its own Convex
+deployment with its own `prod:` key (`/arcade-club` `convex-staging-deploy-key` in
+`prod`); and the installed preview app, written to EAS `preview` by
+`pnpm env:apply staging --only eas`, which calls the production backend.
 
 Static commands need no Infisical login:
 
@@ -76,6 +79,11 @@ Deployed environments read values from their destination, never from a
   variables `CLOUDFLARE_ACCOUNT_ID`, `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_SENTRY_DSN`.
   The workflow refuses a key without the `prod:` prefix and a build whose Worker is
   not `games`.
+- `staging`: `pnpm env:apply staging --only github` writes the same names into the
+  `staging` GitHub Environment, with `CONVEX_DEPLOY_KEY` from
+  `convex-staging-deploy-key`; `--only convex` sets `CLERK_JWT_ISSUER_DOMAIN` on the
+  staging deployment. The workflow refuses a build whose Worker is not
+  `games-staging`.
 - `preview`: `pnpm env:apply preview --only github` writes repository scope, always as
   `PREVIEW_<name>`, so a missing Environment value never falls back to a preview one.
   `preview.yml` maps them back (`CONVEX_DEPLOY_KEY: ${{ secrets.PREVIEW_CONVEX_DEPLOY_KEY }}`);
@@ -88,7 +96,8 @@ Local deploys and over-the-air publishes take their values from Infisical throug
 
 ```sh
 pnpm deploy:dev          # push Convex to the shared dev deployment (zany-parakeet-507), build games-dev (CLOUDFLARE_ENV=dev), wrangler deploy
-pnpm deploy:production   # same as CI: convex deploy + build, wrangler deploy
+pnpm deploy:staging      # same as a merge: staging Convex + build (CLOUDFLARE_ENV=staging), wrangler deploy
+pnpm deploy:production   # same as a production run: convex deploy + build, wrangler deploy
 pnpm mobile:update:preview
 ```
 
@@ -101,7 +110,7 @@ which puts the file back exactly as it was.
 ## Convex deployment values
 
 `pnpm exec convex env list` (add `--prod` for production) shows a deployment's values.
-`CLERK_JWT_ISSUER_DOMAIN` is required on every Convex deployment: dev, prod, and as a
+`CLERK_JWT_ISSUER_DOMAIN` is required on every Convex deployment: dev, staging, prod, and as a
 `preview` type default (`convex env default set ... --type preview`, written by
 `pnpm env:apply preview --only convex`, trusting the Clerk development issuer). Without
 it Convex never validates the Clerk JWT and `ctx.auth.getUserIdentity()` silently

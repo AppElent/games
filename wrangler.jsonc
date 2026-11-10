@@ -10,6 +10,14 @@
   // Every other env clears the routes, or its deploy takes the production domain.
   "env": {
     "dev": { "name": "games-dev", "workers_dev": true, "routes": [] },
+    // What a merge to main deploys (.github/workflows/deploy.yml). A custom domain,
+    // because production Clerk signs in only on *.appelent.nl.
+    "staging": {
+      "name": "games-staging",
+      "workers_dev": true,
+      "routes": [{ "pattern": "arcade-club-stg.appelent.nl", "custom_domain": true }],
+      "vars": { "environment_name": "staging" }
+    },
     // PR previews (CLOUDFLARE_ENV=pr); environment_name tags the Worker's Sentry reports.
     "pr": {
       "name": "games-pr",

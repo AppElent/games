@@ -6,7 +6,7 @@ import {
 	SHARED_SENTRY_OPTIONS,
 } from "./lib/observability/config";
 
-// environment_name is a Wrangler var: set for PR previews (wrangler.jsonc `pr`).
+// environment_name is a Wrangler var: set for staging and PR previews (wrangler.jsonc).
 type SentryEnv = {
 	environment_name?: string;
 };

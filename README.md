@@ -51,11 +51,12 @@ pnpm run build
 
 ## Deployment
 
-Deploys to Cloudflare Workers (`games` in prod, `games-dev` for the dev environment) via Wrangler:
+Deploys to Cloudflare Workers via Wrangler: a merge to `main` ships staging (`games-staging`, `arcade-club-stg.appelent.nl`); production (`games`) ships from a manual "Run workflow" of `deploy.yml` on `main`. `games-dev` is the dev environment.
 
 ```bash
 pnpm run deploy:dev          # builds and deploys the games-dev Worker, values from Infisical
-pnpm run deploy:production   # convex deploy, build, wrangler deploy; CI does this on merge
+pnpm run deploy:staging      # staging Convex + games-staging Worker; CI does this on merge
+pnpm run deploy:production   # production Convex + games Worker; CI does this on a manual run
 ```
 
 Pull requests labelled `preview:web` get an isolated preview (per-PR Convex backend + Cloudflare Worker) via `.github/workflows/preview.yml`.
