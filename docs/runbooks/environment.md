@@ -109,7 +109,7 @@ which puts the file back exactly as it was.
 ## Convex deployment values
 
 `pnpm exec convex env list` (add `--prod` for production) shows a deployment's values.
-`CLERK_JWT_ISSUER_DOMAIN` is required on every Convex deployment: dev, prod, and as a
+`CLERK_JWT_ISSUER_DOMAIN` is required on every Convex deployment: dev, staging, prod, and as a
 `preview` type default (`convex env default set ... --type preview`, written by
 `pnpm env:apply preview --only convex`, trusting the Clerk development issuer). Without
 it Convex never validates the Clerk JWT and `ctx.auth.getUserIdentity()` silently
