@@ -60,6 +60,12 @@ Project decisions below select implementations and explain deviations from share
 Run the root checks for every change: they cover all of these. Mobile run and device
 verification facts live in the [mobile runbook](docs/runbooks/mobile.md).
 
+## Convex schema
+
+Use `defineTable` and `.index(...)`, never hand-add `_id` or `_creationTime`, and use
+`v.union(v.literal(...))` string enums (as throughout `convex/schema.ts`) instead of
+free-form strings ([validators](https://docs.convex.dev/database/types)).
+
 ## Project decisions
 
 | Rule | Scope | Replacement | Reason |

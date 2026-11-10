@@ -5,7 +5,7 @@ description: Use when adding a new game to Arcade Club — walks through shared 
 
 # Add A New Game To Arcade Club
 
-Every online game reuses the shared session platform (`gameSessions` + `sessionParticipants`, see "Game session model" in `AGENTS.md`). Work through the steps in order; each names the existing game to copy. Connect Four is the smallest complete example of every step.
+Every online game reuses the shared session platform (`gameSessions` + `sessionParticipants`, see the [game sessions contract](../../../docs/contracts/game-sessions.md)). Work through the steps in order; each names the existing game to copy. Connect Four is the smallest complete example of every step.
 
 ## Card games: config first
 

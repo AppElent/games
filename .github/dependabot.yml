@@ -1,5 +1,5 @@
 # Dependabot handles security fixes and routine minor/patch bumps. Majors and
-# Expo SDK-aligned packages go through the upgrade-deps skill
+# Expo SDK-aligned packages go through the upgrade-dependencies skill
 # (docs/standards/dependency-updates.md).
 version: 2
 updates:

@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when adding, changing or debugging an environment variable, or deploying to an Arcade Club environment.
-version: 3.0.0
+version: 3.1.0
 ---
 
 # Environment contract
@@ -97,6 +97,15 @@ the Convex CLI would push to whatever `.env.local` selects, which in a prepared 
 is the worktree backend and its scoped key. `convex dev` also rewrites `.env.local` for
 the deployment it pushed to, so `ship:dev` runs it through `scripts/keep-env-local.mjs`,
 which puts the file back exactly as it was.
+
+## Convex deployment values
+
+`pnpm exec convex env list` (add `--prod` for production) shows a deployment's values.
+`CLERK_JWT_ISSUER_DOMAIN` is required on every Convex deployment: dev, prod, and as a
+`preview` type default (`convex env default set ... --type preview`, written by
+`pnpm env:apply preview --only convex`, trusting the Clerk development issuer). Without
+it Convex never validates the Clerk JWT and `ctx.auth.getUserIdentity()` silently
+returns `undefined`.
 
 ## Supplied values
 
