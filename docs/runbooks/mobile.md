@@ -75,22 +75,23 @@ deployed to production.
 
 ### TestFlight
 
-The first release runs interactively, so EAS can sign in to Apple, create the App
-Store Connect app for `com.appelent.arcadeclub`, the distribution certificate and an
-App Store Connect API key:
+The App Store Connect app is `6832923667` (`submit.production.ios.ascAppId` in
+`eas.json`). Release with:
 
 ```bash
 cd apps/mobile
 pnpm exec eas build --platform ios --profile production --auto-submit
 ```
 
-Then record the app's Apple ID (App Store Connect → App Information) as
-`submit.production.ios.ascAppId` in `eas.json`, so later releases can run with
-`--non-interactive`. Production builds use production Clerk and Convex: deploy the
-backend first (see [deploy.yml](../../.github/workflows/deploy.yml)).
+Production builds use production Clerk and Convex: deploy the backend first (see
+[deploy.yml](../../.github/workflows/deploy.yml)). The `asc` CLI manages TestFlight
+from the terminal (`asc status --app 6832923667`).
 
-A public link (external testers) needs Beta App Review of the first build, and these
-App Store Connect fields first:
+External testers join through the **Public** group's link,
+`https://testflight.apple.com/join/M3bRpXCj`. Add each new build to that group
+(`asc builds add-groups --app 6832923667 --latest --group 0a5928f2-2d89-49e6-890c-3e95512023af --submit --confirm`);
+a new version needs Beta App Review again. The store name is "Arcade Club: Party
+Games" because "Arcade Club" is taken. The review needs these App Store Connect fields:
 
 | Field | Value |
 | --- | --- |
