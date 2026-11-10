@@ -1,6 +1,6 @@
 import type { HitsterMode } from "../../../hitster";
 
-/** Hitster (Music Timeline) UI chrome. Song titles, artist names, release
+/** Music Timeline (internal id `hitster`) UI chrome. Song titles, artist names, release
  * years and pack titles are content data and never routed through message keys. */
 export const hitster = {
 	modes: {

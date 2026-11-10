@@ -8,12 +8,14 @@
  * @module
  */
 
+import type * as account from "../account.js";
 import type * as backgammon from "../backgammon.js";
 import type * as bluffDice from "../bluffDice.js";
 import type * as cardGames from "../cardGames.js";
 import type * as chess from "../chess.js";
 import type * as connectFour from "../connectFour.js";
 import type * as hitster from "../hitster.js";
+import type * as lib_accountDeletion from "../lib/accountDeletion.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_cardSeats from "../lib/cardSeats.js";
 import type * as lib_codes from "../lib/codes.js";
@@ -36,12 +38,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  account: typeof account;
   backgammon: typeof backgammon;
   bluffDice: typeof bluffDice;
   cardGames: typeof cardGames;
   chess: typeof chess;
   connectFour: typeof connectFour;
   hitster: typeof hitster;
+  "lib/accountDeletion": typeof lib_accountDeletion;
   "lib/auth": typeof lib_auth;
   "lib/cardSeats": typeof lib_cardSeats;
   "lib/codes": typeof lib_codes;

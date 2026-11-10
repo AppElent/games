@@ -89,6 +89,23 @@ Then record the app's Apple ID (App Store Connect → App Information) as
 `--non-interactive`. Production builds use production Clerk and Convex: deploy the
 backend first (see [deploy.yml](../../.github/workflows/deploy.yml)).
 
+A public link (external testers) needs Beta App Review of the first build, and these
+App Store Connect fields first:
+
+| Field | Value |
+| --- | --- |
+| Privacy Policy URL (App Information) | `https://arcade-club.appelent.nl/privacy` |
+| Beta App Description, What to Test | Plain description of the games; online play needs a second device or a guest |
+| Feedback email | `privacy@appelent.nl` (Cloudflare Email Routing forwards it) |
+| Sign-in for review | `appreview@appelent.nl` in production Clerk; its password is set in the Clerk dashboard |
+| App Privacy | Email (account), name (display name), user ID, crash and diagnostic data; none used for tracking |
+
+The policy page is `src/routes/privacy.tsx` with copy in the `privacy` messages; Profile
+links to it. Profile → Delete account deletes the Arcade Club data and then the shared
+Appelent Clerk user. If review deletes the reviewer account, recreate it before the
+next submission. The song-timeline game ships as Music Timeline: never use the
+trademarked name Hitster in visible copy or store metadata.
+
 ### CI builds
 
 The **Mobile Build** workflow runs `eas build --local` on a GitHub runner, so it spends

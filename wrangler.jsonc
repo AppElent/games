@@ -4,10 +4,13 @@
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  "routes": [{ "pattern": "arcade-club.appelent.nl", "custom_domain": true }],
+  // Routes turn workers.dev off by default; installed builds still share links there.
+  "workers_dev": true,
+  // Every other env clears the routes, or its deploy takes the production domain.
   "env": {
-    "dev": { "name": "games-dev", "workers_dev": true },
-    // PR previews (CLOUDFLARE_ENV=pr): no routes, so a preview never claims
-    // the production domain; environment_name tags the Worker's Sentry reports.
+    "dev": { "name": "games-dev", "workers_dev": true, "routes": [] },
+    // PR previews (CLOUDFLARE_ENV=pr); environment_name tags the Worker's Sentry reports.
     "pr": {
       "name": "games-pr",
       "workers_dev": true,

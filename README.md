@@ -4,7 +4,7 @@ Arcade Club is a real-time games web app built with TanStack Start, Clerk, and C
 
 ## Features
 
-- Room games with a host screen and player phones: Live Quiz, Hitster, Bluff Dice, Signal Words and card games.
+- Room games with a host screen and player phones: Live Quiz, Music Timeline, Bluff Dice, Signal Words and card games.
 - Two-player challenge links: Backgammon, Chess and Connect Four.
 - Solo puzzles: Sudoku (classic, killer, binary), Word Links and Squad Surge.
 - Guest-friendly joining with signed-in ownership for saved sessions.
