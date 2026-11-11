@@ -10,6 +10,11 @@ Convex backend (`convex/`), Expo phone app (`apps/mobile/`), shared rules in
 `@arcadeclub/core` (`packages/core/`) and `@arcadeclub/chess` (`packages/chess/`).
 Auth is Clerk. pnpm, always.
 
+Web and the phone app are equal ([ADR 0002](docs/adr/0002-ship-every-game-on-web-and-mobile.md)).
+`packages/core/src/features.ts` says which feature and game is on which platform, and CI
+fails when a route file is missing from it. A new game needs a `features.ts` entry and
+ships on web and mobile together; a new route needs a feature.
+
 Before the task, read the matching project doc:
 
 | When you are… | Read |
@@ -19,7 +24,7 @@ Before the task, read the matching project doc:
 | Changing card games, the card engine, its stored state or seat claims | [Card games](docs/contracts/card-games.md), then [its decision](docs/adr/0001-card-games-use-rule-families-and-config.md) |
 | Drafting puzzles, word packs, quiz sets or prompts | the `generate-game-content` skill |
 | Changing sign-in, account, theme sync, or how Clerk reaches Convex | [Auth](docs/contracts/auth.md) |
-| Changing which games the phone app offers, or its seats and saves | [Mobile app](docs/contracts/mobile-app.md) |
+| Changing which games the phone app offers, or its seats and saves | [Mobile app](docs/contracts/mobile-app.md), then [ADR 0002](docs/adr/0002-ship-every-game-on-web-and-mobile.md) |
 | Building, running, verifying or releasing the phone app | [Mobile](docs/runbooks/mobile.md) |
 | Running the dev server or checks, or verifying a web change | [Verification](docs/runbooks/verification.md), then the `verify` skill |
 | Adding or changing an environment variable or secret | [Environment](docs/runbooks/environment.md) |
