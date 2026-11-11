@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when deploying Arcade Club, or changing the CI, deploy, preview or mobile build workflows.
-version: 2.0.0
+version: 2.1.0
 ---
 
 # Deploy
@@ -35,6 +35,10 @@ Project facts for the [deployments](../standards/deployments.md) and
 - `mobile-runtime.yml` comments on each mobile PR whether it changes the runtime
   fingerprint; `mobile-build.yml` and `eas-local-build.yml` build the app on a runner
   (`eas build --local`) for PRs labelled `build:ios`/`build:android` or a manual run.
+- `dependabot-blast-radius.yml` labels each Dependabot PR from
+  `dependabot/fetch-metadata`'s update type: patch `blast-radius:low`, minor or major
+  `blast-radius:med`. It swaps only those two labels and skips a PR marked
+  `blast-radius:high`.
 
 ## Verify
 
