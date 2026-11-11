@@ -108,7 +108,7 @@ export const FEATURES = defineFeatures([
 		kind: "floor",
 		status: "pending-port",
 		platforms: [],
-		reason: "APP-45",
+		reason: "Neither platform exports a user's data yet (APP-45).",
 		routes: {},
 	},
 	{
@@ -165,7 +165,7 @@ export const FEATURES = defineFeatures([
 		kind: "product",
 		status: "exclusive",
 		platforms: ["web"],
-		reason: `The hosts' desk: account stats, past results with CSV reports, and links to quiz sets and the workbench. The app lists a player's open games under Continue (${ADR}).`,
+		reason: `Host admin is desk work: account stats, past results with CSV reports, and links to quiz sets and the workbench. Players on the app find their open games under Continue instead (${ADR}).`,
 		routes: { web: ["dashboard/**"] },
 	},
 	{

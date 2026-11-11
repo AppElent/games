@@ -30,8 +30,9 @@ works on both.
   It works in a browser for someone without the app. The app accepts the same link
   through its own scheme (`arcadeclub://join?token=…`) and shares the web URL.
 - **The web is responsive first.** No page is marked `large-screen`.
-- **One web client.** The app has no Expo web build: it does not depend on
-  `react-native-web` directly and has no web script or web config.
+- **One web client.** Web is not a build or deploy target for the app: no web
+  script, no web export, no web config. `react-native-web` may still arrive as a
+  dependency of Expo DOM components.
 - **Web exclusives**, by design: `about` (for visitors without the app),
   `dashboard` (the hosts' desk: stats, past results and CSV reports) and
   `workbench` (pasting and approving generated content, which is keyboard work).
@@ -41,10 +42,7 @@ platform, and `scripts/feature-manifest.test.ts` fails CI when a route file is n
 in it. `APP_GAMES` keeps the app's wiring only; its test requires exactly the games
 the feature list puts on mobile.
 
-Open gaps, each `pending-port` in the feature list: account deletion on the web
-([APP-44](https://linear.app/appelent/issue/APP-44)), data export on both platforms ([APP-45](https://linear.app/appelent/issue/APP-45), listed with no platforms), account name
-and password editing in the app ([APP-46](https://linear.app/appelent/issue/APP-46)), and sudoku's photo scan and cloud saves in
-the app ([APP-47](https://linear.app/appelent/issue/APP-47)).
+Open gaps are the `pending-port` entries in `packages/core/src/features.ts`.
 
 ## Universal links
 
