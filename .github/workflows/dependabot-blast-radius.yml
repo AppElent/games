@@ -1,0 +1,58 @@
+name: Dependabot blast radius
+
+# Labels each Dependabot PR by its highest update type: patch is
+# `blast-radius:low`, minor and major are `blast-radius:med`. Only the two
+# blast-radius labels it manages change; `dependencies` and other labels stay.
+# A PR someone raised to `blast-radius:high` is left alone.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  label:
+    # The actor check skips runs from a person pushing to a Dependabot branch;
+    # fetch-metadata rejects commits that are not Dependabot's.
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.actor == 'dependabot[bot]'
+    concurrency:
+      group: dependabot-blast-radius-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    # Dependabot runs get a read-only token unless the workflow asks for more.
+    # Reading the PR's commits and writing its labels both need only this.
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v3
+
+      - name: Set blast-radius label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          if jq -e 'index("blast-radius:high")' <<<"$LABELS" >/dev/null; then
+            echo "Already blast-radius:high; leaving labels unchanged."
+            exit 0
+          fi
+          case "$UPDATE_TYPE" in
+            version-update:semver-patch) want=blast-radius:low stale=blast-radius:med ;;
+            version-update:semver-minor | version-update:semver-major) want=blast-radius:med stale=blast-radius:low ;;
+            *)
+              # No semver type (e.g. a git SHA bump): label as the riskier default.
+              echo "::notice::Unrecognised update type '$UPDATE_TYPE'; labelling blast-radius:med."
+              want=blast-radius:med stale=blast-radius:low ;;
+          esac
+          # POST adds to the PR's labels without replacing them.
+          gh api --silent -X POST "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=$want"
+          if jq -e --arg l "$stale" 'index($l)' <<<"$LABELS" >/dev/null; then
+            gh api --silent -X DELETE "repos/$GH_REPO/issues/$PR/labels/$stale"
+          fi
+          echo "$UPDATE_TYPE -> $want"
