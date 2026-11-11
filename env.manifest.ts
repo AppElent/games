@@ -8,14 +8,21 @@ export const ENV_CONFIG = {
 	source: { paths: ["/", "/arcade-club"] },
 	convex: {
 		project: "eric-jansen:games",
-		deployments: { dev: "zany-parakeet-507", production: "chatty-ram-217" },
+		deployments: {
+			dev: "zany-parakeet-507",
+			// The staging web's own prod-type deployment, eric-jansen:games:staging.
+			staging: "blessed-blackbird-8",
+			production: "chatty-ram-217",
+		},
 	},
 	worker: { name: "games" },
 	mobile: { path: "apps/mobile" },
 	github: { repository: "AppElent/games" },
 };
 
-// "staging" is only the installed preview app (EAS preview); there is no staging web.
+// "staging" is the staging web (Worker games-staging, its own Convex deployment) and
+// the installed preview app (EAS preview), which calls the production backend. Both
+// read Infisical prod; only the staging deploy key differs.
 export const ENVIRONMENTS = [
 	"local",
 	"dev",
@@ -24,8 +31,8 @@ export const ENVIRONMENTS = [
 	"production",
 ] as const;
 
-const ALL = ["local", "dev", "preview", "production"];
-const SHIPPED = ["preview", "production"];
+const ALL = ["local", "dev", "preview", "staging", "production"];
+const SHIPPED = ["preview", "staging", "production"];
 // Mobile builds: development, the preview app (staging) and the store app.
 const APP = ["local", "dev", "staging", "production"];
 const APP_DEPLOYED = ["dev", "staging", "production"];
@@ -44,6 +51,7 @@ export const ENTRIES = [
 					local:
 						"workspace prepare (or `convex dev`) writes the selected deployment",
 					preview: "convex deploy --cmd-url-env-var-name CONVEX_URL",
+					staging: "convex deploy --cmd-url-env-var-name CONVEX_URL",
 					production: "convex deploy --cmd-url-env-var-name CONVEX_URL",
 				},
 			},
@@ -79,7 +87,22 @@ export const ENTRIES = [
 		description:
 			"CI deploy key: preview kind in Infisical staging, `prod:` in prod.",
 		secret: true,
-		lands: { workflow: { name: "CONVEX_DEPLOY_KEY", environments: SHIPPED } },
+		lands: {
+			workflow: {
+				name: "CONVEX_DEPLOY_KEY",
+				environments: ["preview", "production"],
+			},
+		},
+	},
+	{
+		key: "convexStagingDeployKey",
+		infisicalKey: "convex-staging-deploy-key",
+		description:
+			"`prod:` deploy key of the staging web's Convex deployment, in Infisical prod.",
+		secret: true,
+		lands: {
+			workflow: { name: "CONVEX_DEPLOY_KEY", environments: ["staging"] },
+		},
 	},
 	{
 		key: "clerkPublishableKey",

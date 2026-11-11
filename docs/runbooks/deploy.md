@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when deploying Arcade Club, or changing the CI, deploy, preview or mobile build workflows.
-version: 1.0.0
+version: 2.0.0
 ---
 
 # Deploy
@@ -14,17 +14,20 @@ Project facts for the [deployments](../standards/deployments.md) and
 
 | Fact | Value |
 | --- | --- |
-| Workers | `games` (production), `games-dev` (`CLOUDFLARE_ENV=dev`), `games-pr-<n>` (previews) |
+| Workers | `games` (production, `arcade-club.appelent.nl`), `games-staging` (`CLOUDFLARE_ENV=staging`, `arcade-club-stg.appelent.nl`), `games-dev` (`CLOUDFLARE_ENV=dev`), `games-pr-<n>` (previews) |
+| Convex | `chatty-ram-217` (production), `blessed-blackbird-8` (`eric-jansen:games:staging`), `zany-parakeet-507` (dev) |
 | Quality gate | `.github/workflows/ci.yml`, job `check`; the `main` ruleset requires it and a PR for every change |
 | Shared job setup | `.github/actions/setup` (pnpm, Node version, frozen install) after each checkout; bump Node there |
-| Local fallback | `pnpm run deploy:production` (= `pnpm run deploy`), `pnpm run deploy:dev` |
+| Local fallback | `pnpm run deploy:staging`, `pnpm run deploy:production` (= `pnpm run deploy`), `pnpm run deploy:dev` |
 
 ## Workflows
 
-- `deploy.yml`: a push to `main` (or "Run workflow") reruns CI, then deploys
-  production Convex and the `games` Worker from the `production` GitHub Environment,
-  then publishes the preview app's OTA update when an installed build can load it
-  (`apps/mobile/scripts/ci-publish-update.mjs`, repo secret `PREVIEW_EXPO_TOKEN`).
+- `deploy.yml`: a push to `main` reruns CI, then deploys the staging Convex deployment
+  and the `games-staging` Worker from the `staging` GitHub Environment. Production
+  ships only from "Run workflow" on `main`: production Convex and the `games` Worker
+  from the `production` Environment, then the preview app's OTA update when an
+  installed build can load it (`apps/mobile/scripts/ci-publish-update.mjs`, repo
+  secret `PREVIEW_EXPO_TOKEN`), because that app calls the production backend.
 - `preview.yml`: per-PR Convex and Worker preview, opt-in with the `preview:web`
   label, reading repository-scope `PREVIEW_<name>` values. A preview starts from an
   empty Convex backend and needs no seed: the only reference data, the sample quiz, is

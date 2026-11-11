@@ -41,12 +41,19 @@ describe("Arcade Club environment manifest", () => {
 		}
 	});
 
-	it("writes the preview app from staging and nothing else to staging", () => {
+	it("writes staging to the preview app, the staging GitHub Environment and the staging Convex deployment only", () => {
 		const destinations = (environment) =>
 			placements(environment).map(({ destination }) =>
-				[destination.kind, destination.environment].join(" "),
+				[
+					destination.kind,
+					destination.environment ??
+						destination.scope ??
+						destination.deployment,
+				].join(" "),
 			);
-		expect(new Set(destinations("staging"))).toEqual(new Set(["eas preview"]));
+		expect(new Set(destinations("staging"))).toEqual(
+			new Set(["convex blessed-blackbird-8", "eas preview", "github staging"]),
+		);
 		expect(destinations("preview").join()).not.toContain("eas");
 	});
 
@@ -68,13 +75,25 @@ describe("Arcade Club environment manifest", () => {
 			"PREVIEW_VITE_CLERK_PUBLISHABLE_KEY",
 			"PREVIEW_VITE_SENTRY_DSN",
 		]);
-		expect(github("production")).toEqual([
-			"CLOUDFLARE_ACCOUNT_ID",
-			"CLOUDFLARE_API_TOKEN",
-			"CONVEX_DEPLOY_KEY",
-			"SENTRY_AUTH_TOKEN",
-			"VITE_CLERK_PUBLISHABLE_KEY",
-			"VITE_SENTRY_DSN",
-		]);
+		for (const environment of ["staging", "production"]) {
+			expect(github(environment)).toEqual([
+				"CLOUDFLARE_ACCOUNT_ID",
+				"CLOUDFLARE_API_TOKEN",
+				"CONVEX_DEPLOY_KEY",
+				"SENTRY_AUTH_TOKEN",
+				"VITE_CLERK_PUBLISHABLE_KEY",
+				"VITE_SENTRY_DSN",
+			]);
+		}
+	});
+
+	it("deploys staging with its own Convex key, never the production one", () => {
+		const deployKey = (environment) =>
+			placements(environment).find(
+				({ name, destination }) =>
+					name === "CONVEX_DEPLOY_KEY" && destination.kind === "github",
+			)?.entry.infisicalKey;
+		expect(deployKey("staging")).toBe("convex-staging-deploy-key");
+		expect(deployKey("production")).toBe("convex-deploy-key");
 	});
 });
