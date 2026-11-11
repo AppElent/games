@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when changing error reporting or investigating an Arcade Club error in Sentry.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Sentry
@@ -45,18 +45,58 @@ maps through the Expo plugin with the EAS secret.
 ## Convex forwarder
 
 The free plan has no managed Convex integration, so a reader forwards failed
-executions (including scheduled functions):
+executions (including scheduled functions). The script is the toolkit's forwarder
+([sentry-monitoring setup](../standards/sentry-monitoring/setup.md)), copied unchanged;
+the `app` tag defaults to `arcadeclub-convex` from the package name. It replays the
+last 100 entries on restart, skips failures Convex will retry, and deduplicates by a
+stable event id; it has no durable queue, so failures while it is down are lost. Run
+one reader per deployment, and stop it if you adopt managed reporting.
+
+### Production service
+
+Production runs on Eric's always-on Mac Studio as the launchd user agent
+`com.appelent.convex-sentry.arcade`
+(`~/Library/LaunchAgents/com.appelent.convex-sentry.arcade.plist`): RunAtLoad,
+KeepAlive, ThrottleInterval 30, so it survives a reboot while that user is logged in.
+It logs to `~/Library/Logs/convex-sentry-arcade.log`.
+
+The agent runs `~/Developer/.services/bin/convex-sentry-run arcade` against a dedicated
+clone at `~/Developer/.services/games`, which it updates from `origin/main` on start
+when the tree is clean. Do not run the production forwarder from a T3 worktree or
+from `~/Developer/games`. The wrapper and its README live outside this repo.
+
+On start the wrapper runs `pnpm env:exec production --only github`, which loads
+Infisical `sentry-dsn` as `VITE_SENTRY_DSN`, and exports it as `SENTRY_DSN` and
+`SENTRY_CONVEX_DSN` with `SENTRY_ENVIRONMENT=production`. It unsets
+`CONVEX_DEPLOY_KEY` and `CONVEX_DEPLOYMENT_TOKEN`: the production deploy key can
+deploy but lacks `deployment:logs:view`. Logs are read with the logged-in Convex CLI
+and `--deployment eric-jansen:games:prod`, the public selector from `env.manifest.ts`;
+`--prod` alone fails in a fresh clone, which has no `.env.local` `CONVEX_DEPLOYMENT`.
+
+Restart it, then watch the log:
+
+```sh
+launchctl kickstart -k "gui/$(id -u)/com.appelent.convex-sentry.arcade"
+tail -f ~/Library/Logs/convex-sentry-arcade.log
+```
+
+A healthy start logs `[Production] eric-jansen:games:production (prod)` and a
+`Watching logs` line. Stop it:
+
+```sh
+launchctl bootout "gui/$(id -u)/com.appelent.convex-sentry.arcade"
+```
+
+### Manual runs
+
+For a one-off or a dev deployment, run the reader in a checkout:
 
 ```sh
 pnpm env:exec local -- pnpm sentry:convex --prod
 pnpm env:exec local -- pnpm sentry:convex --deployment zany-parakeet-507
 ```
 
-The script is the toolkit's forwarder
-([sentry-monitoring setup](../standards/sentry-monitoring/setup.md)), copied unchanged.
-`env:exec local` sets `SENTRY_CONVEX_DSN` to the public project DSN (Infisical
-`sentry-dsn`, the same value as `VITE_SENTRY_DSN`); the `app` tag defaults to
-`arcadeclub-convex` from the package name. It needs Convex CLI auth and an always-on host, which isn't provisioned yet. It
-replays the last 100 entries on restart, skips failures Convex will retry, and
-deduplicates by a stable event id; it has no durable queue. Run one reader per deployment, and stop it if you adopt managed
-reporting.
+`env:exec local` sets `SENTRY_CONVEX_DSN` (`local-tooling`) to the public project DSN
+(Infisical `sentry-dsn`, the same value as `VITE_SENTRY_DSN`). It needs Convex CLI
+auth, and `--prod` needs `CONVEX_DEPLOYMENT` in `.env.local`. Stop the Mac service
+before reading production by hand, so only one reader runs.

@@ -20,6 +20,7 @@ Project commands for the [verification standard](../standards/verification.md). 
 | `pnpm run check` | Biome lint and format check (`pnpm run lint:fix` writes fixes) |
 | `pnpm run typecheck` | `tsc --noEmit` |
 | `pnpm test` | Vitest (`pnpm run test:watch` to watch, `pnpm exec vitest run <path>` for one file) |
+| `pnpm verify` | `check`, `typecheck` and `test` in order; stops at the first failure |
 | `pnpm run build` | Production build |
 
 `check`, `typecheck` and `test` cover every workspace package, with Jest for
