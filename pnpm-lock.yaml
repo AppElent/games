@@ -1791,9 +1791,6 @@ packages:
   '@expo/config-plugins@58.0.11':
     resolution: {integrity: sha512-lenBm4ajWMPW+Hol3xiHHoSZEO/mA3T7X/NU3XNqm96XepwjXh2CMpIvROGLoh0amfVEIXIW3Qj3gnDS3cK/nw==}
 
-  '@expo/config-plugins@58.0.12':
-    resolution: {integrity: sha512-nqnoPBARpKdKLY8+c+N2mizJgiWjlQGWeDhEOqMOZnQcpMmU79H1Svc9QOzcE1yX7obzw0Hf2YVlfW67g58Ucg==}
-
   '@expo/config-types@53.0.5':
     resolution: {integrity: sha512-kqZ0w44E+HEGBjy+Lpyn0BVL5UANg/tmNixxaRMLS6nf37YsDrLk2VMAmeKMMk5CKG0NmOdVv3ngeUjRQMsy9g==}
 
@@ -5594,8 +5591,8 @@ packages:
   electron-to-chromium@1.5.380:
     resolution: {integrity: sha512-W6d5AbuEoRayO447cqrg6lKJIlscgRnnxOZl/08kfV71BQDoEBC7Wwis68z87LjyK6f4kWyTaubuDbhHKrZkbA==}
 
-  electron-to-chromium@1.5.475:
-    resolution: {integrity: sha512-S9tceHJbIsHH8VRwh9x+8lJO50SYwTdwVGdEjdz2FERyP59j1N6rdXOSklIusrhxt9GG/WN4V/kRgmDHl9MM5w==}
+  electron-to-chromium@1.5.473:
+    resolution: {integrity: sha512-9njcRQK+6FOXNAWw5g+h2RPiyazqo5RFMVJ39ZMHjDHUNnnFlhnOGV7O0WmJetODDx19ES5p+FLi+KCVFQGugw==}
 
   emittery@0.13.1:
     resolution: {integrity: sha512-DeWwawk6r5yR9jFgnDKYt4sLS0LmHJJi3ZOnb5/JdbYwj3nW+FxQnHIjhBKz8YLC7oRNPVM9NQ47I3CVx34eqQ==}
@@ -11029,25 +11026,6 @@ snapshots:
       - supports-color
       - typescript
 
-  '@expo/config-plugins@58.0.12(typescript@6.0.3)':
-    dependencies:
-      '@expo/config-types': 58.0.3
-      '@expo/json-file': 11.2.1
-      '@expo/plist': 0.10.1
-      '@expo/require-utils': 58.0.5(typescript@6.0.3)
-      '@expo/sdk-runtime-versions': 1.0.1
-      chalk: 4.1.2
-      debug: 4.4.3(supports-color@8.1.1)
-      getenv: 2.0.0
-      semver: 7.8.6
-      slugify: 1.6.9
-      tinyglobby: 0.2.17
-      xcode: 4.0.0
-      xml2js: 0.6.0
-    transitivePeerDependencies:
-      - supports-color
-      - typescript
-
   '@expo/config-types@53.0.5': {}
 
   '@expo/config-types@55.0.6': {}
@@ -11091,7 +11069,7 @@ snapshots:
 
   '@expo/config@58.0.8(typescript@6.0.3)':
     dependencies:
-      '@expo/config-plugins': 58.0.12(typescript@6.0.3)
+      '@expo/config-plugins': 58.0.11(typescript@6.0.3)
       '@expo/config-types': 58.0.3
       '@expo/json-file': 11.2.1
       '@expo/platforms': 58.0.1
@@ -14502,7 +14480,7 @@ snapshots:
     dependencies:
       baseline-browser-mapping: 2.11.35
       caniuse-lite: 1.0.30001820
-      electron-to-chromium: 1.5.475
+      electron-to-chromium: 1.5.473
       node-releases: 2.0.63
       update-browserslist-db: 1.3.4(browserslist@4.29.5)
 
@@ -15082,7 +15060,7 @@ snapshots:
 
   electron-to-chromium@1.5.380: {}
 
-  electron-to-chromium@1.5.475: {}
+  electron-to-chromium@1.5.473: {}
 
   emittery@0.13.1: {}
 
