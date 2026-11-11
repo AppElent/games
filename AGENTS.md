@@ -30,11 +30,12 @@ Before the task, read the matching project doc:
 | Reviewing the running app, or capturing a review session | the `review-app` skill |
 
 Decisions: [ADR index](docs/README.md#decisions). Adding, moving, or finding docs:
-[docs map](docs/README.md). Issues are GitHub Issues on `AppElent/games`.
+[docs map](docs/README.md). Issues live in Linear; see [Factory workflow](#factory-workflow).
 
 ## Factory workflow
 
 Linear (workspace `appelent`, team AppElent, key `APP`) is the source of truth. Work is a Linear issue with an app label and a blast radius.
+Work lives in Linear, not GitHub Issues; do not open or track work as GitHub Issues.
 
 - `ready-for-agent`: the issue has sharp, testable acceptance criteria and a blast radius, so an agent can pick it up.
 - `ready-for-human`: Eric must do or decide something. Add a comment saying what, where, and roughly how long.
