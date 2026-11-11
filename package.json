@@ -25,6 +25,7 @@
     "lint": "biome lint",
     "lint:fix": "biome check --write",
     "check": "biome check && node scripts/check-mobile-structure.mjs",
+    "verify": "pnpm run check && pnpm run typecheck && pnpm test",
     "cf-typegen": "wrangler types",
     "deploy": "pnpm run deploy:production",
     "deploy:dev": "node scripts/env.mjs exec dev --only github -- pnpm run ship:dev",
