@@ -93,7 +93,8 @@ export function checkFeatureManifest(
 		seen.add(id);
 
 		const both = PLATFORMS.every((platform) => platforms.includes(platform));
-		if (platforms.length === 0) problems.push(`${id}: lists no platform`);
+		if (platforms.length === 0 && status !== "pending-port")
+			problems.push(`${id}: lists no platform`);
 		if (status === "parity" && !both)
 			problems.push(`${id}: status "parity" needs both platforms`);
 		if (status !== "parity" && both)

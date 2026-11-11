@@ -21,7 +21,7 @@ works on both.
   an Expo DOM component (`"use dom"`) to start. A game that cannot ship on both does
   not ship.
 - **Existing web-only games are `pending-port`.** They stay on the web, with no
-  deadline, until Eric decides which to keep (FU-6). A kept game is ported as a DOM
+  deadline, until Eric decides which to keep ([APP-49](https://linear.app/appelent/issue/APP-49)). A kept game is ported as a DOM
   component first and rewritten natively later.
 - **Floor**, on both platforms and not reduced: sign-in, sign-up and password reset;
   account and profile editing; account deletion; data export; language; theme; the
@@ -42,13 +42,13 @@ in it. `APP_GAMES` keeps the app's wiring only; its test requires exactly the ga
 the feature list puts on mobile.
 
 Open gaps, each `pending-port` in the feature list: account deletion on the web
-(FU-1), data export on both platforms (FU-2, so it has no entry yet), account name
-and password editing in the app (FU-3), and sudoku's photo scan and cloud saves in
-the app (FU-4).
+([APP-44](https://linear.app/appelent/issue/APP-44)), data export on both platforms ([APP-45](https://linear.app/appelent/issue/APP-45), listed with no platforms), account name
+and password editing in the app ([APP-46](https://linear.app/appelent/issue/APP-46)), and sudoku's photo scan and cloud saves in
+the app ([APP-47](https://linear.app/appelent/issue/APP-47)).
 
 ## Universal links
 
-Not shipped yet (FU-5). The app could open a claimed `https://arcade-club.appelent.nl/join?token=…`
+Not shipped yet ([APP-48](https://linear.app/appelent/issue/APP-48)). The app could open a claimed `https://arcade-club.appelent.nl/join?token=…`
 link: Expo Router matches `/join` to `app/(tabs)/join/index.tsx`, which reads `token`
 and `code`, so no `+native-intent` is needed. But the Apple Team ID for
 `apple-app-site-association` is not in the repo, and Android app links need the Play
@@ -74,7 +74,7 @@ straight back to the app.
 
 ## Reopen when
 
-- Eric decides which web-only games to keep (FU-6): drop the rest, port the kept ones.
+- Eric decides which web-only games to keep ([APP-49](https://linear.app/appelent/issue/APP-49)): drop the rest, port the kept ones.
 - A game or screen cannot reasonably work on a phone.
 - The Apple Team ID and Play signing SHA-256 are available, to ship universal links
-  and app links (FU-5).
+  and app links ([APP-48](https://linear.app/appelent/issue/APP-48)).

@@ -23,7 +23,7 @@ export interface Feature {
 	readonly id: string;
 	readonly kind: FeatureKind;
 	readonly status: FeatureStatus;
-	/** Platforms that ship the feature today. */
+	/** Platforms that ship the feature today. Empty only for a pending-port feature that exists nowhere yet. */
 	readonly platforms: readonly Platform[];
 	/** Why the feature is not on both platforms. Required unless status is "parity". */
 	readonly reason?: string;
@@ -47,15 +47,12 @@ export const defineFeatures = <const T extends readonly Feature[]>(
 
 const ADR = "docs/adr/0002-ship-every-game-on-web-and-mobile.md";
 const TRIAGE =
-	"Web-only for now: Eric decides whether to keep it and port it to the app (FU-6).";
+	"Web-only for now: Eric decides whether to keep it and port it to the app (APP-49).";
 
 /**
  * Every feature and the platforms it ships on today (ADR 0002). Each game in
  * `GAME_TYPES` is a product feature whose id is the game id; the app's
  * `APP_GAMES` holds exactly the games listed here with `mobile`.
- *
- * Data export (floor) is on neither platform yet, so it has no entry: an entry
- * needs at least one platform. FU-2 adds it on both, with a `parity` entry.
  */
 export const FEATURES = defineFeatures([
 	// Floor
@@ -94,7 +91,7 @@ export const FEATURES = defineFeatures([
 		status: "pending-port",
 		platforms: ["web"],
 		reason:
-			"The web edits the account name and changes the password on /account; the app shows the email and a display name kept on the phone (FU-3).",
+			"The web edits the account name and changes the password on /account; the app shows the email and a display name kept on the phone (APP-46).",
 		routes: {},
 	},
 	{
@@ -103,7 +100,15 @@ export const FEATURES = defineFeatures([
 		status: "pending-port",
 		platforms: ["mobile"],
 		reason:
-			"Only the app's Profile deletes an account (convex/account.ts deleteMyData); the web has no way to (FU-1).",
+			"Only the app's Profile deletes an account (convex/account.ts deleteMyData); the web has no way to (APP-44).",
+		routes: {},
+	},
+	{
+		id: "data-export",
+		kind: "floor",
+		status: "pending-port",
+		platforms: [],
+		reason: "APP-45",
 		routes: {},
 	},
 	{
@@ -195,7 +200,7 @@ export const FEATURES = defineFeatures([
 		kind: "product",
 		status: "pending-port",
 		platforms: ["web"],
-		reason: "Only the web reads a puzzle from a photo (FU-4).",
+		reason: "Only the web reads a puzzle from a photo (APP-47).",
 		routes: { web: ["sudoku/scan"] },
 	},
 	{
@@ -204,7 +209,7 @@ export const FEATURES = defineFeatures([
 		status: "pending-port",
 		platforms: ["web"],
 		reason:
-			"The web keeps puzzles in Convex; the app keeps them on the phone only, so neither sees the other's (FU-4).",
+			"The web keeps puzzles in Convex; the app keeps them on the phone only, so neither sees the other's (APP-47).",
 		routes: {},
 	},
 	{
