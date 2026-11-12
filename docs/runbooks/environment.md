@@ -36,8 +36,8 @@ short-lived and use the Clerk development instance: Infisical `staging /` holds
 values, so the per-PR web build gets `pk_test_` and every per-PR Convex backend trusts
 the development issuer (a Convex `preview` default). `staging /arcade-club` holds a
 preview-kind `convex-deploy-key` for the per-PR web backends. `staging` is long-lived
-and reads Infisical `prod` like production (production Clerk, backend URL and web
-origin). It is two things: the staging web, a merge's first stop, on its own Convex
+and reads Infisical `prod` like production: production Clerk, with its own backend URL
+and web origin. It is two things: the staging web, a merge's first stop, on its own Convex
 deployment with its own `prod:` key (`/arcade-club` `convex-staging-deploy-key` in
 `prod`); and the installed preview app, written to EAS `preview` by
 `pnpm env:apply staging --only eas`, which calls that same staging backend.
@@ -62,7 +62,8 @@ Clerk stays production: the staging web already signs in on it, and the staging
 deployment trusts its issuer. Both values are inlined in the JavaScript bundle, not the
 native runtime, so an over-the-air update moves installed preview builds over; a
 build only needs replacing if its runtime is already behind main's (see
-[mobile.md](mobile.md#over-the-air-updates)). `deploy.yml` publishes that update after each staging deploy.
+[mobile.md](mobile.md#over-the-air-updates)). `deploy.yml` publishes that update after
+each staging deploy.
 
 Static commands need no Infisical login:
 
