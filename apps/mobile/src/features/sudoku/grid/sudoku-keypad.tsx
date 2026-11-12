@@ -213,7 +213,7 @@ const createStyles = (colors: Tokens) =>
 			borderRadius: radius.sm,
 			backgroundColor: colors.surface,
 			borderWidth: StyleSheet.hairlineWidth,
-			borderColor: colors.border,
+			borderColor: colors.borderStrong,
 			alignItems: "center",
 			justifyContent: "center",
 		},

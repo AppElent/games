@@ -166,7 +166,7 @@ export function ConnectFourMatch({
 			{localColor && !finished && opponentJoined ? (
 				<button
 					type="button"
-					className="rounded-md border border-orange-300/40 bg-orange-300/10 px-4 py-2 text-sm font-bold text-orange-100"
+					className="rounded-md border border-orange-300/50 bg-orange-300/10 px-4 py-2 text-sm font-bold text-orange-100"
 					onClick={seatAction(resign, connectFour.actions.resignError)}
 				>
 					{connectFour.actions.resign}

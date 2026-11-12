@@ -57,7 +57,12 @@ export function Card({
 					?.onAction()
 			}
 			testID={testID}
-			style={({ pressed }) => [styles.card, pressed && styles.pressed, style]}
+			style={({ pressed }) => [
+				styles.card,
+				styles.pressable,
+				pressed && styles.pressed,
+				style,
+			]}
 		>
 			{children}
 		</Pressable>
@@ -74,5 +79,6 @@ const createStyles = (colors: Tokens) =>
 			padding: spacing.lg,
 			gap: spacing.sm,
 		},
+		pressable: { borderColor: colors.borderStrong },
 		pressed: { backgroundColor: colors.surfacePressed },
 	});

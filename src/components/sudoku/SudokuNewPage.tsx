@@ -113,7 +113,7 @@ export function SudokuNewPage() {
 					onChange={(event) => setName(event.target.value)}
 					placeholder={sudoku.newGame.namePlaceholder}
 					maxLength={MAX_TITLE_LENGTH}
-					className="w-full rounded-md border border-slate-600 bg-slate-800/70 px-3 py-2 text-white placeholder:text-slate-500"
+					className="w-full rounded-md border border-[var(--club-line-strong)] bg-slate-800/70 px-3 py-2 text-white placeholder:text-slate-500"
 				/>
 			</label>
 
@@ -133,7 +133,7 @@ export function SudokuNewPage() {
 							className={`min-h-11 rounded-md px-4 py-2 font-bold ${
 								variant === entry.id
 									? "bg-white text-slate-950"
-									: "border border-white/20 bg-white/10 text-white"
+									: "border border-[var(--club-line-strong)] bg-white/10 text-white"
 							} disabled:cursor-not-allowed disabled:opacity-50`}
 						>
 							{entry.label}
@@ -152,7 +152,7 @@ export function SudokuNewPage() {
 						type="button"
 						disabled={busy !== null}
 						onClick={() => start(entry.id)}
-						className="rounded-lg border border-slate-600/70 bg-slate-800/60 px-5 py-4 text-left transition hover:border-sky-400/70 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+						className="rounded-lg border border-[var(--club-line-strong)] bg-slate-800/60 px-5 py-4 text-left transition hover:border-sky-400/70 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<span className="block text-lg font-bold text-white">
 							{busy === entry.id ? sudoku.newGame.generating : entry.label}
@@ -166,7 +166,7 @@ export function SudokuNewPage() {
 
 			<Link
 				to="/sudoku/scan"
-				className="mb-10 inline-flex items-center gap-2 rounded-md border border-slate-600/70 bg-slate-800/60 px-4 py-3 font-semibold text-slate-200 transition hover:border-sky-400/70"
+				className="mb-10 inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-slate-800/60 px-4 py-3 font-semibold text-slate-200 transition hover:border-sky-400/70"
 			>
 				<Camera className="h-5 w-5" /> {sudoku.newGame.scanInstead}
 			</Link>

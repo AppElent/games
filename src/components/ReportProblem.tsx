@@ -81,7 +81,7 @@ export function ReportProblem() {
 			<button
 				type="button"
 				onClick={open}
-				className="rounded-md border border-[var(--club-line)] px-4 py-2 font-bold text-[var(--club-text)]"
+				className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-text)]"
 			>
 				{text.report}
 			</button>
@@ -114,7 +114,7 @@ export function ReportProblem() {
 							disabled={pending}
 							onChange={(event) => setMessage(event.target.value)}
 							placeholder={text.placeholder}
-							className="min-h-28 rounded-md border border-[var(--club-line)] bg-[var(--club-panel-strong)] p-3 font-normal text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
+							className="min-h-28 rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] p-3 font-normal text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
 						/>
 					</label>
 					{screenshot ? (

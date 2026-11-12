@@ -76,7 +76,7 @@ export function Workbench() {
 							className={`rounded-md border px-3 py-1.5 text-sm font-bold ${
 								kind === option
 									? "border-cyan-300 bg-cyan-300/20 text-cyan-100"
-									: "border-white/10 bg-white/5 text-slate-300"
+									: "border-[var(--club-line-strong)] bg-white/5 text-slate-300"
 							}`}
 							onClick={() => setKind(option)}
 						>
@@ -95,7 +95,7 @@ export function Workbench() {
 					onChange={(event) => setPayload(event.target.value)}
 					rows={8}
 					placeholder={KIND_PLACEHOLDERS[kind]}
-					className="mb-3 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
+					className="mb-3 w-full rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
 				/>
 				{error ? <p className="mb-3 club-error">{error}</p> : null}
 				<button
@@ -146,7 +146,7 @@ export function Workbench() {
 										disabled={busyId === draft._id}
 										title="Approve"
 										aria-label="Approve draft"
-										className="rounded-md border border-emerald-300/40 bg-emerald-300/10 p-2 text-emerald-100 hover:bg-emerald-300/20 disabled:opacity-60"
+										className="rounded-md border border-emerald-300/50 bg-emerald-300/10 p-2 text-emerald-100 hover:bg-emerald-300/20 disabled:opacity-60"
 										onClick={() =>
 											run(draft._id, () =>
 												approveDraft({
@@ -164,7 +164,7 @@ export function Workbench() {
 										disabled={busyId === draft._id}
 										title="Reject"
 										aria-label="Reject draft"
-										className="rounded-md border border-orange-300/40 bg-orange-300/10 p-2 text-orange-100 hover:bg-orange-300/20 disabled:opacity-60"
+										className="rounded-md border border-orange-300/50 bg-orange-300/10 p-2 text-orange-100 hover:bg-orange-300/20 disabled:opacity-60"
 										onClick={() =>
 											run(draft._id, () =>
 												rejectDraft({
@@ -181,7 +181,7 @@ export function Workbench() {
 									disabled={busyId === draft._id}
 									title="Delete"
 									aria-label="Delete draft"
-									className="rounded-md border border-white/10 bg-white/5 p-2 text-slate-300 hover:bg-white/10 disabled:opacity-60"
+									className="rounded-md border border-[var(--club-line-strong)] bg-white/5 p-2 text-slate-300 hover:bg-white/10 disabled:opacity-60"
 									onClick={() =>
 										run(draft._id, () =>
 											deleteDraft({
@@ -242,7 +242,7 @@ function PayloadEditor({
 				value={value}
 				onChange={(event) => setValue(event.target.value)}
 				rows={8}
-				className="mb-2 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
+				className="mb-2 w-full rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
 			/>
 			<button
 				type="button"

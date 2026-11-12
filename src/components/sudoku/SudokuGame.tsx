@@ -303,7 +303,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 										setEditingTitle(false);
 									}
 								}}
-								className="w-full rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-sm text-white"
+								className="w-full rounded-md border border-[var(--club-line-strong)] bg-slate-800 px-2 py-1 text-sm text-white"
 								maxLength={MAX_TITLE_LENGTH}
 							/>
 						) : (
@@ -429,7 +429,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 								dispatch({ type: "restart" });
 							}
 						}}
-						className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 px-2 py-1 font-semibold text-slate-300 hover:bg-slate-800"
+						className="inline-flex items-center gap-1 rounded-md border border-[var(--club-line-strong)] px-2 py-1 font-semibold text-slate-300 hover:bg-slate-800"
 					>
 						<RotateCcw className="h-3.5 w-3.5" />{" "}
 						{messages.common.gameShell.restart}

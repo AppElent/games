@@ -107,11 +107,7 @@ const BinaryCell = memo(function BinaryCell({
 					width: cellSize,
 					height: cellSize,
 					backgroundColor: fill,
-					borderColor: conflict
-						? tokens.danger
-						: given
-							? tokens.borderStrong
-							: tokens.border,
+					borderColor: conflict ? tokens.danger : tokens.borderStrong,
 				},
 			]}
 		>

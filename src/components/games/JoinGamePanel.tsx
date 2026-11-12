@@ -29,7 +29,7 @@ export function JoinGamePanel() {
 					value={code}
 					onChange={(event) => setCode(event.target.value)}
 					placeholder={messages.common.session.roomCode}
-					className="min-w-0 flex-1 rounded-md border border-[var(--club-line)] bg-[var(--club-panel-strong)] px-3 py-2 text-sm text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-cyan-300"
+					className="min-w-0 flex-1 rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-sm text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-cyan-300"
 				/>
 				<button
 					type="submit"

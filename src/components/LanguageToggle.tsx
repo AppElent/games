@@ -15,7 +15,7 @@ export default function LanguageToggle() {
 			onClick={() => setLocale(next)}
 			aria-label={label}
 			title={label}
-			className="rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/15"
+			className="rounded-md border border-white/50 bg-white/10 px-3 py-2 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/15"
 		>
 			{locale.toUpperCase()}
 		</button>
