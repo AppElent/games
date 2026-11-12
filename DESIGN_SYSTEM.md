@@ -34,6 +34,8 @@ The web app's palette lives in `src/styles.css` (`--club-*`). Native UI follows
 [the mobile design system](apps/mobile/DESIGN_SYSTEM.md), which transcribes the same palette.
 
 Colour pairs meet WCAG AA in both schemes: text 4.5:1, field and button borders 3:1.
+Physical-object palettes (card table, backgammon board) are outside this rule until their
+own pass.
 Change a value in `src/styles.css` and `apps/mobile/src/theme/tokens.ts` together.
 
 | Web | Mobile | Use | Dark | Light |
