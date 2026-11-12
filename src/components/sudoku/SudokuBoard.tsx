@@ -70,7 +70,7 @@ export function SudokuBoard({
 
 	return (
 		<div
-			className={`grid aspect-square w-full select-none grid-cols-9 grid-rows-9 rounded-lg border-2 border-slate-400 bg-white shadow-lg dark:border-slate-300/80 dark:bg-slate-900 ${className}`}
+			className={`grid aspect-square w-full select-none grid-cols-9 grid-rows-9 rounded-lg border-2 border-slate-600 bg-white shadow-lg dark:border-slate-300/80 dark:bg-slate-900 ${className}`}
 		>
 			{grid.map((value, cell) => {
 				const row = rowOf(cell);
@@ -92,16 +92,16 @@ export function SudokuBoard({
 
 				const borders = [
 					col % 3 === 0
-						? "border-l-2 border-l-slate-400 dark:border-l-slate-300/70"
-						: "border-l border-l-slate-300 dark:border-l-slate-600/60",
+						? "border-l-2 border-l-slate-600 dark:border-l-slate-300/70"
+						: "border-l border-l-slate-900/50 dark:border-l-slate-400/60",
 					row % 3 === 0
-						? "border-t-2 border-t-slate-400 dark:border-t-slate-300/70"
-						: "border-t border-t-slate-300 dark:border-t-slate-600/60",
+						? "border-t-2 border-t-slate-600 dark:border-t-slate-300/70"
+						: "border-t border-t-slate-900/50 dark:border-t-slate-400/60",
 					col === 8
-						? "border-r-2 border-r-slate-400 dark:border-r-slate-300/70"
+						? "border-r-2 border-r-slate-600 dark:border-r-slate-300/70"
 						: "",
 					row === 8
-						? "border-b-2 border-b-slate-400 dark:border-b-slate-300/70"
+						? "border-b-2 border-b-slate-600 dark:border-b-slate-300/70"
 						: "",
 				].join(" ");
 

@@ -115,3 +115,43 @@ describe("web header", () => {
 		expect(contrast(border, fill)).toBeGreaterThanOrEqual(3);
 	});
 });
+
+describe("web puzzle boards", () => {
+	// Sudoku and binary cells are tap targets: thin cell lines use the phone's
+	// borderStrong. The board sets its own ground with dark: classes inside the
+	// fullscreen shell, so the colours are spelled out as Tailwind classes.
+	const source = ["SudokuBoard.tsx", "BinaryGame.tsx"]
+		.map((file) =>
+			readFileSync(
+				join(__dirname, "../../../../src/components/sudoku", file),
+				"utf8",
+			),
+		)
+		.join("\n");
+
+	it.each([
+		["slate-900/50", lightColors, "#ffffff"],
+		["slate-400/60", darkColors, "#0f172a"],
+	] as const)(
+		"thin lines use %s, the phone's borderStrong",
+		(cls, t, board) => {
+			const tailwind: Record<string, string> = {
+				"slate-900/50": "rgba(15, 23, 42, 0.5)",
+				"slate-400/60": "rgba(148, 163, 184, 0.6)",
+			};
+			expect(source).toMatch(
+				new RegExp(`border(-[lt])?-${cls.replace("/", "\\/")}`),
+			);
+			expect(tailwind[cls]).toBe(t.borderStrong);
+			const ground = parse(board);
+			expect(
+				contrast(parse(t.borderStrong, ground), ground),
+			).toBeGreaterThanOrEqual(3);
+		},
+	);
+
+	it("no thin line keeps the old 1.5:1 slate-300 / slate-600/60", () => {
+		expect(source).not.toMatch(/border(-[lt])?-slate-300 /);
+		expect(source).not.toMatch(/border(-[lt])?-slate-600\/60/);
+	});
+});

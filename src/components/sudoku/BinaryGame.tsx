@@ -129,7 +129,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 
 				<div className="relative w-full">
 					<div
-						className="grid aspect-square w-full select-none rounded-lg border-2 border-slate-400 bg-white shadow-lg dark:border-slate-300/80 dark:bg-slate-900"
+						className="grid aspect-square w-full select-none rounded-lg border-2 border-slate-600 bg-white shadow-lg dark:border-slate-300/80 dark:bg-slate-900"
 						style={{
 							gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`,
 							gridTemplateRows: `repeat(${size}, minmax(0, 1fr))`,
@@ -148,7 +148,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 									aria-label={`${fmt(sudoku.board.cellLabel, { row: row + 1, col: col + 1 })}${value !== 0 ? `, ${binaryDigitLabel(value)}` : ""}`}
 									disabled={isGiven || status !== "active"}
 									onClick={() => cycleCell(cell)}
-									className={`flex items-center justify-center border-slate-300 p-0 dark:border-slate-600/60 ${
+									className={`flex items-center justify-center border-slate-900/50 p-0 dark:border-slate-400/60 ${
 										col > 0 ? "border-l" : ""
 									} ${row > 0 ? "border-t" : ""} ${
 										isGiven

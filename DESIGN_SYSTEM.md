@@ -51,3 +51,9 @@ variable is pinned to its dark value. The site header's translucent dark bar let
 through, so its buttons use `border-white/60` (3:1 against the page and against the button's
 own `bg-white/10` fill, over both themes) and its links, including "Sign in", use
 `.club-nav-link`.
+
+Puzzle boards (Sudoku, binary) draw the same lines as the phone. Their cells are tap targets,
+so thin cell lines use the `borderStrong` colour (`slate-900/50` light, `slate-400/60` dark,
+at least 3:1 on the board), and box lines and the outer edge use `textMuted` (`slate-600`)
+in light mode. The board pins its own white or slate-900 ground with `dark:` classes, so it
+spells these colours out rather than reading the pinned `--club-*` variables.
