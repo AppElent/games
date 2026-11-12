@@ -95,7 +95,7 @@ export function Workbench() {
 					onChange={(event) => setPayload(event.target.value)}
 					rows={8}
 					placeholder={KIND_PLACEHOLDERS[kind]}
-					className="mb-3 w-full rounded-md border border-slate-400/60 bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
+					className="mb-3 w-full rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
 				/>
 				{error ? <p className="mb-3 club-error">{error}</p> : null}
 				<button
@@ -242,7 +242,7 @@ function PayloadEditor({
 				value={value}
 				onChange={(event) => setValue(event.target.value)}
 				rows={8}
-				className="mb-2 w-full rounded-md border border-slate-400/60 bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
+				className="mb-2 w-full rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
 			/>
 			<button
 				type="button"

@@ -163,7 +163,7 @@ body {
 /* Repeated Tailwind blocks, named so they change together. Each holds exactly
    the classes it replaced; near-variants keep their own class lists. */
 @utility club-input-dark {
-  @apply rounded-md border border-slate-400/60 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300;
+  @apply rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300;
 }
 
 @utility club-field-label {
@@ -179,7 +179,7 @@ body {
 }
 
 @utility club-btn-secondary {
-  @apply rounded-xl border border-slate-400/60 bg-white/10 px-4 py-2 font-bold text-white;
+  @apply rounded-xl border border-[var(--club-line-strong)] bg-white/10 px-4 py-2 font-bold text-white;
 }
 
 /* A dimmed layer over a game surface, centering a menu or end panel. */

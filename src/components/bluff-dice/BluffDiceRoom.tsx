@@ -209,7 +209,7 @@ export function BluffDiceRoom({
 								<select
 									value={quantity}
 									onChange={(event) => setQuantity(Number(event.target.value))}
-									className="rounded-md border border-slate-400/60 bg-black/30 px-3 py-2.5 text-white"
+									className="rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2.5 text-white"
 								>
 									{Array.from({ length: totalDice }, (_, i) => i + 1).map(
 										(value) => (
@@ -227,7 +227,7 @@ export function BluffDiceRoom({
 								<select
 									value={face}
 									onChange={(event) => setFace(Number(event.target.value))}
-									className="rounded-md border border-slate-400/60 bg-black/30 px-3 py-2.5 text-white"
+									className="rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2.5 text-white"
 								>
 									{[1, 2, 3, 4, 5, 6].map((value) => (
 										<option key={value} value={value}>
