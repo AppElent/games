@@ -193,3 +193,65 @@ describe("web header", () => {
 		expect(contrast(border, fill)).toBeGreaterThanOrEqual(3);
 	});
 });
+
+describe("web puzzle boards", () => {
+	// Sudoku and binary cells are tap targets, so thin cell lines use the phone's
+	// borderStrong. The boards keep their own themed ground inside the fullscreen
+	// shell, so they read --puzzle-line; the scan board is always dark and reads
+	// the pinned --club-line-strong.
+	const styles = readFileSync(
+		join(__dirname, "../../../../src/styles.css"),
+		"utf8",
+	);
+	const sudoku = (file: string) =>
+		readFileSync(
+			join(__dirname, "../../../../src/components/sudoku", file),
+			"utf8",
+		);
+	const line = (selector: string) =>
+		new RegExp(
+			`${selector.replaceAll(".", "\\.")} \\{\\s*--puzzle-line:\\s*([^;]+);`,
+		).exec(styles)?.[1];
+
+	it.each([
+		[".puzzle-board", lightColors, "#ffffff"],
+		[".dark .puzzle-board", darkColors, "#0f172a"],
+	] as const)(
+		"%s thin lines are the phone's borderStrong, 3:1 on the board",
+		(selector, t, board) => {
+			expect(line(selector)).toBe(t.borderStrong);
+			const ground = parse(board);
+			expect(
+				contrast(parse(t.borderStrong, ground), ground),
+			).toBeGreaterThanOrEqual(3);
+		},
+	);
+
+	// Thin lines are the 1px border strings: `"border-l border-l-<colour>"` on the
+	// Sudoku grids, and every border colour in the binary cell's class template.
+	// The whole string must be the variable, so a `dark:` override fails too.
+	const thinColours = (source: string) => [
+		...[...source.matchAll(/"border-([lt]) border-\1-([^"]+)"/g)].map(
+			(m) => m[2],
+		),
+		...[...source.matchAll(/className=\{`[^`]*\bp-0\b[^`]*`\}/g)].flatMap((m) =>
+			[...m[0].matchAll(/(?:^|\s|:)border-(?![lrtb]\b|\d)([^\s"`$]+)/g)].map(
+				(c) => c[1],
+			),
+		),
+	];
+
+	it.each([
+		["SudokuBoard.tsx", "[var(--puzzle-line)]"],
+		["BinaryGame.tsx", "[var(--puzzle-line)]"],
+		["SudokuScanFlow.tsx", "[var(--club-line-strong)]"],
+	])("every thin line in %s is %s", (file, colour) => {
+		const source = sudoku(file);
+		const found = thinColours(source);
+		expect(found.length).toBeGreaterThan(0);
+		for (const c of found) expect(c).toBe(colour);
+		if (colour.includes("puzzle-line")) {
+			expect(source).toContain("puzzle-board ");
+		}
+	});
+});

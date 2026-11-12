@@ -366,17 +366,17 @@ function VerifyStep({
 					<p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
 						{sudoku.scan.recognizedGridLabel}
 					</p>
-					<div className="grid aspect-square w-full max-w-[420px] grid-cols-9 grid-rows-9 rounded-md border-2 border-slate-400/70 bg-slate-900">
+					<div className="grid aspect-square w-full max-w-[420px] grid-cols-9 grid-rows-9 rounded-md border-2 border-slate-300/80 bg-slate-900">
 						{cells.map((entry, index) => {
 							const row = Math.floor(index / 9);
 							const col = index % 9;
 							const borders = [
 								col % 3 === 0
-									? "border-l-2 border-l-slate-400/60"
-									: "border-l border-l-slate-600/50",
+									? "border-l-2 border-l-slate-300/70"
+									: "border-l border-l-[var(--club-line-strong)]",
 								row % 3 === 0
-									? "border-t-2 border-t-slate-400/60"
-									: "border-t border-t-slate-600/50",
+									? "border-t-2 border-t-slate-300/70"
+									: "border-t border-t-[var(--club-line-strong)]",
 							].join(" ");
 							const flag = conflictSet.has(index)
 								? "bg-red-500/30"
