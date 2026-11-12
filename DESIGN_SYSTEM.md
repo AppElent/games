@@ -52,8 +52,13 @@ through, so its buttons use `border-white/60` (3:1 against the page and against 
 own `bg-white/10` fill, over both themes) and its links, including "Sign in", use
 `.club-nav-link`.
 
-Puzzle boards (Sudoku, binary) draw the same lines as the phone. Their cells are tap targets,
-so thin cell lines use the `borderStrong` colour (`slate-900/50` light, `slate-400/60` dark,
-at least 3:1 on the board), and box lines and the outer edge use `textMuted` (`slate-600`)
-in light mode. The board pins its own white or slate-900 ground with `dark:` classes, so it
-spells these colours out rather than reading the pinned `--club-*` variables.
+Puzzle board cells (Sudoku, binary) are tap targets, so their thin cell lines use the phone's
+`borderStrong` colour, at least 3:1 on the empty board. The board follows the page theme with
+its own white or slate-900 ground, even inside `.game-fullscreen`, so it reads `--puzzle-line`
+(set on `.puzzle-board` in `src/styles.css`) instead of the pinned `--club-*` variables. The
+always-dark scan board reads `--club-line-strong`. Box lines and the outer edge stay heavier:
+2px, and `slate-600` in light mode (the phone's `textMuted`); dark mode uses `slate-300/70`
+rather than the phone's exact colour. Killer cage outlines use the same colours as box lines,
+dashed. The 3:1 holds on empty cells. A filled cell (selection, highlight, colour mark) shows by
+its fill, and the line beside it drops to about 3:1 in light mode and about 2:1 in dark,
+the same as on the phone.

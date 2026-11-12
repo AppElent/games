@@ -162,6 +162,17 @@ body {
   overflow: hidden;
 }
 
+/* Sudoku and binary boards follow the page theme with their own white or
+   slate-900 ground, even inside .game-fullscreen, which pins --club-* dark.
+   So thin cell lines get their own variable: the phone's borderStrong for
+   each theme, at least 3:1 on the empty board. */
+.puzzle-board {
+  --puzzle-line: rgba(15, 23, 42, 0.5);
+}
+.dark .puzzle-board {
+  --puzzle-line: rgba(148, 163, 184, 0.6);
+}
+
 /* Repeated Tailwind blocks, named so they change together. Each holds exactly
    the classes it replaced; near-variants keep their own class lists. */
 @utility club-input-dark {

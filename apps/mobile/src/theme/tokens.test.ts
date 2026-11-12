@@ -117,32 +117,31 @@ describe("web header", () => {
 });
 
 describe("web puzzle boards", () => {
-	// Sudoku and binary cells are tap targets: thin cell lines use the phone's
-	// borderStrong. The board sets its own ground with dark: classes inside the
-	// fullscreen shell, so the colours are spelled out as Tailwind classes.
-	const source = ["SudokuBoard.tsx", "BinaryGame.tsx"]
-		.map((file) =>
-			readFileSync(
-				join(__dirname, "../../../../src/components/sudoku", file),
-				"utf8",
-			),
-		)
-		.join("\n");
+	// Sudoku and binary cells are tap targets, so thin cell lines use the phone's
+	// borderStrong. The boards keep their own themed ground inside the fullscreen
+	// shell, so they read --puzzle-line; the scan board is always dark and reads
+	// the pinned --club-line-strong.
+	const styles = readFileSync(
+		join(__dirname, "../../../../src/styles.css"),
+		"utf8",
+	);
+	const sudoku = (file: string) =>
+		readFileSync(
+			join(__dirname, "../../../../src/components/sudoku", file),
+			"utf8",
+		);
+	const line = (selector: string) =>
+		new RegExp(
+			`${selector.replace(".", "\\.")} \\{\\s*--puzzle-line:\\s*([^;]+);`,
+		).exec(styles)?.[1];
 
 	it.each([
-		["slate-900/50", lightColors, "#ffffff"],
-		["slate-400/60", darkColors, "#0f172a"],
+		[".puzzle-board", lightColors, "#ffffff"],
+		[".dark .puzzle-board", darkColors, "#0f172a"],
 	] as const)(
-		"thin lines use %s, the phone's borderStrong",
-		(cls, t, board) => {
-			const tailwind: Record<string, string> = {
-				"slate-900/50": "rgba(15, 23, 42, 0.5)",
-				"slate-400/60": "rgba(148, 163, 184, 0.6)",
-			};
-			expect(source).toMatch(
-				new RegExp(`border(-[lt])?-${cls.replace("/", "\\/")}`),
-			);
-			expect(tailwind[cls]).toBe(t.borderStrong);
+		"%s thin lines are the phone's borderStrong, 3:1 on the board",
+		(selector, t, board) => {
+			expect(line(selector)).toBe(t.borderStrong);
 			const ground = parse(board);
 			expect(
 				contrast(parse(t.borderStrong, ground), ground),
@@ -150,8 +149,25 @@ describe("web puzzle boards", () => {
 		},
 	);
 
-	it("no thin line keeps the old 1.5:1 slate-300 / slate-600/60", () => {
-		expect(source).not.toMatch(/border(-[lt])?-slate-300 /);
-		expect(source).not.toMatch(/border(-[lt])?-slate-600\/60/);
+	// Thin lines are the 1px border classes: `border-l border-l-<colour>` on the
+	// Sudoku grid, and the cell `border-<colour>` on the binary grid.
+	const thinColours = (source: string) =>
+		[
+			...source.matchAll(/"border-([lt]) border-\1-([^\s"]+)/g),
+			...source.matchAll(/justify-center border-(\S+) p-0/g),
+		].map((m) => m.at(-1));
+
+	it.each([
+		["SudokuBoard.tsx", "[var(--puzzle-line)]"],
+		["BinaryGame.tsx", "[var(--puzzle-line)]"],
+		["SudokuScanFlow.tsx", "[var(--club-line-strong)]"],
+	])("every thin line in %s is %s", (file, colour) => {
+		const source = sudoku(file);
+		const found = thinColours(source);
+		expect(found.length).toBeGreaterThan(0);
+		for (const c of found) expect(c).toBe(colour);
+		if (colour.includes("puzzle-line")) {
+			expect(source).toContain("puzzle-board ");
+		}
 	});
 });
