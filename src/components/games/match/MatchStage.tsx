@@ -55,7 +55,7 @@ export function MatchHud({
 			<button
 				type="button"
 				onClick={onInfo}
-				className="flex h-11 items-center rounded-xl border border-[var(--club-line-strong)] bg-slate-900/70 px-4 text-sm font-bold text-white backdrop-blur"
+				className="flex h-11 items-center rounded-xl club-btn-outline bg-slate-900/70 px-4 text-sm font-bold text-white backdrop-blur"
 			>
 				{messages.common.match.info}
 			</button>

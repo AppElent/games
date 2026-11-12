@@ -180,8 +180,14 @@ body {
   @apply rounded-md bg-white px-5 py-2 font-bold text-slate-950;
 }
 
+/* The 3:1 edge of every outline button and toggle. Only the border: sites keep
+   their own shape, fill and text, so one place sets the edge colour. */
+@utility club-btn-outline {
+  @apply border border-[var(--club-line-strong)];
+}
+
 @utility club-btn-secondary {
-  @apply rounded-xl border border-[var(--club-line-strong)] bg-white/10 px-4 py-2 font-bold text-white;
+  @apply club-btn-outline rounded-xl bg-white/10 px-4 py-2 font-bold text-white;
 }
 
 /* A dimmed layer over a game surface, centering a menu or end panel. */

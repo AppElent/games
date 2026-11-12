@@ -57,7 +57,7 @@ function WordLinksDailyPage() {
 						<Link
 							to="/word-links/$puzzleId"
 							params={{ puzzleId: practiceId }}
-							className="rounded-md border border-[var(--club-line-strong)] bg-white/10 px-4 py-2 font-bold text-white"
+							className="rounded-md club-btn-outline bg-white/10 px-4 py-2 font-bold text-white"
 						>
 							{wordLinks.page.practiceLink}
 						</Link>
