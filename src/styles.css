@@ -14,7 +14,7 @@
   --club-line-strong: rgba(148, 163, 184, 0.6);
   --club-text: #f8fafc;
   --club-muted: #aab6cc;
-  --club-soft: #7c8aa3;
+  --club-soft: #8794ad;
   --club-green: #34d399;
   --club-cyan: #22d3ee;
   --club-pink: #f472b6;
@@ -33,7 +33,7 @@
   --club-line-strong: rgba(15, 23, 42, 0.5);
   --club-text: #0f172a;
   --club-muted: #475569;
-  --club-soft: #5f6e84;
+  --club-soft: #5a687e;
   --club-green: #047857;
   --club-cyan: #0e7490;
   --club-pink: #be185d;
@@ -120,9 +120,11 @@ body {
 }
 
 /* The header stays dark in both themes, so nav links use fixed colors
-   instead of theme tokens (which would go near-black in light mode). */
+   instead of theme tokens (which would go near-black in light mode). The bar
+   is translucent: over a white page it lightens to about #474a57, where
+   slate-300 still reads at 5.8:1. */
 .club-nav-link {
-  color: #aab6cc;
+  color: #cbd5e1;
   text-decoration: none;
 }
 
@@ -141,7 +143,7 @@ body {
   --club-line-strong: rgba(148, 163, 184, 0.6);
   --club-text: #f8fafc;
   --club-muted: #aab6cc;
-  --club-soft: #7c8aa3;
+  --club-soft: #8794ad;
   --club-green: #34d399;
   --club-cyan: #22d3ee;
   --club-pink: #f472b6;
