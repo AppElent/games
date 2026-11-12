@@ -44,5 +44,5 @@ Change a value in `src/styles.css` and `apps/mobile/src/theme/tokens.ts` togethe
 | `--club-line-strong` | `borderStrong` | Field and button borders | slate-400 at 60% | slate-900 at 50% |
 
 Every field and button border uses `--club-line-strong`. Inside `.game-fullscreen` the
-variable is pinned to its dark value. Only the site header, which is dark in both themes
-and sits outside `.game-fullscreen`, spells that dark value as `border-slate-400/60`.
+variable is pinned to its dark value. The site header's translucent dark bar lets the page
+through, so its buttons use `border-white/50`, which passes over both themes.
