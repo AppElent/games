@@ -83,7 +83,7 @@ export function TimelineRow({
 					className={`h-24 w-11 shrink-0 self-center rounded-xl border-2 border-dashed text-xl font-bold transition focus-visible:outline-2 focus-visible:outline-blue-400 ${
 						selected
 							? "border-blue-500 bg-blue-500/20 text-blue-700 dark:text-blue-200"
-							: "border-[var(--club-line)] text-[var(--club-soft)] hover:border-[var(--club-soft)] hover:text-[var(--club-muted)]"
+							: "border-[var(--club-line-strong)] text-[var(--club-soft)] hover:border-[var(--club-soft)] hover:text-[var(--club-muted)]"
 					}`}
 				>
 					{selected ? "●" : "+"}
@@ -207,7 +207,7 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 								{getHitsterModeConfig(state.mode).tokenCap > 0 ? (
 									<span
 										className={
-											winner ? "opacity-70" : "text-[var(--club-soft)]"
+											winner ? "opacity-70" : "text-[var(--club-muted)]"
 										}
 									>
 										{fmt(scoreboard.tokensAbbrev, { count: row.tokens })}

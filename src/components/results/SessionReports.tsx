@@ -129,7 +129,7 @@ function ScoreboardSection({
 				</h2>
 				<button
 					type="button"
-					className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/10"
+					className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-white/5 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/10"
 					onClick={() => {
 						if (quizCsv) {
 							downloadCsv(`quiz-results-${sessionId.slice(-6)}.csv`, quizCsv());

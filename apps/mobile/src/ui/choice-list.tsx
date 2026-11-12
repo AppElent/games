@@ -93,7 +93,7 @@ const createStyles = (colors: Tokens) =>
 			borderRadius: radius.md,
 			backgroundColor: colors.surface,
 			borderWidth: StyleSheet.hairlineWidth,
-			borderColor: colors.border,
+			borderColor: colors.borderStrong,
 		},
 		selected: { borderColor: colors.accent, backgroundColor: colors.accentDim },
 		pressed: { opacity: opacity.pressed },

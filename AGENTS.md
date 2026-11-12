@@ -34,6 +34,9 @@ Before the task, read the matching project doc:
 | Watching a pull request through CI and review | the `babysit-pr` skill |
 | Reviewing the running app, or capturing a review session | the `review-app` skill |
 
+Run `pnpm verify` (lint, typecheck and tests in one command) before pushing; see
+[Verification](docs/runbooks/verification.md) for running a single step.
+
 Decisions: [ADR index](docs/README.md#decisions). Adding, moving, or finding docs:
 [docs map](docs/README.md). Issues live in Linear; see [Factory workflow](#factory-workflow).
 

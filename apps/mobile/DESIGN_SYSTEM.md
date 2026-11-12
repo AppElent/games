@@ -13,6 +13,11 @@ cyan, Backgammon orange, Hitster pink, card games green).
 the type ramp. Nothing else spells a hex value or a `fontSize`. Text renders
 through `AppText` variants.
 
+Colour pairs meet WCAG AA in both schemes (text 4.5:1, `borderStrong` around fields
+and buttons 3:1); the [project design system](../../DESIGN_SYSTEM.md#project-bindings)
+lists the shared values. Fields, buttons, choice rows, keys and pressable cards use
+`borderStrong`; `border` outlines static cards and panels.
+
 ## Components
 
 | Primitive (`src/ui/`) | Use |

@@ -35,7 +35,7 @@ export function PuzzleHeader({
 					<button
 						type="button"
 						onClick={onTogglePause}
-						className="inline-flex items-center gap-1 rounded-md border border-slate-600/70 bg-slate-800/70 px-2 py-1 text-sm font-semibold text-slate-200 hover:bg-slate-700"
+						className="inline-flex items-center gap-1 rounded-md border border-[var(--club-line-strong)] bg-slate-800/70 px-2 py-1 text-sm font-semibold text-slate-200 hover:bg-slate-700"
 					>
 						{status === "active" ? (
 							<>

@@ -173,7 +173,7 @@ export function SignalWordsRoom({
 									<div className="mt-3 flex gap-2">
 										<button
 											type="button"
-											className="min-h-11 flex-1 rounded-md border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
+											className="min-h-11 flex-1 rounded-md border border-[var(--club-line-strong)] bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
 											onClick={seatAction(
 												(seat) => joinTeam({ ...seat, team, clueGiver: false }),
 												signalWords.teams.joinError,
@@ -183,7 +183,7 @@ export function SignalWordsRoom({
 										</button>
 										<button
 											type="button"
-											className="min-h-11 flex-1 rounded-md border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
+											className="min-h-11 flex-1 rounded-md border border-[var(--club-line-strong)] bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
 											onClick={seatAction(
 												(seat) => joinTeam({ ...seat, team, clueGiver: true }),
 												signalWords.teams.joinError,
@@ -226,7 +226,7 @@ export function SignalWordsRoom({
 										? `${ROLE_STYLES[revealedRole]} opacity-90`
 										: revealedRole
 											? `${ROLE_STYLES[revealedRole]}`
-											: "border-white/15 bg-white/10 text-white"
+											: "border-[var(--club-line-strong)] bg-white/10 text-white"
 								} ${clickable ? "hover:bg-white/25" : ""}`}
 							>
 								{word}
@@ -264,7 +264,7 @@ export function SignalWordsRoom({
 						<input
 							value={clue}
 							onChange={(event) => setClue(event.target.value)}
-							className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white"
+							className="w-full rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 text-white"
 							placeholder={signalWords.clueForm.placeholder}
 						/>
 					</label>
@@ -275,7 +275,7 @@ export function SignalWordsRoom({
 						<select
 							value={count}
 							onChange={(event) => setCount(Number(event.target.value))}
-							className="rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-white"
+							className="rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2.5 text-white"
 						>
 							{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
 								<option key={value} value={value}>
@@ -294,7 +294,7 @@ export function SignalWordsRoom({
 				<div className="flex justify-center">
 					<button
 						type="button"
-						className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white"
+						className="rounded-md border border-[var(--club-line-strong)] bg-white/10 px-4 py-2 text-sm font-bold text-white"
 						onClick={seatAction(pass, signalWords.actions.passError)}
 					>
 						{signalWords.actions.passTurn}

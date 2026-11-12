@@ -207,7 +207,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 						<button
 							type="button"
 							onClick={() => setOrder((current) => shuffle(current))}
-							className="min-h-11 rounded-md border border-white/20 bg-white/10 px-5 py-2 font-bold text-white"
+							className="min-h-11 rounded-md border border-[var(--club-line-strong)] bg-white/10 px-5 py-2 font-bold text-white"
 						>
 							{wordLinks.game.shuffle}
 						</button>
@@ -215,7 +215,7 @@ export function WordLinksGame({ puzzle, mode }: Props) {
 							type="button"
 							disabled={selected.length === 0}
 							onClick={() => setSelected([])}
-							className="min-h-11 rounded-md border border-white/20 bg-white/10 px-5 py-2 font-bold text-white disabled:opacity-50"
+							className="min-h-11 rounded-md border border-[var(--club-line-strong)] bg-white/10 px-5 py-2 font-bold text-white disabled:opacity-50"
 						>
 							{wordLinks.game.deselect}
 						</button>

@@ -54,7 +54,7 @@ export function FullscreenGameShell({
 								: messages.common.gameShell.openMenu
 						}
 						onClick={() => setMenu(!menuOpen)}
-						className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-slate-900/70 text-white backdrop-blur"
+						className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--club-line-strong)] bg-slate-900/70 text-white backdrop-blur"
 					>
 						{menuOpen ? (
 							<X className="h-5 w-5" />
@@ -97,7 +97,7 @@ export function FullscreenGameShell({
 								) : null}
 								<Link
 									to="/"
-									className="min-h-11 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-center font-bold text-white"
+									className="min-h-11 rounded-xl border border-[var(--club-line-strong)] bg-white/10 px-4 py-2 text-center font-bold text-white"
 								>
 									{messages.common.gameShell.returnToGames}
 								</Link>

@@ -65,7 +65,7 @@ function AnswerInputs({
 		return null;
 	}
 	const inputClass =
-		"w-full rounded-xl border border-[var(--club-line)] bg-[var(--club-panel-strong)] px-3 py-2.5 text-[var(--club-text)] placeholder:text-[var(--club-soft)] focus-visible:outline-2 focus-visible:outline-blue-400";
+		"w-full rounded-xl border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2.5 text-[var(--club-text)] placeholder:text-[var(--club-soft)] focus-visible:outline-2 focus-visible:outline-blue-400";
 	return (
 		<div className="grid gap-2 sm:grid-cols-2">
 			{showArtistTitle ? (
@@ -325,7 +325,7 @@ export function HitsterStage({
 										<div className="text-center">
 											<button
 												type="button"
-												className="rounded-xl border border-[var(--club-line)] px-5 py-2.5 font-semibold text-[var(--club-text)] hover:border-[var(--club-soft)]"
+												className="rounded-xl border border-[var(--club-line-strong)] px-5 py-2.5 font-semibold text-[var(--club-text)] hover:border-[var(--club-soft)]"
 												onClick={() => setStealOpen(true)}
 											>
 												{stage.stealButton}
