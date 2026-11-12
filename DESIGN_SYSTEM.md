@@ -34,8 +34,10 @@ The web app's palette lives in `src/styles.css` (`--club-*`). Native UI follows
 [the mobile design system](apps/mobile/DESIGN_SYSTEM.md), which transcribes the same palette.
 
 Colour pairs meet WCAG AA in both schemes: text 4.5:1, field and button borders 3:1.
-Physical-object palettes (card table, backgammon board) are outside this rule until their
-own pass.
+Physical-object palettes (card table, backgammon board) keep their own colours, but their
+control borders still reach 3:1 against the brightest felt or stage they sit on: the card
+table's `--ivory-line` (`cardColors.ivoryLine`) and the backgammon board's `CONTROL_LINE`.
+Decorative lines (panels, rings, empty piles) stay soft.
 Change a value in `src/styles.css` and `apps/mobile/src/theme/tokens.ts` together.
 
 | Web | Mobile | Use | Dark | Light |

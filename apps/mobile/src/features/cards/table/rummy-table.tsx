@@ -715,8 +715,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: spacing.md,
 		borderRadius: radius.pill,
 		backgroundColor: cardColors.chip,
-		borderWidth: StyleSheet.hairlineWidth,
-		borderColor: cardColors.goldSoft,
+		borderWidth: 1,
+		borderColor: cardColors.ivoryLine,
 	},
 	melds: { flex: 1, minHeight: 0 },
 	meldsContent: {
