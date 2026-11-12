@@ -226,7 +226,7 @@ export function SignalWordsRoom({
 										? `${ROLE_STYLES[revealedRole]} opacity-90`
 										: revealedRole
 											? `${ROLE_STYLES[revealedRole]}`
-											: "border-white/15 bg-white/10 text-white"
+											: "border-[var(--club-line-strong)] bg-white/10 text-white"
 								} ${clickable ? "hover:bg-white/25" : ""}`}
 							>
 								{word}
