@@ -97,10 +97,8 @@ export const FEATURES = defineFeatures([
 	{
 		id: "account-deletion",
 		kind: "floor",
-		status: "pending-port",
-		platforms: ["mobile"],
-		reason:
-			"Only the app's Profile deletes an account (convex/account.ts deleteMyData); the web has no way to (APP-44).",
+		status: "parity",
+		platforms: ["web", "mobile"],
 		routes: {},
 	},
 	{
