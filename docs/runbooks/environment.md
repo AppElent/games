@@ -60,8 +60,9 @@ as `EXPO_PUBLIC_CONVEX_URL`, and `web-staging-origin`
 (`https://arcade-club-stg.appelent.nl`) as `EXPO_PUBLIC_WEB_ORIGIN`, in EAS `preview`.
 Clerk stays production: the staging web already signs in on it, and the staging
 deployment trusts its issuer. Both values are inlined in the JavaScript bundle, not the
-native runtime, so an over-the-air update moves installed preview builds over; no
-rebuild is needed. `deploy.yml` publishes that update after each staging deploy.
+native runtime, so an over-the-air update moves installed preview builds over; a
+build only needs replacing if its runtime is already behind main's (see
+[mobile.md](mobile.md#over-the-air-updates)). `deploy.yml` publishes that update after each staging deploy.
 
 Static commands need no Infisical login:
 
