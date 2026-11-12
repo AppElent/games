@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
 	ghost: {
 		backgroundColor: cardColors.chip,
 		borderWidth: 1,
-		borderColor: cardColors.goldSoft,
+		borderColor: cardColors.ivoryLine,
 	},
 	ghostOn: { borderColor: cardColors.gold },
 	pressed: { opacity: opacity.pressed },

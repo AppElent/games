@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { darkColors, lightColors, type Tokens } from "./tokens";
+import { cardColors, darkColors, lightColors, type Tokens } from "./tokens";
 
 type Rgb = readonly [number, number, number];
 
@@ -88,5 +88,83 @@ describe("web tokens match the phone's", () => {
 		expect(value(selector, "club-line")).toBe(t.border);
 		expect(value(selector, "club-line-strong")).toBe(t.borderStrong);
 		expect(value(selector, "club-orange")).toBe(t.orange);
+	});
+});
+
+const repoFile = (path: string) =>
+	readFileSync(join(__dirname, "../../../..", path), "utf8");
+
+/** A border drawn over a control's fill, against the ground around it. */
+function borderContrast(line: string, fill: string, ground: Rgb): number {
+	return contrast(parse(line, parse(fill, ground)), ground);
+}
+
+describe("card table controls reach 3:1 on the felt", () => {
+	const felts = Object.entries(cardColors.felts).map(
+		([name, [brightest]]) => [name, parse(brightest)] as const,
+	);
+	const css = repoFile("src/components/cards/cards.css");
+	const value = (selector: string, property: string) => {
+		const start = css.indexOf(`${selector} {`);
+		if (start < 0) throw new Error(`${selector} block not found in cards.css`);
+		const block = css.slice(start, css.indexOf("}", start));
+		return new RegExp(`\\s${property}:\\s*([^;]+);`).exec(block)?.[1].trim();
+	};
+
+	it.each(felts)("ivoryLine over a chip on %s", (_name, felt) => {
+		expect(
+			borderContrast(cardColors.ivoryLine, cardColors.chip, felt),
+		).toBeGreaterThanOrEqual(3);
+	});
+
+	it("ivoryLine over a chip on the result panel", () => {
+		expect(
+			borderContrast(
+				cardColors.ivoryLine,
+				cardColors.chip,
+				parse(cardColors.panel),
+			),
+		).toBeGreaterThanOrEqual(3);
+	});
+
+	// The web's icon chip has the darkest fill of any control on the felt.
+	it.each(felts)("the web icon chip's border on %s", (_name, felt) => {
+		const fill = value(".icon-chip", "background");
+		if (!fill) throw new Error("no .icon-chip background in cards.css");
+		expect(
+			borderContrast(cardColors.ivoryLine, fill, felt),
+		).toBeGreaterThanOrEqual(3);
+	});
+
+	it("the web table carries the same line and felts", () => {
+		expect(value(".cards-felt", "--ivory-line")).toBe(cardColors.ivoryLine);
+		expect(value(".cards-felt", "--felt-a")).toBe(cardColors.felts.oxblood[0]);
+		expect(value('.cards-felt[data-felt="bottle"]', "--felt-a")).toBe(
+			cardColors.felts.bottle[0],
+		);
+		expect(value('.cards-felt[data-felt="midnight"]', "--felt-a")).toBe(
+			cardColors.felts.midnight[0],
+		);
+	});
+});
+
+describe("web backgammon controls reach 3:1", () => {
+	const line = /const CONTROL_LINE = "([^"]+)";/.exec(
+		repoFile("src/components/backgammon/BackgammonBoard.tsx"),
+	)?.[1];
+	if (!line) throw new Error("CONTROL_LINE not found in BackgammonBoard.tsx");
+
+	// Buttons sit on the fullscreen stage (bg-slate-950); the off switch sits in
+	// the options panel, whose gradient starts at #2c2018.
+	it.each([
+		["a ghost button on the stage", "rgba(255, 255, 255, 0.05)", "#020617"],
+		["the reset button on the stage", "rgba(0, 0, 0, 0)", "#020617"],
+		[
+			"an off switch in the options panel",
+			"rgba(255, 255, 255, 0.12)",
+			"#2c2018",
+		],
+	])("%s", (_label, fill, ground) => {
+		expect(borderContrast(line, fill, parse(ground))).toBeGreaterThanOrEqual(3);
 	});
 });
