@@ -40,11 +40,13 @@ Change a value in `src/styles.css` and `apps/mobile/src/theme/tokens.ts` togethe
 
 | Web | Mobile | Use | Dark | Light |
 | --- | --- | --- | --- | --- |
-| `--club-soft` | `textFaint` | Faint text, placeholders | `#7c8aa3` | `#5f6e84` |
+| `--club-soft` | `textFaint` | Faint text, placeholders | `#8794ad` | `#5a687e` |
 | `--club-orange` | `orange` (on `orangeDim`) | Backgammon hue, hint text | `#fb923c` | `#ba3e0c` |
 | `--club-line` | `border` | Panel and card outlines (decorative) | slate-400 at 18% | slate-900 at 12% |
 | `--club-line-strong` | `borderStrong` | Field and button borders | slate-400 at 60% | slate-900 at 50% |
 
 Every field and button border uses `--club-line-strong`. Inside `.game-fullscreen` the
 variable is pinned to its dark value. The site header's translucent dark bar lets the page
-through, so its buttons use `border-white/50`, which passes over both themes.
+through, so its buttons use `border-white/60` (3:1 against the page and against the button's
+own `bg-white/10` fill, over both themes) and its links, including "Sign in", use
+`.club-nav-link`.
