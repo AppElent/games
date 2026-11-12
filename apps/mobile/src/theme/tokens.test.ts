@@ -132,7 +132,7 @@ describe("web puzzle boards", () => {
 		);
 	const line = (selector: string) =>
 		new RegExp(
-			`${selector.replace(".", "\\.")} \\{\\s*--puzzle-line:\\s*([^;]+);`,
+			`${selector.replaceAll(".", "\\.")} \\{\\s*--puzzle-line:\\s*([^;]+);`,
 		).exec(styles)?.[1];
 
 	it.each([
@@ -149,13 +149,19 @@ describe("web puzzle boards", () => {
 		},
 	);
 
-	// Thin lines are the 1px border classes: `border-l border-l-<colour>` on the
-	// Sudoku grid, and the cell `border-<colour>` on the binary grid.
-	const thinColours = (source: string) =>
-		[
-			...source.matchAll(/"border-([lt]) border-\1-([^\s"]+)/g),
-			...source.matchAll(/justify-center border-(\S+) p-0/g),
-		].map((m) => m.at(-1));
+	// Thin lines are the 1px border strings: `"border-l border-l-<colour>"` on the
+	// Sudoku grids, and every border colour in the binary cell's class template.
+	// The whole string must be the variable, so a `dark:` override fails too.
+	const thinColours = (source: string) => [
+		...[...source.matchAll(/"border-([lt]) border-\1-([^"]+)"/g)].map(
+			(m) => m[2],
+		),
+		...[...source.matchAll(/className=\{`[^`]*\bp-0\b[^`]*`\}/g)].flatMap((m) =>
+			[...m[0].matchAll(/(?:^|\s|:)border-(?![lrtb]\b|\d)([^\s"`$]+)/g)].map(
+				(c) => c[1],
+			),
+		),
+	];
 
 	it.each([
 		["SudokuBoard.tsx", "[var(--puzzle-line)]"],

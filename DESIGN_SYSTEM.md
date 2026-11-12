@@ -59,6 +59,6 @@ its own white or slate-900 ground, even inside `.game-fullscreen`, so it reads `
 always-dark scan board reads `--club-line-strong`. Box lines and the outer edge stay heavier:
 2px, and `slate-600` in light mode (the phone's `textMuted`); dark mode uses `slate-300/70`
 rather than the phone's exact colour. Killer cage outlines use the same colours as box lines,
-dashed. The 3:1 holds on empty cells. A filled cell (selection, highlight, colour mark) shows by
-its fill, and the line beside it drops to about 3:1 in light mode and about 2:1 in dark,
-the same as on the phone.
+dashed. The 3:1 holds on empty cells and on peer highlights. A selected, hinted, same-digit or
+colour-marked cell shows by its own fill, and the line beside it drops to about 3:1 in light
+mode and about 2:1 in dark, the same as on the phone.
