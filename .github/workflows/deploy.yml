@@ -2,10 +2,10 @@ name: Deploy
 
 # A merge to main ships staging: the CI checks again (admins can bypass the
 # ruleset), then the staging Convex deployment, then the games-staging Worker
-# built against it. Production ships only from a manual "Run workflow" on main:
-# production Convex, the games Worker, then the preview app's over-the-air
-# update, whose builds call the production backend. Builds stay separate
-# (mobile-build.yml).
+# built against it, then the preview app's over-the-air update, whose builds
+# call that staging backend. Production ships only from a manual "Run
+# workflow" on main: production Convex and the games Worker. Builds stay
+# separate (mobile-build.yml); production updates stay manual.
 on:
   push:
     branches: [main]
@@ -86,14 +86,14 @@ jobs:
       - name: Deploy Worker
         run: pnpm exec wrangler deploy
 
-  # Publishes main's JavaScript to the preview channel once the production
-  # backend it calls is live (so only after a production deploy), and only when
-  # an installed build can load it; otherwise the run summary
-  # says a rebuild is due. See apps/mobile/scripts/ci-publish-update.mjs.
-  # Preview values live in repository scope as PREVIEW_<name>.
+  # Publishes main's JavaScript to the preview channel once the staging
+  # backend it calls is live (so after every staging deploy), and only when an
+  # installed build can load it; otherwise the run summary says a rebuild is
+  # due. See apps/mobile/scripts/ci-publish-update.mjs. Preview values live in
+  # repository scope as PREVIEW_<name>.
   mobile-update:
     needs: deploy
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     # Moves the mobile-update/preview tag after publishing.
     permissions: { contents: write }
