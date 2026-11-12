@@ -113,6 +113,8 @@ export const cardColors = {
 	onGold: "#231704",
 	ivory: "#f8f2e2",
 	ivoryMuted: "rgba(248, 242, 226, 0.72)",
+	/** Control borders: 3:1 against every felt, over a `chip` fill. */
+	ivoryLine: "rgba(248, 242, 226, 0.72)",
 	chip: "rgba(0, 0, 0, 0.28)",
 	line: "rgba(248, 242, 226, 0.16)",
 	panel: "#14151d",

@@ -69,6 +69,8 @@ const PIPS: Record<number, number[]> = {
 const SIZE = 40;
 const MONO = "'Spline Sans Mono', ui-monospace, monospace";
 const SERIF = "'Cormorant Garamond', Georgia, serif";
+/** Button and switch borders: 3:1 against the dark stage and the options panel. */
+const CONTROL_LINE = "rgba(233, 217, 189, 0.45)";
 
 type DragState = {
 	from: BackgammonMoveSource;
@@ -704,7 +706,7 @@ export function BackgammonBoard({
 							...btnBase,
 							color: "#d9cbb2",
 							background: "rgba(255,255,255,0.05)",
-							border: "1px solid rgba(233,217,189,0.22)",
+							border: `1px solid ${CONTROL_LINE}`,
 							padding: "9px 16px",
 							opacity: endTurnEnabled ? 1 : 0.4,
 							cursor: endTurnEnabled ? "pointer" : "not-allowed",
@@ -721,7 +723,7 @@ export function BackgammonBoard({
 								...btnBase,
 								color: "#e4d2ac",
 								background: "rgba(233,217,189,0.1)",
-								border: "1px solid rgba(233,217,189,0.28)",
+								border: `1px solid ${CONTROL_LINE}`,
 								opacity: canUndo ? 1 : 0.4,
 								cursor: canUndo ? "pointer" : "not-allowed",
 							}}
@@ -738,7 +740,7 @@ export function BackgammonBoard({
 								...btnBase,
 								color: "#e4d2ac",
 								background: "rgba(233,217,189,0.1)",
-								border: "1px solid rgba(233,217,189,0.28)",
+								border: `1px solid ${CONTROL_LINE}`,
 								opacity: canRedo ? 1 : 0.4,
 								cursor: canRedo ? "pointer" : "not-allowed",
 							}}
@@ -754,7 +756,7 @@ export function BackgammonBoard({
 								...btnBase,
 								color: "#9a8f7a",
 								background: "transparent",
-								border: "1px solid rgba(233,217,189,0.14)",
+								border: `1px solid ${CONTROL_LINE}`,
 							}}
 						>
 							{backgammon.board.resetButton}
@@ -770,7 +772,7 @@ export function BackgammonBoard({
 									fontSize: 15,
 									color: "#d9cbb2",
 									background: "rgba(255,255,255,0.05)",
-									border: "1px solid rgba(233,217,189,0.22)",
+									border: `1px solid ${CONTROL_LINE}`,
 									borderRadius: 8,
 									padding: "7px 12px",
 									cursor: "pointer",
@@ -840,7 +842,7 @@ export function BackgammonBoard({
 														background: on
 															? "linear-gradient(180deg,#7ecfa4,#4fa87c)"
 															: "rgba(255,255,255,0.12)",
-														border: `1px solid ${on ? "#3c8560" : "rgba(233,217,189,0.2)"}`,
+														border: `1px solid ${on ? "#3c8560" : CONTROL_LINE}`,
 													}}
 												>
 													<span
