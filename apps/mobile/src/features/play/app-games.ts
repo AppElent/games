@@ -1,6 +1,8 @@
 /**
- * The games this app carries, in Play-tab order; every other game is
- * web-only. Text comes from the shared catalog under each game's id. An
+ * The games this app carries, in Play-tab order: exactly the games that
+ * `@arcadeclub/core/features` lists on `mobile` (`app-games.test.ts` checks
+ * it), so a game moves to the app in both places. This file holds only the
+ * app's wiring. Text comes from the shared catalog under each game's id. An
  * online game names the `create` mutation the app hosts through and the
  * screen a seated player opens.
  */

@@ -1,9 +1,11 @@
 ---
 name: add-new-game
-description: Use when adding a new game to Arcade Club — walks through shared rules, game identity and catalog, the Convex module, web routes, tests and the definition of done so the game matches every existing pattern.
+description: Use when adding a new game to Arcade Club — walks through shared rules, game identity and catalog, the Convex module, web and mobile routes, the feature list, tests and the definition of done so the game matches every existing pattern.
 ---
 
 # Add A New Game To Arcade Club
+
+A new game ships on web and mobile at the same time ([ADR 0002](../../../docs/adr/0002-ship-every-game-on-web-and-mobile.md)). If it cannot ship on both, it does not ship.
 
 Every online game reuses the shared session platform (`gameSessions` + `sessionParticipants`, see the [game sessions contract](../../../docs/contracts/game-sessions.md)). Work through the steps in order; each names the existing game to copy. Connect Four is the smallest complete example of every step.
 
@@ -40,7 +42,8 @@ Decide the `gameType` id (kebab-case), `joinMode`, `authPolicy` (`guestAllowed` 
 
 1. Add the id to `GAME_TYPES` in `packages/core/src/games.ts`; Convex's `gameTypeValidator` derives from it. A game with online sessions also gets its `joinMode` and `authPolicy` in `GAME_SESSION_POLICY` in the same file (it fails to compile until you do); a local-only game is excluded from `SessionGameType` there instead.
 2. Add the `GAME_CATALOG` entry in `src/lib/games/catalog.ts` (it fails to compile until you do): gradient `accent`, lucide `icon`, `route: "/<game-id>/new"`, `sessionPath` (where a seated player plays; `null` for a local-only game), and `hostPath` only when the host runs the game on a screen of its own (Hitster, Live Quiz; see Step 4). `/join` navigates through `sessionPath`, so it needs no per-game code.
-3. Add display text to `packages/core/src/i18n/{en,nl}/catalog.ts`, and screen text to `packages/core/src/i18n/{en,nl}/games/<game>.ts`, registered in `packages/core/src/i18n/{en,nl}/index.ts`. The message parity test fails until `nl` has every `en` key.
+3. Add a `product` feature with `id` equal to the game id to `FEATURES` in `packages/core/src/features.ts`: `status: "parity"`, `platforms: ["web", "mobile"]`, and its route patterns on both (`"<game-id>/**"`). `scripts/feature-manifest.test.ts` fails until every new route file belongs to it.
+4. Add display text to `packages/core/src/i18n/{en,nl}/catalog.ts`, and screen text to `packages/core/src/i18n/{en,nl}/games/<game>.ts`, registered in `packages/core/src/i18n/{en,nl}/index.ts`. The message parity test fails until `nl` has every `en` key.
 
 ## Step 3: Convex
 
@@ -68,11 +71,11 @@ Run `pnpm exec convex dev --once` (or keep `pnpm run dev:watch` running) so code
 - Styling: dark club theme (`club-wrap`, `club-panel`, `club-kicker`, `club-title`) with Tailwind; works at 360 px with 44 px touch targets.
 - After adding route files: `pnpm run generate-routes`.
 
-## Step 4b (optional): Mobile app
+## Step 4b: Mobile app
 
-The mobile app (`apps/mobile`) carries only Sudoku, Backgammon, Hitster and the card games (Pesten and Jokeren). Adding a game there is its own task; read `apps/mobile/CODING_STANDARDS.md` first. A new card game for an existing rule family needs no mobile code: the card hub and tables read the core config.
+Required: the game ships in the app in the same PR. Read `apps/mobile/CODING_STANDARDS.md` first. The web screen may start in the app as an Expo DOM component (`"use dom"`, the `expo-dom` skill) and get a native rewrite later. A new card game for an existing rule family needs no mobile code: the card hub and tables read the core config.
 
-1. Add the game to `APP_GAMES` in `apps/mobile/src/features/play/app-games.ts`: hub `href`, icon and tint, and for an online game `online` with its `create` mutation (`api.<game>.create`, exposed through `apps/mobile/src/convex/api.ts`) and the `sessionHref` a seated player opens; `seatSecret: true` when seats are proven by a secret the phone keeps (card tables), and `titledBySession: true` when one entry opens several games so Continue shows the session's title. The Play tab, Continue, `/join` (through `isOnlineAppGame`) and the hosting hook (`useHostSession("<game-id>")`) all read it.
+1. Add the game to `APP_GAMES` in `apps/mobile/src/features/play/app-games.ts`: hub `href`, icon and tint, and for an online game `online` with its `create` mutation (`api.<game>.create`, exposed through `apps/mobile/src/convex/api.ts`) and the `sessionHref` a seated player opens; `seatSecret: true` when seats are proven by a secret the phone keeps (card tables), and `titledBySession: true` when one entry opens several games so Continue shows the session's title. The Play tab, Continue, `/join` (through `isOnlineAppGame`) and the hosting hook (`useHostSession("<game-id>")`) all read it. `app-games.test.ts` fails until `APP_GAMES` holds exactly the games `features.ts` lists on mobile.
 2. Routes in `apps/mobile/app/<game-id>/` render one screen each from `apps/mobile/src/features/<game-id>/<subject>/`; the hub screen sets its own title. Online screens wrap their loading and missing states in `OnlineScreenFrame` (`src/features/sessions/components/`) and read the seat through `useSeatedSession`. A two-seat screen decides whether to offer a move with core `duelTurn`, as `src/features/backgammon/online/use-online-match.ts` does.
 3. Continue: online seats are listed by `src/features/sessions/session-seats.ts` with no per-game code. A local save gets a store that validates parsed data and degrades to "no save", and a `resumableItems()` that you add to `listContinueItems` in `src/features/play/home/continue-items.ts`.
 4. Add the Play-tab tagline under `taglines` in `packages/core/src/i18n/{en,nl}/play.ts`, and Jest tests next to the logic.
@@ -90,6 +93,8 @@ A new kind of grid puzzle played on the Sudoku screens (as killer and binary are
 ## Step 6: Definition of done
 
 - [ ] `pnpm test`, `pnpm run check`, `pnpm run typecheck` and `pnpm run build` pass.
+- [ ] The game has a `parity` entry in `packages/core/src/features.ts`, and it plays in the app as well as on the web.
+- [ ] On the phone, `/join` in the app lands a second player on the app's screen for the game.
 - [ ] The catalog card opens a playable flow, and `/join` lands a second player on the right screen.
 - [ ] The game reaches every terminal state; the end screen offers a rematch or next action.
 - [ ] Illegal actions are refused server-side, each with its own `serverErrors` code in both languages.
