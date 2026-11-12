@@ -11,9 +11,10 @@
   --club-panel: rgba(18, 22, 38, 0.82);
   --club-panel-strong: rgba(25, 31, 52, 0.94);
   --club-line: rgba(148, 163, 184, 0.18);
+  --club-line-strong: rgba(148, 163, 184, 0.6);
   --club-text: #f8fafc;
   --club-muted: #aab6cc;
-  --club-soft: #64748b;
+  --club-soft: #7c8aa3;
   --club-green: #34d399;
   --club-cyan: #22d3ee;
   --club-pink: #f472b6;
@@ -29,13 +30,14 @@
   --club-panel: rgba(255, 255, 255, 0.82);
   --club-panel-strong: rgba(255, 255, 255, 0.96);
   --club-line: rgba(15, 23, 42, 0.12);
+  --club-line-strong: rgba(15, 23, 42, 0.5);
   --club-text: #0f172a;
   --club-muted: #475569;
-  --club-soft: #64748b;
+  --club-soft: #5f6e84;
   --club-green: #047857;
   --club-cyan: #0e7490;
   --club-pink: #be185d;
-  --club-orange: #c2410c;
+  --club-orange: #ba3e0c;
   --background: oklch(0.985 0 0);
   --foreground: oklch(0.141 0.005 285.823);
 }
@@ -136,9 +138,10 @@ body {
   --club-panel: rgba(18, 22, 38, 0.82);
   --club-panel-strong: rgba(25, 31, 52, 0.94);
   --club-line: rgba(148, 163, 184, 0.18);
+  --club-line-strong: rgba(148, 163, 184, 0.6);
   --club-text: #f8fafc;
   --club-muted: #aab6cc;
-  --club-soft: #64748b;
+  --club-soft: #7c8aa3;
   --club-green: #34d399;
   --club-cyan: #22d3ee;
   --club-pink: #f472b6;
@@ -160,7 +163,7 @@ body {
 /* Repeated Tailwind blocks, named so they change together. Each holds exactly
    the classes it replaced; near-variants keep their own class lists. */
 @utility club-input-dark {
-  @apply rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300;
+  @apply rounded-md border border-slate-400/60 bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300;
 }
 
 @utility club-field-label {
@@ -176,7 +179,7 @@ body {
 }
 
 @utility club-btn-secondary {
-  @apply rounded-xl border border-white/20 bg-white/10 px-4 py-2 font-bold text-white;
+  @apply rounded-xl border border-slate-400/60 bg-white/10 px-4 py-2 font-bold text-white;
 }
 
 /* A dimmed layer over a game surface, centering a menu or end panel. */

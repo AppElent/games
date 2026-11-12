@@ -183,7 +183,7 @@ export function QuizSetEditor({
 							onChange={(event) => setImportText(event.target.value)}
 							rows={5}
 							placeholder={messages.games.quiz.setEditor.importPlaceholder}
-							className="mb-3 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-sm text-white outline-none focus:border-cyan-300"
+							className="mb-3 w-full rounded-md border border-slate-400/60 bg-black/30 px-3 py-2 font-mono text-sm text-white outline-none focus:border-cyan-300"
 						/>
 						{importErrors.length > 0 ? (
 							<ul className="mb-3 space-y-1 club-error">

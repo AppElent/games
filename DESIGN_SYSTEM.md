@@ -32,3 +32,16 @@ Conform, improve, or differ as described in [working with standards](CODING_STAN
 
 The web app's palette lives in `src/styles.css` (`--club-*`). Native UI follows
 [the mobile design system](apps/mobile/DESIGN_SYSTEM.md), which transcribes the same palette.
+
+Colour pairs meet WCAG AA in both schemes: text 4.5:1, field and button borders 3:1.
+Change a value in `src/styles.css` and `apps/mobile/src/theme/tokens.ts` together.
+
+| Web | Mobile | Use | Dark | Light |
+| --- | --- | --- | --- | --- |
+| `--club-soft` | `textFaint` | Faint text, placeholders | `#7c8aa3` | `#5f6e84` |
+| `--club-orange` | `orange` (on `orangeDim`) | Backgammon hue, hint text | `#fb923c` | `#ba3e0c` |
+| `--club-line` | `border` | Panel and card outlines (decorative) | slate-400 at 18% | slate-900 at 12% |
+| `--club-line-strong` | `borderStrong` | Field and button borders | slate-400 at 60% | slate-900 at 50% |
+
+`club-input-dark`, `club-btn-secondary` and their near-variants sit on always-dark game
+surfaces, so they use the dark `--club-line-strong` value as `border-slate-400/60`.

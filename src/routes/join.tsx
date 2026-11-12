@@ -77,7 +77,7 @@ function JoinPage() {
 					id="join-name"
 					value={name}
 					onChange={(event) => setName(event.target.value)}
-					className="mb-4 w-full rounded-md border border-[var(--club-line)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
+					className="mb-4 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
 					placeholder={messages.common.joinPanel.playerNamePlaceholder}
 				/>
 				{joiningByLink ? (
@@ -96,7 +96,7 @@ function JoinPage() {
 							id="join-code"
 							value={code}
 							onChange={(event) => setCode(event.target.value)}
-							className="mb-4 w-full rounded-md border border-[var(--club-line)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
+							className="mb-4 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
 							placeholder="ABC123"
 						/>
 					</>
@@ -106,7 +106,7 @@ function JoinPage() {
 						type="checkbox"
 						checked={asSpectator}
 						onChange={(event) => setAsSpectator(event.target.checked)}
-						className="h-4 w-4 rounded border-[var(--club-line)]"
+						className="h-4 w-4 rounded border-[var(--club-line-strong)]"
 					/>
 					{messages.common.joinPanel.watchOnly}
 				</label>
