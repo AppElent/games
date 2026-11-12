@@ -9,8 +9,9 @@ version: 4.1.0
 [`env.manifest.ts`](../../env.manifest.ts) is data only: which value each web, mobile,
 Convex and CI consumer reads, under which name, in which environment. The shared
 [environments standard](../standards/environments.md) decides where each value lands
-and which Infisical tier each environment reads. This app has one exception to it: the
-installed preview app calls the staging backend, not production
+and which Infisical tier each environment reads. This app has one exception to it, also
+in the [project decisions](../../CODING_STANDARDS.md#project-decisions): the installed
+preview app calls the staging backend, not production
 ([below](#exception-the-preview-app-uses-staging)).
 
 | Environment | Web | Convex | EAS | Infisical |
