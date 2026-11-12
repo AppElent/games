@@ -81,7 +81,7 @@ export function ReportProblem() {
 			<button
 				type="button"
 				onClick={open}
-				className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-text)]"
+				className="rounded-md club-btn-outline px-4 py-2 font-bold text-[var(--club-text)]"
 			>
 				{text.report}
 			</button>
