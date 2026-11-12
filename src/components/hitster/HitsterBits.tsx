@@ -207,7 +207,7 @@ export function HitsterScoreboard({ bundle }: { bundle: HitsterBundle }) {
 								{getHitsterModeConfig(state.mode).tokenCap > 0 ? (
 									<span
 										className={
-											winner ? "opacity-70" : "text-[var(--club-soft)]"
+											winner ? "opacity-70" : "text-[var(--club-muted)]"
 										}
 									>
 										{fmt(scoreboard.tokensAbbrev, { count: row.tokens })}
