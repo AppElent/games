@@ -41,7 +41,7 @@ function WordLinksPracticePage() {
 				</h1>
 				<Link
 					to="/word-links"
-					className="rounded-md border border-[var(--club-line-strong)] bg-white/10 px-4 py-2 text-sm font-bold text-white"
+					className="rounded-md club-btn-outline bg-white/10 px-4 py-2 text-sm font-bold text-white"
 				>
 					{wordLinks.page.dailyLink}
 				</Link>

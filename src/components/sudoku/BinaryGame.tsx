@@ -183,7 +183,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 							type="button"
 							onClick={handleUndo}
 							disabled={undoStack.length === 0 || status !== "active"}
-							className="inline-flex items-center gap-1 rounded-md border border-[var(--club-line-strong)] px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+							className="inline-flex items-center gap-1 rounded-md club-btn-outline px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							<Undo2 className="h-4 w-4" /> {sudoku.keypad.undo}
 						</button>
@@ -191,7 +191,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 							type="button"
 							onClick={restart}
 							disabled={status !== "active"}
-							className="inline-flex items-center gap-1 rounded-md border border-[var(--club-line-strong)] px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+							className="inline-flex items-center gap-1 rounded-md club-btn-outline px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							<RotateCcw className="h-4 w-4" />{" "}
 							{messages.common.gameShell.restart}

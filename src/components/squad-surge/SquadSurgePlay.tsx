@@ -93,7 +93,7 @@ export function SquadSurgePlay({ d, seed }: { d: number; seed: number }) {
 						type="button"
 						onClick={toggleSound}
 						aria-label={soundOn ? play.muteSound : play.unmuteSound}
-						className="absolute top-3 right-3 z-10 flex size-11 items-center justify-center rounded-xl border border-[var(--club-line-strong)] bg-slate-950/60 text-lg backdrop-blur-sm"
+						className="absolute top-3 right-3 z-10 flex size-11 items-center justify-center rounded-xl club-btn-outline bg-slate-950/60 text-lg backdrop-blur-sm"
 					>
 						{soundOn ? "🔊" : "🔇"}
 					</button>

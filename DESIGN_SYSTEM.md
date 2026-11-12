@@ -45,6 +45,7 @@ Change a value in `src/styles.css` and `apps/mobile/src/theme/tokens.ts` togethe
 | `--club-line` | `border` | Panel and card outlines (decorative) | slate-400 at 18% | slate-900 at 12% |
 | `--club-line-strong` | `borderStrong` | Field and button borders | slate-400 at 60% | slate-900 at 50% |
 
-Every field and button border uses `--club-line-strong`. Inside `.game-fullscreen` the
+Every field and button border uses `--club-line-strong`; outline buttons and toggles get it
+through the `club-btn-outline` utility in `src/styles.css`, not a hand-written border. Inside `.game-fullscreen` the
 variable is pinned to its dark value. The site header's translucent dark bar lets the page
 through, so its buttons use `border-white/50`, which passes over both themes.
