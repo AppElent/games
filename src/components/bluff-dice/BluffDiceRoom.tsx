@@ -249,7 +249,7 @@ export function BluffDiceRoom({
 							{lastClaim ? (
 								<button
 									type="button"
-									className="min-h-11 rounded-md border border-orange-300/40 bg-orange-300/10 px-5 py-2 font-bold text-orange-100"
+									className="min-h-11 rounded-md border border-orange-300/50 bg-orange-300/10 px-5 py-2 font-bold text-orange-100"
 									onClick={seatAction(
 										challenge,
 										bluffDice.room.couldNotChallenge,

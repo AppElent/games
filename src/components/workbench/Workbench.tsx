@@ -146,7 +146,7 @@ export function Workbench() {
 										disabled={busyId === draft._id}
 										title="Approve"
 										aria-label="Approve draft"
-										className="rounded-md border border-emerald-300/40 bg-emerald-300/10 p-2 text-emerald-100 hover:bg-emerald-300/20 disabled:opacity-60"
+										className="rounded-md border border-emerald-300/50 bg-emerald-300/10 p-2 text-emerald-100 hover:bg-emerald-300/20 disabled:opacity-60"
 										onClick={() =>
 											run(draft._id, () =>
 												approveDraft({
@@ -164,7 +164,7 @@ export function Workbench() {
 										disabled={busyId === draft._id}
 										title="Reject"
 										aria-label="Reject draft"
-										className="rounded-md border border-orange-300/40 bg-orange-300/10 p-2 text-orange-100 hover:bg-orange-300/20 disabled:opacity-60"
+										className="rounded-md border border-orange-300/50 bg-orange-300/10 p-2 text-orange-100 hover:bg-orange-300/20 disabled:opacity-60"
 										onClick={() =>
 											run(draft._id, () =>
 												rejectDraft({
