@@ -67,7 +67,9 @@ export function Workbench() {
 	return (
 		<div className="space-y-6">
 			<div className="club-panel rounded-lg p-5">
-				<h2 className="mb-3 club-panel-heading">New draft</h2>
+				<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--club-muted)]">
+					New draft
+				</h2>
 				<div className="mb-3 flex flex-wrap gap-2">
 					{CONTENT_DRAFT_KINDS.map((option) => (
 						<button
