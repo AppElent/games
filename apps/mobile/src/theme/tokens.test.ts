@@ -48,11 +48,13 @@ describe.each(schemes)("%s colour pairs meet WCAG AA", (_name, t) => {
 	});
 
 	it.each([
-		["bg", bg],
-		["surface", surface],
-	])("orange on orangeDim over %s reaches 4.5:1", (_label, ground) => {
-		const fill = parse(t.orangeDim, ground);
-		expect(contrast(parse(t.orange), fill)).toBeGreaterThanOrEqual(4.5);
+		["orange", "orangeDim", "bg", bg],
+		["orange", "orangeDim", "surface", surface],
+		["accent", "accentDim", "bg", bg],
+		["accent", "accentDim", "surface", surface],
+	] as const)("%s on %s over %s reaches 4.5:1", (ink, tint, _label, ground) => {
+		const fill = parse(t[tint], ground);
+		expect(contrast(parse(t[ink]), fill)).toBeGreaterThanOrEqual(4.5);
 	});
 
 	it.each([
@@ -71,6 +73,7 @@ describe("web tokens match the phone's", () => {
 	);
 	const block = (selector: string) => {
 		const start = css.indexOf(`${selector} {`);
+		if (start < 0) throw new Error(`${selector} block not found in styles.css`);
 		return css.slice(start, css.indexOf("}", start));
 	};
 	const value = (selector: string, name: string) =>
@@ -82,6 +85,7 @@ describe("web tokens match the phone's", () => {
 		[".light", lightColors],
 	])("%s", (selector, t) => {
 		expect(value(selector, "club-soft")).toBe(t.textFaint);
+		expect(value(selector, "club-line")).toBe(t.border);
 		expect(value(selector, "club-line-strong")).toBe(t.borderStrong);
 		expect(value(selector, "club-orange")).toBe(t.orange);
 	});

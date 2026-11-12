@@ -76,7 +76,7 @@ export function Workbench() {
 							className={`rounded-md border px-3 py-1.5 text-sm font-bold ${
 								kind === option
 									? "border-cyan-300 bg-cyan-300/20 text-cyan-100"
-									: "border-white/10 bg-white/5 text-slate-300"
+									: "border-[var(--club-line-strong)] bg-white/5 text-slate-300"
 							}`}
 							onClick={() => setKind(option)}
 						>
@@ -181,7 +181,7 @@ export function Workbench() {
 									disabled={busyId === draft._id}
 									title="Delete"
 									aria-label="Delete draft"
-									className="rounded-md border border-white/10 bg-white/5 p-2 text-slate-300 hover:bg-white/10 disabled:opacity-60"
+									className="rounded-md border border-[var(--club-line-strong)] bg-white/5 p-2 text-slate-300 hover:bg-white/10 disabled:opacity-60"
 									onClick={() =>
 										run(draft._id, () =>
 											deleteDraft({

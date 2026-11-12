@@ -47,7 +47,7 @@ export const lightColors: Tokens = {
 	textFaint: "#5f6e84",
 	accent: "#0e7490",
 	accentPressed: "#155e75",
-	accentDim: "rgba(14, 116, 144, 0.10)",
+	accentDim: "rgba(14, 116, 144, 0.09)",
 	onAccent: "#ffffff",
 	green: "#047857",
 	greenDim: "rgba(4, 120, 87, 0.10)",

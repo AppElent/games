@@ -49,7 +49,7 @@ export function GameEndScreen({
 				{newGameRoute ? (
 					<Link
 						to={newGameRoute}
-						className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-5 py-2.5 font-bold text-white no-underline hover:bg-white/15"
+						className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-white/10 px-5 py-2.5 font-bold text-white no-underline hover:bg-white/15"
 					>
 						{resolvedNewGameLabel}
 					</Link>
@@ -57,7 +57,7 @@ export function GameEndScreen({
 				{shareText ? (
 					<button
 						type="button"
-						className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-5 py-2.5 font-bold text-white hover:bg-white/15"
+						className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-white/10 px-5 py-2.5 font-bold text-white hover:bg-white/15"
 						onClick={() => void copy(shareText)}
 					>
 						{copied ? (
@@ -72,7 +72,7 @@ export function GameEndScreen({
 				) : null}
 				<Link
 					to="/"
-					className="inline-flex items-center gap-2 rounded-md border border-white/15 px-5 py-2.5 font-bold text-slate-300 no-underline hover:bg-white/10"
+					className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] px-5 py-2.5 font-bold text-slate-300 no-underline hover:bg-white/10"
 				>
 					<Home className="h-4 w-4" />
 					{messages.common.endScreen.backToArcade}

@@ -216,7 +216,7 @@ export function ChessMatch({
 						</button>
 						<button
 							type="button"
-							className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 font-bold text-white"
+							className="rounded-md border border-[var(--club-line-strong)] bg-white/10 px-3 py-1.5 font-bold text-white"
 							onClick={seatAction(
 								(seat) => respondDraw({ ...seat, accept: false }),
 								chess.drawOffer.declineError,
@@ -289,7 +289,7 @@ export function ChessMatch({
 				<div className="flex flex-wrap justify-center gap-3">
 					<button
 						type="button"
-						className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white"
+						className="rounded-md border border-[var(--club-line-strong)] bg-white/10 px-4 py-2 text-sm font-bold text-white"
 						onClick={seatAction(offerDraw, chess.actions.offerDrawError)}
 					>
 						{chess.actions.offerDraw}

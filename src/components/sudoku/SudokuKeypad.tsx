@@ -55,7 +55,7 @@ export function SudokuKeypad({
 						className={`rounded-md px-2 py-1.5 text-xs font-bold transition ${
 							mode === entry.id
 								? "bg-sky-400 text-slate-950"
-								: "border border-slate-600/70 bg-slate-800/70 text-slate-300 hover:bg-slate-700"
+								: "border border-[var(--club-line-strong)] bg-slate-800/70 text-slate-300 hover:bg-slate-700"
 						} disabled:cursor-not-allowed disabled:opacity-40`}
 					>
 						{entry.id === "corner" ? (
@@ -98,7 +98,7 @@ export function SudokuKeypad({
 								type="button"
 								disabled={disabled}
 								onClick={() => onDigit(digit)}
-								className="flex flex-col items-center rounded-md border border-slate-600/70 bg-slate-800/70 py-1.5 font-bold text-slate-100 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+								className="flex flex-col items-center rounded-md border border-[var(--club-line-strong)] bg-slate-800/70 py-1.5 font-bold text-slate-100 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
 							>
 								<span className="text-lg leading-none">{digit}</span>
 								<span className="text-[0.6rem] font-normal text-slate-400">

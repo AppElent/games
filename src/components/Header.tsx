@@ -13,7 +13,7 @@ export default function Header() {
 			<nav className="club-wrap flex flex-wrap items-center gap-x-4 gap-y-3 py-3">
 				<Link
 					to="/"
-					className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm font-extrabold text-white no-underline"
+					className="inline-flex items-center gap-2 rounded-md border border-slate-400/60 bg-white/10 px-3 py-2 text-sm font-extrabold text-white no-underline"
 				>
 					<span className="flex h-7 w-7 items-center justify-center rounded-md bg-cyan-300 text-slate-950">
 						<Gamepad2 className="h-4 w-4" />

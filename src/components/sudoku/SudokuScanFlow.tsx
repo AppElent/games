@@ -156,7 +156,7 @@ function UploadStep({ onFile }: { onFile: (file: File | undefined) => void }) {
 				<button
 					type="button"
 					onClick={() => uploadRef.current?.click()}
-					className="inline-flex items-center gap-2 rounded-md border border-slate-600/70 bg-slate-800/60 px-5 py-3 font-bold text-slate-200"
+					className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-slate-800/60 px-5 py-3 font-bold text-slate-200"
 				>
 					<Upload className="h-5 w-5" /> {sudoku.scan.uploadImage}
 				</button>
@@ -258,7 +258,7 @@ function CornerStep({
 				<button
 					type="button"
 					onClick={onBack}
-					className="rounded-md border border-slate-600/70 px-4 py-2 font-semibold text-slate-300"
+					className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-semibold text-slate-300"
 				>
 					{messages.common.actions.back}
 				</button>
@@ -444,7 +444,7 @@ function VerifyStep({
 								className={`rounded-md px-2 py-1 text-xs font-bold ${
 									cell.type === entry.id
 										? "bg-sky-400 text-slate-950"
-										: "border border-slate-600 text-slate-300 hover:bg-slate-700"
+										: "border border-[var(--club-line-strong)] text-slate-300 hover:bg-slate-700"
 								}`}
 							>
 								{entry.label}
@@ -463,7 +463,7 @@ function VerifyStep({
 									className={`rounded py-1 text-sm font-bold ${
 										cell.digit === digit
 											? "bg-sky-400 text-slate-950"
-											: "border border-slate-600 text-slate-200 hover:bg-slate-700"
+											: "border border-[var(--club-line-strong)] text-slate-200 hover:bg-slate-700"
 									}`}
 								>
 									{digit}
@@ -496,7 +496,7 @@ function VerifyStep({
 												className={`h-6 w-6 rounded text-xs font-bold ${
 													active
 														? "bg-sky-400 text-slate-950"
-														: "border border-slate-600 text-slate-300"
+														: "border border-[var(--club-line-strong)] text-slate-300"
 												}`}
 											>
 												{digit}
@@ -510,7 +510,7 @@ function VerifyStep({
 					<button
 						type="button"
 						onClick={() => onCellsChange(clearScanCell(cells, selected))}
-						className="rounded-md border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-700"
+						className="rounded-md border border-[var(--club-line-strong)] px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-700"
 					>
 						{sudoku.scan.clearCell}
 					</button>
@@ -549,7 +549,7 @@ function VerifyStep({
 					<button
 						type="button"
 						onClick={onRescan}
-						className="rounded-md border border-slate-600/70 px-4 py-2 font-semibold text-slate-300"
+						className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-semibold text-slate-300"
 					>
 						{sudoku.scan.startOver}
 					</button>

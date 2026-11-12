@@ -31,7 +31,7 @@ export function SessionHostControls({
 			<div className="flex flex-wrap gap-2">
 				<button
 					type="button"
-					className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm font-bold text-white hover:bg-white/10"
+					className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-white/5 px-3 py-2 text-sm font-bold text-white hover:bg-white/10"
 					onClick={() =>
 						void run(
 							() => moderation.setLocked(!locked),
@@ -53,7 +53,7 @@ export function SessionHostControls({
 				</button>
 				<button
 					type="button"
-					className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm font-bold text-white hover:bg-white/10"
+					className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-white/5 px-3 py-2 text-sm font-bold text-white hover:bg-white/10"
 					onClick={() => {
 						setDraftTitle(title);
 						setEditing((value) => !value);

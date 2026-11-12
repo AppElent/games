@@ -32,14 +32,14 @@ function DashboardPage() {
 				<div className="mb-8 flex flex-wrap gap-3">
 					<Link
 						to="/quiz/sets"
-						className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-[var(--club-text)] no-underline hover:bg-white/10"
+						className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-white/5 px-4 py-2 text-sm font-bold text-[var(--club-text)] no-underline hover:bg-white/10"
 					>
 						<ListChecks className="h-4 w-4 text-cyan-300" />
 						{messages.common.dashboard.quizSets}
 					</Link>
 					<Link
 						to="/workbench"
-						className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-[var(--club-text)] no-underline hover:bg-white/10"
+						className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-white/5 px-4 py-2 text-sm font-bold text-[var(--club-text)] no-underline hover:bg-white/10"
 					>
 						<FlaskConical className="h-4 w-4 text-emerald-300" />
 						{messages.common.dashboard.contentWorkbench}

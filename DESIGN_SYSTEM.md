@@ -43,5 +43,7 @@ Change a value in `src/styles.css` and `apps/mobile/src/theme/tokens.ts` togethe
 | `--club-line` | `border` | Panel and card outlines (decorative) | slate-400 at 18% | slate-900 at 12% |
 | `--club-line-strong` | `borderStrong` | Field and button borders | slate-400 at 60% | slate-900 at 50% |
 
-`club-input-dark`, `club-btn-secondary` and their near-variants sit on always-dark game
-surfaces, so they use the dark `--club-line-strong` value as `border-slate-400/60`.
+Every field and button border uses `--club-line-strong`. Elements that are dark in both
+themes (`club-input-dark`, `club-btn-secondary`, their near-variant fields, the site
+header) spell its dark value as `border-slate-400/60`. Inside `.game-fullscreen` the
+variable is already pinned to the dark value.
