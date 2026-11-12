@@ -46,6 +46,13 @@ describe("deleteAccount", () => {
 		expect(s.signOut).toHaveBeenCalledOnce();
 	});
 
+	it("still succeeds when signing out fails after the user is gone", async () => {
+		const s = steps([true]);
+		s.signOut.mockRejectedValueOnce(new Error("no session"));
+		await expect(deleteAccount(s)).resolves.toBeUndefined();
+		expect(s.deleteUser).toHaveBeenCalledOnce();
+	});
+
 	it("does not sign out when deleting the user fails", async () => {
 		const s = steps([true]);
 		s.deleteUser.mockRejectedValueOnce(new Error("clerk down"));

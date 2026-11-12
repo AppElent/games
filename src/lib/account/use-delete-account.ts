@@ -1,5 +1,6 @@
 import { deleteAccount as runDeletion } from "@arcadeclub/core/account-deletion";
 import { useClerk, useUser } from "@clerk/react";
+import { useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation } from "convex/react";
 import { useState } from "react";
 import { useGameAction } from "#/lib/games/use-game-action";
@@ -10,12 +11,15 @@ import { api } from "../../../convex/_generated/api";
  * "Delete account" on the Account page, the same steps as the app's Profile
  * (`@arcadeclub/core/account-deletion`). A refusal (an active game, an account
  * switch) or an interrupted run lands in `error`, localized; running it again
- * resumes. `deleteAccount` resolves true once the account is gone.
+ * resumes. `deleteAccount` resolves true once the account is gone, and the
+ * player lands on the home page rather than the sign-in redirect that
+ * `RequireSignedIn` starts when the session ends.
  */
 export function useDeleteAccount() {
 	const { user } = useUser();
 	const { signOut } = useClerk();
 	const { isAuthenticated } = useConvexAuth();
+	const navigate = useNavigate();
 	const deleteMyData = useMutation(api.account.deleteMyData);
 	const copy = useMessages().profile.deleteAccount;
 	const { error, setError, run } = useGameAction();
@@ -30,7 +34,7 @@ export function useDeleteAccount() {
 		const expectedSubject = user.id;
 		setBusy(true);
 		try {
-			return await run(
+			const deleted = await run(
 				() =>
 					runDeletion({
 						deleteBatch: () => deleteMyData({ expectedSubject }),
@@ -39,6 +43,8 @@ export function useDeleteAccount() {
 					}),
 				copy.failed,
 			);
+			if (deleted) await navigate({ to: "/", replace: true });
+			return deleted;
 		} finally {
 			setBusy(false);
 		}

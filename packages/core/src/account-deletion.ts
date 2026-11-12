@@ -11,6 +11,11 @@ export type AccountDeletionSteps = {
 	deleteBatch: () => Promise<{ done: boolean }>;
 	/** Deletes the identity-provider (Clerk) user. */
 	deleteUser: () => Promise<unknown>;
+	/**
+	 * Ends the session. Best-effort: the account is already gone, and Clerk
+	 * may have signed the client out with it, so a failure here is not a
+	 * failed deletion.
+	 */
 	signOut: () => Promise<unknown>;
 };
 
@@ -24,5 +29,5 @@ export async function deleteAccount({
 		({ done } = await deleteBatch());
 	}
 	await deleteUser();
-	await signOut();
+	await signOut().catch(() => {});
 }

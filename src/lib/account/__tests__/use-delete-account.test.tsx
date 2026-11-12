@@ -16,6 +16,8 @@ vi.mock("@clerk/react", () => ({
 	}),
 	useClerk: () => ({ signOut }),
 }));
+const navigate = vi.fn();
+vi.mock("@tanstack/react-router", () => ({ useNavigate: () => navigate }));
 vi.mock("convex/react", () => ({
 	useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),
 	useMutation: () => deleteMyData,
@@ -63,6 +65,7 @@ describe("useDeleteAccount", () => {
 		}
 		expect(deleteUser).toHaveBeenCalledOnce();
 		expect(signOut).toHaveBeenCalledWith({ redirectUrl: "/" });
+		expect(navigate).toHaveBeenCalledWith({ to: "/", replace: true });
 		expect(deleteUser.mock.invocationCallOrder[0]).toBeGreaterThan(
 			deleteMyData.mock.invocationCallOrder[2],
 		);
@@ -90,6 +93,18 @@ describe("useDeleteAccount", () => {
 		expect(deleteUser).toHaveBeenCalledOnce();
 		expect(signOut).toHaveBeenCalledOnce();
 		expect(first.result.current.error).toBe("");
+	});
+
+	it("refuses after an account switch and keeps the signed-in user", async () => {
+		deleteMyData.mockRejectedValueOnce(refusal("accountChanged"));
+		const { ok, result } = await runDeletion();
+		expect(ok).toBe(false);
+		expect(result.current.error).toBe(
+			"You switched accounts. Sign in to the account you want to delete and try again.",
+		);
+		expect(deleteUser).not.toHaveBeenCalled();
+		expect(signOut).not.toHaveBeenCalled();
+		expect(navigate).not.toHaveBeenCalled();
 	});
 
 	it("shows the generic message when a batch is interrupted", async () => {

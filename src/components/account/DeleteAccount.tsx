@@ -25,12 +25,11 @@ export function DeleteAccount() {
 
 	return (
 		<section className="rm-panel mt-6 p-4">
-			<p className="rm-label">{copy.action}</p>
 			<button
 				type="button"
 				onClick={open}
 				disabled={!deletion.ready}
-				className="mt-3 rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-orange)] disabled:opacity-50"
+				className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-orange)] disabled:opacity-50"
 			>
 				{copy.action}
 			</button>
@@ -73,7 +72,7 @@ export function DeleteAccount() {
 						onClick={() => void deletion.deleteAccount()}
 						className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-orange)] disabled:opacity-50"
 					>
-						{copy.confirm}
+						{deletion.busy ? copy.deleting : copy.confirm}
 					</button>
 				</div>
 			</dialog>
