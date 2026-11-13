@@ -8,7 +8,7 @@ Hosting, joining and the lobby for both party games. Shared rules, tokens, large
 
 Example data on every screen: room code `K7Q 4MR` (the canvas shows `K7QX`; real codes are 6 characters, see [open questions](README.md#open-questions)), host Sam (Beat the Clock) or Lotte (Doen, Durven), players Noor, Daan, Mila, Jesse, Lotte.
 
-Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts` (`clock.*`) and `truthOrDare.ts` (`truth.*`). Strings shared by both games are listed once under `room.*`; put them in each game's module or in `common` if a third game needs them. `{x}` is a `fmt` placeholder; `{n|one|other}` means a `plural`.
+Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts` (`clock.*`) and `truthOrDare.ts` (`truth.*`). Strings shared by both games are listed once under `room.*`; put them in each game's module or in `common` if a third game needs them. The join screen (4) serves every game, so its keys go in `common.joinPanel.*`. `{x}` is a `fmt` placeholder; `{n|one|other}` means a `plural`.
 
 ## Flow
 
@@ -22,7 +22,7 @@ Ready rule: in Beat the Clock every team (the Teams setting, 2–4) has at least
 
 ## 1. Room settings · Beat the Clock
 
-`Host-SettingsClock.dc.html`. Web: `src/routes/beat-the-clock/new.tsx` with `NewGamePage`. Mobile: the game's host screen under `features/sessions/host`.
+`Host-SettingsClock.dc.html`. Web: `src/routes/beat-the-clock/new.tsx` with `NewGamePage`. Mobile: `features/beat-the-clock/setup/beat-the-clock-setup-screen.tsx` (pattern: `features/hitster/setup/hitster-setup-screen.tsx`).
 
 Layout, top to bottom: back button and title; **Word pack** radio list (4 rows); three segmented controls (time per turn, points to win, teams); a language note; the create button pinned to the bottom.
 
@@ -47,7 +47,7 @@ Action: **Host room** creates the session with the settings and the host's app l
 | Key | en | nl |
 | --- | --- | --- |
 | `clock.title` | Beat the Clock | Tegen de Klok |
-| `room.backToGames` (aria) | Back to games | Terug naar spellen (existing `common` string `returnToGames`) |
+| `common.returnToGames` (existing, aria) | Return to Games | Terug naar spellen |
 | `room.hostHeading` | Host a room | Kamer openen |
 | `clock.settings.pack` | Word pack | Woordenpakket |
 | `clock.packs.everyday` | Everyday | Alledaags |
@@ -173,7 +173,7 @@ With 3 or 4 teams the cards form a 2 × 2 grid (a third team spans one cell, lea
 | `clock.lobby.noTeam` | No team yet: {names} | Nog geen team: {names} |
 | `clock.lobby.shuffle` | Shuffle teams | Teams husselen |
 | `clock.lobby.need` | Each team needs at least 2 players. | Elk team heeft minstens 2 spelers nodig. |
-| `truth.lobby.summary` | {n} players · {levels} | {n} spelers · {levels} |
+| `truth.lobby.summary` | {n\|1 player\|{n} players} · {levels} | {n\|1 speler\|{n} spelers} · {levels} |
 | `truth.lobby.need` | You need at least 2 players. | Je hebt minstens 2 spelers nodig. |
 | `room.start` | Start game | Spel starten |
 | `room.starting` | Starting… | Starten… |
@@ -190,7 +190,7 @@ Team names, in order of team number:
 
 ## 4. Join · code and name
 
-`Host-Join.dc.html`. Web: `src/routes/join.tsx` with `JoinGamePanel` (normal app chrome, follows the app theme, see [light theme](README.md#light-theme-join-page)). Mobile: `features/sessions/join`. Keyboard behaviour: [keyboard-open join](README.md#keyboard-open-join).
+`Host-Join.dc.html`. Web: `JoinPage` in `src/routes/join.tsx` (normal app chrome, follows the app theme, see [light theme](README.md#light-theme)). Mobile: `features/sessions/join`. Keyboard behaviour: [keyboard-open join](README.md#keyboard-open-join).
 
 Layout: back button and "Join a room"; a room card when the code matches a room (game icon tile in the game's hue and Dim fill, game name, host and player count); the **Room code** field with a hint; the **Your name** field with a hint; **Join room** pinned to the bottom.
 
@@ -207,7 +207,11 @@ Layout: back button and "Join a room"; a room card when the code matches a room 
 
 Rules: the code field upper-cases input and strips spaces, accepts 6 characters, and shows them as `ABC 123` (`normalizeJoinCode`, `formatJoinCode`). Name: 1–20 characters, trimmed; the 20-character limit is new, so the server (`convex/lib/join.ts`) must validate it too. The room is looked up as soon as the code is complete; a wrong code shows the error without a submit. **Continue as Noor** goes straight back into the seat (lobby or the turn in progress). **Join as someone else** shows the form with the name empty and takes a new seat.
 
-API: the room card and the instant wrong-code check need a lookup. Today `api.sessions.inviteGameType` returns only the game type. Extend it, or add a sibling query (suggested `sessions.invitePreview`), returning game type, host display name, player count and whether the room has the 18+ level. Whether this device already holds a seat comes from the local seat store (`src/lib/games/seat.ts`, mobile `session-seats.ts`); the server still checks the seat when the player continues.
+API: the room card and the instant wrong-code check need a lookup. Today `api.sessions.inviteGameType` returns only the game type. Extend it, or add a sibling query (suggested `sessions.invitePreview`), taking the code and an optional `participantId` and returning `sessionId`, game type, host display name, player count, whether the room has the 18+ level, and, when `participantId` is given and still an active seat in that session, the seat's display name.
+
+The seat stores are keyed by `sessionId` (web `src/lib/games/seat.ts`, per tab in sessionStorage; mobile `session-seats.ts`). So the client looks up the preview by code first, reads its seat for the returned `sessionId`, and re-queries with that `participantId`. `alreadyIn` shows only when the server returns a seat name. **Continue as** navigates to `getSessionPath(gameType, sessionId, participantId)`.
+
+The restyle, the room card and the 20-character name limit (shared `convex/lib/join.ts`) apply to every game's join, not only these two.
 
 Existing join actions stay. This screen restyles the shared `/join` page and the app's join screen; it keeps every action they have today:
 
@@ -220,28 +224,28 @@ Existing join actions stay. This screen restyles the shared `/join` page and the
 
 | Key | en | nl |
 | --- | --- | --- |
-| `room.backToHome` (aria) | Back | Terug |
-| `room.joinHeading` | Join a room | Meedoen met een kamer |
-| `room.foundMeta` | Hosted by {host} · {n\|1 player\|{n} players} | Host: {host} · {n\|1 speler\|{n} spelers} |
-| `room.foundMetaAdult` | Hosted by {host} · 18+ | Host: {host} · 18+ |
+| `common.joinPanel.back` (aria) | Back | Terug |
+| `common.joinPanel.title` (existing) | Join a game | Doe mee aan een spel |
+| `common.joinPanel.foundMeta` | Hosted by {host} · {n\|1 player\|{n} players} | Host: {host} · {n\|1 speler\|{n} spelers} |
+| `common.joinPanel.foundMetaAdult` | Hosted by {host} · 18+ | Host: {host} · 18+ |
 | `common.session.roomCode` (existing) | Room code | Kamercode |
-| `room.codeHint` | Ask the host for the code, or scan their QR code. | Vraag de host om de code, of scan de QR-code. |
-| `room.codeWrong` | No room has this code. Check it with the host. | Geen kamer met deze code. Vraag het na bij de host. |
-| `room.nameLabel` | Your name | Je naam |
-| `room.namePlaceholder` | What should the others call you? | Hoe moeten de anderen je noemen? |
-| `room.nameHint` | No account needed. Signed in? We use your profile name. | Geen account nodig. Ingelogd? Dan gebruiken we je profielnaam. |
-| `room.join` | Join room | Meedoen |
-| `room.joining` | Joining… | Bezig met meedoen… |
-| `room.alreadyInTitle` | You're already in this room as {name} | Je zit al in deze kamer als {name} |
-| `room.alreadyInBody` | This phone kept your seat. Your team and score are waiting. | Deze telefoon heeft je plek bewaard. Je team en score staan klaar. |
-| `room.continueAs` | Continue as {name} | Verder als {name} |
-| `room.joinAsOther` | Join as someone else | Meedoen als iemand anders |
-| `truth.appBlockedTitle` | Open this room in your browser | Open deze kamer in je browser |
-| `truth.appBlockedBody` | The host turned on 18+ prompts. Those rooms are only playable in a browser, not in the app. | De host heeft 18+-opdrachten aangezet. Zulke kamers speel je alleen in de browser, niet in de app. |
-| `room.openInBrowser` | Open in browser | Openen in browser (opens the web join URL with `openWebPage`) |
-| `room.joinAnother` | Join another room | Andere kamer kiezen |
+| `common.joinPanel.codeHint` | Ask the host for the code, or scan their QR code. | Vraag de host om de code, of scan de QR-code. |
+| `common.joinPanel.codeWrong` | No room has this code. Check it with the host. | Geen kamer met deze code. Vraag het na bij de host. |
+| `common.joinPanel.nameLabel` | Your name | Je naam |
+| `common.joinPanel.namePlaceholder` | What should the others call you? | Hoe moeten de anderen je noemen? |
+| `common.joinPanel.nameHint` | No account needed. Signed in? We use your profile name. | Geen account nodig. Ingelogd? Dan gebruiken we je profielnaam. |
+| `common.joinPanel.submit` (existing) | Join | Meedoen |
+| `common.joinPanel.joining` | Joining… | Bezig met meedoen… |
+| `common.joinPanel.alreadyInTitle` | You're already in this room as {name} | Je zit al in deze kamer als {name} |
+| `common.joinPanel.alreadyInBody` | Your seat is still yours. | Je plek is nog van jou. |
+| `common.joinPanel.continueAs` | Continue as {name} | Verder als {name} |
+| `common.joinPanel.joinAsOther` | Join as someone else | Meedoen als iemand anders |
+| `common.joinPanel.adultTitle` | Open this room in your browser | Open deze kamer in je browser |
+| `common.joinPanel.adultBody` | The host turned on 18+ prompts. Those rooms are only playable in a browser, not in the app. | De host heeft 18+-opdrachten aangezet. Zulke kamers speel je alleen in de browser, niet in de app. |
+| `common.joinPanel.openInBrowser` | Open in browser | Openen in browser (opens the web join URL with `openWebPage`) |
+| `common.joinPanel.joinAnother` | Join another room | Andere kamer kiezen |
 
-Copy change from the canvas: the wrong-code hint drew "codes are 4 letters"; real codes are 6 characters, so the hint drops that clause. For Doen, Durven the "already in" body reads "This phone kept your seat." without the team and score sentence (`room.alreadyInBodyTruth`: "This phone kept your seat." / "Deze telefoon heeft je plek bewaard.").
+Copy change from the canvas: the wrong-code hint drew "codes are 4 letters"; real codes are 6 characters, so the hint drops that clause. The canvas title "Join a room" and button "Join room" use the existing `common.joinPanel` strings instead; the canvas "already in" body ("This phone kept your seat…") is replaced by a body that is true on web too, where seats are per tab.
 
 Existing join strings in `common.joinPanel` (`submit`, `openOnWeb`, `unsupportedGame`) may replace the new keys where the wording matches; keep one string per meaning.
 
@@ -282,7 +286,7 @@ Doen, Durven player lobby status: "Waiting for Lotte to start the game" / "Wacht
 
 ## Not drawn, built to the overview
 
-- Light theme of screen 4 on the web: [light theme](README.md#light-theme-join-page).
+- Light theme of screen 4 on the web: [light theme](README.md#light-theme).
 - Larger system text for all five screens: [larger system text](README.md#larger-system-text).
 - Screen 4 with the keyboard open: [keyboard-open join](README.md#keyboard-open-join).
 - English copy of screens 2 and Doen, Durven's lobby, Dutch copy of screens 1, 4 and 5: the tables above.

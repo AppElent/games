@@ -56,7 +56,9 @@ To review a state on the canvas: press Play on a phone artboard to click through
 
 ## Shared visual spec
 
-Game screens, including the settings pages and lobbies, are always dark: they render inside `FullscreenGameShell`, whose `.game-fullscreen` class pins the dark tokens (`src/styles.css`). Only the web `/join` page (`src/routes/join.tsx`, normal app chrome) follows the app theme; see [light theme](#light-theme-join-page).
+**Web:** game screens, including the settings pages and lobbies, are always dark: they render inside `FullscreenGamePage` / `FullscreenGameShell`, whose `.game-fullscreen` class pins the dark tokens (`src/styles.css`). Only the `/join` page (`src/routes/join.tsx`, normal app chrome) follows the app theme.
+
+**Mobile:** every screen follows the app theme (`lightColors` / `darkColors` in `apps/mobile/src/theme/tokens.ts`, read through `useThemedStyles`); nothing pins dark. Build each screen with tokens only, so light mode is the dark artboard with each token's light value. See [light theme](#light-theme).
 
 ### Tokens
 
@@ -73,11 +75,11 @@ Use design system names. Hex values are the dark theme as drawn.
 | Secondary text, labels, captions | `textMuted` #aab6cc | `--club-muted` | `textMuted` |
 | Primary button, selected segment, checkbox, link | `accent` #22d3ee, ink `onAccent` #04121a (light #ffffff) | `--club-cyan`; **add** `--club-on-cyan` for the ink | `accent`, `onAccent` |
 | Selected row, secondary button fill | `accentDim` | none yet: use `accentDim` value | `accentDim` |
-| Beat the Clock hue: kicker, timer, ticks, team chips | `amber` #fbbf24 (light #92400e), ink on amber #1c1404 | **add** `--club-amber` | **add** `amber` |
+| Beat the Clock hue: kicker, timer, ticks, team chips | `amber` #fbbf24 (light #92400e), ink `onAmber` #1c1404 (light #ffffff) | **add** `--club-amber`, `--club-on-amber` | **add** `amber`, `onAmber` |
 | Beat the Clock fills: ticked word, team chip | `amberDim` | **add** `--club-amber-dim` | **add** `amberDim` |
 | Doen, Durven hue: kicker, category, level chip, active ring | `violet` #a78bfa (light #6d28d9) | **add** `--club-violet` | **add** `violet` |
 | Doen, Durven fills | `violetDim` | **add** `--club-violet-dim` | **add** `violetDim` |
-| Error notice, destructive action, last 5 s of the timer | `danger` #fb7185, fill `dangerDim` | existing error styles | `danger`, `dangerDim` |
+| Error notice, destructive action, last 5 s of the timer | `danger` #fb7185 (light #be123c), fill `dangerDim`, ink `onDanger` #1a0509 (light #ffffff) | none yet (the join error uses `--club-orange`): **add** `--club-danger`, `--club-danger-dim`, `--club-on-danger` with the mobile values | `danger`, `dangerDim`; **add** `onDanger` |
 
 Amber and violet were added to the design system artifact for these games; their code tokens land with the first game PR. Contrast is recorded in the design system: amber on `bg` 11.84:1 (dark) and 6.78:1 (light); violet on `bg` 7.26:1 and 6.79:1; each hue on its Dim fill passes 4.5:1 in both themes. Use the token values on `main`, which include the APP-29 contrast fixes, rather than hex values copied from the artboards.
 
@@ -130,9 +132,11 @@ Not drawn; build to this. At 200% text (web) or the largest accessibility size (
 - Word rows grow in height; the word wraps to two lines before it truncates. Never truncate a prompt.
 - Header meta (room code, "Turn 7 · first to 30") wraps under the kicker instead of truncating.
 
-### Light theme (join page)
+### Light theme
 
-Not drawn; build to this. The web `/join` page sits outside the always-dark game surface and follows the app theme. In light mode use the light value of each token: `bg` #f8fafc, `surface` #ffffff, `text` #0f172a, `textMuted` #475569, `accent` #0e7490 with `onAccent` #ffffff, `danger` #be123c, `amber` #92400e, `violet` #6d28d9, and the Dim fills' light values. Input borders use `--club-line-strong` (3:1 after APP-29). Everything else (layout, copy, states) matches the dark artboards. Once the player is seated, the game screens are dark again.
+Not drawn; build to this. It applies to the web `/join` page and to every mobile screen (settings, lobby, join, game, end).
+
+In light mode: In light mode use the light value of each token: `bg` #f8fafc, `surface` #ffffff, `text` #0f172a, `textMuted` #475569, `accent` #0e7490 with `onAccent` #ffffff, `danger` #be123c, `amber` #92400e, `violet` #6d28d9, `onAmber` and `onDanger` #ffffff, and the Dim fills' light values (amber and violet Dim at the same 0.09 alpha as `accentDim`). Input borders use `--club-line-strong` / `borderStrong` (3:1 after APP-29). Never hard-code an artboard hex: every ink, including the check on a ticked word and the End game label, is a token. Everything else (layout, copy, states) matches the dark artboards. On web, once the player is seated, the game screens are dark again; on mobile they stay in the app theme.
 
 ### Keyboard-open join
 
@@ -149,10 +153,10 @@ Reuse before adding. Shared web pieces live in `src/components/games/`; shared m
 
 | Need | Web | Mobile |
 | --- | --- | --- |
-| Settings page and create | `NewGamePage` (options as children, create/creating labels, error, `HostGate`) inside `FullscreenGamePage`. Its create button is white today; give it a primary tone option rather than forking the page | `Screen`, `ChoiceList` (packs, levels), `Segmented`, `Button`, `Notice` |
+| Settings page and create | `NewGamePage` (options as children, create/creating labels, error, `HostGate`) inside `FullscreenGamePage`. Its create button is white today; give it a primary tone option rather than forking the page | `features/<game>/setup/<game>-setup-screen.tsx` (pattern: `features/hitster/setup/hitster-setup-screen.tsx`) with `HostGate`, `Screen`, `ChoiceList` (packs, levels), `Segmented`, `Button`, `Notice` |
 | Room page frame | `SessionBundleRoute` + `FullscreenGameShell`; lobby content can use `RoomFrame` parts (`RoomStartButton`, `RoomLoading`) | `features/sessions/components/online-screen-frame.tsx`, `Screen`, `Card` |
 | Room code and QR | `JoinCodePanel`, `QrSharePanel` | `QrCode`, `features/sessions/host/share-invite.ts` (`shareInvite`) |
-| Join | `/join` route, `JoinGamePanel` | `features/sessions/join/join-screen.tsx`, `scan-invite-screen.tsx`, `use-join-session.ts`, `TextField` |
+| Join | `JoinPage` in `src/routes/join.tsx` (the home page's code box, `JoinGamePanel` in `src/routes/index.tsx`, only routes to it) | `features/sessions/join/join-screen.tsx`, `scan-invite-screen.tsx`, `use-join-session.ts`, `TextField` |
 | Open a web page from the app (18+ rooms) | n/a | `openWebPage` in `features/sessions/session-links.ts` (ADR 0002), never `Linking.openURL` |
 | Seat handling, back in seat | `src/lib/games/seat.ts`, `SeatBanner` | `features/sessions/session-seats.ts` |
 | Players, kick, rename | `ParticipantList`, `ModerationActions`, `SessionHostControls` | no shared list yet (Hitster's `lobby-roster.tsx` is game-owned); build the team cards and player list in the game's folder |
@@ -175,7 +179,9 @@ APP-28 plans three PRs: Beat the Clock web, Doen, Durven web, then both on mobil
   - Lobby: players still without a team when the host taps Start are added to the smallest team, so the drawn `ready` state (Lotte without a team, Start enabled) holds; the host picks or switches their own team with the same team-card toggles as players.
   - Beat the Clock: after time's up, ticks can only be removed, not added (approved choice 2 says "undo a wrong tick"; the prototype lets rows toggle both ways); a describer who doesn't send within 10 s after time runs out sends automatically; after the check confirms, every phone moves to the score after 2 s; **Leave room** asks for confirmation; the host's menu shows **Resume for everyone** while paused; ending the game mid-round with a tie shows "Tied" without an extra round.
   - Doen, Durven: a category with no prompts left is disabled, and the game ends with the summary when all three run out; random order reshuffles every round and never picks the same player twice in a row (the next player is drawn when the turn starts, so "Next: Noor" is known); the in-game menu reuses the Beat the Clock sheet with How to play, End game and Leave room; **Niveaus aanpassen** can't add 18+ while anyone in the room plays in the app.
+  - Beat the Clock, team size mid-game: **Switch team** is disabled when it would leave your team with fewer than 2 players; a team that drops below 2 through **Leave room** has its turns skipped (with a notice) until it has 2 again, and the game ends with the current scores if fewer than 2 teams can still play.
   - Join: watchers (the existing "Only watch, don't play") are kept in both games; in Beat the Clock they see the teammate view (timer and count, never the words); in Doen, Durven the watch screen without actions, and they are not in the rotation.
+- **Web "already in this room".** The web seat store is per tab (sessionStorage), so a new tab or browser restart can't offer **Continue as**; the player joins again or uses their invite link. Persisting web seats is out of scope here.
 - **Room code length.** The canvas shows a 4-letter code (`K7QX`). Real codes are 6 characters from `JOIN_CODE_ALPHABET`, shown as `ABC 123` (`formatJoinCode`). Build with real codes; the companions already use them. No design change needed.
 - **Team names.** Drawn as fixed names (Comets, Rockets). The companions give a fixed list per language for 2–4 teams; renaming teams is out of scope.
 - **Host disconnects.** Not designed. Follow the existing session behaviour (host role stays with the seat; the game waits on the host only for host-only actions).

@@ -26,7 +26,7 @@ Header on every in-game screen: 44px menu button; kicker "Doen, durven of de waa
 | Key | en | nl |
 | --- | --- | --- |
 | `truth.kicker` | Truth or dare | Doen, durven of de waarheid |
-| `room.menu.title` (aria) | Menu | Menu |
+| `room.menuLabel` (aria) | Room menu | Kamermenu |
 | `room.menu.hostTitle` (aria, host) | Host menu | Hostmenu |
 | `truth.meta` | Round {round} · {n\|1 player\|{n} players} | Ronde {round} · {n\|1 speler\|{n} spelers} |
 | `truth.levelList` | {levels} (joined with ", ") | {levels} |
@@ -164,7 +164,7 @@ Approved choice 6: no winner and no per-player score.
 | `truth.over.changeLevels` | Change levels | Niveaus aanpassen |
 | `truth.over.restarting` | Restarting… | Opnieuw starten… |
 | `truth.over.waitForHost` | {host} can start a new game. Stay here to join in. | {host} kan een nieuw spel starten. Blijf hier om mee te doen. |
-| `room.backToArcade` | Back to the arcade | Terug naar de arcade |
+| `common.backToArcade` (existing) | Back to arcade | Terug naar de arcade |
 
 ## 6. Menu
 

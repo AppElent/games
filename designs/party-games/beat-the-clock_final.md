@@ -42,13 +42,13 @@ Header on every in-game screen: 44px pause button (`aria-label` "Pause") that op
 | State | What shows |
 | --- | --- |
 | `ready` | Team chip "Comets", "Your turn to describe", how-to text; **Go** as the cyan primary at 64px tall with a 20px label (the game hue is never a button fill). Words are not on the screen or in the client state yet. |
-| `describing` | Timer 104px amber with "seconds left" and a 6px amber time bar; hint line; 5 word rows (60px, number, word 21px, check circle); "{n} of 5 guessed" and **End turn early** |
+| `describing` | Timer 96px amber with "seconds left" and a 6px amber time bar; hint line; 5 word rows (60px, number, word 21px, check circle); "{n} of 5 guessed" and **End turn early** |
 | last 5 s | Timer and bar turn `danger`; label "Last seconds" |
 | `timeUp` | Timer 0:00 in `danger`, label "Time's up"; hint changes; ticked rows can be unticked (approved choice 2: undo a wrong tick), unticked rows can no longer be ticked; **Send {n} words to Rockets** replaces the footer |
 | sending | Send button disabled with spinner "Sending…" (pending state; not drawn) |
 | `reconnecting` | Status strip "Reconnecting… The clock keeps running. Your ticks are saved." |
 
-Word row: untapped = transparent row with an outlined circle; ticked = `amberDim` row with a filled amber circle and a dark check (`#1c1404`), `aria-pressed="true"`. Tapping toggles. After the check starts, rows are read-only.
+Word row: untapped = transparent row with an outlined circle; ticked = `amberDim` row with a filled amber circle and a check in `onAmber`, `aria-pressed="true"`. Tapping toggles. After the check starts, rows are read-only.
 
 **End turn early** sends straight away without a confirm; it is a quiet text action so it isn't hit by accident.
 
@@ -158,7 +158,7 @@ Flags are shared: a flag by Mila shows on Daan's screen too, and either can undo
 | `clock.check.flagged` | Flagged · won't count | Gemarkeerd · telt niet |
 | `clock.check.missed` | Not guessed | Niet geraden |
 | `clock.check.none` | No words to check. | Geen woorden om te controleren. |
-| `clock.check.auto` | Counts on its own in {s} s. Any {team} player can flag. | Telt vanzelf over {s} s. Elke speler van {team} kan markeren. |
+| `clock.check.auto` | Counts on its own in {s} s. Any referee can flag. | Telt vanzelf over {s} s. Elke scheidsrechter kan markeren. |
 | `clock.check.confirm` | Confirm {n\|1 word\|{n} words} | {n\|1 woord\|{n} woorden} bevestigen |
 | `clock.check.confirming` | Confirming… | Bevestigen… |
 | `clock.check.confirmedBy` | {name} confirmed. {team} score {n\|1 point\|{n} points}. | {name} heeft bevestigd. {team} krijgen {n\|1 punt\|{n} punten}. |
@@ -229,8 +229,8 @@ Layout: trophy tile in `amberDim`, headline 38px, a subline; final scores as ran
 
 | State | What shows |
 | --- | --- |
-| `host` | "Rockets win", "31 to 28 after 4 rounds. Mila guessed the most words."; **Play again** (same teams and settings, new game), **New teams** (back to the lobby with teams cleared), **Back to the arcade** |
-| `player` | Same result; instead of the host actions a notice "Sam can start a new game. Stay here to play again."; **Back to the arcade** |
+| `host` | "Rockets win", "31 to 28 after 4 rounds. Mila described the most words."; **Play again** (same teams and settings, new game; words used in this room stay excluded), **New teams** (back to the lobby with teams cleared), **Back to arcade** |
+| `player` | Same result; instead of the host actions a notice "Sam can start a new game. Stay here to play again."; **Back to arcade** |
 | `tie` | "Tied at 31", "One more round decides it. Every team gets one more turn."; places show "="; **Start the extra round** for everyone (it goes to the next turn's score/ready state); no other actions |
 | restarting (host tapped Play again) | Play again disabled with spinner "Starting…" (pending state; not drawn) |
 
@@ -251,7 +251,7 @@ The "most words" line names the describer whose turns produced the most counted 
 | `room.playAgain` | Play again | Nog een keer |
 | `clock.winner.newTeams` | New teams | Nieuwe teams |
 | `room.waitForHost` | {host} can start a new game. Stay here to play again. | {host} kan een nieuw spel starten. Blijf hier om weer mee te doen. |
-| `room.backToArcade` | Back to the arcade | Terug naar de arcade (existing `common` string) |
+| `common.backToArcade` (existing) | Back to arcade | Terug naar de arcade |
 
 ## 8. Pause menu
 
@@ -261,7 +261,7 @@ The "most words" line names the describer whose turns produced the most counted 
 | --- | --- |
 | `player` | Title "Menu"; How to play · Switch team ("From the next turn") · Leave room ("You can rejoin with code K7Q 4MR", in `danger`) |
 | `host` | Title "Host menu"; Pause for everyone ("Stops the clock on every phone") · Skip this turn ("No points; Rockets go next") · How to play · End game ("Shows the scores as final", in `danger`) |
-| `hostConfirmEnd` | `alertdialog` "End the game for everyone?" with body, **End game** (danger fill, `#1a0509` ink) and **Keep playing** |
+| `hostConfirmEnd` | `alertdialog` "End the game for everyone?" with body, **End game** (`danger` fill, `onDanger` ink) and **Keep playing** |
 | `pausedByHost` (players) | No sheet; a centred "Paused" card over the dimmed game: "Sam paused the game. The clock is stopped at 0:17 and starts again when Sam resumes." The describer's words are hidden behind it until the clock runs again. |
 | paused (host) | The first host item reads **Resume for everyone** ("Starts the clock on every phone"); not drawn |
 
@@ -269,8 +269,8 @@ Behaviour:
 
 - Opening the menu does not stop the clock for anyone. Only **Pause for everyone** does.
 - **Skip this turn**: no points for the playing team; the next team plays. No confirm (it is reversible in effect: the team plays again next round).
-- **Switch team**: opens the team picker from the player lobby (screen 5 of room and join); applies from the next turn. Hidden for the current describer during their turn.
-- **Leave room**: leaves the seat after a confirm ("Leave the room?" / "Kamer verlaten?", body "You can rejoin with code {code}." / "Je kunt terugkomen met code {code}.", buttons **Leave** / **Verlaten** and **Stay** / **Blijven**). A team that drops under 2 players keeps playing; the host can shuffle at the next game.
+- **Switch team**: opens the team picker from the player lobby (screen 5 of room and join); applies from the next turn. Hidden for the current describer during their turn. Disabled, with the hint `clock.menu.switchBlocked`, when your team would drop below 2 players.
+- **Leave room**: leaves the seat after a confirm ("Leave the room?" / "Kamer verlaten?", body "You can rejoin with code {code}." / "Je kunt terugkomen met code {code}.", buttons **Leave** / **Verlaten** and **Stay** / **Blijven**). A team that drops below 2 players has its turns skipped until it has 2 again (a player switches in); every phone shows `clock.turn.skippedShort` for 3 s instead of the ready screen. If fewer than 2 teams have 2 players, the game ends with the current scores (`clock.winner.*`, as **End game**).
 - **End game**: after confirm, the current turn doesn't count and everyone goes to the winner screen with the current scores (a tie shows "Tied", without an extra round).
 - **How to play**: the game's how-to steps (as `RoomFrame`'s `howToPlay`).
 - Close: the × button (`aria-label` "Close menu"), the scrim, Escape, or system back.
@@ -291,6 +291,8 @@ Behaviour:
 | `clock.menu.endHint` | Shows the scores as final | De huidige stand wordt de eindstand |
 | `clock.menu.switch` | Switch team | Wissel van team |
 | `clock.menu.switchHint` | From the next turn | Vanaf de volgende beurt |
+| `clock.menu.switchBlocked` | Your team needs at least 2 players | Je team heeft minstens 2 spelers nodig |
+| `clock.turn.skippedShort` | {team} has too few players, so their turn is skipped. | {team} heeft te weinig spelers, dus hun beurt wordt overgeslagen. |
 | `room.menu.leave` | Leave room | Kamer verlaten |
 | `room.menu.leaveHint` | You can rejoin with code {code} | Je kunt terugkomen met code {code} |
 | `room.leave.title` | Leave the room? | Kamer verlaten? |
