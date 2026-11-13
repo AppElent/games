@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Beat the Clock, room settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 16px; background: #080a12; color: #f8fafc; font-family: Manrope, ui-sans-serif, system-ui, sans-serif;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <button type="button" aria-label="Back to games" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.34); background: #121626; color: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <span style="font-size: 11.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #fbbf24;">Beat the Clock</span>
+      <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 26px; line-height: 1.15; font-weight: 700;">Host a room</h1>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: #aab6cc;">Word pack</span>
+    <div style="display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 18px; background: #121626; border: 1px solid rgba(148, 163, 184, 0.18);">
+      <sc-for list="{{ packs }}" as="p" hint-placeholder-count="4">
+        <sc-if value="{{ p.sel }}" hint-placeholder-val="{{ false }}">
+          <button type="button" aria-pressed="true" onClick="{{ p.pick }}" style="min-height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 12px; border: 0; background: rgba(34, 211, 238, 0.14); color: #f8fafc; text-align: left;">
+            <span style="width: 22px; height: 22px; border-radius: 999px; border: 7px solid #22d3ee; box-sizing: border-box;"></span>
+            <span style="flex-grow: 1; font-size: 16px; font-weight: 700;">{{ p.name }}</span>
+            <span style="font-size: 13px; color: #aab6cc;">{{ p.count }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ p.unsel }}" hint-placeholder-val="{{ true }}">
+          <button type="button" aria-pressed="false" onClick="{{ p.pick }}" style="min-height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 12px; border: 0; background: transparent; color: #f8fafc; text-align: left;">
+            <span style="width: 22px; height: 22px; border-radius: 999px; border: 2px solid rgba(148, 163, 184, 0.6); box-sizing: border-box;"></span>
+            <span style="flex-grow: 1; font-size: 16px; font-weight: 700;">{{ p.name }}</span>
+            <span style="font-size: 13px; color: #aab6cc;">{{ p.count }}</span>
+          </button>
+        </sc-if>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ segs }}" as="g" hint-placeholder-count="3">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: #aab6cc;">{{ g.label }}</span>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; padding: 2px; border-radius: 12px; background: #191f34;">
+        <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="3">
+          <sc-if value="{{ o.sel }}" hint-placeholder-val="{{ false }}">
+            <button type="button" aria-pressed="true" onClick="{{ o.pick }}" style="min-height: 44px; border-radius: 8px; border: 0; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 700;">{{ o.label }}</button>
+          </sc-if>
+          <sc-if value="{{ o.unsel }}" hint-placeholder-val="{{ true }}">
+            <button type="button" aria-pressed="false" onClick="{{ o.pick }}" style="min-height: 44px; border-radius: 8px; border: 0; background: transparent; color: #f8fafc; font-size: 16px; font-weight: 700;">{{ o.label }}</button>
+          </sc-if>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+
+  <span style="font-size: 14px; line-height: 20px; color: #aab6cc;">Cards are in English, the language of your app. Players pick a team in the lobby.</span>
+
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+    <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="display: flex; gap: 10px; padding: 12px 16px; border-radius: 12px; background: rgba(251, 113, 133, 0.14); font-size: 15px; line-height: 21px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span>We couldn't create the room. Check your connection and try again.</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isCreating }}" hint-placeholder-val="{{ false }}">
+      <button type="button" disabled="disabled" style="min-height: 52px; border-radius: 999px; border: 0; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; opacity: 0.45; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <span aria-hidden="true" style="width: 16px; height: 16px; border-radius: 999px; border: 2.5px solid #04121a; border-right-color: transparent; animation: spin 0.8s linear infinite;"></span>
+        Creating room…
+      </button>
+    </sc-if>
+    <sc-if value="{{ canCreate }}" hint-placeholder-val="{{ true }}">
+      <a href="Host-Lobby.dc.html" style="min-height: 52px; border-radius: 999px; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center;">{{ cta }}</a>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["ready","creating","error"],"default":"ready"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { pack: 0, timer: 0, target: 1, teams: 0 };
+  }
+  renderVals() {
+    const s = this.props.state ?? 'ready';
+    const packs = [['Everyday', '400 cards'], ['Movies and TV', '250 cards'], ['Around the world', '250 cards'], ['Kids', '200 cards']]
+      .map(([name, count], i) => ({ name, count, sel: this.state.pack === i, unsel: this.state.pack !== i, pick: () => this.setState({ pack: i }) }));
+    const seg = (label, key, opts) => ({
+      label,
+      opts: opts.map((o, i) => ({ label: o, sel: this.state[key] === i, unsel: this.state[key] !== i, pick: () => this.setState({ [key]: i }) })),
+    });
+    return {
+      packs,
+      segs: [seg('Time per turn', 'timer', ['30 s', '45 s', '60 s']), seg('Points to win', 'target', ['20', '30', '50']), seg('Teams', 'teams', ['2', '3', '4'])],
+      isError: s === 'error',
+      isCreating: s === 'creating',
+      canCreate: s !== 'creating',
+      cta: s === 'error' ? 'Try again' : 'Host room',
+    };
+  }
+}
+</script>
+</body>
+</html>

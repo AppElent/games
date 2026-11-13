@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Beat the Clock, winner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 18px; background: #080a12; color: #f8fafc; font-family: Manrope, ui-sans-serif, system-ui, sans-serif;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+      <span style="font-size: 11.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #fbbf24;">Beat the Clock</span>
+      <span style="font-size: 13px; font-weight: 600; color: #aab6cc;">{{ meta }}</span>
+    </div>
+    <span style="font-size: 13px; font-weight: 700; color: #aab6cc;">Room K7QX</span>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 22px;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;">
+      <span style="width: 72px; height: 72px; border-radius: 22px; background: rgba(251, 191, 36, 0.16); color: #fbbf24; display: flex; align-items: center; justify-content: center;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg>
+      </span>
+      <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 40px; line-height: 1.1; font-weight: 700;">{{ headline }}</h1>
+      <span style="font-size: 16px; line-height: 23px; color: #aab6cc;">{{ sub }}</span>
+    </div>
+
+    <ol aria-label="Final scores" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="2">
+        <li style="display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px; background: #121626; border: 1px solid {{ r.border }};">
+          <span style="width: 22px; font-size: 15px; font-weight: 800; color: #aab6cc;">{{ r.place }}</span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px;"><span style="font-size: 18px; font-weight: 800;">{{ r.name }}</span><span style="font-size: 13px; color: #aab6cc;">{{ r.players }}</span></span>
+          <span style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700;">{{ r.score }}</span>
+        </li>
+      </sc-for>
+    </ol>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <sc-if value="{{ tie }}" hint-placeholder-val="{{ false }}">
+      <a href="Clock-Score.dc.html" style="min-height: 52px; border-radius: 999px; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center;">Start the extra round</a>
+    </sc-if>
+    <sc-if value="{{ host }}" hint-placeholder-val="{{ true }}">
+      <a href="Clock-Describer.dc.html" style="min-height: 52px; border-radius: 999px; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center;">Play again</a>
+      <a href="Host-Lobby.dc.html" style="min-height: 48px; box-sizing: border-box; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.34); color: #f8fafc; font-size: 16px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center;">New teams</a>
+    </sc-if>
+    <sc-if value="{{ player }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="padding: 14px 16px; border-radius: 14px; background: #191f34; font-size: 15px; line-height: 21px; text-align: center;">Sam can start a new game. Stay here to play again.</div>
+    </sc-if>
+    <sc-if value="{{ notTie }}" hint-placeholder-val="{{ true }}">
+      <button type="button" style="min-height: 44px; border: 0; background: transparent; color: #22d3ee; font-size: 15px; font-weight: 700;">Back to the arcade</button>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["host","player","tie"],"default":"host"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'host';
+    const tie = s === 'tie';
+    const scores = tie ? [['Rockets', 31], ['Comets', 31]] : [['Rockets', 31], ['Comets', 28]];
+    const players = { Rockets: 'Daan, Mila, Jesse', Comets: 'Sam, Noor, Lotte' };
+    const rows = scores.map(([name, score], i) => ({
+      name, score, players: players[name],
+      place: tie ? '=' : String(i + 1),
+      border: i === 0 && !tie ? 'rgba(251, 191, 36, 0.5)' : 'rgba(148, 163, 184, 0.18)',
+    }));
+    return {
+      rows, tie, notTie: !tie,
+      host: s === 'host', player: s === 'player',
+      headline: tie ? 'Tied at 31' : 'Rockets win',
+      sub: tie ? 'One more round decides it. Every team gets one more turn.' : '31 to 28 after 4 rounds. Mila guessed the most words.',
+      meta: tie ? 'Round 4 complete' : 'Game over',
+    };
+  }
+}
+</script>
+</body>
+</html>

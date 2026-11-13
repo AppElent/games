@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Beat the Clock, waiting for the referee</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+@keyframes pulse{50%{opacity:.45}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 16px; background: #080a12; color: #f8fafc; font-family: Manrope, ui-sans-serif, system-ui, sans-serif;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <a href="Clock-Pause.dc.html" aria-label="Pause" style="width: 44px; height: 44px; flex-shrink: 0; box-sizing: border-box; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.34); background: #121626; color: #f8fafc; display: flex; align-items: center; justify-content: center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg>
+    </a>
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+      <span style="font-size: 11.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #fbbf24;">Beat the Clock</span>
+      <span style="font-size: 13px; font-weight: 600; color: #aab6cc;">Turn 7 · referee check</span>
+    </div>
+    <span style="font-size: 13px; font-weight: 700; color: #aab6cc;">Room K7QX</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <span style="display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; color: #aab6cc;"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 999px; background: #fbbf24; animation: pulse 1.4s ease-in-out infinite;"></span>{{ status }}</span>
+    <span style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; line-height: 1.15;">{{ title }}</span>
+  </div>
+
+  <ul aria-label="Your guessed words" style="list-style: none; margin: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 18px; background: #121626; border: 1px solid rgba(148, 163, 184, 0.18);">
+    <sc-for list="{{ words }}" as="w" hint-placeholder-count="3">
+      <li style="min-height: 58px; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-radius: 12px; background: {{ w.bg }};">
+        <span style="flex-grow: 1; font-size: 20px; font-weight: 700; text-decoration: {{ w.deco }}; color: {{ w.color }};">{{ w.label }}</span>
+        <span style="font-size: 13px; font-weight: 700; color: {{ w.tone }};">{{ w.status }}</span>
+      </li>
+    </sc-for>
+  </ul>
+
+  <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px;">
+    <span style="font-size: 16px; font-weight: 700;">This turn</span>
+    <span style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: #fbbf24;">+{{ points }}</span>
+  </div>
+
+  <sc-if value="{{ confirmed }}" hint-placeholder-val="{{ false }}">
+    <a href="Clock-Score.dc.html" style="margin-top: auto; min-height: 52px; border-radius: 999px; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center;">See the scores</a>
+  </sc-if>
+  <sc-if value="{{ waiting }}" hint-placeholder-val="{{ true }}">
+    <span style="margin-top: auto; font-size: 14px; line-height: 20px; color: #aab6cc; text-align: center;">Nothing to do. Scores show when Rockets confirm, or after 10 s.</span>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["waiting","flagged","confirmed"],"default":"waiting"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'waiting';
+    const flagged = s !== 'waiting' ? { 1: true } : {};
+    const done = s === 'confirmed';
+    const words = ['Lighthouse', 'Volcano', 'Passport'].map((label, i) => ({
+      label,
+      status: flagged[i] ? 'Flagged by Mila' : done ? 'Counts' : 'Checking',
+      tone: flagged[i] ? '#fb7185' : done ? '#fbbf24' : '#aab6cc',
+      bg: flagged[i] ? 'rgba(251, 113, 133, 0.14)' : 'rgba(251, 191, 36, 0.16)',
+      deco: flagged[i] ? 'line-through' : 'none',
+      color: flagged[i] ? '#aab6cc' : '#f8fafc',
+    }));
+    return {
+      words,
+      points: 3 - Object.keys(flagged).length,
+      confirmed: done, waiting: !done,
+      status: done ? 'Confirmed' : 'Counts on its own in 8 s',
+      title: done ? 'Rockets confirmed your words' : 'Rockets are checking your words',
+    };
+  }
+}
+</script>
+</body>
+</html>
