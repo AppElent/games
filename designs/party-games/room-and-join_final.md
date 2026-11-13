@@ -18,7 +18,7 @@ Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock
 4. Host taps **Start game** → every phone switches to the game's first screen ([Beat the Clock](beat-the-clock_final.md), [Doen, Durven](doen-durven_final.md)).
 5. A player whose device already holds a seat skips the name step: "already in this room" (screen 4, `alreadyIn`).
 
-Ready rule: Beat the Clock needs at least 2 teams with at least 2 players each; Doen, Durven needs at least 2 players. Until then Start is disabled and a line above it says what is missing.
+Ready rule: in Beat the Clock every team (the Teams setting, 2–4) has at least 2 players; in Doen, Durven at least 2 players are in the room. Watchers don't count. Until then Start is disabled and a line above it says what is missing. Players still without a team when the host taps Start are added to the smallest team (ties: the lowest team number) and count toward the rule.
 
 ## 1. Room settings · Beat the Clock
 
@@ -47,7 +47,7 @@ Action: **Host room** creates the session with the settings and the host's app l
 | Key | en | nl |
 | --- | --- | --- |
 | `clock.title` | Beat the Clock | Tegen de Klok |
-| `room.back` (aria) | Back to games | Terug naar spellen |
+| `room.backToGames` (aria) | Back to games | Terug naar spellen (existing `common` string `returnToGames`) |
 | `room.hostHeading` | Host a room | Kamer openen |
 | `clock.settings.pack` | Word pack | Woordenpakket |
 | `clock.packs.everyday` | Everyday | Alledaags |
@@ -61,7 +61,7 @@ Action: **Host room** creates the session with the settings and the host's app l
 | `clock.settings.teams` | Teams | Teams |
 | `clock.settings.note` | Cards are in English, the language of your app. Players pick a team in the lobby. | Kaarten zijn in het Nederlands, de taal van je app. Spelers kiezen een team in de lobby. |
 | `room.create` | Host room | Kamer openen |
-| `room.creating` | Creating room… | Kamer openen… |
+| `room.creating` | Creating room… | Kamer wordt geopend… |
 | `room.createError` | We couldn't create the room. Check your connection and try again. | De kamer kon niet worden geopend. Controleer je verbinding en probeer het opnieuw. |
 | `room.retry` | Try again | Opnieuw proberen |
 
@@ -85,11 +85,22 @@ Layout: back button and title; **Levels** checkbox list (3 rows on web, 2 in the
 | no level ticked | Button disabled; line above it "Kies minstens één niveau." |
 | `adult` (18+ ticked, not confirmed) | Confirmation card appears (violet outline, `violetDim` fill); button disabled with "Bevestig eerst dat iedereen 18 of ouder is." |
 | 18+ ticked and confirmed | Button enabled |
-| `creating` | Button disabled with spinner "Kamer openen…" |
+| `creating` | Button disabled with spinner "Kamer wordt geopend…" |
 | `error` | Alert above the button; button reads **Opnieuw proberen** |
 | `app` (mobile) | 18+ row is absent; an info row says "18+ speel je alleen in de browser, niet in de app." |
 
-The server must reject an 18+ room created from the app, and an 18+ room without the confirmation, even if a client sends it.
+The server enforces the web-only rule whatever a client sends: the app passes its platform with create, join and level changes, and the server rejects an 18+ room created from the app, an 18+ room without the confirmation, and a join from the app into an 18+ room (the app then shows the `adultInApp` state of screen 4).
+
+### Changing levels after a game
+
+**Niveaus aanpassen** on the game-over screen opens this screen in edit mode for the existing room: the same controls with the room's current values, the title "Niveaus aanpassen" / "Change levels" and the action **Opslaan** / **Save** (pending "Opslaan…" / "Saving…"). It calls a game mutation that updates the room's levels and order (suggested `truthOrDare.updateSettings`, host only, between games only), then returns everyone to the lobby. It is not `NewGamePage`, which only creates. While any seated player joined from the app, the 18+ row is disabled with the hint below, and the server rejects 18+ for that room.
+
+| Key | en | nl |
+| --- | --- | --- |
+| `truth.settings.editHeading` | Change levels | Niveaus aanpassen |
+| `truth.settings.save` | Save | Opslaan |
+| `truth.settings.saving` | Saving… | Opslaan… |
+| `truth.settings.adultBlockedByApp` | 18+ isn't available: someone in this room plays in the app. | 18+ kan niet: iemand in deze kamer speelt in de app. |
 
 | Key | en | nl |
 | --- | --- | --- |
@@ -122,8 +133,8 @@ Layout: menu button, kicker, "Lobby", settings summary on the right; the code ca
 
 | State | What shows |
 | --- | --- |
-| `ready` | Teams or players filled; Start enabled when the ready rule holds |
-| not ready (some team under 2, or only 1 player) | Start disabled; line above it: "Each team needs at least 2 players." / "You need at least 2 players." |
+| `ready` | Teams or players filled; Start enabled when the ready rule holds (players in "No team yet" join the smallest team on Start) |
+| not ready (some team under 2 players, or fewer than 2 players) | Start disabled; line above it: "Each team needs at least 2 players." / "You need at least 2 players." |
 | `alone` (only the host) | Empty state in place of the list: icon, "Nobody has joined yet", body; Start disabled |
 | QR shown | 96px QR (light tile) inside the code card; the toggle reads **Hide QR** and is `aria-pressed="true"` |
 | `starting` | Start disabled with spinner "Starting…" |
@@ -139,13 +150,17 @@ Actions:
 
 Team card: amber team chip (`amberDim` fill), count on the right ("2 players"), names in rows of 36px; the host's own row reads "Sam (you)". Players without a team are listed in the strip under the cards.
 
+The host is a player too. Their team cards are the same toggle buttons as the player lobby (screen 5): tapping a card puts the host on that team (`aria-pressed`, cyan border on the host's team, **Join {team}** / **Switch** on the others). The drawn plain cards are the host's view after picking.
+
+With 3 or 4 teams the cards form a 2 × 2 grid (a third team spans one cell, leaving the fourth empty). Players are moved between teams only by themselves or by **Shuffle teams**; the host does not drag players.
+
 | Key | en | nl |
 | --- | --- | --- |
 | `room.lobby` | Lobby | Lobby |
-| `room.menu` (aria) | Room menu | Kamermenu |
+| `room.menuLabel` (aria) | Room menu | Kamermenu |
 | `clock.lobby.meta` | {seconds} s · first to {target} | {seconds} s · eerst bij {target} |
 | `truth.lobby.meta` | In order / Random | Op volgorde / Willekeurig |
-| `room.code` | Room code | Kamercode |
+| `common.session.roomCode` (existing) | Room code | Kamercode |
 | `room.share` | Share invite | Uitnodigen |
 | `room.linkCopied` | Link copied | Link gekopieerd |
 | `room.showQr` | Show QR | Toon QR |
@@ -190,29 +205,40 @@ Layout: back button and "Join a room"; a room card when the code matches a room 
 | `adultInApp` (mobile only) | No form. Card "Open this room in your browser" with **Open in browser** (primary, opens the web join URL) and **Join another room** (secondary, clears the code) |
 | signed in | Name prefilled from the profile name, still editable |
 
-Rules: the code field upper-cases input and strips spaces, accepts 6 characters, and shows them as `ABC 123` (`normalizeJoinCode`, `formatJoinCode`). Name: 1–20 characters, trimmed. The room is looked up as soon as the code is complete; a wrong code shows the error without a submit. **Continue as Noor** goes straight back into the seat (lobby or the turn in progress). **Join as someone else** shows the form with the name empty and takes a new seat.
+Rules: the code field upper-cases input and strips spaces, accepts 6 characters, and shows them as `ABC 123` (`normalizeJoinCode`, `formatJoinCode`). Name: 1–20 characters, trimmed; the 20-character limit is new, so the server (`convex/lib/join.ts`) must validate it too. The room is looked up as soon as the code is complete; a wrong code shows the error without a submit. **Continue as Noor** goes straight back into the seat (lobby or the turn in progress). **Join as someone else** shows the form with the name empty and takes a new seat.
+
+API: the room card and the instant wrong-code check need a lookup. Today `api.sessions.inviteGameType` returns only the game type. Extend it, or add a sibling query (suggested `sessions.invitePreview`), returning game type, host display name, player count and whether the room has the 18+ level. Whether this device already holds a seat comes from the local seat store (`src/lib/games/seat.ts`, mobile `session-seats.ts`); the server still checks the seat when the player continues.
+
+Existing join actions stay. This screen restyles the shared `/join` page and the app's join screen; it keeps every action they have today:
+
+| Existing action | Where it goes |
+| --- | --- |
+| **Only watch, don't play** (`common.joinPanel.watchOnly`, `asSpectator`) | A checkbox under the name field, unchanged. Watchers don't count for the ready rule, don't get a team or a turn, see the teammate view in Beat the Clock (never the words) and the watch screen without actions in Doen, Durven. |
+| Invite link (`/join?token=…`, "Claim your seat", `joinByToken`) | Same screen: the code field is replaced by the room card, the title reads `common.joinPanel.claimSeat`, and the existing invite notice shows above the name field. |
+| **Scan QR code** (mobile, `scan-invite-screen.tsx`) | A tonal button under the code field, as today. |
+| Unsupported game in the app (`common.joinPanel.unsupportedGame`, **Open on the web**) | Unchanged for games not in the app. For an 18+ room the specific `adultInApp` card replaces it. |
 
 | Key | en | nl |
 | --- | --- | --- |
-| `room.back` (aria) | Back | Terug |
+| `room.backToHome` (aria) | Back | Terug |
 | `room.joinHeading` | Join a room | Meedoen met een kamer |
 | `room.foundMeta` | Hosted by {host} · {n\|1 player\|{n} players} | Host: {host} · {n\|1 speler\|{n} spelers} |
 | `room.foundMetaAdult` | Hosted by {host} · 18+ | Host: {host} · 18+ |
-| `room.codeLabel` | Room code | Kamercode |
+| `common.session.roomCode` (existing) | Room code | Kamercode |
 | `room.codeHint` | Ask the host for the code, or scan their QR code. | Vraag de host om de code, of scan de QR-code. |
-| `room.codeWrong` | No room has this code. Check it with the host. | Geen kamer met deze code. Check het bij de host. |
+| `room.codeWrong` | No room has this code. Check it with the host. | Geen kamer met deze code. Vraag het na bij de host. |
 | `room.nameLabel` | Your name | Je naam |
 | `room.namePlaceholder` | What should the others call you? | Hoe moeten de anderen je noemen? |
 | `room.nameHint` | No account needed. Signed in? We use your profile name. | Geen account nodig. Ingelogd? Dan gebruiken we je profielnaam. |
 | `room.join` | Join room | Meedoen |
-| `room.joining` | Joining… | Meedoen… |
+| `room.joining` | Joining… | Bezig met meedoen… |
 | `room.alreadyInTitle` | You're already in this room as {name} | Je zit al in deze kamer als {name} |
 | `room.alreadyInBody` | This phone kept your seat. Your team and score are waiting. | Deze telefoon heeft je plek bewaard. Je team en score staan klaar. |
 | `room.continueAs` | Continue as {name} | Verder als {name} |
 | `room.joinAsOther` | Join as someone else | Meedoen als iemand anders |
 | `truth.appBlockedTitle` | Open this room in your browser | Open deze kamer in je browser |
 | `truth.appBlockedBody` | The host turned on 18+ prompts. Those rooms are only playable in a browser, not in the app. | De host heeft 18+-opdrachten aangezet. Zulke kamers speel je alleen in de browser, niet in de app. |
-| `room.openInBrowser` | Open in browser | Openen in browser |
+| `room.openInBrowser` | Open in browser | Openen in browser (opens the web join URL with `openWebPage`) |
 | `room.joinAnother` | Join another room | Andere kamer kiezen |
 
 Copy change from the canvas: the wrong-code hint drew "codes are 4 letters"; real codes are 6 characters, so the hint drops that clause. For Doen, Durven the "already in" body reads "This phone kept your seat." without the team and score sentence (`room.alreadyInBodyTruth`: "This phone kept your seat." / "Deze telefoon heeft je plek bewaard.").

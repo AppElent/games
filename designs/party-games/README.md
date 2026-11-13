@@ -56,7 +56,7 @@ To review a state on the canvas: press Play on a phone artboard to click through
 
 ## Shared visual spec
 
-Game screens are always dark, like every Arcade Club game surface (`FullscreenGameShell`). Only the web join page and the new-game page outside the shell follow the app theme; see [light theme](#light-theme-join-page).
+Game screens, including the settings pages and lobbies, are always dark: they render inside `FullscreenGameShell`, whose `.game-fullscreen` class pins the dark tokens (`src/styles.css`). Only the web `/join` page (`src/routes/join.tsx`, normal app chrome) follows the app theme; see [light theme](#light-theme-join-page).
 
 ### Tokens
 
@@ -71,7 +71,7 @@ Use design system names. Hex values are the dark theme as drawn.
 | Control border (secondary button, input, menu button) | `borderStrong` | `--club-line-strong` | `borderStrong` |
 | Text | `text` #f8fafc | `--club-text` | `text` |
 | Secondary text, labels, captions | `textMuted` #aab6cc | `--club-muted` | `textMuted` |
-| Primary button, selected segment, checkbox, link | `accent` #22d3ee, ink `onAccent` #04121a | `--club-cyan` | `accent`, `onAccent` |
+| Primary button, selected segment, checkbox, link | `accent` #22d3ee, ink `onAccent` #04121a (light #ffffff) | `--club-cyan`; **add** `--club-on-cyan` for the ink | `accent`, `onAccent` |
 | Selected row, secondary button fill | `accentDim` | none yet: use `accentDim` value | `accentDim` |
 | Beat the Clock hue: kicker, timer, ticks, team chips | `amber` #fbbf24 (light #92400e), ink on amber #1c1404 | **add** `--club-amber` | **add** `amber` |
 | Beat the Clock fills: ticked word, team chip | `amberDim` | **add** `--club-amber-dim` | **add** `amberDim` |
@@ -88,15 +88,17 @@ The A-direction artboard (*Directions* page) still shows the Doen, Durven level 
 - Titles, timers and scores: Space Grotesk 700 (`club-title`). Body and controls: Manrope.
 - Kicker: 11.5–12px, 800, 0.12em tracking, uppercase, in the game hue (`club-kicker` with the hue colour instead of green).
 - Screen title 26px (settings, lobby), 34px (waiting, pick), 38px (end screens).
-- Describer timer 104px; teammate timer 136px; opponent timer 64px. Tabular numbers on every timer, score and code.
+- Describer timer 96px; teammate timer 136px; opponent timer 64px. Tabular numbers on every timer, score and code.
+- End-screen headline 40px (Beat the Clock winner) and 38px (Doen, Durven game over).
 - Prompt text 32px, line height 1.18. A prompt over 120 characters drops to 26px (canvas state `longPrompt`).
+- Where a size here and an artboard differ, the artboard wins.
 - Word rows 21px 700; list rows 16px 600; captions 13–14px.
 
 ### Layout and controls
 
 - Phone frame 390 × 844, padding 16px top, 20px sides, 24px bottom. On wider web viewports, centre a column at most 480px wide; game screens never stretch controls across a desktop.
 - Header: 44px round icon button (menu or pause, `borderStrong` outline, `surface` fill), then kicker and a meta line, then a right-aligned meta (room code) when there is space.
-- Primary button: pill, min-height 52px, `accent` fill, `onAccent` text 16px 800. Secondary: pill, 48px, transparent with a `borderStrong` outline. Quiet action: text button in `accent`, min-height 44px. Every tap target is at least 44 × 44px.
+- Primary button: pill, min-height 52px, `accent` fill, `onAccent` text 16px 800. Secondary: pill, 48px, transparent with a `borderStrong` outline, for the second choice under a primary. Tonal: pill, 44px, `accentDim` fill, for inline actions in a card (Share invite, Show QR, the host's Gedaan/Overslaan). Quiet action: text button in `accent`, min-height 44px. Every tap target is at least 44 × 44px.
 - Pending: the button stays in place, disabled at 45% opacity, with a 16px spinner and an "…ing" label. Never move or remove the control while its request runs.
 - Error: `dangerDim` notice with an icon and one sentence above the action, `role="alert"`. The action becomes "Try again" where a retry makes sense.
 - Reconnecting: a `surface2` status strip under the header with a 14px spinner, `role="status"`, saying what keeps working.
@@ -130,14 +132,14 @@ Not drawn; build to this. At 200% text (web) or the largest accessibility size (
 
 ### Light theme (join page)
 
-Not drawn; build to this. The web `/join` page and the new-game settings pages sit outside the always-dark game surface and follow the app theme. In light mode use the light value of each token: `bg` #f8fafc, `surface` #ffffff, `text` #0f172a, `textMuted` #475569, `accent` #0e7490 with `onAccent` #ffffff, `danger` #be123c, `amber` #92400e, `violet` #6d28d9, and the Dim fills' light values. Input borders use `--club-line-strong` (3:1 after APP-29). Everything else (layout, copy, states) matches the dark artboards. Once the player is seated, the game screens are dark again.
+Not drawn; build to this. The web `/join` page sits outside the always-dark game surface and follows the app theme. In light mode use the light value of each token: `bg` #f8fafc, `surface` #ffffff, `text` #0f172a, `textMuted` #475569, `accent` #0e7490 with `onAccent` #ffffff, `danger` #be123c, `amber` #92400e, `violet` #6d28d9, and the Dim fills' light values. Input borders use `--club-line-strong` (3:1 after APP-29). Everything else (layout, copy, states) matches the dark artboards. Once the player is seated, the game screens are dark again.
 
 ### Keyboard-open join
 
 Not drawn; build to this, for the join screen (web on a phone, and mobile):
 
 - The code field autofocuses only when the code is empty (state `typed`); a code from a link leaves focus on the name field.
-- The code field uses `autocapitalize="characters"`, `autocomplete="off"`, `inputmode="text"`, `enterkeyhint="next"`; the name field `autocomplete="nickname"`, `enterkeyhint="go"`. Enter in the name field submits when both are valid.
+- Web: the code field uses `autocapitalize="characters"`, `autocomplete="off"`, `inputmode="text"`, `enterkeyhint="next"`; the name field `autocomplete="nickname"`, `enterkeyhint="go"`. Mobile: code `autoCapitalize="characters"`, `autoCorrect={false}`, `returnKeyType="next"`; name `textContentType="nickname"`, `autoComplete="nickname"`, `returnKeyType="go"`. Enter in the name field submits when both are valid.
 - With the keyboard open, the screen scrolls so the focused field **and** the Join button are visible above the keyboard (mobile: `KeyboardAvoidingView` or the screen's keyboard inset; web: `scrollIntoView` with `block: "nearest"` on focus). The room card can scroll off the top.
 - The inline error under the code field stays visible while the field has focus.
 
@@ -148,18 +150,19 @@ Reuse before adding. Shared web pieces live in `src/components/games/`; shared m
 | Need | Web | Mobile |
 | --- | --- | --- |
 | Settings page and create | `NewGamePage` (options as children, create/creating labels, error, `HostGate`) inside `FullscreenGamePage`. Its create button is white today; give it a primary tone option rather than forking the page | `Screen`, `ChoiceList` (packs, levels), `Segmented`, `Button`, `Notice` |
-| Room page frame | `SessionBundleRoute` + `FullscreenGameShell`; lobby content can use `RoomFrame` parts (`RoomStartButton`, `RoomLoading`) | `Screen`, `Card` |
-| Room code and QR | `JoinCodePanel`, `QrSharePanel` | `QrCode`, share sheet |
-| Join | `/join` route, `JoinGamePanel` | `features/sessions/join`, `use-join-session.ts`, `TextField` |
-| Seat handling, back in seat | `src/lib/games/seat.ts`, `SeatBanner` | `features/sessions` seat storage |
-| Players, kick, rename | `ParticipantList`, `ModerationActions`, `SessionHostControls` | existing participant list |
-| Mutations with localized errors | `useGameAction` | existing session hooks |
+| Room page frame | `SessionBundleRoute` + `FullscreenGameShell`; lobby content can use `RoomFrame` parts (`RoomStartButton`, `RoomLoading`) | `features/sessions/components/online-screen-frame.tsx`, `Screen`, `Card` |
+| Room code and QR | `JoinCodePanel`, `QrSharePanel` | `QrCode`, `features/sessions/host/share-invite.ts` (`shareInvite`) |
+| Join | `/join` route, `JoinGamePanel` | `features/sessions/join/join-screen.tsx`, `scan-invite-screen.tsx`, `use-join-session.ts`, `TextField` |
+| Open a web page from the app (18+ rooms) | n/a | `openWebPage` in `features/sessions/session-links.ts` (ADR 0002), never `Linking.openURL` |
+| Seat handling, back in seat | `src/lib/games/seat.ts`, `SeatBanner` | `features/sessions/session-seats.ts` |
+| Players, kick, rename | `ParticipantList`, `ModerationActions`, `SessionHostControls` | no shared list yet (Hitster's `lobby-roster.tsx` is game-owned); build the team cards and player list in the game's folder |
+| Mutations with localized errors | `useGameAction` | `useSessionAction` (`features/sessions/use-session-action.ts`) |
 | End screen | `GameEndScreen` can host Beat the Clock's winner; Doen, Durven needs its stats grid | `Card`, `Button` |
 | Menus | `FullscreenGameShell` pause menu, extended with game items | bottom sheet per `expo-ui` guidance |
 
 New per-game pieces: the describer word list, the referee check list, the scoreboard row with progress, the team picker, the category picker and the prompt card. Keep each in the game's folder until a second game needs it.
 
-Copy goes in `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts` and `…/truthOrDare.ts` (one module per game, both languages, `satisfies typeof en`), with catalog entries in `…/catalog.ts`. Placeholders use `fmt`, counts use `plural`.
+Copy goes in `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts` and `…/truthOrDare.ts` (one module per game, both languages, `satisfies typeof en`), with catalog entries in `…/catalog.ts`. Placeholders use `fmt`, counts use `plural`. A placeholder that holds several names (`{opponents}`, a referee `{team}` with 3–4 teams, `{guessers}`, `{categories}`) is a list joined in the reader's language by a small runtime helper (`Intl.ListFormat` with `type: "conjunction"`): "Rockets and Meteors" / "Raketten en Meteoren". Team names are plural nouns, so a verb after one team or a list reads the same ("Rockets are", "Raketten zijn").
 
 ## Build order
 
@@ -169,8 +172,10 @@ APP-28 plans three PRs: Beat the Clock web, Doen, Durven web, then both on mobil
 
 - **English title and id for Doen, Durven of de Waarheid.** The copy here uses "Truth or Dare" with categories Do / Dare / Truth, and paths assume the game id `truth-or-dare`. Eric to confirm or rename before the catalog entry ships.
 - **Behaviour the canvas didn't show, specified in the companions so no game can get stuck.** Eric can veto any of these without touching the approved screens:
-  - Beat the Clock: a describer who doesn't send within 10 s after time runs out sends automatically; after the check confirms, every phone moves to the score after 2 s; **Leave room** asks for confirmation; the host's menu shows **Resume for everyone** while paused; ending the game mid-round with a tie shows "Tied" without an extra round.
-  - Doen, Durven: a category with no prompts left is disabled, and the game ends with the summary when all three run out; random order never picks the same player twice in a row; the in-game menu reuses the Beat the Clock sheet with How to play, End game and Leave room.
+  - Lobby: players still without a team when the host taps Start are added to the smallest team, so the drawn `ready` state (Lotte without a team, Start enabled) holds; the host picks or switches their own team with the same team-card toggles as players.
+  - Beat the Clock: after time's up, ticks can only be removed, not added (approved choice 2 says "undo a wrong tick"; the prototype lets rows toggle both ways); a describer who doesn't send within 10 s after time runs out sends automatically; after the check confirms, every phone moves to the score after 2 s; **Leave room** asks for confirmation; the host's menu shows **Resume for everyone** while paused; ending the game mid-round with a tie shows "Tied" without an extra round.
+  - Doen, Durven: a category with no prompts left is disabled, and the game ends with the summary when all three run out; random order reshuffles every round and never picks the same player twice in a row (the next player is drawn when the turn starts, so "Next: Noor" is known); the in-game menu reuses the Beat the Clock sheet with How to play, End game and Leave room; **Niveaus aanpassen** can't add 18+ while anyone in the room plays in the app.
+  - Join: watchers (the existing "Only watch, don't play") are kept in both games; in Beat the Clock they see the teammate view (timer and count, never the words); in Doen, Durven the watch screen without actions, and they are not in the rotation.
 - **Room code length.** The canvas shows a 4-letter code (`K7QX`). Real codes are 6 characters from `JOIN_CODE_ALPHABET`, shown as `ABC 123` (`formatJoinCode`). Build with real codes; the companions already use them. No design change needed.
 - **Team names.** Drawn as fixed names (Comets, Rockets). The companions give a fixed list per language for 2–4 teams; renaming teams is out of scope.
 - **Host disconnects.** Not designed. Follow the existing session behaviour (host role stays with the seat; the game waits on the host only for host-only actions).
@@ -204,5 +209,6 @@ Not part of this handoff; each belongs to the PR named.
 
   It still applies cleanly to `main` at `3742b55` (`git apply --check` passes).
 - **`club-amber` and `club-violet`** (with their Dim fills) in `src/styles.css` and `apps/mobile/src/theme/tokens.ts`: first PR of each game.
+- **18+ as a platform exception**: ADR 0002 asks for every exception to be listed. Record the web-only 18+ level in `features.ts` (or the ADR) in the Doen, Durven PR that adds it.
 - **The `generate-game-content` skill's family-friendly rule** needs a documented opt-in exception for the 18+ level: Doen, Durven web PR.
 - **White primary buttons in existing web rooms** (Bluff Dice, `NewGamePage`, `RoomStartButton`): a separate design-system alignment issue if Eric wants the rooms to match. Not part of these games.

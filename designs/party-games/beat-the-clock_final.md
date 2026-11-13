@@ -22,7 +22,9 @@ Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock
 
 The server owns the clock (start time and length); phones render the countdown from it, so a reload or reconnect shows the right time. The clock keeps running if the describer drops; they rejoin into the same turn with their ticks.
 
-Header on every in-game screen: 44px pause button (`aria-label` "Pause") that opens the menu (screen 8); kicker "Beat the Clock" in amber; meta line "Turn 7 · first to 30"; "Room K7Q 4MR" on the right. A two-column scoreboard sits at the bottom of the describer, teammate and opponent screens: the playing team's card has an amber border and shows the pending gain ("18 +2").
+Header on every in-game screen: 44px pause button (`aria-label` "Pause") that opens the menu (screen 8); kicker "Beat the Clock" in amber; meta line "Turn 7 · first to 30"; "Room K7Q 4MR" on the right. A scoreboard strip sits at the bottom of the describer, teammate and opponent screens: the playing team's card has an amber border and shows the pending gain ("18 +2"). With 2 teams it is two columns; with 3 or 4 it is a 2 × 2 grid, playing team first, then the others in turn order.
+
+**3 or 4 teams.** One team plays; every other team referees. Wherever the copy below says `{opponents}` or a referee `{team}`, it is the list of all other teams, joined by the list helper in the [overview](README.md#component-bindings) ("Rockets and Meteors" / "Raketten en Meteoren"). The opponent and referee screens (3, 4) are shown to every player of every other team; any of them can flag and confirm.
 
 | Key | en | nl |
 | --- | --- | --- |
@@ -42,7 +44,7 @@ Header on every in-game screen: 44px pause button (`aria-label` "Pause") that op
 | `ready` | Team chip "Comets", "Your turn to describe", how-to text; **Go** as the cyan primary at 64px tall with a 20px label (the game hue is never a button fill). Words are not on the screen or in the client state yet. |
 | `describing` | Timer 104px amber with "seconds left" and a 6px amber time bar; hint line; 5 word rows (60px, number, word 21px, check circle); "{n} of 5 guessed" and **End turn early** |
 | last 5 s | Timer and bar turn `danger`; label "Last seconds" |
-| `timeUp` | Timer 0:00 in `danger`, label "Time's up"; hint changes; rows still toggle; **Send {n} words to Rockets** replaces the footer |
+| `timeUp` | Timer 0:00 in `danger`, label "Time's up"; hint changes; ticked rows can be unticked (approved choice 2: undo a wrong tick), unticked rows can no longer be ticked; **Send {n} words to Rockets** replaces the footer |
 | sending | Send button disabled with spinner "Sending…" (pending state; not drawn) |
 | `reconnecting` | Status strip "Reconnecting… The clock keeps running. Your ticks are saved." |
 
@@ -69,7 +71,11 @@ Word row: untapped = transparent row with an outlined circle; ticked = `amberDim
 | `clock.describer.sending` | Sending… | Versturen… |
 | `clock.describer.offline` | Reconnecting… The clock keeps running. Your ticks are saved. | Verbinding herstellen… De klok loopt door. Je vinkjes zijn bewaard. |
 
-`{guessers}` lists the teammates ("Noor", "Noor and Lotte" / "Noor en Lotte"); with more than one, use the plural verb ("guess" / "raden"): `clock.describer.readyBodyMany`.
+`{guessers}` lists the teammates ("Noor", "Noor and Lotte" / "Noor en Lotte"). With more than one guesser use the plural-verb variant:
+
+| Key | en | nl |
+| --- | --- | --- |
+| `clock.describer.readyBodyMany` | Describe each word without saying it. {guessers} guess; {opponents} watch as referee. The 5 words appear when you tap Go. | Omschrijf elk woord zonder het te zeggen. {guessers} raden; {opponents} kijken mee als scheidsrechter. De 5 woorden verschijnen als je op Start tikt. |
 
 ## 2. Turn · teammate
 
@@ -79,7 +85,7 @@ Word row: untapped = transparent row with an outlined circle; ticked = `amberDim
 | --- | --- |
 | `ready` | Team chip with "Your team · Sam describes"; a pulse dot, "Get ready to guess", "The clock starts when Sam taps Go. Put your phone down and listen." |
 | `describing` | Timer 136px, time bar, "Guess out loud", 5 progress dots (filled amber per ticked word, `role="img"` with label "2 of 5 words guessed"), "2 of 5 guessed". No words. |
-| last 5 s | Timer and bar turn `danger` (same rule as the describer) |
+| last 5 s | Timer and bar turn `danger`, and the label "Last seconds" (`clock.timer.last`, 14px 600 `textMuted`) appears directly under the timer, above the bar, so colour is never the only signal (approved choice 4) |
 | `reconnecting` | Strip "Reconnecting… Keep guessing out loud." |
 
 Time's up and the check: teammates see the describing team's check screen (screen 5).
@@ -101,7 +107,7 @@ Time's up and the check: teammates see the describing team's check screen (scree
 | --- | --- |
 | `ready` | Timer 0:30 at 64px; "Comets are up", "Waiting for Sam to tap Go"; referee notice; a placeholder "The card appears when Sam taps Go." |
 | `describing` | Timer counting; "Comets are describing", "Sam describes, Noor guesses"; referee notice; the card as a read-only list, ticked words with `amberDim` fill and the text "Guessed" |
-| last 5 s | Timer turns `danger` |
+| last 5 s | Timer turns `danger`, and "Last seconds" (`clock.timer.last`, 14px 600 `textMuted`) appears directly under the timer, replacing the sub line for those seconds (approved choice 4) |
 | `reconnecting` | Strip "Reconnecting… Ticks may show a moment late." |
 
 Opponents cannot flag during the turn (approved choice 3). Scoreboard at the bottom shows "Rockets · you" on their own team.
@@ -119,7 +125,11 @@ Opponents cannot flag during the turn (approved choice 3). Scoreboard at the bot
 | `clock.opponent.yourTeam` | {team} · you | {team} · jij |
 | `clock.opponent.offline` | Reconnecting… Ticks may show a moment late. | Verbinding herstellen… Vinkjes kunnen iets later verschijnen. |
 
-With several guessers, `busyBody` uses the plural verb ("guess" / "raden").
+With several guessers use the plural-verb variant:
+
+| Key | en | nl |
+| --- | --- | --- |
+| `clock.opponent.busyBodyMany` | {describer} describes, {guessers} guess | {describer} omschrijft, {guessers} raden |
 
 ## 4. Referee check · opponent
 
@@ -187,7 +197,8 @@ Layout: "+2" large in amber with "for Comets" and a detail line; the scoreboard 
 | --- | --- |
 | `nextTurn` | "+2 for Comets", "3 guessed, 1 flagged by Rockets"; Rockets 21, Comets 20; card "Next: Daan describes for Rockets. Daan's screen shows Go when it's time." |
 | `youreNext` (the next describer) | Card "You're next. Describe for Rockets. Take your phone, then tap Next." with **Next** (goes to the describer's ready state) |
-| `targetHit` (end of a round with a team at or above the target) | Meta "Round 4 complete · first to 30"; "+4 for Rockets", "Round 4 is complete, and Rockets passed 30."; Rockets 31, Comets 28; **See who won** |
+| `targetHit` (end of a round with a team at or above the target) | Meta "Round 4 complete · first to 30"; "+4 for Rockets", "Round 4 is complete, and Rockets reached 30."; Rockets 31, Comets 28; **See who won** |
+| 3 or 4 teams | One row per team, sorted by score; the leader has the amber border |
 | target passed mid-round | Normal `nextTurn`; the round finishes first (rule 1) |
 
 Progress bars: `role="progressbar"`, max = target, label "{team} progress to {target}". The score screen stays until the next describer taps Next (or Go); there is no timer.
@@ -198,7 +209,7 @@ Progress bars: `role="progressbar"`, max = target, label "{team} progress to {ta
 | `clock.score.for` | for {team} | voor {team} |
 | `clock.score.detail` | {n} guessed, {f} flagged by {opponents} | {n} geraden, {f} gemarkeerd door {opponents} |
 | `clock.score.detailNoFlags` | {n} guessed | {n} geraden |
-| `clock.score.roundDone` | Round {round} is complete, and {team} passed {target}. | Ronde {round} is klaar en {team} zitten boven de {target}. |
+| `clock.score.roundDone` | Round {round} is complete, and {team} reached {target}. | Ronde {round} is klaar en {team} zitten op of boven de {target}. |
 | `clock.meta.roundDone` | Round {round} complete · first to {target} | Ronde {round} klaar · eerst bij {target} |
 | `clock.score.list` (aria) | Scores | Stand |
 | `clock.score.progress` (aria) | {team} progress to {target} | {team} op weg naar {target} |
@@ -223,7 +234,7 @@ Layout: trophy tile in `amberDim`, headline 38px, a subline; final scores as ran
 | `tie` | "Tied at 31", "One more round decides it. Every team gets one more turn."; places show "="; **Start the extra round** for everyone (it goes to the next turn's score/ready state); no other actions |
 | restarting (host tapped Play again) | Play again disabled with spinner "Starting…" (pending state; not drawn) |
 
-The "most words" line names the player whose turns produced the most counted words; omit the sentence on a tie between players.
+The "most words" line names the describer whose turns produced the most counted words (guesses are spoken, so only describing is tracked per player); omit the sentence on a tie between players. With 3 or 4 teams the subline uses `clock.winner.bodyMany` (the winning score only) and the rows list every team by place.
 
 | Key | en | nl |
 | --- | --- | --- |
@@ -231,7 +242,8 @@ The "most words" line names the player whose turns produced the most counted wor
 | `clock.winner.metaTie` | Round {round} complete | Ronde {round} klaar |
 | `clock.winner.title` | {team} win | {team} winnen |
 | `clock.winner.body` | {a} to {b} after {n\|1 round\|{n} rounds}. | {a} tegen {b} na {n\|1 ronde\|{n} rondes}. |
-| `clock.winner.best` | {name} guessed the most words. | {name} raadde de meeste woorden. |
+| `clock.winner.bodyMany` | {score} points after {n\|1 round\|{n} rounds}. | {score} punten na {n\|1 ronde\|{n} rondes}. |
+| `clock.winner.best` | {name} described the most words. | {name} omschreef de meeste woorden. |
 | `clock.winner.tieTitle` | Tied at {score} | Gelijk op {score} |
 | `clock.winner.tieBody` | One more round decides it. Every team gets one more turn. | Eén extra ronde beslist. Elk team krijgt nog één beurt. |
 | `clock.winner.list` (aria) | Final scores | Eindstand |
@@ -250,7 +262,7 @@ The "most words" line names the player whose turns produced the most counted wor
 | `player` | Title "Menu"; How to play · Switch team ("From the next turn") · Leave room ("You can rejoin with code K7Q 4MR", in `danger`) |
 | `host` | Title "Host menu"; Pause for everyone ("Stops the clock on every phone") · Skip this turn ("No points; Rockets go next") · How to play · End game ("Shows the scores as final", in `danger`) |
 | `hostConfirmEnd` | `alertdialog` "End the game for everyone?" with body, **End game** (danger fill, `#1a0509` ink) and **Keep playing** |
-| `pausedByHost` (players) | No sheet; a centred "Paused" card: "Sam paused the game. The clock is stopped at 0:17 and starts again when Sam resumes." |
+| `pausedByHost` (players) | No sheet; a centred "Paused" card over the dimmed game: "Sam paused the game. The clock is stopped at 0:17 and starts again when Sam resumes." The describer's words are hidden behind it until the clock runs again. |
 | paused (host) | The first host item reads **Resume for everyone** ("Starts the clock on every phone"); not drawn |
 
 Behaviour:
@@ -292,7 +304,7 @@ Behaviour:
 | `room.end.confirm` | End game | Spel beëindigen |
 | `room.end.cancel` | Keep playing | Verder spelen |
 
-`{scores}` is "Rockets 21, Comets 18" (highest first, joined with ", ").
+`{scores}` is "Rockets 21, Comets 18" (highest first, joined with ", "). `room.menu.*` is the menu's key group; the menu button's accessible name is `room.menuLabel` (room and join) or `clock.pause`.
 
 ## How to play
 

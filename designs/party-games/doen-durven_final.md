@@ -16,7 +16,7 @@ Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/truthOrDare.
 1. **Pick.** The active player chooses Doen, Durven or Waarheid. Everyone else sees who is choosing and the turn order.
 2. **Prompt.** The server draws an unused prompt of that category from the room's levels, fills in a named player where the prompt has one (never the active player), and shows it on every phone.
 3. **Done or skip.** The active player taps **Gedaan** or **Overslaan**. The host can do it for them. Skipping is always allowed and never penalised.
-4. **Next player.** In join order, or random if the host chose it (random never picks the same player twice in a row). A round ends when everyone has had a turn.
+4. **Next player.** In join order, or random if the host chose it (random never picks the same player twice in a row). A round ends when everyone has had a turn. In random order the turn order is reshuffled at the start of each round (the first pick of a round is never the last player of the round before).
 5. The game runs until the host ends it from the menu. Then everyone sees the summary.
 
 No timer, no points. Prompts never repeat within a game. If a category runs out for the room's levels, it is disabled on the pick screen with the hint "No prompts left" / "Geen opdrachten meer"; if all three run out, the game ends with the summary.
@@ -117,14 +117,15 @@ Layout: the active player row with a pulse dot and "is bezig met Doen"; category
 | State | What shows |
 | --- | --- |
 | `player` | Prompt and status only |
+| watcher (spectator seat) | Same as `player`: prompt and status, no actions, never named in a prompt, never the next player |
 | named in the prompt | Extra line under the prompt for that player |
 | next player | Notice "Hierna ben jij aan de beurt. Je telefoon laat het zien." |
-| `host` | Card: "Lotte's telefoon is weg of reageert niet? Rond het af voor Lotte." with **Gedaan** and **Overslaan** (`accentDim` pills, 44px; accessible names "Gedaan voor Lotte", "Overslaan voor Lotte") |
+| `host` | Card: `truth.watch.hostHint` ("Reageert de telefoon van Lotte niet? Rond het af voor Lotte.") with **Gedaan** and **Overslaan** (`accentDim` pills, 44px; accessible names "Gedaan voor Lotte", "Overslaan voor Lotte") |
 | host taps for the player | Buttons disabled with spinner while saving; then everyone moves on |
 
 | Key | en | nl |
 | --- | --- | --- |
-| `truth.watch.doing` | picked {category} | is bezig met {category} |
+| `truth.watch.doing` | is doing {category} | is bezig met {category} |
 | `truth.watch.named` | You're in this one, {name}. | Jij, {name}, doet mee in deze opdracht. |
 | `truth.watch.hostHint` | Is {name}'s phone not responding? Finish the turn for {name}. | Reageert de telefoon van {name} niet? Rond het af voor {name}. |
 | `truth.watch.doneFor` (aria) | Done for {name} | Gedaan voor {name} |
@@ -141,7 +142,7 @@ Layout: a star tile in `violetDim`, "Dat was het!" at 38px, "Lotte heeft het spe
 
 | State | What shows |
 | --- | --- |
-| `host` | **Nog een keer** (same room and settings, new game, prompts used in this room stay excluded), **Niveaus aanpassen** (back to settings with the room kept), **Terug naar de arcade** |
+| `host` | **Nog een keer** (same room and settings, new game, prompts used in this room stay excluded), **Niveaus aanpassen** (opens the settings in edit mode with the room kept; see [Changing levels after a game](room-and-join_final.md#changing-levels-after-a-game)), **Terug naar de arcade** |
 | `player` | Same summary; notice "Lotte kan een nieuw spel starten. Blijf hier om mee te doen."; **Terug naar de arcade** |
 | `restarting` | Nog een keer disabled with spinner "Opnieuw starten…" |
 | tie for most picked | "Meest gekozen" lists both: "Doen en Waarheid, 8 keer" |
