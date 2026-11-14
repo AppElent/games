@@ -20,6 +20,6 @@ export const play = {
 		backgammon: "Pass-and-play on this phone, or challenge a friend.",
 		hitster: "Place songs on your timeline. Host a party room.",
 		"card-games":
-			"Pesten, Mau-Mau and Jokeren, against the computer or friends.",
+			"Pesten, Mau-Mau, Jokeren and Twenty-One, against the computer or friends.",
 	},
 };

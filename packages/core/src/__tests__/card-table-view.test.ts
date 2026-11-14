@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CARD_ASPECT, cardBackArt, cardFaceArt } from "../cards/art";
+import type { BankView } from "../cards/bank";
 import { buildDeck, type CardId, parseCard } from "../cards/deck";
 import { getCardGame, resolvedRules } from "../cards/engine";
 import type { CardEvent } from "../cards/events";
@@ -7,6 +8,8 @@ import { buildMeld, type Meld } from "../cards/melds";
 import type { RummyRules, RummyView } from "../cards/rummy";
 import type { SheddingView } from "../cards/shedding";
 import {
+	bankHint,
+	bankSeatNote,
 	type CardWords,
 	cardName,
 	cardTilt,
@@ -23,6 +26,7 @@ import {
 	seatIsSilent,
 	seatName,
 	sheddingHint,
+	signedPoints,
 	sortCards,
 	specialCards,
 	startFreshCards,
@@ -209,6 +213,23 @@ describe("narration", () => {
 		{ seq: 41, type: "win", seats: [0] },
 		{ seq: 42, type: "win", seats: [1] },
 		{ seq: 43, type: "win", seats: [0, 1] },
+		{ seq: 44, type: "stake", seat: 0, amount: 1 },
+		{ seq: 45, type: "stake", seat: 1, amount: 5 },
+		{ seq: 46, type: "natural", seat: 0 },
+		{ seq: 47, type: "natural", seat: 1 },
+		{ seq: 48, type: "hit", seat: 0, card: "S7#0", total: 17 },
+		{ seq: 49, type: "hit", seat: 1, card: "S7#0", total: 17 },
+		{ seq: 50, type: "double", seat: 0, card: "S7#0", total: 18 },
+		{ seq: 51, type: "double", seat: 1, card: "S7#0", total: 18 },
+		{ seq: 52, type: "stand", seat: 0, total: 19 },
+		{ seq: 53, type: "stand", seat: 1, total: 19 },
+		{ seq: 54, type: "bust", seat: 0, total: 24 },
+		{ seq: 55, type: "bust", seat: 1, total: 24 },
+		{ seq: 56, type: "bankReveal", card: "HK#0", total: 16 },
+		{ seq: 57, type: "bankDraw", card: "H5#0", total: 21 },
+		{ seq: 58, type: "settle", round: 2, results: [2, 3, -1], bankTotal: 18 },
+		{ seq: 59, type: "settle", round: 2, results: [2, -5, -1], bankTotal: 18 },
+		{ seq: 60, type: "settle", round: 2, results: [2, 0, -1], bankTotal: 18 },
 	];
 
 	it.each([
@@ -233,6 +254,28 @@ describe("narration", () => {
 		);
 		expect(text).toContain(cardName(cards, "S8#0"));
 		expect(text).toContain(cards.bots.bot0);
+	});
+
+	it("tells a player what the round at the bank brought them", () => {
+		const settle = (results: number[]): CardEvent => ({
+			seq: 1,
+			type: "settle",
+			round: 3,
+			results,
+			bankTotal: 20,
+		});
+		expect(describeEvent(settle([0, 3, 1]), words, table)).toBe(
+			words.countOf(3, cards.events.settleYouWin),
+		);
+		expect(describeEvent(settle([0, -2, 1]), words, table)).toBe(
+			words.countOf(2, cards.events.settleYouLose),
+		);
+		expect(describeEvent(settle([0, 0, 1]), words, table)).toBe(
+			cards.events.settleYouEven,
+		);
+		expect(
+			describeEvent(settle([0, 3, 1]), words, { ...table, you: null }),
+		).toBe(words.fmt(cards.events.settle, { round: 3 }));
 	});
 
 	it("has nothing to say about an empty log", () => {
@@ -268,6 +311,95 @@ describe("sheddingHint", () => {
 		expect(
 			sheddingHint(view({ pendingDraw: 4, legal: ["S2#0"] }), true, words),
 		).toContain("4");
+	});
+});
+
+describe("bank table", () => {
+	function bankView(over: Partial<BankView> = {}): BankView {
+		return {
+			family: "bank",
+			phase: "play",
+			turn: 1,
+			round: 2,
+			totalRounds: 10,
+			hands: [
+				["S10#0", "HK#0"],
+				["SA#0", "D5#0"],
+				["C9#0", "C8#0", "C7#0"],
+			],
+			handTotals: [20, 16, 24],
+			handCounts: [2, 2, 3],
+			bank: ["H9#0", null],
+			bankTotal: 9,
+			stockCount: 80,
+			stakes: [1, 2, 5],
+			doubled: [false, false, false],
+			done: [true, false, true],
+			results: [[1, -2, 0]],
+			totals: [1, -2, 0],
+			stakeOptions: [1, 2, 5],
+			canStake: false,
+			canHit: true,
+			canStand: true,
+			canDouble: false,
+			winners: [],
+			events: [],
+			...over,
+		};
+	}
+
+	it("signs a round's points", () => {
+		expect(signedPoints(words, 3)).toBe("+3");
+		expect(signedPoints(words, -2)).toBe("−2");
+		expect(signedPoints(words, 0)).toBe("±0");
+	});
+
+	it("asks for a stake, then waits for the others", () => {
+		const staking = bankView({ phase: "stake", canStake: true });
+		expect(bankHint(staking, 1, words)).toBe(cards.bank.stakeHint);
+		expect(bankHint({ ...staking, canStake: false }, 1, words)).toBe(
+			cards.bank.stakeWaiting,
+		);
+		expect(bankHint(staking, null, words)).toBeNull();
+	});
+
+	it("gives the total on your turn only", () => {
+		expect(bankHint(bankView(), 1, words)).toBe(
+			words.fmt(cards.bank.playHint, { total: 16 }),
+		);
+		expect(bankHint(bankView({ turn: 0 }), 1, words)).toBeNull();
+		expect(bankHint(bankView({ phase: "finished" }), 1, words)).toBeNull();
+	});
+
+	it("notes each hand's total and what it plays for", () => {
+		const view = bankView({
+			hands: [
+				["SA#0", "HK#0"],
+				["SA#0", "D5#0"],
+				["C9#0", "C8#0", "C7#0"],
+			],
+			handTotals: [21, 16, 24],
+		});
+		const forPoints = (count: number) =>
+			words.countOf(count, cards.bank.playingFor);
+		expect(bankSeatNote(words, view, 0)).toBe(
+			`${cards.bank.natural} · ${forPoints(1)}`,
+		);
+		expect(bankSeatNote(words, view, 1)).toBe(`16 · ${forPoints(2)}`);
+		expect(bankSeatNote(words, view, 2)).toBe(
+			`${cards.bank.over} · ${forPoints(5)}`,
+		);
+		expect(
+			bankSeatNote(words, { ...view, stakes: [null, null, null] }, 1),
+		).toBe("16");
+	});
+
+	it("shows last round's result between rounds", () => {
+		const between = bankView({ phase: "stake" });
+		expect(bankSeatNote(words, between, 0)).toBe("+1");
+		expect(bankSeatNote(words, between, 1)).toBe("−2");
+		expect(bankSeatNote(words, between, 2)).toBe("±0");
+		expect(bankSeatNote(words, { ...between, results: [] }, 0)).toBe("");
 	});
 });
 
@@ -541,6 +673,21 @@ describe("flights", () => {
 			["S5#0", "seat-1", "meld-4"],
 			["S8#0", "seat-2", "meld-4"],
 			["S6#0", "hand", "meld-4"],
+		]);
+	});
+
+	it("deals a hit to its hand and a bank card to the bank", () => {
+		const { flights } = plan([
+			{ seq: 1, type: "hit", seat: 0, card: "S7#0", total: 17 },
+			{ seq: 2, type: "double", seat: 2, card: "S8#0", total: 18 },
+			{ seq: 3, type: "bankDraw", card: "S9#0", total: 19 },
+		]);
+		expect(
+			flights.map((flight) => [flight.card, flight.from, flight.to]),
+		).toEqual([
+			["S7#0", "stock", "hand"],
+			["S8#0", "stock", "seat-2"],
+			["S9#0", "stock", "bank"],
 		]);
 	});
 

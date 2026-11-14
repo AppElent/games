@@ -30,6 +30,11 @@ export const serverErrors = {
 	cardsSeatCredential: "Deze stoel hoort bij een ander apparaat.",
 	cardsPlayerStillActive: "Die speler is nog actief.",
 	cardsNotSeated: "Neem plaats om mee te spelen.",
+	cardsBadStake: "Kies een van de puntenwaarden.",
+	cardsAlreadyStaked: "Je hebt je punten voor deze ronde al gekozen.",
+	cardsStakesClosed: "Punten kies je voordat de kaarten worden gedeeld.",
+	cardsWaitForStakes: "Wacht tot iedereen punten heeft gekozen.",
+	cardsCannotDouble: "Verdubbelen kan alleen op je eerste twee kaarten.",
 	signInRequired: "Inloggen vereist.",
 	accountChanged:
 		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",

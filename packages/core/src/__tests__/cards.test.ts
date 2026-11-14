@@ -972,7 +972,11 @@ describe("jokeren", () => {
 });
 
 describe("views keep hands private", () => {
-	it.each(CARD_GAME_IDS)("%s hides other hands and the stock", (id) => {
+	// At a bank table every hand is dealt face up; its own test covers the bank's card.
+	const privateHands = CARD_GAME_IDS.filter(
+		(id) => CARD_GAMES[id].family !== "bank",
+	);
+	it.each(privateHands)("%s hides other hands and the stock", (id) => {
 		const game = getCardGame(id);
 		const state = createCardGame(game, [], 3, seeded(21));
 		const mine = viewCardGame(game, [], state, 0);
@@ -985,7 +989,7 @@ describe("views keep hands private", () => {
 			expect(serialized).not.toContain(`"${card}"`);
 		}
 		const spectator = viewCardGame(game, [], state, null);
-		expect(spectator.hand).toEqual([]);
+		expect("hand" in spectator && spectator.hand).toEqual([]);
 		expect(spectator.handCounts).toEqual([
 			state.hands[0].length,
 			state.hands[1].length,
@@ -1008,7 +1012,8 @@ function playOut(
 		state.stock.length +
 		state.discard.length +
 		state.hands.flat().length +
-		("melds" in state ? state.melds.flatMap((m) => m.cards).length : 0);
+		("melds" in state ? state.melds.flatMap((m) => m.cards).length : 0) +
+		("bank" in state ? state.bank.length : 0);
 	for (let step = 0; step < 40_000; step += 1) {
 		if (state.phase === "finished") {
 			return state;
@@ -1036,6 +1041,7 @@ function playOut(
 			...state.discard,
 			...state.hands.flat(),
 			...("melds" in state ? state.melds.flatMap((m) => m.cards) : []),
+			...("bank" in state ? state.bank : []),
 		];
 		expect(cards.length).toBe(total);
 		expect(new Set(cards).size).toBe(total);
@@ -1075,6 +1081,18 @@ describe("full games between computer players", () => {
 		30_000,
 	);
 
+	it.each([1, 3, 6])(
+		"eenentwintigen bots never make an illegal move with %i seats",
+		(seats) => {
+			for (let seed = 1; seed <= 150; seed += 1) {
+				expect(
+					playOut(getCardGame("eenentwintigen"), [], seats, seed).phase,
+				).toBe("finished");
+			}
+		},
+		30_000,
+	);
+
 	it.each([
 		["pesten", ["noFinishOnPower", "noStacking", "noLastCard"]],
 		["maumau", ["noStacking", "noLastCard"]],
@@ -1092,6 +1110,7 @@ describe("full games between computer players", () => {
 			],
 		],
 		["jokeren", ["fullMatch", "stockOnly", "openAt40"]],
+		["eenentwintigen", ["doubleDown", "bankHitsSoft17", "longMatch"]],
 	] as const)("%s finishes with every house rule on", (id, options) => {
 		for (let seed = 1; seed <= 12; seed += 1) {
 			const final = playOut(getCardGame(id), [...options], 4, seed * 41);

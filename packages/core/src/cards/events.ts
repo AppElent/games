@@ -23,6 +23,21 @@ export type CardEvent = { seq: number } & (
 	| { type: "discard"; seat: number; card: CardId }
 	| { type: "roundEnd"; winner: number | null; round: number }
 	| { type: "win"; seats: number[] }
+	| { type: "stake"; seat: number; amount: number }
+	| { type: "natural"; seat: number }
+	| { type: "hit"; seat: number; card: CardId; total: number }
+	| { type: "double"; seat: number; card: CardId; total: number }
+	| { type: "stand"; seat: number; total: number }
+	| { type: "bust"; seat: number; total: number }
+	| { type: "bankReveal"; card: CardId; total: number }
+	| { type: "bankDraw"; card: CardId; total: number }
+	| {
+			type: "settle";
+			round: number;
+			/** Points each seat won (positive) or lost (negative). */
+			results: number[];
+			bankTotal: number;
+	  }
 );
 
 type CardEventInput = CardEvent extends infer E

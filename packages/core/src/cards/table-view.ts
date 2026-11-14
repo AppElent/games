@@ -4,6 +4,7 @@
  * which cards cross the table. No drawing and no framework.
  */
 import type { Messages } from "../i18n/en";
+import type { BankView } from "./bank";
 import { type CardId, parseCard, RANKS, SUITS } from "./deck";
 import {
 	type CardGameDefinition,
@@ -303,6 +304,52 @@ export function describeEvent(
 			return mine(event.seats[0])
 				? e.youWin
 				: fmt(e.win, { name: name(event.seats[0]) });
+		case "stake":
+			return mine(event.seat)
+				? countOf(event.amount, e.youStake)
+				: fmt(countOf(event.amount, e.stake), { name: name(event.seat) });
+		case "natural":
+			return mine(event.seat)
+				? e.youNatural
+				: fmt(e.natural, { name: name(event.seat) });
+		case "hit":
+		case "double": {
+			const params = {
+				card: cardName(cards, event.card),
+				total: event.total,
+				name: name(event.seat),
+			};
+			const [yours, theirs] =
+				event.type === "hit" ? [e.youHit, e.hit] : [e.youDouble, e.double];
+			return fmt(mine(event.seat) ? yours : theirs, params);
+		}
+		case "stand":
+			return mine(event.seat)
+				? fmt(e.youStand, { total: event.total })
+				: fmt(e.stand, { total: event.total, name: name(event.seat) });
+		case "bust":
+			return mine(event.seat)
+				? e.youBust
+				: fmt(e.bust, { name: name(event.seat) });
+		case "bankReveal":
+		case "bankDraw":
+			return fmt(event.type === "bankReveal" ? e.bankReveal : e.bankDraw, {
+				card: cardName(cards, event.card),
+				total: event.total,
+			});
+		case "settle": {
+			const result = table.you === null ? null : event.results[table.you];
+			if (result === null || result === undefined) {
+				return fmt(e.settle, { round: event.round });
+			}
+			if (result === 0) {
+				return e.settleYouEven;
+			}
+			return countOf(
+				Math.abs(result),
+				result > 0 ? e.settleYouWin : e.settleYouLose,
+			);
+		}
 	}
 }
 
@@ -451,6 +498,64 @@ export function rummyMeldAction(turn: RummyTurn, meld: Meld) {
 	return order ? { type: "add" as const, order } : null;
 }
 
+/** What to do now at a bank table; null when there is nothing for this player to do. */
+export function bankHint(
+	view: BankView,
+	you: number | null,
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+) {
+	if (you === null || view.phase === "finished") {
+		return null;
+	}
+	if (view.phase === "stake") {
+		return view.canStake ? cards.bank.stakeHint : cards.bank.stakeWaiting;
+	}
+	if (view.turn !== you) {
+		return null;
+	}
+	return fmt(cards.bank.playHint, { total: view.handTotals[you] });
+}
+
+/** Points won or lost in a round, signed: "+3", "−2" or "±0". */
+export function signedPoints(
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	points: number,
+) {
+	if (points === 0) {
+		return cards.bank.resultEven;
+	}
+	return fmt(points > 0 ? cards.bank.resultWin : cards.bank.resultLose, {
+		count: Math.abs(points),
+	});
+}
+
+/**
+ * A player's line at a bank table: their total and what the hand is played
+ * for, or last round's result while the next one is being picked.
+ */
+export function bankSeatNote(
+	words: Pick<CardWords, "cards" | "fmt" | "countOf">,
+	view: BankView,
+	seat: number,
+) {
+	const { cards, countOf } = words;
+	const stake = view.stakes[seat];
+	if (view.phase !== "play") {
+		const last = view.results.at(-1)?.[seat];
+		return last === undefined ? "" : signedPoints(words, last);
+	}
+	const total = view.handTotals[seat];
+	const state =
+		total > 21
+			? cards.bank.over
+			: view.hands[seat].length === 2 && total === 21
+				? cards.bank.natural
+				: String(total);
+	return stake === null
+		? state
+		: `${state} · ${countOf(stake, cards.bank.playingFor)}`;
+}
+
 /** What to do now on a rummy turn; null when it isn't this player's turn. */
 export function rummyHint(
 	turn: RummyTurn,
@@ -553,11 +658,12 @@ export function nextFreshCards(
 	};
 }
 
-/** Where a card can travel: a seat, the player's hand, the piles, or a meld. */
+/** Where a card can travel: a seat, the player's hand, the piles, a meld, or the bank. */
 export type FlightZone =
 	| "hand"
 	| "stock"
 	| "discard"
+	| "bank"
 	| `seat-${number}`
 	| `meld-${number}`;
 
@@ -657,6 +763,13 @@ export function planFlights(
 				break;
 			case "swap":
 				fly(event.card, seatZone(event.seat), `meld-${event.meldId}`);
+				break;
+			case "hit":
+			case "double":
+				fly(event.card, "stock", seatZone(event.seat));
+				break;
+			case "bankDraw":
+				fly(event.card, "stock", "bank");
 				break;
 			case "skip":
 			case "again":

@@ -1,6 +1,7 @@
 import { getCardGame } from "@arcadeclub/core/cards/engine";
 import { useMessages } from "#/lib/i18n";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { BankTable } from "./BankTable";
 import { CardsNotFound, CardsPage } from "./Chrome";
 import { Lobby } from "./Lobby";
 import { RummyTable } from "./RummyTable";
@@ -55,6 +56,15 @@ export function CardTableScreen({
 		case "rummy":
 			return (
 				<RummyTable
+					game={game}
+					table={table}
+					view={table.view}
+					controls={controls}
+				/>
+			);
+		case "bank":
+			return (
+				<BankTable
 					game={game}
 					table={table}
 					view={table.view}

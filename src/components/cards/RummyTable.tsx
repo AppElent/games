@@ -16,6 +16,7 @@ import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
 import { EndOverlay } from "./EndOverlay";
 import { PlayingCard, useCardName } from "./PlayingCard";
+import { ScoreBoard } from "./ScoreBoard";
 import {
 	Hand,
 	Piles,
@@ -35,48 +36,6 @@ import {
 	meldZone,
 	zoneAttr,
 } from "./zones";
-
-function ScoreBoard({
-	table,
-	view,
-}: {
-	table: CardTableBundle;
-	view: RummyView;
-}) {
-	const cards = useMessages().games.cards;
-	if (view.scores.length === 0) {
-		return <p className="text-sm">{cards.rummy.noScores}</p>;
-	}
-	return (
-		<table className="score-table">
-			<thead>
-				<tr>
-					<th scope="col">{cards.table.playerHeading}</th>
-					{view.scores.map((_, index) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: rounds only ever append.
-						<th key={index} scope="col">
-							{index + 1}
-						</th>
-					))}
-					<th scope="col">{cards.rummy.scoreTotal}</th>
-				</tr>
-			</thead>
-			<tbody>
-				{table.seats.map((_, seat) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: seats are fixed during a game.
-					<tr key={seat}>
-						<td>{seatName(cards, table, seat)}</td>
-						{view.scores.map((round, index) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: rounds only ever append.
-							<td key={index}>{round[seat]}</td>
-						))}
-						<td className="font-bold">{view.totals[seat]}</td>
-					</tr>
-				))}
-			</tbody>
-		</table>
-	);
-}
 
 export function RummyTable({
 	game,
@@ -539,7 +498,11 @@ export function RummyTable({
 								total: view.totalRounds,
 							})}
 						</p>
-						<ScoreBoard table={table} view={view} />
+						<ScoreBoard
+							table={table}
+							scores={view.scores}
+							totals={view.totals}
+						/>
 						<p className="mt-3 text-sm text-[var(--ivory-muted)]">
 							{cards.rummy.lowestWins}
 						</p>
@@ -564,7 +527,11 @@ export function RummyTable({
 										})}
 						</p>
 						<div className="mb-4">
-							<ScoreBoard table={table} view={view} />
+							<ScoreBoard
+								table={table}
+								scores={view.scores}
+								totals={view.totals}
+							/>
 						</div>
 						<ul className="mb-4 flex flex-col gap-2">
 							{view.revealed?.map((hand, seat) => (

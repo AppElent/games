@@ -1,5 +1,4 @@
 /** Round by round, plus the total. Rounds scroll sideways in a long match. */
-import type { RummyView } from "@arcadeclub/core/cards/rummy";
 import { seatName } from "@arcadeclub/core/cards/table-view";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useI18n } from "../../../i18n";
@@ -9,11 +8,13 @@ import type { CardTableBundle } from "./use-card-table";
 
 export function ScoreBoard({
 	table,
-	view,
+	scores,
+	totals,
 	onFelt = false,
 }: {
 	table: CardTableBundle;
-	view: RummyView;
+	scores: readonly (readonly number[])[];
+	totals: readonly number[];
 	/** On a table panel rather than the app's own surface. */
 	onFelt?: boolean;
 }) {
@@ -23,7 +24,7 @@ export function ScoreBoard({
 	const ink = onFelt ? cardColors.ivory : tokens.text;
 	const muted = onFelt ? cardColors.ivoryMuted : tokens.textMuted;
 	const line = onFelt ? cardColors.line : tokens.border;
-	if (view.scores.length === 0) {
+	if (scores.length === 0) {
 		return (
 			<AppText variant="secondary" style={{ color: muted }}>
 				{cards.rummy.noScores}
@@ -57,7 +58,7 @@ export function ScoreBoard({
 				style={styles.rounds}
 				contentContainerStyle={styles.roundsContent}
 			>
-				{view.scores.map((round, index) => (
+				{scores.map((round, index) => (
 					// biome-ignore lint/suspicious/noArrayIndexKey: rounds only ever append.
 					<View key={index} style={styles.round}>
 						<View style={[cell, styles.number]}>
@@ -84,7 +85,7 @@ export function ScoreBoard({
 				{seats.map((seat) => (
 					<View key={seat} style={[cell, styles.number]}>
 						<AppText variant="body" style={{ color: ink }}>
-							{view.totals[seat]}
+							{totals[seat]}
 						</AppText>
 					</View>
 				))}

@@ -28,6 +28,11 @@ export const serverErrors = {
 	cardsSeatCredential: "This seat belongs to another device.",
 	cardsPlayerStillActive: "That player is still active.",
 	cardsNotSeated: "Take a seat to play.",
+	cardsBadStake: "Pick one of the point values on offer.",
+	cardsAlreadyStaked: "You've already picked your points for this round.",
+	cardsStakesClosed: "Points are picked before the cards are dealt.",
+	cardsWaitForStakes: "Wait until everyone has picked their points.",
+	cardsCannotDouble: "You can only double on your first two cards.",
 	signInRequired: "Sign in required.",
 	accountChanged:
 		"You switched accounts. Sign in to the account you want to delete and try again.",

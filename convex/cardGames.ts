@@ -91,6 +91,10 @@ const cardActionValidator = v.union(
 	}),
 	v.object({ type: v.literal("discard"), card: v.string() }),
 	v.object({ type: v.literal("nextRound") }),
+	v.object({ type: v.literal("stake"), amount: v.number() }),
+	v.object({ type: v.literal("hit") }),
+	v.object({ type: v.literal("stand") }),
+	v.object({ type: v.literal("double") }),
 );
 
 // Arguments are a validator and core is dependency-free, so this cannot be

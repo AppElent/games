@@ -72,7 +72,7 @@ export const catalog = {
 		description:
 			"Iedereen rolt verborgen dobbelstenen, de claims klimmen steeds hoger en één uitdaging onthult wie er blufte.",
 		primaryAction: "Tafel openen",
-		stats: "2-8 spelers",
+		stats: "1-8 spelers",
 	},
 	"squad-surge": {
 		title: "Squad Surge",
@@ -88,6 +88,6 @@ export const catalog = {
 		description:
 			"Klassieke Nederlandse kaartspellen aan één tafel. Speel meteen tegen de computer of nodig vrienden uit met een kamercode.",
 		primaryAction: "Kies een spel",
-		stats: "2-8 spelers",
+		stats: "1-8 spelers",
 	},
 } satisfies Record<GameType, CatalogText>;

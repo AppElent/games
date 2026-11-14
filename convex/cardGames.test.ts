@@ -530,6 +530,82 @@ describe("play", () => {
 	});
 });
 
+describe("eenentwintigen", () => {
+	type BankRead = {
+		phase: string;
+		hands: string[][];
+		bank: (string | null)[];
+		stakes: (number | null)[];
+		canStake: boolean;
+		round: number;
+	};
+	const bankView = (table: { view: unknown }) => table.view as BankRead;
+
+	it("plays a solo table against the bank, keeping the hole card hidden", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(
+			t,
+			"eenentwintigen",
+			2,
+		);
+		const opening = bankView(await read(t, creds(sessionId, participantId)));
+		expect(opening).toMatchObject({ phase: "stake", canStake: true, round: 1 });
+		await expect(
+			t.mutation(api.cardGames.act, {
+				...creds(sessionId, participantId),
+				action: { type: "hit" },
+			}),
+		).rejects.toMatchObject({ data: { code: "cardsWaitForStakes" } });
+		await expect(
+			t.mutation(api.cardGames.act, {
+				...creds(sessionId, participantId),
+				action: { type: "stake", amount: 3 },
+			}),
+		).rejects.toMatchObject({ data: { code: "cardsBadStake" } });
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "stake", amount: 2 },
+		});
+		await t.finishAllScheduledFunctions(vi.runAllTimers);
+		const dealt = bankView(await read(t, creds(sessionId, participantId)));
+		expect(dealt.stakes[0]).toBe(2);
+		expect(dealt.hands[0].length).toBeGreaterThanOrEqual(2);
+		const stored = await t.run((ctx) =>
+			ctx.db.query("cardGameStates").unique(),
+		);
+		const game = stored?.game as { phase: string; bank: string[] };
+		const mine = JSON.stringify(dealt);
+		if (game.phase === "play") {
+			expect(dealt.bank[1]).toBeNull();
+			expect(mine).not.toContain(`"${game.bank[1]}"`);
+		}
+	});
+
+	it("a table on autopilot plays a whole match to the end", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(
+			t,
+			"eenentwintigen",
+			3,
+		);
+		await t.mutation(api.cardGames.setAutopilot, {
+			...creds(sessionId, participantId),
+			seat: 0,
+			on: true,
+		});
+		await (
+			t.finishAllScheduledFunctions as (
+				advance: () => void,
+				maxIterations: number,
+			) => Promise<void>
+		)(vi.runAllTimers, 10_000);
+		const done = await read(t, creds(sessionId, participantId));
+		expect(done.status).toBe("finished");
+		const session = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(session?.status).toBe("completed");
+	});
+});
+
 describe("getTable", () => {
 	it("answers a mistyped table link with nothing", async () => {
 		const t = setup();
