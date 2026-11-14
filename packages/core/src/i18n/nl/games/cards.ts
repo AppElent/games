@@ -362,9 +362,9 @@ export const cards = {
 		},
 		maumau: {
 			name: "Mau-Mau",
-			tagline: "Vijf kaarten, drie streken",
+			tagline: "Snel, scherp en met drie pestkaarten",
 			blurb:
-				"Het snelle broertje van Pesten met 32 kaarten. Volg de stapel, ontwijk de zevens en roep Mau bij je laatste kaart.",
+				"Het snelle broertje van Pesten met 32 kaarten. Volg de stapel, ontwijk de zevens en meld je laatste kaart.",
 			powers: {
 				"7": "Zeven pakt twee",
 				"8": "Acht slaat over",
@@ -376,7 +376,7 @@ export const cards = {
 					hint: "Op een 7 mag je geen 7 leggen.",
 				},
 				noLastCard: {
-					label: "Mau hoeft niet",
+					label: "Laatste kaart hoeft niet",
 					hint: "Niemand hoeft zijn laatste kaart te melden.",
 				},
 				plain7: {

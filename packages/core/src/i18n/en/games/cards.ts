@@ -358,9 +358,9 @@ export const cards = {
 		},
 		maumau: {
 			name: "Mau-Mau",
-			tagline: "Five cards, three tricks",
+			tagline: "Quick, sharp and three special cards",
 			blurb:
-				"Pesten's quick cousin with a 32-card deck. Match the pile, dodge the sevens and call Mau on your last card.",
+				"Pesten's quick cousin with a 32-card deck. Match the pile, dodge the sevens and call your last card.",
 			powers: {
 				"7": "Seven draws two",
 				"8": "Eight skips",
@@ -372,7 +372,7 @@ export const cards = {
 					hint: "A 7 can't be answered with another 7.",
 				},
 				noLastCard: {
-					label: "No Mau call",
+					label: "No last-card call",
 					hint: "Nobody has to announce their last card.",
 				},
 				plain7: {

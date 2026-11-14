@@ -82,6 +82,12 @@ function expectRule(action: () => unknown, code: string) {
 }
 
 describe("deck", () => {
+	it("builds a short deck from the given ranks", () => {
+		const deck = buildDeck(1, 0, ["7", "8", "9", "10", "J", "Q", "K", "A"]);
+		expect(deck).toHaveLength(32);
+		expect(deck).not.toContain("S2#0");
+	});
+
 	it("builds unique ids across decks and jokers", () => {
 		const deck = buildDeck(2, 4);
 		expect(deck).toHaveLength(108);
@@ -1111,8 +1117,11 @@ describe("mau-mau", () => {
 
 	it("7 makes the next player draw two, 2 is a plain card", () => {
 		const rules = resolvedRules(game, []).rules as SheddingRules;
-		expect(rules.powers["7"]).toEqual({ kind: "draw", amount: 2 });
-		expect(rules.powers["2" as "7"]).toBeUndefined();
+		expect(rules.powers).toEqual({
+			"7": { kind: "draw", amount: 2 },
+			"8": { kind: "skip" },
+			J: { kind: "chooseSuit" },
+		});
 	});
 
 	it("bots finish games from two to five players", () => {

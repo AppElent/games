@@ -2,7 +2,7 @@ import type { CardGameDefinition } from "../engine";
 
 /**
  * Mau-Mau, the German-Dutch cousin of Pesten: a 32-card deck, five cards each,
- * and only three special cards. Text lives in the message catalog under
+ * and only three special cards. The last-card call is Mau in the original. Text lives in the message catalog under
  * `games.cards.games.maumau`.
  */
 export const maumau = {
