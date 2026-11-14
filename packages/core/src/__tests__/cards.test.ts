@@ -1708,6 +1708,45 @@ describe("gin rummy", () => {
 	});
 
 	describe("view", () => {
+		it("never shows a hidden card over whole bot matches", () => {
+			for (let seed = 1; seed <= 20; seed += 1) {
+				const random = seeded(seed);
+				let state = createGin(rules, 2, random);
+				while (state.phase !== "finished") {
+					// Only this hand counts: the log keeps earlier deals, and a card
+					// that has been on the discard pile is public.
+					const dealt = state.events.map((e) => e.type).lastIndexOf("deal");
+					const thisHand = state.events.slice(dealt);
+					const seen = new Set([
+						...state.discard,
+						...thisHand.flatMap((e) => (e.type === "discard" ? [e.card] : [])),
+					]);
+					const views = [0, 1, null].map((seat) => {
+						const { events: _, ...rest } = viewGin(rules, state, seat);
+						return JSON.stringify([rest, thisHand]);
+					});
+					const hidden = (cards: readonly string[]) =>
+						cards.filter((card) => !seen.has(card));
+					for (const card of hidden(state.stock)) {
+						for (const view of views) expect(view).not.toContain(`"${card}"`);
+					}
+					for (const seat of [0, 1]) {
+						// The knocker's hand is open from the knock; every hand once scored.
+						if (state.phase === "handOver" || state.knock?.seat === seat) {
+							continue;
+						}
+						for (const card of hidden(state.hands[seat])) {
+							expect(views[1 - seat]).not.toContain(`"${card}"`);
+							expect(views[2]).not.toContain(`"${card}"`);
+						}
+					}
+					const move = botGinMove(rules, state, [0, 1]);
+					if (!move) throw new Error(`bot stuck in ${state.phase}`);
+					state = applyGin(rules, state, move.seat, move.action, random);
+				}
+			}
+		});
+
 		it("hides the other hand until it is scored, and shows the knocker's", () => {
 			const state = ginState([
 				`${KNOCKER} C2 CK`,

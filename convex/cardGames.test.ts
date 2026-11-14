@@ -633,27 +633,27 @@ describe("gin rummy", () => {
 		for (const card of theirs) {
 			expect(JSON.stringify(table.view)).not.toContain(`"${card}"`);
 		}
-		if (table.view.turn === 0) {
-			await t.mutation(api.cardGames.act, {
+		// The person on the first seat leads the first hand.
+		expect(table.view.turn).toBe(0);
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "drawStock" },
+		});
+		const drawn = await read(t, creds(sessionId, participantId));
+		expect(drawn.view.hand).toHaveLength(11);
+		await expectCode(
+			t.mutation(api.cardGames.act, {
 				...creds(sessionId, participantId),
-				action: { type: "drawStock" },
-			});
-			const drawn = await read(t, creds(sessionId, participantId));
-			expect(drawn.view.hand).toHaveLength(11);
-			await expectCode(
-				t.mutation(api.cardGames.act, {
-					...creds(sessionId, participantId),
-					action: { type: "finishLayoff" },
-				}),
-				"cardsNoKnock",
-			);
-			await t.mutation(api.cardGames.act, {
-				...creds(sessionId, participantId),
-				action: { type: "discard", card: drawn.view.hand[0] },
-			});
-			const after = await read(t, creds(sessionId, participantId));
-			expect(after.view.hand).toHaveLength(10);
-		}
+				action: { type: "finishLayoff" },
+			}),
+			"cardsNoKnock",
+		);
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "discard", card: drawn.view.hand[0] },
+		});
+		const after = await read(t, creds(sessionId, participantId));
+		expect(after.view.hand).toHaveLength(10);
 	});
 
 	it("plays a whole match on autopilot", async () => {

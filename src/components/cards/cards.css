@@ -1441,6 +1441,11 @@ button.meld[data-target="true"] {
 	height: 2.2rem;
 }
 
+.score-scroll {
+	overflow-x: auto;
+	touch-action: pan-x pan-y;
+}
+
 .score-table {
 	width: 100%;
 	border-collapse: collapse;
