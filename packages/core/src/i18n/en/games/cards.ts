@@ -255,7 +255,6 @@ export const cards = {
 			one: "{count} deadwood point",
 			other: "{count} deadwood points",
 		},
-		noMelds: "No melds",
 		nextHand: "Deal hand {round}",
 		waitingNextHand: "Waiting for a player to deal the next hand.",
 		firstTo: "First to {target} points wins.",

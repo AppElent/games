@@ -28,6 +28,12 @@ export type CardEvent = { seq: number } & (
 	| { type: "trickWon"; seat: number; points: number }
 	| { type: "broken"; suit: Suit }
 	| { type: "moon"; seat: number }
+	| {
+			type: "handEnd";
+			winner: number;
+			kind: "knock" | "gin" | "undercut";
+			points: number;
+	  }
 	| { type: "win"; seats: number[] }
 );
 

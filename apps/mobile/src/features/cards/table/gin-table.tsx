@@ -1,12 +1,13 @@
 /** A table for Gin Rummy: two players, melds kept in hand until someone knocks. */
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
-import type { GinHandResult, GinView } from "@arcadeclub/core/cards/gin";
+import type { GinView } from "@arcadeclub/core/cards/gin";
 import type { Meld } from "@arcadeclub/core/cards/melds";
 import {
 	cardName,
 	ginHint,
 	ginLayoffOrder,
+	ginResultText,
 	ginTurn,
 	groupGinHand,
 	meldCardNames,
@@ -29,6 +30,7 @@ import { cardColors, metrics, radius, spacing } from "../../../theme";
 import { Icon } from "../../../ui/icon";
 import { AppText } from "../../../ui/text";
 import { Sheet } from "../deck/sheet";
+import { useCardWords } from "../deck/use-card-words";
 import { FeltText, TableButton } from "./felt-ui";
 import { useFlights } from "./flights";
 import { Hand } from "./hand";
@@ -59,6 +61,7 @@ export function GinTable({
 }) {
 	const { t, locale } = useI18n();
 	const cards = t.games.cards;
+	const words = useCardWords();
 	const { width: screen } = useWindowDimensions();
 	const [selected, setSelected] = useState<CardId[]>([]);
 	const [sortBy, setSortBy] = useState<Sort>("melds");
@@ -186,21 +189,6 @@ export function GinTable({
 		round: view.round,
 		target: view.targetScore,
 	});
-
-	function resultLine(outcome: GinHandResult) {
-		if (outcome.kind === "void" || outcome.winner === null) {
-			return cards.gin.resultVoid;
-		}
-		const yours = outcome.winner === you;
-		const forms = {
-			gin: yours ? cards.gin.resultYouGin : cards.gin.resultGin,
-			knock: yours ? cards.gin.resultYouKnock : cards.gin.resultKnock,
-			undercut: yours ? cards.gin.resultYouUndercut : cards.gin.resultUndercut,
-		}[outcome.kind];
-		return fmt(plural(locale, outcome.points, forms), {
-			name: seatName(cards, table, outcome.winner),
-		});
-	}
 
 	return (
 		<TableFrame
@@ -467,7 +455,7 @@ export function GinTable({
 							}
 						>
 							<FeltText variant="body" style={styles.center}>
-								{resultLine(result)}
+								{ginResultText(result, words, table)}
 							</FeltText>
 							{result.shown.map((shown, seat) => (
 								// biome-ignore lint/suspicious/noArrayIndexKey: seats are fixed during a game.

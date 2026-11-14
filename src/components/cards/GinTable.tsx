@@ -5,6 +5,7 @@ import type { Meld } from "@arcadeclub/core/cards/melds";
 import {
 	ginHint,
 	ginLayoffOrder,
+	ginResultText,
 	ginTurn,
 	groupGinHand,
 	meldCardNames,
@@ -33,6 +34,7 @@ import {
 	useFreshCards,
 } from "./Table";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
+import { useCardWords } from "./useCardWords";
 import { useFlights } from "./useFlights";
 import {
 	cardAttr,
@@ -94,6 +96,7 @@ export function GinTable({
 	const { locale } = useI18n();
 	const { games, serverErrors } = useMessages();
 	const cards = games.cards;
+	const words = useCardWords();
 	const cardName = useCardName();
 	const rootRef = useRef<HTMLDivElement>(null);
 	const [selected, setSelected] = useState<CardId[]>([]);
@@ -204,21 +207,6 @@ export function GinTable({
 		round: view.round,
 		target: view.targetScore,
 	});
-
-	function resultLine(outcome: GinHandResult) {
-		if (outcome.kind === "void" || outcome.winner === null) {
-			return cards.gin.resultVoid;
-		}
-		const yours = outcome.winner === you;
-		const forms = {
-			gin: yours ? cards.gin.resultYouGin : cards.gin.resultGin,
-			knock: yours ? cards.gin.resultYouKnock : cards.gin.resultKnock,
-			undercut: yours ? cards.gin.resultYouUndercut : cards.gin.resultUndercut,
-		}[outcome.kind];
-		return fmt(plural(locale, outcome.points, forms), {
-			name: seatName(cards, table, outcome.winner),
-		});
-	}
 
 	return (
 		<TableFrame
@@ -476,7 +464,9 @@ export function GinTable({
 					>
 						{result ? (
 							<>
-								<p className="mb-3 text-base font-bold">{resultLine(result)}</p>
+								<p className="mb-3 text-base font-bold">
+									{ginResultText(result, words, table)}
+								</p>
 								<ul className="mb-4 flex flex-col gap-3">
 									{result.shown.map((shown, seat) => (
 										// biome-ignore lint/suspicious/noArrayIndexKey: seats are fixed during a game.

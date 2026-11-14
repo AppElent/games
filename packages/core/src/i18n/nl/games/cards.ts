@@ -257,7 +257,6 @@ export const cards = {
 			one: "{count} los punt",
 			other: "{count} losse punten",
 		},
-		noMelds: "Geen combinaties",
 		nextHand: "Deel ronde {round}",
 		waitingNextHand: "Wachten tot iemand de volgende ronde deelt.",
 		firstTo: "Wie het eerst {target} punten heeft, wint.",

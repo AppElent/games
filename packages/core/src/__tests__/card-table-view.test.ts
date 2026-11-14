@@ -238,6 +238,12 @@ describe("narration", () => {
 		{ seq: 55, type: "knock", seat: 1, gin: false },
 		{ seq: 56, type: "knock", seat: 0, gin: true },
 		{ seq: 57, type: "knock", seat: 1, gin: true },
+		{ seq: 58, type: "handEnd", winner: 0, kind: "knock", points: 1 },
+		{ seq: 59, type: "handEnd", winner: 1, kind: "knock", points: 14 },
+		{ seq: 60, type: "handEnd", winner: 0, kind: "gin", points: 40 },
+		{ seq: 61, type: "handEnd", winner: 1, kind: "gin", points: 40 },
+		{ seq: 62, type: "handEnd", winner: 0, kind: "undercut", points: 25 },
+		{ seq: 63, type: "handEnd", winner: 1, kind: "undercut", points: 25 },
 	];
 
 	it.each([
@@ -569,7 +575,8 @@ describe("gin turns", () => {
 
 		const idle = turnFor(knocked, 1);
 		expect(idle.turn.layingOff).toBe(true);
-		expect(idle.turn.deadwood).toBeNull();
+		// Everything the defender holds is still unmatched before laying off.
+		expect(idle.turn.deadwood).toBeGreaterThan(0);
 		expect(idle.hint).toBe(words.fmt(cards.gin.layoffHint, { name: "Hanna" }));
 
 		const fits = turnFor(knocked, 1, "S5");

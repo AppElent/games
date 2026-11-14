@@ -610,7 +610,7 @@ describe("hartenjagen", () => {
 });
 
 describe("gin rummy", () => {
-	it("seats one computer opponent and refuses a third player", async () => {
+	it("refuses a table with two computer players", async () => {
 		const t = setup();
 		await expectCode(
 			t.mutation(api.cardGames.createTable, tableArgs({ gameId: "gin-rummy" })),

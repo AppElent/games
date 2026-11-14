@@ -349,6 +349,17 @@ describe("pesten", () => {
 			nextStarter(rummy),
 		);
 		expect(again.family === "rummy" && again.turn).toBe(1);
+
+		const gin = createCardGame(getCardGame("gin-rummy"), [], 2, seeded(2));
+		expect(gin.family === "gin" && gin.turn).toBe(0);
+		const rematch = createCardGame(
+			getCardGame("gin-rummy"),
+			[],
+			2,
+			seeded(2),
+			nextStarter(gin),
+		);
+		expect(rematch.family === "gin" && rematch.turn).toBe(1);
 	});
 
 	it("drawing after a forgotten call leaves nothing to catch", () => {
@@ -1503,6 +1514,21 @@ describe("gin rummy", () => {
 	describe("scoring", () => {
 		const DEFENDER = "S5 H8 DQ C3 C4 HK SK DK C7 H2";
 
+		it("lays an ace off below a run that starts at two", () => {
+			const state = ginState([
+				"S5 S6 S7 S8 S9 S10 SJ SQ SK C2 CK",
+				"SA S2 S3 S4 H8 DQ C3 C4 HK DK",
+			]);
+			const knocked = act(state, 0, { type: "knock", card: "CK#0" });
+			const laid = act(knocked, 1, {
+				type: "layOff",
+				meldId: knocked.melds[0].id,
+				cards: ids("SA S2 S3 S4"),
+			});
+			expect(laid.melds[0]).toMatchObject({ low: 1 });
+			expect(laid.melds[0].cards.slice(0, 5)).toEqual(ids("SA S2 S3 S4 S5"));
+		});
+
 		it("knocks, lets the defender lay off, and scores the difference", () => {
 			let state = act(ginState([`${KNOCKER} C2 CK`, DEFENDER]), 0, {
 				type: "knock",
@@ -1580,6 +1606,40 @@ describe("gin rummy", () => {
 			expect(state.scores).toEqual([[0, 30]]);
 		});
 
+		it("undercuts after laying off", () => {
+			let state = act(
+				ginState([`${KNOCKER} C9 CK`, "S5 S6 H8 HK SK DK HQ SQ DQ C3"]),
+				0,
+				{ type: "knock", card: "CK#0" },
+			);
+			const spades = state.melds.find((meld) => meld.cards.includes("S2#0"));
+			const hearts = state.melds.find((meld) => meld.cards.includes("H5#0"));
+			state = act(state, 1, {
+				type: "layOff",
+				meldId: spades?.id ?? 0,
+				cards: ids("S6 S5"),
+			});
+			state = act(state, 1, {
+				type: "layOff",
+				meldId: hearts?.id ?? 0,
+				cards: ids("H8"),
+			});
+			state = act(state, 1, { type: "finishLayoff" });
+			// Kings and queens are sets; the three of clubs is under the knocker's 9.
+			expect(state.result).toMatchObject({
+				kind: "undercut",
+				winner: 1,
+				points: 9 - 3 + 25,
+				deadwood: [9, 3],
+			});
+			expect(state.events.at(-1)).toMatchObject({
+				type: "handEnd",
+				winner: 1,
+				kind: "undercut",
+				points: 31,
+			});
+		});
+
 		it("counts equal deadwood as an undercut", () => {
 			const state = knockAndFinish("C4", "D2 D3 D4 C6 C7 C8 HK SK DK H4");
 			expect(state.result).toMatchObject({
@@ -1596,7 +1656,10 @@ describe("gin rummy", () => {
 				card: "CK#0",
 			});
 			expect(state.phase).toBe("handOver");
-			expect(state.events.at(-1)).toMatchObject({ type: "knock", gin: true });
+			expect(state.events.slice(-2)).toMatchObject([
+				{ type: "knock", gin: true },
+				{ type: "handEnd", winner: 0, kind: "gin", points: 64 },
+			]);
 			// The defender's 39 stays whole, though S5 and H8 would have fit.
 			expect(state.result).toMatchObject({
 				kind: "gin",
@@ -1684,7 +1747,7 @@ describe("gin rummy", () => {
 
 		it("takes a discard that completes a meld", () => {
 			const state = ginState(
-				["S2 S3 H9 C9 D8 HK CQ DJ S7 H4", "S5 H8 DQ C3 C4 HK SK DK C7 H2"],
+				["S2 S3 H9 C9 D8 HK CQ DJ S7 H4", "S5 H8 DQ C3 C4 D5 SK DK C7 H2"],
 				{
 					phase: "draw",
 					discard: ["S4#0"],

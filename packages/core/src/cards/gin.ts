@@ -2,8 +2,7 @@
  * Gin family: two players draw and discard toward a hand of sets and runs.
  * Melds stay hidden in the hand until someone knocks; then the knocker lays
  * their hand open, the other player lays off on the knocker's melds, and the
- * difference in unmatched cards (deadwood) scores. What differs between games in
- * the family (Gin Rummy, Oklahoma Gin) is `GinRules` data.
+ * difference in unmatched cards (deadwood) scores.
  *
  * Gin plays the ace low only: A-2-3 is a run, Q-K-A is not.
  */
@@ -139,6 +138,22 @@ export function ginMeld(cards: readonly CardId[], rules: GinRules) {
 	return aceLow(buildMeld(cards, rules));
 }
 
+/** The meld with `card` added, ace low only; null when it doesn't fit. */
+function ginExtend(meld: Meld, card: CardId): Meld | null {
+	const extended = aceLow(extendMeld(meld, card));
+	if (extended || meld.kind === "set") {
+		return extended;
+	}
+	// extendMeld tries an ace above the king first, so put it below a run from 2 here.
+	const parsed = parseCard(card);
+	return !parsed.joker &&
+		parsed.rank === "A" &&
+		parsed.suit === meld.suit &&
+		meld.low === 2
+		? { ...meld, cards: [card, ...meld.cards], low: 1 }
+		: null;
+}
+
 /**
  * An order in which all of `cards` lay off onto the meld, or null when they
  * don't all fit. Tapping order does not matter.
@@ -148,12 +163,12 @@ export function fitLayoff(meld: Meld, cards: readonly CardId[]) {
 	const order: CardId[] = [];
 	let current = meld;
 	while (left.length > 0) {
-		const index = left.findIndex((card) => aceLow(extendMeld(current, card)));
+		const index = left.findIndex((card) => ginExtend(current, card));
 		if (index < 0) {
 			return null;
 		}
 		const [card] = left.splice(index, 1);
-		current = extendMeld(current, card) as Meld;
+		current = ginExtend(current, card) as Meld;
 		order.push(card);
 	}
 	return { order, meld: current };
@@ -352,8 +367,15 @@ function endHand(
 	state.scores.push(row);
 	state.result = { ...result, shown };
 	state.takenDiscard = null;
-	if (result.kind === "void") {
+	if (result.kind === "void" || result.winner === null) {
 		pushEvent(state, { type: "roundEnd", winner: null, round: state.round });
+	} else {
+		pushEvent(state, {
+			type: "handEnd",
+			winner: result.winner,
+			kind: result.kind,
+			points: result.points,
+		});
 	}
 	const totals = totalsOf(state.scores, state.hands.length);
 	const reached = totals.flatMap((total, seat) =>

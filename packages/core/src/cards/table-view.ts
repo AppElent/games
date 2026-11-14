@@ -22,6 +22,7 @@ import {
 	arrangeHand,
 	bestDiscard,
 	fitLayoff,
+	type GinHandResult,
 	type GinRules,
 	type GinView,
 } from "./gin";
@@ -204,6 +205,29 @@ export function cardTilt(id: CardId) {
 	return (hash % 15) - 7;
 }
 
+/** How a gin hand ended, for the ticker and the hand result. */
+export function ginResultText(
+	outcome: Pick<GinHandResult, "winner" | "kind" | "points">,
+	{ cards, fmt, countOf }: CardWords,
+	table: TableSeats,
+): string {
+	const g = cards.gin;
+	if (outcome.kind === "void" || outcome.winner === null) {
+		return g.resultVoid;
+	}
+	const forms =
+		outcome.winner === table.you
+			? {
+					gin: g.resultYouGin,
+					knock: g.resultYouKnock,
+					undercut: g.resultYouUndercut,
+				}
+			: { gin: g.resultGin, knock: g.resultKnock, undercut: g.resultUndercut };
+	return fmt(countOf(outcome.points, forms[outcome.kind]), {
+		name: seatName(cards, table, outcome.winner),
+	});
+}
+
 /** One sentence for the ticker; screen readers hear it through a live region. */
 export function describeEvent(
 	event: CardEvent,
@@ -314,6 +338,8 @@ export function describeEvent(
 			return mine(event.seat)
 				? e.youKnock
 				: fmt(e.knock, { name: name(event.seat) });
+		case "handEnd":
+			return ginResultText(event, words, table);
 		case "roundEnd":
 			return event.winner === null
 				? e.roundEndNobody
@@ -698,9 +724,10 @@ export function ginTurn({
 			).points
 		: null;
 	const canKnock = knockDeadwood !== null && knockDeadwood <= rules.knockLimit;
-	// With eleven cards the count that matters is what the best discard leaves.
+	// With eleven cards the count that matters is what the best discard leaves;
+	// while laying off, it's what the hand would leave to score now.
 	const deadwood =
-		you === null || !live || view.phase === "layoff"
+		you === null || !live
 			? null
 			: playing
 				? (bestDiscard(view.hand, rules, view.takenDiscard)?.points ?? 0)
