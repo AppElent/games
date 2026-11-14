@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Beat the Clock, turn score</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 18px; background: #080a12; color: #f8fafc; font-family: Manrope, ui-sans-serif, system-ui, sans-serif;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <a href="Clock-Pause.dc.html" aria-label="Pause" style="width: 44px; height: 44px; flex-shrink: 0; box-sizing: border-box; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.34); background: #121626; color: #f8fafc; display: flex; align-items: center; justify-content: center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg>
+    </a>
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+      <span style="font-size: 11.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #fbbf24;">Beat the Clock</span>
+      <span style="font-size: 13px; font-weight: 600; color: #aab6cc;">{{ meta }}</span>
+    </div>
+    <span style="font-size: 13px; font-weight: 700; color: #aab6cc;">Room K7QX</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px 0 8px; text-align: center;">
+    <span style="font-family: 'Space Grotesk', sans-serif; font-size: 88px; line-height: 1; font-weight: 700; color: #fbbf24;">+{{ gained }}</span>
+    <span style="font-size: 20px; font-weight: 800;">for {{ team }}</span>
+    <span style="font-size: 15px; color: #aab6cc;">{{ detail }}</span>
+  </div>
+
+  <ol aria-label="Scores" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="2">
+      <li style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 18px; background: #121626; border: 1px solid {{ r.border }};">
+        <div style="display: flex; align-items: baseline; justify-content: space-between;">
+          <span style="font-size: 17px; font-weight: 800;">{{ r.name }}</span>
+          <span style="font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700;">{{ r.score }} <span style="font-size: 14px; font-weight: 600; color: #aab6cc;">/ 30</span></span>
+        </div>
+        <div role="progressbar" aria-label="{{ r.name }} progress to 30" aria-valuemin="0" aria-valuemax="30" aria-valuenow="{{ r.score }}" style="height: 6px; border-radius: 999px; background: #191f34; overflow: hidden;">
+          <div style="width: {{ r.pct }}; height: 6px; border-radius: 999px; background: #fbbf24;"></div>
+        </div>
+      </li>
+    </sc-for>
+  </ol>
+
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+    <sc-if value="{{ you }}" hint-placeholder-val="{{ false }}">
+      <div style="padding: 14px 16px; border-radius: 14px; background: rgba(251, 191, 36, 0.16); font-size: 16px; line-height: 22px;"><b>You're next.</b> Describe for Rockets. Take your phone, then tap Next.</div>
+      <a href="Clock-Describer.dc.html" style="min-height: 52px; border-radius: 999px; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center;">Next</a>
+    </sc-if>
+    <sc-if value="{{ other }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: #191f34;">
+        <span style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; background: #121626; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700;">D</span>
+        <span style="font-size: 15px; line-height: 21px;"><b>Next: Daan</b> describes for Rockets.<br><span style="color: #aab6cc;">Daan's screen shows Go when it's time.</span></span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ end }}" hint-placeholder-val="{{ false }}">
+      <a href="Clock-Winner.dc.html" style="min-height: 52px; border-radius: 999px; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center;">See who won</a>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["nextTurn","youreNext","targetHit"],"default":"nextTurn"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'nextTurn';
+    const end = s === 'targetHit';
+    const scores = end ? [['Rockets', 31], ['Comets', 28]] : [['Rockets', 21], ['Comets', 20]];
+    const rows = scores.map(([name, score], i) => ({
+      name, score,
+      pct: Math.min(100, Math.round((score / 30) * 100)) + '%',
+      border: i === 0 ? 'rgba(251, 191, 36, 0.5)' : 'rgba(148, 163, 184, 0.18)',
+    }));
+    return {
+      rows, end,
+      you: s === 'youreNext',
+      other: s === 'nextTurn',
+      gained: end ? 4 : 2,
+      team: end ? 'Rockets' : 'Comets',
+      detail: end ? 'Round 4 is complete, and Rockets passed 30.' : '3 guessed, 1 flagged by Rockets',
+      meta: end ? 'Round 4 complete · first to 30' : 'Turn 7 · first to 30',
+    };
+  }
+}
+</script>
+</body>
+</html>

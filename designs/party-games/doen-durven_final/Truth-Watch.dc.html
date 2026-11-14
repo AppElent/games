@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Doen, Durven of de Waarheid, meekijken</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+@keyframes pulse{50%{opacity:.45}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 20px; background: #080a12; color: #f8fafc; font-family: Manrope, ui-sans-serif, system-ui, sans-serif;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <button type="button" aria-label="{{ menuLabel }}" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.34); background: #121626; color: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+      <span style="font-size: 11.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #a78bfa;">Doen, durven of de waarheid</span>
+      <span style="font-size: 13px; font-weight: 600; color: #aab6cc;">Ronde 3 · 6 spelers</span>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <span style="width: 48px; height: 48px; border-radius: 999px; background: #191f34; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;">L</span>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <span style="font-size: 20px; font-weight: 800;">Lotte</span>
+      <span style="display: flex; align-items: center; gap: 8px; font-size: 15px; color: #aab6cc;"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 999px; background: #a78bfa; animation: pulse 1.4s ease-in-out infinite;"></span>is bezig met Doen</span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #a78bfa;">Doen</span>
+      <span style="padding: 3px 9px; border-radius: 999px; background: rgba(167, 139, 250, 0.16); color: #a78bfa; font-size: 12px; font-weight: 800;">Familie</span>
+    </div>
+    <p style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; line-height: 1.18;">Laat <span style="color: #a78bfa;">Noor</span> je kapsel opnieuw stylen, zonder kam of borstel.</p>
+    <span style="font-size: 15px; line-height: 22px; color: #aab6cc;">Jij, Noor, doet mee in deze opdracht.</span>
+  </div>
+
+  <sc-if value="{{ host }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 18px; background: #121626; border: 1px solid rgba(148, 163, 184, 0.18);">
+      <span style="font-size: 13px; line-height: 18px; color: #aab6cc;">Lotte's telefoon is weg of reageert niet? Rond het af voor Lotte.</span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <a href="Truth-Pick.dc.html" style="min-height: 44px; border-radius: 999px; background: rgba(34, 211, 238, 0.14); color: #f8fafc; font-size: 15px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center;">Gedaan</a>
+        <a href="Truth-Pick.dc.html" style="min-height: 44px; border-radius: 999px; background: rgba(34, 211, 238, 0.14); color: #f8fafc; font-size: 15px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center;">Overslaan</a>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: rgba(167, 139, 250, 0.16);">
+    <span style="font-size: 15px; line-height: 21px;"><b>Hierna ben jij aan de beurt.</b> Je telefoon laat het zien.</span>
+  </div>
+  <a href="Truth-Pick.dc.html" style="min-height: 44px; display: flex; align-items: center; justify-content: center; color: #aab6cc; font-size: 14px; font-weight: 700; text-decoration: none;">Prototype: Lotte tikt Gedaan</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["player","host"],"default":"player"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'player';
+    return { host: s === 'host', menuLabel: s === 'host' ? 'Hostmenu' : 'Menu' };
+  }
+}
+</script>
+</body>
+</html>

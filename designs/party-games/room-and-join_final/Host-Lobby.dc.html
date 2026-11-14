@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lobby, host</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 16px; background: #080a12; color: #f8fafc; font-family: Manrope, ui-sans-serif, system-ui, sans-serif;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <button type="button" aria-label="{{ t.menu }}" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.34); background: #121626; color: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+      <span style="font-size: 11.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: {{ hue }};">{{ t.game }}</span>
+      <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 26px; line-height: 1.15; font-weight: 700;">Lobby</h1>
+    </div>
+    <span style="font-size: 13px; font-weight: 700; color: #aab6cc;">{{ t.meta }}</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 18px; background: #121626; border: 1px solid rgba(148, 163, 184, 0.18);">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: #aab6cc;">{{ t.code }}</span>
+        <span style="font-size: 36px; font-weight: 800; letter-spacing: 8px; font-variant-numeric: tabular-nums;">K7QX</span>
+      </div>
+      <sc-if value="{{ qr }}" hint-placeholder-val="{{ false }}">
+        <div role="img" aria-label="{{ t.qrAlt }}" style="width: 96px; height: 96px; border-radius: 10px; background: #f8fafc; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; padding: 8px; box-sizing: border-box;">
+          <sc-for list="{{ qrCells }}" as="c" hint-placeholder-count="49"><span style="border-radius: 1px; background: {{ c }};"></span></sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+      <button type="button" style="min-height: 44px; border-radius: 999px; border: 0; background: rgba(34, 211, 238, 0.14); color: #f8fafc; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>{{ t.share }}
+      </button>
+      <button type="button" aria-pressed="{{ qrAttr }}" onClick="{{ toggleQr }}" style="min-height: 44px; border-radius: 999px; border: 0; background: rgba(34, 211, 238, 0.14); color: #f8fafc; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4"/></svg>{{ qrLabel }}
+      </button>
+    </div>
+  </div>
+
+  <sc-if value="{{ alone }}" hint-placeholder-val="{{ false }}">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 0 12px;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#aab6cc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/></svg>
+      <span style="font-size: 18px; font-weight: 700;">{{ t.emptyTitle }}</span>
+      <span style="font-size: 15px; line-height: 21px; color: #aab6cc;">{{ t.emptyBody }}</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ teamsView }}" hint-placeholder-val="{{ true }}">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+      <sc-for list="{{ teams }}" as="tm" hint-placeholder-count="2">
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 18px; background: #121626; border: 1px solid rgba(148, 163, 184, 0.18);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="padding: 4px 10px; border-radius: 999px; background: rgba(251, 191, 36, 0.16); color: #fbbf24; font-size: 14px; font-weight: 800;">{{ tm.name }}</span>
+            <span style="font-size: 13px; color: #aab6cc;">{{ tm.count }}</span>
+          </div>
+          <sc-for list="{{ tm.players }}" as="p" hint-placeholder-count="2">
+            <span style="min-height: 36px; display: flex; align-items: center; font-size: 16px; font-weight: 600;">{{ p }}</span>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: #191f34; font-size: 15px;">
+      <span style="flex-grow: 1; color: #aab6cc;">No team yet: <span style="color: #f8fafc; font-weight: 700;">Lotte</span></span>
+      <button type="button" style="min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: #22d3ee; font-size: 15px; font-weight: 700;">Shuffle teams</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ listView }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 14px; border-radius: 18px; background: #121626; border: 1px solid rgba(148, 163, 184, 0.18);">
+      <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: #aab6cc; padding: 6px 0;">5 spelers · Familie, Feest</span>
+      <sc-for list="{{ players }}" as="p" hint-placeholder-count="5">
+        <span style="min-height: 40px; display: flex; align-items: center; font-size: 16px; font-weight: 600;">{{ p }}</span>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+    <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="display: flex; gap: 10px; padding: 12px 16px; border-radius: 12px; background: rgba(251, 113, 133, 0.14); font-size: 15px; line-height: 21px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span>{{ t.error }}</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ blocked }}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 14px; color: #aab6cc; text-align: center;">{{ t.need }}</span>
+      <button type="button" disabled="disabled" style="min-height: 52px; border-radius: 999px; border: 0; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; opacity: 0.45;">{{ t.start }}</button>
+    </sc-if>
+    <sc-if value="{{ isStarting }}" hint-placeholder-val="{{ false }}">
+      <button type="button" disabled="disabled" style="min-height: 52px; border-radius: 999px; border: 0; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; opacity: 0.45; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <span aria-hidden="true" style="width: 16px; height: 16px; border-radius: 999px; border: 2.5px solid #04121a; border-right-color: transparent; animation: spin 0.8s linear infinite;"></span>{{ t.starting }}
+      </button>
+    </sc-if>
+    <sc-if value="{{ canStart }}" hint-placeholder-val="{{ true }}">
+      <a href="{{ startHref }}" style="min-height: 52px; border-radius: 999px; background: #22d3ee; color: #04121a; font-size: 16px; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center;">{{ t.start }}</a>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"game":{"editor":"enum","options":["clock","truth"],"default":"clock"},"state":{"editor":"enum","options":["ready","alone","starting","error"],"default":"ready"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { qr: false };
+  }
+  renderVals() {
+    const s = this.props.state ?? 'ready';
+    const clock = (this.props.game ?? 'clock') === 'clock';
+    const alone = s === 'alone';
+    const t = clock ? {
+      game: 'Beat the Clock', meta: '30 s · first to 30', menu: 'Room menu', code: 'Room code', share: 'Share invite',
+      qrAlt: 'QR code to join room K7QX', emptyTitle: 'Nobody has joined yet', emptyBody: 'Share the code or show the QR code. Players join on their own phone.',
+      error: "The game couldn't start. Try again.", need: 'Each team needs at least 2 players.', start: 'Start game', starting: 'Starting…',
+    } : {
+      game: 'Doen, durven of de waarheid', meta: 'Op volgorde', menu: 'Kamermenu', code: 'Kamercode', share: 'Uitnodigen',
+      qrAlt: 'QR-code om kamer K7QX te openen', emptyTitle: 'Nog niemand binnen', emptyBody: 'Deel de code of laat de QR-code zien. Iedereen speelt op zijn eigen telefoon.',
+      error: 'Het spel kon niet starten. Probeer het opnieuw.', need: 'Je hebt minstens 2 spelers nodig.', start: 'Spel starten', starting: 'Starten…',
+    };
+    const qr = this.state.qr;
+    const pattern = '1110111100100110101111011101010110100111011101101';
+    return {
+      t, hue: clock ? '#fbbf24' : '#a78bfa',
+      qr, qrAttr: qr ? 'true' : 'false',
+      qrLabel: qr ? (clock ? 'Hide QR' : 'Verberg QR') : (clock ? 'Show QR' : 'Toon QR'),
+      toggleQr: () => this.setState({ qr: !qr }),
+      qrCells: pattern.split('').map((b) => (b === '1' ? '#080a12' : '#f8fafc')),
+      alone,
+      teamsView: clock && !alone,
+      listView: !clock && !alone,
+      teams: [
+        { name: 'Comets', count: '2 players', players: ['Sam (you)', 'Noor'] },
+        { name: 'Rockets', count: '3 players', players: ['Daan', 'Mila', 'Jesse'] },
+      ],
+      players: ['Lotte (jij)', 'Noor', 'Daan', 'Mila', 'Jesse'],
+      isError: s === 'error',
+      blocked: alone,
+      isStarting: s === 'starting',
+      canStart: !alone && s !== 'starting',
+      startHref: clock ? 'Clock-Describer.dc.html' : 'Truth-Pick.dc.html',
+    };
+  }
+}
+</script>
+</body>
+</html>
