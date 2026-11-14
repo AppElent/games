@@ -14,12 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - run: pnpm run check
+      # Same command as local: lint, typecheck, then tests.
+      - run: pnpm verify
       # Manifest and .env.example only; needs no Infisical access.
       - run: pnpm run env:check
       - run: node scripts/check-project.mjs --strict
-      - run: pnpm run typecheck
-      - run: pnpm test
       # Build catches bundling/plugin/SSR-compile breakage that typecheck + tests
       # miss; preview.yml builds only for labelled PRs.
       - run: pnpm build
