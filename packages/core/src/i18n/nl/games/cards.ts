@@ -202,6 +202,68 @@ export const cards = {
 		matchTie: "Gelijkspel!",
 		lowestWins: "De laagste score wint.",
 	},
+	gin: {
+		drawHint: "Pak van de trekstapel of neem de bovenste aflegkaart.",
+		drawStock: "Pak van de trekstapel",
+		takeDiscard: "Pak de {card} van de aflegstapel",
+		pickDiscard: "Tik op de kaart die je wilt afleggen.",
+		canKnockHint: "Je kunt kloppen: tik op de kaart die je aflegt.",
+		oneCard: "Kies één kaart om af te leggen.",
+		discardHint: "Leg hem af om je beurt te beëindigen.",
+		knockHint: "Leg hem af, of klop met {deadwood} losse punten.",
+		ginHint: "Leg hem af en ga gin!",
+		discardCard: "Afleggen",
+		knock: "Kloppen ({deadwood})",
+		goGin: "Gin!",
+		deadwood: "Losse punten: {points}",
+		layoffHint:
+			"{name} klopte. Kies kaarten die bij de combinaties passen en tik dan op de combinatie.",
+		layoffTapMeld: "Tik op een gemarkeerde combinatie om aan te leggen.",
+		layoffNoFit: "Die kaarten passen bij geen enkele combinatie.",
+		layoffWait: "Wachten tot {name} heeft aangelegd.",
+		finishLayoff: "Klaar met aanleggen",
+		layOffOn: "Aanleggen bij deze {kind}",
+		knockerMelds: "Combinaties van {name}",
+		knockerDeadwood: "Losse kaarten van {name}",
+		sortByMelds: "Groepeer combinaties",
+		handLabel: "Ronde {round} · tot {target}",
+		handOver: "Ronde {round}",
+		resultGin: {
+			one: "{name} gaat gin en scoort {count} punt",
+			other: "{name} gaat gin en scoort {count} punten",
+		},
+		resultYouGin: {
+			one: "Jij gaat gin en scoort {count} punt",
+			other: "Jij gaat gin en scoort {count} punten",
+		},
+		resultKnock: {
+			one: "{name} klopt en scoort {count} punt",
+			other: "{name} klopt en scoort {count} punten",
+		},
+		resultYouKnock: {
+			one: "Jij klopt en scoort {count} punt",
+			other: "Jij klopt en scoort {count} punten",
+		},
+		resultUndercut: {
+			one: "{name} onderbiedt en scoort {count} punt",
+			other: "{name} onderbiedt en scoort {count} punten",
+		},
+		resultYouUndercut: {
+			one: "Jij onderbiedt en scoort {count} punt",
+			other: "Jij onderbiedt en scoort {count} punten",
+		},
+		resultVoid: "De trekstapel is bijna op: niemand scoort deze ronde.",
+		deadwoodPoints: {
+			one: "{count} los punt",
+			other: "{count} losse punten",
+		},
+		noMelds: "Geen combinaties",
+		nextHand: "Deel ronde {round}",
+		waitingNextHand: "Wachten tot iemand de volgende ronde deelt.",
+		firstTo: "Wie het eerst {target} punten heeft, wint.",
+		noScores: "De stand verschijnt na de eerste ronde.",
+		scoreTotal: "Totaal",
+	},
 	suits: { S: "schoppen", H: "harten", D: "ruiten", C: "klaveren" },
 	ranks: {
 		A: "aas",
@@ -290,6 +352,10 @@ export const cards = {
 		youSwap: "Jij ruilt een joker.",
 		discard: "{name} legt de {card} af.",
 		youDiscard: "Jij legt de {card} af.",
+		knock: "{name} klopt!",
+		youKnock: "Jij klopt!",
+		gin: "{name} gaat gin!",
+		youGin: "Jij gaat gin!",
 		roundEnd: "{name} is uit. De ronde is voorbij!",
 		youRoundEnd: "Jij bent uit. De ronde is voorbij!",
 		roundEndNobody: "De ronde wordt afgebroken.",
@@ -389,6 +455,24 @@ export const cards = {
 				other: "{card}: {count} punten",
 			},
 			moon: "Pak je in één ronde alle strafkaarten, dan kosten ze jou niets: alle anderen krijgen ze.",
+		},
+		gin: {
+			goal: "Maak groepen en rijen in je hand en klop dan: je scoort het verschil met de losse kaarten van je tegenstander. Wie het eerst {target} punten heeft, wint.",
+			turnDraw: "Pak van de trekstapel of neem de bovenste aflegkaart.",
+			turnDiscard:
+				"Sluit af door één kaart af te leggen, maar niet de kaart die je net van de stapel pakte.",
+			knock:
+				"Klop als je losse kaarten na het afleggen samen {limit} of minder tellen: je hand gaat open op tafel.",
+			gin: "Gin: helemaal geen losse kaarten. Je scoort de losse punten van je tegenstander plus {bonus}, en die mag niet aanleggen.",
+			layoff:
+				"Na een klop legt de ander losse kaarten aan bij de groepen en rijen van wie klopte.",
+			score: "Wie klopt, scoort het verschil in losse punten.",
+			undercut:
+				"Onderbieden: heeft de ander evenveel of minder losse punten, dan scoort die het verschil plus {bonus}.",
+			void: "Liggen er nog maar {count} kaarten op de trekstapel en heeft niemand geklopt, dan telt de ronde niet.",
+			set: "Groep: 3 of 4 kaarten van dezelfde waarde.",
+			run: "Rij: 3 of meer kaarten van één kleur op volgorde. De aas is altijd laag: A-2-3, nooit V-H-A.",
+			points: "Losse kaarten tellen: aas 1, 2-10 hun waarde, B V H {face}.",
 		},
 	},
 	games: {
@@ -519,6 +603,19 @@ export const cards = {
 				},
 				to50: {
 					label: "Kort spel",
+					hint: "Speel tot 50 punten in plaats van 100.",
+				},
+			},
+		},
+		"gin-rummy": {
+			name: "Gin Rummy",
+			tagline: "Kloppen, gin of onderbieden",
+			blurb:
+				"De klassieker voor twee. Bouw stiekem groepen en rijen, klop als je weinig losse punten hebt, of ga gin.",
+			powers: {},
+			options: {
+				shortMatch: {
+					label: "Korte partij",
 					hint: "Speel tot 50 punten in plaats van 100.",
 				},
 			},

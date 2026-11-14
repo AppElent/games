@@ -38,6 +38,10 @@ export const serverErrors = {
 	cardsAlreadyPassed: "Je hebt je kaarten al doorgegeven.",
 	cardsPassCount: "Kies precies {count} kaarten om door te geven.",
 	cardsPassFirst: "Geef eerst je kaarten door.",
+	cardsKnockTooHigh:
+		"Kloppen mag met {limit} of minder; dit laat {deadwood} over.",
+	cardsAfterKnock: "Er is geklopt: alleen aanleggen kan nog.",
+	cardsNoKnock: "Er is nog niet geklopt.",
 	signInRequired: "Inloggen vereist.",
 	accountChanged:
 		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",
