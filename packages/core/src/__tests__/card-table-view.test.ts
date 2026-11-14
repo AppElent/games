@@ -28,6 +28,7 @@ import {
 	startFreshCards,
 	tricksHint,
 	tricksRuleLines,
+	tricksSeatNote,
 } from "../cards/table-view";
 import type { TricksRules, TricksView } from "../cards/tricks";
 import { en } from "../i18n/en";
@@ -702,6 +703,20 @@ describe("tricksHint", () => {
 			legal: ["S2#0", "H4#0"],
 		});
 		expect(tricksHint(broken, 1, words, rules)).toBe(cards.tricks.lead);
+	});
+});
+
+describe("tricksSeatNote", () => {
+	it("says who has passed, then signs this round's points", () => {
+		const passing = tricksView({
+			phase: "passing",
+			passReady: [false, true, false],
+		});
+		expect(tricksSeatNote(passing, 1, words)).toBe(cards.tricks.passedNote);
+		expect(tricksSeatNote(passing, 0, words)).toBe("0 pts · +0");
+		const scored = tricksView({ totals: [12, 3, 0], roundPoints: [5, -10, 0] });
+		expect(tricksSeatNote(scored, 0, words)).toBe("12 pts · +5");
+		expect(tricksSeatNote(scored, 1, words)).toBe("3 pts · −10");
 	});
 });
 

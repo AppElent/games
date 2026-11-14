@@ -580,8 +580,13 @@ export function chooseTricksCard(
 ) {
 	const legal = legalTricksCards(rules, state, seat);
 	const byRisk = (a: CardId, b: CardId) => risk(rules, a) - risk(rules, b);
+	// A card worth taking (the jack of diamonds) stays home rather than be given away.
+	const spare = (cards: CardId[]) => {
+		const giveable = cards.filter((card) => cardValue(rules, card) >= 0);
+		return giveable.length > 0 ? giveable : cards;
+	};
 	if (state.trick.length === 0) {
-		return [...legal].sort(byRisk)[0];
+		return spare(legal).sort(byRisk)[0];
 	}
 	const led = suitOf(state.trick[0].card);
 	const following = legal.filter((card) => suitOf(card) === led);
@@ -599,7 +604,7 @@ export function chooseTricksCard(
 			rankIndex(rules, card) < rankIndex(rules, winning.card),
 	);
 	if (ducks.length > 0) {
-		return highest(ducks) as CardId;
+		return highest(spare(ducks)) as CardId;
 	}
 	// This seat takes the trick anyway. Last to play, it may as well go high,
 	// but not with a card that scores against it.

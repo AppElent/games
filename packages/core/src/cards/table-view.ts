@@ -442,6 +442,22 @@ export function tricksHint(
 	return t.lead;
 }
 
+/** The line under a seat: passed while cards are being chosen, else its points. */
+export function tricksSeatNote(
+	view: Pick<TricksView, "phase" | "passReady" | "totals" | "roundPoints">,
+	seat: number,
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+) {
+	if (view.phase === "passing" && view.passReady[seat]) {
+		return cards.tricks.passedNote;
+	}
+	const round = view.roundPoints[seat];
+	return fmt(cards.tricks.seatScore, {
+		total: view.totals[seat],
+		round: round < 0 ? `−${-round}` : `+${round}`,
+	});
+}
+
 /** A face such as "SQ" as a card name, in this language. */
 function faceName(cards: CardMessages, face: string) {
 	return cardName(cards, `${face}#0`);

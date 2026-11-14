@@ -526,6 +526,22 @@ describe("the computer player", () => {
 		expect(chooseTricksCard(rules, state, 0)).toBe("C4#0");
 	});
 
+	it("keeps the jack of diamonds rather than give it away", () => {
+		const jack = rulesWith(["jackOfDiamonds"]);
+		const lead = playing([["DJ#0", "D9#0", "C4#0"], ["C5#0"], ["C6#0"]], {
+			tricksTaken: [1, 0, 0],
+		});
+		expect(chooseTricksCard(jack, lead, 0)).toBe("C4#0");
+		const follow = act(
+			playing([["DK#0"], ["DJ#0", "D3#0"], ["D2#0"]], {
+				tricksTaken: [1, 0, 0],
+			}),
+			0,
+			{ type: "play", card: "DK#0" },
+		);
+		expect(chooseTricksCard(jack, follow, 1)).toBe("D3#0");
+	});
+
 	it("waits for people to pass and to deal the next round", () => {
 		const state = createCardGame(game, [], 4, mulberry32(9)) as TricksState;
 		expect(botTricksMove(rules, state, [1, 2])?.action.type).toBe("passCards");

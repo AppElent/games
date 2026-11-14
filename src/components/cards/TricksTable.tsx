@@ -6,6 +6,7 @@ import {
 	seatName,
 	sortCards,
 	tricksHint,
+	tricksSeatNote,
 } from "@arcadeclub/core/cards/table-view";
 import type { TricksView } from "@arcadeclub/core/cards/tricks";
 import { ListOrdered } from "lucide-react";
@@ -225,14 +226,7 @@ export function TricksTable({
 					turn={playing ? view.turn : null}
 					flash={flights.flash}
 					controls={controls}
-					note={(seat) =>
-						view.phase === "passing" && view.passReady[seat]
-							? "✓"
-							: fmt(t.seatScore, {
-									total: view.totals[seat],
-									round: view.roundPoints[seat],
-								})
-					}
+					note={(seat) => tricksSeatNote(view, seat, words)}
 				/>
 			}
 			center={

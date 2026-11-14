@@ -8,6 +8,7 @@ import {
 	seatName,
 	sortCards,
 	tricksHint,
+	tricksSeatNote,
 } from "@arcadeclub/core/cards/table-view";
 import type { TricksView } from "@arcadeclub/core/cards/tricks";
 import { useEffect, useMemo, useState } from "react";
@@ -277,14 +278,7 @@ export function TricksTable({
 					flash={flights.flash}
 					zones={flights.zones}
 					controls={controls}
-					note={(seat) =>
-						view.phase === "passing" && view.passReady[seat]
-							? "✓"
-							: fmt(tt.seatScore, {
-									total: view.totals[seat],
-									round: view.roundPoints[seat],
-								})
-					}
+					note={(seat) => tricksSeatNote(view, seat, words)}
 				/>
 			}
 			center={

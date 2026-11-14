@@ -180,7 +180,8 @@ export const cards = {
 		tookTrick: "{name} took the trick",
 		youTookTrick: "You took the trick",
 		trickLabel: "Cards in this trick",
-		seatScore: "{total} pts · +{round}",
+		passedNote: "Passed",
+		seatScore: "{total} pts · {round}",
 		roundLabel: "Round {round} · to {target}",
 		roundOver: "Round {round} is over",
 		moon: "{name} shot the moon! Everyone else takes the points.",
@@ -381,7 +382,7 @@ export const cards = {
 				one: "The {card}: {count} point",
 				other: "The {card}: {count} points",
 			},
-			moon: "Take every point card in one round and they cost you nothing: everyone else takes them instead.",
+			moon: "Take every penalty card in one round and they cost you nothing: everyone else takes them instead.",
 		},
 	},
 	games: {
