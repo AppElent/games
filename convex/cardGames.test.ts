@@ -538,6 +538,7 @@ describe("hartenjagen", () => {
 		passed: string[] | null;
 		received: string[];
 		passReady: boolean[];
+		turn: number;
 	};
 
 	it("passes, plays and finishes a solo table against three computers", async () => {
@@ -578,10 +579,13 @@ describe("hartenjagen", () => {
 			action: { type: "passCards", cards: start.hand.slice(0, 3) },
 		});
 		await t.finishAllScheduledFunctions(vi.runAllTimers);
-		const passed = (await read(t, me)).view as unknown as HeartsView;
+		const table = await read(t, me);
+		const passed = table.view as unknown as HeartsView;
 		expect(passed.phase).toBe("playing");
 		expect(passed.received).toHaveLength(3);
-		expect(passed.hand.length).toBeGreaterThanOrEqual(12);
+		// The computers play until it's this seat's turn, so its hand is still whole.
+		expect(passed.turn).toBe(table.you);
+		expect(passed.hand).toHaveLength(13);
 
 		await t.mutation(api.cardGames.setAutopilot, { ...me, seat: 0, on: true });
 		await (

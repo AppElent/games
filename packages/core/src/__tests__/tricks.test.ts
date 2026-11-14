@@ -441,6 +441,20 @@ describe("scoring", () => {
 });
 
 describe("views keep hands and passes private", () => {
+	it("doesn't say who holds the 2 of clubs before the pass", () => {
+		for (let seed = 1; seed <= 20; seed += 1) {
+			const state = createCardGame(
+				game,
+				[],
+				4,
+				mulberry32(seed),
+			) as TricksState;
+			expect(state.phase).toBe("passing");
+			const view = viewCardGame(game, [], state, 0) as TricksView;
+			expect(view.turn).toBe((state.dealer + 1) % 4);
+		}
+	});
+
 	it("shows only your own hand, chosen cards and received cards", () => {
 		let state = createCardGame(game, [], 4, mulberry32(8)) as TricksState;
 		const secret = state.hands[1].slice(0, 3);

@@ -79,6 +79,13 @@ that keeps Hartenjagen unchanged, not a new family.
   and refusal codes (Boerenbridge bids, Toepen knocks).
 - **Scoring**: a new entry in `SCORERS` (tricks against bid, last trick only, team
   points plus roem).
+- **Trick history**: `taken` keeps each seat's cards, not each trick. Roem is scored
+  per trick, so Klaverjassen keeps the tricks themselves for its scorer.
+- **Must trump**: a void seat may play anything today. Klaverjassen's must-trump and
+  must-overtrump read `teams` too, since a partner already winning lifts them.
+- **Match end**: `scoreDeal` ends at `target` with the lowest total winning. A
+  match-end rule covers a fixed number of deals with the highest total winning
+  (Boerenbridge, Klaverjassen) and Toepen's elimination.
 
 ## Acceptance
 

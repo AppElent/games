@@ -305,7 +305,10 @@ function dealTricks(
 		events: carried?.events ?? [],
 		nextSeq: carried?.nextSeq ?? 0,
 	};
-	state.turn = opener(rules, state);
+	// While cards are being passed nobody has the turn, and naming the 2 of
+	// clubs' holder early would say who was dealt it: the exchange picks the opener.
+	state.turn =
+		state.phase === "playing" ? opener(rules, state) : (dealer + 1) % seats;
 	pushEvent(state, { type: "deal", round });
 	return state;
 }

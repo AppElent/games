@@ -9,7 +9,7 @@ import {
 } from "@arcadeclub/core/cards/table-view";
 import type { TricksView } from "@arcadeclub/core/cards/tricks";
 import { ListOrdered } from "lucide-react";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
 import { EndOverlay } from "./EndOverlay";
@@ -424,9 +424,7 @@ export function TricksTable({
 										className="flex justify-between gap-3 rounded-md px-2 py-1.5"
 										style={
 											total === best
-												? ({
-														background: "rgba(230,192,106,.16)",
-													} as CSSProperties)
+												? { background: "var(--gold-soft)" }
 												: undefined
 										}
 									>
