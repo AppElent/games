@@ -67,7 +67,9 @@ export function Workbench() {
 	return (
 		<div className="space-y-6">
 			<div className="club-panel rounded-lg p-5">
-				<h2 className="mb-3 club-panel-heading">New draft</h2>
+				<h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--club-muted)]">
+					New draft
+				</h2>
 				<div className="mb-3 flex flex-wrap gap-2">
 					{CONTENT_DRAFT_KINDS.map((option) => (
 						<button
@@ -75,8 +77,8 @@ export function Workbench() {
 							type="button"
 							className={`rounded-md border px-3 py-1.5 text-sm font-bold ${
 								kind === option
-									? "border-cyan-300 bg-cyan-300/20 text-cyan-100"
-									: "border-[var(--club-line-strong)] bg-white/5 text-slate-300"
+									? "border-[var(--club-cyan)] bg-[var(--club-cyan)]/15 text-[var(--club-text)]"
+									: "club-btn-outline text-[var(--club-muted)]"
 							}`}
 							onClick={() => setKind(option)}
 						>
@@ -88,16 +90,18 @@ export function Workbench() {
 					value={title}
 					onChange={(event) => setTitle(event.target.value)}
 					placeholder="Draft title"
-					className="mb-3 w-full club-input-dark"
+					className="mb-3 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-[var(--club-cyan)]"
 				/>
 				<textarea
 					value={payload}
 					onChange={(event) => setPayload(event.target.value)}
 					rows={8}
 					placeholder={KIND_PLACEHOLDERS[kind]}
-					className="mb-3 w-full rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
+					className="mb-3 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-[var(--club-cyan)] font-mono text-xs"
 				/>
-				{error ? <p className="mb-3 club-error">{error}</p> : null}
+				{error ? (
+					<p className="mb-3 text-sm text-[var(--club-orange)]">{error}</p>
+				) : null}
 				<button
 					type="button"
 					disabled={busyId === "new"}
@@ -117,22 +121,24 @@ export function Workbench() {
 
 			<div className="space-y-4">
 				{drafts?.length === 0 ? (
-					<p className="text-sm text-slate-400">No drafts yet.</p>
+					<p className="text-sm text-[var(--club-muted)]">No drafts yet.</p>
 				) : null}
 				{drafts?.map((draft) => (
 					<div key={draft._id} className="club-panel rounded-lg p-5">
 						<div className="mb-2 flex flex-wrap items-center justify-between gap-2">
 							<div>
-								<p className="font-bold text-white">{draft.title}</p>
-								<p className="text-sm text-slate-400">
+								<p className="font-bold text-[var(--club-text)]">
+									{draft.title}
+								</p>
+								<p className="text-sm text-[var(--club-muted)]">
 									{KIND_LABELS[draft.kind as ContentDraftKind]} —{" "}
 									<span
 										className={
 											draft.status === "approved"
-												? "text-emerald-300"
+												? "text-[var(--club-green)]"
 												: draft.status === "rejected"
-													? "text-orange-300"
-													: "text-slate-300"
+													? "text-[var(--club-orange)]"
+													: "text-[var(--club-muted)]"
 										}
 									>
 										{draft.status}
@@ -146,7 +152,7 @@ export function Workbench() {
 										disabled={busyId === draft._id}
 										title="Approve"
 										aria-label="Approve draft"
-										className="rounded-md border border-emerald-300/50 bg-emerald-300/10 p-2 text-emerald-100 hover:bg-emerald-300/20 disabled:opacity-60"
+										className="rounded-md border border-[var(--club-green)] bg-[var(--club-green)]/10 p-2 text-[var(--club-green)] hover:bg-[var(--club-green)]/20 disabled:opacity-60"
 										onClick={() =>
 											run(draft._id, () =>
 												approveDraft({
@@ -164,7 +170,7 @@ export function Workbench() {
 										disabled={busyId === draft._id}
 										title="Reject"
 										aria-label="Reject draft"
-										className="rounded-md border border-orange-300/50 bg-orange-300/10 p-2 text-orange-100 hover:bg-orange-300/20 disabled:opacity-60"
+										className="rounded-md border border-[var(--club-orange)] bg-[var(--club-orange)]/10 p-2 text-[var(--club-orange)] hover:bg-[var(--club-orange)]/20 disabled:opacity-60"
 										onClick={() =>
 											run(draft._id, () =>
 												rejectDraft({
@@ -181,7 +187,7 @@ export function Workbench() {
 									disabled={busyId === draft._id}
 									title="Delete"
 									aria-label="Delete draft"
-									className="rounded-md border border-[var(--club-line-strong)] bg-white/5 p-2 text-slate-300 hover:bg-white/10 disabled:opacity-60"
+									className="rounded-md club-btn-outline p-2 text-[var(--club-muted)] hover:bg-[var(--club-line)] disabled:opacity-60"
 									onClick={() =>
 										run(draft._id, () =>
 											deleteDraft({
@@ -195,17 +201,17 @@ export function Workbench() {
 							</div>
 						</div>
 						{draft.validationErrors.length > 0 ? (
-							<ul className="mb-2 space-y-1 club-error">
+							<ul className="mb-2 space-y-1 text-sm text-[var(--club-orange)]">
 								{draft.validationErrors.map((message) => (
 									<li key={message}>{message}</li>
 								))}
 							</ul>
 						) : (
-							<p className="mb-2 text-sm text-emerald-300">
+							<p className="mb-2 text-sm text-[var(--club-green)]">
 								No validation errors.
 							</p>
 						)}
-						<details className="text-xs text-slate-400">
+						<details className="text-xs text-[var(--club-muted)]">
 							<summary className="cursor-pointer select-none">
 								Edit payload
 							</summary>
@@ -242,11 +248,11 @@ function PayloadEditor({
 				value={value}
 				onChange={(event) => setValue(event.target.value)}
 				rows={8}
-				className="mb-2 w-full rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300"
+				className="mb-2 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-[var(--club-cyan)] font-mono text-xs"
 			/>
 			<button
 				type="button"
-				className="rounded-md bg-white px-3 py-1.5 text-xs font-bold text-slate-950"
+				className="rounded-md bg-[var(--club-text)] px-3 py-1.5 text-xs font-bold text-[var(--club-bg)]"
 				onClick={() => onSave(value)}
 			>
 				Re-validate

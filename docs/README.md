@@ -14,3 +14,4 @@ follow the [documentation standard](standards/documentation.md).
 ## Decisions
 
 - [0001: Build card games from rule families and per-game config](adr/0001-card-games-use-rule-families-and-config.md)
+- [0002: Ship every game on web and mobile](adr/0002-ship-every-game-on-web-and-mobile.md)

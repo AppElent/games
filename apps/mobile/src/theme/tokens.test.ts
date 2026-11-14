@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { darkColors, lightColors, type Tokens } from "./tokens";
+import { cardColors, darkColors, lightColors, type Tokens } from "./tokens";
 
 type Rgb = readonly [number, number, number];
 
@@ -38,11 +38,13 @@ describe.each(schemes)("%s colour pairs meet WCAG AA", (_name, t) => {
 	const bg = parse(t.bg);
 	const surface = parse(t.surface);
 	const surface2 = parse(t.surface2);
+	const surfacePressed = parse(t.surfacePressed);
 
 	it.each([
 		["bg", bg],
 		["surface", surface],
 		["surface2", surface2],
+		["surfacePressed", surfacePressed],
 	])("textFaint on %s reaches 4.5:1", (_label, ground) => {
 		expect(contrast(parse(t.textFaint), ground)).toBeGreaterThanOrEqual(4.5);
 	});
@@ -88,5 +90,168 @@ describe("web tokens match the phone's", () => {
 		expect(value(selector, "club-line")).toBe(t.border);
 		expect(value(selector, "club-line-strong")).toBe(t.borderStrong);
 		expect(value(selector, "club-orange")).toBe(t.orange);
+	});
+});
+
+const repoFile = (path: string) =>
+	readFileSync(join(__dirname, "../../../..", path), "utf8");
+
+/** A border drawn over a control's fill, against the ground around it. */
+function borderContrast(line: string, fill: string, ground: Rgb): number {
+	return contrast(parse(line, parse(fill, ground)), ground);
+}
+
+describe("card table controls reach 3:1 on the felt", () => {
+	const felts = Object.entries(cardColors.felts).map(
+		([name, [brightest]]) => [name, parse(brightest)] as const,
+	);
+	const css = repoFile("src/components/cards/cards.css");
+	const value = (selector: string, property: string) => {
+		const start = css.indexOf(`${selector} {`);
+		if (start < 0) throw new Error(`${selector} block not found in cards.css`);
+		const block = css.slice(start, css.indexOf("}", start));
+		return new RegExp(`\\s${property}:\\s*([^;]+);`).exec(block)?.[1].trim();
+	};
+
+	it.each(felts)("ivoryLine over a chip on %s", (_name, felt) => {
+		expect(
+			borderContrast(cardColors.ivoryLine, cardColors.chip, felt),
+		).toBeGreaterThanOrEqual(3);
+	});
+
+	it("ivoryLine over a chip on the result panel", () => {
+		expect(
+			borderContrast(
+				cardColors.ivoryLine,
+				cardColors.chip,
+				parse(cardColors.panel),
+			),
+		).toBeGreaterThanOrEqual(3);
+	});
+
+	// The web's icon chip has the darkest fill of any control on the felt.
+	it.each(felts)("the web icon chip's border on %s", (_name, felt) => {
+		const fill = value(".icon-chip", "background");
+		if (!fill) throw new Error("no .icon-chip background in cards.css");
+		expect(
+			borderContrast(cardColors.ivoryLine, fill, felt),
+		).toBeGreaterThanOrEqual(3);
+	});
+
+	it("the web table carries the same line and felts", () => {
+		expect(value(".cards-felt", "--ivory-line")).toBe(cardColors.ivoryLine);
+		expect(value(".cards-felt", "--felt-a")).toBe(cardColors.felts.oxblood[0]);
+		expect(value('.cards-felt[data-felt="bottle"]', "--felt-a")).toBe(
+			cardColors.felts.bottle[0],
+		);
+		expect(value('.cards-felt[data-felt="midnight"]', "--felt-a")).toBe(
+			cardColors.felts.midnight[0],
+		);
+	});
+});
+
+describe("web backgammon controls reach 3:1", () => {
+	const line = /const CONTROL_LINE = "([^"]+)";/.exec(
+		repoFile("src/components/backgammon/BackgammonBoard.tsx"),
+	)?.[1];
+	if (!line) throw new Error("CONTROL_LINE not found in BackgammonBoard.tsx");
+
+	// Buttons sit on the fullscreen stage (bg-slate-950); the off switch sits in
+	// the options panel, whose gradient starts at #2c2018.
+	it.each([
+		["a ghost button on the stage", "rgba(255, 255, 255, 0.05)", "#020617"],
+		["the reset button on the stage", "rgba(0, 0, 0, 0)", "#020617"],
+		[
+			"an off switch in the options panel",
+			"rgba(255, 255, 255, 0.12)",
+			"#2c2018",
+		],
+	])("%s", (_label, fill, ground) => {
+		expect(borderContrast(line, fill, parse(ground))).toBeGreaterThanOrEqual(3);
+	});
+});
+
+describe("web header", () => {
+	// Header.tsx: bg-slate-950/72 over the page. A white page is the worst case.
+	const bar = parse("rgba(2, 6, 23, 0.72)", parse("#ffffff"));
+	const css = readFileSync(
+		join(__dirname, "../../../../src/styles.css"),
+		"utf8",
+	);
+
+	it("nav links (and Sign in) reach 4.5:1 on the bar over a light page", () => {
+		const color = /\.club-nav-link \{[^}]*color:\s*(#[0-9a-f]{6});/i.exec(
+			css,
+		)?.[1];
+		if (!color) throw new Error(".club-nav-link color not found");
+		expect(contrast(parse(color), bar)).toBeGreaterThanOrEqual(4.5);
+	});
+
+	it("white/60 button borders reach 3:1 against the button's white/10 fill", () => {
+		const fill = parse("rgba(255, 255, 255, 0.1)", bar);
+		const border = parse("rgba(255, 255, 255, 0.6)", fill);
+		expect(contrast(border, fill)).toBeGreaterThanOrEqual(3);
+	});
+});
+
+describe("web puzzle boards", () => {
+	// Sudoku and binary cells are tap targets, so thin cell lines use the phone's
+	// borderStrong. The boards keep their own themed ground inside the fullscreen
+	// shell, so they read --puzzle-line; the scan board is always dark and reads
+	// the pinned --club-line-strong.
+	const styles = readFileSync(
+		join(__dirname, "../../../../src/styles.css"),
+		"utf8",
+	);
+	const sudoku = (file: string) =>
+		readFileSync(
+			join(__dirname, "../../../../src/components/sudoku", file),
+			"utf8",
+		);
+	const line = (selector: string) =>
+		new RegExp(
+			`${selector.replaceAll(".", "\\.")} \\{\\s*--puzzle-line:\\s*([^;]+);`,
+		).exec(styles)?.[1];
+
+	it.each([
+		[".puzzle-board", lightColors, "#ffffff"],
+		[".dark .puzzle-board", darkColors, "#0f172a"],
+	] as const)(
+		"%s thin lines are the phone's borderStrong, 3:1 on the board",
+		(selector, t, board) => {
+			expect(line(selector)).toBe(t.borderStrong);
+			const ground = parse(board);
+			expect(
+				contrast(parse(t.borderStrong, ground), ground),
+			).toBeGreaterThanOrEqual(3);
+		},
+	);
+
+	// Thin lines are the 1px border strings: `"border-l border-l-<colour>"` on the
+	// Sudoku grids, and every border colour in the binary cell's class template.
+	// The whole string must be the variable, so a `dark:` override fails too.
+	const thinColours = (source: string) => [
+		...[...source.matchAll(/"border-([lt]) border-\1-([^"]+)"/g)].map(
+			(m) => m[2],
+		),
+		...[...source.matchAll(/className=\{`[^`]*\bp-0\b[^`]*`\}/g)].flatMap((m) =>
+			[...m[0].matchAll(/(?:^|\s|:)border-(?![lrtb]\b|\d)([^\s"`$]+)/g)].map(
+				(c) => c[1],
+			),
+		),
+	];
+
+	it.each([
+		["SudokuBoard.tsx", "[var(--puzzle-line)]"],
+		["BinaryGame.tsx", "[var(--puzzle-line)]"],
+		["SudokuScanFlow.tsx", "[var(--club-line-strong)]"],
+	])("every thin line in %s is %s", (file, colour) => {
+		const source = sudoku(file);
+		const found = thinColours(source);
+		expect(found.length).toBeGreaterThan(0);
+		for (const c of found) expect(c).toBe(colour);
+		if (colour.includes("puzzle-line")) {
+			expect(source).toContain("puzzle-board ");
+		}
 	});
 });

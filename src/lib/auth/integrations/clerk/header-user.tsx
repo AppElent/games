@@ -51,9 +51,11 @@ export default function HeaderUser() {
 				</div>
 			</Show>
 			<Show when="signed-out">
+				{/* The header bar is dark in both themes, so this link uses the
+				    header's nav colour, not the theme-following --auth-fg. */}
 				<a
 					href={config.paths.signIn}
-					className="text-sm font-medium text-[var(--auth-fg)] hover:underline"
+					className="club-nav-link text-sm font-bold hover:underline"
 				>
 					Sign in
 				</a>
