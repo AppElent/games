@@ -58,11 +58,16 @@ export function cardCopy(id: CardId) {
 	return Number(id.slice(id.indexOf("#") + 1));
 }
 
-export function buildDeck(decks: number, jokers: number): CardId[] {
+/** `ranks` picks a short deck, such as the 32-card piquet deck (7 to ace). */
+export function buildDeck(
+	decks: number,
+	jokers: number,
+	ranks: readonly Rank[] = RANKS,
+): CardId[] {
 	const cards: CardId[] = [];
 	for (let deck = 0; deck < decks; deck += 1) {
 		for (const suit of SUITS) {
-			for (const rank of RANKS) {
+			for (const rank of ranks) {
 				cards.push(`${suit}${rank}#${deck}`);
 			}
 		}

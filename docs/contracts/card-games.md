@@ -1,6 +1,6 @@
 ---
 type: contract
-description: Read when changing card games (Pesten, Jokeren), the card engine, its stored state, seat claims or card art.
+description: Read when changing card games (Pesten, Mau-Mau, Jokeren), the card engine, its stored state, seat claims or card art.
 version: 1.0.0
 status: current
 ---
@@ -13,8 +13,8 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
 
 ## Behavior
 
-- One catalog entry (`card-games`) leads to a hub at `/cards` listing Pesten and
-  Jokeren.
+- One catalog entry (`card-games`) leads to a hub at `/cards` listing every game in
+  `CARD_GAMES` (Pesten, Mau-Mau, Jokeren).
 - A game is a config file in `packages/core/src/cards/games/` for a rule family
   (`shedding`, `rummy`), so adding one to a family needs no backend or UI code.
 - House rules are options over a game's `rules`, off by default. An option with

@@ -84,7 +84,7 @@ export const catalog = {
 	},
 	"card-games": {
 		title: "Kaartclub",
-		tagline: "Pesten, Jokeren en meer",
+		tagline: "Pesten, Mau-Mau, Jokeren en meer",
 		description:
 			"Klassieke Nederlandse kaartspellen aan één tafel. Speel meteen tegen de computer of nodig vrienden uit met een kamercode.",
 		primaryAction: "Kies een spel",

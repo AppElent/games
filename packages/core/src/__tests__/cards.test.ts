@@ -82,6 +82,12 @@ function expectRule(action: () => unknown, code: string) {
 }
 
 describe("deck", () => {
+	it("builds a short deck from the given ranks", () => {
+		const deck = buildDeck(1, 0, ["7", "8", "9", "10", "J", "Q", "K", "A"]);
+		expect(deck).toHaveLength(32);
+		expect(deck).not.toContain("S2#0");
+	});
+
 	it("builds unique ids across decks and jokers", () => {
 		const deck = buildDeck(2, 4);
 		expect(deck).toHaveLength(108);
@@ -1071,6 +1077,8 @@ describe("full games between computer players", () => {
 
 	it.each([
 		["pesten", ["noFinishOnPower", "noStacking", "noLastCard"]],
+		["maumau", ["noStacking", "noLastCard"]],
+		["maumau", ["plain7", "plain8", "plainJ"]],
 		[
 			"pesten",
 			[
@@ -1090,6 +1098,66 @@ describe("full games between computer players", () => {
 			expect(final.phase).toBe("finished");
 		}
 	});
+});
+
+describe("mau-mau", () => {
+	const game = getCardGame("maumau");
+
+	it("deals five cards each from a 32-card deck without jokers", () => {
+		const state = createCardGame(game, [], 4, seeded(3));
+		const all = [...state.stock, ...state.discard, ...state.hands.flat()];
+		expect(all).toHaveLength(32);
+		expect(state.hands.every((hand) => hand.length === 5)).toBe(true);
+		const ranks = new Set(all.map((card) => parseCard(card).rank));
+		expect([...ranks].sort()).toEqual(
+			["7", "8", "9", "10", "J", "Q", "K", "A"].sort(),
+		);
+		expect(all.some((card) => parseCard(card).joker)).toBe(false);
+	});
+
+	it("7 makes the next player draw two, 2 is a plain card", () => {
+		const rules = resolvedRules(game, []).rules as SheddingRules;
+		expect(rules.powers).toEqual({
+			"7": { kind: "draw", amount: 2 },
+			"8": { kind: "skip" },
+			J: { kind: "chooseSuit" },
+		});
+	});
+
+	it("starts even when the stock left after dealing holds only special cards", () => {
+		const specials = [
+			"S7",
+			"H7",
+			"D7",
+			"C7",
+			"S8",
+			"H8",
+			"D8",
+			"C8",
+			"SJ",
+			"HJ",
+			"DJ",
+			"CJ",
+		];
+		// Seeded shuffles almost never do this, so stack the deck by hand.
+		const rules = {
+			...(game.rules as SheddingRules),
+			handSize: 1,
+			ranks: ["7", "8", "J"] as const,
+		};
+		const state = createShedding(rules, 2, seeded(1));
+		expect(state.discard).toHaveLength(1);
+		expect(specials.map((card) => `${card}#0`)).toContain(state.discard[0]);
+		expect(state.stock).toHaveLength(9);
+	});
+
+	it("bots finish games from two to five players", () => {
+		for (let seats = 2; seats <= 5; seats += 1) {
+			for (let seed = 1; seed <= 25; seed += 1) {
+				expect(playOut(game, [], seats, seed).phase).toBe("finished");
+			}
+		}
+	}, 30_000);
 });
 
 describe("fitting cards onto a meld", () => {

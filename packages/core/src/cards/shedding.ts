@@ -38,6 +38,8 @@ export type SheddingRules = {
 	/** First matching entry from the top wins: `from` is a minimum seat count. */
 	decks: ReadonlyArray<{ from: number; decks: number }>;
 	jokersPerDeck: number;
+	/** The ranks in each deck; all thirteen when left out. */
+	ranks?: readonly Rank[];
 	handSize: number;
 	powers: Partial<Record<PowerKey, CardPower>>;
 	/** A draw card may answer a draw card, passing on the total. */
@@ -217,11 +219,15 @@ export function createShedding(
 	starter = 0,
 ): SheddingState {
 	const decks = rules.decks.find((entry) => seats >= entry.from)?.decks ?? 1;
-	const stock = shuffle(buildDeck(decks, decks * rules.jokersPerDeck), random);
+	const stock = shuffle(
+		buildDeck(decks, decks * rules.jokersPerDeck, rules.ranks),
+		random,
+	);
 	const hands = deal(stock, seats, rules.handSize);
-	// The first card never carries a power: reshuffle it into the stock.
+	// The first card carries no power: move power cards under the stock. A
+	// short stock can hold nothing else, so stop after one pass and keep it.
 	let top = stock.pop() as CardId;
-	while (powerOf(rules, top)) {
+	for (let tries = stock.length; tries > 0 && powerOf(rules, top); tries -= 1) {
 		stock.unshift(top);
 		top = stock.pop() as CardId;
 	}
