@@ -28,6 +28,13 @@ export const serverErrors = {
 	cardsSeatCredential: "This seat belongs to another device.",
 	cardsPlayerStillActive: "That player is still active.",
 	cardsNotSeated: "Take a seat to play.",
+	cardsMustFollow: "Follow suit: you hold a card of the suit that was led.",
+	cardsMustOpenWith: "Lead the two of clubs to open the round.",
+	cardsLeadNotBroken: "That suit can't be led until it's been broken.",
+	cardsNotPassing: "There are no cards to pass right now.",
+	cardsAlreadyPassed: "You've already passed your cards.",
+	cardsPassCount: "Pick exactly {count} cards to pass.",
+	cardsPassFirst: "Pass your cards first.",
 	signInRequired: "Sign in required.",
 	accountChanged:
 		"You switched accounts. Sign in to the account you want to delete and try again.",

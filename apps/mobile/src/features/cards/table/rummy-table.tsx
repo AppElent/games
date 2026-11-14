@@ -620,7 +620,14 @@ export function RummyTable({
 												name: seatName(cards, table, view.roundWinner),
 											})}
 							</FeltText>
-							<ScoreBoard table={table} view={view} onFelt />
+							<ScoreBoard
+								table={table}
+								scores={view.scores}
+								totals={view.totals}
+								empty={cards.rummy.noScores}
+								totalLabel={cards.rummy.scoreTotal}
+								onFelt
+							/>
 							{view.revealed?.map((hand, seat) => (
 								// biome-ignore lint/suspicious/noArrayIndexKey: seats are fixed during a game.
 								<View key={seat} style={styles.revealed}>
@@ -689,7 +696,13 @@ export function RummyTable({
 						onClose={() => setScoresOpen(false)}
 					>
 						<AppText variant="secondary">{roundLabel}</AppText>
-						<ScoreBoard table={table} view={view} />
+						<ScoreBoard
+							table={table}
+							scores={view.scores}
+							totals={view.totals}
+							empty={cards.rummy.noScores}
+							totalLabel={cards.rummy.scoreTotal}
+						/>
 					</Sheet>
 				</>
 			}

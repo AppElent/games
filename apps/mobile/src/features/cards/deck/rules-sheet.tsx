@@ -9,7 +9,10 @@ import {
 	resolvedRules,
 } from "@arcadeclub/core/cards/engine";
 import type { CardPower } from "@arcadeclub/core/cards/shedding";
-import { powerEffect } from "@arcadeclub/core/cards/table-view";
+import {
+	powerEffect,
+	tricksRuleLines,
+} from "@arcadeclub/core/cards/table-view";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
@@ -17,6 +20,7 @@ import { spacing } from "../../../theme";
 import { AppText } from "../../../ui/text";
 import { PlayingCard } from "./playing-card";
 import { Sheet } from "./sheet";
+import { useCardWords } from "./use-card-words";
 
 function Section({
 	heading,
@@ -43,6 +47,27 @@ function Lines({ lines }: { lines: string[] }) {
 	));
 }
 
+function TricksRules({ lines }: { lines: ReturnType<typeof tricksRuleLines> }) {
+	const { t } = useI18n();
+	const r = t.games.cards.rules;
+	return (
+		<>
+			<Section heading={r.goalHeading}>
+				<Lines lines={[lines.goal]} />
+			</Section>
+			<Section heading={r.passHeading}>
+				<Lines lines={lines.passing} />
+			</Section>
+			<Section heading={r.turnHeading}>
+				<Lines lines={lines.turn} />
+			</Section>
+			<Section heading={r.pointsHeading}>
+				<Lines lines={lines.points} />
+			</Section>
+		</>
+	);
+}
+
 export function RulesSheet({
 	game,
 	options,
@@ -56,6 +81,7 @@ export function RulesSheet({
 }) {
 	const { t } = useI18n();
 	const cards = t.games.cards;
+	const words = useCardWords();
 	const text = cards.games[game.id as CardGameId];
 	const optionText = text.options as Record<
 		string,
@@ -135,7 +161,7 @@ export function RulesSheet({
 						</Section>
 					) : null}
 				</>
-			) : (
+			) : resolved.family === "rummy" ? (
 				<>
 					<Section heading={r.goalHeading}>
 						<Lines
@@ -177,6 +203,8 @@ export function RulesSheet({
 						/>
 					</Section>
 				</>
+			) : (
+				<TricksRules lines={tricksRuleLines(words, resolved.rules)} />
 			)}
 			{active.length > 0 ? (
 				<Section heading={r.extrasHeading}>

@@ -26,7 +26,10 @@ import {
 	sortCards,
 	specialCards,
 	startFreshCards,
+	tricksHint,
+	tricksRuleLines,
 } from "../cards/table-view";
+import type { TricksRules, TricksView } from "../cards/tricks";
 import { en } from "../i18n/en";
 import { nl } from "../i18n/nl";
 
@@ -209,6 +212,16 @@ describe("narration", () => {
 		{ seq: 41, type: "win", seats: [0] },
 		{ seq: 42, type: "win", seats: [1] },
 		{ seq: 43, type: "win", seats: [0, 1] },
+		{ seq: 44, type: "passReady", seat: 0 },
+		{ seq: 45, type: "passReady", seat: 1 },
+		{ seq: 46, type: "exchange", shift: 1, count: 3 },
+		{ seq: 47, type: "trickWon", seat: 0, points: 0 },
+		{ seq: 48, type: "trickWon", seat: 0, points: 14 },
+		{ seq: 49, type: "trickWon", seat: 1, points: 0 },
+		{ seq: 50, type: "trickWon", seat: 1, points: 1 },
+		{ seq: 51, type: "broken", suit: "H" },
+		{ seq: 52, type: "moon", seat: 0 },
+		{ seq: 53, type: "moon", seat: 1 },
 	];
 
 	it.each([
@@ -589,5 +602,166 @@ describe("specialCards", () => {
 		expect(
 			specialCards(wordsFor(en.games.cards), getCardGame("jokeren")),
 		).toEqual([]);
+	});
+});
+
+const hartenjagen = (options: string[] = []) => {
+	const resolved = resolvedRules(getCardGame("hartenjagen"), options);
+	if (resolved.family !== "tricks") throw new Error("Hartenjagen takes tricks");
+	return resolved.rules;
+};
+
+function tricksView(over: Partial<TricksView> = {}): TricksView {
+	return {
+		family: "tricks",
+		phase: "playing",
+		round: 1,
+		target: 100,
+		turn: 1,
+		handCounts: [13, 13, 13],
+		hand: [],
+		legal: [],
+		passDirection: "left",
+		passCount: 3,
+		passed: null,
+		passReady: [false, false, false],
+		received: [],
+		trick: [],
+		lastTrick: null,
+		trump: null,
+		broken: false,
+		roundPoints: [0, 0, 0],
+		tricksTaken: [0, 0, 0],
+		scores: [],
+		totals: [0, 0, 0],
+		moon: null,
+		winners: [],
+		events: [],
+		...over,
+	};
+}
+
+describe("tricksHint", () => {
+	const rules: TricksRules = hartenjagen();
+
+	it("asks for the pass, then waits for the others", () => {
+		const passing = tricksView({ phase: "passing" });
+		expect(tricksHint(passing, 1, words, rules)).toBe(
+			"Pick 3 cards to pass to the left.",
+		);
+		expect(
+			tricksHint(
+				{ ...passing, passed: ["S2#0", "S3#0", "S4#0"] },
+				1,
+				words,
+				rules,
+			),
+		).toBe(cards.tricks.passWaiting);
+		expect(tricksHint(passing, null, words, rules)).toBeNull();
+	});
+
+	it("stays quiet on someone else's turn", () => {
+		expect(tricksHint(tricksView({ turn: 0 }), 1, words, rules)).toBeNull();
+	});
+
+	it("names the opening card", () => {
+		const view = tricksView({ hand: ["C2#0", "H5#0"], legal: ["C2#0"] });
+		expect(tricksHint(view, 1, words, rules)).toBe("Lead the two of clubs.");
+	});
+
+	it("says whether the player can follow", () => {
+		const trick = [{ seat: 0, card: "S9#0" as CardId }];
+		expect(
+			tricksHint(
+				tricksView({ trick, hand: ["S2#0", "H4#0"], legal: ["S2#0"] }),
+				1,
+				words,
+				rules,
+			),
+		).toBe("Follow suit: play spades.");
+		expect(
+			tricksHint(
+				tricksView({ trick, hand: ["D2#0", "H4#0"], legal: ["D2#0", "H4#0"] }),
+				1,
+				words,
+				rules,
+			),
+		).toBe("No spades left: play any card.");
+	});
+
+	it("warns about hearts only while they are held back", () => {
+		const held = tricksView({ hand: ["S2#0", "H4#0"], legal: ["S2#0"] });
+		expect(tricksHint(held, 1, words, rules)).toBe(
+			"Your lead. No hearts until they're broken.",
+		);
+		const onlyHearts = tricksView({ hand: ["H4#0"], legal: ["H4#0"] });
+		expect(tricksHint(onlyHearts, 1, words, rules)).toBe(cards.tricks.lead);
+		const broken = tricksView({
+			broken: true,
+			hand: ["S2#0", "H4#0"],
+			legal: ["S2#0", "H4#0"],
+		});
+		expect(tricksHint(broken, 1, words, rules)).toBe(cards.tricks.lead);
+	});
+});
+
+describe("tricksRuleLines", () => {
+	it.each([
+		["en", en.games.cards],
+		["nl", nl.games.cards],
+	] as const)("writes every rule in %s", (_, messages) => {
+		for (const options of [
+			[],
+			["noPassing", "queenBreaksHearts", "jackOfDiamonds", "to50"],
+		]) {
+			const lines = tricksRuleLines(wordsFor(messages), hartenjagen(options));
+			const all = [
+				lines.goal,
+				...lines.passing,
+				...lines.turn,
+				...lines.points,
+			];
+			for (const line of all) {
+				expect(line.length).toBeGreaterThan(0);
+				expect(line).not.toMatch(/[{}]|undefined/);
+			}
+		}
+	});
+
+	it("follows the house rules", () => {
+		const plain = tricksRuleLines(words, hartenjagen());
+		expect(plain.goal).toContain("100");
+		expect(plain.passing[0]).toContain("to the left, to the right, across");
+		expect(plain.turn).toContain(
+			"From high to low: A K Q J 10 9 8 7 6 5 4 3 2.",
+		);
+		expect(plain.points).toHaveLength(3);
+
+		const house = tricksRuleLines(
+			words,
+			hartenjagen(["noPassing", "queenBreaksHearts", "jackOfDiamonds", "to50"]),
+		);
+		expect(house.goal).toContain("50");
+		expect(house.passing).toEqual([cards.rules.tricks.noPass]);
+		expect(house.turn.join(" ")).toContain("queen of spades");
+		expect(house.points.join(" ")).toContain("jack of diamonds");
+	});
+});
+
+describe("trick flights", () => {
+	it("passes face-down cards between seats, and bumps the taker", () => {
+		const { flights, flash } = planFlights(
+			[
+				{ seq: 1, type: "exchange", shift: 1, count: 3 },
+				{ seq: 2, type: "trickWon", seat: 2, points: 1 },
+			],
+			{ you: 0, seatCount: 3, meldCard: () => null },
+		);
+		expect(flights).toHaveLength(9);
+		expect(flights.every((flight) => flight.card === null)).toBe(true);
+		expect(
+			new Set(flights.map((flight) => `${flight.from}>${flight.to}`)),
+		).toEqual(new Set(["hand>seat-1", "seat-1>seat-2", "seat-2>hand"]));
+		expect(flash).toBe(2);
 	});
 });

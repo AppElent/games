@@ -4,7 +4,14 @@
  * which cards cross the table. No drawing and no framework.
  */
 import type { Messages } from "../i18n/en";
-import { type CardId, parseCard, RANKS, SUITS } from "./deck";
+import {
+	type CardId,
+	cardFace,
+	parseCard,
+	RANKS,
+	SUITS,
+	type Suit,
+} from "./deck";
 import {
 	type CardGameDefinition,
 	plainCardOption,
@@ -22,6 +29,7 @@ import {
 } from "./melds";
 import type { RummyRules, RummyView } from "./rummy";
 import type { CardPower, SheddingRules, SheddingView } from "./shedding";
+import type { TricksRules, TricksView } from "./tricks";
 
 export type CardMessages = Messages["games"]["cards"];
 
@@ -296,6 +304,27 @@ export function describeEvent(
 				: mine(event.winner)
 					? e.youRoundEnd
 					: fmt(e.roundEnd, { name: name(event.winner) });
+		case "passReady":
+			return mine(event.seat)
+				? e.youPassReady
+				: fmt(e.passReady, { name: name(event.seat) });
+		case "exchange":
+			return e.exchange;
+		case "trickWon":
+			if (event.points === 0) {
+				return mine(event.seat)
+					? e.youTrickWonClean
+					: fmt(e.trickWonClean, { name: name(event.seat) });
+			}
+			return mine(event.seat)
+				? countOf(event.points, e.youTrickWon)
+				: fmt(countOf(event.points, e.trickWon), { name: name(event.seat) });
+		case "broken":
+			return fmt(e.broken, { suit: cards.suits[event.suit] });
+		case "moon":
+			return mine(event.seat)
+				? e.youMoon
+				: fmt(e.moon, { name: name(event.seat) });
 		case "win":
 			if (event.seats.length > 1) {
 				return fmt(e.winTie, { name: event.seats.map(name).join(" & ") });
@@ -311,6 +340,8 @@ const FOLLOWS_A_PLAY: ReadonlySet<CardEvent["type"]> = new Set([
 	"skip",
 	"reverse",
 	"again",
+	"broken",
+	"trickWon",
 ]);
 
 /** The latest thing that happened, as the table's one line of narration. */
@@ -358,6 +389,116 @@ export function sheddingHint(
 	return view.legal.length > 0
 		? cards.shedding.pickMove
 		: cards.shedding.noMove;
+}
+
+/** What to do now in a trick-taking deal; null when there's nothing for this seat to do. */
+export function tricksHint(
+	view: TricksView,
+	you: number | null,
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	rules: Pick<TricksRules, "firstLead" | "breaking">,
+) {
+	const t = cards.tricks;
+	if (you === null) {
+		return null;
+	}
+	if (view.phase === "passing") {
+		return view.passed
+			? t.passWaiting
+			: fmt(t.passHint, {
+					count: view.passCount,
+					direction: t.directions[view.passDirection],
+				});
+	}
+	if (view.phase !== "playing" || view.turn !== you) {
+		return null;
+	}
+	const led = view.trick[0]?.card;
+	if (led) {
+		const suit = cards.suits[parseCard(led).suit as Suit];
+		const following = view.legal.some(
+			(card) => parseCard(card).suit === parseCard(led).suit,
+		);
+		return fmt(following ? t.follow : t.void, { suit });
+	}
+	const opening = rules.firstLead;
+	if (
+		opening &&
+		view.legal.length === 1 &&
+		cardFace(view.legal[0]) === opening
+	) {
+		return fmt(t.leadFirst, { card: cardName(cards, view.legal[0]) });
+	}
+	const breaking = rules.breaking;
+	// Only worth saying when the rule holds something back.
+	if (
+		breaking &&
+		!view.broken &&
+		view.hand.some((card) => parseCard(card).suit === breaking.suit) &&
+		view.legal.every((card) => parseCard(card).suit !== breaking.suit)
+	) {
+		return fmt(t.leadNotBroken, { suit: cards.suits[breaking.suit] });
+	}
+	return t.lead;
+}
+
+/** A face such as "SQ" as a card name, in this language. */
+function faceName(cards: CardMessages, face: string) {
+	return cardName(cards, `${face}#0`);
+}
+
+/** The rules sheet for a trick-taking game, written from its config. */
+export function tricksRuleLines(
+	{ cards, fmt, countOf }: CardWords,
+	rules: TricksRules,
+) {
+	const r = cards.rules.tricks;
+	const t = cards.tricks;
+	const passing = rules.passing;
+	const glyph = (rank: (typeof RANKS)[number]) =>
+		(cards.rankGlyphs as Record<string, string>)[rank] ?? rank;
+	const breaking = rules.breaking;
+	return {
+		goal: fmt(r.goal, { target: rules.target }),
+		passing: passing
+			? [
+					fmt(r.pass, {
+						count: passing.count,
+						cycle: passing.cycle
+							.map((direction) => t.directions[direction])
+							.join(", "),
+					}),
+					...(passing.cycle.includes("across") ? [r.passOdd] : []),
+				]
+			: [r.noPass],
+		turn: [
+			...(rules.firstLead
+				? [fmt(r.firstLead, { card: faceName(cards, rules.firstLead) })]
+				: []),
+			r.follow,
+			r.trick,
+			fmt(r.ranks, { ranks: [...rules.ranks].reverse().map(glyph).join(" ") }),
+			...(breaking
+				? [
+						fmt(r.breaking, { suit: cards.suits[breaking.suit] }),
+						...breaking.alsoBrokenBy.map((face) =>
+							fmt(r.breakingAlso, { card: faceName(cards, face) }),
+						),
+					]
+				: []),
+		],
+		points: [
+			...Object.entries(rules.suitPoints).map(([suit, points]) =>
+				fmt(countOf(points as number, r.pointSuit), {
+					suit: cards.suits[suit as Suit],
+				}),
+			),
+			...Object.entries(rules.cardPoints).map(([face, points]) =>
+				fmt(countOf(points, r.pointCard), { card: faceName(cards, face) }),
+			),
+			...(rules.shootTheMoon ? [r.moon] : []),
+		],
+	};
 }
 
 /** Everything a rummy turn allows, given what this player has selected and set aside. */
@@ -658,8 +799,24 @@ export function planFlights(
 			case "swap":
 				fly(event.card, seatZone(event.seat), `meld-${event.meldId}`);
 				break;
+			case "exchange":
+				for (let seat = 0; seat < seatCount; seat += 1) {
+					for (
+						let i = 0;
+						i < Math.min(event.count, MAX_CARDS_PER_EVENT);
+						i += 1
+					) {
+						fly(
+							null,
+							seatZone(seat),
+							seatZone((seat + event.shift) % seatCount),
+						);
+					}
+				}
+				break;
 			case "skip":
 			case "again":
+			case "trickWon":
 				flash = event.seat;
 				break;
 			default:

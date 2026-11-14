@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { expectCode } from "./test.helpers";
 
 const modules = import.meta.glob("./**/*.ts");
 const SECRET_A = "secret-a-0123456789";
@@ -527,6 +528,77 @@ describe("play", () => {
 		expect(again.status).toBe("playing");
 		const reopened = await t.run((ctx) => ctx.db.get(sessionId));
 		expect(reopened?.status).toBe("active");
+	});
+});
+
+describe("hartenjagen", () => {
+	type HeartsView = {
+		hand: string[];
+		phase: string;
+		passed: string[] | null;
+		received: string[];
+		passReady: boolean[];
+	};
+
+	it("passes, plays and finishes a solo table against three computers", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(t, "hartenjagen", 3);
+		const me = creds(sessionId, participantId);
+		const start = (await read(t, me)).view as unknown as HeartsView;
+		expect(start.phase).toBe("passing");
+		expect(start.hand).toHaveLength(13);
+
+		const stored = await t.run((ctx) =>
+			ctx.db.query("cardGameStates").unique(),
+		);
+		if (!stored) throw new Error("the table has no state");
+		const others = (stored.game as { hands: string[][] }).hands.slice(1).flat();
+		const mine = JSON.stringify(await read(t, me));
+		for (const card of others) {
+			expect(mine).not.toContain(`"${card}"`);
+		}
+
+		await expectCode(
+			t.mutation(api.cardGames.act, {
+				...me,
+				action: { type: "play", card: start.hand[0] },
+			}),
+			"cardsPassFirst",
+		);
+		await expectCode(
+			t.mutation(api.cardGames.act, {
+				...me,
+				action: { type: "passCards", cards: start.hand.slice(0, 2) },
+			}),
+			"cardsPassCount",
+			{ count: 3 },
+		);
+		await t.mutation(api.cardGames.act, {
+			...me,
+			action: { type: "passCards", cards: start.hand.slice(0, 3) },
+		});
+		await t.finishAllScheduledFunctions(vi.runAllTimers);
+		const passed = (await read(t, me)).view as unknown as HeartsView;
+		expect(passed.phase).toBe("playing");
+		expect(passed.received).toHaveLength(3);
+		expect(passed.hand.length).toBeGreaterThanOrEqual(12);
+
+		await t.mutation(api.cardGames.setAutopilot, { ...me, seat: 0, on: true });
+		await (
+			t.finishAllScheduledFunctions as (
+				advance: () => void,
+				maxIterations: number,
+			) => Promise<void>
+		)(vi.runAllTimers, 10_000);
+		const done = await read(t, me);
+		expect(done.status).toBe("finished");
+		const session = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(session?.status).toBe("completed");
+	});
+
+	it("needs at least three players", async () => {
+		const t = setup();
+		await expect(soloTable(t, "hartenjagen", 1)).rejects.toThrow();
 	});
 });
 

@@ -1,7 +1,7 @@
 ---
 type: contract
-description: Read when changing card games (Pesten, Mau-Mau, Jokeren), the card engine, its stored state, seat claims or card art.
-version: 1.0.0
+description: Read when changing card games (Pesten, Mau-Mau, Jokeren, Hartenjagen), the card engine, its stored state, seat claims or card art.
+version: 1.1.0
 status: current
 ---
 
@@ -14,9 +14,10 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
 ## Behavior
 
 - One catalog entry (`card-games`) leads to a hub at `/cards` listing every game in
-  `CARD_GAMES` (Pesten, Mau-Mau, Jokeren).
+  `CARD_GAMES` (Pesten, Mau-Mau, Jokeren, Hartenjagen).
 - A game is a config file in `packages/core/src/cards/games/` for a rule family
-  (`shedding`, `rummy`), so adding one to a family needs no backend or UI code.
+  (`shedding`, `rummy`, `tricks`), so adding one to a family needs no backend or UI
+  code.
 - House rules are options over a game's `rules`, off by default. An option with
   `withoutPowers` turns those special cards into plain cards, so a shedding game offers
   one such option per special card and the setup screens list them under "Special
@@ -28,7 +29,58 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
   same card art from `packages/core/src/cards/art.ts` and derive the same table logic
   (names, hints, fresh cards, flights) from `packages/core/src/cards/table-view.ts`.
 
+## Trick-taking (`tricks`)
+
+`packages/core/src/cards/tricks.ts` deals the deck out, optionally passes cards, then
+plays tricks: the first card sets the suit, others must follow it if they can, and the
+highest card of that suit (or the highest trump) takes the trick and leads the next.
+When the hands are empty the deal is scored; the match ends after the deal in which
+someone reaches `target`.
+
+A game sets these `TricksRules` fields:
+
+| Field | What it decides | Hartenjagen |
+| --- | --- | --- |
+| `ranks` | Rank order, low to high, and which ranks are dealt | 2 to A, full deck |
+| `stripped` | Faces removed per seat count, so the deck divides evenly | 3: D2; 5: D2 C3; 6: D2 C3 D3 C4 |
+| `passing` | Cards passed before a deal and the direction cycle; null for none | 3, left/right/across/keep |
+| `firstLead` | The face that opens each deal; null means left of the dealer leads | C2 |
+| `breaking` | A suit nobody leads until it has been played, and faces that also break it | hearts |
+| `scoring` | Which function in `SCORERS` turns tricks taken into points | `penaltyCards` |
+| `suitPoints`, `cardPoints` | Points per card; a face overrides its suit | hearts 1, SQ 13 |
+| `shootTheMoon` | Taking every positive card gives their total to everyone else | on |
+| `target` | When the match ends; the lowest total wins | 100 |
+
+House rules are shallow patches on these fields, as in the other families.
+
+- Privacy: `viewTricks` shows a seat only its own hand, the cards it set aside to pass
+  and the cards it was passed. Trick cards and cards taken were played face up.
+- Passing is simultaneous: each seat chooses, and the exchange happens once every seat
+  has. "Across" is skipped for an odd number of seats.
+- The bot ducks under the winning card, dumps its most dangerous card when it cannot
+  follow, and passes its most dangerous cards. It never plays an illegal card.
+
+### Extension points for later games
+
+Boerenbridge, Toepen and Klaverjassen need these. Each is a new field with a default
+that keeps Hartenjagen unchanged, not a new family.
+
+- **Rank order**: `ranks` already decides strength and the deck. Toepen sets
+  `["J","Q","K","A","7","8","9","10"]` and gets its 32-card deck from that.
+- **Trump**: `TricksState.trump` exists and `trickWinner` honours it. A new
+  `trump` rule chooses how it is set per deal (turned up, or chosen by a seat), and a
+  `trumpRanks` order covers Klaverjassen's J 9 A 10 K Q 8 7.
+- **Follow rules**: `legalTricksCards` is the single place that decides legal cards,
+  so must-trump and must-overtrump are a rule switch read there.
+- **Team seating**: a `teams` field mapping seats to teams; scoring then adds per team.
+- **Round schedule**: a `handSizes` function from seat count and round, for
+  Boerenbridge's rising and falling hands; today every deal deals out the deck.
+- **Bidding and stakes**: a phase before `playing`, like `passing`, with its own action
+  and refusal codes (Boerenbridge bids, Toepen knocks).
+- **Scoring**: a new entry in `SCORERS` (tricks against bid, last trick only, team
+  points plus roem).
+
 ## Acceptance
 
-- `packages/core/src/__tests__/{cards,card-table-view}.test.ts` and
+- `packages/core/src/__tests__/{cards,card-table-view,tricks}.test.ts` and
   `convex/cardGames.test.ts` pass.
