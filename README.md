@@ -43,9 +43,7 @@ pnpm run dev:all
 ## Verification
 
 ```bash
-pnpm run check
-pnpm run typecheck
-pnpm test
+pnpm verify
 pnpm run build
 ```
 
