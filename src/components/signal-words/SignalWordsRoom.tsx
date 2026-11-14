@@ -173,7 +173,7 @@ export function SignalWordsRoom({
 									<div className="mt-3 flex gap-2">
 										<button
 											type="button"
-											className="min-h-11 flex-1 rounded-md border border-[var(--club-line-strong)] bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
+											className="min-h-11 flex-1 rounded-md club-btn-outline bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
 											onClick={seatAction(
 												(seat) => joinTeam({ ...seat, team, clueGiver: false }),
 												signalWords.teams.joinError,
@@ -183,7 +183,7 @@ export function SignalWordsRoom({
 										</button>
 										<button
 											type="button"
-											className="min-h-11 flex-1 rounded-md border border-[var(--club-line-strong)] bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
+											className="min-h-11 flex-1 rounded-md club-btn-outline bg-white/10 px-2 py-1.5 text-xs font-bold text-white"
 											onClick={seatAction(
 												(seat) => joinTeam({ ...seat, team, clueGiver: true }),
 												signalWords.teams.joinError,
@@ -226,7 +226,7 @@ export function SignalWordsRoom({
 										? `${ROLE_STYLES[revealedRole]} opacity-90`
 										: revealedRole
 											? `${ROLE_STYLES[revealedRole]}`
-											: "border-[var(--club-line-strong)] bg-white/10 text-white"
+											: "club-btn-outline bg-white/10 text-white"
 								} ${clickable ? "hover:bg-white/25" : ""}`}
 							>
 								{word}
@@ -294,7 +294,7 @@ export function SignalWordsRoom({
 				<div className="flex justify-center">
 					<button
 						type="button"
-						className="rounded-md border border-[var(--club-line-strong)] bg-white/10 px-4 py-2 text-sm font-bold text-white"
+						className="rounded-md club-btn-outline bg-white/10 px-4 py-2 text-sm font-bold text-white"
 						onClick={seatAction(pass, signalWords.actions.passError)}
 					>
 						{signalWords.actions.passTurn}

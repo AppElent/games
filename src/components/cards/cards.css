@@ -9,6 +9,8 @@
 	--gold-soft: rgba(230, 192, 106, 0.32);
 	--ivory: #f8f2e2;
 	--ivory-muted: rgba(248, 242, 226, 0.72);
+	/* Control borders: 3:1 against every felt, over a control's dark fill. */
+	--ivory-line: rgba(248, 242, 226, 0.72);
 	position: absolute;
 	inset: 0;
 	isolation: isolate;
@@ -233,7 +235,7 @@
 
 .btn-ghost {
 	color: var(--ivory);
-	border: 1px solid rgba(248, 242, 226, 0.28);
+	border: 1px solid var(--ivory-line);
 	background: rgba(0, 0, 0, 0.26);
 }
 
@@ -285,7 +287,7 @@
 	gap: 0.25rem;
 	height: 100%;
 	overflow: hidden;
-	border: 1px solid var(--gold-soft);
+	border: 1px solid var(--ivory-line);
 	border-radius: 1.1rem;
 	padding: 1.15rem 1.25rem;
 	color: var(--ivory);
@@ -364,7 +366,7 @@
 .mode-option {
 	position: relative;
 	display: block;
-	border: 1px solid rgba(248, 242, 226, 0.2);
+	border: 1px solid var(--ivory-line);
 	border-radius: 0.8rem;
 	padding: 0.8rem 0.9rem;
 	background: rgba(0, 0, 0, 0.22);
@@ -388,7 +390,7 @@
 	width: 2.75rem;
 	height: 2.75rem;
 	border-radius: 999px;
-	border: 1px solid rgba(248, 242, 226, 0.3);
+	border: 1px solid var(--ivory-line);
 	background: rgba(0, 0, 0, 0.26);
 	color: var(--ivory);
 }
@@ -415,6 +417,7 @@
 	padding: 0.15rem;
 	border-radius: 999px;
 	background: rgba(248, 242, 226, 0.2);
+	box-shadow: inset 0 0 0 1px var(--ivory-line);
 	transition: background-color 0.15s ease;
 }
 
@@ -430,6 +433,7 @@
 
 .rule-switch[aria-checked="true"] .rule-switch-track {
 	background: var(--gold);
+	box-shadow: none;
 }
 
 .rule-switch[aria-checked="true"] .rule-switch-track::before {
@@ -480,7 +484,7 @@
 	min-height: 2.75rem;
 	padding: 0 0.7rem;
 	border-radius: 0.75rem;
-	border: 1px solid rgba(255, 255, 255, 0.2);
+	border: 1px solid var(--ivory-line);
 	background: rgba(8, 10, 18, 0.55);
 	color: var(--ivory);
 	font-size: 0.875rem;

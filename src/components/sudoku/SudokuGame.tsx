@@ -429,7 +429,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 								dispatch({ type: "restart" });
 							}
 						}}
-						className="inline-flex items-center gap-1 rounded-md border border-[var(--club-line-strong)] px-2 py-1 font-semibold text-slate-300 hover:bg-slate-800"
+						className="inline-flex items-center gap-1 rounded-md club-btn-outline px-2 py-1 font-semibold text-slate-300 hover:bg-slate-800"
 					>
 						<RotateCcw className="h-3.5 w-3.5" />{" "}
 						{messages.common.gameShell.restart}

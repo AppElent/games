@@ -14,7 +14,6 @@ import {
 import { useConvex } from "convex/react";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Linking } from "react-native";
 import { api } from "../../../convex/api";
 import { fmt, useI18n } from "../../../i18n";
 import { useTokens } from "../../../theme";
@@ -30,7 +29,7 @@ import {
 	PLAYER_NAME_MAX,
 	usePlayerIdentity,
 } from "../../players/identity/use-player-identity";
-import { webJoinUrl } from "../session-links";
+import { openWebPage, webJoinUrl } from "../session-links";
 import { useJoinSession } from "../use-join-session";
 
 type Props = { shareToken?: string; initialCode?: string };
@@ -155,7 +154,7 @@ export function JoinScreen({ shareToken, initialCode }: Props) {
 							variant="secondary"
 							label={copy.openOnWeb}
 							onPress={() => {
-								if (unsupported.url) Linking.openURL(unsupported.url);
+								if (unsupported.url) void openWebPage(unsupported.url);
 							}}
 						/>
 					) : null}

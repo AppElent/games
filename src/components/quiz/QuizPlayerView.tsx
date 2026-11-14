@@ -112,7 +112,7 @@ export function QuizPlayerView({
 									? "border-emerald-300 bg-emerald-300/20 text-emerald-50"
 									: selected
 										? "border-cyan-300 bg-cyan-300/20 text-cyan-50"
-										: "border-[var(--club-line-strong)] bg-white/5 text-white"
+										: "club-btn-outline bg-white/5 text-white"
 							}`}
 						>
 							<span>{choice.label}</span>
