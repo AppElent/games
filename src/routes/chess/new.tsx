@@ -56,7 +56,7 @@ function ChessNewPage() {
 								className={`min-h-11 rounded-md px-4 py-2 font-bold ${
 									timeControl === control
 										? "bg-white text-slate-950"
-										: "border border-[var(--club-line-strong)] bg-white/10 text-white"
+										: "club-btn-outline bg-white/10 text-white"
 								}`}
 							>
 								{timeControlLabel(control)}
@@ -79,7 +79,7 @@ function ChessNewPage() {
 							className={`min-h-11 rounded-md px-4 py-2 font-bold capitalize ${
 								hostColor === color
 									? "bg-white text-slate-950"
-									: "border border-[var(--club-line-strong)] bg-white/10 text-white"
+									: "club-btn-outline bg-white/10 text-white"
 							}`}
 						>
 							{chess.newGame.colorOptions[color]}

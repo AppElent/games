@@ -61,7 +61,7 @@ function SquadSurgeStart() {
 								className={`min-h-11 rounded-xl border px-3 py-2 text-sm font-bold ${
 									difficulty === option.value
 										? "border-emerald-300 bg-emerald-400 text-slate-950"
-										: "border-[var(--club-line-strong)] bg-white/10 text-white"
+										: "club-btn-outline bg-white/10 text-white"
 								}`}
 							>
 								{option.label}

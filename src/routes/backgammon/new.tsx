@@ -50,7 +50,7 @@ function BackgammonNewPage() {
 						<button
 							type="button"
 							disabled={busy}
-							className="mt-5 rounded-md border border-[var(--club-line-strong)] bg-white/10 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+							className="mt-5 rounded-md club-btn-outline bg-white/10 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
 							onClick={() =>
 								host(
 									({ displayName, guestId }) =>

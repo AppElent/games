@@ -160,7 +160,7 @@ export function QuizSetEditor({
 					</h2>
 					<button
 						type="button"
-						className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-white/5 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/10"
+						className="inline-flex items-center gap-2 rounded-md club-btn-outline bg-white/5 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/10"
 						onClick={() => setShowImport((value) => !value)}
 					>
 						<ClipboardPaste className="h-4 w-4" />
@@ -280,7 +280,7 @@ export function QuizSetEditor({
 											className={`h-9 w-9 shrink-0 rounded-md border text-sm font-bold ${
 												correct
 													? "border-emerald-300 bg-emerald-300/20 text-emerald-100"
-													: "border-[var(--club-line-strong)] bg-white/5 text-slate-400"
+													: "club-btn-outline bg-white/5 text-slate-400"
 											}`}
 											onClick={() =>
 												patchQuestion(index, {
@@ -319,7 +319,7 @@ export function QuizSetEditor({
 							{question.choices.length < 4 ? (
 								<button
 									type="button"
-									className="rounded-md border border-[var(--club-line-strong)] bg-white/5 px-3 py-1.5 font-bold text-white hover:bg-white/10"
+									className="rounded-md club-btn-outline bg-white/5 px-3 py-1.5 font-bold text-white hover:bg-white/10"
 									onClick={() =>
 										patchQuestion(index, {
 											choices: [
@@ -379,7 +379,7 @@ export function QuizSetEditor({
 			<div className="flex flex-wrap gap-3">
 				<button
 					type="button"
-					className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-white/5 px-4 py-2.5 font-bold text-white hover:bg-white/10"
+					className="inline-flex items-center gap-2 rounded-md club-btn-outline bg-white/5 px-4 py-2.5 font-bold text-white hover:bg-white/10"
 					onClick={() =>
 						setQuestions((current) => [
 							...current,

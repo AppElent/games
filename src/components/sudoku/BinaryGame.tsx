@@ -129,7 +129,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 
 				<div className="relative w-full">
 					<div
-						className="grid aspect-square w-full select-none rounded-lg border-2 border-slate-400 bg-white shadow-lg dark:border-slate-300/80 dark:bg-slate-900"
+						className="puzzle-board grid aspect-square w-full select-none rounded-lg border-2 border-slate-600 bg-white shadow-lg dark:border-slate-300/80 dark:bg-slate-900"
 						style={{
 							gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`,
 							gridTemplateRows: `repeat(${size}, minmax(0, 1fr))`,
@@ -148,7 +148,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 									aria-label={`${fmt(sudoku.board.cellLabel, { row: row + 1, col: col + 1 })}${value !== 0 ? `, ${binaryDigitLabel(value)}` : ""}`}
 									disabled={isGiven || status !== "active"}
 									onClick={() => cycleCell(cell)}
-									className={`flex items-center justify-center border-slate-300 p-0 dark:border-slate-600/60 ${
+									className={`flex items-center justify-center border-[var(--puzzle-line)] p-0 ${
 										col > 0 ? "border-l" : ""
 									} ${row > 0 ? "border-t" : ""} ${
 										isGiven
@@ -183,7 +183,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 							type="button"
 							onClick={handleUndo}
 							disabled={undoStack.length === 0 || status !== "active"}
-							className="inline-flex items-center gap-1 rounded-md border border-[var(--club-line-strong)] px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+							className="inline-flex items-center gap-1 rounded-md club-btn-outline px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							<Undo2 className="h-4 w-4" /> {sudoku.keypad.undo}
 						</button>
@@ -191,7 +191,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 							type="button"
 							onClick={restart}
 							disabled={status !== "active"}
-							className="inline-flex items-center gap-1 rounded-md border border-[var(--club-line-strong)] px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+							className="inline-flex items-center gap-1 rounded-md club-btn-outline px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							<RotateCcw className="h-4 w-4" />{" "}
 							{messages.common.gameShell.restart}
