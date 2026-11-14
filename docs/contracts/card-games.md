@@ -79,9 +79,11 @@ Hartenjagen unchanged, not a new family.
 - **Follow rules**: `legalTricksCards` is the single place that decides legal cards,
   so must-trump and must-overtrump are a rule switch read there.
 - **Team seating**: a `SEATINGS` entry such as opposite seats as partners. The match
-  already ends and is won on team totals.
+  already ends and is won on team totals. The view still shows totals per seat, so a
+  team game adds team totals to `TricksView`.
 - **Round schedule**: a `SCHEDULES` entry for Boerenbridge's rising and falling hands,
-  from the seat count and round.
+  from the seat count and round. With cards left undealt the `firstLead` card may be in
+  no hand, so such a game sets `firstLead` to null.
 - **Bidding and stakes**: a phase before `playing`, like `passing`, with its own action
   and refusal codes (Boerenbridge bids, Toepen knocks).
 - **Scoring**: a new entry in `SCORERS` (tricks against bid, last trick only, team

@@ -312,12 +312,18 @@ function dealTricks(
 	const stock = shuffle(tricksDeck(rules, seats), random);
 	const round = carried?.round ?? 1;
 	const handSize = SCHEDULES[rules.schedule](stock.length, seats, round);
-	if (!Number.isInteger(handSize) || handSize * seats > stock.length) {
+	if (
+		!Number.isInteger(handSize) ||
+		handSize < 1 ||
+		handSize * seats > stock.length
+	) {
 		throw new Error(
 			`the deck does not deal ${handSize} cards to ${seats} seats`,
 		);
 	}
 	const hands = deal(stock, seats, handSize);
+	// `deal` took the hands off the stock: what remains was never dealt.
+	const undealt = stock;
 	const direction = passDirectionFor(rules, seats, round);
 	const state: TricksState = {
 		family: "tricks",
@@ -331,7 +337,7 @@ function dealTricks(
 		turn: 0,
 		trick: [],
 		lastTrick: null,
-		trump: TRUMPS[rules.trumpChoice](stock),
+		trump: TRUMPS[rules.trumpChoice](undealt),
 		broken: false,
 		taken: hands.map(() => []),
 		tricksTaken: hands.map(() => 0),
