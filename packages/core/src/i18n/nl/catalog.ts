@@ -72,7 +72,7 @@ export const catalog = {
 		description:
 			"Iedereen rolt verborgen dobbelstenen, de claims klimmen steeds hoger en één uitdaging onthult wie er blufte.",
 		primaryAction: "Tafel openen",
-		stats: "1-8 spelers",
+		stats: "2-8 spelers",
 	},
 	"squad-surge": {
 		title: "Squad Surge",

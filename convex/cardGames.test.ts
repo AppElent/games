@@ -578,14 +578,19 @@ describe("eenentwintigen", () => {
 		if (!stored) throw new Error("no table");
 		const game = stored.game as {
 			bank: string[];
+			stock: string[];
 			done: boolean[];
 		};
+		// The face-down card comes from the stock, which no view or event has shown.
+		const hole = game.stock[0];
 		await t.run((ctx) =>
 			ctx.db.patch(stored._id, {
 				game: {
 					...stored.game,
 					phase: "play",
 					turn: 0,
+					bank: [game.bank[0], hole],
+					stock: game.stock.slice(1),
 					bankRevealed: false,
 					done: game.done.map(() => false),
 				} as typeof stored.game,
@@ -593,7 +598,7 @@ describe("eenentwintigen", () => {
 		);
 		const playing = await read(t, creds(sessionId, participantId));
 		expect(bankView(playing).bank).toEqual([game.bank[0], null]);
-		expect(JSON.stringify(playing)).not.toContain(`"${game.bank[1]}"`);
+		expect(JSON.stringify(playing)).not.toContain(`"${hole}"`);
 	});
 
 	it("plays alone against the bank", async () => {

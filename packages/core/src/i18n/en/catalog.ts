@@ -78,7 +78,7 @@ export const catalog = {
 		description:
 			"Everyone rolls hidden dice, claims climb higher, and one challenge reveals who was bluffing.",
 		primaryAction: "Host table",
-		stats: "1-8 players",
+		stats: "2-8 players",
 	},
 	"squad-surge": {
 		title: "Squad Surge",
