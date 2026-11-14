@@ -9,9 +9,12 @@ import {
 	type CardGameDefinition,
 	type CardGameState,
 	createCardGame,
+	generalOptions,
 	getCardGame,
 	nextStarter,
 	normalizeOptions,
+	plainCardOption,
+	resolvedRules,
 	viewCardGame,
 } from "../cards/engine";
 import {
@@ -377,6 +380,66 @@ describe("pesten", () => {
 
 describe("pesten house rules", () => {
 	const game = CARD_GAMES.pesten as CardGameDefinition;
+	const rulesWith = (options: string[]) =>
+		resolvedRules(game, options).rules as SheddingRules;
+
+	it("offers a switch for every special card", () => {
+		for (const key of Object.keys(pestenRules.powers)) {
+			expect(plainCardOption(game, key)).toBeDefined();
+		}
+		expect(generalOptions(game).map((option) => option.id)).toEqual([
+			"noFinishOnPower",
+			"noStacking",
+			"noLastCard",
+		]);
+	});
+
+	it("switched-off special cards combine and leave the rest alone", () => {
+		const rules = rulesWith(["plain7", "plainA"]);
+		expect(Object.keys(rules.powers).sort()).toEqual(
+			["2", "8", "J", "joker"].sort(),
+		);
+		expect(pestenRules.powers["7"]).toBeDefined();
+	});
+
+	it("a plain 7 passes the turn like any other card", () => {
+		const state = pestenState({
+			hands: [["S7#0", "S9#0", "D3#0"], ["D4#0"], ["H6#0"]],
+		});
+		const next = applyShedding(
+			rulesWith(["plain7"]),
+			state,
+			0,
+			{ type: "play", card: "S7#0" },
+			seeded(2),
+		);
+		expect(next.turn).toBe(1);
+		expect(next.mustContinue).toBe(false);
+	});
+
+	it("a plain jack only goes on its suit or rank", () => {
+		const state = pestenState({
+			hands: [["HJ#0", "S9#0"], ["D4#0"], ["H6#0"]],
+		});
+		expectRule(
+			() =>
+				applyShedding(
+					rulesWith(["plainJ"]),
+					state,
+					0,
+					{ type: "play", card: "HJ#0" },
+					seeded(2),
+				),
+			"cardsDoesNotFit",
+		);
+	});
+
+	it("no jokers takes them out of the deck", () => {
+		const state = createCardGame(game, ["plainJoker"], 4, seeded(7));
+		const all = [...state.stock, ...state.discard, ...state.hands.flat()];
+		expect(all.some((card) => parseCard(card).joker)).toBe(false);
+		expect(rulesWith(["plainJoker"]).powers.joker).toBeUndefined();
+	});
 
 	it("rejects unknown options and keeps a stable order", () => {
 		expect(() => normalizeOptions(game, ["nope"])).toThrow(GameRuleError);
@@ -1008,6 +1071,18 @@ describe("full games between computer players", () => {
 
 	it.each([
 		["pesten", ["noFinishOnPower", "noStacking", "noLastCard"]],
+		[
+			"pesten",
+			[
+				"plain2",
+				"plainJoker",
+				"plain7",
+				"plain8",
+				"plainJ",
+				"plainA",
+				"noLastCard",
+			],
+		],
 		["jokeren", ["fullMatch", "stockOnly", "openAt40"]],
 	] as const)("%s finishes with every house rule on", (id, options) => {
 		for (let seed = 1; seed <= 12; seed += 1) {

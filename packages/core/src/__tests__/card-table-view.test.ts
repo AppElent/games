@@ -24,6 +24,7 @@ import {
 	seatName,
 	sheddingHint,
 	sortCards,
+	specialCards,
 	startFreshCards,
 } from "../cards/table-view";
 import { en } from "../i18n/en";
@@ -554,5 +555,39 @@ describe("flights", () => {
 			from: "seat-0",
 			fromHandCard: false,
 		});
+	});
+});
+
+describe("specialCards", () => {
+	it("lists every Pesten special card with its effect and switch", () => {
+		const list = specialCards(wordsFor(en.games.cards), getCardGame("pesten"));
+		expect(list.map((card) => card.key).sort()).toEqual(
+			["2", "7", "8", "A", "J", "joker"].sort(),
+		);
+		const two = list.find((card) => card.key === "2");
+		expect(two).toMatchObject({
+			sample: "S2#0",
+			name: "Two pulls two",
+			effect: "Next player takes 2",
+			plainOption: "plain2",
+		});
+		expect(list.find((card) => card.key === "joker")?.sample).toBe("JK#0");
+	});
+
+	it("has Dutch text for every card", () => {
+		const names = nl.games.cards.games.pesten.powers as Record<string, string>;
+		for (const card of specialCards(
+			wordsFor(nl.games.cards),
+			getCardGame("pesten"),
+		)) {
+			expect(card.name).toBe(names[card.key]);
+			expect(card.effect).not.toMatch(/\{/);
+		}
+	});
+
+	it("is empty for a game without special cards", () => {
+		expect(
+			specialCards(wordsFor(en.games.cards), getCardGame("jokeren")),
+		).toEqual([]);
 	});
 });

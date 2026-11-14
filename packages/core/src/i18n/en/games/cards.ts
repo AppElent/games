@@ -20,6 +20,8 @@ export const cards = {
 		moreOpponents: "More opponents",
 		opponents: { one: "{count} opponent", other: "{count} opponents" },
 		houseRules: "House rules",
+		specialCards: "Special cards",
+		specialCardsHint: "Switch one off to play it as a plain card.",
 		playNow: "Deal the cards",
 		openRoom: "Open a room",
 		creating: "Shuffling...",
@@ -327,6 +329,30 @@ export const cards = {
 				noLastCard: {
 					label: "No last-card call",
 					hint: "Nobody has to announce their last card.",
+				},
+				plain2: {
+					label: "2 as a plain card",
+					hint: "Two pulls two is off.",
+				},
+				plainJoker: {
+					label: "No jokers",
+					hint: "The deck has no jokers.",
+				},
+				plain7: {
+					label: "7 as a plain card",
+					hint: "Seven sticks is off.",
+				},
+				plain8: {
+					label: "8 as a plain card",
+					hint: "Eight waits is off.",
+				},
+				plainJ: {
+					label: "Jack as a plain card",
+					hint: "Jack switches is off.",
+				},
+				plainA: {
+					label: "Ace as a plain card",
+					hint: "Ace turns is off.",
 				},
 			},
 		},

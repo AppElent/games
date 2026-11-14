@@ -121,6 +121,9 @@ export const common = {
 		qrAlt: "QR code for game link",
 		generating: "Generating QR...",
 		copyLink: "Copy link",
+		shareLink: "Share link",
+		linkCopied: "Link copied",
+		copyFailed: "Could not copy. Select the link above to copy it.",
 	},
 	roomControls: {
 		heading: "Room controls",

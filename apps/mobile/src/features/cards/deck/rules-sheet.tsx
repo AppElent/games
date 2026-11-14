@@ -9,6 +9,7 @@ import {
 	resolvedRules,
 } from "@arcadeclub/core/cards/engine";
 import type { CardPower } from "@arcadeclub/core/cards/shedding";
+import { powerEffect } from "@arcadeclub/core/cards/table-view";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
@@ -64,21 +65,14 @@ export function RulesSheet({
 	const r = cards.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
-	const effect = (power: CardPower) => {
-		switch (power.kind) {
-			case "draw":
-				return fmt(power.wild ? r.effects.drawWild : r.effects.draw, {
-					count: power.amount,
-				});
-			case "reverse":
-				return resolved.family === "shedding" &&
-					resolved.rules.twoPlayerReverseAgain
-					? r.effects.reverseDuel
-					: r.effects.reverse;
-			default:
-				return r.effects[power.kind];
-		}
-	};
+	const effect = (power: CardPower) =>
+		powerEffect(
+			{ cards, fmt },
+			resolved.family === "shedding"
+				? resolved.rules
+				: { twoPlayerReverseAgain: false },
+			power,
+		);
 
 	return (
 		<Sheet
@@ -121,23 +115,25 @@ export function RulesSheet({
 							]}
 						/>
 					</Section>
-					<Section heading={r.powersHeading}>
-						{Object.entries(resolved.rules.powers).map(([key, power]) => {
-							const sample: CardId = key === "joker" ? "JK#0" : `S${key}#0`;
-							const powers = text.powers as Record<string, string>;
-							return (
-								<View key={key} style={styles.power}>
-									<PlayingCard card={sample} width={44} />
-									<View style={styles.powerText}>
-										<AppText variant="body">{powers[key]}</AppText>
-										<AppText variant="secondary">
-											{effect(power as CardPower)}
-										</AppText>
+					{Object.keys(resolved.rules.powers).length > 0 ? (
+						<Section heading={r.powersHeading}>
+							{Object.entries(resolved.rules.powers).map(([key, power]) => {
+								const sample: CardId = key === "joker" ? "JK#0" : `S${key}#0`;
+								const powers = text.powers as Record<string, string>;
+								return (
+									<View key={key} style={styles.power}>
+										<PlayingCard card={sample} width={44} />
+										<View style={styles.powerText}>
+											<AppText variant="body">{powers[key]}</AppText>
+											<AppText variant="secondary">
+												{effect(power as CardPower)}
+											</AppText>
+										</View>
 									</View>
-								</View>
-							);
-						})}
-					</Section>
+								);
+							})}
+						</Section>
+					) : null}
 				</>
 			) : (
 				<>

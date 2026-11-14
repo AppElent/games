@@ -1,4 +1,9 @@
-import { type CardGameId, getCardGame } from "@arcadeclub/core/cards/engine";
+import {
+	type CardGameId,
+	generalOptions,
+	getCardGame,
+} from "@arcadeclub/core/cards/engine";
+import { specialCards } from "@arcadeclub/core/cards/table-view";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Minus, Plus } from "lucide-react";
@@ -9,7 +14,9 @@ import { useHostSession } from "#/lib/games/use-host-session";
 import { plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import { CardsPage } from "./Chrome";
+import { PlayingCard } from "./PlayingCard";
 import { RulesSheet } from "./RulesSheet";
+import { useCardWords } from "./useCardWords";
 
 type CardTableMode = "computer" | "friends";
 
@@ -76,6 +83,15 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 3));
 	const [options, setOptions] = useState<string[]>([]);
 	const [rulesOpen, setRulesOpen] = useState(false);
+	const words = useCardWords();
+	const houseRules = generalOptions(game);
+	const special = specialCards(words, game);
+	const toggle = (id: string) =>
+		setOptions((current) =>
+			current.includes(id)
+				? current.filter((option) => option !== id)
+				: [...current, id],
+		);
 	const { busy, error, create } = useCreateCardTable(gameId, {
 		mode,
 		opponents,
@@ -175,11 +191,60 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 							</div>
 						</div>
 					) : null}
-					{game.options.length > 0 ? (
+					{special.length > 0 ? (
+						<div>
+							<h2 className="cards-kicker mb-1">{cards.setup.specialCards}</h2>
+							<p className="mb-1 text-xs leading-snug text-[var(--ivory-muted)]">
+								{cards.setup.specialCardsHint}
+							</p>
+							<div
+								className="divide-y divide-white/10"
+								style={{ "--card-w": "2.25rem" } as React.CSSProperties}
+							>
+								{special.map((card) => {
+									const plain = card.plainOption;
+									const on = plain === null || !options.includes(plain);
+									return (
+										<button
+											key={card.key}
+											type="button"
+											role="switch"
+											aria-checked={on}
+											aria-labelledby={`power-${card.key}`}
+											aria-describedby={`power-${card.key}-effect`}
+											disabled={plain === null}
+											className="rule-switch"
+											onClick={() => {
+												if (plain !== null) toggle(plain);
+											}}
+										>
+											<PlayingCard card={card.sample} />
+											<span className="min-w-0">
+												<span
+													id={`power-${card.key}`}
+													className="block font-semibold"
+												>
+													{card.name}
+												</span>
+												<span
+													id={`power-${card.key}-effect`}
+													className="block text-xs leading-snug text-[var(--ivory-muted)]"
+												>
+													{card.effect}
+												</span>
+											</span>
+											<span className="rule-switch-track" aria-hidden="true" />
+										</button>
+									);
+								})}
+							</div>
+						</div>
+					) : null}
+					{houseRules.length > 0 ? (
 						<div>
 							<h2 className="cards-kicker mb-1">{cards.setup.houseRules}</h2>
 							<div className="divide-y divide-white/10">
-								{game.options.map((option) => {
+								{houseRules.map((option) => {
 									const on = options.includes(option.id);
 									const label = optionText[option.id];
 									return (
@@ -189,13 +254,7 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 											role="switch"
 											aria-checked={on}
 											className="rule-switch"
-											onClick={() =>
-												setOptions((current) =>
-													on
-														? current.filter((id) => id !== option.id)
-														: [...current, option.id],
-												)
-											}
+											onClick={() => toggle(option.id)}
 										>
 											<span className="min-w-0">
 												<span className="block font-semibold">

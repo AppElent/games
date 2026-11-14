@@ -1,6 +1,7 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import { type CardGame, resolvedRules } from "@arcadeclub/core/cards/engine";
 import type { CardPower } from "@arcadeclub/core/cards/shedding";
+import { powerEffect } from "@arcadeclub/core/cards/table-view";
 import { fmt, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
 import { PlayingCard } from "./PlayingCard";
@@ -55,21 +56,14 @@ export function RulesSheet({
 	const r = cards.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
-	const effect = (power: CardPower) => {
-		switch (power.kind) {
-			case "draw":
-				return fmt(power.wild ? r.effects.drawWild : r.effects.draw, {
-					count: power.amount,
-				});
-			case "reverse":
-				return resolved.family === "shedding" &&
-					resolved.rules.twoPlayerReverseAgain
-					? r.effects.reverseDuel
-					: r.effects.reverse;
-			default:
-				return r.effects[power.kind];
-		}
-	};
+	const effect = (power: CardPower) =>
+		powerEffect(
+			{ cards, fmt },
+			resolved.family === "shedding"
+				? resolved.rules
+				: { twoPlayerReverseAgain: false },
+			power,
+		);
 
 	return (
 		<Sheet
@@ -112,25 +106,27 @@ export function RulesSheet({
 							]}
 						/>
 					</Section>
-					<Section heading={r.powersHeading}>
-						<ul className="flex flex-col gap-2">
-							{Object.entries(resolved.rules.powers).map(([key, power]) => {
-								const sample: CardId = key === "joker" ? "JK#0" : `S${key}#0`;
-								const powers = text.powers as Record<string, string>;
-								return (
-									<li key={key} className="flex items-center gap-3">
-										<PlayingCard card={sample} />
-										<div className="min-w-0 text-sm leading-snug">
-											<p className="font-bold">{powers[key]}</p>
-											<p className="text-[var(--ivory-muted)]">
-												{effect(power as CardPower)}
-											</p>
-										</div>
-									</li>
-								);
-							})}
-						</ul>
-					</Section>
+					{Object.keys(resolved.rules.powers).length > 0 ? (
+						<Section heading={r.powersHeading}>
+							<ul className="flex flex-col gap-2">
+								{Object.entries(resolved.rules.powers).map(([key, power]) => {
+									const sample: CardId = key === "joker" ? "JK#0" : `S${key}#0`;
+									const powers = text.powers as Record<string, string>;
+									return (
+										<li key={key} className="flex items-center gap-3">
+											<PlayingCard card={sample} />
+											<div className="min-w-0 text-sm leading-snug">
+												<p className="font-bold">{powers[key]}</p>
+												<p className="text-[var(--ivory-muted)]">
+													{effect(power as CardPower)}
+												</p>
+											</div>
+										</li>
+									);
+								})}
+							</ul>
+						</Section>
+					) : null}
 				</>
 			) : (
 				<>
