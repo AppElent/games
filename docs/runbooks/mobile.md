@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running, verifying or building the Arcade Club mobile app (apps/mobile).
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Mobile app
@@ -13,6 +13,15 @@ version: 1.0.0
 | Production | `production` | `com.appelent.arcadeclub` | `arcadeclub` |
 | Preview | `preview` | `com.appelent.arcadeclub.preview` | `arcadeclub-preview` |
 | Development | `development` (or unset locally) | `com.appelent.arcadeclub.dev` | `arcadeclub-dev` |
+
+| Variant | Convex | Clerk | Share links |
+| --- | --- | --- | --- |
+| Production | `chatty-ram-217` (production) | production | `arcade-club.appelent.nl` |
+| Preview | `blessed-blackbird-8` (staging) | production | `arcade-club-stg.appelent.nl` |
+| Development | `zany-parakeet-507` (dev), or the worktree's backend locally | development | Infisical `dev` `web-origin` |
+
+The preview app on staging is an exception to the shared standard; see
+[environment.md](environment.md#exception-the-preview-app-uses-staging).
 
 `apps/mobile/app.config.ts` maps the variant; `eas.json` sets it per profile. EAS
 project: `@appelent/arcadeclub` (id in `app.json`).
@@ -70,8 +79,8 @@ interactively so EAS can sign in to Apple and create the provisioning profile; a
 
 To install the preview app next to the dev app on an iPhone, build `preview-internal`
 (ad-hoc, `com.appelent.arcadeclub.preview`) and open the build page on the phone. It
-runs against production Clerk and Convex, so it only sees Convex changes once they're
-deployed to production.
+runs against production Clerk and the staging Convex deployment, so it sees Convex
+changes once a merge has deployed them to staging, and never sees production data.
 
 ### TestFlight
 
@@ -135,9 +144,9 @@ runtime, since nothing would load the update; `--without-build` overrides that. 
 retry with `--upload-only`; don't publish again. A bare `eas update` resolves to the
 development variant, so no preview or production build would ever load it.
 
-A production deploy (a manual `deploy.yml` run on `main`) publishes the preview update
-from CI once the production backend is live
-(`apps/mobile/scripts/ci-publish-update.mjs`); a merge only ships staging web. It publishes only
+A merge to `main` publishes the preview update from CI once `deploy.yml` has shipped
+the staging backend (`apps/mobile/scripts/ci-publish-update.mjs`); a production deploy
+publishes no app update. It publishes only
 when a finished EAS build or an earlier update on `preview` has the runtime, and skips
 when nothing the app bundles changed since the `mobile-update/preview` tag. Otherwise
 the run summary says a rebuild is due. Local builds are not on EAS: after installing

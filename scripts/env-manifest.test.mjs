@@ -96,4 +96,27 @@ describe("Arcade Club environment manifest", () => {
 		expect(deployKey("staging")).toBe("convex-staging-deploy-key");
 		expect(deployKey("production")).toBe("convex-deploy-key");
 	});
+
+	it("points the preview app at the staging backend and web, the store app at production", () => {
+		const easSource = (environment) =>
+			Object.fromEntries(
+				placements(environment)
+					.filter(
+						({ name, destination }) =>
+							destination.kind === "eas" &&
+							["EXPO_PUBLIC_CONVEX_URL", "EXPO_PUBLIC_WEB_ORIGIN"].includes(
+								name,
+							),
+					)
+					.map(({ name, entry }) => [name, entry.infisicalKey]),
+			);
+		expect(easSource("staging")).toEqual({
+			EXPO_PUBLIC_CONVEX_URL: "convex-staging-url",
+			EXPO_PUBLIC_WEB_ORIGIN: "web-staging-origin",
+		});
+		expect(easSource("production")).toEqual({
+			EXPO_PUBLIC_CONVEX_URL: "convex-url",
+			EXPO_PUBLIC_WEB_ORIGIN: "web-origin",
+		});
+	});
 });
