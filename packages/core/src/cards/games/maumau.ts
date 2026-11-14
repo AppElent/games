@@ -12,7 +12,11 @@ export const maumau = {
 	showcase: ["H7#0", "S8#0", "CJ#0", "DA#0"],
 	players: { min: 2, max: 5 },
 	rules: {
-		decks: [{ from: 2, decks: 1 }],
+		// Five players would leave seven cards in the stock: give them a second deck.
+		decks: [
+			{ from: 5, decks: 2 },
+			{ from: 2, decks: 1 },
+		],
 		jokersPerDeck: 0,
 		ranks: ["7", "8", "9", "10", "J", "Q", "K", "A"],
 		handSize: 5,

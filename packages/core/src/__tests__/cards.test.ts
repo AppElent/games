@@ -1124,6 +1124,33 @@ describe("mau-mau", () => {
 		});
 	});
 
+	it("starts even when the stock left after dealing holds only special cards", () => {
+		const specials = [
+			"S7",
+			"H7",
+			"D7",
+			"C7",
+			"S8",
+			"H8",
+			"D8",
+			"C8",
+			"SJ",
+			"HJ",
+			"DJ",
+			"CJ",
+		];
+		// Seeded shuffles almost never do this, so stack the deck by hand.
+		const rules = {
+			...(game.rules as SheddingRules),
+			handSize: 1,
+			ranks: ["7", "8", "J"] as const,
+		};
+		const state = createShedding(rules, 2, seeded(1));
+		expect(state.discard).toHaveLength(1);
+		expect(specials.map((card) => `${card}#0`)).toContain(state.discard[0]);
+		expect(state.stock).toHaveLength(9);
+	});
+
 	it("bots finish games from two to five players", () => {
 		for (let seats = 2; seats <= 5; seats += 1) {
 			for (let seed = 1; seed <= 25; seed += 1) {

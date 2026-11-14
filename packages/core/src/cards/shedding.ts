@@ -224,9 +224,10 @@ export function createShedding(
 		random,
 	);
 	const hands = deal(stock, seats, rules.handSize);
-	// The first card never carries a power: reshuffle it into the stock.
+	// The first card carries no power: move power cards under the stock. A
+	// short stock can hold nothing else, so stop after one pass and keep it.
 	let top = stock.pop() as CardId;
-	while (powerOf(rules, top)) {
+	for (let tries = stock.length; tries > 0 && powerOf(rules, top); tries -= 1) {
 		stock.unshift(top);
 		top = stock.pop() as CardId;
 	}
