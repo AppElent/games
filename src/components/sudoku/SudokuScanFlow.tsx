@@ -156,7 +156,7 @@ function UploadStep({ onFile }: { onFile: (file: File | undefined) => void }) {
 				<button
 					type="button"
 					onClick={() => uploadRef.current?.click()}
-					className="inline-flex items-center gap-2 rounded-md border border-[var(--club-line-strong)] bg-slate-800/60 px-5 py-3 font-bold text-slate-200"
+					className="inline-flex items-center gap-2 rounded-md club-btn-outline bg-slate-800/60 px-5 py-3 font-bold text-slate-200"
 				>
 					<Upload className="h-5 w-5" /> {sudoku.scan.uploadImage}
 				</button>
@@ -258,7 +258,7 @@ function CornerStep({
 				<button
 					type="button"
 					onClick={onBack}
-					className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-semibold text-slate-300"
+					className="rounded-md club-btn-outline px-4 py-2 font-semibold text-slate-300"
 				>
 					{messages.common.actions.back}
 				</button>
@@ -366,17 +366,17 @@ function VerifyStep({
 					<p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
 						{sudoku.scan.recognizedGridLabel}
 					</p>
-					<div className="grid aspect-square w-full max-w-[420px] grid-cols-9 grid-rows-9 rounded-md border-2 border-slate-400/70 bg-slate-900">
+					<div className="grid aspect-square w-full max-w-[420px] grid-cols-9 grid-rows-9 rounded-md border-2 border-slate-300/80 bg-slate-900">
 						{cells.map((entry, index) => {
 							const row = Math.floor(index / 9);
 							const col = index % 9;
 							const borders = [
 								col % 3 === 0
-									? "border-l-2 border-l-slate-400/60"
-									: "border-l border-l-slate-600/50",
+									? "border-l-2 border-l-slate-300/70"
+									: "border-l border-l-[var(--club-line-strong)]",
 								row % 3 === 0
-									? "border-t-2 border-t-slate-400/60"
-									: "border-t border-t-slate-600/50",
+									? "border-t-2 border-t-slate-300/70"
+									: "border-t border-t-[var(--club-line-strong)]",
 							].join(" ");
 							const flag = conflictSet.has(index)
 								? "bg-red-500/30"
@@ -444,7 +444,7 @@ function VerifyStep({
 								className={`rounded-md px-2 py-1 text-xs font-bold ${
 									cell.type === entry.id
 										? "bg-sky-400 text-slate-950"
-										: "border border-[var(--club-line-strong)] text-slate-300 hover:bg-slate-700"
+										: "club-btn-outline text-slate-300 hover:bg-slate-700"
 								}`}
 							>
 								{entry.label}
@@ -463,7 +463,7 @@ function VerifyStep({
 									className={`rounded py-1 text-sm font-bold ${
 										cell.digit === digit
 											? "bg-sky-400 text-slate-950"
-											: "border border-[var(--club-line-strong)] text-slate-200 hover:bg-slate-700"
+											: "club-btn-outline text-slate-200 hover:bg-slate-700"
 									}`}
 								>
 									{digit}
@@ -496,7 +496,7 @@ function VerifyStep({
 												className={`h-6 w-6 rounded text-xs font-bold ${
 													active
 														? "bg-sky-400 text-slate-950"
-														: "border border-[var(--club-line-strong)] text-slate-300"
+														: "club-btn-outline text-slate-300"
 												}`}
 											>
 												{digit}
@@ -510,7 +510,7 @@ function VerifyStep({
 					<button
 						type="button"
 						onClick={() => onCellsChange(clearScanCell(cells, selected))}
-						className="rounded-md border border-[var(--club-line-strong)] px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-700"
+						className="rounded-md club-btn-outline px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-700"
 					>
 						{sudoku.scan.clearCell}
 					</button>
@@ -549,7 +549,7 @@ function VerifyStep({
 					<button
 						type="button"
 						onClick={onRescan}
-						className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-semibold text-slate-300"
+						className="rounded-md club-btn-outline px-4 py-2 font-semibold text-slate-300"
 					>
 						{sudoku.scan.startOver}
 					</button>

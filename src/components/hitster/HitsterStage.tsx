@@ -325,7 +325,7 @@ export function HitsterStage({
 										<div className="text-center">
 											<button
 												type="button"
-												className="rounded-xl border border-[var(--club-line-strong)] px-5 py-2.5 font-semibold text-[var(--club-text)] hover:border-[var(--club-soft)]"
+												className="rounded-xl club-btn-outline px-5 py-2.5 font-semibold text-[var(--club-text)] hover:border-[var(--club-soft)]"
 												onClick={() => setStealOpen(true)}
 											>
 												{stage.stealButton}
