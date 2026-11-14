@@ -185,7 +185,7 @@ Not drawn for this game; reuse the Beat the Clock bottom sheet ([pause menu](bea
 | Host | How to play · End game (danger, confirm) |
 | Player | How to play · Leave room (danger, confirm) |
 
-End game confirm: "End the game for everyone?" with body "Everyone sees the summary of this game." / "Iedereen ziet het overzicht van dit spel.", then **End game** and **Keep playing**. Leaving takes the player out of the rotation; if it was their turn, the next player is up.
+End game confirm: "End the game for everyone?" with body "Everyone sees the summary of this game." / "Iedereen ziet het overzicht van dit spel.", then **End game** and **Keep playing**. Leaving takes the player out of the rotation; if it was their turn (choosing or on the prompt), the turn counts as skipped and the next player is up. Server, landing and rejoin: [leaving a room](README.md#leaving-a-room).
 
 | Key | en | nl |
 | --- | --- | --- |

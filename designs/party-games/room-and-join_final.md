@@ -202,7 +202,7 @@ Layout: back button and "Join a room"; a room card when the code matches a room 
 | `wrongCode` | Code field border and hint in `danger`, `aria-invalid="true"`; hint "No room has this code. Check it with the host."; no room card |
 | `joining` | Join disabled with spinner "Joining…" |
 | `alreadyIn` | No form. Card "You're already in this room as Noor" with **Continue as Noor** (primary) and **Join another room** (secondary, `common.joinPanel.joinAnother`, clears the code) |
-| join failed | Inline error above **Join room**, in `danger` with `role="alert"`, from the existing server error copy (`serverErrors`): `roomLocked` "This room is locked by the host.", `removedByHost`, `signInToJoin` (with the existing sign-in action), `roomNotFound` (code), `gameUnavailable` (invite token); a network failure uses `common.joinPanel.joinError`. The form stays filled. |
+| join failed | Inline error above **Join room**, in `danger` with `role="alert"`, from the existing server error copy (`serverErrors`): `roomLocked` "This room is locked by the host.", `removedByHost`, `signInToJoin` (error text only; the join screen has no sign-in button), `roomNotFound` (code), `gameUnavailable` (invite token); a network failure uses `common.joinPanel.joinError`. The form stays filled. |
 | invite token unknown or expired | No room card; the preview returns `null`, so the inline error shows `gameUnavailable` ("This game is no longer available.") and the code field appears so the player can type a code instead |
 | `adultInApp` (mobile only) | No form. Card "Open this room in your browser" with **Open in browser** (primary, opens the web join URL) and **Join another room** (secondary, clears the code and any invite token) |
 | signed in | Name prefilled from the profile name, still editable |
@@ -262,11 +262,11 @@ Layout: menu button, kicker, host and settings line, room code; a title and subt
 | --- | --- |
 | `pickTeam` | "Pick your team"; both cards show **Join Comets** / **Join Rockets**; status "Pick a team to get ready" |
 | `onTeam` | The chosen card has a cyan border, check badge and "You" in its list, `aria-pressed="true"`; the other card shows **Switch**; status "Waiting for Sam to start the game" |
-| `lateJoin` (game running) | "Game in progress"; subtitle names the running turn; after picking: "You play from your team's next turn…", status "Rockets are describing now. Hang on." |
+| `lateJoin` (game running) | "Game in progress"; subtitle names the running turn; after picking: "You play from your team's next turn…", status `clock.lobby.statusLate` ("Rockets are playing now. You're in from your team's next turn.") |
 | `loading` | Skeleton blocks in place of title and cards, `aria-busy="true"`, label "Loading the room" |
 | removed by the host | Existing session behaviour (`SeatBanner` message, back to `/join`) |
 
-Doen, Durven player lobby status: "Waiting for Lotte to start the game" / "Wachten tot Lotte het spel start". Late joiners there skip this screen and land on the waiting screen at the end of the rotation.
+Doen, Durven player lobby status: "Waiting for Lotte to start the game" / "Wachten tot Lotte het spel start". Late joiners there skip this screen and land on the screen everyone else sees for the current turn (the waiting screen while someone chooses, the watch screen while a prompt shows), at the end of the rotation.
 
 | Key | en | nl |
 | --- | --- | --- |

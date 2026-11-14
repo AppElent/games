@@ -54,6 +54,18 @@ To review a state on the canvas: press Play on a phone artboard to click through
 - Prompts never repeat within a game; skipping is always allowed.
 - Never use the trademarked "30 Seconds" name anywhere, including content and code.
 
+### Leaving a room
+
+Both games, all clients. There is no leave mutation today (only the host's kick, `kickedAt`), so each game adds one (suggested `beatTheClock.leave` / `truthOrDare.leave`, using `useGameAction` / `useSessionAction` with the overview's pending and error states):
+
+- **Server.** Leaving sets `leftAt` on the participant and clears its team (Beat the Clock) or rotation slot (Doen, Durven). Left rows don't count for the ready rule, turns or the too-few checks. The host has no Leave room (they use End game).
+- **Where the leaver lands.** Web: the home page (`/`). Mobile: the Play tab. The local seat for that session is forgotten.
+- **Preview and `alreadyIn`.** `invitePreview` skips left rows, as it skips kicked ones, so a leaver sees the normal join form, not "Your seat is still yours".
+- **Rejoin.** `admitParticipant` already reclaims the same identity's row; for a left row it clears `leftAt` and the player comes back as a late joiner (Beat the Clock: pick a team, play from that team's next turn; Doen, Durven: end of the rotation). Old team, score credit and rotation slot are not restored.
+- **Leaving mid-turn, Beat the Clock.** The describer leaves during `ready`: the next describer on that team gets the ready screen (same turn). During `describing` or `timeUp`: the ticks as they stand are sent, as the auto-send does, and the check runs. A referee or teammate leaving changes nothing in the turn.
+- **Leaving mid-turn, Doen, Durven.** The active player leaves while choosing or on the prompt: the turn counts as skipped and the next player is up.
+- **Too few players** after a leave follows each game's rule (Beat the Clock: short teams are skipped, fewer than 2 playable teams ends the game; Doen, Durven: fewer than 2 players ends the game).
+
 ## Shared visual spec
 
 **Web:** game screens, including the settings pages and lobbies, are always dark: they render inside `FullscreenGamePage` / `FullscreenGameShell`, whose `.game-fullscreen` class pins the dark tokens (`src/styles.css`). Only the `/join` page (`src/routes/join.tsx`, normal app chrome) follows the app theme.
@@ -162,11 +174,11 @@ Reuse before adding. Shared web pieces live in `src/components/games/`; shared m
 | Players, kick, rename | `ParticipantList`, `ModerationActions`, `SessionHostControls` | no shared list yet (Hitster's `lobby-roster.tsx` is game-owned); build the team cards and player list in the game's folder |
 | Mutations with localized errors | `useGameAction` | `useSessionAction` (`features/sessions/use-session-action.ts`) |
 | End screen | `GameEndScreen` can host Beat the Clock's winner; Doen, Durven needs its stats grid | `Card`, `Button` |
-| Menus | `FullscreenGameShell` pause menu, extended with game items | bottom sheet per `expo-ui` guidance |
+| Menus | `FullscreenGameShell` today always draws a floating menu button that opens a centred "Paused" overlay (Resume / Restart / Return to Games) and fires `onPauseChange`. These games don't use it: add an optional `menu` prop to `FullscreenGameShell`, passed through by `FullscreenGamePage`, that replaces the floating button and overlay with the game's own header control. When it is set, the shell draws no floating button, no overlay and never calls `onPauseChange`; other games are unchanged. In-game screens pass the 44px menu button that opens the game's bottom sheet (opening it never pauses; only the host's **Pause for everyone** does); settings screens pass the back button (`common.gameShell.returnToGames`). There is no Return to Games item in game: players leave through **Leave room** (with its confirm), the host through **End game** and then **Back to arcade** | bottom sheet per `expo-ui` guidance; settings screens use the stack's back button |
 
 New per-game pieces: the describer word list, the referee check list, the scoreboard row with progress, the team picker, the category picker and the prompt card. Keep each in the game's folder until a second game needs it.
 
-Copy goes in `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts` and `…/truthOrDare.ts` (one module per game, both languages, `satisfies typeof en`), with catalog entries in `…/catalog.ts`. Placeholders use `fmt`, counts use `plural`. A placeholder that holds several names (`{opponents}`, a referee `{team}` with 3–4 teams, `{guessers}`, `{categories}`) is a list joined in the reader's language by a small runtime helper (`Intl.ListFormat` with `type: "conjunction"`): "Rockets and Meteors" / "Raketten en Meteoren". Team names are plural nouns, so a verb after one team or a list reads the same ("Rockets are", "Raketten zijn").
+Copy goes in `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts` and `…/truthOrDare.ts` (one module per game, both languages, `satisfies typeof en`), with catalog entries in `packages/core/src/i18n/{en,nl}/catalog.ts` (not under `games/`). Placeholders use `fmt`, counts use `plural`. A placeholder that holds several names (`{opponents}`, a referee `{team}` with 3–4 teams, `{guessers}`, `{categories}`) is a list joined in the reader's language by a small runtime helper (`Intl.ListFormat` with `type: "conjunction"`): "Rockets and Meteors" / "Raketten en Meteoren". Team names are plural nouns, so a verb after one team or a list reads the same ("Rockets are", "Raketten zijn").
 
 ## Build order
 
@@ -181,7 +193,7 @@ APP-28 plans three PRs: Beat the Clock web, Doen, Durven web, then both on mobil
   - Doen, Durven: a category with no prompts left is disabled, and the game ends with the summary when all three run out; random order reshuffles every round and never picks the same player twice in a row (the next player is drawn when the turn starts, so "Next: Noor" is known); the in-game menu reuses the Beat the Clock sheet with How to play, End game and Leave room; **Niveaus aanpassen** can't add 18+ while anyone in the room plays in the app.
   - Beat the Clock, team size mid-game: **Switch team** is disabled when it would leave your team with fewer than 2 players; a team that drops below 2 through **Leave room** has its turns skipped (with a notice) until it has 2 again, and the game ends with the current scores if fewer than 2 teams can still play.
   - Doen, Durven ends with the summary when fewer than 2 players are left in the rotation; a named player who leaves stays in the prompt on screen.
-  - Beat the Clock: on the score screen **Skip this turn** skips the upcoming turn (for a describer whose phone doesn't respond); **Next**, **See who won** and **Start the extra round** move every phone, first tap wins.
+  - Beat the Clock: on the score screen **Skip this turn** skips the upcoming turn (for a describer whose phone doesn't respond); **Next** (only on the next describer's phone) moves every phone to the ready state; **See who won** and **Start the extra round** show on every phone and the first tap moves everyone. A skip of the last turn in a round still ends the round (target, tie and next round rules apply).
   - Join: **Join as someone else** (drawn on `alreadyIn`) is dropped, because the server gives one identity one seat; the secondary action is **Join another room**.
   - Beat the Clock, end of game: a game that ends early (host **End game**, too few teams, or the word pack running out) shows why on the winner screen and, when tied, "Tied" with normal end actions (no extra round). **Play again** is disabled while any team has fewer than 2 players; the host uses **New teams**.
   - Content running out: a game ends when its content runs out (Beat the Clock: fewer than 5 unused words at the start of a turn; Doen, Durven: all three categories empty). **Play again** excludes content used in this room until too little is left; then the exclusion resets for the new game and the host sees a notice that content will repeat.
