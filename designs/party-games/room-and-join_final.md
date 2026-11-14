@@ -266,8 +266,8 @@ Layout: menu button, kicker, host and settings line, room code; a title and subt
 | --- | --- |
 | `pickTeam` | "Pick your team"; both cards show **Join Comets** / **Join Rockets**; status "Pick a team to get ready" |
 | `onTeam` | The chosen card has a cyan border, check badge and "You" in its list, `aria-pressed="true"`; the other card shows **Switch**; status "Waiting for Sam to start the game" |
-| `lateJoin` (game running), when it ends | The late joiner stays on this screen (and does not referee) until their team's next ready state, then moves into the game screens with everyone else |
 | `lateJoin` (game running) | "Game in progress"; subtitle names the running turn; after picking: "You play from your team's next turn…", status `clock.lobby.statusLate` ("Rockets are playing now. You're in from your team's next turn.") |
+| `lateJoin` (game running), when it ends | The late joiner stays on this screen (and does not referee) until their team's next ready state, then moves into the game screens with everyone else. If the game ends first (picked a team or not), they see the `player` end screen |
 | `loading` | Skeleton blocks in place of title and cards, `aria-busy="true"`, label "Loading the room" |
 | removed by the host | Existing session behaviour (`SeatBanner` message, back to `/join`) |
 

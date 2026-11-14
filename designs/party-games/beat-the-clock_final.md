@@ -23,7 +23,7 @@ Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock
 
 The server owns the clock (start time and length); phones render the countdown from it, so a reload or reconnect shows the right time. The clock keeps running if the describer drops; they rejoin into the same turn with their ticks.
 
-Header on every in-game screen: 44px pause button (`aria-label` "Pause") that opens the menu (screen 8); kicker "Beat the Clock" in amber; meta line "Turn 7 · first to 30"; "Room K7Q 4MR" on the right. A scoreboard strip sits at the bottom of the describer, teammate and opponent screens: the playing team's card has an amber border and shows the pending gain ("18 +2"). With 2 teams it is two columns; with 3 or 4 it is a 2 × 2 grid, playing team first, then the others in turn order.
+Header on every in-game screen: 44px menu button that opens the menu (screen 8). The host's shows the pause icon with `aria-label` `clock.pause`; players' shows the menu icon with `room.menuLabel`; kicker "Beat the Clock" in amber; meta line "Turn 7 · first to 30"; "Room K7Q 4MR" on the right. A scoreboard strip sits at the bottom of the describer, teammate and opponent screens: the playing team's card has an amber border and shows the pending gain ("18 +2"). With 2 teams it is two columns; with 3 or 4 it is a 2 × 2 grid, playing team first, then the others in turn order.
 
 **3 or 4 teams.** One team plays; every other team referees. Wherever the copy below says `{opponents}` or a referee `{team}`, it is the list of all other teams, joined by the list helper in the [overview](README.md#component-bindings) ("Rockets and Meteors" / "Raketten en Meteoren"). The opponent and referee screens (3, 4) are shown to every player of every other team; any of them can flag and confirm.
 
@@ -261,7 +261,7 @@ Layout: trophy tile in `amberDim`, headline 40px, a subline; final scores as ran
 | `tie` | "Tied at 31", "One more round decides it. Every team gets one more turn."; places show "="; **Start the extra round** for everyone (it goes to the next turn's score/ready state); no other actions |
 | `endedEarly` | Meta line says why: `clock.winner.endedByHost`, `clock.winner.tooFewTeams` or `clock.winner.ranOut`; otherwise as `host` / `player` |
 | `endedTie` (game ended early, or the pack ran out, with a tie at the top) | Title `clock.winner.tieTitle` ("Tied at 31"), body `clock.winner.endedTieBody`, meta as `endedEarly`; places show "="; the normal `host` / `player` actions, no extra round |
-| Play again blocked (a team has fewer than 2 players) | **Play again** disabled with `clock.lobby.need` under it; **New teams** stays |
+| Play again with a team below 2 players | **Play again** stays enabled; it reopens the room and takes everyone to the lobby (teams kept) instead of starting, where the ready rule applies ([game over and the session](README.md#leaving-a-room)) |
 | pack will repeat (fewer than 5 unused words left in this room) | Host notice above Play again: `clock.winner.packReset`; the next game the host starts (Play again, or Start after New teams) resets the room's used words |
 | restarting (host tapped Play again) | Play again disabled with spinner "Starting…" (pending state; not drawn) |
 
