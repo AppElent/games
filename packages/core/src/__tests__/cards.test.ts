@@ -1071,6 +1071,8 @@ describe("full games between computer players", () => {
 
 	it.each([
 		["pesten", ["noFinishOnPower", "noStacking", "noLastCard"]],
+		["maumau", ["noStacking", "noLastCard"]],
+		["maumau", ["plain7", "plain8", "plainJ"]],
 		[
 			"pesten",
 			[
@@ -1090,6 +1092,36 @@ describe("full games between computer players", () => {
 			expect(final.phase).toBe("finished");
 		}
 	});
+});
+
+describe("mau-mau", () => {
+	const game = getCardGame("maumau");
+
+	it("deals five cards each from a 32-card deck without jokers", () => {
+		const state = createCardGame(game, [], 4, seeded(3));
+		const all = [...state.stock, ...state.discard, ...state.hands.flat()];
+		expect(all).toHaveLength(32);
+		expect(state.hands.every((hand) => hand.length === 5)).toBe(true);
+		const ranks = new Set(all.map((card) => parseCard(card).rank));
+		expect([...ranks].sort()).toEqual(
+			["7", "8", "9", "10", "J", "Q", "K", "A"].sort(),
+		);
+		expect(all.some((card) => parseCard(card).joker)).toBe(false);
+	});
+
+	it("7 makes the next player draw two, 2 is a plain card", () => {
+		const rules = resolvedRules(game, []).rules as SheddingRules;
+		expect(rules.powers["7"]).toEqual({ kind: "draw", amount: 2 });
+		expect(rules.powers["2" as "7"]).toBeUndefined();
+	});
+
+	it("bots finish games from two to five players", () => {
+		for (let seats = 2; seats <= 5; seats += 1) {
+			for (let seed = 1; seed <= 25; seed += 1) {
+				expect(playOut(game, [], seats, seed).phase).toBe("finished");
+			}
+		}
+	}, 30_000);
 });
 
 describe("fitting cards onto a meld", () => {

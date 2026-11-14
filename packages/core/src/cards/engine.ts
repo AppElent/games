@@ -8,6 +8,7 @@
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
 import { jokeren } from "./games/jokeren";
+import { maumau } from "./games/maumau";
 import { pesten } from "./games/pesten";
 import {
 	applyRummy,
@@ -66,7 +67,7 @@ export type CardGameDefinition =
 /** How long a player can go without a heartbeat before others may hand their seat to autopilot. */
 export const SEAT_SILENT_AFTER_MS = 60_000;
 
-export const CARD_GAMES = { pesten, jokeren } as const satisfies Record<
+export const CARD_GAMES = { pesten, maumau, jokeren } as const satisfies Record<
 	string,
 	CardGameDefinition
 >;

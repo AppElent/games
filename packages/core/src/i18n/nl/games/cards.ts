@@ -360,6 +360,39 @@ export const cards = {
 				},
 			},
 		},
+		maumau: {
+			name: "Mau-Mau",
+			tagline: "Vijf kaarten, drie streken",
+			blurb:
+				"Het snelle broertje van Pesten met 32 kaarten. Volg de stapel, ontwijk de zevens en roep Mau bij je laatste kaart.",
+			powers: {
+				"7": "Zeven pakt twee",
+				"8": "Acht slaat over",
+				J: "Boer wenst",
+			},
+			options: {
+				noStacking: {
+					label: "Niet stapelen",
+					hint: "Op een 7 mag je geen 7 leggen.",
+				},
+				noLastCard: {
+					label: "Mau hoeft niet",
+					hint: "Niemand hoeft zijn laatste kaart te melden.",
+				},
+				plain7: {
+					label: "7 als gewone kaart",
+					hint: "Zeven pakt twee doet niet mee.",
+				},
+				plain8: {
+					label: "8 als gewone kaart",
+					hint: "Acht slaat over doet niet mee.",
+				},
+				plainJ: {
+					label: "Boer als gewone kaart",
+					hint: "Boer wenst doet niet mee.",
+				},
+			},
+		},
 		jokeren: {
 			name: "Jokeren",
 			tagline: "Groepen, rijen en vier jokers",

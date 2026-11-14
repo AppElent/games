@@ -90,7 +90,7 @@ export const catalog = {
 	},
 	"card-games": {
 		title: "Card Club",
-		tagline: "Pesten, Jokeren and more",
+		tagline: "Pesten, Mau-Mau, Jokeren and more",
 		description:
 			"Classic Dutch card games at one table. Play the computer straight away or invite friends with a room code.",
 		primaryAction: "Pick a game",

@@ -16,7 +16,7 @@ the [mobile runbook](../runbooks/mobile.md).
 ## Behavior
 
 - The app offers Sudoku (local), Backgammon (local pass-and-play and online
-  challenge), Music Timeline (id `hitster`, online room) and card games (Pesten and
+  challenge), Music Timeline (id `hitster`, online room) and card games (Pesten, Mau-Mau and
   Jokeren, against bots or in an online room). The other games are web-only for now
   (`pending-port`, [ADR 0002](../adr/0002-ship-every-game-on-web-and-mobile.md)) and
   not listed; a new game ships on both.
