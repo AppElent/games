@@ -17,7 +17,8 @@ Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/truthOrDare.
 2. **Prompt.** The server draws an unused prompt of that category from the room's levels, fills in a named player where the prompt has one (never the active player), and shows it on every phone.
 3. **Done or skip.** The active player taps **Gedaan** or **Overslaan**. The host can do it for them. Skipping is always allowed and never penalised.
 4. **Next player.** In join order, or random if the host chose it (random never picks the same player twice in a row). A round ends when everyone has had a turn. In random order the turn order is reshuffled at the start of each round (the first pick of a round is never the last player of the round before).
-5. The game runs until the host ends it from the menu. Then everyone sees the summary.
+5. The game runs until the host ends it from the menu, the prompts run out, or fewer than 2 players (watchers don't count) are left in the rotation. Then everyone sees the summary.
+6. Players leaving: a player who leaves is taken out of the rotation. If it was their turn, the next player is up. If they were the pre-drawn next player, the next player is drawn again. If they are named in the prompt on screen, the prompt stays as drawn and only their "you're in this one" line goes. A prompt that names a player is drawn only when someone other than the active player is in the rotation.
 
 No timer, no points. Prompts never repeat within a game. If a category runs out for the room's levels, it is disabled on the pick screen with the hint "No prompts left" / "Geen opdrachten meer"; if all three run out, the game ends with the summary.
 
@@ -97,7 +98,7 @@ Layout: the active player row (48px initial avatar, name, "koos Doen"); category
 | `feest` | Durven · Feest: "Zing het refrein van een liedje naar keuze, fluisterend en met een heel serieus gezicht." |
 | `18+` | Waarheid · 18+: "Met wie in deze kamer zou je het liefst op date gaan, en waarom?" (web only) |
 | `longPrompt` | A prompt over 120 characters at 26px; it wraps, never truncates |
-| `saving` | Gedaan disabled with spinner "Opslaan…"; Overslaan disabled |
+| `saving` | The tapped button disabled with a spinner and "Opslaan…"; the other button disabled (the same for Gedaan and Overslaan) |
 | done by the host | The screen moves on as if the player tapped it; no extra notice |
 
 Prompt examples are content, not copy; the real prompts come from the content pack (the `generate-game-content` skill, with the 18+ opt-in exception). A named player in a prompt is highlighted in violet on the watchers' screen.
@@ -151,6 +152,7 @@ Layout: a star tile in `violetDim`, "Dat was het!" at 38px, "Lotte heeft het spe
 | `restarting` | Nog een keer disabled with spinner "Opnieuw starten…" |
 | tie for most picked | "Meest gekozen" lists both: "Doen en Waarheid, 8 keer" |
 | ended because prompts ran out | Subline "De opdrachten zijn op na {n} rondes." |
+| ended because too few players were left | Subline `truth.over.tooFew`; the host's actions as `host` (Nog een keer is disabled with `truth.lobby.need` until 2 players are in the room) |
 | prompts will repeat (every category is out for these levels in this room) | Host notice above **Nog een keer**: `truth.over.promptsReset`; Nog een keer resets the room's used prompts; **Niveaus aanpassen** stays |
 | ended before anyone picked | Rondes 1, Gedaan 0, Overgeslagen 0; the "Meest gekozen" card is hidden |
 
@@ -160,6 +162,7 @@ Approved choice 6: no winner and no per-player score. Rondes counts the rounds s
 | --- | --- | --- |
 | `truth.over.title` | That's a wrap! | Dat was het! |
 | `truth.over.endedBy` | {host} ended the game after {n\|1 round\|{n} rounds}. | {host} heeft het spel beëindigd na {n\|1 ronde\|{n} rondes}. |
+| `truth.over.tooFew` | Too few players were left after {n\|1 round\|{n} rounds}. | Er waren te weinig spelers over na {n\|1 ronde\|{n} rondes}. |
 | `truth.over.ranOut` | The prompts ran out after {n\|1 round\|{n} rounds}. | De opdrachten zijn op na {n\|1 ronde\|{n} rondes}. |
 | `truth.over.rounds` | Rounds | Rondes |
 | `truth.over.done` | Done | Gedaan |

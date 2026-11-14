@@ -92,6 +92,19 @@ Word row: untapped = transparent row with an outlined circle; ticked = `amberDim
 
 When the describer sends (or the 10 s auto-send fires), teammates move to the describing team's check screen (screen 5).
 
+**Watchers** (joined with "Only watch, don't play") use this screen's layout with neutral copy and never see the words while a turn runs:
+
+| State | What shows |
+| --- | --- |
+| `ready` | Chip `clock.watcher.team` ("Comets · Sam describes"); title `clock.opponent.upTitle`, body `clock.opponent.upBody` |
+| `describing`, last 5 s, `timeUp` | As the teammate states, with `clock.watcher.watching` in place of "Guess out loud" |
+| after the send | Screen 5, `watcher` row |
+
+| Key | en | nl |
+| --- | --- | --- |
+| `clock.watcher.team` | {team} · {describer} describes | {team} · {describer} omschrijft |
+| `clock.watcher.watching` | You're watching | Je kijkt mee |
+
 | Key | en | nl |
 | --- | --- | --- |
 | `clock.teammate.team` | Your team · {describer} describes | Jouw team · {describer} omschrijft |
@@ -147,6 +160,7 @@ Layout: title and explanation; the ticked words, each with a **Flag** button; a 
 | `oneFlagged` | Flagged row: `dangerDim` fill, word struck through, "Flagged · won't count", button **Undo**; the confirm label and points drop by one |
 | `sending` | Confirm disabled with spinner "Confirming…"; flag buttons disabled |
 | `confirmedByOther` | Buttons gone; status "Mila confirmed. Comets score 2 points." Then everyone moves to the score. |
+| `autoConfirmed` (nobody confirmed within 10 s) | Buttons gone; status "The check is over. Comets score 2 points." (`clock.check.autoDone`). Then everyone moves to the score. |
 | no ticked words | Title stays; list reads "No words to check."; **Confirm 0 words** still ends the check (not drawn) |
 
 Flags are shared: a flag by Mila shows on Daan's screen too, and either can undo it. Only the confirm ends the check.
@@ -165,6 +179,7 @@ Flags are shared: a flag by Mila shows on Daan's screen too, and either can undo
 | `clock.check.auto` | Counts on its own in {s} s. Any referee can flag. | Telt vanzelf over {s} s. Elke scheidsrechter kan markeren. |
 | `clock.check.confirm` | Confirm {n\|1 word\|{n} words} | {n\|1 woord\|{n} woorden} bevestigen |
 | `clock.check.confirming` | Confirming… | Bevestigen… |
+| `clock.check.autoDone` | The check is over. {team} score {n\|1 point\|{n} points}. | De controle is voorbij. {team} krijgen {n\|1 punt\|{n} punten}. |
 | `clock.check.confirmedBy` | {name} confirmed. {team} score {n\|1 point\|{n} points}. | {name} heeft bevestigd. {team} krijgen {n\|1 punt\|{n} punten}. |
 
 ## 5. Referee check · describing team
@@ -176,12 +191,17 @@ Flags are shared: a flag by Mila shows on Daan's screen too, and either can undo
 | `waiting` | Status "Counts on its own in 8 s"; "Rockets are checking your words"; the ticked words with "Checking"; "This turn +3"; footer "Nothing to do. Scores show when Rockets confirm, or after 10 s." |
 | `flagged` | The flagged word struck through in a `dangerDim` row with "Flagged by Mila"; "+2" |
 | `confirmed` | "Rockets confirmed your words", rows read "Counts", **See the scores** (everyone also moves automatically after 2 s) |
+| `autoConfirmed` | "Your words count" (`clock.checking.autoDone`), rows read "Counts" except flagged ones; then as `confirmed` |
+| watcher | Title `clock.checking.titleWatch` ("Rockets are checking Comets' words"), the same rows (the turn is over, so the words may show), no footer hint; `autoConfirmed` and `confirmed` use `clock.checking.doneWatch` |
 
 | Key | en | nl |
 | --- | --- | --- |
 | `clock.checking.title` | {team} are checking your words | {team} controleren jullie woorden |
 | `clock.checking.done` | {team} confirmed your words | {team} hebben jullie woorden bevestigd |
 | `clock.checking.auto` | Counts on its own in {s} s | Telt vanzelf over {s} s |
+| `clock.checking.autoDone` | Your words count | Jullie woorden tellen |
+| `clock.checking.titleWatch` | {referees} are checking {team}' words | {referees} controleren de woorden van {team} |
+| `clock.checking.doneWatch` | The check is over | De controle is voorbij |
 | `clock.checking.confirmed` | Confirmed | Bevestigd |
 | `clock.checking.list` (aria) | Your guessed words | Jullie geraden woorden |
 | `clock.checking.pending` | Checking | Wordt gecontroleerd |
@@ -206,7 +226,7 @@ Layout: "+2" large in amber with "for Comets" and a detail line; the scoreboard 
 | 3 or 4 teams | One row per team, sorted by score; the leader has the amber border |
 | target passed mid-round | Normal `nextTurn`; the round finishes first (rule 1) |
 
-Progress bars: `role="progressbar"`, max = target, label "{team} progress to {target}". The score screen stays until the next describer taps Next (or Go); there is no timer.
+Progress bars: `role="progressbar"`, max = target, label "{team} progress to {target}". The score screen stays until the next describer taps **Next**; there is no timer. **Next** is a server transition that moves every phone to the ready state (screen 1 for the describer, the ready states of screens 2 and 3 for everyone else); **Go** on the ready screen then starts the clock. **See who won** and **Start the extra round** show on every phone; the first tap moves everyone (a server transition, repeated taps do nothing). If the next describer's phone doesn't respond, the host uses **Skip this turn** (screen 8), which skips that upcoming turn.
 
 | Key | en | nl |
 | --- | --- | --- |
@@ -241,7 +261,7 @@ Layout: trophy tile in `amberDim`, headline 40px, a subline; final scores as ran
 | `endedEarly` | Meta line says why: `clock.winner.endedByHost`, `clock.winner.tooFewTeams` or `clock.winner.ranOut`; otherwise as `host` / `player` |
 | `endedTie` (game ended early, or the pack ran out, with a tie at the top) | Title `clock.winner.tieTitle` ("Tied at 31"), body `clock.winner.endedTieBody`, meta as `endedEarly`; places show "="; the normal `host` / `player` actions, no extra round |
 | Play again blocked (a team has fewer than 2 players) | **Play again** disabled with `clock.lobby.need` under it; **New teams** stays |
-| pack will repeat (fewer than 5 unused words left in this room) | Host notice above Play again: `clock.winner.packReset`; Play again resets the room's used words |
+| pack will repeat (fewer than 5 unused words left in this room) | Host notice above Play again: `clock.winner.packReset`; the next game the host starts (Play again, or Start after New teams) resets the room's used words |
 | restarting (host tapped Play again) | Play again disabled with spinner "Starting…" (pending state; not drawn) |
 
 Copy change from the canvas: the artboard's "Mila guessed the most words" becomes "described". The "most words" line names the describer whose turns produced the most counted words (guesses are spoken, so only describing is tracked per player); omit the sentence on a tie between players. With 3 or 4 teams the subline uses `clock.winner.bodyMany` (the winning score only) and the rows list every team by place.
@@ -260,7 +280,7 @@ Copy change from the canvas: the artboard's "Mila guessed the most words" become
 | `clock.winner.endedByHost` | {host} ended the game | {host} heeft het spel beëindigd |
 | `clock.winner.tooFewTeams` | Too few teams could still play | Te weinig teams konden nog spelen |
 | `clock.winner.ranOut` | The word pack ran out | De woordenlijst is op |
-| `clock.winner.packReset` | Every word in this pack has been used here. A new game can repeat words. | Alle woorden uit deze lijst zijn hier gebruikt. In een nieuw spel kunnen woorden terugkomen. |
+| `clock.winner.packReset` | There aren't enough unused words for another game. A new game can repeat words. | Er zijn niet genoeg ongebruikte woorden voor een nieuw spel. In een nieuw spel kunnen woorden terugkomen. |
 | `clock.winner.list` (aria) | Final scores | Eindstand |
 | `clock.winner.extraRound` | Start the extra round | Start de extra ronde |
 | `room.playAgain` | Play again | Nog een keer |
@@ -277,14 +297,15 @@ Copy change from the canvas: the artboard's "Mila guessed the most words" become
 | `player` | Title "Menu"; How to play · Switch team ("From the next turn") · Leave room ("You can rejoin with code K7Q 4MR", in `danger`) |
 | `host` | Title "Host menu"; Pause for everyone ("Stops the clock on every phone") · Skip this turn ("No points; Rockets go next") · How to play · End game ("Shows the scores as final", in `danger`) |
 | `hostConfirmEnd` | `alertdialog` "End the game for everyone?" with body, **End game** (`danger` fill, `onDanger` ink) and **Keep playing** |
-| `pausedByHost` (players) | No sheet; a centred "Paused" card over the dimmed game: "Sam paused the game. The clock is stopped at 0:17 and starts again when Sam resumes." The describer's words are hidden behind it until the clock runs again. |
+| `pausedByHost` (players) | No sheet; a centred "Paused" card over the dimmed game: "Sam paused the game. The clock is stopped at 0:17 and starts again when Sam resumes." The describer's words are hidden behind it until the clock runs again. On the ready, check or score screens (no running clock) the body is `clock.paused.bodyNoClock`. |
+| paused, host sheet closed | The host sees the same Paused card with **Resume for everyone** under it |
 | paused (host) | The first host item reads **Resume for everyone** ("Starts the clock on every phone"); not drawn |
 
 Behaviour:
 
 - Opening the menu does not stop the clock for anyone. Only **Pause for everyone** does.
 - Pause freezes the phase that is running: the turn clock, the 10 s auto-send after time's up, or the 10 s referee check (its countdown stops and Confirm is disabled). On the ready screen Go is disabled; on the score screen the move to the next turn waits. Resume continues from the frozen value.
-- **Skip this turn**: no points for the playing team; the next team plays. No confirm (it is reversible in effect: the team plays again next round).
+- **Skip this turn**: on the ready, describing or time's-up screens, the playing team's turn ends with 0 points; on the score screen, it skips the upcoming turn (0 points for that team) and leaves the score just shown untouched. During the referee check it is hidden (the check ends within 10 s). A card that was dealt is spent either way. Every phone then shows `clock.turn.skipped` for 3 s and moves to the next ready state. No confirm (it is reversible in effect: the team plays again next round).
 - **Switch team**: opens the team picker from the player lobby (screen 5 of room and join); applies from the next turn. Hidden for the current describer during their turn. Disabled, with the hint `clock.menu.switchBlocked`, when your team would drop below 2 players.
 - **Leave room**: leaves the seat after a confirm ("Leave the room?" / "Kamer verlaten?", body "You can rejoin with code {code}." / "Je kunt terugkomen met code {code}.", buttons **Leave** / **Verlaten** and **Stay** / **Blijven**). A team that drops below 2 players has its turns skipped until it has 2 again (a player switches in); every phone shows `clock.turn.skippedShort` for 3 s instead of the ready screen. If fewer than 2 teams have 2 players, the game ends with the current scores (`clock.winner.*`, as **End game**).
 - **End game**: after confirm, the current turn doesn't count and everyone goes to the winner screen with the current scores (a tie shows `endedTie`, without an extra round).
@@ -308,6 +329,7 @@ Behaviour:
 | `clock.menu.switch` | Switch team | Wissel van team |
 | `clock.menu.switchHint` | From the next turn | Vanaf de volgende beurt |
 | `clock.menu.switchBlocked` | Your team needs at least 2 players | Je team heeft minstens 2 spelers nodig |
+| `clock.turn.skipped` | {host} skipped this turn. {team} are next. | {host} heeft deze beurt overgeslagen. {team} zijn hierna. |
 | `clock.turn.skippedShort` | {team} have too few players, so their turn is skipped. | {team} hebben te weinig spelers, dus hun beurt wordt overgeslagen. |
 | `room.menu.leave` | Leave room | Kamer verlaten |
 | `room.menu.leaveHint` | You can rejoin with code {code} | Je kunt terugkomen met code {code} |
@@ -316,6 +338,7 @@ Behaviour:
 | `room.leave.confirm` | Leave | Verlaten |
 | `room.leave.cancel` | Stay | Blijven |
 | `clock.paused.title` | Paused | Gepauzeerd |
+| `clock.paused.bodyNoClock` | {host} paused the game. It continues when {host} resumes. | {host} heeft het spel gepauzeerd. Het gaat verder als {host} verdergaat. |
 | `clock.paused.body` | {host} paused the game. The clock is stopped at {time} and starts again when {host} resumes. | {host} heeft het spel gepauzeerd. De klok staat stil op {time} en loopt weer als {host} verdergaat. |
 | `room.end.title` | End the game for everyone? | Spel beëindigen voor iedereen? |
 | `clock.end.body` | This turn won't count. Everyone sees the current scores as final: {scores}. | Deze beurt telt niet. Iedereen ziet de huidige stand als eindstand: {scores}. |

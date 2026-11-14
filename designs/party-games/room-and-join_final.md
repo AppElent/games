@@ -89,7 +89,7 @@ Layout: back button and title; **Levels** checkbox list (3 rows on web, 2 in the
 | `error` | Alert above the button; button reads **Opnieuw proberen** |
 | `app` (mobile) | 18+ row is absent; an info row says "18+ speel je alleen in de browser, niet in de app." |
 
-The server enforces the web-only rule whatever a client sends: the app passes its platform with create, join and level changes, and the server rejects an 18+ room created from the app, an 18+ room without the confirmation, and a join from the app into an 18+ room (the app then shows the `adultInApp` state of screen 4).
+The server enforces the web-only rule whatever a client sends: the app passes its platform with create, join and level changes, and the server rejects an 18+ room created from the app, an 18+ room without the confirmation, and a join from the app into an 18+ room (the app then shows the `adultInApp` state of screen 4). The game's state query and mutations also refuse an app client in an 18+ room, so an existing seat can't be used from the app either: on mobile, `adultInApp` takes precedence over `alreadyIn` on screen 4, and the app's game screen shows the `adultInApp` card when a stored seat points to an 18+ room.
 
 ### Changing levels after a game
 
@@ -202,12 +202,12 @@ Layout: back button and "Join a room"; a room card when the code matches a room 
 | `wrongCode` | Code field border and hint in `danger`, `aria-invalid="true"`; hint "No room has this code. Check it with the host."; no room card |
 | `joining` | Join disabled with spinner "Joining…" |
 | `alreadyIn` | No form. Card "You're already in this room as Noor" with **Continue as Noor** (primary) and **Join another room** (secondary, `common.joinPanel.joinAnother`, clears the code) |
-| join failed | Inline error above **Join room**, in `danger` with `role="alert"`, from the existing server error copy (`serverErrors`): `roomLocked` "This room is locked by the host.", `removedByHost`, `signInToJoin` (with the existing sign-in action), `sessionNotFound`; a network failure uses `common.joinPanel.joinError`. The form stays filled. |
-| invite token unknown or expired | No room card; the existing invite error on `/join?token=` is unchanged, plus the code field so the player can type a code instead |
-| `adultInApp` (mobile only) | No form. Card "Open this room in your browser" with **Open in browser** (primary, opens the web join URL) and **Join another room** (secondary, clears the code) |
+| join failed | Inline error above **Join room**, in `danger` with `role="alert"`, from the existing server error copy (`serverErrors`): `roomLocked` "This room is locked by the host.", `removedByHost`, `signInToJoin` (with the existing sign-in action), `roomNotFound` (code), `gameUnavailable` (invite token); a network failure uses `common.joinPanel.joinError`. The form stays filled. |
+| invite token unknown or expired | No room card; the preview returns `null`, so the inline error shows `gameUnavailable` ("This game is no longer available.") and the code field appears so the player can type a code instead |
+| `adultInApp` (mobile only) | No form. Card "Open this room in your browser" with **Open in browser** (primary, opens the web join URL) and **Join another room** (secondary, clears the code and any invite token) |
 | signed in | Name prefilled from the profile name, still editable |
 
-Rules: the code field upper-cases input and strips spaces, accepts 6 characters, and shows them as `ABC 123` (`normalizeJoinCode`, `formatJoinCode`). Name: 1–20 characters, trimmed; the 20-character limit is new, so the server (`convex/lib/join.ts`) must validate it too. The room is looked up as soon as the code is complete; a wrong code shows the error without a submit. Mobile caps names at `PLAYER_NAME_MAX` (32, `features/players/identity/use-player-identity.ts`); lower it to 20 so both clients match the server. **Continue as Noor** goes straight back into the seat (lobby or the turn in progress).
+Rules: the code field upper-cases input and strips spaces, keeps the existing `isJoinCodeLike` check (new codes are 6 characters), and shows them as `ABC 123` (`normalizeJoinCode`, `formatJoinCode`). Name: 1–20 characters, trimmed; the 20-character limit is new, so the server (`convex/lib/join.ts`) must validate it too. The room is looked up as soon as the code is complete; a wrong code shows the error without a submit. Mobile caps names at `PLAYER_NAME_MAX` (32, `features/players/identity/use-player-identity.ts`); lower it to 20 so both clients match the server (this also caps the stored profile name on the phone). A longer signed-in profile name is cut to 20 when prefilled. The host's name goes through `convex/lib/hostedSession.ts`, so validate it there too. **Continue as Noor** goes straight back into the seat (lobby or the turn in progress).
 
 The canvas also drew **Join as someone else** on `alreadyIn`. It is dropped: the server admits by identity (`admitParticipant` in `convex/lib/join.ts` hands back the existing row for the same user or guest id), so a second seat from the same identity is not possible today. The secondary action is **Join another room** instead.
 
@@ -221,7 +221,7 @@ Existing join actions stay. This screen restyles the shared `/join` page and the
 
 | Existing action | Where it goes |
 | --- | --- |
-| **Only watch, don't play** (`common.joinPanel.watchOnly`, `asSpectator`) | A checkbox under the name field, unchanged. Watchers don't count for the ready rule, don't get a team or a turn, see the teammate view in Beat the Clock (never the words) and the watch screen without actions in Doen, Durven. |
+| **Only watch, don't play** (`common.joinPanel.watchOnly`, `asSpectator`) | A checkbox under the name field, unchanged. Watchers don't count for the ready rule, don't get a team or a turn, see the watcher view in Beat the Clock ([turn · teammate, watchers](beat-the-clock_final.md#2-turn--teammate); never the words while a turn runs) and the watch screen without actions in Doen, Durven. |
 | Invite link (`/join?token=…`, "Claim your seat", `joinByToken`) | Same screen: the code field is replaced by the room card, the title reads `common.joinPanel.claimSeat`, and the existing invite notice shows above the name field. |
 | **Scan QR code** (mobile, `scan-invite-screen.tsx`) | A tonal button under the code field, as today. |
 | Unsupported game in the app (`common.joinPanel.unsupportedGame`, **Open on the web**) | Unchanged for games not in the app. For an 18+ room the specific `adultInApp` card replaces it. |
@@ -285,7 +285,7 @@ Doen, Durven player lobby status: "Waiting for Lotte to start the game" / "Wacht
 | `clock.lobby.youInList` | You | Jij |
 | `clock.lobby.statusPick` | Pick a team to get ready | Kies een team om klaar te staan |
 | `room.statusWaiting` | Waiting for {host} to start the game | Wachten tot {host} het spel start |
-| `clock.lobby.statusLate` | {team} are describing now. Hang on. | {team} zijn nu aan het omschrijven. Even geduld. |
+| `clock.lobby.statusLate` | {team} are playing now. You're in from your team's next turn. | {team} zijn nu aan de beurt. Je doet mee vanaf de volgende beurt van je team. |
 
 ## Not drawn, built to the overview
 
