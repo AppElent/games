@@ -8,7 +8,7 @@ Hosting, joining and the lobby for both party games. Shared rules, tokens, large
 
 Example data on every screen: room code `K7Q 4MR` (the canvas shows `K7QX`; real codes are 6 characters, see [open questions](README.md#open-questions)), host Sam (Beat the Clock) or Lotte (Doen, Durven), players Noor, Daan, Mila, Jesse, Lotte.
 
-Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts` (`clock.*`) and `truthOrDare.ts` (`truth.*`). Strings shared by both games are listed once under `room.*`; put them in each game's module or in `common` if a third game needs them. The join screen (4) serves every game, so its keys go in `common.joinPanel.*`. `{x}` is a `fmt` placeholder; `{n|one|other}` means a `plural`.
+Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts` (`clock.*`) and `truthOrDare.ts` (`truth.*`). Strings shared by both games are listed once under `room.*`; put them in each game's module or in `common` if a third game needs them. The join screen (4) serves every game, so its keys go in `common.joinPanel.*`. `{x}` is a `fmt` placeholder; `{n|one|other}` means a `plural` on the count `n` (in code `plural()` fills `{count}`, so write the forms as `"1 player"` / `"{count} players"`).
 
 ## Flow
 
@@ -16,7 +16,7 @@ Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock
 2. Create → host lobby (screen 3). Host shares the code or QR.
 3. Players scan, type the code or open the link → join (screen 4) → player lobby (screen 5).
 4. Host taps **Start game** → every phone switches to the game's first screen ([Beat the Clock](beat-the-clock_final.md), [Doen, Durven](doen-durven_final.md)).
-5. A player whose device already holds a seat skips the name step: "already in this room" (screen 4, `alreadyIn`).
+5. A player whose identity (signed-in user, or this browser's or phone's guest id) already holds a seat skips the name step: "already in this room" (screen 4, `alreadyIn`).
 
 Ready rule: in Beat the Clock every team (the Teams setting, 2–4) has at least 2 players; in Doen, Durven at least 2 players are in the room. Watchers don't count. Until then Start is disabled and a line above it says what is missing. Players still without a team when the host taps Start are added to the smallest team (ties: the lowest team number) and count toward the rule.
 
@@ -47,7 +47,7 @@ Action: **Host room** creates the session with the settings and the host's app l
 | Key | en | nl |
 | --- | --- | --- |
 | `clock.title` | Beat the Clock | Tegen de Klok |
-| `common.returnToGames` (existing, aria) | Return to Games | Terug naar spellen |
+| `common.gameShell.returnToGames` (existing, aria) | Return to Games | Terug naar spellen |
 | `room.hostHeading` | Host a room | Kamer openen |
 | `clock.settings.pack` | Word pack | Woordenpakket |
 | `clock.packs.everyday` | Everyday | Alledaags |
@@ -201,15 +201,19 @@ Layout: back button and "Join a room"; a room card when the code matches a room 
 | code complete and found | Room card appears under the title |
 | `wrongCode` | Code field border and hint in `danger`, `aria-invalid="true"`; hint "No room has this code. Check it with the host."; no room card |
 | `joining` | Join disabled with spinner "Joining…" |
-| `alreadyIn` | No form. Card "You're already in this room as Noor" with **Continue as Noor** (primary) and **Join as someone else** (secondary) |
+| `alreadyIn` | No form. Card "You're already in this room as Noor" with **Continue as Noor** (primary) and **Join another room** (secondary, `common.joinPanel.joinAnother`, clears the code) |
+| join failed | Inline error above **Join room**, in `danger` with `role="alert"`, from the existing server error copy (`serverErrors`): `roomLocked` "This room is locked by the host.", `removedByHost`, `signInToJoin` (with the existing sign-in action), `sessionNotFound`; a network failure uses `common.joinPanel.joinError`. The form stays filled. |
+| invite token unknown or expired | No room card; the existing invite error on `/join?token=` is unchanged, plus the code field so the player can type a code instead |
 | `adultInApp` (mobile only) | No form. Card "Open this room in your browser" with **Open in browser** (primary, opens the web join URL) and **Join another room** (secondary, clears the code) |
 | signed in | Name prefilled from the profile name, still editable |
 
-Rules: the code field upper-cases input and strips spaces, accepts 6 characters, and shows them as `ABC 123` (`normalizeJoinCode`, `formatJoinCode`). Name: 1–20 characters, trimmed; the 20-character limit is new, so the server (`convex/lib/join.ts`) must validate it too. The room is looked up as soon as the code is complete; a wrong code shows the error without a submit. **Continue as Noor** goes straight back into the seat (lobby or the turn in progress). **Join as someone else** shows the form with the name empty and takes a new seat.
+Rules: the code field upper-cases input and strips spaces, accepts 6 characters, and shows them as `ABC 123` (`normalizeJoinCode`, `formatJoinCode`). Name: 1–20 characters, trimmed; the 20-character limit is new, so the server (`convex/lib/join.ts`) must validate it too. The room is looked up as soon as the code is complete; a wrong code shows the error without a submit. Mobile caps names at `PLAYER_NAME_MAX` (32, `features/players/identity/use-player-identity.ts`); lower it to 20 so both clients match the server. **Continue as Noor** goes straight back into the seat (lobby or the turn in progress).
 
-API: the room card and the instant wrong-code check need a lookup. Today `api.sessions.inviteGameType` returns only the game type. Extend it, or add a sibling query (suggested `sessions.invitePreview`), taking the code and an optional `participantId` and returning `sessionId`, game type, host display name, player count, whether the room has the 18+ level, and, when `participantId` is given and still an active seat in that session, the seat's display name.
+The canvas also drew **Join as someone else** on `alreadyIn`. It is dropped: the server admits by identity (`admitParticipant` in `convex/lib/join.ts` hands back the existing row for the same user or guest id), so a second seat from the same identity is not possible today. The secondary action is **Join another room** instead.
 
-The seat stores are keyed by `sessionId` (web `src/lib/games/seat.ts`, per tab in sessionStorage; mobile `session-seats.ts`). So the client looks up the preview by code first, reads its seat for the returned `sessionId`, and re-queries with that `participantId`. `alreadyIn` shows only when the server returns a seat name. **Continue as** navigates to `getSessionPath(gameType, sessionId, participantId)`.
+API: the room card and the instant wrong-code check need a lookup. Today `api.sessions.inviteGameType` returns only the game type. Extend it, or add a sibling query (suggested `sessions.invitePreview`), taking the same inputs as `inviteGameType` (`joinCode` **or** `shareToken`) plus an optional `guestId`, and returning `null` when nothing matches, otherwise `sessionId`, game type, host display name, player count, whether the room has the 18+ level, and the display name and `participantId` of the caller's own seat when one exists. The caller's seat is found the way `admitParticipant` finds it: by the signed-in user, otherwise by `guestId` (web: the per-browser guest id in `src/lib/games/sessions.ts`; mobile: `usePlayerIdentity`), skipping kicked seats.
+
+Lookups: a typed or linked code calls the preview with `joinCode`; an invite link (`/join?token=…`, mobile invite deep link) calls it with `shareToken`, and the room card replaces the code field. `null` gives `wrongCode` for a code and the invite error for a token. The 18+ flag drives `adultInApp` on mobile for both paths. `alreadyIn` shows only when the preview returns a seat. **Continue as** writes that seat to the local seat store (web `rememberSeat` in `src/lib/games/seat.ts`; mobile `session-seats.ts`) and navigates to it: web `getSessionPath(gameType, sessionId, participantId)` (`src/lib/games/catalog.ts`), mobile `onlineSessionHref` (`features/play/app-games.ts`). Because the lookup is by identity, Continue as also works from a new tab in the same browser.
 
 The restyle, the room card and the 20-character name limit (shared `convex/lib/join.ts`) apply to every game's join, not only these two.
 
@@ -239,13 +243,12 @@ Existing join actions stay. This screen restyles the shared `/join` page and the
 | `common.joinPanel.alreadyInTitle` | You're already in this room as {name} | Je zit al in deze kamer als {name} |
 | `common.joinPanel.alreadyInBody` | Your seat is still yours. | Je plek is nog van jou. |
 | `common.joinPanel.continueAs` | Continue as {name} | Verder als {name} |
-| `common.joinPanel.joinAsOther` | Join as someone else | Meedoen als iemand anders |
 | `common.joinPanel.adultTitle` | Open this room in your browser | Open deze kamer in je browser |
 | `common.joinPanel.adultBody` | The host turned on 18+ prompts. Those rooms are only playable in a browser, not in the app. | De host heeft 18+-opdrachten aangezet. Zulke kamers speel je alleen in de browser, niet in de app. |
 | `common.joinPanel.openInBrowser` | Open in browser | Openen in browser (opens the web join URL with `openWebPage`) |
 | `common.joinPanel.joinAnother` | Join another room | Andere kamer kiezen |
 
-Copy change from the canvas: the wrong-code hint drew "codes are 4 letters"; real codes are 6 characters, so the hint drops that clause. The canvas title "Join a room" and button "Join room" use the existing `common.joinPanel` strings instead; the canvas "already in" body ("This phone kept your seat…") is replaced by a body that is true on web too, where seats are per tab.
+Copy change from the canvas: the wrong-code hint drew "codes are 4 letters"; real codes are 6 characters, so the hint drops that clause. The canvas title "Join a room" and button "Join room" use the existing `common.joinPanel` strings instead; the canvas "already in" body ("This phone kept your seat…") becomes "Your seat is still yours.", which is true for signed-in players on any device too. The room card's icon tile uses each game's catalog `icon` and hue: these two games use `amber` / `violet`; other games use their web catalog `accent` (`src/lib/games/catalog.ts`) and the mobile catalog colour. The restyle replaces `common.joinPanel.subtitle`, `kicker`, `enterCode`, `displayName` and `playerNamePlaceholder`; delete them when no screen uses them.
 
 Existing join strings in `common.joinPanel` (`submit`, `openOnWeb`, `unsupportedGame`) may replace the new keys where the wording matches; keep one string per meaning.
 

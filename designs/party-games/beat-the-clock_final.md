@@ -9,7 +9,7 @@ The in-game screens of Beat the Clock / Tegen de Klok, from the first turn to th
 
 Example data: room `K7Q 4MR`, 30 s turns, first to 30. Comets (Sam, Noor, Lotte) against Rockets (Daan, Mila, Jesse). Turn 7: Sam describes for Comets; Noor guesses; Rockets referee. Card: Lighthouse, Pancake, Volcano, Saxophone, Passport. Before the turn: Comets 18, Rockets 21.
 
-Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts`. `{x}` is a `fmt` placeholder; `{n|one|other}` a `plural`. Team names are localized (Comets/Kometen, Rockets/Raketten; full list in [room and join](room-and-join_final.md#3-lobby--host)).
+Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock.ts`. `{x}` is a `fmt` placeholder; `{n|one|other}` a `plural` (in code `plural()` fills `{count}`). Team names are localized (Comets/Kometen, Rockets/Raketten; full list in [room and join](room-and-join_final.md#3-lobby--host)).
 
 ## Turn model
 
@@ -18,7 +18,8 @@ Copy keys are suggestions for `packages/core/src/i18n/{en,nl}/games/beatTheClock
 3. **Time's up** (or **End turn early**). The describer may untick a mis-tap, then sends. Sending is required to move on; if the describer doesn't send within 10 s after time runs out, the ticks as they stand are sent automatically.
 4. **Referee check.** Opponents see the ticked words and can flag any of them. The first opponent to tap **Confirm** ends the check for everyone; otherwise it confirms itself 10 s after the send. Flagged words don't count.
 5. **Turn score.** +1 per counted word. Everyone sees the scoreboard and who describes next.
-6. After the last team's turn in a round: if any team is at or above the target, the highest score wins; a tie at the top plays one more round with every team. Otherwise the next round starts.
+6. Content: each turn needs 5 words not yet used in this game. If fewer than 5 are left when a turn starts, the game ends with the current scores (winner screen, `clock.winner.ranOut`).
+7. After the last team's turn in a round: if any team is at or above the target, the highest score wins; a tie at the top plays one more round with every team. Otherwise the next round starts.
 
 The server owns the clock (start time and length); phones render the countdown from it, so a reload or reconnect shows the right time. The clock keeps running if the describer drops; they rejoin into the same turn with their ticks.
 
@@ -86,9 +87,10 @@ Word row: untapped = transparent row with an outlined circle; ticked = `amberDim
 | `ready` | Team chip with "Your team · Sam describes"; a pulse dot, "Get ready to guess", "The clock starts when Sam taps Go. Put your phone down and listen." |
 | `describing` | Timer 136px, time bar, "Guess out loud", 5 progress dots (filled amber per ticked word, `role="img"` with label "2 of 5 words guessed"), "2 of 5 guessed". No words. |
 | last 5 s | Timer and bar turn `danger`, and the label "Last seconds" (`clock.timer.last`, 14px 600 `textMuted`) appears directly under the timer, above the bar, so colour is never the only signal (approved choice 4) |
+| `timeUp` | Timer 0:00 in `danger`, label "Time's up" (`clock.timer.up`); the dots and count freeze but follow the describer's unticks; "Waiting for Sam to send the words" (`clock.waitSend`). Still no words. |
 | `reconnecting` | Strip "Reconnecting… Keep guessing out loud." |
 
-Time's up and the check: teammates see the describing team's check screen (screen 5).
+When the describer sends (or the 10 s auto-send fires), teammates move to the describing team's check screen (screen 5).
 
 | Key | en | nl |
 | --- | --- | --- |
@@ -108,6 +110,7 @@ Time's up and the check: teammates see the describing team's check screen (scree
 | `ready` | Timer 0:30 at 64px; "Comets are up", "Waiting for Sam to tap Go"; referee notice; a placeholder "The card appears when Sam taps Go." |
 | `describing` | Timer counting; "Comets are describing", "Sam describes, Noor guesses"; referee notice; the card as a read-only list, ticked words with `amberDim` fill and the text "Guessed" |
 | last 5 s | Timer turns `danger`, and "Last seconds" (`clock.timer.last`, 14px 600 `textMuted`) appears directly under the timer, replacing the sub line for those seconds (approved choice 4) |
+| `timeUp` | Timer 0:00 in `danger`, label "Time's up" (`clock.timer.up`) replacing the sub line; "Waiting for Sam to send the words" (`clock.waitSend`); the card stays read-only and shows unticks live; no Flag. The check (screen 4) starts when the words are sent. |
 | `reconnecting` | Strip "Reconnecting… Ticks may show a moment late." |
 
 Opponents cannot flag during the turn (approved choice 3). Scoreboard at the bottom shows "Rockets · you" on their own team.
@@ -123,6 +126,7 @@ Opponents cannot flag during the turn (approved choice 3). Scoreboard at the bot
 | `clock.opponent.card` (aria) | {team}' card | Kaart van {team} |
 | `clock.opponent.guessed` | Guessed | Geraden |
 | `clock.opponent.yourTeam` | {team} · you | {team} · jij |
+| `clock.waitSend` | Waiting for {describer} to send the words | Wachten tot {describer} de woorden verstuurt |
 | `clock.opponent.offline` | Reconnecting… Ticks may show a moment late. | Verbinding herstellen… Vinkjes kunnen iets later verschijnen. |
 
 With several guessers use the plural-verb variant:
@@ -197,6 +201,7 @@ Layout: "+2" large in amber with "for Comets" and a detail line; the scoreboard 
 | --- | --- |
 | `nextTurn` | "+2 for Comets", "3 guessed, 1 flagged by Rockets"; Rockets 21, Comets 20; card "Next: Daan describes for Rockets. Daan's screen shows Go when it's time." |
 | `youreNext` (the next describer) | Card "You're next. Describe for Rockets. Take your phone, then tap Next." with **Next** (goes to the describer's ready state) |
+| `targetHitTie` (round ends with a tie at the top, at or above the target) | "Round 4 is complete, and Rockets and Comets are tied at 31." (`clock.score.roundDoneTie`); **See who won** opens the winner `tie` state |
 | `targetHit` (end of a round with a team at or above the target) | Meta "Round 4 complete · first to 30"; "+4 for Rockets", "Round 4 is complete, and Rockets reached 30."; Rockets 31, Comets 28; **See who won** |
 | 3 or 4 teams | One row per team, sorted by score; the leader has the amber border |
 | target passed mid-round | Normal `nextTurn`; the round finishes first (rule 1) |
@@ -209,6 +214,7 @@ Progress bars: `role="progressbar"`, max = target, label "{team} progress to {ta
 | `clock.score.for` | for {team} | voor {team} |
 | `clock.score.detail` | {n} guessed, {f} flagged by {opponents} | {n} geraden, {f} gemarkeerd door {opponents} |
 | `clock.score.detailNoFlags` | {n} guessed | {n} geraden |
+| `clock.score.roundDoneTie` | Round {round} is complete, and {teams} are tied at {score}. | Ronde {round} is klaar en {teams} staan gelijk op {score}. |
 | `clock.score.roundDone` | Round {round} is complete, and {team} reached {target}. | Ronde {round} is klaar en {team} zitten op of boven de {target}. |
 | `clock.meta.roundDone` | Round {round} complete · first to {target} | Ronde {round} klaar · eerst bij {target} |
 | `clock.score.list` (aria) | Scores | Stand |
@@ -225,16 +231,20 @@ Progress bars: `role="progressbar"`, max = target, label "{team} progress to {ta
 
 `Clock-Winner.dc.html`.
 
-Layout: trophy tile in `amberDim`, headline 38px, a subline; final scores as ranked rows (place, team, players, score; winner with an amber border); actions.
+Layout: trophy tile in `amberDim`, headline 40px, a subline; final scores as ranked rows (place, team, players, score; winner with an amber border); actions.
 
 | State | What shows |
 | --- | --- |
 | `host` | "Rockets win", "31 to 28 after 4 rounds. Mila described the most words."; **Play again** (same teams and settings, new game; words used in this room stay excluded), **New teams** (back to the lobby with teams cleared), **Back to arcade** |
 | `player` | Same result; instead of the host actions a notice "Sam can start a new game. Stay here to play again."; **Back to arcade** |
 | `tie` | "Tied at 31", "One more round decides it. Every team gets one more turn."; places show "="; **Start the extra round** for everyone (it goes to the next turn's score/ready state); no other actions |
+| `endedEarly` | Meta line says why: `clock.winner.endedByHost`, `clock.winner.tooFewTeams` or `clock.winner.ranOut`; otherwise as `host` / `player` |
+| `endedTie` (game ended early, or the pack ran out, with a tie at the top) | Title `clock.winner.tieTitle` ("Tied at 31"), body `clock.winner.endedTieBody`, meta as `endedEarly`; places show "="; the normal `host` / `player` actions, no extra round |
+| Play again blocked (a team has fewer than 2 players) | **Play again** disabled with `clock.lobby.need` under it; **New teams** stays |
+| pack will repeat (fewer than 5 unused words left in this room) | Host notice above Play again: `clock.winner.packReset`; Play again resets the room's used words |
 | restarting (host tapped Play again) | Play again disabled with spinner "Starting…" (pending state; not drawn) |
 
-The "most words" line names the describer whose turns produced the most counted words (guesses are spoken, so only describing is tracked per player); omit the sentence on a tie between players. With 3 or 4 teams the subline uses `clock.winner.bodyMany` (the winning score only) and the rows list every team by place.
+Copy change from the canvas: the artboard's "Mila guessed the most words" becomes "described". The "most words" line names the describer whose turns produced the most counted words (guesses are spoken, so only describing is tracked per player); omit the sentence on a tie between players. With 3 or 4 teams the subline uses `clock.winner.bodyMany` (the winning score only) and the rows list every team by place.
 
 | Key | en | nl |
 | --- | --- | --- |
@@ -246,12 +256,17 @@ The "most words" line names the describer whose turns produced the most counted 
 | `clock.winner.best` | {name} described the most words. | {name} omschreef de meeste woorden. |
 | `clock.winner.tieTitle` | Tied at {score} | Gelijk op {score} |
 | `clock.winner.tieBody` | One more round decides it. Every team gets one more turn. | Eén extra ronde beslist. Elk team krijgt nog één beurt. |
+| `clock.winner.endedTieBody` | The game ended in a tie after {n\|1 round\|{n} rounds}. | Het spel eindigde gelijk na {n\|1 ronde\|{n} rondes}. |
+| `clock.winner.endedByHost` | {host} ended the game | {host} heeft het spel beëindigd |
+| `clock.winner.tooFewTeams` | Too few teams could still play | Te weinig teams konden nog spelen |
+| `clock.winner.ranOut` | The word pack ran out | De woordenlijst is op |
+| `clock.winner.packReset` | Every word in this pack has been used here. A new game can repeat words. | Alle woorden uit deze lijst zijn hier gebruikt. In een nieuw spel kunnen woorden terugkomen. |
 | `clock.winner.list` (aria) | Final scores | Eindstand |
 | `clock.winner.extraRound` | Start the extra round | Start de extra ronde |
 | `room.playAgain` | Play again | Nog een keer |
 | `clock.winner.newTeams` | New teams | Nieuwe teams |
 | `room.waitForHost` | {host} can start a new game. Stay here to play again. | {host} kan een nieuw spel starten. Blijf hier om weer mee te doen. |
-| `common.backToArcade` (existing) | Back to arcade | Terug naar de arcade |
+| `common.endScreen.backToArcade` (existing) | Back to arcade | Terug naar de arcade |
 
 ## 8. Pause menu
 
@@ -268,10 +283,11 @@ The "most words" line names the describer whose turns produced the most counted 
 Behaviour:
 
 - Opening the menu does not stop the clock for anyone. Only **Pause for everyone** does.
+- Pause freezes the phase that is running: the turn clock, the 10 s auto-send after time's up, or the 10 s referee check (its countdown stops and Confirm is disabled). On the ready screen Go is disabled; on the score screen the move to the next turn waits. Resume continues from the frozen value.
 - **Skip this turn**: no points for the playing team; the next team plays. No confirm (it is reversible in effect: the team plays again next round).
 - **Switch team**: opens the team picker from the player lobby (screen 5 of room and join); applies from the next turn. Hidden for the current describer during their turn. Disabled, with the hint `clock.menu.switchBlocked`, when your team would drop below 2 players.
 - **Leave room**: leaves the seat after a confirm ("Leave the room?" / "Kamer verlaten?", body "You can rejoin with code {code}." / "Je kunt terugkomen met code {code}.", buttons **Leave** / **Verlaten** and **Stay** / **Blijven**). A team that drops below 2 players has its turns skipped until it has 2 again (a player switches in); every phone shows `clock.turn.skippedShort` for 3 s instead of the ready screen. If fewer than 2 teams have 2 players, the game ends with the current scores (`clock.winner.*`, as **End game**).
-- **End game**: after confirm, the current turn doesn't count and everyone goes to the winner screen with the current scores (a tie shows "Tied", without an extra round).
+- **End game**: after confirm, the current turn doesn't count and everyone goes to the winner screen with the current scores (a tie shows `endedTie`, without an extra round).
 - **How to play**: the game's how-to steps (as `RoomFrame`'s `howToPlay`).
 - Close: the × button (`aria-label` "Close menu"), the scrim, Escape, or system back.
 
@@ -292,7 +308,7 @@ Behaviour:
 | `clock.menu.switch` | Switch team | Wissel van team |
 | `clock.menu.switchHint` | From the next turn | Vanaf de volgende beurt |
 | `clock.menu.switchBlocked` | Your team needs at least 2 players | Je team heeft minstens 2 spelers nodig |
-| `clock.turn.skippedShort` | {team} has too few players, so their turn is skipped. | {team} heeft te weinig spelers, dus hun beurt wordt overgeslagen. |
+| `clock.turn.skippedShort` | {team} have too few players, so their turn is skipped. | {team} hebben te weinig spelers, dus hun beurt wordt overgeslagen. |
 | `room.menu.leave` | Leave room | Kamer verlaten |
 | `room.menu.leaveHint` | You can rejoin with code {code} | Je kunt terugkomen met code {code} |
 | `room.leave.title` | Leave the room? | Kamer verlaten? |

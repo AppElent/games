@@ -69,10 +69,14 @@ Layout: an 88px avatar with a violet ring and the active player's initial; "Lott
 | --- | --- |
 | `choosing` | As above. Show the next four players; with more, the list ends at four. |
 | `reconnecting` | Status strip "Verbinding herstellen…" |
+| `host` | Under the avatar, a card like the watch screen's: `truth.waiting.hostHint` ("Reageert de telefoon van Lotte niet? Sla de beurt van Lotte over.") with **Overslaan** (`accentDim` pill, 44px, accessible name "Overslaan voor Lotte"). It counts as skipped (no category) and the next player is up; pending: disabled with spinner. |
+| watcher | As `choosing` |
 | late joiner | Lands here; appears at the end of the turn order |
 
 | Key | en | nl |
 | --- | --- | --- |
+| `truth.waiting.hostHint` | Is {name}'s phone not responding? Skip {name}'s turn. | Reageert de telefoon van {name} niet? Sla de beurt van {name} over. |
+| `truth.waiting.skipFor` (aria) | Skip for {name} | Overslaan voor {name} |
 | `truth.wait.choosing` | {name} is choosing… | {name} kiest… |
 | `truth.wait.question` | Do, dare or truth? | Doen, durven of de waarheid? |
 | `truth.wait.order` | Turn order | Volgorde |
@@ -147,8 +151,10 @@ Layout: a star tile in `violetDim`, "Dat was het!" at 38px, "Lotte heeft het spe
 | `restarting` | Nog een keer disabled with spinner "Opnieuw starten…" |
 | tie for most picked | "Meest gekozen" lists both: "Doen en Waarheid, 8 keer" |
 | ended because prompts ran out | Subline "De opdrachten zijn op na {n} rondes." |
+| prompts will repeat (every category is out for these levels in this room) | Host notice above **Nog een keer**: `truth.over.promptsReset`; Nog een keer resets the room's used prompts; **Niveaus aanpassen** stays |
+| ended before anyone picked | Rondes 1, Gedaan 0, Overgeslagen 0; the "Meest gekozen" card is hidden |
 
-Approved choice 6: no winner and no per-player score.
+Approved choice 6: no winner and no per-player score. Rondes counts the rounds started, including the one the game ended in.
 
 | Key | en | nl |
 | --- | --- | --- |
@@ -162,13 +168,14 @@ Approved choice 6: no winner and no per-player score.
 | `truth.over.mostPickedValue` | {categories}, {n\|once\|{n} times} | {categories}, {n\|1 keer\|{n} keer} |
 | `room.playAgain` | Play again | Nog een keer |
 | `truth.over.changeLevels` | Change levels | Niveaus aanpassen |
+| `truth.over.promptsReset` | Every prompt for these levels has been played here. A new game can repeat prompts. | Alle opdrachten voor deze niveaus zijn hier gespeeld. In een nieuw spel kunnen opdrachten terugkomen. |
 | `truth.over.restarting` | Restarting… | Opnieuw starten… |
 | `truth.over.waitForHost` | {host} can start a new game. Stay here to join in. | {host} kan een nieuw spel starten. Blijf hier om mee te doen. |
-| `common.backToArcade` (existing) | Back to arcade | Terug naar de arcade |
+| `common.endScreen.backToArcade` (existing) | Back to arcade | Terug naar de arcade |
 
 ## 6. Menu
 
-Not drawn for this game; reuse the Beat the Clock bottom sheet ([pause menu](beat-the-clock_final.md#8-pause-menu)) with these items. There is no clock, so there is no pause or skip-turn item; the host finishes a stuck turn from the watch screen.
+Not drawn for this game; reuse the Beat the Clock bottom sheet ([pause menu](beat-the-clock_final.md#8-pause-menu)) with these items. There is no clock, so there is no pause or skip-turn item; the host finishes a stuck turn from the waiting screen (while the player chooses) or the watch screen (once the prompt shows).
 
 | Who | Items |
 | --- | --- |
