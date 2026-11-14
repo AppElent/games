@@ -13,6 +13,7 @@ export const profile = {
 		confirmBody:
 			"Hiermee verwijder je definitief je Appelent-account, waarmee je ook inlogt bij andere Appelent-apps, samen met je Arcade Club-gegevens. Spellen die alleen jij speelde worden verwijderd; in spellen met anderen wordt je naam weggehaald. Dit kan niet ongedaan worden gemaakt.",
 		confirm: "Definitief verwijderen",
+		deleting: "Bezig met verwijderen…",
 		failed: "Je account kon niet worden verwijderd. Probeer het opnieuw.",
 		unavailable: "Je account verwijderen is nu niet beschikbaar.",
 	},

@@ -26,6 +26,10 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 - `src/routes/{sign-in,sign-up,forgot-password,account}.tsx` are thin wrappers around
   `#/lib/auth`'s `AuthCard` and form components; `src/components/Header.tsx` uses its
   `HeaderUser`.
+- "Delete account" on `/account` (`src/components/account/DeleteAccount.tsx`) and the
+  app's Profile run the same steps, `@arcadeclub/core/account-deletion`: `account.deleteMyData`
+  with `expectedSubject` until `done`, then the Clerk user, then sign-out. Refusals
+  (`accountInActiveGame`, `accountChanged`) show localized; a rerun resumes.
 - Theme (light, dark, auto) is driven by `#/lib/auth`'s
   `getInitialMode`/`applyThemeMode`/`setThemeMode`, `ThemeSync` (reconciles with Clerk
   `unsafeMetadata` on sign-in) and the `THEME_INIT_SCRIPT` inline pre-paint script in
@@ -36,4 +40,5 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 
 ## Acceptance
 
-- `src/lib/auth/__tests__` and `src/lib/auth/components/auth/__tests__` pass.
+- `src/lib/auth/__tests__`, `src/lib/auth/components/auth/__tests__` and
+  `src/lib/account/__tests__` pass.
