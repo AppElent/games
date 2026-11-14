@@ -17,6 +17,10 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
   Jokeren.
 - A game is a config file in `packages/core/src/cards/games/` for a rule family
   (`shedding`, `rummy`), so adding one to a family needs no backend or UI code.
+- House rules are options over a game's `rules`, off by default. An option with
+  `withoutPowers` turns those special cards into plain cards, so a shedding game offers
+  one such option per special card and the setup screens list them under "Special
+  cards" (`specialCards` in `table-view.ts`).
 - A table is created in one step by `cardGames.createTable`, and joiners claim a seat
   through `ON_JOIN` (`convex/lib/cardSeats.ts`). A seat is proven by a secret the
   device keeps, since participant ids are public.

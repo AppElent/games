@@ -1,76 +1,51 @@
-// @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { shareLink } from "#/lib/share-link";
+import { describe, expect, it, vi } from "vitest";
+import { canShareLinks, shareLink } from "#/lib/share-link";
 
 const URL = "https://arcade.example/join/ABC123";
 
-function stubClipboard(writeText: ((text: string) => Promise<void>) | null) {
-	Object.defineProperty(navigator, "clipboard", {
-		configurable: true,
-		value: writeText ? { writeText } : undefined,
+function failing(name: string) {
+	return vi.fn(async () => {
+		const error = new Error(name);
+		error.name = name;
+		throw error;
 	});
 }
 
-function abort() {
-	const error = new Error("closed");
-	error.name = "AbortError";
-	return error;
-}
-
 describe("shareLink", () => {
-	afterEach(() => stubClipboard(null));
-
 	it("hands the link to the share sheet when there is one", async () => {
 		const share = vi.fn(async () => undefined);
-		const writeText = vi.fn(async () => undefined);
-		stubClipboard(writeText);
 		await expect(shareLink(URL, "Invite players", { share })).resolves.toBe(
 			"shared",
 		);
 		expect(share).toHaveBeenCalledWith({ title: "Invite players", url: URL });
-		expect(writeText).not.toHaveBeenCalled();
 	});
 
-	it("copies the link when the browser has no share sheet", async () => {
-		const writeText = vi.fn(async () => undefined);
-		stubClipboard(writeText);
-		await expect(shareLink(URL, "Invite", {})).resolves.toBe("copied");
-		expect(writeText).toHaveBeenCalledWith(URL);
+	it("is unavailable without a share sheet", async () => {
+		await expect(shareLink(URL, "Invite", {})).resolves.toBe("unavailable");
+		await expect(shareLink(URL, "Invite", undefined)).resolves.toBe(
+			"unavailable",
+		);
+		expect(canShareLinks({})).toBe(false);
+		expect(canShareLinks({ share: async () => undefined })).toBe(true);
 	});
 
-	it("copies the link when the browser cannot share it", async () => {
+	it("is unavailable when the browser cannot share this link", async () => {
 		const share = vi.fn(async () => undefined);
-		stubClipboard(async () => undefined);
 		await expect(
 			shareLink(URL, "Invite", { share, canShare: () => false }),
-		).resolves.toBe("copied");
+		).resolves.toBe("unavailable");
 		expect(share).not.toHaveBeenCalled();
 	});
 
-	it("copies the link when the share sheet fails", async () => {
-		const writeText = vi.fn(async () => undefined);
-		stubClipboard(writeText);
-		const share = vi.fn(async () => {
-			throw new Error("NotAllowedError");
-		});
-		await expect(shareLink(URL, "Invite", { share })).resolves.toBe("copied");
-		expect(writeText).toHaveBeenCalledWith(URL);
+	it("is unavailable when the sheet refuses", async () => {
+		await expect(
+			shareLink(URL, "Invite", { share: failing("NotAllowedError") }),
+		).resolves.toBe("unavailable");
 	});
 
-	it("does nothing more when the person closes the sheet", async () => {
-		const writeText = vi.fn(async () => undefined);
-		stubClipboard(writeText);
-		const share = vi.fn(async () => {
-			throw abort();
-		});
-		await expect(shareLink(URL, "Invite", { share })).resolves.toBe(
-			"cancelled",
-		);
-		expect(writeText).not.toHaveBeenCalled();
-	});
-
-	it("reports a failure when neither sharing nor copying works", async () => {
-		stubClipboard(null);
-		await expect(shareLink(URL, "Invite", {})).resolves.toBe("failed");
+	it("tells a closed sheet apart from a failure", async () => {
+		await expect(
+			shareLink(URL, "Invite", { share: failing("AbortError") }),
+		).resolves.toBe("cancelled");
 	});
 });

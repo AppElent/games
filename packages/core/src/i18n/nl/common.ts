@@ -130,6 +130,8 @@ export const common = {
 		copyLink: "Link kopiëren",
 		shareLink: "Link delen",
 		linkCopied: "Link gekopieerd",
+		copyFailed:
+			"Kopiëren lukte niet. Selecteer de link hierboven om hem te kopiëren.",
 	},
 	roomControls: {
 		heading: "Kamerbediening",

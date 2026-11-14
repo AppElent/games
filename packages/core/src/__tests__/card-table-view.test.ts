@@ -575,11 +575,12 @@ describe("specialCards", () => {
 	});
 
 	it("has Dutch text for every card", () => {
+		const names = nl.games.cards.games.pesten.powers as Record<string, string>;
 		for (const card of specialCards(
 			wordsFor(nl.games.cards),
 			getCardGame("pesten"),
 		)) {
-			expect(card.name).not.toBe(card.key === "joker" ? "" : card.key);
+			expect(card.name).toBe(names[card.key]);
 			expect(card.effect).not.toMatch(/\{/);
 		}
 	});

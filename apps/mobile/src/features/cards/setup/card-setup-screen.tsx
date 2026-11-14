@@ -184,7 +184,13 @@ function Setup({
 								const on = plain === null || !options.includes(plain);
 								return (
 									<View key={card.key} style={styles.rule}>
-										<PlayingCard card={card.sample} width={36} />
+										<View
+											accessible={false}
+											importantForAccessibility="no-hide-descendants"
+											accessibilityElementsHidden
+										>
+											<PlayingCard card={card.sample} width={36} />
+										</View>
 										<View style={styles.ruleText}>
 											<AppText variant="body">{card.name}</AppText>
 											<AppText variant="caption">{card.effect}</AppText>

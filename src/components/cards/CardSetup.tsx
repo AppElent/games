@@ -210,7 +210,9 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 											type="button"
 											role="switch"
 											aria-checked={on}
-											aria-disabled={plain === null}
+											aria-labelledby={`power-${card.key}`}
+											aria-describedby={`power-${card.key}-effect`}
+											disabled={plain === null}
 											className="rule-switch"
 											onClick={() => {
 												if (plain !== null) toggle(plain);
@@ -218,8 +220,16 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 										>
 											<PlayingCard card={card.sample} />
 											<span className="min-w-0">
-												<span className="block font-semibold">{card.name}</span>
-												<span className="block text-xs leading-snug text-[var(--ivory-muted)]">
+												<span
+													id={`power-${card.key}`}
+													className="block font-semibold"
+												>
+													{card.name}
+												</span>
+												<span
+													id={`power-${card.key}-effect`}
+													className="block text-xs leading-snug text-[var(--ivory-muted)]"
+												>
 													{card.effect}
 												</span>
 											</span>

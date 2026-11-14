@@ -331,28 +331,28 @@ export const cards = {
 					hint: "Nobody has to announce their last card.",
 				},
 				plain2: {
-					label: "Two pulls two off",
-					hint: "A 2 is a plain card.",
+					label: "2 as a plain card",
+					hint: "Two pulls two is off.",
 				},
 				plainJoker: {
 					label: "No jokers",
 					hint: "The deck has no jokers.",
 				},
 				plain7: {
-					label: "Seven sticks off",
-					hint: "A 7 is a plain card.",
+					label: "7 as a plain card",
+					hint: "Seven sticks is off.",
 				},
 				plain8: {
-					label: "Eight waits off",
-					hint: "An 8 is a plain card.",
+					label: "8 as a plain card",
+					hint: "Eight waits is off.",
 				},
 				plainJ: {
-					label: "Jack switches off",
-					hint: "A jack is a plain card.",
+					label: "Jack as a plain card",
+					hint: "Jack switches is off.",
 				},
 				plainA: {
-					label: "Ace turns off",
-					hint: "An ace is a plain card.",
+					label: "Ace as a plain card",
+					hint: "Ace turns is off.",
 				},
 			},
 		},

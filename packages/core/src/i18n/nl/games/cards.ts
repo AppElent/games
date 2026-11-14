@@ -335,28 +335,28 @@ export const cards = {
 					hint: "Niemand hoeft zijn laatste kaart te melden.",
 				},
 				plain2: {
-					label: "Twee trekt twee uit",
-					hint: "Een 2 is een gewone kaart.",
+					label: "2 als gewone kaart",
+					hint: "Twee trekt twee doet niet mee.",
 				},
 				plainJoker: {
 					label: "Zonder jokers",
 					hint: "Er zitten geen jokers in het spel.",
 				},
 				plain7: {
-					label: "Zeven blijft kleven uit",
-					hint: "Een 7 is een gewone kaart.",
+					label: "7 als gewone kaart",
+					hint: "Zeven blijft kleven doet niet mee.",
 				},
 				plain8: {
-					label: "Acht wacht uit",
-					hint: "Een 8 is een gewone kaart.",
+					label: "8 als gewone kaart",
+					hint: "Acht wacht doet niet mee.",
 				},
 				plainJ: {
-					label: "Boer wisselt uit",
-					hint: "Een boer is een gewone kaart.",
+					label: "Boer als gewone kaart",
+					hint: "Boer wisselt doet niet mee.",
 				},
 				plainA: {
-					label: "Aas keert uit",
-					hint: "Een aas is een gewone kaart.",
+					label: "Aas als gewone kaart",
+					hint: "Aas keert doet niet mee.",
 				},
 			},
 		},

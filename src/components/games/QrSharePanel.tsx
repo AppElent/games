@@ -2,24 +2,27 @@ import { Check, Copy, Link as LinkIcon, Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { useMessages } from "#/lib/i18n";
-import { shareLink } from "#/lib/share-link";
+import { canShareLinks, shareLink } from "#/lib/share-link";
 import { useCopyFeedback } from "#/lib/use-copy-feedback";
 
 export function QrSharePanel({ url, label }: { url: string; label: string }) {
 	const messages = useMessages();
 	const [qrSrc, setQrSrc] = useState("");
 	const { copied, copy } = useCopyFeedback();
-	const [shareCopied, setShareCopied] = useState(false);
+	// Only after mount: the server cannot know whether the browser has a sheet.
+	const [canShare, setCanShare] = useState(false);
+	const [copyFailed, setCopyFailed] = useState(false);
 
-	useEffect(() => {
-		if (!shareCopied) return;
-		const timer = window.setTimeout(() => setShareCopied(false), 2000);
-		return () => window.clearTimeout(timer);
-	}, [shareCopied]);
+	useEffect(() => setCanShare(canShareLinks()), []);
+
+	const copyLink = async () => {
+		setCopyFailed(!(await copy(url)));
+	};
 
 	const share = async () => {
-		if ((await shareLink(url, label)) === "copied") {
-			setShareCopied(true);
+		// A sheet that refuses falls back to the clipboard; a closed one does nothing.
+		if ((await shareLink(url, label)) === "unavailable") {
+			await copyLink();
 		}
 	};
 
@@ -65,39 +68,41 @@ export function QrSharePanel({ url, label }: { url: string; label: string }) {
 				{url}
 			</div>
 			<div className="mt-4 flex flex-wrap gap-2">
+				{canShare ? (
+					<button
+						type="button"
+						onClick={() => void share()}
+						className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-bold text-slate-950"
+					>
+						<Share2 className="h-4 w-4" aria-hidden="true" />
+						{messages.common.qrShare.shareLink}
+					</button>
+				) : null}
 				<button
 					type="button"
-					onClick={() => void share()}
-					className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-bold text-slate-950"
-				>
-					{shareCopied ? (
-						<Check className="h-4 w-4" />
-					) : (
-						<Share2 className="h-4 w-4" />
-					)}
-					<span aria-live="polite">
-						{shareCopied
-							? messages.common.qrShare.linkCopied
-							: messages.common.qrShare.shareLink}
-					</span>
-				</button>
-				<button
-					type="button"
-					onClick={() => void copy(url)}
-					className="inline-flex items-center gap-2 rounded-md border border-white/30 px-4 py-2 text-sm font-bold text-white"
+					onClick={() => void copyLink()}
+					className={
+						canShare
+							? "club-btn-outline inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-bold text-white"
+							: "inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-bold text-slate-950"
+					}
 				>
 					{copied ? (
-						<Check className="h-4 w-4" />
+						<Check className="h-4 w-4" aria-hidden="true" />
 					) : (
-						<Copy className="h-4 w-4" />
+						<Copy className="h-4 w-4" aria-hidden="true" />
 					)}
-					<span aria-live="polite">
-						{copied
-							? messages.common.actions.copied
-							: messages.common.qrShare.copyLink}
-					</span>
+					{copied
+						? messages.common.qrShare.linkCopied
+						: messages.common.qrShare.copyLink}
 				</button>
 			</div>
+			<p role="status" className="mt-2 text-sm text-orange-200">
+				{copyFailed ? messages.common.qrShare.copyFailed : ""}
+			</p>
+			<p role="status" className="sr-only">
+				{copied ? messages.common.qrShare.linkCopied : ""}
+			</p>
 		</section>
 	);
 }
