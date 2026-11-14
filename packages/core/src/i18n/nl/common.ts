@@ -128,6 +128,8 @@ export const common = {
 		qrAlt: "QR-code voor spellink",
 		generating: "QR-code genereren…",
 		copyLink: "Link kopiëren",
+		shareLink: "Link delen",
+		linkCopied: "Link gekopieerd",
 	},
 	roomControls: {
 		heading: "Kamerbediening",

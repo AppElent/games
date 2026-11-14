@@ -5,7 +5,11 @@
  */
 import type { Messages } from "../i18n/en";
 import { type CardId, parseCard, RANKS, SUITS } from "./deck";
-import { SEAT_SILENT_AFTER_MS } from "./engine";
+import {
+	type CardGameDefinition,
+	plainCardOption,
+	SEAT_SILENT_AFTER_MS,
+} from "./engine";
 import type { CardEvent } from "./events";
 import {
 	buildMeld,
@@ -17,7 +21,7 @@ import {
 	swapJoker,
 } from "./melds";
 import type { RummyRules, RummyView } from "./rummy";
-import type { SheddingView } from "./shedding";
+import type { CardPower, SheddingRules, SheddingView } from "./shedding";
 
 export type CardMessages = Messages["games"]["cards"];
 
@@ -49,6 +53,61 @@ export function seatName(
 		return (cards.bots as Record<string, string>)[`bot${entry.botIndex}`];
 	}
 	return entry?.name ?? cards.setup.youFallback;
+}
+
+/** What a special card does, in words, under these rules. */
+export function powerEffect(
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	rules: Pick<SheddingRules, "twoPlayerReverseAgain">,
+	power: CardPower,
+) {
+	const effects = cards.rules.effects;
+	switch (power.kind) {
+		case "draw":
+			return fmt(power.wild ? effects.drawWild : effects.draw, {
+				count: power.amount,
+			});
+		case "reverse":
+			return rules.twoPlayerReverseAgain
+				? effects.reverseDuel
+				: effects.reverse;
+		default:
+			return effects[power.kind];
+	}
+}
+
+export type SpecialCard = {
+	/** The key in `rules.powers`: a rank, or "joker". */
+	key: string;
+	/** A card to draw as its picture. */
+	sample: CardId;
+	name: string;
+	effect: string;
+	/** The house rule that turns it into a plain card, if the game offers one. */
+	plainOption: string | null;
+};
+
+/**
+ * Every special card a game deals, before house rules, so a setup screen can
+ * list them all and offer to switch each one off.
+ */
+export function specialCards(
+	words: Pick<CardWords, "cards" | "fmt">,
+	game: CardGameDefinition,
+): SpecialCard[] {
+	if (game.family !== "shedding") {
+		return [];
+	}
+	const rules = game.rules as SheddingRules;
+	const names = words.cards.games[game.id as keyof CardMessages["games"]]
+		.powers as Record<string, string>;
+	return Object.entries(rules.powers).map(([key, power]) => ({
+		key,
+		sample: key === "joker" ? "JK#0" : `S${key}#0`,
+		name: names[key] ?? key,
+		effect: powerEffect(words, rules, power as CardPower),
+		plainOption: plainCardOption(game, key)?.id ?? null,
+	}));
 }
 
 /** The other seats in the order play reaches them, so the table reads clockwise. */

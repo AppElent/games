@@ -46,7 +46,17 @@ type Definition<Family extends string, Rules> = {
 	players: { min: number; max: number };
 	rules: Rules;
 	/** House rules: each one is a patch over `rules`, off by default. */
-	options: ReadonlyArray<{ id: string; patch: Partial<Rules> }>;
+	options: ReadonlyArray<HouseRule<Rules>>;
+};
+
+export type HouseRule<Rules> = {
+	id: string;
+	patch?: Partial<Rules>;
+	/**
+	 * Special cards this rule turns into plain cards (keys of `rules.powers`).
+	 * Several such rules combine, which a `patch` on `powers` could not.
+	 */
+	withoutPowers?: readonly string[];
 };
 
 export type CardGameDefinition =
@@ -93,16 +103,39 @@ export function normalizeOptions(game: CardGameDefinition, options: string[]) {
 }
 
 function rulesOf<R>(
-	game: { rules: R; options: ReadonlyArray<{ id: string; patch: Partial<R> }> },
+	game: { rules: R; options: ReadonlyArray<HouseRule<R>> },
 	options: readonly string[],
 ): R {
 	let rules = game.rules;
 	for (const option of game.options) {
-		if (options.includes(option.id)) {
-			rules = { ...rules, ...option.patch };
+		if (!options.includes(option.id)) {
+			continue;
+		}
+		rules = { ...rules, ...option.patch };
+		const powers = (rules as { powers?: Record<string, unknown> }).powers;
+		if (option.withoutPowers && powers) {
+			const kept = { ...powers };
+			for (const key of option.withoutPowers) {
+				delete kept[key];
+			}
+			rules = { ...rules, powers: kept };
 		}
 	}
 	return rules;
+}
+
+/** The house rule that turns this special card into a plain one, if the game has it. */
+export function plainCardOption(game: CardGameDefinition, power: string) {
+	return (game.options as ReadonlyArray<HouseRule<unknown>>).find((option) =>
+		option.withoutPowers?.includes(power),
+	);
+}
+
+/** House rules that are not about a single special card. */
+export function generalOptions(game: CardGameDefinition) {
+	return (game.options as ReadonlyArray<HouseRule<unknown>>).filter(
+		(option) => !option.withoutPowers,
+	);
 }
 
 function rulesFor(game: CardGameDefinition, options: readonly string[]) {

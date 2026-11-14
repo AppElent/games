@@ -20,6 +20,8 @@ export const cards = {
 		moreOpponents: "Meer tegenstanders",
 		opponents: { one: "{count} tegenstander", other: "{count} tegenstanders" },
 		houseRules: "Huisregels",
+		specialCards: "Pestkaarten",
+		specialCardsHint: "Zet er een uit om hem als gewone kaart te spelen.",
 		playNow: "Delen maar",
 		openRoom: "Kamer openen",
 		creating: "Schudden...",
@@ -331,6 +333,30 @@ export const cards = {
 				noLastCard: {
 					label: "Laatste kaart hoeft niet",
 					hint: "Niemand hoeft zijn laatste kaart te melden.",
+				},
+				plain2: {
+					label: "Twee trekt twee uit",
+					hint: "Een 2 is een gewone kaart.",
+				},
+				plainJoker: {
+					label: "Zonder jokers",
+					hint: "Er zitten geen jokers in het spel.",
+				},
+				plain7: {
+					label: "Zeven blijft kleven uit",
+					hint: "Een 7 is een gewone kaart.",
+				},
+				plain8: {
+					label: "Acht wacht uit",
+					hint: "Een 8 is een gewone kaart.",
+				},
+				plainJ: {
+					label: "Boer wisselt uit",
+					hint: "Een boer is een gewone kaart.",
+				},
+				plainA: {
+					label: "Aas keert uit",
+					hint: "Een aas is een gewone kaart.",
 				},
 			},
 		},

@@ -5,9 +5,11 @@
 import {
 	type CardGameDefinition,
 	type CardGameId,
+	generalOptions,
 	getCardGame,
 	isCardGameId,
 } from "@arcadeclub/core/cards/engine";
+import { specialCards } from "@arcadeclub/core/cards/table-view";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { Stack, useRouter } from "expo-router";
 import { type ReactNode, useMemo, useState } from "react";
@@ -33,7 +35,9 @@ import { AppText } from "../../../ui/text";
 import { onlineSessionHref } from "../../play/app-games";
 import { HostGate } from "../../sessions/host/host-gate";
 import { useHostSession } from "../../sessions/host/use-host-session";
+import { PlayingCard } from "../deck/playing-card";
 import { RulesSheet } from "../deck/rules-sheet";
+import { useCardWords } from "../deck/use-card-words";
 
 export function CardSetupScreen({ gameId }: { gameId: string }) {
 	const router = useRouter();
@@ -75,6 +79,15 @@ function Setup({
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 3));
 	const [options, setOptions] = useState<string[]>([]);
 	const [rulesOpen, setRulesOpen] = useState(false);
+	const words = useCardWords();
+	const houseRules = generalOptions(game);
+	const special = useMemo(() => specialCards(words, game), [words, game]);
+	const setOption = (id: string, on: boolean) =>
+		setOptions((current) =>
+			on
+				? [...current.filter((option) => option !== id), id]
+				: current.filter((option) => option !== id),
+		);
 	const solo = mode === "computer";
 	const headerOptions = useMemo(() => ({ title: text.name }), [text.name]);
 
@@ -162,10 +175,41 @@ function Setup({
 						</View>
 					</Section>
 				) : null}
-				{game.options.length > 0 ? (
+				{special.length > 0 ? (
+					<Section label={cards.setup.specialCards}>
+						<AppText variant="caption">{cards.setup.specialCardsHint}</AppText>
+						<Card>
+							{special.map((card) => {
+								const plain = card.plainOption;
+								const on = plain === null || !options.includes(plain);
+								return (
+									<View key={card.key} style={styles.rule}>
+										<PlayingCard card={card.sample} width={36} />
+										<View style={styles.ruleText}>
+											<AppText variant="body">{card.name}</AppText>
+											<AppText variant="caption">{card.effect}</AppText>
+										</View>
+										<Switch
+											accessibilityLabel={card.name}
+											accessibilityHint={card.effect}
+											value={on}
+											disabled={plain === null}
+											trackColor={{ true: tokens.accent }}
+											onValueChange={(next) => {
+												if (plain !== null) setOption(plain, !next);
+											}}
+											testID={`cards-power-${card.key}`}
+										/>
+									</View>
+								);
+							})}
+						</Card>
+					</Section>
+				) : null}
+				{houseRules.length > 0 ? (
 					<Section label={cards.setup.houseRules}>
 						<Card>
-							{game.options.map((option) => {
+							{houseRules.map((option) => {
 								const on = options.includes(option.id);
 								const label = optionText[option.id];
 								return (
@@ -179,13 +223,7 @@ function Setup({
 											accessibilityHint={label.hint}
 											value={on}
 											trackColor={{ true: tokens.accent }}
-											onValueChange={(next) =>
-												setOptions((current) =>
-													next
-														? [...current, option.id]
-														: current.filter((id) => id !== option.id),
-												)
-											}
+											onValueChange={(next) => setOption(option.id, next)}
 											testID={`cards-option-${option.id}`}
 										/>
 									</View>
