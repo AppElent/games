@@ -37,7 +37,6 @@ export type BankState = {
 	discard: CardId[];
 	/** Points each seat plays this round for; null until they choose. */
 	stakes: (number | null)[];
-	doubled: boolean[];
 	/** Seats whose hand is over this round: stood, bust, doubled or 21. */
 	done: boolean[];
 	turn: number;
@@ -84,14 +83,10 @@ export type BankView = {
 	bankTotal: number;
 	stockCount: number;
 	stakes: (number | null)[];
-	doubled: boolean[];
-	done: boolean[];
 	results: number[][];
 	totals: number[];
 	stakeOptions: readonly number[];
 	canStake: boolean;
-	canHit: boolean;
-	canStand: boolean;
 	canDouble: boolean;
 	winners: number[];
 	events: CardEvent[];
@@ -174,7 +169,6 @@ export function createBank(
 		stock: shuffle(buildDeck(rules.decks, 0), random),
 		discard: [],
 		stakes: Array.from({ length: seats }, () => null),
-		doubled: Array.from({ length: seats }, () => false),
 		done: Array.from({ length: seats }, () => false),
 		turn: starter,
 		starter,
@@ -227,7 +221,12 @@ function dealRound(rules: BankRules, state: BankState, random: Rng) {
 		state.bank.push(draw(state, random));
 	}
 	state.phase = "play";
-	pushEvent(state, { type: "deal", round: state.round });
+	pushEvent(state, {
+		type: "deal",
+		round: state.round,
+		perSeat: 2,
+		bank: true,
+	});
 	state.done = state.hands.map((hand) => isNatural(hand));
 	state.hands.forEach((hand, seat) => {
 		if (isNatural(hand)) {
@@ -310,7 +309,6 @@ function bankPlays(rules: BankRules, state: BankState, random: Rng) {
 	state.round += 1;
 	state.phase = "stake";
 	state.stakes = state.stakes.map(() => null);
-	state.doubled = state.doubled.map(() => false);
 	state.done = state.done.map(() => false);
 }
 
@@ -359,10 +357,7 @@ function requirePlayTurn(state: BankState, seat: number) {
 
 function canDouble(rules: BankRules, state: BankState, seat: number) {
 	return (
-		rules.doubleDown &&
-		state.hands[seat].length === 2 &&
-		!state.doubled[seat] &&
-		!state.done[seat]
+		rules.doubleDown && state.hands[seat].length === 2 && !state.done[seat]
 	);
 }
 
@@ -412,7 +407,6 @@ export function applyBank(
 			const card = draw(state, random);
 			state.hands[seat].push(card);
 			state.stakes[seat] = (state.stakes[seat] ?? 0) * 2;
-			state.doubled[seat] = true;
 			const total = handValue(state.hands[seat]).total;
 			pushEvent(state, { type: "double", seat, card, total });
 			if (total > TARGET) {
@@ -447,15 +441,11 @@ export function viewBank(
 		bankTotal: handValue(bank.filter((card) => card !== null)).total,
 		stockCount: state.stock.length,
 		stakes: state.stakes,
-		doubled: state.doubled,
-		done: state.done,
 		results: state.results,
 		totals: totalsOf(state.results, state.hands.length),
 		stakeOptions: rules.stakes,
 		canStake:
 			seat !== null && state.phase === "stake" && state.stakes[seat] === null,
-		canHit: isTurn,
-		canStand: isTurn,
 		canDouble: isTurn && canDouble(rules, state, seat),
 		winners: state.winners,
 		events: state.events,

@@ -1154,6 +1154,11 @@ button.pile:disabled {
 	margin-top: 0.75rem;
 }
 
+/* Match standings: the best score stands out */
+.standing[data-best="true"] {
+	background: rgba(230, 192, 106, 0.16);
+}
+
 /* Rummy: the middle of the table */
 .rummy-board {
 	display: grid;

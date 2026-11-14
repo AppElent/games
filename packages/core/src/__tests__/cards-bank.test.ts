@@ -58,7 +58,6 @@ function playing(overrides: Partial<BankState> = {}): BankState {
 			(card) => card.startsWith("C") && card !== "C8#0",
 		),
 		stakes: Array.from({ length: seats }, () => 2),
-		doubled: Array.from({ length: seats }, () => false),
 		done: Array.from({ length: seats }, () => false),
 		phase: "play",
 		turn: 0,
@@ -449,9 +448,9 @@ describe("house rules", () => {
 		expect(resolvedRules(game, ["longMatch"]).rules).toMatchObject({
 			rounds: 20,
 		});
-		expect(() => normalizeOptions(game, ["shortMatch", "longMatch"])).toThrow(
-			GameRuleError,
-		);
+		expect(
+			codeOf(() => normalizeOptions(game, ["shortMatch", "longMatch"])),
+		).toBe("cardsOptionsClash");
 		expect(normalizeOptions(game, ["longMatch", "doubleDown"])).toEqual([
 			"doubleDown",
 			"longMatch",

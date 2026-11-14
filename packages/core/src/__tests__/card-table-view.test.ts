@@ -333,14 +333,10 @@ describe("bank table", () => {
 			bankTotal: 9,
 			stockCount: 80,
 			stakes: [1, 2, 5],
-			doubled: [false, false, false],
-			done: [true, false, true],
 			results: [[1, -2, 0]],
 			totals: [1, -2, 0],
 			stakeOptions: [1, 2, 5],
 			canStake: false,
-			canHit: true,
-			canStand: true,
 			canDouble: false,
 			winners: [],
 			events: [],
@@ -688,6 +684,22 @@ describe("flights", () => {
 			["S7#0", "stock", "hand"],
 			["S8#0", "stock", "seat-2"],
 			["S9#0", "stock", "bank"],
+		]);
+	});
+
+	it("deals two cards each and two to the bank at a bank table", () => {
+		const { flights } = plan([
+			{ seq: 1, type: "deal", round: 1, perSeat: 2, bank: true },
+		]);
+		expect(flights.map((flight) => flight.to)).toEqual([
+			"hand",
+			"seat-1",
+			"seat-2",
+			"bank",
+			"hand",
+			"seat-1",
+			"seat-2",
+			"bank",
 		]);
 	});
 

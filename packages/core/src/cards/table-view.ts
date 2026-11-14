@@ -726,9 +726,16 @@ export function planFlights(
 	for (const event of events) {
 		switch (event.type) {
 			case "deal":
-				for (let round = 0; round < DEAL_CARDS_PER_SEAT; round += 1) {
+				for (
+					let pass = 0;
+					pass < (event.perSeat ?? DEAL_CARDS_PER_SEAT);
+					pass += 1
+				) {
 					for (let seat = 0; seat < seatCount; seat += 1) {
 						fly(null, "stock", seatZone(seat));
+					}
+					if (event.bank) {
+						fly(null, "stock", "bank");
 					}
 				}
 				break;

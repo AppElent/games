@@ -125,7 +125,7 @@ export function normalizeOptions(game: CardGameDefinition, options: string[]) {
 	const chosen = known.filter((rule) => options.includes(rule.id));
 	const groups = chosen.flatMap((rule) => (rule.group ? [rule.group] : []));
 	if (new Set(groups).size < groups.length) {
-		throw new GameRuleError("cardsUnknownOption");
+		throw new GameRuleError("cardsOptionsClash");
 	}
 	return chosen.map((rule) => rule.id);
 }
@@ -307,7 +307,7 @@ export function applyCardAction(
 	return family.apply(rulesFor(game, options), state, seat, action, random);
 }
 
-/** What one seat may see; `null` is a spectator. Never includes other hands. */
+/** What one seat may see; `null` is a spectator. Never includes a hand the rules keep hidden. */
 export function viewCardGame(
 	game: CardGameDefinition,
 	options: readonly string[],

@@ -568,17 +568,51 @@ describe("eenentwintigen", () => {
 		});
 		await t.finishAllScheduledFunctions(vi.runAllTimers);
 		const dealt = bankView(await read(t, creds(sessionId, participantId)));
-		expect(dealt.stakes[0]).toBe(2);
+		// Dealt; a natural would already have settled the round.
 		expect(dealt.hands[0].length).toBeGreaterThanOrEqual(2);
+		expect(dealt.stakes[0] === 2 || dealt.round === 2).toBe(true);
+		// Pin the round mid-play, so the face-down card is certain to be hidden.
 		const stored = await t.run((ctx) =>
 			ctx.db.query("cardGameStates").unique(),
 		);
-		const game = stored?.game as { phase: string; bank: string[] };
-		const mine = JSON.stringify(dealt);
-		if (game.phase === "play") {
-			expect(dealt.bank[1]).toBeNull();
-			expect(mine).not.toContain(`"${game.bank[1]}"`);
-		}
+		if (!stored) throw new Error("no table");
+		const game = stored.game as {
+			bank: string[];
+			done: boolean[];
+		};
+		await t.run((ctx) =>
+			ctx.db.patch(stored._id, {
+				game: {
+					...stored.game,
+					phase: "play",
+					turn: 0,
+					bankRevealed: false,
+					done: game.done.map(() => false),
+				} as typeof stored.game,
+			}),
+		);
+		const playing = await read(t, creds(sessionId, participantId));
+		expect(bankView(playing).bank).toEqual([game.bank[0], null]);
+		expect(JSON.stringify(playing)).not.toContain(`"${game.bank[1]}"`);
+	});
+
+	it("plays alone against the bank", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(
+			t,
+			"eenentwintigen",
+			0,
+		);
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "stake", amount: 5 },
+		});
+		const dealt = bankView(await read(t, creds(sessionId, participantId)));
+		// A natural settles at once; otherwise it is this player's turn.
+		expect(
+			(dealt.phase === "play" && dealt.hands[0].length === 2) ||
+				(dealt.phase === "stake" && dealt.round === 2),
+		).toBe(true);
 	});
 
 	it("a table on autopilot plays a whole match to the end", async () => {

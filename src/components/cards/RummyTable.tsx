@@ -602,12 +602,8 @@ export function RummyTable({
 								{standings.map(({ total, seat }) => (
 									<li
 										key={seat}
-										className="flex justify-between gap-3 rounded-md px-2 py-1.5"
-										style={
-											total === best
-												? { background: "rgba(230,192,106,.16)" }
-												: undefined
-										}
+										className="standing flex justify-between gap-3 rounded-md px-2 py-1.5"
+										data-best={total === best}
 									>
 										<span className="truncate font-semibold">
 											{seatName(cards, table, seat)}

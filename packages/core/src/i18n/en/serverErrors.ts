@@ -23,6 +23,7 @@ export const serverErrors = {
 	cardsStockOnly: "In this game you only draw from the stock.",
 	cardsDiscardEmpty: "The discard pile is empty.",
 	cardsUnknownOption: "That house rule doesn't exist.",
+	cardsOptionsClash: "Pick only one of those house rules.",
 	cardsWrongAction: "That move isn't part of this game.",
 	cardsTableFull: "This table is full.",
 	cardsSeatCredential: "This seat belongs to another device.",

@@ -4,8 +4,10 @@ import type { CardId, Suit } from "./deck";
  * What just happened at the table, in order. Public: anything hidden (which
  * card someone drew) stays out. Clients animate and caption from this log.
  */
-export type CardEvent = { seq: number } & (
-	| { type: "deal"; round: number }
+export type CardEvent = {
+	seq: number;
+} /** `perSeat` cards each (three are animated when absent), and two to the bank if `bank`. */ & (
+	| { type: "deal"; round: number; perSeat?: number; bank?: boolean }
 	| { type: "play"; seat: number; card: CardId; suit?: Suit }
 	| { type: "draw"; seat: number; count: number; source: "stock" | "discard" }
 	| { type: "penalty"; seat: number; count: number }

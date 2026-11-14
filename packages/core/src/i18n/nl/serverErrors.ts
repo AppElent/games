@@ -25,6 +25,7 @@ export const serverErrors = {
 	cardsStockOnly: "In dit spel pak je alleen van de trekstapel.",
 	cardsDiscardEmpty: "De aflegstapel is leeg.",
 	cardsUnknownOption: "Die huisregel bestaat niet.",
+	cardsOptionsClash: "Kies maar één van die huisregels.",
 	cardsWrongAction: "Die zet hoort niet bij dit spel.",
 	cardsTableFull: "Deze tafel is vol.",
 	cardsSeatCredential: "Deze stoel hoort bij een ander apparaat.",

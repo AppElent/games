@@ -204,7 +204,7 @@ export function BankTable({
 									/>
 								))
 							: null}
-						{mine && view.canHit ? (
+						{mine ? (
 							<TableButton
 								label={cards.bank.hit}
 								disabled={controls.pending}
@@ -215,7 +215,7 @@ export function BankTable({
 								testID="cards-hit"
 							/>
 						) : null}
-						{mine && view.canStand ? (
+						{mine ? (
 							<TableButton
 								ghost
 								label={cards.bank.stand}
@@ -227,7 +227,7 @@ export function BankTable({
 								testID="cards-stand"
 							/>
 						) : null}
-						{mine && view.canDouble ? (
+						{view.canDouble ? (
 							<TableButton
 								ghost
 								label={cards.bank.double}
@@ -255,8 +255,6 @@ export function BankTable({
 					handSize={hand.length}
 					fresh={fresh}
 					zones={flights.zones}
-					stateOf={() => ({ disabled: true })}
-					onTap={() => false}
 				/>
 			}
 			overlays={
