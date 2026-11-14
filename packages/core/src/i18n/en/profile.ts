@@ -11,6 +11,7 @@ export const profile = {
 		confirmBody:
 			"This permanently deletes your Appelent account, which you also use to sign in to other Appelent apps, along with your Arcade Club data. Games only you played are deleted; in games you played with others, your name is removed. This can't be undone.",
 		confirm: "Delete permanently",
+		deleting: "Deleting…",
 		failed: "Your account could not be deleted. Try again.",
 		unavailable: "Deleting your account isn't available right now.",
 	},

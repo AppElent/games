@@ -51,7 +51,7 @@ export const privacy = {
 			heading: "Je keuzes en rechten",
 			paragraphs: {
 				delete:
-					"Je kunt je account en je gegevens op elk moment verwijderen in de iOS-app via Profiel → Account verwijderen, of door ons te mailen. Daarmee verwijder je je Appelent-account voor alle Appelent-apps.",
+					"Je kunt je account en je gegevens op elk moment verwijderen op de Account-pagina van de website, in de iOS-app via Profiel → Account verwijderen, of door ons te mailen. Daarmee verwijder je je Appelent-account voor alle Appelent-apps.",
 				gdpr: "Je kunt ons vragen om een kopie van je gegevens, ze te corrigeren of te verwijderen, of bezwaar maken tegen het gebruik ervan, via privacy@appelent.nl. Je kunt ook een klacht indienen bij de Autoriteit Persoonsgegevens.",
 				children:
 					"Arcade Club is niet bedoeld voor kinderen jonger dan 13 en we verzamelen niet bewust hun persoonsgegevens.",

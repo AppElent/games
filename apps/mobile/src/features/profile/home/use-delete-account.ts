@@ -1,9 +1,8 @@
 /**
- * Deleting the signed-in account: the Arcade Club data first, in batches until
- * the backend reports `done`, then the Clerk user, then the session. The Clerk
- * user is the shared Appelent account, so it goes last: a failure part way
- * leaves the account able to sign in and try again.
+ * Deleting the signed-in account; the steps and their order live in
+ * `@arcadeclub/core/account-deletion`, shared with the web Account page.
  */
+import { deleteAccount as runDeletion } from "@arcadeclub/core/account-deletion";
 import { useAuth, useUser } from "@clerk/expo";
 import { useMutation } from "convex/react";
 import { useState } from "react";
@@ -28,14 +27,13 @@ export function useDeleteAccount() {
 		}
 		setUnavailable(false);
 		const expectedSubject = user.id;
-		await run(async () => {
-			let done = false;
-			while (!done) {
-				({ done } = await deleteMyData({ expectedSubject }));
-			}
-			await user.delete();
-			await signOut();
-		});
+		await run(() =>
+			runDeletion({
+				deleteBatch: () => deleteMyData({ expectedSubject }),
+				deleteUser: () => user.delete(),
+				signOut: () => signOut(),
+			}),
+		);
 	}
 
 	return {
