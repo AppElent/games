@@ -64,6 +64,8 @@ Both games, all clients. There is no leave mutation today (only the host's kick,
 - **Rejoin.** `admitParticipant` already reclaims the same identity's row; for a left row it clears `leftAt` and the player comes back as a late joiner (Beat the Clock: pick a team, play from that team's next turn; Doen, Durven: end of the rotation). Old team, score credit and rotation slot are not restored.
 - **Leaving mid-turn, Beat the Clock.** The describer leaves during `ready`: the next describer on that team gets the ready screen (same turn). During `describing` or `timeUp`: the ticks as they stand are sent, as the auto-send does, and the check runs. A referee or teammate leaving changes nothing in the turn.
 - **Leaving mid-turn, Doen, Durven.** The active player leaves while choosing or on the prompt: the turn counts as skipped and the next player is up.
+- **Back to arcade** on a game's end screen calls the same leave for a player (not the host), so **Play again** and "same teams" only keep players still in the room.
+- **Next describer, Beat the Clock.** Within a team, describers go in join order; late joiners and players who switch in go to the end. The next describer is recomputed whenever the roster changes: if the named next describer leaves, the score card and **Next** move to the team's new next describer. A **Switch team** by the named next describer applies after that upcoming turn. If a leave drops the team below 2, the short-team skip (`clock.turn.skippedShort`) wins over handing the turn to a teammate.
 - **Too few players** after a leave follows each game's rule (Beat the Clock: short teams are skipped, fewer than 2 playable teams ends the game; Doen, Durven: fewer than 2 players ends the game).
 
 ## Shared visual spec

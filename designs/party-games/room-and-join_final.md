@@ -146,7 +146,8 @@ Actions:
 - **Show QR / Hide QR**: toggles the QR of the join URL (`QrSharePanel` on web, `QrCode` on mobile).
 - **Shuffle teams** (Beat the Clock): spreads all players, including those without a team, evenly over the teams at random. Players can still switch after a shuffle until Start.
 - **Start game**: locks settings and teams, starts the session, routes everyone.
-- Menu (`Room menu`): the existing session controls (rename, lock, kick via `SessionHostControls` and `ModerationActions`), plus **How to play**.
+- Menu (`Room menu`, `room.menuLabel`): the existing session controls (rename, lock, kick via `SessionHostControls` and `ModerationActions`), plus **How to play**. The host leaves the lobby with the header back button (`common.gameShell.returnToGames`); the room stays open as rooms do today, and the host gets back in through **Continue as**. Closing a room that hasn't started is not part of this design.
+- Player lobby menu (screen 5, and the Doen, Durven player lobby): **How to play** · **Leave room** (danger, with the confirm from the [pause menu](beat-the-clock_final.md#8-pause-menu)). Team switching stays on the team cards. Watchers get the same menu.
 
 Team card: amber team chip (`amberDim` fill), count on the right ("2 players"), names in rows of 36px; the host's own row reads "Sam (you)". Players without a team are listed in the strip under the cards.
 

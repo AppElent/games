@@ -152,7 +152,7 @@ Layout: a star tile in `violetDim`, "Dat was het!" at 38px, "Lotte heeft het spe
 | `restarting` | Nog een keer disabled with spinner "Opnieuw starten…" |
 | tie for most picked | "Meest gekozen" lists both: "Doen en Waarheid, 8 keer" |
 | ended because prompts ran out | Subline "De opdrachten zijn op na {n} rondes." |
-| ended because too few players were left | Subline `truth.over.tooFew`; the host's actions as `host` (Nog een keer is disabled with `truth.lobby.need` until 2 players are in the room) |
+| ended because too few players were left | Subline `truth.over.tooFew`; the host's actions as `host` (Nog een keer is disabled with `truth.lobby.need` until 2 players are in the room; the room stays joinable at game over, as between games) |
 | prompts will repeat (every category is out for these levels in this room) | Host notice above **Nog een keer**: `truth.over.promptsReset`; Nog een keer resets the room's used prompts; **Niveaus aanpassen** stays |
 | ended before anyone picked | Rondes 1, Gedaan 0, Overgeslagen 0; the "Meest gekozen" card is hidden |
 
