@@ -88,6 +88,7 @@ Layout: back button and title; **Levels** checkbox list (3 rows on web, 2 in the
 | `creating` | Button disabled with spinner "Kamer wordt geopend…" |
 | `error` | Alert above the button; button reads **Opnieuw proberen** |
 | `app` (mobile) | 18+ row is absent; an info row says "18+ speel je alleen in de browser, niet in de app." |
+| signed out (`HostGate`) | As screen 1 |
 
 The server enforces the web-only rule whatever a client sends: the app passes its platform with create, join and level changes, and the server rejects an 18+ room created from the app, an 18+ room without the confirmation, and a join from the app into an 18+ room (the app then shows the `adultInApp` state of screen 4). The game's state query and mutations also refuse an app client in an 18+ room, so an existing seat can't be used from the app either: on mobile, `adultInApp` takes precedence over `alreadyIn` on screen 4, and the app's game screen shows the `adultInApp` card when a stored seat points to an 18+ room.
 
@@ -146,7 +147,9 @@ Actions:
 - **Show QR / Hide QR**: toggles the QR of the join URL (`QrSharePanel` on web, `QrCode` on mobile).
 - **Shuffle teams** (Beat the Clock): spreads all players, including those without a team, evenly over the teams at random. Players can still switch after a shuffle until Start.
 - **Start game**: locks settings and teams, starts the session, routes everyone.
-- Menu (`Room menu`, `room.menuLabel`): the existing session controls (rename, lock, kick via `SessionHostControls` and `ModerationActions`), plus **How to play**. The host leaves the lobby with the header back button (`common.gameShell.returnToGames`); the room stays open as rooms do today, and the host gets back in through **Continue as**. Closing a room that hasn't started is not part of this design.
+- Menu (`Room menu`, `room.menuLabel`), the only control in the header's `menu` slot:
+  - Web: the existing session controls (rename, lock, kick via `SessionHostControls` and `ModerationActions`), then **How to play**, then **Return to Games** (`common.gameShell.returnToGames`, a link to `/`) as the last item. That item is the host's way out of the lobby on web; the room stays open as rooms do today, and the host gets back in through **Continue as**.
+  - Mobile: **How to play** only. The app has no rename, lock or kick today (it calls none of `sessions.rename`, `setLocked`, `kickParticipant`), and these games don't add them; the host leaves with the stack's back button. Moderation from the app is leftover parity work. Closing a room that hasn't started is not part of this design.
 - Player lobby menu (screen 5, and the Doen, Durven player lobby): **How to play** · **Leave room** (danger, with the confirm from the [pause menu](beat-the-clock_final.md#8-pause-menu)). Team switching stays on the team cards. Watchers get the same menu.
 
 Team card: amber team chip (`amberDim` fill), count on the right ("2 players"), names in rows of 36px; the host's own row reads "Sam (you)". Players without a team are listed in the strip under the cards.
@@ -263,6 +266,7 @@ Layout: menu button, kicker, host and settings line, room code; a title and subt
 | --- | --- |
 | `pickTeam` | "Pick your team"; both cards show **Join Comets** / **Join Rockets**; status "Pick a team to get ready" |
 | `onTeam` | The chosen card has a cyan border, check badge and "You" in its list, `aria-pressed="true"`; the other card shows **Switch**; status "Waiting for Sam to start the game" |
+| `lateJoin` (game running), when it ends | The late joiner stays on this screen (and does not referee) until their team's next ready state, then moves into the game screens with everyone else |
 | `lateJoin` (game running) | "Game in progress"; subtitle names the running turn; after picking: "You play from your team's next turn…", status `clock.lobby.statusLate` ("Rockets are playing now. You're in from your team's next turn.") |
 | `loading` | Skeleton blocks in place of title and cards, `aria-busy="true"`, label "Loading the room" |
 | removed by the host | Existing session behaviour (`SeatBanner` message, back to `/join`) |

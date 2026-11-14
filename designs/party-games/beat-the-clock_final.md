@@ -330,6 +330,7 @@ Behaviour:
 | `clock.menu.endHint` | Shows the scores as final | De huidige stand wordt de eindstand |
 | `clock.menu.switch` | Switch team | Wissel van team |
 | `clock.menu.switchHint` | From the next turn | Vanaf de volgende beurt |
+| `clock.menu.switchHintNext` (the named next describer) | After you describe | Nadat jij hebt omschreven |
 | `clock.menu.switchBlocked` | Your team needs at least 2 players | Je team heeft minstens 2 spelers nodig |
 | `clock.turn.skipped` | {host} skipped this turn. {team} are next. | {host} heeft deze beurt overgeslagen. {team} zijn hierna. |
 | `clock.turn.skippedShort` | {team} have too few players, so their turn is skipped. | {team} hebben te weinig spelers, dus hun beurt wordt overgeslagen. |
