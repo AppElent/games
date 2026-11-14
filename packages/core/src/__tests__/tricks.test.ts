@@ -540,6 +540,14 @@ describe("the computer player", () => {
 			{ type: "play", card: "DK#0" },
 		);
 		expect(chooseTricksCard(jack, follow, 1)).toBe("D3#0");
+		const forced = act(
+			playing([["D10#0"], ["DJ#0", "DA#0"], ["DQ#0"]], {
+				tricksTaken: [1, 0, 0],
+			}),
+			0,
+			{ type: "play", card: "D10#0" },
+		);
+		expect(chooseTricksCard(jack, forced, 1)).toBe("DA#0");
 	});
 
 	it("waits for people to pass and to deal the next round", () => {

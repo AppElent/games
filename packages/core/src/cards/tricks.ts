@@ -36,6 +36,12 @@ export type TricksRules = {
 	firstLead: string | null;
 	/** A suit nobody may lead until it has been played (or one of `alsoBrokenBy` has). */
 	breaking: { suit: Suit; alsoBrokenBy: readonly string[] } | null;
+	/** Which entry in `SCHEDULES` sets how many cards each seat is dealt. */
+	schedule: keyof typeof SCHEDULES;
+	/** Which entry in `TRUMPS` picks a deal's trump suit. */
+	trumpChoice: keyof typeof TRUMPS;
+	/** Which entry in `SEATINGS` puts seats into teams. */
+	seating: keyof typeof SEATINGS;
 	/** Which scorer in `SCORERS` turns the tricks taken into points. */
 	scoring: keyof typeof SCORERS;
 	/** Points per card of a suit; `cardPoints` overrides a single face. */
@@ -269,6 +275,33 @@ export function legalTricksCards(
 	);
 }
 
+/**
+ * Hand sizes by name: the whole deck shared out, or (for a later game such as
+ * Boerenbridge) a size that changes with the round.
+ */
+const SCHEDULES = {
+	fullDeck: (deck: number, seats: number, _round: number) => deck / seats,
+} satisfies Record<
+	string,
+	(deck: number, seats: number, round: number) => number
+>;
+
+/**
+ * Trump choosers by name, given the cards left over after the deal. A later
+ * game turns one up, or has a seat choose it in a phase of its own.
+ */
+const TRUMPS = {
+	none: (_rest: readonly CardId[]): Suit | null => null,
+} satisfies Record<string, (rest: readonly CardId[]) => Suit | null>;
+
+/**
+ * Teams by name: each seat's team number. Partners share a total, so a team
+ * game (Klaverjassen) wins or loses together.
+ */
+const SEATINGS = {
+	alone: (seats: number) => Array.from({ length: seats }, (_, seat) => seat),
+} satisfies Record<string, (seats: number) => number[]>;
+
 function dealTricks(
 	rules: TricksRules,
 	seats: number,
@@ -277,11 +310,14 @@ function dealTricks(
 	carried?: Pick<TricksState, "round" | "scores" | "events" | "nextSeq">,
 ): TricksState {
 	const stock = shuffle(tricksDeck(rules, seats), random);
-	if (stock.length % seats !== 0) {
-		throw new Error(`the deck does not deal evenly to ${seats} seats`);
-	}
-	const hands = deal(stock, seats, stock.length / seats);
 	const round = carried?.round ?? 1;
+	const handSize = SCHEDULES[rules.schedule](stock.length, seats, round);
+	if (!Number.isInteger(handSize) || handSize * seats > stock.length) {
+		throw new Error(
+			`the deck does not deal ${handSize} cards to ${seats} seats`,
+		);
+	}
+	const hands = deal(stock, seats, handSize);
 	const direction = passDirectionFor(rules, seats, round);
 	const state: TricksState = {
 		family: "tricks",
@@ -295,7 +331,7 @@ function dealTricks(
 		turn: 0,
 		trick: [],
 		lastTrick: null,
-		trump: null,
+		trump: TRUMPS[rules.trumpChoice](stock),
 		broken: false,
 		taken: hands.map(() => []),
 		tricksTaken: hands.map(() => 0),
@@ -378,14 +414,23 @@ function scoreDeal(rules: TricksRules, state: TricksState) {
 	if (moon !== null) {
 		pushEvent(state, { type: "moon", seat: moon });
 	}
-	const totals = totalsOf(state.scores, state.hands.length);
-	if (Math.max(...totals) < rules.target) {
+	// Partners play for one total, so the match ends and is won by team.
+	const seats = state.hands.length;
+	const team = SEATINGS[rules.seating](seats);
+	const totals = totalsOf(state.scores, seats);
+	const teamTotals = team.map((own) =>
+		totals.reduce(
+			(sum, total, seat) => (team[seat] === own ? sum + total : sum),
+			0,
+		),
+	);
+	if (Math.max(...teamTotals) < rules.target) {
 		state.phase = "roundOver";
 		return;
 	}
-	const lowest = Math.min(...totals);
+	const lowest = Math.min(...teamTotals);
 	state.phase = "finished";
-	state.winners = totals.flatMap((total, seat) =>
+	state.winners = teamTotals.flatMap((total, seat) =>
 		total === lowest ? [seat] : [],
 	);
 	pushEvent(state, { type: "win", seats: state.winners });
@@ -613,7 +658,7 @@ export function chooseTricksCard(
 		const safe = following.filter((card) => cardValue(rules, card) <= 0);
 		return highest(safe.length > 0 ? safe : following) as CardId;
 	}
-	return [...following].sort(byRisk)[0];
+	return spare(following).sort(byRisk)[0];
 }
 
 export function botTricksMove(

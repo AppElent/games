@@ -46,6 +46,9 @@ A game sets these `TricksRules` fields:
 | `passing` | Cards passed before a deal and the direction cycle; null for none | 3, left/right/across/keep |
 | `firstLead` | The face that opens each deal; null means left of the dealer leads | C2 |
 | `breaking` | A suit nobody leads until it has been played, and faces that also break it | hearts |
+| `schedule` | Which function in `SCHEDULES` sets each seat's hand size per deal; cards left over stay undealt | `fullDeck` |
+| `trumpChoice` | Which function in `TRUMPS` picks a deal's trump suit from the undealt cards | `none` |
+| `seating` | Which function in `SEATINGS` puts seats into teams; partners share a total | `alone` |
 | `scoring` | Which function in `SCORERS` turns tricks taken into points | `penaltyCards` |
 | `suitPoints`, `cardPoints` | Points per card; a face overrides its suit | hearts 1, SQ 13 |
 | `shootTheMoon` | Taking every positive card gives their total to everyone else | on |
@@ -62,19 +65,23 @@ House rules are shallow patches on these fields, as in the other families.
 
 ### Extension points for later games
 
-Boerenbridge, Toepen and Klaverjassen need these. Each is a new field with a default
-that keeps Hartenjagen unchanged, not a new family.
+Boerenbridge, Toepen and Klaverjassen need these. The strategy maps (`SCHEDULES`,
+`TRUMPS`, `SEATINGS`, `SCORERS`) hold only what Hartenjagen uses; a later game adds an
+entry and names it in its rules. The rest are new fields with a default that keeps
+Hartenjagen unchanged, not a new family.
 
 - **Rank order**: `ranks` already decides strength and the deck. Toepen sets
   `["J","Q","K","A","7","8","9","10"]` and gets its 32-card deck from that.
-- **Trump**: `TricksState.trump` exists and `trickWinner` honours it. A new
-  `trump` rule chooses how it is set per deal (turned up, or chosen by a seat), and a
-  `trumpRanks` order covers Klaverjassen's J 9 A 10 K Q 8 7.
+- **Trump**: `trickWinner` honours `TricksState.trump`, which `trumpChoice` sets per
+  deal. Boerenbridge adds a `TRUMPS` entry that turns up an undealt card; Klaverjassen
+  has a seat choose it in a phase of its own, and a `trumpRanks` order covers its
+  J 9 A 10 K Q 8 7.
 - **Follow rules**: `legalTricksCards` is the single place that decides legal cards,
   so must-trump and must-overtrump are a rule switch read there.
-- **Team seating**: a `teams` field mapping seats to teams; scoring then adds per team.
-- **Round schedule**: a `handSizes` function from seat count and round, for
-  Boerenbridge's rising and falling hands; today every deal deals out the deck.
+- **Team seating**: a `SEATINGS` entry such as opposite seats as partners. The match
+  already ends and is won on team totals.
+- **Round schedule**: a `SCHEDULES` entry for Boerenbridge's rising and falling hands,
+  from the seat count and round.
 - **Bidding and stakes**: a phase before `playing`, like `passing`, with its own action
   and refusal codes (Boerenbridge bids, Toepen knocks).
 - **Scoring**: a new entry in `SCORERS` (tricks against bid, last trick only, team
@@ -82,7 +89,7 @@ that keeps Hartenjagen unchanged, not a new family.
 - **Trick history**: `taken` keeps each seat's cards, not each trick. Roem is scored
   per trick, so Klaverjassen keeps the tricks themselves for its scorer.
 - **Must trump**: a void seat may play anything today. Klaverjassen's must-trump and
-  must-overtrump read `teams` too, since a partner already winning lifts them.
+  must-overtrump read `seating` too, since a partner already winning lifts them.
 - **Match end**: `scoreDeal` ends at `target` with the lowest total winning. A
   match-end rule covers a fixed number of deals with the highest total winning
   (Boerenbridge, Klaverjassen) and Toepen's elimination.

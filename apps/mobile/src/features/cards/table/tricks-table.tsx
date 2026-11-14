@@ -237,8 +237,8 @@ export function TricksTable({
 
 	function pass() {
 		haptics.moveMade();
+		// The selection clears once the pass is in, and survives a refusal.
 		controls.act({ type: "passCards", cards: selected });
-		setSelected([]);
 	}
 
 	const hint = tricksHint(view, you, words, rules);

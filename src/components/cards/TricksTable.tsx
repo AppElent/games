@@ -183,8 +183,8 @@ export function TricksTable({
 	}
 
 	function pass() {
+		// The selection clears once the pass is in, and survives a refusal.
 		controls.act({ type: "passCards", cards: selected });
-		setSelected([]);
 	}
 
 	const roundLabel = fmt(t.roundLabel, {
