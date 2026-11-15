@@ -44,7 +44,7 @@ type Props = {
 	hintCells: ReadonlySet<number> | undefined;
 	cages?: KillerCage[];
 	hidden: boolean;
-	/** Outside digit mode an empty selected cell gets a deeper tint. */
+	/** Outside digit mode an empty, unmarked selected cell gets a deeper tint. */
 	mode: SudokuInputMode;
 	cornerLayout: CornerNoteLayout;
 	/** Whether a press on the selected cell switches mode, for its hint. */
@@ -153,7 +153,7 @@ export function SudokuBoard({
 						marker={hidden ? 0 : board.colors[index]}
 						cageSum={hidden ? undefined : cageInfo?.sumAt.get(index)}
 						selected={isSelected}
-						selectedMode={isSelected ? mode : undefined}
+						selectedMode={isSelected && !hidden ? mode : undefined}
 						canCycle={isSelected && canCycle}
 						cornerLayout={cornerLayout}
 						peer={isPeer}
@@ -327,10 +327,13 @@ const BoardCell = memo(function BoardCell({
 					]}
 				/>
 			) : null}
-			{selectedMode !== undefined && selectedMode !== "digit" && value === 0 ? (
+			{selectedMode !== undefined &&
+			selectedMode !== "digit" &&
+			value === 0 &&
+			marker === 0 ? (
 				// Outside digit mode an empty cell gets a deeper tint: it takes no
-				// edge space, so the notes being entered stay clear. A filled
-				// cell keeps the plain fill so its digit keeps full contrast.
+				// edge space, so the notes being entered stay clear. A filled or
+				// colour-marked cell keeps its fill so text on it keeps contrast.
 				<View pointerEvents="none" style={styles.noteModeTint} />
 			) : null}
 			{cageSum !== undefined ? (

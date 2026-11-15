@@ -24,7 +24,7 @@ export const darkColors = {
 	accentDim: "rgba(34, 211, 238, 0.14)",
 	/**
 	 * Laid over an `accentDim` fill to mark it more strongly: an empty Sudoku
-	 * cell in a note mode. Too deep for accent or danger digits on top.
+	 * cell in a note mode. Too deep for digits or colour markers under it.
 	 */
 	accentTint: "rgba(34, 211, 238, 0.14)",
 	onAccent: "#04121a",
