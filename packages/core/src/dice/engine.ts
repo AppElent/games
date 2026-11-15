@@ -148,7 +148,7 @@ export function applyDiceAction(
 	state: DiceGameState,
 	seat: number,
 	action: DiceAction,
-	random: Rng = Math.random,
+	random: Rng,
 ): DiceGameState {
 	const family = familyOf(game.family);
 	if (!Object.keys(family.actions).includes(action.type)) {

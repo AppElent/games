@@ -28,6 +28,9 @@ import { en } from "../i18n/en";
 import { fmt } from "../i18n/format";
 import { mulberry32 } from "../random";
 
+/** Dice for the tests that do not care which faces come up. */
+const rng = mulberry32(1);
+
 const yatzy = DICE_GAMES.yatzy;
 const SCANDI = diceRules(yatzy, []);
 const YAHTZEE = diceRules(yatzy, ["yahtzeeSheet"]);
@@ -203,6 +206,7 @@ describe("Yahtzee sheet scoring", () => {
 			withDice(state, [4, 4, 4, 4, 4]),
 			0,
 			{ type: "score", category: "largeStraight" },
+			rng,
 		);
 		expect(state.sheets[0].largeStraight).toBe(40);
 		expect(state.extras[0]).toBe(100);
@@ -225,6 +229,7 @@ describe("Yahtzee sheet scoring", () => {
 					withDice(state, [3, 3, 3, 3, 3]),
 					0,
 					{ type: "score", category: "chance" },
+					rng,
 				),
 			"diceJokerRule",
 		);
@@ -239,6 +244,7 @@ describe("Yahtzee sheet scoring", () => {
 			withDice(state, [2, 2, 2, 2, 2]),
 			0,
 			{ type: "score", category: "smallStraight" },
+			rng,
 		);
 		expect(state.sheets[0].smallStraight).toBe(30);
 		expect(state.extras[0]).toBe(0);
@@ -317,24 +323,53 @@ describe("Yatzy turns", () => {
 
 	it("rolls three times, holding dice, then must score", () => {
 		let state = fresh();
-		state = applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [] });
+		state = applyDiceAction(
+			yatzy,
+			[],
+			state,
+			0,
+			{ type: "roll", keep: [] },
+			rng,
+		);
 		expect(state.dice).toHaveLength(5);
 		const first = state.dice;
-		state = applyDiceAction(yatzy, [], state, 0, {
-			type: "roll",
-			keep: [0, 1],
-		});
+		state = applyDiceAction(
+			yatzy,
+			[],
+			state,
+			0,
+			{
+				type: "roll",
+				keep: [0, 1],
+			},
+			rng,
+		);
 		expect(state.dice.slice(0, 2)).toEqual(first.slice(0, 2));
 		expect(state.held).toEqual([true, true, false, false, false]);
-		state = applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [] });
+		state = applyDiceAction(
+			yatzy,
+			[],
+			state,
+			0,
+			{ type: "roll", keep: [] },
+			rng,
+		);
 		expectRule(
-			() => applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [] }),
+			() =>
+				applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [] }, rng),
 			"diceNoRollsLeft",
 		);
-		state = applyDiceAction(yatzy, [], state, 0, {
-			type: "score",
-			category: "chance",
-		});
+		state = applyDiceAction(
+			yatzy,
+			[],
+			state,
+			0,
+			{
+				type: "score",
+				category: "chance",
+			},
+			rng,
+		);
 		expect(state.sheets[0].chance).toBeGreaterThan(0);
 		expect(state.turn).toBe(1);
 		expect(state.rollsUsed).toBe(0);
@@ -345,66 +380,125 @@ describe("Yatzy turns", () => {
 		const state = fresh();
 		const before = JSON.stringify(state);
 		expectRule(
-			() => applyDiceAction(yatzy, [], state, 1, { type: "roll", keep: [] }),
+			() =>
+				applyDiceAction(yatzy, [], state, 1, { type: "roll", keep: [] }, rng),
 			"notYourTurn",
 		);
 		expectRule(
 			() =>
-				applyDiceAction(yatzy, [], state, 0, {
-					type: "score",
-					category: "ones",
-				}),
+				applyDiceAction(
+					yatzy,
+					[],
+					state,
+					0,
+					{
+						type: "score",
+						category: "ones",
+					},
+					rng,
+				),
 			"diceRollFirst",
 		);
 		expectRule(
-			() => applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [0] }),
+			() =>
+				applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [0] }, rng),
 			"diceInvalidHold",
 		);
-		const rolled = applyDiceAction(yatzy, [], state, 0, {
-			type: "roll",
-			keep: [],
-		});
+		const rolled = applyDiceAction(
+			yatzy,
+			[],
+			state,
+			0,
+			{
+				type: "roll",
+				keep: [],
+			},
+			rng,
+		);
 		expectRule(
-			() => applyDiceAction(yatzy, [], rolled, 0, { type: "roll", keep: [9] }),
+			() =>
+				applyDiceAction(yatzy, [], rolled, 0, { type: "roll", keep: [9] }, rng),
 			"diceInvalidHold",
 		);
 		expectRule(
 			() =>
-				applyDiceAction(yatzy, [], rolled, 0, {
-					type: "roll",
-					keep: [0, 1, 2, 3, 4],
-				}),
+				applyDiceAction(
+					yatzy,
+					[],
+					rolled,
+					0,
+					{
+						type: "roll",
+						keep: [0, 1, 2, 3, 4],
+					},
+					rng,
+				),
 			"diceInvalidHold",
 		);
 		expectRule(
 			() =>
-				applyDiceAction(yatzy, ["yahtzeeSheet"], rolled, 0, {
-					type: "score",
-					category: "onePair",
-				}),
+				applyDiceAction(
+					yatzy,
+					["yahtzeeSheet"],
+					rolled,
+					0,
+					{
+						type: "score",
+						category: "onePair",
+					},
+					rng,
+				),
 			"diceUnknownCategory",
 		);
-		const scored = applyDiceAction(yatzy, [], { ...rolled, turn: 0 }, 0, {
-			type: "score",
-			category: "ones",
-		});
-		const again = applyDiceAction(yatzy, [], { ...scored, turn: 0 }, 0, {
-			type: "roll",
-			keep: [],
-		});
+		const scored = applyDiceAction(
+			yatzy,
+			[],
+			{ ...rolled, turn: 0 },
+			0,
+			{
+				type: "score",
+				category: "ones",
+			},
+			rng,
+		);
+		const again = applyDiceAction(
+			yatzy,
+			[],
+			{ ...scored, turn: 0 },
+			0,
+			{
+				type: "roll",
+				keep: [],
+			},
+			rng,
+		);
 		expectRule(
 			() =>
-				applyDiceAction(yatzy, [], again, 0, {
-					type: "score",
-					category: "ones",
-				}),
+				applyDiceAction(
+					yatzy,
+					[],
+					again,
+					0,
+					{
+						type: "score",
+						category: "ones",
+					},
+					rng,
+				),
 			"diceCategoryTaken",
 		);
 		expectRule(
 			() =>
-				applyDiceAction(yatzy, [], state, 0, {
-					type: "draw",
-				} as unknown as Parameters<typeof applyDiceAction>[4]),
+				applyDiceAction(
+					yatzy,
+					[],
+					state,
+					0,
+					{
+						type: "draw",
+					} as unknown as Parameters<typeof applyDiceAction>[4],
+					rng,
+				),
 			"cardsWrongAction",
 		);
 		expect(JSON.stringify(state)).toBe(before);
@@ -413,7 +507,8 @@ describe("Yatzy turns", () => {
 	it("refuses a move once the game is over", () => {
 		const state = { ...fresh(), phase: "finished" as const };
 		expectRule(
-			() => applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [] }),
+			() =>
+				applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [] }, rng),
 			"noActiveGame",
 		);
 	});
@@ -435,10 +530,17 @@ describe("Yatzy turns", () => {
 	});
 
 	it("offers where the rolled dice may go", () => {
-		const state = applyDiceAction(yatzy, [], fresh(), 0, {
-			type: "roll",
-			keep: [],
-		});
+		const state = applyDiceAction(
+			yatzy,
+			[],
+			fresh(),
+			0,
+			{
+				type: "roll",
+				keep: [],
+			},
+			rng,
+		);
 		const view = viewDiceGame(yatzy, [], state, 1);
 		expect(view.options).toHaveLength(15);
 	});
@@ -538,16 +640,30 @@ describe("dice table view", () => {
 		expect(turnStep(view(), 0)).toBe("start");
 		expect(turnStep(view(), 1)).toBe("waiting");
 		expect(turnStep(view(), null)).toBe("waiting");
-		state = applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [] });
+		state = applyDiceAction(
+			yatzy,
+			[],
+			state,
+			0,
+			{ type: "roll", keep: [] },
+			rng,
+		);
 		expect(turnStep(view(), 0)).toBe("hold");
 		const seats = { seats: [{ botIndex: null, name: "Eric" }], you: 0 };
 		const news = () =>
 			latestNews({ dice: en.games.dice, fmt }, seats, state.events)?.text;
 		expect(news()).toMatch(/^You rolled [1-6](, [1-6]){4}$/);
-		state = applyDiceAction(yatzy, [], withDice(state, [1, 1, 1, 1, 1], 3), 0, {
-			type: "score",
-			category: "yatzy",
-		});
+		state = applyDiceAction(
+			yatzy,
+			[],
+			withDice(state, [1, 1, 1, 1, 1], 3),
+			0,
+			{
+				type: "score",
+				category: "yatzy",
+			},
+			rng,
+		);
 		expect(news()).toBe("You scored 50 in Yatzy");
 		state = { ...state, phase: "finished" };
 		expect(turnStep(view(), 0)).toBe("over");
