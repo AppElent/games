@@ -32,12 +32,6 @@ export const SUDOKU_COLORS = [
 	{ tint: "bg-pink-500/40", swatch: "bg-pink-500" },
 ] as const;
 
-/**
- * Top-right notes leave a Killer cage sum its corner up to this many digits;
- * more need the full width to stay legible.
- */
-const CAGE_SUM_NOTE_LIMIT = 4;
-
 const CORNER_SLOTS: Record<CornerNoteSlot, string> = {
 	topLeft: "left-0.5 top-0",
 	topRight: "right-0.5 top-0",
@@ -143,10 +137,6 @@ export function SudokuBoard({
 
 				const cageEdges = cageInfo ? cageInfo.edges[cell] : null;
 				const cageSum = cageInfo?.sumAt.get(cell);
-				// Top-right notes leave a cage sum its corner while they fit beside it.
-				const besideCageSum =
-					cageSum !== undefined &&
-					digitsInMask(board.corner[cell]).length <= CAGE_SUM_NOTE_LIMIT;
 
 				return (
 					<button
@@ -202,18 +192,13 @@ export function SudokuBoard({
 									(group) =>
 										cornerLayout === "topRight" ? (
 											// One line that shrinks with the cell (cqw) rather than
-											// wrapping into the center notes, and clear of a Killer
-											// cage sum; the class is the fallback where container
-											// units are unsupported.
+											// wrapping into the center notes; the class is the
+											// fallback where container units are unsupported.
 											<span
 												key={group.slot}
-												className={`absolute right-0.5 top-0 whitespace-nowrap text-right text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300 ${
-													besideCageSum ? "left-[40%]" : "left-0.5"
-												}`}
+												className="absolute inset-x-0.5 top-0 whitespace-nowrap text-right text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300"
 												style={{
-													fontSize: `min(clamp(0.5rem, 1.7vw, 0.72rem), calc((${
-														besideCageSum ? 60 : 100
-													}cqw - 0.25rem) / ${(group.digits.length * 0.62).toFixed(2)}))`,
+													fontSize: `min(clamp(0.5rem, 1.7vw, 0.72rem), calc((100cqw - 0.25rem) / ${(group.digits.length * 0.62).toFixed(2)}))`,
 												}}
 											>
 												{group.digits.join("")}

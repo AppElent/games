@@ -228,12 +228,6 @@ type CellProps = {
 	onPress: (cell: number) => void;
 };
 
-/**
- * Top-right notes leave a Killer cage sum its corner up to this many digits;
- * more need the full width to stay legible.
- */
-const CAGE_SUM_NOTE_LIMIT = 4;
-
 /** Where each corner-note group sits in its cell. */
 const CORNER_SLOTS = {
 	topLeft: { left: "6%", top: "2%" },
@@ -323,7 +317,6 @@ const BoardCell = memo(function BoardCell({
 					height: size,
 					backgroundColor: background,
 				},
-				selected && styles.selected,
 			]}
 		>
 			{marker > 0 ? (
@@ -334,9 +327,18 @@ const BoardCell = memo(function BoardCell({
 					]}
 				/>
 			) : null}
-			{selectedMode !== undefined && selectedMode !== "digit" ? (
-				// Over the 2pt selection border, so nothing inside the cell moves.
-				<View pointerEvents="none" style={styles.noteModeRing} />
+			{selected ? (
+				// An overlay, not the cell's own border, so the space inside the
+				// cell (and the notes fitted to it) stays the same when selected.
+				<View
+					pointerEvents="none"
+					style={[
+						styles.selectedRing,
+						selectedMode !== undefined &&
+							selectedMode !== "digit" &&
+							styles.noteModeRing,
+					]}
+				/>
 			) : null}
 			{cageSum !== undefined ? (
 				<AppText
@@ -360,20 +362,14 @@ const BoardCell = memo(function BoardCell({
 					{cornerGroups.map((group) =>
 						cornerLayout === "topRight" ? (
 							// One line that shrinks to fit rather than wrapping into
-							// the center notes, and clear of a Killer cage sum.
+							// the center notes.
 							<AppText
 								key={group.slot}
 								variant="cellNote"
 								allowFontScaling={false}
 								numberOfLines={1}
 								adjustsFontSizeToFit
-								style={[
-									styles.corner,
-									styles.topRightNotes,
-									cageSum !== undefined &&
-										group.digits.length <= CAGE_SUM_NOTE_LIMIT &&
-										styles.besideCageSum,
-								]}
+								style={[styles.corner, styles.topRightNotes]}
 							>
 								{group.digits.join("")}
 							</AppText>
@@ -419,7 +415,12 @@ const createStyles = (colors: Tokens) =>
 			alignItems: "center",
 			justifyContent: "center",
 		},
-		selected: {
+		selectedRing: {
+			position: "absolute",
+			top: 0,
+			left: 0,
+			right: 0,
+			bottom: 0,
 			borderWidth: 2,
 			borderColor: colors.accent,
 		},
@@ -430,17 +431,9 @@ const createStyles = (colors: Tokens) =>
 			backgroundColor: colors.surface,
 			paddingHorizontal: 1,
 		},
-		// Thicker, not dashed: dashed lines are Killer cages. Drawn under the
-		// cell's text, which renders after it.
-		noteModeRing: {
-			position: "absolute",
-			top: -2,
-			left: -2,
-			right: -2,
-			bottom: -2,
-			borderWidth: 4,
-			borderColor: colors.accent,
-		},
+		// Outside digit mode: thicker, not dashed (dashed lines are Killer
+		// cages). Drawn under the cell's text, which renders after it.
+		noteModeRing: { borderWidth: 4 },
 		corner: {
 			position: "absolute",
 			color: colors.textMuted,
@@ -451,8 +444,6 @@ const createStyles = (colors: Tokens) =>
 			right: "6%",
 			textAlign: "right",
 		},
-		// A Killer cage sum holds the top-left corner.
-		besideCageSum: { left: "42%" },
 		centerNote: {
 			color: colors.textMuted,
 			paddingHorizontal: 2,
