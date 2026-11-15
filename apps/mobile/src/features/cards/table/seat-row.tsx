@@ -1,9 +1,6 @@
 /** The opponents around the top of the table, in the order play reaches them. */
-import {
-	opponentOrder,
-	seatIsSilent,
-	seatName,
-} from "@arcadeclub/core/cards/table-view";
+import { opponentOrder, seatName } from "@arcadeclub/core/cards/table-view";
+import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 import Animated, {

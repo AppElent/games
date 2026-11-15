@@ -160,6 +160,25 @@ export const cards = {
 		scoresHeading: "Scorebord",
 		noScores: "De stand verschijnt na de eerste ronde.",
 	},
+	bank: {
+		bankName: "Bank",
+		stakeHint: "Hoeveel punten is deze hand waard?",
+		stakeButton: { one: "{count} punt", other: "{count} punten" },
+		stakeWaiting: "Wachten tot de anderen hun punten kiezen.",
+		playingFor: { one: "voor {count} punt", other: "voor {count} punten" },
+		hit: "Nog een kaart",
+		stand: "Stoppen",
+		double: "Verdubbelen",
+		playHint: "Je hebt {total}. Nog een kaart, of stoppen?",
+		natural: "Eenentwintig!",
+		over: "Dood",
+		hidden: "Gesloten kaart",
+		bankTotal: "Bank heeft {total}",
+		resultWin: "+{count}",
+		resultLose: "−{count}",
+		resultEven: "±0",
+		highestWins: "Het hoogste totaal wint.",
+	},
 	tricks: {
 		passHint: "Kies {count} kaarten om {direction} door te geven.",
 		passWaiting: "Wachten tot de anderen hebben doorgegeven.",
@@ -201,6 +220,85 @@ export const cards = {
 		matchYouWin: "Jij wint het spel!",
 		matchTie: "Gelijkspel!",
 		lowestWins: "De laagste score wint.",
+		highestWins: "De hoogste score wint.",
+		bidHint: "Bied hoeveel slagen je haalt: 0 tot en met {count}.",
+		bidDealer:
+			"Jij geeft: je mag geen {count} bieden, anders komen de biedingen uit.",
+		bidButton: "Bied {count}",
+		bidLess: "Eén slag minder",
+		bidMore: "Eén slag meer",
+		bidValue: "Jouw bod",
+		seatTotal: "{total} ptn",
+		seatBid: "Bod {bid} · {total} ptn",
+		seatTricks: "{taken} van {bid} · {total} ptn",
+		trumpPill: "Troef: {suit}",
+		noTrumpPill: "Geen troef",
+		turnedUpLabel: "Omgedraaid voor troef: {card}",
+		bidsPill: "Geboden: {bids} van {tricks} slagen",
+		dealLabel: "Ronde {round} van {deals}",
+		cardsEach: { one: "{count} kaart", other: "{count} kaarten" },
+		roundBid: "bod {bid}, gehaald {taken}",
+	},
+	gin: {
+		drawHint: "Pak van de trekstapel of neem de bovenste aflegkaart.",
+		drawStock: "Pak van de trekstapel",
+		takeDiscard: "Pak de {card} van de aflegstapel",
+		pickDiscard: "Tik op de kaart die je wilt afleggen.",
+		canKnockHint: "Je kunt kloppen: tik op de kaart die je aflegt.",
+		oneCard: "Kies één kaart om af te leggen.",
+		discardHint: "Leg hem af om je beurt te beëindigen.",
+		knockHint: "Leg hem af, of klop met {deadwood} losse punten.",
+		ginHint: "Leg hem af en ga gin!",
+		discardCard: "Afleggen",
+		knock: "Kloppen ({deadwood})",
+		goGin: "Gin!",
+		deadwood: "Losse punten: {points}",
+		layoffHint:
+			"{name} klopte. Kies kaarten die bij de combinaties passen en tik dan op de combinatie.",
+		layoffTapMeld: "Tik op een gemarkeerde combinatie om aan te leggen.",
+		layoffNoFit: "Die kaarten passen bij geen enkele combinatie.",
+		layoffWait: "Wachten tot {name} heeft aangelegd.",
+		finishLayoff: "Klaar met aanleggen",
+		layOffOn: "Aanleggen bij deze {kind}",
+		knockerMelds: "Combinaties van {name}",
+		knockerDeadwood: "Losse kaarten van {name}",
+		sortByMelds: "Groepeer combinaties",
+		handLabel: "Ronde {round} · tot {target}",
+		handOver: "Ronde {round}",
+		resultGin: {
+			one: "{name} gaat gin en scoort {count} punt",
+			other: "{name} gaat gin en scoort {count} punten",
+		},
+		resultYouGin: {
+			one: "Jij gaat gin en scoort {count} punt",
+			other: "Jij gaat gin en scoort {count} punten",
+		},
+		resultKnock: {
+			one: "{name} klopt en scoort {count} punt",
+			other: "{name} klopt en scoort {count} punten",
+		},
+		resultYouKnock: {
+			one: "Jij klopt en scoort {count} punt",
+			other: "Jij klopt en scoort {count} punten",
+		},
+		resultUndercut: {
+			one: "{name} onderbiedt en scoort {count} punt",
+			other: "{name} onderbiedt en scoort {count} punten",
+		},
+		resultYouUndercut: {
+			one: "Jij onderbiedt en scoort {count} punt",
+			other: "Jij onderbiedt en scoort {count} punten",
+		},
+		resultVoid: "De trekstapel is bijna op: niemand scoort deze ronde.",
+		deadwoodPoints: {
+			one: "{count} los punt",
+			other: "{count} losse punten",
+		},
+		nextHand: "Deel ronde {round}",
+		waitingNextHand: "Wachten tot iemand de volgende ronde deelt.",
+		firstTo: "Wie het eerst {target} punten heeft, wint.",
+		noScores: "De stand verschijnt na de eerste ronde.",
+		scoreTotal: "Totaal",
 	},
 	suits: { S: "schoppen", H: "harten", D: "ruiten", C: "klaveren" },
 	ranks: {
@@ -290,6 +388,10 @@ export const cards = {
 		youSwap: "Jij ruilt een joker.",
 		discard: "{name} legt de {card} af.",
 		youDiscard: "Jij legt de {card} af.",
+		knock: "{name} klopt!",
+		youKnock: "Jij klopt!",
+		gin: "{name} gaat gin!",
+		youGin: "Jij gaat gin!",
 		roundEnd: "{name} is uit. De ronde is voorbij!",
 		youRoundEnd: "Jij bent uit. De ronde is voorbij!",
 		roundEndNobody: "De ronde wordt afgebroken.",
@@ -307,11 +409,43 @@ export const cards = {
 			other: "Jij pakt de slag: {count} punten.",
 		},
 		youTrickWonClean: "Jij pakt de slag.",
+		bid: "{name} biedt {count}.",
+		youBid: "Jij biedt {count}.",
 		broken: "De {suit} zijn gebroken!",
 		moon: "{name} schiet de maan!",
 		youMoon: "Jij schiet de maan!",
 		winTie: "{name} winnen!",
 		youWin: "Jij wint!",
+		stake: {
+			one: "{name} speelt deze hand voor {count} punt.",
+			other: "{name} speelt deze hand voor {count} punten.",
+		},
+		youStake: {
+			one: "Jij speelt deze hand voor {count} punt.",
+			other: "Jij speelt deze hand voor {count} punten.",
+		},
+		natural: "{name} heeft eenentwintig met twee kaarten!",
+		youNatural: "Jij hebt eenentwintig met twee kaarten!",
+		hit: "{name} pakt de {card}: {total}.",
+		youHit: "Jij pakt de {card}: {total}.",
+		double: "{name} verdubbelt en pakt de {card}: {total}.",
+		youDouble: "Jij verdubbelt en pakt de {card}: {total}.",
+		stand: "{name} stopt op {total}.",
+		youStand: "Jij stopt op {total}.",
+		bust: "{name} is dood: meer dan 21.",
+		youBust: "Jij bent dood: meer dan 21.",
+		bankReveal: "De bank draait de {card} om: {total}.",
+		bankDraw: "De bank pakt de {card}: {total}.",
+		settle: "Ronde {round} is voorbij.",
+		settleYouWin: {
+			one: "Ronde voorbij: je wint {count} punt.",
+			other: "Ronde voorbij: je wint {count} punten.",
+		},
+		settleYouLose: {
+			one: "Ronde voorbij: je verliest {count} punt.",
+			other: "Ronde voorbij: je verliest {count} punten.",
+		},
+		settleYouEven: "Ronde voorbij: je staat gelijk met de bank.",
 	},
 	rules: {
 		heading: "Zo speel je {game}",
@@ -321,7 +455,9 @@ export const cards = {
 		extrasHeading: "Aan deze tafel",
 		meldsHeading: "Groepen en rijen",
 		pointsHeading: "Punten",
+		bankHeading: "De bank",
 		passHeading: "Doorgeven",
+		bidHeading: "Rondes en bieden",
 		shedding: {
 			goal: "Ben als eerste al je kaarten kwijt.",
 			match:
@@ -365,6 +501,23 @@ export const cards = {
 			points:
 				"2-10 tellen hun waarde, B V H {face}, aas {ace} ({lowAce} in A-2-3), joker {joker}.",
 		},
+		bank: {
+			goal: "Kom dichter bij 21 dan de bank zonder eroverheen te gaan. Het hoogste totaal na {rounds} rondes wint.",
+			values: "2-10 tellen hun waarde, B V H tellen 10, een aas 1 of 11.",
+			stake: "Kies voor het delen wat je hand waard is: {stakes} punten.",
+			hit: "Pak zo vaak je wilt nog een kaart, of stop. Boven 21 ben je dood en verlies je je punten meteen.",
+			double:
+				"Op je eerste twee kaarten mag je je punten verdubbelen, nog één kaart pakken en stoppen.",
+			bank: "De bank laat één kaart zien. Als iedereen klaar is draait hij de andere om en pakt kaarten tot hij {stand} of meer heeft.",
+			bankSoft:
+				"De bank pakt ook een kaart op {stand} als hij een aas als 11 telt.",
+			payout:
+				"Versla de bank, of zie hem boven 21 gaan, en je wint je punten. Gelijk met de bank: er verandert niets.",
+			natural:
+				"Eenentwintig met twee kaarten wint {pays} keer je punten, afgerond, tenzij de bank het ook heeft.",
+			bankNatural:
+				"Eenentwintig met de eerste twee kaarten van de bank wint van alles behalve een andere eenentwintig met twee kaarten.",
+		},
 		tricks: {
 			goal: "Blijf weg bij de punten. Het spel eindigt zodra iemand {target} haalt; de laagste score wint.",
 			pass: "Voor elke ronde geef je {count} kaarten door. De richting wisselt elke ronde: {cycle}.",
@@ -389,6 +542,47 @@ export const cards = {
 				other: "{card}: {count} punten",
 			},
 			moon: "Pak je in één ronde alle strafkaarten, dan kosten ze jou niets: alle anderen krijgen ze.",
+			goalHigh:
+				"Haal de meeste punten. Het spel eindigt zodra iemand {target} haalt; de hoogste score wint.",
+			goalLastHigh:
+				"Het spel eindigt na de laatste ronde; de hoogste score wint.",
+			goalLastLow:
+				"Het spel eindigt na de laatste ronde; de laagste score wint.",
+			schedules: {
+				upDown:
+					"In ronde 1 krijgt iedereen één kaart, elke ronde één meer tot zoveel als de stapel voor de tafel toelaat, en dan elke ronde één minder terug naar één.",
+				up: "In ronde 1 krijgt iedereen één kaart, en elke ronde één meer, tot zoveel als de stapel voor de tafel toelaat.",
+				down: "In de eerste ronde krijgt iedereen zoveel kaarten als de stapel voor de tafel toelaat, en elke ronde één minder, tot één.",
+			},
+			bid: "Voor het spelen zegt iedereen hoeveel slagen die haalt, te beginnen links van de gever. De gever biedt als laatste.",
+			dealerRule:
+				"De gever mag niet zo bieden dat de biedingen optellen tot het aantal slagen: iemand moet ernaast zitten.",
+			trumpTurnUp:
+				"Na het delen wordt de volgende kaart omgedraaid: die kleur is troef. Is alles gedeeld, dan is er geen troef.",
+			leftLeads: "Wie links van de gever zit, komt uit in de eerste slag.",
+			trickTrump:
+				"De hoogste troef pakt de slag, anders de hoogste kaart van de gevraagde kleur. Wie de slag pakt, komt daarna uit.",
+			bidMet: "Bod precies gehaald: {exact} punten plus {perTrick} per slag.",
+			bidMissed:
+				"Bod niet gehaald: {perTrickOff} punten eraf voor elke slag ernaast.",
+		},
+		gin: {
+			goal: "Maak groepen en rijen in je hand en klop dan: je scoort het verschil met de losse kaarten van je tegenstander. Wie het eerst {target} punten heeft, wint.",
+			turnDraw: "Pak van de trekstapel of neem de bovenste aflegkaart.",
+			turnDiscard:
+				"Sluit af door één kaart af te leggen, maar niet de kaart die je net van de stapel pakte.",
+			knock:
+				"Klop als je losse kaarten na het afleggen samen {limit} of minder tellen: je hand gaat open op tafel.",
+			gin: "Gin: helemaal geen losse kaarten. Je scoort de losse punten van je tegenstander plus {bonus}, en die mag niet aanleggen.",
+			layoff:
+				"Na een klop legt de ander losse kaarten aan bij de groepen en rijen van wie klopte.",
+			score: "Wie klopt, scoort het verschil in losse punten.",
+			undercut:
+				"Onderbieden: heeft de ander evenveel of minder losse punten, dan scoort die het verschil plus {bonus}.",
+			void: "Liggen er nog maar {count} kaarten op de trekstapel en heeft niemand geklopt, dan telt de ronde niet.",
+			set: "Groep: 3 of 4 kaarten van dezelfde waarde.",
+			run: "Rij: 3 of meer kaarten van één kleur op volgorde. De aas is altijd laag: A-2-3, nooit V-H-A.",
+			points: "Losse kaarten tellen: aas 1, 2-10 hun waarde, B V H {face}.",
 		},
 	},
 	games: {
@@ -498,6 +692,31 @@ export const cards = {
 				},
 			},
 		},
+		eenentwintigen: {
+			name: "Eenentwintigen",
+			tagline: "Versla de bank tot 21",
+			blurb:
+				"Iedereen tegen de bank. Kies wat elke hand waard is, pak kaarten richting 21 en stop op tijd. Alleen om punten.",
+			powers: {},
+			options: {
+				doubleDown: {
+					label: "Verdubbelen",
+					hint: "Verdubbel je punten op twee kaarten voor nog één kaart.",
+				},
+				bankHitsSoft17: {
+					label: "Bank pakt op zachte 17",
+					hint: "De bank pakt een kaart op 17 met een aas als 11.",
+				},
+				shortMatch: {
+					label: "Korte partij",
+					hint: "Speel 5 rondes in plaats van 10.",
+				},
+				longMatch: {
+					label: "Lange partij",
+					hint: "Speel 20 rondes in plaats van 10.",
+				},
+			},
+		},
 		hartenjagen: {
 			name: "Hartenjagen",
 			tagline: "Ontloop de harten",
@@ -519,6 +738,40 @@ export const cards = {
 				},
 				to50: {
 					label: "Kort spel",
+					hint: "Speel tot 50 punten in plaats van 100.",
+				},
+			},
+		},
+		boerenbridge: {
+			name: "Boerenbridge",
+			tagline: "Bied het, en haal het",
+			blurb:
+				"Zeg hoeveel slagen je haalt, en haal er precies zoveel. De handen groeien en krimpen per ronde, en een omgedraaide kaart bepaalt troef.",
+			powers: {},
+			options: {
+				upOnly: {
+					label: "Alleen omhoog",
+					hint: "Begin met één kaart en stop bij zoveel als de stapel toelaat.",
+				},
+				downOnly: {
+					label: "Alleen omlaag",
+					hint: "Begin met de meeste kaarten en stop bij één.",
+				},
+				dealerFree: {
+					label: "Gever biedt vrij",
+					hint: "De gever mag de biedingen laten optellen tot het aantal slagen.",
+				},
+			},
+		},
+		"gin-rummy": {
+			name: "Gin Rummy",
+			tagline: "Kloppen, gin of onderbieden",
+			blurb:
+				"De klassieker voor twee. Bouw stiekem groepen en rijen, klop als je weinig losse punten hebt, of ga gin.",
+			powers: {},
+			options: {
+				shortMatch: {
+					label: "Korte partij",
 					hint: "Speel tot 50 punten in plaats van 100.",
 				},
 			},

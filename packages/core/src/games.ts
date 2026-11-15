@@ -11,6 +11,7 @@ export const GAME_TYPES = [
 	"bluff-dice",
 	"squad-surge",
 	"card-games",
+	"dice-games",
 ] as const;
 export type GameType = (typeof GAME_TYPES)[number];
 
@@ -36,8 +37,8 @@ type SessionPolicy = {
 
 /**
  * How each game's sessions are hosted: how others get in, and whether they
- * need an account. A card table is solo or a room, as its host picks; it is
- * listed as a room.
+ * need an account. A card or dice table is solo or a room, as its host picks;
+ * it is listed as a room.
  */
 export const GAME_SESSION_POLICY = {
 	"live-quiz": { joinMode: "room", authPolicy: "hostChoice" },
@@ -49,6 +50,11 @@ export const GAME_SESSION_POLICY = {
 	"signal-words": { joinMode: "room", authPolicy: "guestAllowed" },
 	"bluff-dice": { joinMode: "room", authPolicy: "guestAllowed" },
 	"card-games": {
+		joinMode: "room",
+		authPolicy: "guestAllowed",
+		seatSecret: true,
+	},
+	"dice-games": {
 		joinMode: "room",
 		authPolicy: "guestAllowed",
 		seatSecret: true,

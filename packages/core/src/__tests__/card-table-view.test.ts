@@ -1,17 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { CARD_ASPECT, cardBackArt, cardFaceArt } from "../cards/art";
+import type { BankView } from "../cards/bank";
 import { buildDeck, type CardId, parseCard } from "../cards/deck";
 import { getCardGame, resolvedRules } from "../cards/engine";
 import type { CardEvent } from "../cards/events";
+import {
+	applyGin,
+	createGin,
+	type GinRules,
+	type GinState,
+	viewGin,
+} from "../cards/gin";
 import { buildMeld, type Meld } from "../cards/melds";
 import type { RummyRules, RummyView } from "../cards/rummy";
 import type { SheddingView } from "../cards/shedding";
 import {
+	bankHint,
+	bankSeatNote,
+	bidTotal,
 	type CardWords,
 	cardName,
 	cardTilt,
 	describeEvent,
 	eventsSince,
+	ginHint,
+	ginLayoffOrder,
+	ginTurn,
+	groupGinHand,
 	latestEventText,
 	meldCardNames,
 	nextFreshCards,
@@ -20,9 +35,9 @@ import {
 	rummyHint,
 	rummyMeldAction,
 	rummyTurn,
-	seatIsSilent,
 	seatName,
 	sheddingHint,
+	signedPoints,
 	sortCards,
 	specialCards,
 	startFreshCards,
@@ -33,6 +48,7 @@ import {
 import type { TricksRules, TricksView } from "../cards/tricks";
 import { en } from "../i18n/en";
 import { nl } from "../i18n/nl";
+import { seatIsSilent } from "../table-engine";
 
 function wordsFor(cards: typeof en.games.cards): CardWords {
 	return {
@@ -213,16 +229,45 @@ describe("narration", () => {
 		{ seq: 41, type: "win", seats: [0] },
 		{ seq: 42, type: "win", seats: [1] },
 		{ seq: 43, type: "win", seats: [0, 1] },
-		{ seq: 44, type: "passReady", seat: 0 },
-		{ seq: 45, type: "passReady", seat: 1 },
-		{ seq: 46, type: "exchange", shift: 1, count: 3 },
-		{ seq: 47, type: "trickWon", seat: 0, points: 0 },
-		{ seq: 48, type: "trickWon", seat: 0, points: 14 },
-		{ seq: 49, type: "trickWon", seat: 1, points: 0 },
-		{ seq: 50, type: "trickWon", seat: 1, points: 1 },
-		{ seq: 51, type: "broken", suit: "H" },
-		{ seq: 52, type: "moon", seat: 0 },
-		{ seq: 53, type: "moon", seat: 1 },
+		{ seq: 44, type: "stake", seat: 0, amount: 1 },
+		{ seq: 45, type: "stake", seat: 1, amount: 5 },
+		{ seq: 46, type: "natural", seat: 0 },
+		{ seq: 47, type: "natural", seat: 1 },
+		{ seq: 48, type: "hit", seat: 0, card: "S7#0", total: 17 },
+		{ seq: 49, type: "hit", seat: 1, card: "S7#0", total: 17 },
+		{ seq: 50, type: "double", seat: 0, card: "S7#0", total: 18 },
+		{ seq: 51, type: "double", seat: 1, card: "S7#0", total: 18 },
+		{ seq: 52, type: "stand", seat: 0, total: 19 },
+		{ seq: 53, type: "stand", seat: 1, total: 19 },
+		{ seq: 54, type: "bust", seat: 0, total: 24 },
+		{ seq: 55, type: "bust", seat: 1, total: 24 },
+		{ seq: 56, type: "bankReveal", card: "HK#0", total: 16 },
+		{ seq: 57, type: "bankDraw", card: "H5#0", total: 21 },
+		{ seq: 58, type: "settle", round: 2, results: [2, 3, -1], bankTotal: 18 },
+		{ seq: 59, type: "settle", round: 2, results: [2, -5, -1], bankTotal: 18 },
+		{ seq: 60, type: "settle", round: 2, results: [2, 0, -1], bankTotal: 18 },
+		{ seq: 61, type: "passReady", seat: 0 },
+		{ seq: 62, type: "passReady", seat: 1 },
+		{ seq: 63, type: "exchange", shift: 1, count: 3 },
+		{ seq: 64, type: "trickWon", seat: 0, points: 0 },
+		{ seq: 65, type: "trickWon", seat: 0, points: 14 },
+		{ seq: 66, type: "trickWon", seat: 1, points: 0 },
+		{ seq: 67, type: "trickWon", seat: 1, points: 1 },
+		{ seq: 68, type: "broken", suit: "H" },
+		{ seq: 69, type: "moon", seat: 0 },
+		{ seq: 70, type: "moon", seat: 1 },
+		{ seq: 71, type: "knock", seat: 0, gin: false },
+		{ seq: 72, type: "knock", seat: 1, gin: false },
+		{ seq: 73, type: "knock", seat: 0, gin: true },
+		{ seq: 74, type: "knock", seat: 1, gin: true },
+		{ seq: 75, type: "handEnd", winner: 0, kind: "knock", points: 1 },
+		{ seq: 76, type: "handEnd", winner: 1, kind: "knock", points: 14 },
+		{ seq: 77, type: "handEnd", winner: 0, kind: "gin", points: 40 },
+		{ seq: 78, type: "handEnd", winner: 1, kind: "gin", points: 40 },
+		{ seq: 79, type: "handEnd", winner: 0, kind: "undercut", points: 25 },
+		{ seq: 80, type: "handEnd", winner: 1, kind: "undercut", points: 25 },
+		{ seq: 81, type: "bid", seat: 0, count: 2 },
+		{ seq: 82, type: "bid", seat: 1, count: 0 },
 	];
 
 	it.each([
@@ -247,6 +292,28 @@ describe("narration", () => {
 		);
 		expect(text).toContain(cardName(cards, "S8#0"));
 		expect(text).toContain(cards.bots.bot0);
+	});
+
+	it("tells a player what the round at the bank brought them", () => {
+		const settle = (results: number[]): CardEvent => ({
+			seq: 1,
+			type: "settle",
+			round: 3,
+			results,
+			bankTotal: 20,
+		});
+		expect(describeEvent(settle([0, 3, 1]), words, table)).toBe(
+			words.countOf(3, cards.events.settleYouWin),
+		);
+		expect(describeEvent(settle([0, -2, 1]), words, table)).toBe(
+			words.countOf(2, cards.events.settleYouLose),
+		);
+		expect(describeEvent(settle([0, 0, 1]), words, table)).toBe(
+			cards.events.settleYouEven,
+		);
+		expect(
+			describeEvent(settle([0, 3, 1]), words, { ...table, you: null }),
+		).toBe(words.fmt(cards.events.settle, { round: 3 }));
 	});
 
 	it("has nothing to say about an empty log", () => {
@@ -282,6 +349,91 @@ describe("sheddingHint", () => {
 		expect(
 			sheddingHint(view({ pendingDraw: 4, legal: ["S2#0"] }), true, words),
 		).toContain("4");
+	});
+});
+
+describe("bank table", () => {
+	function bankView(over: Partial<BankView> = {}): BankView {
+		return {
+			family: "bank",
+			phase: "play",
+			turn: 1,
+			round: 2,
+			totalRounds: 10,
+			hands: [
+				["S10#0", "HK#0"],
+				["SA#0", "D5#0"],
+				["C9#0", "C8#0", "C7#0"],
+			],
+			handTotals: [20, 16, 24],
+			handCounts: [2, 2, 3],
+			bank: ["H9#0", null],
+			bankTotal: 9,
+			stockCount: 80,
+			stakes: [1, 2, 5],
+			results: [[1, -2, 0]],
+			totals: [1, -2, 0],
+			stakeOptions: [1, 2, 5],
+			canStake: false,
+			canDouble: false,
+			winners: [],
+			events: [],
+			...over,
+		};
+	}
+
+	it("signs a round's points", () => {
+		expect(signedPoints(words, 3)).toBe("+3");
+		expect(signedPoints(words, -2)).toBe("−2");
+		expect(signedPoints(words, 0)).toBe("±0");
+	});
+
+	it("asks for a stake, then waits for the others", () => {
+		const staking = bankView({ phase: "stake", canStake: true });
+		expect(bankHint(staking, 1, words)).toBe(cards.bank.stakeHint);
+		expect(bankHint({ ...staking, canStake: false }, 1, words)).toBe(
+			cards.bank.stakeWaiting,
+		);
+		expect(bankHint(staking, null, words)).toBeNull();
+	});
+
+	it("gives the total on your turn only", () => {
+		expect(bankHint(bankView(), 1, words)).toBe(
+			words.fmt(cards.bank.playHint, { total: 16 }),
+		);
+		expect(bankHint(bankView({ turn: 0 }), 1, words)).toBeNull();
+		expect(bankHint(bankView({ phase: "finished" }), 1, words)).toBeNull();
+	});
+
+	it("notes each hand's total and what it plays for", () => {
+		const view = bankView({
+			hands: [
+				["SA#0", "HK#0"],
+				["SA#0", "D5#0"],
+				["C9#0", "C8#0", "C7#0"],
+			],
+			handTotals: [21, 16, 24],
+		});
+		const forPoints = (count: number) =>
+			words.countOf(count, cards.bank.playingFor);
+		expect(bankSeatNote(words, view, 0)).toBe(
+			`${cards.bank.natural} · ${forPoints(1)}`,
+		);
+		expect(bankSeatNote(words, view, 1)).toBe(`16 · ${forPoints(2)}`);
+		expect(bankSeatNote(words, view, 2)).toBe(
+			`${cards.bank.over} · ${forPoints(5)}`,
+		);
+		expect(
+			bankSeatNote(words, { ...view, stakes: [null, null, null] }, 1),
+		).toBe("16");
+	});
+
+	it("shows last round's result between rounds", () => {
+		const between = bankView({ phase: "stake" });
+		expect(bankSeatNote(words, between, 0)).toBe("+1");
+		expect(bankSeatNote(words, between, 1)).toBe("−2");
+		expect(bankSeatNote(words, between, 2)).toBe("±0");
+		expect(bankSeatNote(words, { ...between, results: [] }, 0)).toBe("");
 	});
 });
 
@@ -447,6 +599,138 @@ describe("rummyHint", () => {
 	});
 });
 
+describe("gin turns", () => {
+	const gin = resolvedRules(getCardGame("gin-rummy"), []);
+	if (gin.family !== "gin") throw new Error("Gin Rummy is gin");
+	const ginRules: GinRules = gin.rules;
+	const ids = (faces: string) => faces.split(" ").map((face) => `${face}#0`);
+	const fixed = () => 0.5;
+	// Three runs for seat 0, then two loose cards; seat 1 holds nothing useful.
+	const KNOCKER = "S2 S3 S4 H5 H6 H7 D9 D10 DJ";
+	const DEFENDER = "S5 H8 DQ C3 C7 HK HQ D2 D4 CJ";
+
+	function state(seat0: string, over: Partial<GinState> = {}): GinState {
+		const hands = [ids(seat0), ids(DEFENDER)];
+		const used = new Set([...hands.flat(), "C5#0"]);
+		return {
+			...createGin(ginRules, 2, fixed),
+			hands,
+			stock: buildDeck(1, 0).filter((card) => !used.has(card)),
+			discard: ["C5#0"],
+			turn: 0,
+			phase: "play",
+			events: [],
+			...over,
+		};
+	}
+	const turnFor = (game: GinState, you: number | null, selected = "") => {
+		const view = viewGin(ginRules, game, you);
+		const turn = ginTurn({
+			view,
+			rules: ginRules,
+			you,
+			selected: selected ? ids(selected) : [],
+		});
+		const hint = ginHint(turn, view, {
+			cards,
+			fmt: words.fmt,
+			serverErrors: en.serverErrors,
+			knocker: "Hanna",
+		});
+		return { view, turn, hint };
+	};
+
+	it("draws first, from either pile", () => {
+		const game = state(DEFENDER.replace("S5", "SA"), { phase: "draw" });
+		const { turn, hint } = turnFor(game, 0);
+		expect(turn.drawing).toBe(true);
+		expect(turn.canTakeDiscard).toBe(true);
+		expect(hint).toBe(cards.gin.drawHint);
+	});
+
+	it("counts the deadwood the best discard leaves, and offers the knock", () => {
+		const game = state(`${KNOCKER} C9 SK`);
+		const none = turnFor(game, 0);
+		expect(none.turn.deadwood).toBe(9);
+		expect(none.turn.knockPossible).toBe(true);
+		expect(none.hint).toBe(cards.gin.canKnockHint);
+
+		const knock = turnFor(game, 0, "SK");
+		expect(knock.turn.canKnock).toBe(true);
+		expect(knock.turn.knockDeadwood).toBe(9);
+		expect(knock.turn.gin).toBe(false);
+		expect(knock.hint).toBe(words.fmt(cards.gin.knockHint, { deadwood: 9 }));
+
+		const breakRun = turnFor(game, 0, "S2");
+		expect(breakRun.turn.canDiscard).toBe(true);
+		expect(breakRun.turn.canKnock).toBe(false);
+		expect(breakRun.hint).toBe(cards.gin.discardHint);
+
+		expect(turnFor(game, 0, "S2 S3").hint).toBe(cards.gin.oneCard);
+	});
+
+	it("goes gin when the discard leaves no deadwood", () => {
+		const { turn, hint } = turnFor(state(`${KNOCKER} D8 CK`), 0, "CK");
+		expect(turn.gin).toBe(true);
+		expect(hint).toBe(cards.gin.ginHint);
+	});
+
+	it("won't discard the card just taken from the pile", () => {
+		const game = state(`${KNOCKER} C9 SK`, { takenDiscard: "SK#0" });
+		const { turn, hint } = turnFor(game, 0, "SK");
+		expect(turn.canDiscard).toBe(false);
+		expect(turn.canKnock).toBe(false);
+		expect(hint).toBe(en.serverErrors.cardsCannotReturnDiscard);
+		// The best discard skips the taken card too.
+		expect(turn.deadwood).toBe(9 + 10 - 9);
+	});
+
+	it("waits on the other player, and shows a spectator no count", () => {
+		const game = state(`${KNOCKER} C9 SK`);
+		const other = turnFor(game, 1);
+		expect(other.turn.mine).toBe(false);
+		expect(other.hint).toBeNull();
+		expect(other.turn.deadwood).toBeGreaterThan(0);
+		expect(turnFor(game, null).turn.deadwood).toBeNull();
+	});
+
+	it("lays off what fits on the knocker's melds", () => {
+		const knocked = applyGin(
+			ginRules,
+			state(`${KNOCKER} C2 SK`),
+			0,
+			{ type: "knock", card: "SK#0" },
+			fixed,
+		);
+		expect(knocked.phase).toBe("layoff");
+
+		const idle = turnFor(knocked, 1);
+		expect(idle.turn.layingOff).toBe(true);
+		// Everything the defender holds is still unmatched before laying off.
+		expect(idle.turn.deadwood).toBeGreaterThan(0);
+		expect(idle.hint).toBe(words.fmt(cards.gin.layoffHint, { name: "Hanna" }));
+
+		const fits = turnFor(knocked, 1, "S5");
+		const spades = fits.view.melds.find((meld) => meld.cards.includes("S2#0"));
+		if (!spades) throw new Error("spade run");
+		expect(ginLayoffOrder(fits.turn, spades)).toEqual(["S5#0"]);
+		expect(fits.hint).toBe(cards.gin.layoffTapMeld);
+
+		const loose = turnFor(knocked, 1, "CJ");
+		expect(
+			loose.view.melds.every((meld) => !ginLayoffOrder(loose.turn, meld)),
+		).toBe(true);
+		expect(loose.hint).toBe(cards.gin.layoffNoFit);
+	});
+
+	it("holds melds together, runs in their own order, then the deadwood", () => {
+		expect(groupGinHand(ids("HK S3 SA C9 S2"), ginRules)).toEqual([
+			...ids("SA S2 S3"),
+			...sortCards(ids("C9 HK"), "suit"),
+		]);
+	});
+});
+
 describe("fresh cards", () => {
 	const deal: CardEvent = { seq: 1, type: "deal", round: 1 };
 	const draw: CardEvent = {
@@ -558,6 +842,37 @@ describe("flights", () => {
 		]);
 	});
 
+	it("deals a hit to its hand and a bank card to the bank", () => {
+		const { flights } = plan([
+			{ seq: 1, type: "hit", seat: 0, card: "S7#0", total: 17 },
+			{ seq: 2, type: "double", seat: 2, card: "S8#0", total: 18 },
+			{ seq: 3, type: "bankDraw", card: "S9#0", total: 19 },
+		]);
+		expect(
+			flights.map((flight) => [flight.card, flight.from, flight.to]),
+		).toEqual([
+			["S7#0", "stock", "hand"],
+			["S8#0", "stock", "seat-2"],
+			["S9#0", "stock", "bank"],
+		]);
+	});
+
+	it("deals two cards each and two to the bank at a bank table", () => {
+		const { flights } = plan([
+			{ seq: 1, type: "deal", round: 1, perSeat: 2, bank: true },
+		]);
+		expect(flights.map((flight) => flight.to)).toEqual([
+			"hand",
+			"seat-1",
+			"seat-2",
+			"bank",
+			"hand",
+			"seat-1",
+			"seat-2",
+			"bank",
+		]);
+	});
+
 	it("bumps the seat that was skipped, and a spectator has no hand", () => {
 		const { flash } = plan([{ seq: 1, type: "skip", seat: 2 }]);
 		expect(flash).toBe(2);
@@ -618,6 +933,8 @@ function tricksView(over: Partial<TricksView> = {}): TricksView {
 		phase: "playing",
 		round: 1,
 		target: 100,
+		deals: null,
+		handSize: 13,
 		turn: 1,
 		handCounts: [13, 13, 13],
 		hand: [],
@@ -630,6 +947,10 @@ function tricksView(over: Partial<TricksView> = {}): TricksView {
 		trick: [],
 		lastTrick: null,
 		trump: null,
+		turnedUp: null,
+		bids: null,
+		legalBids: [],
+		blockedBid: null,
 		broken: false,
 		roundPoints: [0, 0, 0],
 		tricksTaken: [0, 0, 0],
@@ -732,7 +1053,7 @@ describe("tricksRuleLines", () => {
 			const lines = tricksRuleLines(wordsFor(messages), hartenjagen(options));
 			const all = [
 				lines.goal,
-				...lines.passing,
+				...(lines.passing ?? []),
 				...lines.turn,
 				...lines.points,
 			];
@@ -746,7 +1067,7 @@ describe("tricksRuleLines", () => {
 	it("follows the house rules", () => {
 		const plain = tricksRuleLines(words, hartenjagen());
 		expect(plain.goal).toContain("100");
-		expect(plain.passing[0]).toContain("to the left, to the right, across");
+		expect(plain.passing?.[0]).toContain("to the left, to the right, across");
 		expect(plain.turn).toContain(
 			"From high to low: A K Q J 10 9 8 7 6 5 4 3 2.",
 		);
@@ -778,5 +1099,96 @@ describe("trick flights", () => {
 			new Set(flights.map((flight) => `${flight.from}>${flight.to}`)),
 		).toEqual(new Set(["hand>seat-1", "seat-1>seat-2", "seat-2>hand"]));
 		expect(flash).toBe(2);
+	});
+});
+
+const boerenbridge = (options: string[] = []) => {
+	const resolved = resolvedRules(getCardGame("boerenbridge"), options);
+	if (resolved.family !== "tricks")
+		throw new Error("Boerenbridge takes tricks");
+	return resolved.rules;
+};
+
+describe("bidding at the table", () => {
+	const bidding = (over: Partial<TricksView> = {}) =>
+		tricksView({
+			phase: "bidding",
+			target: null,
+			deals: 25,
+			handSize: 3,
+			turn: 0,
+			bids: [null, null, null],
+			legalBids: [0, 1, 2, 3],
+			passDirection: "keep",
+			passCount: 0,
+			...over,
+		});
+
+	it("asks for a bid, and tells the dealer which number is off limits", () => {
+		const rules = boerenbridge();
+		expect(tricksHint(bidding(), 0, words, rules)).toBe(
+			"Bid how many tricks you'll take: 0 to 3.",
+		);
+		expect(tricksHint(bidding(), 1, words, rules)).toBeNull();
+		const dealer = bidding({
+			turn: 2,
+			bids: [1, 1, null],
+			blockedBid: 1,
+			legalBids: [0, 2, 3],
+		});
+		expect(tricksHint(dealer, 2, words, rules)).toContain("can't bid 1");
+	});
+
+	it("shows each seat's tricks against its bid, and adds the bids up", () => {
+		const view = bidding({ bids: [2, null, null] });
+		expect(tricksSeatNote(view, 0, words)).toBe("Bid 2 · 0 pts");
+		expect(tricksSeatNote(view, 1, words)).toBe("0 pts");
+		const playing = bidding({
+			phase: "playing",
+			bids: [2, 0, 1],
+			tricksTaken: [1, 0, 0],
+			totals: [14, -2, 10],
+		});
+		expect(tricksSeatNote(playing, 0, words)).toBe("1 of 2 · 14 pts");
+		expect(bidTotal(playing)).toBe(3);
+		expect(bidTotal(tricksView())).toBeNull();
+	});
+
+	it.each([
+		["en", en.games.cards],
+		["nl", nl.games.cards],
+	] as const)("writes the bidding rules in %s", (_, messages) => {
+		for (const options of [[], ["upOnly", "dealerFree"], ["downOnly"]]) {
+			const lines = tricksRuleLines(wordsFor(messages), boerenbridge(options));
+			expect(lines.passing).toBeNull();
+			const all = [
+				lines.goal,
+				...(lines.bidding ?? []),
+				...lines.turn,
+				...lines.points,
+			];
+			for (const line of all) {
+				expect(line.length).toBeGreaterThan(0);
+				expect(line).not.toMatch(/[{}]|undefined/);
+			}
+		}
+	});
+
+	it("follows the house rules", () => {
+		const plain = tricksRuleLines(words, boerenbridge());
+		const r = cards.rules.tricks;
+		expect(plain.goal).toBe(r.goalLastHigh);
+		expect(plain.bidding).toEqual([r.schedules.upDown, r.bid, r.dealerRule]);
+		expect(plain.turn).toContain(r.trumpTurnUp);
+		expect(plain.turn).toContain(r.trickTrump);
+		expect(plain.points).toEqual([
+			"Bid met exactly: 10 points plus 2 per trick.",
+			"Bid missed: 2 points off for every trick you're out by.",
+		]);
+		const house = tricksRuleLines(
+			words,
+			boerenbridge(["upOnly", "dealerFree"]),
+		);
+		expect(house.bidding).toEqual([r.schedules.up, r.bid]);
 	});
 });

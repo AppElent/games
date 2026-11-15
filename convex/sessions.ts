@@ -1,3 +1,4 @@
+import { seatsCarrySecret } from "@arcadeclub/core/games";
 import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
@@ -31,9 +32,9 @@ export const create = mutation({
 		guestId: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		// A card table needs its host's seat secret from the first moment, so
-		// only `cardGames.createTable` creates one.
-		if (args.gameType === "card-games") {
+		// A card or dice table needs its host's seat secret from the first
+		// moment, so only its own `createTable` creates one.
+		if (seatsCarrySecret(args.gameType)) {
 			throw gameError("gameUnavailable");
 		}
 		const { session, participantId } = await createHostedSession(ctx, args);

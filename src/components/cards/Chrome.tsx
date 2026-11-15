@@ -1,149 +1,40 @@
 import type { FeltColor } from "@arcadeclub/core/cards/engine";
-import { Link } from "@tanstack/react-router";
-import { X } from "lucide-react";
-import { type ReactNode, useEffect, useRef } from "react";
-import { FullscreenGameShell } from "#/components/games/FullscreenGameShell";
+import type { ReactNode } from "react";
+import {
+	type TableCrumb,
+	TableCrumbs,
+	TableNotFound,
+	TablePage,
+} from "#/components/table/Chrome";
 import { useMessages } from "#/lib/i18n";
-import "./cards.css";
 import { CardSprite } from "./PlayingCard";
 
-type Crumb = {
-	label: string;
-	to?: "/cards" | "/cards/$gameId";
-	params?: { gameId: string };
-};
+export { Sheet } from "#/components/table/Chrome";
 
 /** The trail back up to the card club; the last step is the page you're on. */
-export function CardCrumbs({ items }: { items: Crumb[] }) {
+export function CardCrumbs({ items }: { items: TableCrumb[] }) {
 	const label = useMessages().games.cards.table.crumbsLabel;
-	return (
-		<nav className="cards-crumbs" aria-label={label}>
-			<ol>
-				{items.map((item) => (
-					<li key={item.label}>
-						{item.to ? (
-							<Link to={item.to} params={item.params}>
-								{item.label}
-							</Link>
-						) : (
-							<span aria-current="page">{item.label}</span>
-						)}
-					</li>
-				))}
-			</ol>
-		</nav>
-	);
+	return <TableCrumbs items={items} label={label} />;
 }
 
 /** Felt-covered page for the screens around the game: hub, setup, lobby. */
-export function CardsPage({
-	title,
-	felt,
-	crumbs,
-	children,
-}: {
+export function CardsPage(props: {
 	title: string;
 	felt: FeltColor;
-	crumbs: Crumb[];
+	crumbs: TableCrumb[];
 	children: ReactNode;
 }) {
-	return (
-		<FullscreenGameShell title={title}>
-			<div className="cards-felt" data-felt={felt}>
-				<CardSprite />
-				<div className="cards-page">
-					<div className="pt-3 pr-3">
-						<CardCrumbs items={crumbs} />
-					</div>
-					<div className="cards-page-inner">{children}</div>
-				</div>
-			</div>
-		</FullscreenGameShell>
-	);
+	const label = useMessages().games.cards.table.crumbsLabel;
+	return <TablePage {...props} crumbsLabel={label} decor={<CardSprite />} />;
 }
 
 /** A panel saying what could not be found, with the way back to the card games. */
 export function CardsNotFound({ heading }: { heading: string }) {
 	const cards = useMessages().games.cards;
 	return (
-		<div className="cards-panel mt-10 p-6 text-center">
-			<h1 className="cards-title mb-3 text-2xl">{heading}</h1>
-			<Link to="/cards" className="btn-gold">
-				{cards.session.backToGames}
-			</Link>
-		</div>
-	);
-}
-
-/**
- * A native modal dialog, shown as a bottom sheet on phones. Native gives us the
- * focus trap, Escape, and focus returning to whatever opened it.
- */
-export function Sheet({
-	open,
-	title,
-	onClose,
-	dismissable = true,
-	children,
-}: {
-	open: boolean;
-	title: string;
-	onClose: () => void;
-	dismissable?: boolean;
-	children: ReactNode;
-}) {
-	const ref = useRef<HTMLDialogElement>(null);
-	const closeLabel = useMessages().games.cards.table.close;
-
-	useEffect(() => {
-		const dialog = ref.current;
-		if (!dialog) {
-			return;
-		}
-		if (open && !dialog.open) {
-			dialog.showModal();
-		} else if (!open && dialog.open) {
-			dialog.close();
-		}
-	}, [open]);
-
-	return (
-		<dialog
-			ref={ref}
-			className="sheet"
-			aria-label={title}
-			onCancel={(event) => {
-				if (!dismissable) {
-					event.preventDefault();
-				}
-			}}
-			onClose={() => {
-				// Browsers can close a dialog despite the cancelled event above.
-				if (open && !dismissable) {
-					ref.current?.showModal();
-				} else {
-					onClose();
-				}
-			}}
-		>
-			{open ? (
-				<>
-					<div className="sheet-head">
-						<h2 className="cards-title min-w-0 flex-1 text-lg">{title}</h2>
-						{dismissable ? (
-							<button
-								type="button"
-								aria-label={closeLabel}
-								onClick={onClose}
-								className="stepper-btn"
-							>
-								<X className="h-5 w-5" />
-							</button>
-						) : null}
-					</div>
-					<div className="sheet-body">{children}</div>
-				</>
-			) : null}
-		</dialog>
+		<TableNotFound
+			heading={heading}
+			back={{ to: "/cards", label: cards.session.backToGames }}
+		/>
 	);
 }

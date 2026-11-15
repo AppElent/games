@@ -7,10 +7,43 @@
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
+import {
+	type HouseRule as BaseHouseRule,
+	type BotMove,
+	normalizeHouseRules,
+	type TableEngine,
+} from "../table-engine";
+import {
+	applyBank,
+	BANK_ACTIONS,
+	type BankAction,
+	type BankRules,
+	type BankState,
+	type BankView,
+	botBankMove,
+	createBank,
+	nextBankStarter,
+	viewBank,
+} from "./bank";
+import { boerenbridge } from "./games/boerenbridge";
+import { eenentwintigen } from "./games/eenentwintigen";
+import { ginRummy } from "./games/gin-rummy";
 import { hartenjagen } from "./games/hartenjagen";
 import { jokeren } from "./games/jokeren";
 import { maumau } from "./games/maumau";
 import { pesten } from "./games/pesten";
+import {
+	applyGin,
+	botGinMove,
+	GIN_ACTIONS,
+	type GinAction,
+	type GinRules,
+	type GinState,
+	type GinView,
+	nextGinStarter,
+	startGin,
+	viewGin,
+} from "./gin";
 import {
 	applyRummy,
 	botRummyMove,
@@ -35,7 +68,6 @@ import {
 	type SheddingView,
 	viewShedding,
 } from "./shedding";
-import type { BotMove } from "./table";
 import {
 	applyTricks,
 	botTricksMove,
@@ -63,9 +95,7 @@ type Definition<Family extends string, Rules> = {
 	options: ReadonlyArray<HouseRule<Rules>>;
 };
 
-export type HouseRule<Rules> = {
-	id: string;
-	patch?: Partial<Rules>;
+export type HouseRule<Rules> = BaseHouseRule<Rules> & {
 	/**
 	 * Special cards this rule turns into plain cards (keys of `rules.powers`).
 	 * Several such rules combine, which a `patch` on `powers` could not.
@@ -76,16 +106,18 @@ export type HouseRule<Rules> = {
 export type CardGameDefinition =
 	| Definition<"shedding", SheddingRules>
 	| Definition<"rummy", RummyRules>
-	| Definition<"tricks", TricksRules>;
-
-/** How long a player can go without a heartbeat before others may hand their seat to autopilot. */
-export const SEAT_SILENT_AFTER_MS = 60_000;
+	| Definition<"bank", BankRules>
+	| Definition<"tricks", TricksRules>
+	| Definition<"gin", GinRules>;
 
 export const CARD_GAMES = {
 	pesten,
 	maumau,
 	jokeren,
+	eenentwintigen,
 	hartenjagen,
+	boerenbridge,
+	"gin-rummy": ginRummy,
 } as const satisfies Record<string, CardGameDefinition>;
 
 export type CardGameId = keyof typeof CARD_GAMES;
@@ -97,9 +129,19 @@ export function isCardGameId(value: string): value is CardGameId {
 	return (CARD_GAME_IDS as string[]).includes(value);
 }
 
-export type CardGameState = SheddingState | RummyState | TricksState;
-export type CardAction = SheddingAction | RummyAction | TricksAction;
-type CardView = SheddingView | RummyView | TricksView;
+export type CardGameState =
+	| SheddingState
+	| RummyState
+	| BankState
+	| TricksState
+	| GinState;
+export type CardAction =
+	| SheddingAction
+	| RummyAction
+	| BankAction
+	| TricksAction
+	| GinAction;
+type CardView = SheddingView | RummyView | BankView | TricksView | GinView;
 
 export function getCardGame(id: string): CardGame {
 	if (!isCardGameId(id)) {
@@ -109,14 +151,11 @@ export function getCardGame(id: string): CardGame {
 }
 
 /** Validates house-rule ids; unknown ones are a client error. */
-export function normalizeOptions(game: CardGameDefinition, options: string[]) {
-	const known = game.options.map((option) => option.id as string);
-	for (const option of options) {
-		if (!known.includes(option)) {
-			throw new GameRuleError("cardsUnknownOption");
-		}
-	}
-	return known.filter((id) => options.includes(id));
+export function normalizeOptions(
+	game: CardGameDefinition,
+	options: readonly string[],
+) {
+	return normalizeHouseRules(game.options, options);
 }
 
 function rulesOf<R>(
@@ -141,22 +180,26 @@ function rulesOf<R>(
 	return rules;
 }
 
+function houseRules(game: CardGameDefinition) {
+	return game.options as ReadonlyArray<HouseRule<unknown>>;
+}
+
 /** The house rule that turns this special card into a plain one, if the game has it. */
 export function plainCardOption(game: CardGameDefinition, power: string) {
-	return (game.options as ReadonlyArray<HouseRule<unknown>>).find((option) =>
+	return houseRules(game).find((option) =>
 		option.withoutPowers?.includes(power),
 	);
 }
 
 /** House rules that are not about a single special card. */
 export function generalOptions(game: CardGameDefinition) {
-	return (game.options as ReadonlyArray<HouseRule<unknown>>).filter(
-		(option) => !option.withoutPowers,
-	);
+	return houseRules(game).filter((option) => !option.withoutPowers);
 }
 
 function rulesFor(game: CardGameDefinition, options: readonly string[]) {
-	return rulesOf<SheddingRules | RummyRules | TricksRules>(game, options);
+	return rulesOf<
+		SheddingRules | RummyRules | BankRules | TricksRules | GinRules
+	>(game, options);
 }
 
 type FamilyTypes = {
@@ -172,11 +215,23 @@ type FamilyTypes = {
 		action: RummyAction;
 		view: RummyView;
 	};
+	bank: {
+		rules: BankRules;
+		state: BankState;
+		action: BankAction;
+		view: BankView;
+	};
 	tricks: {
 		rules: TricksRules;
 		state: TricksState;
 		action: TricksAction;
 		view: TricksView;
+	};
+	gin: {
+		rules: GinRules;
+		state: GinState;
+		action: GinAction;
+		view: GinView;
 	};
 };
 
@@ -229,6 +284,14 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		view: viewRummy,
 		bot: botRummyMove,
 	},
+	bank: {
+		actions: BANK_ACTIONS,
+		create: createBank,
+		nextStarter: nextBankStarter,
+		apply: applyBank,
+		view: viewBank,
+		bot: botBankMove,
+	},
 	tricks: {
 		actions: TRICKS_ACTIONS,
 		create: createTricks,
@@ -236,6 +299,14 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		apply: applyTricks,
 		view: viewTricks,
 		bot: botTricksMove,
+	},
+	gin: {
+		actions: GIN_ACTIONS,
+		create: startGin,
+		nextStarter: nextGinStarter,
+		apply: applyGin,
+		view: viewGin,
+		bot: botGinMove,
 	},
 };
 
@@ -282,7 +353,7 @@ export function applyCardAction(
 	return family.apply(rulesFor(game, options), state, seat, action, random);
 }
 
-/** What one seat may see; `null` is a spectator. Never includes other hands. */
+/** What one seat may see; `null` is a spectator. Never includes a hand the rules keep hidden. */
 export function viewCardGame(
 	game: CardGameDefinition,
 	options: readonly string[],
@@ -333,3 +404,23 @@ export function familyRules<F extends Family>(
 	const resolved = resolvedRules(game, options);
 	return resolved.family === family ? (resolved.rules as RulesOf[F]) : null;
 }
+
+/** The card games as the Convex table module plays them. */
+export const CARD_ENGINE: TableEngine<CardGameState, CardAction, CardView> = {
+	players: (gameId) => getCardGame(gameId).players,
+	normalizeOptions: (gameId, options) =>
+		normalizeOptions(getCardGame(gameId), options),
+	create: (gameId, options, seats, random, starter) =>
+		createCardGame(getCardGame(gameId), options, seats, random, starter),
+	apply: (gameId, options, state, seat, action, random) =>
+		applyCardAction(getCardGame(gameId), options, state, seat, action, random),
+	bot: (gameId, options, state, bots, random) =>
+		botMove(getCardGame(gameId), options, state, bots, random),
+	view: (gameId, options, state, seat) =>
+		viewCardGame(getCardGame(gameId), options, state, seat),
+	nextStarter,
+	outcome: (state) => ({
+		finished: state.phase === "finished",
+		winners: state.winners,
+	}),
+};

@@ -27,12 +27,12 @@ import { fmt, plural, useI18n } from "../../../i18n";
 import { cardColors, metrics, radius, spacing } from "../../../theme";
 import { Icon } from "../../../ui/icon";
 import { AppText } from "../../../ui/text";
-import { PlayingCard } from "../deck/playing-card";
 import { Sheet } from "../deck/sheet";
 import { useCardWords } from "../deck/use-card-words";
 import { FeltText, TableButton } from "./felt-ui";
-import { type CardZones, useFlights } from "./flights";
+import { useFlights } from "./flights";
 import { Hand } from "./hand";
+import { Fan, MeldView } from "./melds";
 import { Piles } from "./piles";
 import { EndPanel, TablePanel } from "./result-panel";
 import { ScoreBoard } from "./score-board";
@@ -41,83 +41,8 @@ import { EventTicker, TableFrame } from "./table-frame";
 import type { CardTableBundle, CardTableControls } from "./use-card-table";
 import { useFreshCards } from "./use-fresh-cards";
 
-const MELD_STEP = 0.42;
 const REVEAL_CARD = 34;
 const REVEAL_STEP = 19;
-
-function Fan({
-	cards,
-	width,
-	step,
-}: {
-	cards: readonly CardId[];
-	width: number;
-	step: number;
-}) {
-	return (
-		<View style={styles.fan}>
-			{cards.map((card, index) => (
-				<View
-					key={card}
-					style={index > 0 ? { marginLeft: step - width } : null}
-				>
-					<PlayingCard card={card} width={width} />
-				</View>
-			))}
-		</View>
-	);
-}
-
-function MeldView({
-	meld,
-	label,
-	target,
-	cardWidth,
-	zones,
-	onPress,
-	onLayoutY,
-}: {
-	meld: Meld;
-	label: string;
-	target: boolean;
-	cardWidth: number;
-	zones: CardZones;
-	onPress: () => void;
-	onLayoutY: (y: number) => void;
-}) {
-	const step = cardWidth * MELD_STEP;
-	const content = <Fan cards={meld.cards} width={cardWidth} step={step} />;
-	const zone = zones.ref(`meld-${meld.id}`, cardWidth);
-	return (
-		<View
-			ref={zone}
-			collapsable={false}
-			onLayout={(event) => onLayoutY(event.nativeEvent.layout.y)}
-		>
-			{target ? (
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel={label}
-					onPress={onPress}
-					hitSlop={4}
-					style={[styles.meld, styles.meldTarget]}
-					testID={`meld-${meld.id}`}
-				>
-					{content}
-				</Pressable>
-			) : (
-				<View
-					accessible
-					accessibilityLabel={label}
-					style={styles.meld}
-					testID={`meld-${meld.id}`}
-				>
-					{content}
-				</View>
-			)}
-		</View>
-	);
-}
 
 export function RummyTable({
 	game,
@@ -740,17 +665,6 @@ const styles = StyleSheet.create({
 		paddingVertical: spacing.sm,
 	},
 	empty: { flex: 1, textAlign: "center", paddingVertical: spacing.lg },
-	fan: { flexDirection: "row" },
-	meld: {
-		padding: spacing.xs,
-		borderRadius: radius.sm,
-		borderWidth: 1.5,
-		borderColor: "transparent",
-	},
-	meldTarget: {
-		borderColor: cardColors.gold,
-		backgroundColor: cardColors.goldSoft,
-	},
 	staged: {
 		flexDirection: "row",
 		flexWrap: "wrap",
