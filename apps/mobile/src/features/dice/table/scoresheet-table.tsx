@@ -2,19 +2,18 @@
  * A score-sheet game in play: whose turn, the dice (tap to hold), the sheet
  * with what your open boxes would score, and the final standings.
  */
-import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
+import { type DiceGameOf, diceRules } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
 	latestNews,
 	standings,
 	turnStep,
+	winnerTitle,
 } from "@arcadeclub/core/dice/table-view";
 import { seatIsSilent } from "@arcadeclub/core/table-engine";
-import { Stack, useRouter } from "expo-router";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
-	AccessibilityInfo,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -31,18 +30,21 @@ import {
 	useThemedStyles,
 	useTokens,
 } from "../../../theme";
-import { Button, HeaderButton } from "../../../ui/button";
+import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
-import { Notice } from "../../../ui/notice";
-import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
-import { Sheet } from "../../cards/deck/sheet";
-import { DiceRulesSheet } from "../rules/dice-rules-sheet";
 import { DieFace } from "./die-face";
+import {
+	AutopilotNotice,
+	DiceEndPanel,
+	DiceTableFrame,
+	useNow,
+	useSeatMenu,
+} from "./table-parts";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
 
 type Props = {
-	game: DiceGame;
+	game: DiceGameOf<"scoresheet">;
 	table: DiceTableBundle;
 	view: ScoresheetView;
 	controls: DiceTableControls;
@@ -52,90 +54,41 @@ const MAX_DIE = 64;
 const DIE_GAP = spacing.sm;
 const NAME_COLUMN = 124;
 const SEAT_COLUMN = 64;
-/** How often a silent seat is checked for. */
-const PRESENCE_TICK_MS = 15_000;
-
-function useNow() {
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		const timer = setInterval(() => setNow(Date.now()), PRESENCE_TICK_MS);
-		return () => clearInterval(timer);
-	}, []);
-	return now;
-}
-
 export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const { t } = useI18n();
 	const dice = t.games.dice;
-	const text = dice.games[game.id];
-	const [rulesOpen, setRulesOpen] = useState(false);
-	const router = useRouter();
-	const you = table.you;
-	const news = latestNews({ dice, fmt }, table, view.events);
-	const newsSeq = news?.seq;
-	const newsText = news?.text;
-
-	useEffect(() => {
-		// Keyed on `seq` too, so a second identical roll is still read out.
-		if (newsSeq !== undefined && newsText) {
-			AccessibilityInfo.announceForAccessibility(newsText);
-		}
-	}, [newsSeq, newsText]);
-
-	const headerOptions = useMemo(
-		() => ({
-			title: text.name,
-			headerRight: () => (
-				<HeaderButton
-					label={dice.table.rules}
-					onPress={() => setRulesOpen(true)}
-					testID="dice-table-rules"
-				/>
-			),
-		}),
-		[text.name, dice.table.rules],
-	);
-	const code = table.session.joinCode;
-
+	const styles = useThemedStyles(createStyles);
+	const won = table.you !== null && view.winners.includes(table.you);
 	return (
-		<>
-			<Stack.Screen options={headerOptions} />
-			<Screen>
-				{view.phase === "finished" ? (
-					<EndPanel table={table} view={view} controls={controls} />
-				) : null}
-				<DiceTray table={table} view={view} controls={controls} />
-				{you === null ? (
-					<View style={styles.spectator}>
-						<AppText variant="secondary">{dice.table.spectating}</AppText>
-						{code ? (
-							<Button
-								variant="plain"
-								compact
-								label={dice.table.rejoin}
-								onPress={() =>
-									router.replace({ pathname: "/join", params: { code } })
-								}
-								testID="dice-rejoin"
-							/>
-						) : null}
-					</View>
-				) : null}
-				<Notice message={controls.error} />
-				{news ? (
-					<AppText variant="caption" testID="dice-last-score">
-						{news.text}
-					</AppText>
-				) : null}
-				<ScoreSheet game={game} table={table} view={view} controls={controls} />
-			</Screen>
-			<DiceRulesSheet
-				game={game}
-				options={table.options}
-				open={rulesOpen}
-				onClose={() => setRulesOpen(false)}
-			/>
-		</>
+		<DiceTableFrame
+			game={game}
+			table={table}
+			controls={controls}
+			news={latestNews({ dice, fmt }, table, view.events)}
+			end={
+				view.phase === "finished" ? (
+					<DiceEndPanel
+						table={table}
+						controls={controls}
+						title={winnerTitle(dice, table, view.winners)}
+						won={won}
+						heading={dice.table.standings}
+					>
+						{standings(view).map(({ seat, total }) => (
+							<View key={seat} style={styles.standing}>
+								<AppText variant="body" numberOfLines={1} style={styles.flex}>
+									{diceSeatName(dice, table, seat)}
+								</AppText>
+								<AppText variant="heading">{String(total)}</AppText>
+							</View>
+						))}
+					</DiceEndPanel>
+				) : null
+			}
+			tray={<DiceTray table={table} view={view} controls={controls} />}
+		>
+			<ScoreSheet game={game} table={table} view={view} controls={controls} />
+		</DiceTableFrame>
 	);
 }
 
@@ -187,7 +140,6 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 				: step === "score"
 					? dice.table.scoreHint
 					: null;
-	const autopilot = you !== null && table.seats[you]?.autopilot;
 
 	return (
 		<Card>
@@ -310,17 +262,7 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 						</AppText>
 					</>
 				) : null}
-				{autopilot && you !== null ? (
-					<>
-						<AppText variant="secondary">{dice.table.autopilotActive}</AppText>
-						<Button
-							variant="secondary"
-							label={dice.table.autopilotBack}
-							onPress={() => controls.setAutopilot(you, false)}
-							testID="dice-autopilot-back"
-						/>
-					</>
-				) : null}
+				<AutopilotNotice table={table} controls={controls} />
 			</View>
 		</Card>
 	);
@@ -333,7 +275,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const now = useNow();
-	const [menuSeat, setMenuSeat] = useState<number | null>(null);
+	const menu = useSeatMenu(table, controls, now);
 	const rules = diceRules(game, table.options);
 	const you = table.you;
 	const step = turnStep(view, you);
@@ -466,14 +408,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 						</AppText>
 						{seats.map((seat) => {
 							const entry = table.seats[seat];
-							const human = entry.botIndex === null;
 							const silent = seatIsSilent(entry, now);
-							const canManage =
-								you !== null &&
-								seat !== you &&
-								human &&
-								!entry.autopilot &&
-								(table.isHost || silent);
 							const label = (
 								<>
 									<AppText
@@ -491,14 +426,14 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 									) : null}
 								</>
 							);
-							return canManage ? (
+							return menu.canManage(seat) ? (
 								<Pressable
 									key={seat}
 									accessibilityRole="button"
 									accessibilityLabel={fmt(dice.table.seatMenu, {
 										name: name(seat),
 									})}
-									onPress={() => setMenuSeat(seat)}
+									onPress={() => menu.open(seat)}
 									testID={`dice-seat-${seat}`}
 									style={[styles.cell, view.turn === seat && styles.active]}
 								>
@@ -532,89 +467,10 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 					)}
 				</View>
 			</ScrollView>
-			<Sheet
-				open={menuSeat !== null}
-				title={
-					menuSeat === null
-						? ""
-						: fmt(dice.table.seatMenu, { name: name(menuSeat) })
-				}
-				onClose={() => setMenuSeat(null)}
-			>
-				{menuSeat === null ? null : (
-					<Button
-						label={fmt(dice.table.autopilotOn, { name: name(menuSeat) })}
-						onPress={() => {
-							controls.setAutopilot(menuSeat, true);
-							setMenuSeat(null);
-						}}
-						testID="dice-autopilot-on"
-					/>
-				)}
-			</Sheet>
+			{menu.sheet}
 		</Card>
 	);
 }
-
-/** The final sheet: who won, everyone's total, and what next. */
-function EndPanel({ table, view, controls }: Omit<Props, "game">) {
-	const router = useRouter();
-	const { t } = useI18n();
-	const dice = t.games.dice;
-	const styles = useThemedStyles(createStyles);
-	const you = table.you;
-	const won = you !== null && view.winners.includes(you);
-	const title =
-		view.winners.length > 1
-			? dice.table.tie
-			: won
-				? dice.table.youWin
-				: fmt(dice.table.winner, {
-						name: diceSeatName(dice, table, view.winners[0]),
-					});
-
-	useEffect(() => {
-		AccessibilityInfo.announceForAccessibility(title);
-		if (won) haptics.gameWon();
-	}, [title, won]);
-
-	return (
-		<Card testID="dice-end">
-			<AppText variant="title" accessibilityRole="header">
-				{title}
-			</AppText>
-			<AppText variant="label">{dice.table.standings.toUpperCase()}</AppText>
-			{standings(view).map(({ seat, total }) => (
-				<View key={seat} style={styles.standing}>
-					<AppText variant="body" numberOfLines={1} style={styles.flex}>
-						{diceSeatName(dice, table, seat)}
-					</AppText>
-					<AppText variant="heading">{String(total)}</AppText>
-				</View>
-			))}
-			{you !== null ? (
-				<Button
-					label={dice.table.playAgain}
-					busy={controls.pending}
-					onPress={controls.rematch}
-					testID="dice-rematch"
-				/>
-			) : (
-				<AppText variant="secondary">{dice.table.waitingRematch}</AppText>
-			)}
-			<Button
-				variant="secondary"
-				label={dice.table.newGame}
-				onPress={() => router.dismissTo("/dice")}
-				testID="dice-new-game"
-			/>
-		</Card>
-	);
-}
-
-const styles = StyleSheet.create({
-	spectator: { alignItems: "center", gap: spacing.xs },
-});
 
 const createStyles = (colors: Tokens) =>
 	StyleSheet.create({

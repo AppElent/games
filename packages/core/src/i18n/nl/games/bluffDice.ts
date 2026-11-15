@@ -42,14 +42,6 @@ export const bluffDice = {
 		howToPlayLoseDie:
 			"Wie het mis heeft verliest een dobbelsteen. De laatste speler met dobbelstenen wint.",
 	},
-	new: {
-		heading: "Open een tafel",
-		description:
-			"Verborgen dobbelstenen, oplopende bluffen, en één grote vraag: bluft er iemand? 2-8 spelers, iedereen doet mee met de kamercode.",
-		createRoomButton: "Kamer aanmaken",
-		creatingRoomButton: "Kamer wordt aangemaakt...",
-		couldNotCreateRoom: "Kon kamer niet aanmaken",
-	},
 	session: {
 		loadingTable: "Tafel wordt geladen...",
 		tableNotFound: "Tafel niet gevonden.",

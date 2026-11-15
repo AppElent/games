@@ -1,4 +1,8 @@
-import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
+import {
+	type DiceGame,
+	type DiceGameOf,
+	diceRules,
+} from "@arcadeclub/core/dice/engine";
 import { categoryEffect } from "@arcadeclub/core/dice/table-view";
 import { Sheet } from "#/components/table/Chrome";
 import { fmt, useMessages } from "#/lib/i18n";
@@ -39,7 +43,6 @@ export function DiceRulesSheet({
 		string,
 		{ label: string; hint: string }
 	>;
-	const rules = diceRules(game, options);
 	const r = dice.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
@@ -49,6 +52,38 @@ export function DiceRulesSheet({
 			onClose={onClose}
 			title={fmt(r.heading, { game: text.name })}
 		>
+			{game.family === "scoresheet" ? (
+				<ScoresheetRules game={game} options={options} />
+			) : (
+				<BiddingRules game={game} options={options} />
+			)}
+			{active.length > 0 ? (
+				<Section heading={r.extrasHeading}>
+					<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+						{active.map((option) => (
+							<li key={option.label}>
+								{option.label}: {option.hint}
+							</li>
+						))}
+					</ul>
+				</Section>
+			) : null}
+		</Sheet>
+	);
+}
+
+function ScoresheetRules({
+	game,
+	options,
+}: {
+	game: DiceGameOf<"scoresheet">;
+	options: readonly string[];
+}) {
+	const dice = useMessages().games.dice;
+	const rules = diceRules(game, options);
+	const r = dice.rules;
+	return (
+		<>
 			<Section heading={r.goalHeading}>
 				<p className="text-sm leading-snug">
 					{fmt(r.goal, { rounds: rules.sheet.length })}
@@ -82,17 +117,37 @@ export function DiceRulesSheet({
 					</p>
 				) : null}
 			</Section>
-			{active.length > 0 ? (
-				<Section heading={r.extrasHeading}>
-					<ul className="flex flex-col gap-1.5 text-sm leading-snug">
-						{active.map((option) => (
-							<li key={option.label}>
-								{option.label}: {option.hint}
-							</li>
-						))}
-					</ul>
-				</Section>
-			) : null}
-		</Sheet>
+		</>
+	);
+}
+
+/** The round, then each house rule that changes it, said in full. */
+function BiddingRules({
+	game,
+	options,
+}: {
+	game: DiceGameOf<"bidding">;
+	options: readonly string[];
+}) {
+	const dice = useMessages().games.dice;
+	const rules = diceRules(game, options);
+	const r = dice.rules;
+	const b = r.bidding;
+	return (
+		<>
+			<Section heading={r.goalHeading}>
+				<p className="text-sm leading-snug">{b.goal}</p>
+			</Section>
+			<Section heading={b.roundHeading}>
+				<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+					<li>{fmt(b.roll, { dice: rules.startingDice })}</li>
+					<li>{b.bid}</li>
+					<li>{b.call}</li>
+					{rules.wildOnes ? <li>{b.wildOnes}</li> : null}
+					{rules.spotOn ? <li>{b.spotOn}</li> : null}
+					<li>{b.next}</li>
+				</ul>
+			</Section>
+		</>
 	);
 }

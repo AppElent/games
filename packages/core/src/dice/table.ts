@@ -3,10 +3,10 @@
  * cup of dice some of which are held, turn order that skips players who are
  * out, and the public event log clients animate from.
  *
- * Built for the families still to come: the cup holds any number of dice
- * (10.000 rolls six and sets scorers aside), `nextSeat` skips eliminated
- * players (Mexen's lives), and a family keeps per-player cups in its own state
- * and hides them in its view (Blufpoker).
+ * Built for every family: the cup holds any number of dice (10.000 rolls six
+ * and sets scorers aside), `nextSeat` skips eliminated players (Mexen's lives,
+ * liar's dice), and a family keeps per-player cups in its own state and hides
+ * them in its view (`bidding`).
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
@@ -97,6 +97,17 @@ export type DiceEvent = { seq: number } & (
 			category: string;
 			points: number;
 			bonus: number;
+	  }
+	| { type: "bid"; seat: number; quantity: number; face: number }
+	| {
+			type: "call";
+			seat: number;
+			call: "liar" | "spotOn";
+			bidder: number;
+			quantity: number;
+			face: number;
+			count: number;
+			losers: number[];
 	  }
 	| { type: "win"; seats: number[] }
 );

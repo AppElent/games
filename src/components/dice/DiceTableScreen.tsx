@@ -1,6 +1,7 @@
 import { getDiceGame } from "@arcadeclub/core/dice/engine";
 import { useMessages } from "#/lib/i18n";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { BiddingTable } from "./BiddingTable";
 import { DiceNotFound, DicePage } from "./Chrome";
 import { DiceLobby } from "./Lobby";
 import { ScoresheetTable } from "./ScoresheetTable";
@@ -41,15 +42,22 @@ export function DiceTableScreen({
 	if (table.status === "lobby" || !table.view) {
 		return <DiceLobby game={game} table={table} controls={controls} />;
 	}
-	switch (table.view.family) {
-		case "scoresheet":
-			return (
-				<ScoresheetTable
-					game={game}
-					table={table}
-					view={table.view}
-					controls={controls}
-				/>
-			);
+	// The game picks the family; its view always comes from the same family.
+	const view = table.view;
+	if (game.family === "scoresheet" && view.family === "scoresheet") {
+		return (
+			<ScoresheetTable
+				game={game}
+				table={table}
+				view={view}
+				controls={controls}
+			/>
+		);
 	}
+	if (game.family === "bidding" && view.family === "bidding") {
+		return (
+			<BiddingTable game={game} table={table} view={view} controls={controls} />
+		);
+	}
+	return null;
 }

@@ -22,14 +22,14 @@ A card game outside those families needs a new family module (`gin.ts` is the la
 
 ## Dice games: config first
 
-A dice game that fits a rule family in `packages/core/src/dice/` (`scoresheet`) needs none of the steps below:
+A dice game that fits a rule family in `packages/core/src/dice/` (`scoresheet`, `bidding`) needs none of the steps below:
 
-1. Add a definition to `packages/core/src/dice/games/`, copying `yatzy.ts`.
+1. Add a definition to `packages/core/src/dice/games/`, copying `yatzy.ts` or `liars-dice.ts`. A house rule that should start switched on gets `on: true`.
 2. List it in `DICE_GAMES` in `packages/core/src/dice/engine.ts`.
 3. Add its text under `games.dice.games` in `packages/core/src/i18n/{en,nl}/games/dice.ts`.
-4. Add rule tests to `packages/core/src/__tests__/dice.test.ts`.
+4. Add rule tests next to the family's, in `packages/core/src/__tests__/` (`dice.test.ts`, `liars-dice.test.ts`).
 
-A dice game outside those families (10.000, Mexen, Blufpoker) needs a family module in `packages/core/src/dice/`, listed in `FAMILIES` in `dice/engine.ts`, and a table component on web (`src/components/dice/`) and mobile (`apps/mobile/src/features/dice/table/`), but no new Convex tables or functions. Roll only through `rollDice`/`rollCup` from `dice/table.ts`, with the `random` the move receives, so rolls happen on the server and no stored state predicts them. See [the decision](../../../docs/adr/0003-dice-games-share-the-table-machinery.md).
+A dice game outside those families (10.000, Mexen) needs a family module in `packages/core/src/dice/`, listed in `FAMILIES` in `dice/engine.ts`, and a table component on web (`src/components/dice/`) and mobile (`apps/mobile/src/features/dice/table/`), but no new Convex tables or functions. Roll only through `rollDice`/`rollCup` from `dice/table.ts`, with the `random` the move receives, so rolls happen on the server and no stored state predicts them. See [the decision](../../../docs/adr/0003-dice-games-share-the-table-machinery.md).
 
 ## Step 0: Pick the shape
 
@@ -37,9 +37,9 @@ A dice game outside those families (10.000, Mexen, Blufpoker) needs a family mod
 | --- | --- | --- |
 | `solo` | Sudoku | Host only; state saved per session. The only mode a guest can host. |
 | `challenge` | Connect Four (then Chess, Backgammon) | Two seats. The second player claims one through the share link (`sessions.joinByToken`). |
-| `room` | Bluff Dice, Signal Words (then Hitster, Live Quiz) | Join code; host screen plus player phones. |
+| `room` | Signal Words (then Hitster, Live Quiz) | Join code; host screen plus player phones. |
 
-Decide the `gameType` id (kebab-case), `joinMode`, `authPolicy` (`guestAllowed` unless the game needs accounts), and which state is private per player. Private state is filtered server-side: see the role-gated key in `convex/signalWords.ts` or the per-player dice in `convex/bluffDice.ts`.
+Decide the `gameType` id (kebab-case), `joinMode`, `authPolicy` (`guestAllowed` unless the game needs accounts), and which state is private per player. Private state is filtered server-side: see the role-gated key in `convex/signalWords.ts`, or for a table game the family's view filter, such as `viewBidding` in `packages/core/src/dice/bidding.ts`, which hands each seat only its own cup.
 
 ## Step 1: Rules in `packages/core` (TDD)
 
@@ -74,11 +74,11 @@ Run `pnpm exec convex dev --once` (or keep `pnpm run dev:watch` running) so code
 
 - `src/routes/<game-id>/new.tsx`: a game with no options renders `NewGamePage` (`src/components/games/NewGamePage.tsx`) with `create={useMutation(api.<game>.create)}`; copy `src/routes/connect-four/new.tsx`. A game with options gets its own page component that calls `useHostSession` (`src/lib/games/use-host-session.ts`), as `SudokuNewPage` (`src/components/sudoku/SudokuNewPage.tsx`) does; the route only renders it. Either way the tab remembers its seat and lands on `sessionPath`.
 - `src/routes/<game-id>/$sessionId.tsx`: subscribe to `api.<game>.getBundle` and render through `SessionBundleRoute` (loading, not found, game); copy `src/routes/connect-four/$sessionId.tsx`. Room games take one of two shapes:
-  - One room screen for everyone (Bluff Dice, Signal Words): a single `$sessionId.tsx` whose screen shows host controls to the host's seat. The catalog entry has no `hostPath`. Copy `src/routes/bluff-dice/$sessionId.tsx`.
+  - One room screen for everyone (Signal Words): a single `$sessionId.tsx` whose screen shows host controls to the host's seat. The catalog entry has no `hostPath`. Copy `src/routes/signal-words/$sessionId.tsx`.
   - A host screen apart from the players' phones (Hitster, Live Quiz): a `$sessionId/` directory with `host.tsx` and `play.tsx`, and a catalog `hostPath` pointing at `host`. Copy `src/routes/hitster/$sessionId/`.
 - `src/routes/<game-id>/index.tsx` redirects to `/<game-id>/new`. Every game route sets `staticData: { fullscreen: true }`.
 - Screens go in `src/components/<game-id>/`, built from `src/components/games/` the way the closest existing game's screen is. Type the bundle as `NonNullable<FunctionReturnType<typeof api.<game>.getBundle>>`.
-- The player's seat: `useSeat(sessionId)` from `src/lib/games/seat.ts`. A mutation sent as that seat goes through `seatAction(send, fallback)` from `useSeatAction(sessionId)` (`src/lib/games/use-seat-action.ts`): it passes `{ sessionId, participantId, guestId }` (the `seat` it also returns, for a query) to `send`, and is undefined while the tab holds no seat, so the screen can hide or disable the action. `BluffDiceRoom` and `SignalWordsRoom` use it. Any other mutation runs through `run(() => mutate(...), fallback)` from `useGameAction` (`src/lib/games/use-game-action.ts`). Both show a localized error and resolve to whether the call succeeded. Two-seat screens get the seat, turn and `seatAction` from `useDuel` (`src/components/games/match/useDuel.ts`), as `ConnectFourMatch` does. A client offers a move only when core `duelTurn(seats, state, participantId)` allows it, the rule `requireTurn` enforces.
+- The player's seat: `useSeat(sessionId)` from `src/lib/games/seat.ts`. A mutation sent as that seat goes through `seatAction(send, fallback)` from `useSeatAction(sessionId)` (`src/lib/games/use-seat-action.ts`): it passes `{ sessionId, participantId, guestId }` (the `seat` it also returns, for a query) to `send`, and is undefined while the tab holds no seat, so the screen can hide or disable the action. `SignalWordsRoom` uses it. Any other mutation runs through `run(() => mutate(...), fallback)` from `useGameAction` (`src/lib/games/use-game-action.ts`). Both show a localized error and resolve to whether the call succeeded. Two-seat screens get the seat, turn and `seatAction` from `useDuel` (`src/components/games/match/useDuel.ts`), as `ConnectFourMatch` does. A client offers a move only when core `duelTurn(seats, state, participantId)` allows it, the rule `requireTurn` enforces.
 - Styling: dark club theme (`club-wrap`, `club-panel`, `club-kicker`, `club-title`) with Tailwind; works at 360 px with 44 px touch targets.
 - After adding route files: `pnpm run generate-routes`.
 

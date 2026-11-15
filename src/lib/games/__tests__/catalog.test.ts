@@ -39,9 +39,11 @@ function isRoute(href: string) {
 }
 
 describe("game catalog", () => {
-	it("lists every game", () => {
+	it("lists every game but Bluff Dice, which plays as liar's dice", () => {
 		const visibleTypes = getVisibleGames().map((game) => game.type);
-		expect(visibleTypes).toEqual([...GAME_TYPES]);
+		expect(visibleTypes).toEqual(
+			GAME_TYPES.filter((type) => type !== "bluff-dice"),
+		);
 	});
 
 	it("starts every game on a page that exists", () => {

@@ -34,15 +34,13 @@ export function SetupSection({
 
 /** How many computer players join a game against the computer. */
 export function OpponentStepper({
-	value,
-	min,
-	max,
-	label,
-	fewer,
-	more,
-	onChange,
 	testPrefix,
-}: {
+	...props
+}: Omit<StepperProps, "testID"> & { testPrefix: string }) {
+	return <CountStepper {...props} testID={`${testPrefix}-opponents`} />;
+}
+
+type StepperProps = {
 	value: number;
 	min: number;
 	max: number;
@@ -51,8 +49,21 @@ export function OpponentStepper({
 	fewer: string;
 	more: string;
 	onChange: (value: number) => void;
-	testPrefix: string;
-}) {
+	/** Prefix of the two buttons' ids, which end in `-fewer` and `-more`. */
+	testID: string;
+};
+
+/** A count between `min` and `max`, one step at a time. */
+export function CountStepper({
+	value,
+	min,
+	max,
+	label,
+	fewer,
+	more,
+	onChange,
+	testID,
+}: StepperProps) {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const step = (delta: number, stepLabel: string, disabled: boolean) => (
@@ -65,7 +76,7 @@ export function OpponentStepper({
 				haptics.selectionChanged();
 				onChange(value + delta);
 			}}
-			testID={`${testPrefix}-opponents-${delta > 0 ? "more" : "fewer"}`}
+			testID={`${testID}-${delta > 0 ? "more" : "fewer"}`}
 			style={[styles.step, disabled && styles.stepDisabled]}
 		>
 			<Icon

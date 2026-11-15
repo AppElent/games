@@ -47,6 +47,7 @@ export const serverErrors = {
 	diceUnknownCategory: "That box isn't on this score sheet.",
 	diceCategoryTaken: "That box is already filled.",
 	diceJokerRule: "This extra Yatzy has to go somewhere else.",
+	diceSpotOnOff: "This table doesn't play spot on.",
 	cardsKnockTooHigh:
 		"You can knock with {limit} or less; this leaves {deadwood}.",
 	cardsAfterKnock: "Someone knocked: only laying off is left.",

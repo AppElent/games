@@ -8,7 +8,7 @@ import {
 	isDiceGameId,
 } from "@arcadeclub/core/dice/engine";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
-import { setHouseRule } from "@arcadeclub/core/table-engine";
+import { initialHouseRules, setHouseRule } from "@arcadeclub/core/table-engine";
 import { Stack, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
@@ -60,7 +60,9 @@ function Setup({ gameId }: { gameId: DiceGameId }) {
 	const hosting = useHostSession("dice-games");
 	const [mode, setMode] = useState<"computer" | "friends">("computer");
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 1));
-	const [options, setOptions] = useState<string[]>([]);
+	const [options, setOptions] = useState<string[]>(() =>
+		initialHouseRules(game.options),
+	);
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const solo = mode === "computer";
 	const headerOptions = useMemo(() => ({ title: text.name }), [text.name]);

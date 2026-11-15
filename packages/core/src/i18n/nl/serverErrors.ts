@@ -50,6 +50,7 @@ export const serverErrors = {
 	diceUnknownCategory: "Dat vak staat niet op dit scoreblok.",
 	diceCategoryTaken: "Dat vak is al ingevuld.",
 	diceJokerRule: "Deze extra Yatzy moet in een ander vak.",
+	diceSpotOnOff: "Aan deze tafel speel je niet met precies goed.",
 	cardsKnockTooHigh:
 		"Kloppen mag met {limit} of minder; dit laat {deadwood} over.",
 	cardsAfterKnock: "Er is geklopt: alleen aanleggen kan nog.",

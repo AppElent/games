@@ -275,9 +275,10 @@ export const FEATURES = defineFeatures([
 	{
 		id: "bluff-dice",
 		kind: "product",
-		status: "pending-port",
+		status: "exclusive",
 		platforms: ["web"],
-		reason: TRIAGE,
+		reason:
+			"Retiring: it plays on as liar's dice in dice-games on both platforms. The web only keeps its old sessions open until migrations:bluffDiceToDiceTables moves them (APP-158).",
 		routes: { web: ["bluff-dice/**"] },
 	},
 	{

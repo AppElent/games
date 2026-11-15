@@ -36,9 +36,11 @@ export type HouseRule<Rules> = {
 	patch?: Partial<Rules>;
 	/** Rules in the same group exclude each other, such as match lengths. */
 	group?: string;
+	/** Switched on when a setup screen opens, for a rule most tables play with. */
+	on?: boolean;
 };
 
-type HouseRuleId = { id: string; group?: string };
+type HouseRuleId = { id: string; group?: string; on?: boolean };
 
 export type BotMove<Action> = {
 	seat: number;
@@ -68,6 +70,11 @@ export function normalizeHouseRules(
 		throw new GameRuleError("cardsOptionsClash");
 	}
 	return picked.map((option) => option.id);
+}
+
+/** The house rules a setup screen starts with: those marked `on`, in the game's order. */
+export function initialHouseRules(options: ReadonlyArray<HouseRuleId>) {
+	return options.flatMap((option) => (option.on ? [option.id] : []));
 }
 
 /** Turns one house rule on or off; turning one on turns off the rest of its group. */

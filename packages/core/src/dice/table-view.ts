@@ -4,6 +4,8 @@
  * happened. No drawing and no framework.
  */
 import type { Messages } from "../i18n/en";
+import { fmt as fill, plural } from "../i18n/format";
+import { type Bid, type BiddingView, lowestBids, type Reveal } from "./bidding";
 import type { CategoryRule, ScoreCategory, ScoresheetView } from "./scoresheet";
 import type { DiceEvent } from "./table";
 
@@ -94,6 +96,20 @@ export function turnStep(
 	return view.rollsUsed >= view.rollsPerTurn ? "score" : "hold";
 }
 
+/** The end of a game, from this viewer's side: a tie, your win, or whose. */
+export function winnerTitle(
+	dice: DiceMessages,
+	table: TableSeats,
+	winners: readonly number[],
+): string {
+	if (winners.length > 1) {
+		return dice.table.tie;
+	}
+	return winners[0] === table.you
+		? dice.table.youWin
+		: fill(dice.table.winner, { name: diceSeatName(dice, table, winners[0]) });
+}
+
 /**
  * The latest roll or score as a sentence for a screen reader's live region, so
  * a player who cannot see the dice hears every roll and every filled box. `seq`
@@ -134,4 +150,116 @@ export function standings(view: ScoresheetView) {
 	return view.sheets
 		.map((sheet, seat) => ({ seat, total: sheet.total }))
 		.sort((a, b) => b.total - a.total || a.seat - b.seat);
+}
+
+// The bidding family (liar's dice).
+
+/** What this viewer may do at a bidding table now. */
+export type BidStep = "open" | "raise" | "waiting" | "out" | "over";
+
+export function biddingStep(view: BiddingView, you: number | null): BidStep {
+	if (view.phase === "finished") {
+		return "over";
+	}
+	if (you === null) {
+		return "waiting";
+	}
+	if (view.diceCounts[you] === 0) {
+		return "out";
+	}
+	if (view.turn !== you) {
+		return "waiting";
+	}
+	return view.bids.length === 0 ? "open" : "raise";
+}
+
+/**
+ * Where a bid picker starts: the lowest legal bid on the face you hold most
+ * of, low faces first on a tie. Null when no bid fits on the table.
+ */
+export function defaultBid(
+	view: Pick<BiddingView, "bids" | "totalDice" | "rules" | "yourDice">,
+): Bid | null {
+	const held = (face: number) =>
+		view.yourDice.filter((value) => value === face).length;
+	return lowestBids(
+		view.bids.at(-1) ?? null,
+		view.totalDice,
+		view.rules,
+	).reduce<Bid | null>(
+		(best, bid) => (!best || held(bid.face) > held(best.face) ? bid : best),
+		null,
+	);
+}
+
+type BidWords = { dice: DiceMessages; locale: string };
+
+/** A bid in words: "4 dice showing 3". */
+export function bidText({ dice, locale }: BidWords, bid: Bid) {
+	return fill(plural(locale, bid.quantity, dice.bidding.bid), {
+		face: bid.face,
+	});
+}
+
+/** How a round ended, in sentences: the call, the count, and who lost a die. */
+export function revealSentences(
+	words: BidWords,
+	table: TableSeats,
+	reveal: Reveal,
+): string[] {
+	const { dice, locale } = words;
+	const name = (seat: number) => diceSeatName(dice, table, seat);
+	const bidding = dice.bidding;
+	return [
+		fill(reveal.call === "liar" ? bidding.revealLiar : bidding.revealSpotOn, {
+			caller: name(reveal.caller),
+			bidder: name(reveal.bid.seat),
+			bid: bidText(words, reveal.bid),
+		}),
+		plural(locale, reveal.count, bidding.revealCount),
+		reveal.losers.length === 1
+			? fill(bidding.lostOne, { name: name(reveal.losers[0]) })
+			: bidding.lostEveryoneElse,
+	];
+}
+
+/**
+ * The latest bid or call as a sentence for a screen reader's live region;
+ * `seq` tells two identical bids apart. A call reads out the whole reveal.
+ */
+export function biddingNews(
+	words: BidWords,
+	table: TableSeats,
+	view: Pick<BiddingView, "events" | "reveal">,
+): { seq: number; text: string } | null {
+	for (let index = view.events.length - 1; index >= 0; index -= 1) {
+		const event = view.events[index];
+		if (event.type === "bid") {
+			return {
+				seq: event.seq,
+				text: fill(words.dice.bidding.lastBid, {
+					name: diceSeatName(words.dice, table, event.seat),
+					bid: bidText(words, event),
+				}),
+			};
+		}
+		if (event.type === "call" && view.reveal) {
+			return {
+				seq: event.seq,
+				text: revealSentences(words, table, view.reveal).join(" "),
+			};
+		}
+	}
+	return null;
+}
+
+/** The winner first, then whoever lasted longest; ties in seat order. */
+export function biddingStandings(view: Pick<BiddingView, "outIn" | "winners">) {
+	const lasted = (seat: number) =>
+		view.winners.includes(seat)
+			? Number.POSITIVE_INFINITY
+			: (view.outIn[seat] ?? Number.POSITIVE_INFINITY);
+	return view.outIn
+		.map((outIn, seat) => ({ seat, outIn }))
+		.sort((a, b) => lasted(b.seat) - lasted(a.seat) || a.seat - b.seat);
 }

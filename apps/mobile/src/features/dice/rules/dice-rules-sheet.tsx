@@ -2,7 +2,11 @@
  * How to play, written from the game's config and the table's house rules:
  * every box's line comes from its rule, so a new sheet needs no new text.
  */
-import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
+import {
+	type DiceGame,
+	type DiceGameOf,
+	diceRules,
+} from "@arcadeclub/core/dice/engine";
 import { categoryEffect } from "@arcadeclub/core/dice/table-view";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
@@ -46,7 +50,6 @@ export function DiceRulesSheet({
 		string,
 		{ label: string; hint: string }
 	>;
-	const rules = diceRules(game, options);
 	const r = dice.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
@@ -56,6 +59,37 @@ export function DiceRulesSheet({
 			onClose={onClose}
 			title={fmt(r.heading, { game: text.name })}
 		>
+			{game.family === "scoresheet" ? (
+				<ScoresheetRules game={game} options={options} />
+			) : (
+				<BiddingRules game={game} options={options} />
+			)}
+			{active.length > 0 ? (
+				<Section heading={r.extrasHeading}>
+					{active.map((option) => (
+						<AppText key={option.label} variant="secondary" tone="default">
+							{`${option.label}: ${option.hint}`}
+						</AppText>
+					))}
+				</Section>
+			) : null}
+		</Sheet>
+	);
+}
+
+function ScoresheetRules({
+	game,
+	options,
+}: {
+	game: DiceGameOf<"scoresheet">;
+	options: readonly string[];
+}) {
+	const { t } = useI18n();
+	const dice = t.games.dice;
+	const rules = diceRules(game, options);
+	const r = dice.rules;
+	return (
+		<>
 			<Section heading={r.goalHeading}>
 				<AppText variant="secondary" tone="default">
 					{fmt(r.goal, { rounds: rules.sheet.length })}
@@ -87,16 +121,45 @@ export function DiceRulesSheet({
 					</AppText>
 				) : null}
 			</Section>
-			{active.length > 0 ? (
-				<Section heading={r.extrasHeading}>
-					{active.map((option) => (
-						<AppText key={option.label} variant="secondary" tone="default">
-							{`${option.label}: ${option.hint}`}
-						</AppText>
-					))}
-				</Section>
-			) : null}
-		</Sheet>
+		</>
+	);
+}
+
+/** The round, then each house rule that changes it, said in full. */
+function BiddingRules({
+	game,
+	options,
+}: {
+	game: DiceGameOf<"bidding">;
+	options: readonly string[];
+}) {
+	const { t } = useI18n();
+	const r = t.games.dice.rules;
+	const b = r.bidding;
+	const rules = diceRules(game, options);
+	const lines = [
+		fmt(b.roll, { dice: rules.startingDice }),
+		b.bid,
+		b.call,
+		...(rules.wildOnes ? [b.wildOnes] : []),
+		...(rules.spotOn ? [b.spotOn] : []),
+		b.next,
+	];
+	return (
+		<>
+			<Section heading={r.goalHeading}>
+				<AppText variant="secondary" tone="default">
+					{b.goal}
+				</AppText>
+			</Section>
+			<Section heading={b.roundHeading}>
+				{lines.map((line) => (
+					<AppText key={line} variant="secondary" tone="default">
+						{line}
+					</AppText>
+				))}
+			</Section>
+		</>
 	);
 }
 
