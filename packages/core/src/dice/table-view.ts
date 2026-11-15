@@ -95,31 +95,38 @@ export function turnStep(
 }
 
 /**
- * The latest roll or score, as a sentence for a screen reader's live region, so
- * a player who cannot see the dice hears every roll and every filled box.
+ * The latest roll or score as a sentence for a screen reader's live region, so
+ * a player who cannot see the dice hears every roll and every filled box. `seq`
+ * tells two identical rolls apart, so clients announce both.
  */
 export function latestNews(
 	{ dice, fmt }: { dice: DiceMessages; fmt: Fmt },
 	table: TableSeats,
 	events: readonly DiceEvent[],
-): string {
+): { seq: number; text: string } | null {
 	for (let index = events.length - 1; index >= 0; index -= 1) {
 		const event = events[index];
 		if (event.type === "roll") {
-			return fmt(dice.table.lastRolled, {
-				name: diceSeatName(dice, table, event.seat),
-				dice: event.dice.join(", "),
-			});
+			return {
+				seq: event.seq,
+				text: fmt(dice.table.lastRolled, {
+					name: diceSeatName(dice, table, event.seat),
+					dice: event.dice.join(", "),
+				}),
+			};
 		}
 		if (event.type === "score") {
-			return fmt(dice.table.lastScored, {
-				name: diceSeatName(dice, table, event.seat),
-				points: event.points + event.bonus,
-				category: dice.categories[event.category as ScoreCategory],
-			});
+			return {
+				seq: event.seq,
+				text: fmt(dice.table.lastScored, {
+					name: diceSeatName(dice, table, event.seat),
+					points: event.points + event.bonus,
+					category: dice.categories[event.category as ScoreCategory],
+				}),
+			};
 		}
 	}
-	return "";
+	return null;
 }
 
 /** Seats from the highest total down, ties in seat order. */

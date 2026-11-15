@@ -31,6 +31,7 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const dice = useMessages().games.dice;
 	const text = dice.games[game.id];
 	const [rulesOpen, setRulesOpen] = useState(false);
+	const news = latestNews({ dice, fmt }, table, view.events);
 	const you = table.you;
 
 	return (
@@ -81,7 +82,7 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 				<ScoreSheet game={game} table={table} view={view} controls={controls} />
 			</div>
 			<p className="sr-only" aria-live="polite">
-				{latestNews({ dice, fmt }, table, view.events)}
+				{news ? <span key={news.seq}>{news.text}</span> : null}
 			</p>
 			{controls.error ? (
 				<p className="dice-error" role="alert">

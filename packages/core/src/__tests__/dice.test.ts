@@ -530,7 +530,7 @@ describe("dice table view", () => {
 		expect(turnStep(view(), 0)).toBe("hold");
 		const seats = { seats: [{ botIndex: null, name: "Eric" }], you: 0 };
 		const news = () =>
-			latestNews({ dice: en.games.dice, fmt }, seats, state.events);
+			latestNews({ dice: en.games.dice, fmt }, seats, state.events)?.text;
 		expect(news()).toMatch(/^You rolled [1-6](, [1-6]){4}$/);
 		state = applyDiceAction(yatzy, [], withDice(state, [1, 1, 1, 1, 1], 3), 0, {
 			type: "score",

@@ -8,8 +8,8 @@ import { literals } from "./lib/validators";
  * One backend for every dice game: the game id selects a definition from
  * `@arcadeclub/core/dice/engine`, and nothing here names a specific game.
  * Dice tables share the card tables' storage, seats and bots
- * (`lib/tableGames`); rolls come from the seed in the stored state, never
- * from a client.
+ * (`lib/tableGames`); every roll draws on the server's randomness for that
+ * move, never on anything a client sends.
  */
 
 const diceActionValidator = v.union(

@@ -72,10 +72,15 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const router = useRouter();
 	const you = table.you;
 	const news = latestNews({ dice, fmt }, table, view.events);
+	const newsSeq = news?.seq;
+	const newsText = news?.text;
 
 	useEffect(() => {
-		if (news) AccessibilityInfo.announceForAccessibility(news);
-	}, [news]);
+		// Keyed on `seq` too, so a second identical roll is still read out.
+		if (newsSeq !== undefined && newsText) {
+			AccessibilityInfo.announceForAccessibility(newsText);
+		}
+	}, [newsSeq, newsText]);
 
 	const headerOptions = useMemo(
 		() => ({
@@ -119,7 +124,7 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 				<Notice message={controls.error} />
 				{news ? (
 					<AppText variant="caption" testID="dice-last-score">
-						{news}
+						{news.text}
 					</AppText>
 				) : null}
 				<ScoreSheet game={game} table={table} view={view} controls={controls} />

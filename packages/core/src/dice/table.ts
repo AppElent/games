@@ -1,6 +1,7 @@
 /**
- * What every dice family shares: rolls drawn from the server's generator, a cup of dice some of which are held, turn order that skips
- * players who are out, and the public event log clients animate from.
+ * What every dice family shares: rolls drawn from the server's generator, a
+ * cup of dice some of which are held, turn order that skips players who are
+ * out, and the public event log clients animate from.
  *
  * Built for the families still to come: the cup holds any number of dice
  * (10.000 rolls six and sets scorers aside), `nextSeat` skips eliminated
