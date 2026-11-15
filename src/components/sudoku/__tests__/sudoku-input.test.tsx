@@ -63,13 +63,13 @@ describe("SudokuBoard corner notes", () => {
 		const { rerender } = inEnglish(
 			<SudokuBoard board={board} selectedCell={0} mode="digit" />,
 		);
-		expect(firstCell().querySelector(".border-dashed")).toBeNull();
+		expect(firstCell().className).not.toContain("ring-inset");
 		rerender(
 			<LocaleProvider initialLocale="en">
 				<SudokuBoard board={board} selectedCell={0} mode="corner" />
 			</LocaleProvider>,
 		);
-		expect(firstCell().querySelector(".border-dashed")).not.toBeNull();
+		expect(firstCell().className).toContain("ring-inset");
 	});
 });
 

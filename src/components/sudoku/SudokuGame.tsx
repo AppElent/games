@@ -17,6 +17,7 @@ import {
 import type { SudokuHint } from "@arcadeclub/core/sudoku-hints";
 import { describeHint, findHint } from "@arcadeclub/core/sudoku-hints";
 import {
+	isModeCycleTap,
 	nextTapMode,
 	type SudokuInputSettings,
 } from "@arcadeclub/core/sudoku-input";
@@ -175,15 +176,26 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 		if (!isActive()) {
 			return;
 		}
-		setMode((current) => nextTapMode(current, inputSettings));
-		setModeAnnounced(true);
-	}, [isActive, inputSettings]);
+		const next = nextTapMode(mode, inputSettings);
+		if (next !== mode) {
+			setMode(next);
+			setModeAnnounced(true);
+		}
+	}, [isActive, mode, inputSettings]);
 
+	// When the selected cell was picked, so a quick double tap only selects.
+	const selectedAtRef = useRef(0);
 	const selectCell = useCallback(
 		(cell: number) => {
-			if (cell === selectedCell) {
+			const now = Date.now();
+			const selection = {
+				cell: selectedCell,
+				selectedAt: selectedAtRef.current,
+			};
+			if (isModeCycleTap(cell, selection, now)) {
 				cycleMode();
-			} else {
+			} else if (cell !== selectedCell) {
+				selectedAtRef.current = now;
 				setSelectedCell(cell);
 			}
 		},

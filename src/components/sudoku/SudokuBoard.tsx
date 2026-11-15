@@ -53,7 +53,7 @@ type SudokuBoardProps = {
 	className?: string;
 	/** Killer sudoku cages: dashed outlines plus a sum in each cage's corner. */
 	cages?: KillerCage[];
-	/** Outside digit mode the selected cell gets a dashed outline. */
+	/** Outside digit mode the selected cell gets a ring on its edge. */
 	mode?: SudokuInputMode;
 	cornerLayout?: CornerNoteLayout;
 };
@@ -118,6 +118,13 @@ export function SudokuBoard({
 						: "",
 				].join(" ");
 
+				// Outside digit mode the selected cell also gets a solid ring on
+				// its edge: clear of the notes, and unlike the dashed cage lines.
+				const modeRing =
+					isSelected && mode !== "digit"
+						? "ring-[3px] ring-inset ring-sky-700 dark:ring-sky-300"
+						: "";
+
 				const background = isSelected
 					? "bg-sky-300/60 dark:bg-sky-400/30"
 					: isHint
@@ -141,14 +148,8 @@ export function SudokuBoard({
 							col: col + 1,
 						})}
 						onClick={() => onSelectCell?.(cell)}
-						className={`relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
+						className={`relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} ${modeRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
 					>
-						{isSelected && mode !== "digit" && !hidden ? (
-							<span
-								aria-hidden="true"
-								className="pointer-events-none absolute inset-[3px] rounded-sm border-2 border-dashed border-sky-700 dark:border-sky-300"
-							/>
-						) : null}
 						{cageEdges && !hidden ? (
 							<span
 								aria-hidden="true"

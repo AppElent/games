@@ -129,13 +129,13 @@ export const sudoku = {
 		title: "Input settings",
 		tapCycleLabel: "Tapping the selected cell again switches to",
 		tapCycleNote: "Digit is always included.",
-		tapCycleSwitchLabel: "Switch to {mode} on a second tap",
+		tapCycleSwitchLabel: "{mode} in the tap cycle",
 		modes: {
 			corner: "Corner notes",
 			center: "Center notes",
 			color: "Colors",
 		} satisfies Record<SudokuCycleMode, string>,
-		cornerLayoutLabel: "Corner notes",
+		cornerLayoutLabel: "Corner note position",
 		cornerLayouts: {
 			spread: "All corners",
 			topRight: "Top right",

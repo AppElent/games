@@ -44,7 +44,7 @@ type Props = {
 	hintCells: ReadonlySet<number> | undefined;
 	cages?: KillerCage[];
 	hidden: boolean;
-	/** Outside digit mode the selected cell's frame turns dashed. */
+	/** Outside digit mode the selected cell's frame is thicker. */
 	mode: SudokuInputMode;
 	cornerLayout: CornerNoteLayout;
 	/** Whether a press on the selected cell switches mode, for its hint. */
@@ -409,7 +409,8 @@ const createStyles = (colors: Tokens) =>
 			backgroundColor: colors.surface,
 			paddingHorizontal: 1,
 		},
-		selectedNoteMode: { borderStyle: "dashed" },
+		// Thicker, not dashed: dashed lines are Killer cages.
+		selectedNoteMode: { borderWidth: 4 },
 		corner: {
 			position: "absolute",
 			maxWidth: "88%",

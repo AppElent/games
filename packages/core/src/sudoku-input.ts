@@ -155,3 +155,21 @@ export function cornerNoteGroups(
 		digits: index === last ? digits.slice(last) : [digits[index]],
 	}));
 }
+
+/**
+ * A second tap this soon after a cell became selected is one double tap that
+ * selected it, not a request to switch mode, so a quick double tap on a new
+ * cell never leaves the next digit entered as a note.
+ */
+export const RETAP_GRACE_MS = 300;
+
+/** Whether a tap on `cell` should step to the next entry mode. */
+export function isModeCycleTap(
+	cell: number,
+	selection: { cell: number | null; selectedAt: number },
+	now: number,
+): boolean {
+	return (
+		cell === selection.cell && now - selection.selectedAt >= RETAP_GRACE_MS
+	);
+}

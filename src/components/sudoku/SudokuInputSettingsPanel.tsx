@@ -24,14 +24,14 @@ export function SudokuInputSettingsPanel({ settings, onChange }: Props) {
 				/>
 			</summary>
 			<div className="flex flex-col gap-3 px-3 pb-3">
-				<fieldset className="flex flex-col gap-1.5">
+				<fieldset className="flex flex-col">
 					<legend className="mb-1.5 text-slate-400">
 						{copy.tapCycleLabel}
 					</legend>
 					{SUDOKU_CYCLE_MODES.map((mode) => (
 						<label
 							key={mode}
-							className="inline-flex cursor-pointer items-center gap-2"
+							className="inline-flex min-h-8 cursor-pointer items-center gap-2"
 						>
 							<input
 								type="checkbox"
@@ -52,14 +52,14 @@ export function SudokuInputSettingsPanel({ settings, onChange }: Props) {
 					))}
 					<p className="text-slate-400">{copy.tapCycleNote}</p>
 				</fieldset>
-				<fieldset className="flex flex-col gap-1.5">
+				<fieldset className="flex flex-col">
 					<legend className="mb-1.5 text-slate-400">
 						{copy.cornerLayoutLabel}
 					</legend>
 					{CORNER_NOTE_LAYOUTS.map((layout) => (
 						<label
 							key={layout}
-							className="inline-flex cursor-pointer items-center gap-2"
+							className="inline-flex min-h-8 cursor-pointer items-center gap-2"
 						>
 							<input
 								type="radio"

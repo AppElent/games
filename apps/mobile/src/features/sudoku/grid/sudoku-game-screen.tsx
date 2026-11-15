@@ -2,7 +2,7 @@
  * A Classic or Killer puzzle in play.
  */
 import { describeHint } from "@arcadeclub/core/sudoku-hints";
-import { tapCycleModes } from "@arcadeclub/core/sudoku-input";
+import { nextTapMode } from "@arcadeclub/core/sudoku-input";
 import { StyleSheet, Switch, View } from "react-native";
 import { useI18n } from "../../../i18n";
 import {
@@ -135,7 +135,8 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 					mode={game.mode}
 					cornerLayout={inputSettings.cornerLayout}
 					canCycle={
-						status === "active" && tapCycleModes(inputSettings).length > 1
+						status === "active" &&
+						nextTapMode(game.mode, inputSettings) !== game.mode
 					}
 				/>
 			}

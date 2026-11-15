@@ -4,8 +4,10 @@ import type { SudokuInputMode } from "../sudoku-board";
 import {
 	cornerNoteGroups,
 	DEFAULT_SUDOKU_INPUT_SETTINGS,
+	isModeCycleTap,
 	nextTapMode,
 	normalizeSudokuInputSettings,
+	RETAP_GRACE_MS,
 	type SudokuInputSettings,
 	tapCycleModes,
 } from "../sudoku-input";
@@ -155,5 +157,26 @@ describe("cornerNoteGroups", () => {
 		expect(cornerNoteGroups(maskOf(9, 1, 6), "topRight")).toEqual([
 			{ slot: "topRight", digits: [1, 6, 9] },
 		]);
+	});
+});
+
+describe("isModeCycleTap", () => {
+	const selection = { cell: 10, selectedAt: 1_000 };
+
+	it("cycles on a later tap on the selected cell", () => {
+		expect(isModeCycleTap(10, selection, 1_000 + RETAP_GRACE_MS)).toBe(true);
+	});
+
+	it("treats a quick second tap as the same double tap", () => {
+		expect(isModeCycleTap(10, selection, 1_000 + RETAP_GRACE_MS - 1)).toBe(
+			false,
+		);
+	});
+
+	it("never cycles on a tap on another cell", () => {
+		expect(isModeCycleTap(11, selection, 10_000)).toBe(false);
+		expect(isModeCycleTap(10, { cell: null, selectedAt: 0 }, 10_000)).toBe(
+			false,
+		);
 	});
 });

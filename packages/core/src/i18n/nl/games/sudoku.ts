@@ -125,13 +125,13 @@ export const sudoku = {
 		title: "Invoerinstellingen",
 		tapCycleLabel: "Nog eens op het geselecteerde vakje tikken wisselt naar",
 		tapCycleNote: "Cijfer zit er altijd bij.",
-		tapCycleSwitchLabel: "Bij een tweede tik wisselen naar {mode}",
+		tapCycleSwitchLabel: "{mode} in de tikvolgorde",
 		modes: {
 			corner: "Hoeknotities",
 			center: "Middennotities",
 			color: "Kleuren",
 		},
-		cornerLayoutLabel: "Hoeknotities",
+		cornerLayoutLabel: "Plek van hoeknotities",
 		cornerLayouts: {
 			spread: "Alle hoeken",
 			topRight: "Rechtsboven",
