@@ -23,7 +23,7 @@ export const play = {
 		backgammon: "Samen op deze telefoon, of daag een vriend uit.",
 		hitster: "Zet nummers op je tijdlijn. Host een feestkamer.",
 		"card-games":
-			"Pesten, Mau-Mau, Jokeren, Hartenjagen, Gin Rummy en Eenentwintigen, tegen de computer of vrienden.",
+			"Pesten, Mau-Mau, Jokeren, Hartenjagen, Gin Rummy, Eenentwintigen en Boerenbridge, tegen de computer of vrienden.",
 		"dice-games": "Yatzy en 10.000, alleen, tegen de computer of met vrienden.",
 	},
 } satisfies typeof en;

@@ -44,6 +44,11 @@ export const serverErrors = {
 	cardsAlreadyPassed: "Je hebt je kaarten al doorgegeven.",
 	cardsPassCount: "Kies precies {count} kaarten om door te geven.",
 	cardsPassFirst: "Geef eerst je kaarten door.",
+	cardsNotBidding: "Er wordt nu niet geboden.",
+	cardsBidRange: "Bied tussen 0 en {max} slagen.",
+	cardsDealerBid:
+		"Als gever mag je geen {count} bieden: dan komen de biedingen uit op het aantal slagen.",
+	cardsBidFirst: "Eerst bieden: wacht tot iedereen heeft geboden.",
 	diceInvalidHold: "Die dobbelstenen kun je niet vasthouden.",
 	diceNoRollsLeft: "Je hebt geen worpen meer: kies een vak.",
 	diceRollFirst: "Gooi eerst de dobbelstenen.",

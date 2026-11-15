@@ -41,6 +41,11 @@ export const serverErrors = {
 	cardsAlreadyPassed: "You've already passed your cards.",
 	cardsPassCount: "Pick exactly {count} cards to pass.",
 	cardsPassFirst: "Pass your cards first.",
+	cardsNotBidding: "There's no bidding right now.",
+	cardsBidRange: "Bid between 0 and {max} tricks.",
+	cardsDealerBid:
+		"As the dealer you can't bid {count}: the bids would add up to the tricks in the round.",
+	cardsBidFirst: "Bids come first: wait for everyone to bid.",
 	diceInvalidHold: "Those dice can't be held.",
 	diceNoRollsLeft: "No rolls left: pick a box to score.",
 	diceRollFirst: "Roll the dice first.",
