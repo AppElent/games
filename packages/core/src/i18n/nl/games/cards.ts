@@ -206,16 +206,16 @@ export const cards = {
 		bidDealer:
 			"Jij geeft: je mag geen {count} bieden, anders komen de biedingen uit.",
 		bidButton: "Bied {count}",
-		bidLess: "Eén minder",
-		bidMore: "Eén meer",
+		bidLess: "Eén slag minder",
+		bidMore: "Eén slag meer",
 		bidValue: "Jouw bod",
 		seatTotal: "{total} ptn",
 		seatBid: "Bod {bid} · {total} ptn",
-		seatTricks: "{taken}/{bid} · {total} ptn",
+		seatTricks: "{taken} van {bid} · {total} ptn",
 		trumpPill: "Troef: {suit}",
 		noTrumpPill: "Geen troef",
 		turnedUpLabel: "Omgedraaid voor troef: {card}",
-		bidsPill: "Geboden {bids} · {tricks} slagen",
+		bidsPill: "Bod {bids} van {tricks} slagen",
 		dealLabel: "Ronde {round} van {deals}",
 		cardsEach: { one: "{count} kaart", other: "{count} kaarten" },
 		roundBid: "bod {bid}, gehaald {taken}",
@@ -482,13 +482,12 @@ export const cards = {
 			goalLastLow:
 				"Het spel eindigt na de laatste ronde; de laagste score wint.",
 			schedules: {
-				fullDeck: "Elke ronde wordt het hele spel uitgedeeld.",
 				upDown:
-					"Ronde 1 krijgt iedereen één kaart, elke ronde één meer tot zoveel als het spel voor de tafel toelaat, en dan elke ronde één minder terug naar één.",
-				up: "Ronde 1 krijgt iedereen één kaart, en elke ronde één meer, tot zoveel als het spel voor de tafel toelaat.",
-				down: "De eerste ronde krijgt iedereen zoveel kaarten als het spel voor de tafel toelaat, en elke ronde één minder, tot één.",
+					"In ronde 1 krijgt iedereen één kaart, elke ronde één meer tot zoveel als de stapel voor de tafel toelaat, en dan elke ronde één minder terug naar één.",
+				up: "In ronde 1 krijgt iedereen één kaart, en elke ronde één meer, tot zoveel als de stapel voor de tafel toelaat.",
+				down: "In de eerste ronde krijgt iedereen zoveel kaarten als de stapel voor de tafel toelaat, en elke ronde één minder, tot één.",
 			},
-			bid: "Voor het spelen zegt iedereen hoeveel slagen hij haalt, te beginnen links van de gever. De gever biedt als laatste.",
+			bid: "Voor het spelen zegt iedereen hoeveel slagen die haalt, te beginnen links van de gever. De gever biedt als laatste.",
 			dealerRule:
 				"De gever mag niet zo bieden dat de biedingen optellen tot het aantal slagen: iemand moet ernaast zitten.",
 			trumpTurnUp:
@@ -660,7 +659,7 @@ export const cards = {
 			options: {
 				upOnly: {
 					label: "Alleen omhoog",
-					hint: "Begin met één kaart en stop bij zoveel als het spel toelaat.",
+					hint: "Begin met één kaart en stop bij zoveel als de stapel toelaat.",
 				},
 				downOnly: {
 					label: "Alleen omlaag",

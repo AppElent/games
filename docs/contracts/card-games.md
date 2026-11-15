@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing card games (Pesten, Mau-Mau, Jokeren, Hartenjagen, Gin Rummy, Boerenbridge), the card engine, its stored state, seat claims or card art.
-version: 1.2.0
+version: 1.3.0
 status: current
 ---
 
@@ -27,7 +27,9 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
   cards" (`specialCards` in `table-view.ts`).
 - Two house rules that patch the same rule field (Boerenbridge's only up and only
   down) can't both be on: `switchOption` turns the other off on both setup screens,
-  and `normalizeOptions` refuses the pair with `cardsOptionsClash`.
+  and `normalizeOptions` refuses the pair with `cardsOptionsClash`. Patches are
+  shallow, so a second option that patches `bidding` clashes with `dealerFree`;
+  give it a field of its own instead.
 - A table is created in one step by `cardGames.createTable`, and joiners claim a seat
   through `ON_JOIN` (`convex/lib/cardSeats.ts`). A seat is proven by a secret the
   device keeps, since participant ids are public.

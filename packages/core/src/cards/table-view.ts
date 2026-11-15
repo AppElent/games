@@ -566,7 +566,9 @@ export function tricksRuleLines(
 		/** Null when the game bids instead of passing. */
 		bidding: bidding
 			? [
-					r.schedules[rules.schedule],
+					...(rules.schedule === "fullDeck"
+						? []
+						: [r.schedules[rules.schedule]]),
 					r.bid,
 					...(bidding.dealerMayMatch ? [] : [r.dealerRule]),
 				]

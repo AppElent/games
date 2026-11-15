@@ -204,12 +204,12 @@ export const cards = {
 		bidDealer:
 			"You're the dealer: you can't bid {count}, or the bids would add up.",
 		bidButton: "Bid {count}",
-		bidLess: "One fewer",
-		bidMore: "One more",
+		bidLess: "One trick fewer",
+		bidMore: "One trick more",
 		bidValue: "Your bid",
 		seatTotal: "{total} pts",
 		seatBid: "Bid {bid} · {total} pts",
-		seatTricks: "{taken}/{bid} · {total} pts",
+		seatTricks: "{taken} of {bid} · {total} pts",
 		trumpPill: "Trump: {suit}",
 		noTrumpPill: "No trump",
 		turnedUpLabel: "Turned up for trump: {card}",
@@ -475,7 +475,6 @@ export const cards = {
 				"The game ends after the last round; the highest total wins.",
 			goalLastLow: "The game ends after the last round; the lowest total wins.",
 			schedules: {
-				fullDeck: "Every round the whole deck is dealt out.",
 				upDown:
 					"Round 1 deals one card each, every round one more up to as many as the deck allows for the table, then one fewer each round back down to one.",
 				up: "Round 1 deals one card each, and every round one more, up to as many as the deck allows for the table.",

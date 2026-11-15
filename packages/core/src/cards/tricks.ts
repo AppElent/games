@@ -137,7 +137,6 @@ export type TricksView = {
 	deals: number | null;
 	/** Cards each seat was dealt this deal, so also the tricks in it. */
 	handSize: number;
-	dealer: number;
 	turn: number;
 	handCounts: number[];
 	hand: CardId[];
@@ -777,7 +776,6 @@ export function viewTricks(
 		target: rules.target,
 		deals: dealsInMatch(rules, seats),
 		handSize: handSizeFor(rules, seats, state.round) ?? 0,
-		dealer: state.dealer,
 		turn: state.turn,
 		handCounts: state.hands.map(
 			(hand, index) => hand.length + (state.passing[index]?.length ?? 0),

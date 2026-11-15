@@ -235,8 +235,6 @@ describe("narration", () => {
 		{ seq: 51, type: "broken", suit: "H" },
 		{ seq: 52, type: "moon", seat: 0 },
 		{ seq: 53, type: "moon", seat: 1 },
-		{ seq: 54, type: "bid", seat: 0, count: 2 },
-		{ seq: 55, type: "bid", seat: 1, count: 0 },
 		{ seq: 54, type: "knock", seat: 0, gin: false },
 		{ seq: 55, type: "knock", seat: 1, gin: false },
 		{ seq: 56, type: "knock", seat: 0, gin: true },
@@ -247,6 +245,8 @@ describe("narration", () => {
 		{ seq: 61, type: "handEnd", winner: 1, kind: "gin", points: 40 },
 		{ seq: 62, type: "handEnd", winner: 0, kind: "undercut", points: 25 },
 		{ seq: 63, type: "handEnd", winner: 1, kind: "undercut", points: 25 },
+		{ seq: 64, type: "bid", seat: 0, count: 2 },
+		{ seq: 65, type: "bid", seat: 1, count: 0 },
 	];
 
 	it.each([
@@ -776,7 +776,6 @@ function tricksView(over: Partial<TricksView> = {}): TricksView {
 		target: 100,
 		deals: null,
 		handSize: 13,
-		dealer: 0,
 		turn: 1,
 		handCounts: [13, 13, 13],
 		hand: [],
@@ -958,7 +957,6 @@ describe("bidding at the table", () => {
 			target: null,
 			deals: 25,
 			handSize: 3,
-			dealer: 2,
 			turn: 0,
 			bids: [null, null, null],
 			legalBids: [0, 1, 2, 3],
@@ -992,7 +990,7 @@ describe("bidding at the table", () => {
 			tricksTaken: [1, 0, 0],
 			totals: [14, -2, 10],
 		});
-		expect(tricksSeatNote(playing, 0, words)).toBe("1/2 · 14 pts");
+		expect(tricksSeatNote(playing, 0, words)).toBe("1 of 2 · 14 pts");
 		expect(bidTotal(playing)).toBe(3);
 		expect(bidTotal(tricksView())).toBeNull();
 	});
