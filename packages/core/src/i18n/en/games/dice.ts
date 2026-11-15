@@ -184,6 +184,7 @@ export const dice = {
 		},
 		limitPending: "{name} sets this round's throws",
 		yourLimitPending: "You set this round's throws",
+		pointLimit: "The game ends at {limit} points.",
 		doubled: "A Mex was kept: this round's loss counts double.",
 		seatsLabel: "Players",
 		leader: "Goes first",
@@ -268,7 +269,7 @@ export const dice = {
 				},
 				points: {
 					label: "Points instead of lives",
-					hint: "Nobody drops out. The loser takes points instead, the game ends when someone reaches the lives total, and the fewest points win.",
+					hint: "Nobody drops out. The loser takes points instead; the lives setting becomes the point limit, and the fewest points win.",
 				},
 			},
 		},

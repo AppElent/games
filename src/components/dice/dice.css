@@ -425,7 +425,8 @@ button.die {
 	font-weight: 700;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: #1b1310;
+	/* Dark on gold, as the card tables' gold chips. */
+	color: #231704;
 	background: var(--gold);
 }
 
@@ -440,7 +441,7 @@ button.die {
 	display: grid;
 	grid-template-columns: repeat(5, 0.875rem);
 	gap: 0.15rem;
-	color: #e0565b;
+	color: var(--club-pink);
 }
 
 .mexen-hearts svg {

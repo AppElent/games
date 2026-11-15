@@ -71,6 +71,8 @@ export type MexenState = {
 	doubled: boolean;
 	/** Lives lost, or points collected, per seat. */
 	penalties: number[];
+	/** Seats that ran out of lives, in the order they went out. */
+	eliminated: number[];
 	winners: number[];
 	events: DiceEvent[];
 	nextSeq: number;
@@ -110,6 +112,13 @@ export type MexenView = {
 	/** Lives left per seat (lives scoring); never below zero. */
 	livesLeft: number[];
 	out: boolean[];
+	/** Seats that ran out of lives, in the order they went out. */
+	eliminated: number[];
+	/**
+	 * This round's latest kept throw, so a throw kept as it lands (the last one
+	 * allowed) still shows its dice once they leave the table.
+	 */
+	lastKept: (MexenThrow & { seat: number; dice: number[] }) | null;
 	winners: number[];
 	events: DiceEvent[];
 };
@@ -209,6 +218,7 @@ export function createMexen(
 		results: Array.from({ length: seats }, () => null),
 		doubled: false,
 		penalties: Array.from({ length: seats }, () => 0),
+		eliminated: [],
 		winners: [],
 		events: [],
 		nextSeq: 0,
@@ -227,6 +237,7 @@ function copy(state: MexenState): MexenState {
 		dice: [...state.dice],
 		results: state.results.map((result) => (result ? [...result] : null)),
 		penalties: [...state.penalties],
+		eliminated: [...state.eliminated],
 		winners: [...state.winners],
 		events: [...state.events],
 	};
@@ -264,7 +275,7 @@ function resolveRound(rules: MexenRules, state: MexenState) {
 	const lowest = Math.min(...ranks);
 	const tied = state.order.filter((_, index) => ranks[index] === lowest);
 	if (tied.length > 1) {
-		pushDiceEvent(state, { type: "throwOff", seats: tied });
+		pushDiceEvent(state, { type: "mexenThrowOff", seats: tied });
 		state.throwOff = true;
 		state.order = tied;
 		state.turn = tied[0];
@@ -279,8 +290,11 @@ function resolveRound(rules: MexenRules, state: MexenState) {
 	const amount = rules.mexDoubles && state.doubled ? 2 : 1;
 	state.penalties[loser] += amount;
 	const out = isOut(rules, state, loser);
+	if (out) {
+		state.eliminated.push(loser);
+	}
 	pushDiceEvent(state, {
-		type: "lose",
+		type: "mexenLose",
 		seat: loser,
 		amount,
 		unit: rules.scoring,
@@ -322,10 +336,9 @@ function stand(rules: MexenRules, state: MexenState) {
 		state.doubled = true;
 	}
 	pushDiceEvent(state, {
-		type: "stand",
+		type: "mexenStand",
 		seat,
 		dice: [...state.dice],
-		throws: state.rollsUsed,
 		kind: kept.kind,
 	});
 	if (!state.throwOff && seat === state.leader) {
@@ -419,9 +432,29 @@ export function viewMexen(rules: MexenRules, state: MexenState): MexenView {
 		penalties: state.penalties,
 		livesLeft: state.penalties.map((lost) => Math.max(0, rules.lives - lost)),
 		out: outFlags(rules, state),
+		eliminated: state.eliminated,
+		lastKept: lastKept(rules, state),
 		winners: state.winners,
 		events: state.events,
 	};
+}
+
+/** This round's latest kept throw; null once a new round or throw-off clears it. */
+function lastKept(rules: MexenRules, state: MexenState) {
+	for (let index = state.events.length - 1; index >= 0; index -= 1) {
+		const event = state.events[index];
+		if (event.type === "mexenStand") {
+			if (state.results[event.seat] === null) {
+				return null;
+			}
+			return {
+				...readThrow(event.dice, rules),
+				seat: event.seat,
+				dice: event.dice,
+			};
+		}
+	}
+	return null;
 }
 
 // The bot: the round's first player stands on a throw a fresh one is unlikely

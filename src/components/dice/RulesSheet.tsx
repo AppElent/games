@@ -152,8 +152,8 @@ function MexenRules({
 				</ul>
 			</Section>
 			<Section heading={r.rankHeading}>
+				<p className="mb-1.5 text-sm leading-snug">{r.read}</p>
 				<ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm leading-snug">
-					<li>{r.read}</li>
 					<li>{r.mex}</li>
 					{rules.littleMex ? <li>{r.littleMex}</li> : null}
 					<li>{r.doubles}</li>

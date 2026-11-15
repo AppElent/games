@@ -10,6 +10,7 @@
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
+import type { MexenThrowKind } from "./mexen";
 
 export const DIE_FACES = [1, 2, 3, 4, 5, 6] as const;
 
@@ -99,19 +100,13 @@ export type DiceEvent = { seq: number } & (
 			bonus: number;
 	  }
 	| { type: "win"; seats: number[] }
-	/** Mexen: a player keeps their throw after `throws` throws. */
-	| {
-			type: "stand";
-			seat: number;
-			dice: number[];
-			throws: number;
-			kind: "mex" | "littleMex" | "double" | "plain";
-	  }
+	/** Mexen: a player keeps their last throw. */
+	| { type: "mexenStand"; seat: number; dice: number[]; kind: MexenThrowKind }
 	/** Mexen: these seats tied for the lowest throw and throw again. */
-	| { type: "throwOff"; seats: number[] }
+	| { type: "mexenThrowOff"; seats: number[] }
 	/** Mexen: the round's lowest throw costs `amount` lives or points; `out` when no lives remain. */
 	| {
-			type: "lose";
+			type: "mexenLose";
 			seat: number;
 			amount: number;
 			unit: "lives" | "points";

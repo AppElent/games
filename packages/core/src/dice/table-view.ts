@@ -130,15 +130,25 @@ export function mexenTurnStep(
 	return view.rollsUsed === 0 ? "start" : "decide";
 }
 
-/** Mexen seats from best to worst: most lives (or fewest points) first, ties in seat order. */
-export function mexenStandings(view: MexenView) {
+/**
+ * Mexen seats from best to worst: fewest lives lost (or points) first; anyone
+ * out ranks below everyone still in, the last to go out highest. Ties keep seat order.
+ */
+export function mexenStandings(view: MexenView): number[] {
+	const outAt = (seat: number) => view.eliminated.indexOf(seat);
 	return view.penalties
-		.map((penalty, seat) => ({
-			seat,
-			value: view.scoring === "lives" ? view.livesLeft[seat] : penalty,
-			penalty,
-		}))
-		.sort((a, b) => a.penalty - b.penalty || a.seat - b.seat);
+		.map((_, seat) => seat)
+		.sort((a, b) => {
+			const outA = outAt(a);
+			const outB = outAt(b);
+			if (outA !== -1 || outB !== -1) {
+				// Still in (-1) beats out; later out beats earlier.
+				return (
+					(outB === -1 ? Infinity : outB) - (outA === -1 ? Infinity : outA)
+				);
+			}
+			return view.penalties[a] - view.penalties[b] || a - b;
+		});
 }
 
 function mexenNews(
@@ -149,7 +159,7 @@ function mexenNews(
 	const words = dice.mexen;
 	const name = (seat: number) => diceSeatName(dice, table, seat);
 	switch (event.type) {
-		case "stand":
+		case "mexenStand":
 			return fmt(words.lastStand, {
 				name: name(event.seat),
 				throw: mexenThrowLabel(dice, fmt, {
@@ -159,11 +169,11 @@ function mexenNews(
 						Math.min(event.dice[0], event.dice[1]),
 				}),
 			});
-		case "throwOff":
+		case "mexenThrowOff":
 			return fmt(words.lastThrowOff, {
 				names: event.seats.map(name).join(", "),
 			});
-		case "lose": {
+		case "mexenLose": {
 			const template =
 				event.unit === "lives"
 					? event.amount === 1

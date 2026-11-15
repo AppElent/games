@@ -82,7 +82,12 @@ export function MexenTable({ game, table, view, controls }: Props) {
 				</p>
 			) : null}
 			<div className="dice-layout">
-				<MexenTray table={table} view={view} controls={controls} />
+				<MexenTray
+					table={table}
+					view={view}
+					controls={controls}
+					news={news?.text ?? null}
+				/>
 				<MexenSeats table={table} view={view} controls={controls} />
 			</div>
 			<p className="sr-only" aria-live="polite">
@@ -97,7 +102,7 @@ export function MexenTable({ game, table, view, controls }: Props) {
 				<DiceEnd
 					table={table}
 					winners={view.winners}
-					rows={mexenStandings(view).map(({ seat }) => ({
+					rows={mexenStandings(view).map((seat) => ({
 						seat,
 						value: standingValue(seat),
 					}))}
@@ -115,7 +120,12 @@ export function MexenTable({ game, table, view, controls }: Props) {
 }
 
 /** Whose turn, the two dice, and the choice between keeping and throwing again. */
-function MexenTray({ table, view, controls }: Omit<Props, "game">) {
+function MexenTray({
+	table,
+	view,
+	controls,
+	news,
+}: Omit<Props, "game"> & { news: string | null }) {
 	const { locale } = useI18n();
 	const dice = useMessages().games.dice;
 	const words = dice.mexen;
@@ -124,7 +134,6 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 	const mine = step === "start" || step === "decide";
 	const name = (seat: number) => diceSeatName(dice, table, seat);
 	const rollKey = `${view.round}:${view.turn}:${view.rollsUsed}`;
-	const news = latestNews({ dice, fmt }, table, view.events);
 	const current = view.current
 		? mexenThrowLabel(dice, fmt, view.current)
 		: null;
@@ -147,6 +156,13 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 				? words.yourLimitPending
 				: fmt(words.limitPending, { name: name(view.leader) });
 	const autopilot = you !== null && table.seats[you]?.autopilot;
+	// Between throws the table is empty; show the throw kept last, so one
+	// kept as it landed (the last allowed) is still seen.
+	const kept =
+		view.dice.length === 0 && view.lastKept && view.phase === "playing"
+			? view.lastKept
+			: null;
+	const shown = kept ? kept.dice : view.dice;
 
 	return (
 		<section
@@ -161,18 +177,18 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 						: fmt(words.theirTurn, { name: name(view.turn) })}
 			</p>
 			{hint ? <p className="dice-hint">{hint}</p> : null}
-			{view.dice.length === 0 ? (
+			{shown.length === 0 ? (
 				<p className="dice-empty">{dice.table.noDice}</p>
 			) : (
-				<ul className="dice-row">
-					{view.dice.map((value, index) => (
+				<ul className="dice-row" data-kept={kept ? "true" : undefined}>
+					{shown.map((value, index) => (
 						// A new key per throw, so the dice tumble again.
 						// biome-ignore lint/suspicious/noArrayIndexKey: two dice that never move
 						<li key={`${rollKey}-${index}`}>
 							<span
 								className="die"
 								role="img"
-								data-fresh="true"
+								data-fresh={kept ? undefined : "true"}
 								aria-label={fmt(dice.table.die, { index: index + 1, value })}
 							>
 								<DieFace value={value} />
@@ -184,6 +200,13 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 			{current ? (
 				<p className="mexen-throw" data-kind={view.current?.kind}>
 					{current}
+				</p>
+			) : kept ? (
+				<p className="mexen-throw" data-kind={kept.kind}>
+					{fmt(words.lastStand, {
+						name: name(kept.seat),
+						throw: mexenThrowLabel(dice, fmt, kept),
+					})}
 				</p>
 			) : null}
 			{view.rollsUsed > 0 ? (
@@ -219,12 +242,17 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 			{limit && view.phase === "playing" ? (
 				<p className="dice-hint">{limit}</p>
 			) : null}
+			{view.scoring === "points" && view.phase === "playing" ? (
+				<p className="dice-hint">
+					{fmt(words.pointLimit, { limit: view.lives })}
+				</p>
+			) : null}
 			{view.doubled && view.mexDoubles && view.phase === "playing" ? (
 				<p className="mexen-doubled">{words.doubled}</p>
 			) : null}
 			{news && !mine ? (
 				<p className="mexen-news" aria-hidden="true">
-					{news.text}
+					{news}
 				</p>
 			) : null}
 			{autopilot && you !== null ? (

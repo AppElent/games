@@ -184,6 +184,15 @@ describe("a Mexen round", () => {
 		expect(state.results[0]).toEqual([5, 2]);
 		expect(state.limit).toBe(3);
 		expect(state.turn).toBe(1);
+		// The dice leave the table, but the kept throw still shows.
+		const view = viewDiceGame(mexen, [], state, 1);
+		expect(view.dice).toEqual([]);
+		expect(view.lastKept).toMatchObject({
+			seat: 0,
+			dice: [5, 2],
+			kind: "plain",
+			value: 52,
+		});
 	});
 
 	it("costs the lowest throw a life, and the loser leads the next round", () => {
@@ -196,6 +205,7 @@ describe("a Mexen round", () => {
 		expect(state.order).toEqual([1, 2, 0]);
 		expect(state.results).toEqual([null, null, null]);
 		expect(state.limit).toBeNull();
+		expect(viewDiceGame(mexen, [], state, 1).lastKept).toBeNull();
 	});
 
 	it("doubles the loss in a round with a Mex", () => {
@@ -229,7 +239,9 @@ describe("a Mexen round", () => {
 		expect(state.penalties).toEqual([0, 0, 1]);
 		expect(state.throwOff).toBe(false);
 		expect(state.leader).toBe(2);
-		expect(state.events.some((event) => event.type === "throwOff")).toBe(true);
+		expect(state.events.some((event) => event.type === "mexenThrowOff")).toBe(
+			true,
+		);
 	});
 
 	it("still doubles the loss when the Mex came before a throw-off", () => {
@@ -298,8 +310,20 @@ describe("Mexen lives and the end", () => {
 		expect(state.order).toEqual([2, 0]);
 		const lose = [...state.events]
 			.reverse()
-			.find((event) => event.type === "lose");
+			.find((event) => event.type === "mexenLose");
 		expect(lose).toMatchObject({ seat: 1, out: true, unit: "lives" });
+
+		// Seat 0 goes out later, on a doubled loss: more lives lost, but it
+		// outlasted seat 1, so it ranks above it.
+		state = playRound(state, [[[6, 5]], [[3, 2]]], opts);
+		state = playRound(state, [[[3, 2]], [[6, 5]]], opts);
+		state = playRound(state, [[[4, 1]], [[2, 1]]], opts);
+		expect(state.phase).toBe("finished");
+		expect(state.penalties).toEqual([4, 3, 0]);
+		expect(state.eliminated).toEqual([1, 0]);
+		expect(mexenStandings(viewDiceGame(mexen, opts, state, 0))).toEqual([
+			2, 0, 1,
+		]);
 	});
 
 	it("ends when one player has lives left, and they win", () => {
@@ -320,7 +344,7 @@ describe("Mexen lives and the end", () => {
 		);
 		const view = viewDiceGame(mexen, opts, state, 0);
 		expect(mexenTurnStep(view, 0)).toBe("over");
-		expect(mexenStandings(view).map((row) => row.seat)).toEqual([0, 1]);
+		expect(mexenStandings(view)).toEqual([0, 1]);
 		expect(view.livesLeft).toEqual([3, 0]);
 	});
 
@@ -339,11 +363,7 @@ describe("Mexen lives and the end", () => {
 		expect(state.winners).toEqual([0]);
 		const view = viewDiceGame(mexen, opts, state, null);
 		expect(view.out).toEqual([false, false, false]);
-		expect(mexenStandings(view).map((row) => [row.seat, row.value])).toEqual([
-			[0, 0],
-			[2, 1],
-			[1, 3],
-		]);
+		expect(mexenStandings(view)).toEqual([0, 2, 1]);
 	});
 
 	it("starts with 10 lives under that house rule", () => {

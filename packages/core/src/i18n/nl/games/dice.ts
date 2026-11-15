@@ -183,6 +183,7 @@ export const dice = {
 		},
 		limitPending: "{name} bepaalt het aantal worpen",
 		yourLimitPending: "Jij bepaalt het aantal worpen",
+		pointLimit: "Het spel eindigt bij {limit} punten.",
 		doubled: "Er is een mex gehouden: het verlies telt deze ronde dubbel.",
 		seatsLabel: "Spelers",
 		leader: "Begint",
@@ -267,7 +268,7 @@ export const dice = {
 				},
 				points: {
 					label: "Punten in plaats van levens",
-					hint: "Niemand ligt eruit. De verliezer krijgt punten, het spel eindigt zodra iemand het aantal levens in punten heeft, en de minste punten winnen.",
+					hint: "Niemand ligt eruit. De verliezer krijgt punten; het aantal levens wordt de puntengrens, en de minste punten winnen.",
 				},
 			},
 		},

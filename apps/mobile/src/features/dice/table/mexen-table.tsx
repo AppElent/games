@@ -108,7 +108,7 @@ export function MexenTable({ game, table, view, controls }: Props) {
 					<DiceEndPanel
 						table={table}
 						winners={view.winners}
-						rows={mexenStandings(view).map(({ seat }) => ({
+						rows={mexenStandings(view).map((seat) => ({
 							seat,
 							value: standingValue(seat),
 						}))}
@@ -197,6 +197,22 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 				? words.yourLimitPending
 				: fmt(words.limitPending, { name: name(view.leader) });
 	const autopilot = you !== null && table.seats[you]?.autopilot;
+	// Between throws the table is empty; show the throw kept last, so one
+	// kept as it landed (the last allowed) is still seen.
+	const kept =
+		view.dice.length === 0 && view.lastKept && view.phase === "playing"
+			? view.lastKept
+			: null;
+	const shown = kept ? kept.dice : view.dice;
+	const shownKind = kept ? kept.kind : view.current?.kind;
+	const throwLine = current
+		? current
+		: kept
+			? fmt(words.lastStand, {
+					name: name(kept.seat),
+					throw: mexenThrowLabel(dice, fmt, kept),
+				})
+			: null;
 
 	return (
 		<Card>
@@ -220,13 +236,13 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 					</AppText>
 				)}
 				{hint ? <AppText variant="secondary">{hint}</AppText> : null}
-				{view.dice.length === 0 ? (
+				{shown.length === 0 ? (
 					<View style={[styles.diceRow, { minHeight: size }]}>
 						<AppText variant="secondary">{dice.table.noDice}</AppText>
 					</View>
 				) : (
 					<View style={styles.diceRow}>
-						{view.dice.map((value, index) => (
+						{shown.map((value, index) => (
 							<View
 								// Two dice that never move: a die's place is its identity.
 								// biome-ignore lint/suspicious/noArrayIndexKey: see above
@@ -244,17 +260,17 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 						))}
 					</View>
 				)}
-				{current ? (
+				{throwLine ? (
 					<AppText
 						variant="title"
 						style={
-							view.current?.kind === "mex" || view.current?.kind === "littleMex"
+							shownKind === "mex" || shownKind === "littleMex"
 								? { color: tokens.accent }
 								: undefined
 						}
 						testID="mexen-throw"
 					>
-						{current}
+						{throwLine}
 					</AppText>
 				) : null}
 				{view.rollsUsed > 0 ? (
@@ -295,6 +311,11 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 				) : null}
 				{limit && view.phase === "playing" ? (
 					<AppText variant="caption">{limit}</AppText>
+				) : null}
+				{view.scoring === "points" && view.phase === "playing" ? (
+					<AppText variant="caption">
+						{fmt(words.pointLimit, { limit: view.lives })}
+					</AppText>
 				) : null}
 				{view.doubled && view.mexDoubles && view.phase === "playing" ? (
 					<AppText variant="secondary" style={{ color: tokens.accent }}>

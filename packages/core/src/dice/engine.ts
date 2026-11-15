@@ -221,7 +221,12 @@ export function diceBotMove<F extends Family>(
 	return familyOf<F>(game.family).bot(diceRules(game, options), state, bots);
 }
 
-/** The dice games as the Convex table module plays them. */
+/**
+ * The dice games as the Convex table module plays them. Here `F` widens to
+ * every family, so the compiler no longer ties the state to the game: that
+ * holds because a session's state is only ever made by `create` for that
+ * session's own game id, which never changes.
+ */
 export const DICE_ENGINE: TableEngine<DiceGameState, DiceAction, DiceView> = {
 	players: (gameId) => getDiceGame(gameId).players,
 	normalizeOptions: (gameId, options) =>

@@ -30,10 +30,11 @@ engine, its rolls or stored state, read [the decision](../adr/0003-dice-games-sh
   without one. The lowest kept throw pays one life (two when a Mex was kept and
   `mexDoubles` is on); ties throw off with one throw each until one is lowest.
   The loser leads the next round. In `lives` scoring a player with none left is
-  out and the last one in wins; in `points` scoring nobody drops out, the game
+  out (standings rank a later exit higher) and the last one in wins; in `points` scoring nobody drops out, the game
   ends when someone reaches `lives` points, and the fewest points win. House
   rules switch the lives (3/6/10), Mex doubling, Little Mex (3-1 ranks just
-  under Mex, as in Meyer) and points scoring.
+  under Mex, as in Meyer) and points scoring. Its events are prefixed `mexen`
+  so other families' news never reads them.
 - A table is created by `diceGames.createTable` and seats work exactly as card seats
   (`convex/lib/tableSeats.ts`): 1 to `players.max` seats, computer players, autopilot
   for silent players, rematch.
