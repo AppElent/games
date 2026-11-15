@@ -41,6 +41,10 @@ export const serverErrors = {
 	cardsAlreadyPassed: "You've already passed your cards.",
 	cardsPassCount: "Pick exactly {count} cards to pass.",
 	cardsPassFirst: "Pass your cards first.",
+	cardsKnockTooHigh:
+		"You can knock with {limit} or less; this leaves {deadwood}.",
+	cardsAfterKnock: "Someone knocked: only laying off is left.",
+	cardsNoKnock: "Nobody has knocked yet.",
 	signInRequired: "Sign in required.",
 	accountChanged:
 		"You switched accounts. Sign in to the account you want to delete and try again.",

@@ -161,6 +161,36 @@ export function RulesSheet({
 						</Section>
 					) : null}
 				</>
+			) : resolved.family === "gin" ? (
+				<>
+					<Section heading={r.goalHeading}>
+						<Lines
+							lines={[fmt(r.gin.goal, { target: resolved.rules.targetScore })]}
+						/>
+					</Section>
+					<Section heading={r.turnHeading}>
+						<Lines
+							lines={[
+								r.gin.turnDraw,
+								r.gin.turnDiscard,
+								fmt(r.gin.knock, { limit: resolved.rules.knockLimit }),
+								fmt(r.gin.gin, { bonus: resolved.rules.ginBonus }),
+								r.gin.layoff,
+								r.gin.score,
+								fmt(r.gin.undercut, { bonus: resolved.rules.undercutBonus }),
+								fmt(r.gin.void, { count: resolved.rules.stockFloor }),
+							]}
+						/>
+					</Section>
+					<Section heading={r.meldsHeading}>
+						<Lines lines={[r.gin.set, r.gin.run]} />
+					</Section>
+					<Section heading={r.pointsHeading}>
+						<Lines
+							lines={[fmt(r.gin.points, { face: resolved.rules.points.K })]}
+						/>
+					</Section>
+				</>
 			) : resolved.family === "rummy" ? (
 				<>
 					<Section heading={r.goalHeading}>
