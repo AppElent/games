@@ -3,7 +3,6 @@ import { normalizeJoinCode } from "@arcadeclub/core/sessions";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { getOptionalUserId } from "./auth";
-import { claimSeatOnJoin } from "./cardSeats";
 import { DUELS, type Duel, type DuelGame, seatChallenger } from "./duel";
 import { gameError } from "./errors";
 import {
@@ -11,6 +10,7 @@ import {
 	listParticipants,
 	markConnected,
 } from "./gameSession";
+import { claimSeatOnJoin, type TableGameType } from "./tableSeats";
 
 type ParticipantId = Id<"sessionParticipants">;
 
@@ -114,12 +114,24 @@ const DUEL_ON_JOIN = Object.fromEntries(
 	DUELS.map((duel) => [duel.gameType, seatChallengerByShareToken(duel)]),
 ) as Record<DuelGame, OnJoin>;
 
+/** A table game seats only room-code joiners, who alone hold a seat secret. */
+function claimTableSeat(gameType: TableGameType): OnJoin {
+	return async (ctx, session, participantId, route) =>
+		route.via === "joinCode"
+			? await claimSeatOnJoin(
+					ctx,
+					gameType,
+					session,
+					participantId,
+					route.seatSecret,
+				)
+			: false;
+}
+
 const ON_JOIN: Partial<Record<GameType, OnJoin>> = {
 	...DUEL_ON_JOIN,
-	"card-games": async (ctx, session, participantId, route) =>
-		route.via === "joinCode"
-			? await claimSeatOnJoin(ctx, session, participantId, route.seatSecret)
-			: false,
+	"card-games": claimTableSeat("card-games"),
+	"dice-games": claimTableSeat("dice-games"),
 };
 
 /**

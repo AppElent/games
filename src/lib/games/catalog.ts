@@ -7,6 +7,7 @@ import type { Messages } from "@arcadeclub/core/messages";
 import {
 	Brain,
 	CircleDot,
+	Dice5,
 	Dices,
 	Grid3X3,
 	Music,
@@ -110,6 +111,12 @@ const GAME_CATALOG: CatalogEntries = {
 		icon: Spade,
 		route: "/cards",
 		sessionPath: (sessionId) => `/cards/table/${sessionId}`,
+	},
+	"dice-games": {
+		accent: "from-amber-300 to-emerald-400",
+		icon: Dice5,
+		route: "/dice",
+		sessionPath: (sessionId) => `/dice/table/${sessionId}`,
 	},
 };
 

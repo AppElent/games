@@ -33,6 +33,8 @@ import { Route as ConnectFourIndexRouteImport } from './routes/connect-four/inde
 import { Route as ConnectFourSessionIdRouteImport } from './routes/connect-four/$sessionId'
 import { Route as ConnectFourNewRouteImport } from './routes/connect-four/new'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DiceIndexRouteImport } from './routes/dice/index'
+import { Route as DiceGameIdRouteImport } from './routes/dice/$gameId'
 import { Route as HitsterIndexRouteImport } from './routes/hitster/index'
 import { Route as HitsterNewRouteImport } from './routes/hitster/new'
 import { Route as QuizIndexRouteImport } from './routes/quiz/index'
@@ -51,6 +53,7 @@ import { Route as WordLinksPuzzleIdRouteImport } from './routes/word-links/$puzz
 import { Route as WorkbenchIndexRouteImport } from './routes/workbench/index'
 import { Route as CardsTableSessionIdRouteImport } from './routes/cards/table.$sessionId'
 import { Route as DashboardResultsSessionIdRouteImport } from './routes/dashboard/results.$sessionId'
+import { Route as DiceTableSessionIdRouteImport } from './routes/dice/table.$sessionId'
 import { Route as HitsterSessionIdHostRouteImport } from './routes/hitster/$sessionId/host'
 import { Route as HitsterSessionIdPlayRouteImport } from './routes/hitster/$sessionId/play'
 import { Route as QuizSessionIdHostRouteImport } from './routes/quiz/$sessionId/host'
@@ -179,6 +182,16 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/dashboard/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DiceIndexRoute = DiceIndexRouteImport.update({
+  id: '/dice/',
+  path: '/dice/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiceGameIdRoute = DiceGameIdRouteImport.update({
+  id: '/dice/$gameId',
+  path: '/dice/$gameId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HitsterIndexRoute = HitsterIndexRouteImport.update({
   id: '/hitster/',
   path: '/hitster/',
@@ -270,6 +283,11 @@ const DashboardResultsSessionIdRoute =
     path: '/dashboard/results/$sessionId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DiceTableSessionIdRoute = DiceTableSessionIdRouteImport.update({
+  id: '/dice/table/$sessionId',
+  path: '/dice/table/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HitsterSessionIdHostRoute = HitsterSessionIdHostRouteImport.update({
   id: '/hitster/$sessionId/host',
   path: '/hitster/$sessionId/host',
@@ -325,6 +343,7 @@ export interface FileRoutesByFullPath {
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
   '/connect-four/new': typeof ConnectFourNewRoute
+  '/dice/$gameId': typeof DiceGameIdRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
   '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
@@ -340,6 +359,7 @@ export interface FileRoutesByFullPath {
   '/chess/': typeof ChessIndexRoute
   '/connect-four/': typeof ConnectFourIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dice/': typeof DiceIndexRoute
   '/hitster/': typeof HitsterIndexRoute
   '/quiz/': typeof QuizIndexRoute
   '/signal-words/': typeof SignalWordsIndexRoute
@@ -349,6 +369,7 @@ export interface FileRoutesByFullPath {
   '/workbench/': typeof WorkbenchIndexRoute
   '/cards/table/$sessionId': typeof CardsTableSessionIdRoute
   '/dashboard/results/$sessionId': typeof DashboardResultsSessionIdRoute
+  '/dice/table/$sessionId': typeof DiceTableSessionIdRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
   '/quiz/$sessionId/host': typeof QuizSessionIdHostRoute
@@ -376,6 +397,7 @@ export interface FileRoutesByTo {
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
   '/connect-four/new': typeof ConnectFourNewRoute
+  '/dice/$gameId': typeof DiceGameIdRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
   '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
@@ -391,6 +413,7 @@ export interface FileRoutesByTo {
   '/chess': typeof ChessIndexRoute
   '/connect-four': typeof ConnectFourIndexRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/dice': typeof DiceIndexRoute
   '/hitster': typeof HitsterIndexRoute
   '/quiz': typeof QuizIndexRoute
   '/signal-words': typeof SignalWordsIndexRoute
@@ -400,6 +423,7 @@ export interface FileRoutesByTo {
   '/workbench': typeof WorkbenchIndexRoute
   '/cards/table/$sessionId': typeof CardsTableSessionIdRoute
   '/dashboard/results/$sessionId': typeof DashboardResultsSessionIdRoute
+  '/dice/table/$sessionId': typeof DiceTableSessionIdRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
   '/quiz/$sessionId/host': typeof QuizSessionIdHostRoute
@@ -428,6 +452,7 @@ export interface FileRoutesById {
   '/chess/new': typeof ChessNewRoute
   '/connect-four/$sessionId': typeof ConnectFourSessionIdRoute
   '/connect-four/new': typeof ConnectFourNewRoute
+  '/dice/$gameId': typeof DiceGameIdRoute
   '/hitster/new': typeof HitsterNewRoute
   '/quiz/new': typeof QuizNewRoute
   '/signal-words/$sessionId': typeof SignalWordsSessionIdRoute
@@ -443,6 +468,7 @@ export interface FileRoutesById {
   '/chess/': typeof ChessIndexRoute
   '/connect-four/': typeof ConnectFourIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dice/': typeof DiceIndexRoute
   '/hitster/': typeof HitsterIndexRoute
   '/quiz/': typeof QuizIndexRoute
   '/signal-words/': typeof SignalWordsIndexRoute
@@ -452,6 +478,7 @@ export interface FileRoutesById {
   '/workbench/': typeof WorkbenchIndexRoute
   '/cards/table/$sessionId': typeof CardsTableSessionIdRoute
   '/dashboard/results/$sessionId': typeof DashboardResultsSessionIdRoute
+  '/dice/table/$sessionId': typeof DiceTableSessionIdRoute
   '/hitster/$sessionId/host': typeof HitsterSessionIdHostRoute
   '/hitster/$sessionId/play': typeof HitsterSessionIdPlayRoute
   '/quiz/$sessionId/host': typeof QuizSessionIdHostRoute
@@ -481,6 +508,7 @@ export interface FileRouteTypes {
     | '/chess/new'
     | '/connect-four/$sessionId'
     | '/connect-four/new'
+    | '/dice/$gameId'
     | '/hitster/new'
     | '/quiz/new'
     | '/signal-words/$sessionId'
@@ -496,6 +524,7 @@ export interface FileRouteTypes {
     | '/chess/'
     | '/connect-four/'
     | '/dashboard/'
+    | '/dice/'
     | '/hitster/'
     | '/quiz/'
     | '/signal-words/'
@@ -505,6 +534,7 @@ export interface FileRouteTypes {
     | '/workbench/'
     | '/cards/table/$sessionId'
     | '/dashboard/results/$sessionId'
+    | '/dice/table/$sessionId'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
     | '/quiz/$sessionId/host'
@@ -532,6 +562,7 @@ export interface FileRouteTypes {
     | '/chess/new'
     | '/connect-four/$sessionId'
     | '/connect-four/new'
+    | '/dice/$gameId'
     | '/hitster/new'
     | '/quiz/new'
     | '/signal-words/$sessionId'
@@ -547,6 +578,7 @@ export interface FileRouteTypes {
     | '/chess'
     | '/connect-four'
     | '/dashboard'
+    | '/dice'
     | '/hitster'
     | '/quiz'
     | '/signal-words'
@@ -556,6 +588,7 @@ export interface FileRouteTypes {
     | '/workbench'
     | '/cards/table/$sessionId'
     | '/dashboard/results/$sessionId'
+    | '/dice/table/$sessionId'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
     | '/quiz/$sessionId/host'
@@ -583,6 +616,7 @@ export interface FileRouteTypes {
     | '/chess/new'
     | '/connect-four/$sessionId'
     | '/connect-four/new'
+    | '/dice/$gameId'
     | '/hitster/new'
     | '/quiz/new'
     | '/signal-words/$sessionId'
@@ -598,6 +632,7 @@ export interface FileRouteTypes {
     | '/chess/'
     | '/connect-four/'
     | '/dashboard/'
+    | '/dice/'
     | '/hitster/'
     | '/quiz/'
     | '/signal-words/'
@@ -607,6 +642,7 @@ export interface FileRouteTypes {
     | '/workbench/'
     | '/cards/table/$sessionId'
     | '/dashboard/results/$sessionId'
+    | '/dice/table/$sessionId'
     | '/hitster/$sessionId/host'
     | '/hitster/$sessionId/play'
     | '/quiz/$sessionId/host'
@@ -635,6 +671,7 @@ export interface RootRouteChildren {
   ChessNewRoute: typeof ChessNewRoute
   ConnectFourSessionIdRoute: typeof ConnectFourSessionIdRoute
   ConnectFourNewRoute: typeof ConnectFourNewRoute
+  DiceGameIdRoute: typeof DiceGameIdRoute
   HitsterNewRoute: typeof HitsterNewRoute
   QuizNewRoute: typeof QuizNewRoute
   SignalWordsSessionIdRoute: typeof SignalWordsSessionIdRoute
@@ -650,6 +687,7 @@ export interface RootRouteChildren {
   ChessIndexRoute: typeof ChessIndexRoute
   ConnectFourIndexRoute: typeof ConnectFourIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DiceIndexRoute: typeof DiceIndexRoute
   HitsterIndexRoute: typeof HitsterIndexRoute
   QuizIndexRoute: typeof QuizIndexRoute
   SignalWordsIndexRoute: typeof SignalWordsIndexRoute
@@ -659,6 +697,7 @@ export interface RootRouteChildren {
   WorkbenchIndexRoute: typeof WorkbenchIndexRoute
   CardsTableSessionIdRoute: typeof CardsTableSessionIdRoute
   DashboardResultsSessionIdRoute: typeof DashboardResultsSessionIdRoute
+  DiceTableSessionIdRoute: typeof DiceTableSessionIdRoute
   HitsterSessionIdHostRoute: typeof HitsterSessionIdHostRoute
   HitsterSessionIdPlayRoute: typeof HitsterSessionIdPlayRoute
   QuizSessionIdHostRoute: typeof QuizSessionIdHostRoute
@@ -838,6 +877,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dice/': {
+      id: '/dice/'
+      path: '/dice'
+      fullPath: '/dice/'
+      preLoaderRoute: typeof DiceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dice/$gameId': {
+      id: '/dice/$gameId'
+      path: '/dice/$gameId'
+      fullPath: '/dice/$gameId'
+      preLoaderRoute: typeof DiceGameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/hitster/': {
       id: '/hitster/'
       path: '/hitster'
@@ -964,6 +1017,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardResultsSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dice/table/$sessionId': {
+      id: '/dice/table/$sessionId'
+      path: '/dice/table/$sessionId'
+      fullPath: '/dice/table/$sessionId'
+      preLoaderRoute: typeof DiceTableSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/hitster/$sessionId/host': {
       id: '/hitster/$sessionId/host'
       path: '/hitster/$sessionId/host'
@@ -1035,6 +1095,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChessNewRoute: ChessNewRoute,
   ConnectFourSessionIdRoute: ConnectFourSessionIdRoute,
   ConnectFourNewRoute: ConnectFourNewRoute,
+  DiceGameIdRoute: DiceGameIdRoute,
   HitsterNewRoute: HitsterNewRoute,
   QuizNewRoute: QuizNewRoute,
   SignalWordsSessionIdRoute: SignalWordsSessionIdRoute,
@@ -1050,6 +1111,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChessIndexRoute: ChessIndexRoute,
   ConnectFourIndexRoute: ConnectFourIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DiceIndexRoute: DiceIndexRoute,
   HitsterIndexRoute: HitsterIndexRoute,
   QuizIndexRoute: QuizIndexRoute,
   SignalWordsIndexRoute: SignalWordsIndexRoute,
@@ -1059,6 +1121,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkbenchIndexRoute: WorkbenchIndexRoute,
   CardsTableSessionIdRoute: CardsTableSessionIdRoute,
   DashboardResultsSessionIdRoute: DashboardResultsSessionIdRoute,
+  DiceTableSessionIdRoute: DiceTableSessionIdRoute,
   HitsterSessionIdHostRoute: HitsterSessionIdHostRoute,
   HitsterSessionIdPlayRoute: HitsterSessionIdPlayRoute,
   QuizSessionIdHostRoute: QuizSessionIdHostRoute,

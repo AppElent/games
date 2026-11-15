@@ -6,9 +6,10 @@
  */
 import { GameRuleError } from "../errors";
 import { type Rng, shuffle } from "../random";
+import type { BotMove } from "../table-engine";
 import { buildDeck, type CardId, clone, parseCard } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
-import { type BotMove, drawWithReshuffle } from "./table";
+import { drawWithReshuffle } from "./table";
 
 export type BankRules = {
 	decks: number;

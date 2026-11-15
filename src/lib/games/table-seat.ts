@@ -3,32 +3,33 @@ import { readJson, removeStored, writeJson } from "#/lib/games/local-store";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 /**
- * This device's claim on a card-game seat. The secret proves the seat is ours:
- * participant ids are public, so they cannot. It lives in localStorage so a
- * refresh or a reopened tab finds the same seat.
+ * This device's claim on a seat at a table game (cards, dice). The secret
+ * proves the seat is ours: participant ids are public, so they cannot. It lives
+ * in localStorage so a refresh or a reopened tab finds the same seat.
  */
-export type CardSeat = {
+export type TableSeat = {
 	participantId: Id<"sessionParticipants">;
 	seatSecret: string;
 };
 
+// Named before dice joined; kept so seats stored by card players still load.
 const keyOf = (sessionId: string) => `arcade-club.cards.${sessionId}`;
 
-export function newCardSeatSecret() {
+export function newTableSeatSecret() {
 	return `${crypto.randomUUID()}${crypto.randomUUID()}`;
 }
 
 /** A returning participant keeps the secret their seat already holds; see `seatSecretAfterJoin`. */
-export function rememberCardSeat(
+export function rememberTableSeat(
 	sessionId: string,
 	participantId: Id<"sessionParticipants">,
 	seatSecret: string,
 	seatClaimed: boolean,
-): CardSeat {
+): TableSeat {
 	const seat = {
 		participantId,
 		seatSecret: seatSecretAfterJoin(
-			readCardSeat(sessionId),
+			readTableSeat(sessionId),
 			{ participantId, seatClaimed },
 			seatSecret,
 		),
@@ -37,10 +38,10 @@ export function rememberCardSeat(
 	return seat;
 }
 
-export function readCardSeat(sessionId: string): CardSeat | null {
-	return readJson<CardSeat | null>(keyOf(sessionId), null);
+export function readTableSeat(sessionId: string): TableSeat | null {
+	return readJson<TableSeat | null>(keyOf(sessionId), null);
 }
 
-export function forgetCardSeat(sessionId: string) {
+export function forgetTableSeat(sessionId: string) {
 	removeStored(keyOf(sessionId));
 }

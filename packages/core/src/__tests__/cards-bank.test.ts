@@ -20,10 +20,10 @@ import {
 	nextStarter,
 	normalizeOptions,
 	resolvedRules,
-	toggleOption,
 } from "../cards/engine";
 import { GameRuleError } from "../errors";
 import { mulberry32 } from "../random";
+import { toggleHouseRule } from "../table-engine";
 
 const game = getCardGame("eenentwintigen");
 const resolved = resolvedRules(game, []);
@@ -458,17 +458,18 @@ describe("house rules", () => {
 	});
 
 	it("switches the other match length off when one is switched on", () => {
-		const short = toggleOption(game, ["doubleDown"], "shortMatch");
+		const short = toggleHouseRule(game.options, ["doubleDown"], "shortMatch");
 		expect(short).toEqual(["doubleDown", "shortMatch"]);
-		expect(toggleOption(game, short, "longMatch")).toEqual([
+		expect(toggleHouseRule(game.options, short, "longMatch")).toEqual([
 			"doubleDown",
 			"longMatch",
 		]);
-		expect(toggleOption(game, short, "shortMatch")).toEqual(["doubleDown"]);
-		expect(toggleOption(CARD_GAMES.pesten, ["plain2"], "plain7")).toEqual([
-			"plain2",
-			"plain7",
+		expect(toggleHouseRule(game.options, short, "shortMatch")).toEqual([
+			"doubleDown",
 		]);
+		expect(
+			toggleHouseRule(CARD_GAMES.pesten.options, ["plain2"], "plain7"),
+		).toEqual(["plain2", "plain7"]);
 	});
 });
 

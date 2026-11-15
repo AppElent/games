@@ -49,6 +49,12 @@ export const serverErrors = {
 	cardsDealerBid:
 		"Als gever mag je geen {count} bieden: dan komen de biedingen uit op het aantal slagen.",
 	cardsBidFirst: "Eerst bieden: wacht tot iedereen heeft geboden.",
+	diceInvalidHold: "Die dobbelstenen kun je niet vasthouden.",
+	diceNoRollsLeft: "Je hebt geen worpen meer: kies een vak.",
+	diceRollFirst: "Gooi eerst de dobbelstenen.",
+	diceUnknownCategory: "Dat vak staat niet op dit scoreblok.",
+	diceCategoryTaken: "Dat vak is al ingevuld.",
+	diceJokerRule: "Deze extra Yatzy moet in een ander vak.",
 	cardsKnockTooHigh:
 		"Kloppen mag met {limit} of minder; dit laat {deadwood} over.",
 	cardsAfterKnock: "Er is geklopt: alleen aanleggen kan nog.",

@@ -8,7 +8,6 @@ import {
 	getCardGame,
 	normalizeOptions,
 	resolvedRules,
-	toggleOption,
 	viewCardGame,
 } from "../cards/engine";
 import {
@@ -25,6 +24,7 @@ import {
 } from "../cards/tricks";
 import { GameRuleError } from "../errors";
 import { mulberry32 } from "../random";
+import { toggleHouseRule } from "../table-engine";
 
 const game = getCardGame("boerenbridge");
 
@@ -127,10 +127,12 @@ describe("the round schedule", () => {
 	});
 
 	it("can't have both house rules: switching one on switches the other off", () => {
-		expect(toggleOption(game, ["upOnly"], "downOnly")).toEqual(["downOnly"]);
-		expect(toggleOption(game, ["upOnly", "dealerFree"], "upOnly")).toEqual([
-			"dealerFree",
+		expect(toggleHouseRule(game.options, ["upOnly"], "downOnly")).toEqual([
+			"downOnly",
 		]);
+		expect(
+			toggleHouseRule(game.options, ["upOnly", "dealerFree"], "upOnly"),
+		).toEqual(["dealerFree"]);
 		expectRule(
 			() => normalizeOptions(game, ["upOnly", "downOnly"]),
 			"cardsOptionsClash",

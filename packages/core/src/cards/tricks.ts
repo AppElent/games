@@ -7,6 +7,7 @@
  */
 import { GameRuleError } from "../errors";
 import { type Rng, shuffle } from "../random";
+import type { BotMove } from "../table-engine";
 import {
 	buildDeck,
 	type CardId,
@@ -19,7 +20,6 @@ import {
 	type Suit,
 } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
-import type { BotMove } from "./table";
 
 /** Where passed cards go: the next seat in play, the one before, or opposite. */
 export const PASS_DIRECTIONS = ["left", "right", "across", "keep"] as const;
