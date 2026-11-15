@@ -502,6 +502,8 @@ export function RummyTable({
 							table={table}
 							scores={view.scores}
 							totals={view.totals}
+							empty={cards.rummy.noScores}
+							totalLabel={cards.rummy.scoreTotal}
 						/>
 						<p className="mt-3 text-sm text-[var(--ivory-muted)]">
 							{cards.rummy.lowestWins}
@@ -531,6 +533,8 @@ export function RummyTable({
 								table={table}
 								scores={view.scores}
 								totals={view.totals}
+								empty={cards.rummy.noScores}
+								totalLabel={cards.rummy.scoreTotal}
 							/>
 						</div>
 						<ul className="mb-4 flex flex-col gap-2">

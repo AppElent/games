@@ -36,6 +36,14 @@ export const serverErrors = {
 	cardsStakesClosed: "Punten kies je voordat de kaarten worden gedeeld.",
 	cardsWaitForStakes: "Wacht tot iedereen punten heeft gekozen.",
 	cardsCannotDouble: "Verdubbelen kan alleen op je eerste twee kaarten.",
+	cardsMustFollow:
+		"Kleur bekennen: je hebt nog een kaart van de gevraagde kleur.",
+	cardsMustOpenWith: "Kom uit met klaveren twee om de ronde te openen.",
+	cardsLeadNotBroken: "Met die kleur mag je pas uitkomen als hij gebroken is.",
+	cardsNotPassing: "Er valt nu niets door te geven.",
+	cardsAlreadyPassed: "Je hebt je kaarten al doorgegeven.",
+	cardsPassCount: "Kies precies {count} kaarten om door te geven.",
+	cardsPassFirst: "Geef eerst je kaarten door.",
 	signInRequired: "Inloggen vereist.",
 	accountChanged:
 		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",

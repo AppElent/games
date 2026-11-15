@@ -222,6 +222,8 @@ export function BankTable({
 							table={table}
 							scores={view.results}
 							totals={view.totals}
+							empty={cards.rummy.noScores}
+							totalLabel={cards.rummy.scoreTotal}
 						/>
 						<p className="mt-3 text-sm text-[var(--ivory-muted)]">
 							{cards.bank.highestWins}

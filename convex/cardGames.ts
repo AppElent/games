@@ -95,6 +95,7 @@ const cardActionValidator = v.union(
 	v.object({ type: v.literal("hit") }),
 	v.object({ type: v.literal("stand") }),
 	v.object({ type: v.literal("double") }),
+	v.object({ type: v.literal("passCards"), cards: v.array(v.string()) }),
 );
 
 // Arguments are a validator and core is dependency-free, so this cannot be

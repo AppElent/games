@@ -70,6 +70,35 @@ function pestenState(overrides: Partial<SheddingState> = {}): SheddingState {
 	};
 }
 
+/** Every card a state holds, wherever it is: none may appear or vanish. */
+function allCards(state: CardGameState) {
+	switch (state.family) {
+		case "shedding":
+			return [...state.stock, ...state.discard, ...state.hands.flat()];
+		case "rummy":
+			return [
+				...state.stock,
+				...state.discard,
+				...state.hands.flat(),
+				...state.melds.flatMap((meld) => meld.cards),
+			];
+		case "bank":
+			return [
+				...state.stock,
+				...state.discard,
+				...state.hands.flat(),
+				...state.bank,
+			];
+		case "tricks":
+			return [
+				...state.hands.flat(),
+				...state.passing.flatMap((cards) => cards ?? []),
+				...state.trick.map((play) => play.card),
+				...state.taken.flat(),
+			];
+	}
+}
+
 function expectRule(action: () => unknown, code: string) {
 	try {
 		action();
@@ -442,7 +471,7 @@ describe("pesten house rules", () => {
 
 	it("no jokers takes them out of the deck", () => {
 		const state = createCardGame(game, ["plainJoker"], 4, seeded(7));
-		const all = [...state.stock, ...state.discard, ...state.hands.flat()];
+		const all = allCards(state);
 		expect(all.some((card) => parseCard(card).joker)).toBe(false);
 		expect(rulesWith(["plainJoker"]).powers.joker).toBeUndefined();
 	});
@@ -985,7 +1014,7 @@ describe("views keep hands private", () => {
 		for (const card of otherCards) {
 			expect(serialized).not.toContain(`"${card}"`);
 		}
-		for (const card of state.stock) {
+		for (const card of "stock" in state ? state.stock : []) {
 			expect(serialized).not.toContain(`"${card}"`);
 		}
 		const spectator = viewCardGame(game, [], state, null);
@@ -1008,12 +1037,7 @@ function playOut(
 	const random = seeded(seed);
 	let state: CardGameState = createCardGame(game, options, seats, random);
 	const everyone = Array.from({ length: seats }, (_, seat) => seat);
-	const total =
-		state.stock.length +
-		state.discard.length +
-		state.hands.flat().length +
-		("melds" in state ? state.melds.flatMap((m) => m.cards).length : 0) +
-		("bank" in state ? state.bank.length : 0);
+	const total = allCards(state).length;
 	for (let step = 0; step < 40_000; step += 1) {
 		if (state.phase === "finished") {
 			return state;
@@ -1036,13 +1060,7 @@ function playOut(
 			move.action,
 			random,
 		);
-		const cards = [
-			...state.stock,
-			...state.discard,
-			...state.hands.flat(),
-			...("melds" in state ? state.melds.flatMap((m) => m.cards) : []),
-			...("bank" in state ? state.bank : []),
-		];
+		const cards = allCards(state);
 		expect(cards.length).toBe(total);
 		expect(new Set(cards).size).toBe(total);
 	}
@@ -1124,7 +1142,7 @@ describe("mau-mau", () => {
 
 	it("deals five cards each from a 32-card deck without jokers", () => {
 		const state = createCardGame(game, [], 4, seeded(3));
-		const all = [...state.stock, ...state.discard, ...state.hands.flat()];
+		const all = allCards(state);
 		expect(all).toHaveLength(32);
 		expect(state.hands.every((hand) => hand.length === 5)).toBe(true);
 		const ranks = new Set(all.map((card) => parseCard(card).rank));

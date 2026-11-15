@@ -1233,6 +1233,87 @@ button.pile:disabled {
 	}
 }
 
+/* Trick-taking: the cards of the current trick, one per seat */
+.trick {
+	--card-w: clamp(40px, min(13vw, 14vh), 96px);
+	position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: center;
+	align-content: center;
+	gap: 0.5rem clamp(0.4rem, 2vw, 1rem);
+	width: 100%;
+	height: 100%;
+	min-height: calc(var(--card-w) * 1.4 + 1.5rem);
+	padding-bottom: 1.6rem;
+}
+
+.trick-play {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+	margin: 0;
+	transition: opacity 0.2s ease;
+}
+
+.trick-card {
+	display: block;
+	filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+}
+
+.trick-play figcaption,
+.trick-taker {
+	max-width: calc(var(--card-w) + 1rem);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.6875rem;
+	color: var(--ivory-muted);
+}
+
+.trick-slot {
+	width: var(--card-w);
+	aspect-ratio: 100 / 140;
+	border: 2px dashed rgba(248, 242, 226, 0.22);
+	border-radius: calc(var(--card-w) * 0.075);
+}
+
+/* The trick just taken stays in view, its winning card lifted. */
+.trick[data-done="true"] .trick-play {
+	opacity: 0.6;
+}
+
+.trick[data-done="true"] .trick-play[data-winner="true"] {
+	opacity: 1;
+}
+
+.trick-play[data-winner="true"] .trick-card {
+	filter: drop-shadow(0 0 3px var(--gold))
+		drop-shadow(0 0 10px var(--gold-soft));
+}
+
+.trick-play[data-winner="true"] figcaption {
+	color: var(--gold);
+	font-weight: 700;
+}
+
+.trick-taker {
+	position: absolute;
+	left: 50%;
+	bottom: 0;
+	max-width: 90%;
+	transform: translateX(-50%);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	color: var(--ivory);
+}
+
+.trick[data-landing="true"] .trick-play:last-of-type .trick-card {
+	visibility: hidden;
+}
+
 .meld-area {
 	--card-w: clamp(34px, min(10.5vw, 7.5vh), 62px);
 	display: flex;

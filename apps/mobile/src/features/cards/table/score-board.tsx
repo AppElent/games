@@ -10,11 +10,17 @@ export function ScoreBoard({
 	table,
 	scores,
 	totals,
+	empty,
+	totalLabel,
 	onFelt = false,
 }: {
 	table: CardTableBundle;
+	/** Each round's points per seat. */
 	scores: readonly (readonly number[])[];
 	totals: readonly number[];
+	/** Shown before the first round is scored. */
+	empty: string;
+	totalLabel: string;
 	/** On a table panel rather than the app's own surface. */
 	onFelt?: boolean;
 }) {
@@ -27,7 +33,7 @@ export function ScoreBoard({
 	if (scores.length === 0) {
 		return (
 			<AppText variant="secondary" style={{ color: muted }}>
-				{cards.rummy.noScores}
+				{empty}
 			</AppText>
 		);
 	}
@@ -79,7 +85,7 @@ export function ScoreBoard({
 			<View>
 				<View style={[cell, styles.number]}>
 					<AppText variant="caption" style={{ color: muted }}>
-						{cards.rummy.scoreTotal}
+						{totalLabel}
 					</AppText>
 				</View>
 				{seats.map((seat) => (

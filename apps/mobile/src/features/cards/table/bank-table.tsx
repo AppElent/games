@@ -302,6 +302,8 @@ export function BankTable({
 							table={table}
 							scores={view.results}
 							totals={view.totals}
+							empty={cards.rummy.noScores}
+							totalLabel={cards.rummy.scoreTotal}
 						/>
 						<AppText variant="secondary">{cards.bank.highestWins}</AppText>
 					</Sheet>

@@ -2,19 +2,24 @@ import { seatName } from "@arcadeclub/core/cards/table-view";
 import { useMessages } from "#/lib/i18n";
 import type { CardTableBundle } from "./useCardTable";
 
-/** Round by round per seat, plus each seat's total. */
+/** Points per round and the running total, for families that play several rounds. */
 export function ScoreBoard({
 	table,
 	scores,
 	totals,
+	empty,
+	totalLabel,
 }: {
 	table: CardTableBundle;
 	scores: readonly (readonly number[])[];
 	totals: readonly number[];
+	/** Shown before the first round is scored. */
+	empty: string;
+	totalLabel: string;
 }) {
 	const cards = useMessages().games.cards;
 	if (scores.length === 0) {
-		return <p className="text-sm">{cards.rummy.noScores}</p>;
+		return <p className="text-sm">{empty}</p>;
 	}
 	return (
 		<table className="score-table">
@@ -27,7 +32,7 @@ export function ScoreBoard({
 							{index + 1}
 						</th>
 					))}
-					<th scope="col">{cards.rummy.scoreTotal}</th>
+					<th scope="col">{totalLabel}</th>
 				</tr>
 			</thead>
 			<tbody>

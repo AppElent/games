@@ -8,6 +8,7 @@ import { BankTable } from "./bank-table";
 import { LobbyPanel } from "./lobby-panel";
 import { RummyTable } from "./rummy-table";
 import { SheddingTable } from "./shedding-table";
+import { TricksTable } from "./tricks-table";
 import { useCardTable } from "./use-card-table";
 
 export function CardTableScreen({ sessionId }: { sessionId: string }) {
@@ -59,6 +60,15 @@ export function CardTableScreen({ sessionId }: { sessionId: string }) {
 		case "bank":
 			return (
 				<BankTable
+					game={game}
+					table={table}
+					view={table.view}
+					controls={controls}
+				/>
+			);
+		case "tricks":
+			return (
+				<TricksTable
 					game={game}
 					table={table}
 					view={table.view}

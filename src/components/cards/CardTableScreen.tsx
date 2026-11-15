@@ -6,6 +6,7 @@ import { CardsNotFound, CardsPage } from "./Chrome";
 import { Lobby } from "./Lobby";
 import { RummyTable } from "./RummyTable";
 import { SheddingTable } from "./SheddingTable";
+import { TricksTable } from "./TricksTable";
 import { useCardTable } from "./useCardTable";
 
 /** Picks the screen for a table's state; the rule family picks the table itself. */
@@ -65,6 +66,15 @@ export function CardTableScreen({
 		case "bank":
 			return (
 				<BankTable
+					game={game}
+					table={table}
+					view={table.view}
+					controls={controls}
+				/>
+			);
+		case "tricks":
+			return (
+				<TricksTable
 					game={game}
 					table={table}
 					view={table.view}

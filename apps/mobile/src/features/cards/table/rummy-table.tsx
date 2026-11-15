@@ -624,6 +624,8 @@ export function RummyTable({
 								table={table}
 								scores={view.scores}
 								totals={view.totals}
+								empty={cards.rummy.noScores}
+								totalLabel={cards.rummy.scoreTotal}
 								onFelt
 							/>
 							{view.revealed?.map((hand, seat) => (
@@ -698,6 +700,8 @@ export function RummyTable({
 							table={table}
 							scores={view.scores}
 							totals={view.totals}
+							empty={cards.rummy.noScores}
+							totalLabel={cards.rummy.scoreTotal}
 						/>
 					</Sheet>
 				</>

@@ -1,10 +1,14 @@
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import { type CardGame, resolvedRules } from "@arcadeclub/core/cards/engine";
 import type { CardPower } from "@arcadeclub/core/cards/shedding";
-import { powerEffect } from "@arcadeclub/core/cards/table-view";
+import {
+	powerEffect,
+	tricksRuleLines,
+} from "@arcadeclub/core/cards/table-view";
 import { fmt, useI18n, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
 import { PlayingCard } from "./PlayingCard";
+import { useCardWords } from "./useCardWords";
 
 function Section({
 	heading,
@@ -31,6 +35,26 @@ function Lines({ lines }: { lines: string[] }) {
 	);
 }
 
+function TricksRules({ lines }: { lines: ReturnType<typeof tricksRuleLines> }) {
+	const r = useMessages().games.cards.rules;
+	return (
+		<>
+			<Section heading={r.goalHeading}>
+				<p className="text-sm leading-snug">{lines.goal}</p>
+			</Section>
+			<Section heading={r.passHeading}>
+				<Lines lines={lines.passing} />
+			</Section>
+			<Section heading={r.turnHeading}>
+				<Lines lines={lines.turn} />
+			</Section>
+			<Section heading={r.pointsHeading}>
+				<Lines lines={lines.points} />
+			</Section>
+		</>
+	);
+}
+
 /**
  * Written from the game's config and the table's house rules, so a new game
  * gets correct rules without anyone writing them twice.
@@ -48,6 +72,7 @@ export function RulesSheet({
 }) {
 	const { locale } = useI18n();
 	const cards = useMessages().games.cards;
+	const words = useCardWords();
 	const text = cards.games[game.id];
 	const optionText = text.options as Record<
 		string,
@@ -169,7 +194,7 @@ export function RulesSheet({
 						</p>
 					</Section>
 				</>
-			) : (
+			) : resolved.family === "bank" ? (
 				<>
 					<Section heading={r.goalHeading}>
 						<p className="text-sm leading-snug">
@@ -214,6 +239,8 @@ export function RulesSheet({
 						/>
 					</Section>
 				</>
+			) : (
+				<TricksRules lines={tricksRuleLines(words, resolved.rules)} />
 			)}
 			{active.length > 0 ? (
 				<Section heading={r.extrasHeading}>

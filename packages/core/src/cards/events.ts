@@ -29,6 +29,11 @@ export type CardEvent = { seq: number } & (
 	| { type: "swap"; seat: number; meldId: number; card: CardId }
 	| { type: "discard"; seat: number; card: CardId }
 	| { type: "roundEnd"; winner: number | null; round: number }
+	| { type: "passReady"; seat: number }
+	| { type: "exchange"; shift: number; count: number }
+	| { type: "trickWon"; seat: number; points: number }
+	| { type: "broken"; suit: Suit }
+	| { type: "moon"; seat: number }
 	| { type: "win"; seats: number[] }
 	| { type: "stake"; seat: number; amount: number }
 	| { type: "natural"; seat: number }
