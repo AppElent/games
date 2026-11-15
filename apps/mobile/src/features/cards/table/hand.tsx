@@ -41,6 +41,8 @@ const SELECT_LIFT = 20;
 const PLAYABLE_LIFT = 8;
 const FRESH_MARGIN = 24;
 
+const SHOWN: HandCardState = {};
+
 export type HandCardState = {
 	dim?: boolean;
 	selected?: boolean;
@@ -67,8 +69,8 @@ function HandCard({
 	state: HandCardState;
 	fresh: boolean;
 	label: string;
-	/** False refuses the tap, which shakes the card. */
-	onTap: (card: CardId, view: HostInstance) => boolean;
+	/** False refuses the tap, which shakes the card. Absent, the card is only shown. */
+	onTap?: (card: CardId, view: HostInstance) => boolean;
 }) {
 	const quiet = useReducedMotion();
 	const view = useRef<HostInstance>(null);
@@ -100,6 +102,39 @@ function HandCard({
 		],
 	}));
 	const borderRadius = width * 0.075;
+	const face = (
+		<>
+			<PlayingCard card={card} width={width} />
+			{state.dim ? (
+				<View pointerEvents="none" style={[styles.dim, { borderRadius }]} />
+			) : null}
+			{state.selected || fresh ? (
+				<View
+					pointerEvents="none"
+					style={[
+						styles.outline,
+						{ borderRadius },
+						!state.selected && styles.outlineFresh,
+					]}
+				/>
+			) : null}
+		</>
+	);
+
+	if (!onTap) {
+		return (
+			<Animated.View style={[styles.card, motion]}>
+				<View
+					accessible
+					accessibilityRole="image"
+					accessibilityLabel={label}
+					testID={`hand-${card}`}
+				>
+					{face}
+				</View>
+			</Animated.View>
+		);
+	}
 
 	return (
 		<Animated.View style={[styles.card, motion]}>
@@ -124,20 +159,7 @@ function HandCard({
 				}}
 				testID={`hand-${card}`}
 			>
-				<PlayingCard card={card} width={width} />
-				{state.dim ? (
-					<View pointerEvents="none" style={[styles.dim, { borderRadius }]} />
-				) : null}
-				{state.selected || fresh ? (
-					<View
-						pointerEvents="none"
-						style={[
-							styles.outline,
-							{ borderRadius },
-							!state.selected && styles.outlineFresh,
-						]}
-					/>
-				) : null}
+				{face}
 			</Pressable>
 		</Animated.View>
 	);
@@ -156,8 +178,9 @@ export function Hand({
 	handSize: number;
 	fresh: ReadonlySet<CardId>;
 	zones: CardZones;
-	stateOf: (card: CardId) => HandCardState;
-	onTap: (card: CardId, view: HostInstance) => boolean;
+	/** Absent for a hand that is only shown, such as at the bank. */
+	stateOf?: (card: CardId) => HandCardState;
+	onTap?: (card: CardId, view: HostInstance) => boolean;
 }) {
 	const { t } = useI18n();
 	const copy = t.games.cards;
@@ -249,7 +272,7 @@ export function Hand({
 									: 0)
 							}
 							tilt={fanned ? offset * spread : 0}
-							state={stateOf(card)}
+							state={stateOf?.(card) ?? SHOWN}
 							fresh={fresh.has(card)}
 							label={cardName(copy, card)}
 							onTap={onTap}

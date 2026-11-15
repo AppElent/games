@@ -158,6 +158,25 @@ export const cards = {
 		scoresHeading: "Scoreboard",
 		noScores: "Scores appear after the first round.",
 	},
+	bank: {
+		bankName: "Bank",
+		stakeHint: "How many points is this hand worth?",
+		stakeButton: { one: "{count} point", other: "{count} points" },
+		stakeWaiting: "Waiting for the others to pick their points.",
+		playingFor: { one: "for {count} point", other: "for {count} points" },
+		hit: "Another card",
+		stand: "Stop",
+		double: "Double",
+		playHint: "You have {total}. Another card, or stop?",
+		natural: "Twenty-one!",
+		over: "Over 21",
+		hidden: "Face-down card",
+		bankTotal: "Bank has {total}",
+		resultWin: "+{count}",
+		resultLose: "−{count}",
+		resultEven: "±0",
+		highestWins: "Highest total wins.",
+	},
 	tricks: {
 		passHint: "Pick {count} cards to pass {direction}.",
 		passWaiting: "Waiting for the others to pass.",
@@ -376,6 +395,36 @@ export const cards = {
 		youMoon: "You shoot the moon!",
 		winTie: "{name} win!",
 		youWin: "You win!",
+		stake: {
+			one: "{name} plays this hand for {count} point.",
+			other: "{name} plays this hand for {count} points.",
+		},
+		youStake: {
+			one: "You play this hand for {count} point.",
+			other: "You play this hand for {count} points.",
+		},
+		natural: "{name} has twenty-one in two cards!",
+		youNatural: "You have twenty-one in two cards!",
+		hit: "{name} takes the {card}: {total}.",
+		youHit: "You take the {card}: {total}.",
+		double: "{name} doubles and takes the {card}: {total}.",
+		youDouble: "You double and take the {card}: {total}.",
+		stand: "{name} stops on {total}.",
+		youStand: "You stop on {total}.",
+		bust: "{name} is over 21.",
+		youBust: "You're over 21.",
+		bankReveal: "The bank turns over the {card}: {total}.",
+		bankDraw: "The bank takes the {card}: {total}.",
+		settle: "Round {round} is over.",
+		settleYouWin: {
+			one: "Round over: you win {count} point.",
+			other: "Round over: you win {count} points.",
+		},
+		settleYouLose: {
+			one: "Round over: you lose {count} point.",
+			other: "Round over: you lose {count} points.",
+		},
+		settleYouEven: "Round over: you're level with the bank.",
 	},
 	rules: {
 		heading: "How to play {game}",
@@ -385,6 +434,7 @@ export const cards = {
 		extrasHeading: "At this table",
 		meldsHeading: "Sets and runs",
 		pointsHeading: "Points",
+		bankHeading: "The bank",
 		passHeading: "Passing",
 		shedding: {
 			goal: "Be the first to play all your cards.",
@@ -425,6 +475,23 @@ export const cards = {
 				"A joker stands in for any card. A meld needs at least {count} real cards.",
 			points:
 				"2-10 count their face value, J Q K {face}, ace {ace} ({lowAce} in A-2-3), joker {joker}.",
+		},
+		bank: {
+			goal: "Get closer to 21 than the bank without going over. The highest total after {rounds} rounds wins.",
+			values: "2-10 count their face value, J Q K count 10, an ace 1 or 11.",
+			stake: "Before the deal, pick what your hand is worth: {stakes} points.",
+			hit: "Take another card as often as you like, or stop. Over 21 and you lose your points straight away.",
+			double:
+				"On your first two cards you may double your points, take one more card and stop.",
+			bank: "The bank shows one card. When everyone is done it turns the other over and takes cards until it has {stand} or more.",
+			bankSoft:
+				"The bank also takes a card on {stand} when it counts an ace as 11.",
+			payout:
+				"Beat the bank, or see it go over 21, and you win your points. Level with the bank: nothing changes.",
+			natural:
+				"Twenty-one in two cards wins {pays} times your points, rounded, unless the bank has it too.",
+			bankNatural:
+				"Twenty-one in the bank's two cards beats everything but another two-card 21.",
 		},
 		tricks: {
 			goal: "Stay away from points. The game ends when someone reaches {target}; the lowest total wins.",
@@ -572,6 +639,31 @@ export const cards = {
 				openAt40: {
 					label: "Open at 40",
 					hint: "The first lay-down needs 40 points instead of 30.",
+				},
+			},
+		},
+		eenentwintigen: {
+			name: "Twenty-One",
+			tagline: "Beat the bank to 21",
+			blurb:
+				"Everyone against the bank. Pick what each hand is worth, draw towards 21 and stop in time. Points only.",
+			powers: {},
+			options: {
+				doubleDown: {
+					label: "Doubling",
+					hint: "Double your points on two cards for one more card.",
+				},
+				bankHitsSoft17: {
+					label: "Bank draws on soft 17",
+					hint: "The bank takes a card on 17 with an ace counted as 11.",
+				},
+				shortMatch: {
+					label: "Short match",
+					hint: "Play 5 rounds instead of 10.",
+				},
+				longMatch: {
+					label: "Long match",
+					hint: "Play 20 rounds instead of 10.",
 				},
 			},
 		},

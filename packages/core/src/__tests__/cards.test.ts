@@ -93,6 +93,13 @@ function allCards(state: CardGameState) {
 				...state.hands.flat(),
 				...state.melds.flatMap((meld) => meld.cards),
 			];
+		case "bank":
+			return [
+				...state.stock,
+				...state.discard,
+				...state.hands.flat(),
+				...state.bank,
+			];
 		case "tricks":
 			return [
 				...state.hands.flat(),
@@ -1016,7 +1023,11 @@ describe("jokeren", () => {
 });
 
 describe("views keep hands private", () => {
-	it.each(CARD_GAME_IDS)("%s hides other hands and the stock", (id) => {
+	// At a bank table every hand is dealt face up; its own test covers the bank's card.
+	const privateHands = CARD_GAME_IDS.filter(
+		(id) => CARD_GAMES[id].family !== "bank",
+	);
+	it.each(privateHands)("%s hides other hands and the stock", (id) => {
 		const game = getCardGame(id);
 		const seats = Math.min(3, game.players.max);
 		const state = createCardGame(game, [], seats, seeded(21));
@@ -1030,7 +1041,7 @@ describe("views keep hands private", () => {
 			expect(serialized).not.toContain(`"${card}"`);
 		}
 		const spectator = viewCardGame(game, [], state, null);
-		expect(spectator.hand).toEqual([]);
+		expect("hand" in spectator && spectator.hand).toEqual([]);
 		expect(spectator.handCounts).toEqual(
 			state.hands.map((hand) => hand.length),
 		);
@@ -1121,6 +1132,18 @@ describe("full games between computer players", () => {
 		30_000,
 	);
 
+	it.each([1, 3, 6])(
+		"eenentwintigen bots never make an illegal move with %i seats",
+		(seats) => {
+			for (let seed = 1; seed <= 150; seed += 1) {
+				expect(
+					playOut(getCardGame("eenentwintigen"), [], seats, seed).phase,
+				).toBe("finished");
+			}
+		},
+		30_000,
+	);
+
 	it.each([
 		["pesten", ["noFinishOnPower", "noStacking", "noLastCard"]],
 		["maumau", ["noStacking", "noLastCard"]],
@@ -1138,6 +1161,7 @@ describe("full games between computer players", () => {
 			],
 		],
 		["jokeren", ["fullMatch", "stockOnly", "openAt40"]],
+		["eenentwintigen", ["doubleDown", "bankHitsSoft17", "longMatch"]],
 		["gin-rummy", ["shortMatch"]],
 	] as const)("%s finishes with every house rule on", (id, options) => {
 		for (let seed = 1; seed <= 12; seed += 1) {

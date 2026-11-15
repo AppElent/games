@@ -160,6 +160,25 @@ export const cards = {
 		scoresHeading: "Scorebord",
 		noScores: "De stand verschijnt na de eerste ronde.",
 	},
+	bank: {
+		bankName: "Bank",
+		stakeHint: "Hoeveel punten is deze hand waard?",
+		stakeButton: { one: "{count} punt", other: "{count} punten" },
+		stakeWaiting: "Wachten tot de anderen hun punten kiezen.",
+		playingFor: { one: "voor {count} punt", other: "voor {count} punten" },
+		hit: "Nog een kaart",
+		stand: "Stoppen",
+		double: "Verdubbelen",
+		playHint: "Je hebt {total}. Nog een kaart, of stoppen?",
+		natural: "Eenentwintig!",
+		over: "Dood",
+		hidden: "Gesloten kaart",
+		bankTotal: "Bank heeft {total}",
+		resultWin: "+{count}",
+		resultLose: "−{count}",
+		resultEven: "±0",
+		highestWins: "Het hoogste totaal wint.",
+	},
 	tricks: {
 		passHint: "Kies {count} kaarten om {direction} door te geven.",
 		passWaiting: "Wachten tot de anderen hebben doorgegeven.",
@@ -377,6 +396,36 @@ export const cards = {
 		youMoon: "Jij schiet de maan!",
 		winTie: "{name} winnen!",
 		youWin: "Jij wint!",
+		stake: {
+			one: "{name} speelt deze hand voor {count} punt.",
+			other: "{name} speelt deze hand voor {count} punten.",
+		},
+		youStake: {
+			one: "Jij speelt deze hand voor {count} punt.",
+			other: "Jij speelt deze hand voor {count} punten.",
+		},
+		natural: "{name} heeft eenentwintig met twee kaarten!",
+		youNatural: "Jij hebt eenentwintig met twee kaarten!",
+		hit: "{name} pakt de {card}: {total}.",
+		youHit: "Jij pakt de {card}: {total}.",
+		double: "{name} verdubbelt en pakt de {card}: {total}.",
+		youDouble: "Jij verdubbelt en pakt de {card}: {total}.",
+		stand: "{name} stopt op {total}.",
+		youStand: "Jij stopt op {total}.",
+		bust: "{name} is dood: meer dan 21.",
+		youBust: "Jij bent dood: meer dan 21.",
+		bankReveal: "De bank draait de {card} om: {total}.",
+		bankDraw: "De bank pakt de {card}: {total}.",
+		settle: "Ronde {round} is voorbij.",
+		settleYouWin: {
+			one: "Ronde voorbij: je wint {count} punt.",
+			other: "Ronde voorbij: je wint {count} punten.",
+		},
+		settleYouLose: {
+			one: "Ronde voorbij: je verliest {count} punt.",
+			other: "Ronde voorbij: je verliest {count} punten.",
+		},
+		settleYouEven: "Ronde voorbij: je staat gelijk met de bank.",
 	},
 	rules: {
 		heading: "Zo speel je {game}",
@@ -386,6 +435,7 @@ export const cards = {
 		extrasHeading: "Aan deze tafel",
 		meldsHeading: "Groepen en rijen",
 		pointsHeading: "Punten",
+		bankHeading: "De bank",
 		passHeading: "Doorgeven",
 		shedding: {
 			goal: "Ben als eerste al je kaarten kwijt.",
@@ -429,6 +479,23 @@ export const cards = {
 				"Een joker vervangt elke kaart. Een combinatie heeft minstens {count} echte kaarten nodig.",
 			points:
 				"2-10 tellen hun waarde, B V H {face}, aas {ace} ({lowAce} in A-2-3), joker {joker}.",
+		},
+		bank: {
+			goal: "Kom dichter bij 21 dan de bank zonder eroverheen te gaan. Het hoogste totaal na {rounds} rondes wint.",
+			values: "2-10 tellen hun waarde, B V H tellen 10, een aas 1 of 11.",
+			stake: "Kies voor het delen wat je hand waard is: {stakes} punten.",
+			hit: "Pak zo vaak je wilt nog een kaart, of stop. Boven 21 ben je dood en verlies je je punten meteen.",
+			double:
+				"Op je eerste twee kaarten mag je je punten verdubbelen, nog één kaart pakken en stoppen.",
+			bank: "De bank laat één kaart zien. Als iedereen klaar is draait hij de andere om en pakt kaarten tot hij {stand} of meer heeft.",
+			bankSoft:
+				"De bank pakt ook een kaart op {stand} als hij een aas als 11 telt.",
+			payout:
+				"Versla de bank, of zie hem boven 21 gaan, en je wint je punten. Gelijk met de bank: er verandert niets.",
+			natural:
+				"Eenentwintig met twee kaarten wint {pays} keer je punten, afgerond, tenzij de bank het ook heeft.",
+			bankNatural:
+				"Eenentwintig met de eerste twee kaarten van de bank wint van alles behalve een andere eenentwintig met twee kaarten.",
 		},
 		tricks: {
 			goal: "Blijf weg bij de punten. Het spel eindigt zodra iemand {target} haalt; de laagste score wint.",
@@ -578,6 +645,31 @@ export const cards = {
 				openAt40: {
 					label: "Uitkomen met 40",
 					hint: "De eerste keer neerleggen moet 40 punten zijn in plaats van 30.",
+				},
+			},
+		},
+		eenentwintigen: {
+			name: "Eenentwintigen",
+			tagline: "Versla de bank tot 21",
+			blurb:
+				"Iedereen tegen de bank. Kies wat elke hand waard is, pak kaarten richting 21 en stop op tijd. Alleen om punten.",
+			powers: {},
+			options: {
+				doubleDown: {
+					label: "Verdubbelen",
+					hint: "Verdubbel je punten op twee kaarten voor nog één kaart.",
+				},
+				bankHitsSoft17: {
+					label: "Bank pakt op zachte 17",
+					hint: "De bank pakt een kaart op 17 met een aas als 11.",
+				},
+				shortMatch: {
+					label: "Korte partij",
+					hint: "Speel 5 rondes in plaats van 10.",
+				},
+				longMatch: {
+					label: "Lange partij",
+					hint: "Speel 20 rondes in plaats van 10.",
 				},
 			},
 		},
