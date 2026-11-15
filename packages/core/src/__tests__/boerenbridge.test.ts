@@ -8,7 +8,7 @@ import {
 	getCardGame,
 	normalizeOptions,
 	resolvedRules,
-	switchOption,
+	toggleOption,
 	viewCardGame,
 } from "../cards/engine";
 import {
@@ -127,12 +127,10 @@ describe("the round schedule", () => {
 	});
 
 	it("can't have both house rules: switching one on switches the other off", () => {
-		expect(switchOption(game, ["upOnly"], "downOnly", true)).toEqual([
-			"downOnly",
+		expect(toggleOption(game, ["upOnly"], "downOnly")).toEqual(["downOnly"]);
+		expect(toggleOption(game, ["upOnly", "dealerFree"], "upOnly")).toEqual([
+			"dealerFree",
 		]);
-		expect(
-			switchOption(game, ["upOnly", "dealerFree"], "upOnly", false),
-		).toEqual(["dealerFree"]);
 		expectRule(
 			() => normalizeOptions(game, ["upOnly", "downOnly"]),
 			"cardsOptionsClash",

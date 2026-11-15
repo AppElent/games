@@ -7,7 +7,20 @@
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
+import {
+	applyBank,
+	BANK_ACTIONS,
+	type BankAction,
+	type BankRules,
+	type BankState,
+	type BankView,
+	botBankMove,
+	createBank,
+	nextBankStarter,
+	viewBank,
+} from "./bank";
 import { boerenbridge } from "./games/boerenbridge";
+import { eenentwintigen } from "./games/eenentwintigen";
 import { ginRummy } from "./games/gin-rummy";
 import { hartenjagen } from "./games/hartenjagen";
 import { jokeren } from "./games/jokeren";
@@ -85,11 +98,14 @@ export type HouseRule<Rules> = {
 	 * Several such rules combine, which a `patch` on `powers` could not.
 	 */
 	withoutPowers?: readonly string[];
+	/** Rules in the same group exclude each other, such as match lengths. */
+	group?: string;
 };
 
 export type CardGameDefinition =
 	| Definition<"shedding", SheddingRules>
 	| Definition<"rummy", RummyRules>
+	| Definition<"bank", BankRules>
 	| Definition<"tricks", TricksRules>
 	| Definition<"gin", GinRules>;
 
@@ -100,6 +116,7 @@ export const CARD_GAMES = {
 	pesten,
 	maumau,
 	jokeren,
+	eenentwintigen,
 	hartenjagen,
 	boerenbridge,
 	"gin-rummy": ginRummy,
@@ -114,13 +131,19 @@ export function isCardGameId(value: string): value is CardGameId {
 	return (CARD_GAME_IDS as string[]).includes(value);
 }
 
-export type CardGameState = SheddingState | RummyState | TricksState | GinState;
+export type CardGameState =
+	| SheddingState
+	| RummyState
+	| BankState
+	| TricksState
+	| GinState;
 export type CardAction =
 	| SheddingAction
 	| RummyAction
+	| BankAction
 	| TricksAction
 	| GinAction;
-type CardView = SheddingView | RummyView | TricksView | GinView;
+type CardView = SheddingView | RummyView | BankView | TricksView | GinView;
 
 export function getCardGame(id: string): CardGame {
 	if (!isCardGameId(id)) {
@@ -133,51 +156,36 @@ function houseRules(game: CardGameDefinition) {
 	return game.options as ReadonlyArray<HouseRule<unknown>>;
 }
 
-/** Two house rules that patch the same rule field can't both apply. */
-function clash(a: HouseRule<unknown>, b: HouseRule<unknown>) {
-	const fields = Object.keys(a.patch ?? {});
-	return (
-		a.id !== b.id &&
-		Object.keys(b.patch ?? {}).some((field) => fields.includes(field))
-	);
-}
-
-/** Validates house-rule ids; unknown or clashing ones are a client error. */
+/** Validates house-rule ids; unknown ones, or two from one group, are a client error. */
 export function normalizeOptions(game: CardGameDefinition, options: string[]) {
-	const known = game.options.map((option) => option.id as string);
+	const known = houseRules(game);
 	for (const option of options) {
-		if (!known.includes(option)) {
+		if (!known.some((rule) => rule.id === option)) {
 			throw new GameRuleError("cardsUnknownOption");
 		}
 	}
-	const chosen = houseRules(game).filter((option) =>
-		options.includes(option.id),
-	);
-	if (chosen.some((a) => chosen.some((b) => clash(a, b)))) {
+	const chosen = known.filter((rule) => options.includes(rule.id));
+	const groups = chosen.flatMap((rule) => (rule.group ? [rule.group] : []));
+	if (new Set(groups).size < groups.length) {
 		throw new GameRuleError("cardsOptionsClash");
 	}
-	return known.filter((id) => options.includes(id));
+	return chosen.map((rule) => rule.id);
 }
 
-/**
- * The options after switching one on or off. Switching one on switches off
- * any that change the same rule (only going up, only going down).
- */
-export function switchOption(
+/** Switches a house rule on or off; switching one on turns off the rest of its group. */
+export function toggleOption(
 	game: CardGameDefinition,
 	options: readonly string[],
 	id: string,
-	on: boolean,
-) {
-	const rest = options.filter((option) => option !== id);
-	const option = houseRules(game).find((rule) => rule.id === id);
-	if (!on || !option) {
-		return rest;
+): string[] {
+	if (options.includes(id)) {
+		return options.filter((option) => option !== id);
 	}
-	const clashing = houseRules(game)
-		.filter((other) => clash(option, other))
-		.map((other) => other.id);
-	return [...rest.filter((other) => !clashing.includes(other)), id];
+	const group = houseRules(game).find((rule) => rule.id === id)?.group;
+	const rivals = houseRules(game)
+		.filter((rule) => group !== undefined && rule.group === group)
+		.map((rule) => rule.id);
+	return [...options.filter((option) => !rivals.includes(option)), id];
 }
 
 function rulesOf<R>(
@@ -204,23 +212,20 @@ function rulesOf<R>(
 
 /** The house rule that turns this special card into a plain one, if the game has it. */
 export function plainCardOption(game: CardGameDefinition, power: string) {
-	return (game.options as ReadonlyArray<HouseRule<unknown>>).find((option) =>
+	return houseRules(game).find((option) =>
 		option.withoutPowers?.includes(power),
 	);
 }
 
 /** House rules that are not about a single special card. */
 export function generalOptions(game: CardGameDefinition) {
-	return (game.options as ReadonlyArray<HouseRule<unknown>>).filter(
-		(option) => !option.withoutPowers,
-	);
+	return houseRules(game).filter((option) => !option.withoutPowers);
 }
 
 function rulesFor(game: CardGameDefinition, options: readonly string[]) {
-	return rulesOf<SheddingRules | RummyRules | TricksRules | GinRules>(
-		game,
-		options,
-	);
+	return rulesOf<
+		SheddingRules | RummyRules | BankRules | TricksRules | GinRules
+	>(game, options);
 }
 
 type FamilyTypes = {
@@ -235,6 +240,12 @@ type FamilyTypes = {
 		state: RummyState;
 		action: RummyAction;
 		view: RummyView;
+	};
+	bank: {
+		rules: BankRules;
+		state: BankState;
+		action: BankAction;
+		view: BankView;
 	};
 	tricks: {
 		rules: TricksRules;
@@ -299,6 +310,14 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		view: viewRummy,
 		bot: botRummyMove,
 	},
+	bank: {
+		actions: BANK_ACTIONS,
+		create: createBank,
+		nextStarter: nextBankStarter,
+		apply: applyBank,
+		view: viewBank,
+		bot: botBankMove,
+	},
 	tricks: {
 		actions: TRICKS_ACTIONS,
 		create: createTricks,
@@ -360,7 +379,7 @@ export function applyCardAction(
 	return family.apply(rulesFor(game, options), state, seat, action, random);
 }
 
-/** What one seat may see; `null` is a spectator. Never includes other hands. */
+/** What one seat may see; `null` is a spectator. Never includes a hand the rules keep hidden. */
 export function viewCardGame(
 	game: CardGameDefinition,
 	options: readonly string[],

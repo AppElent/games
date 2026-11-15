@@ -89,6 +89,6 @@ export const catalog = {
 		description:
 			"Klassieke Nederlandse kaartspellen aan één tafel. Speel meteen tegen de computer of nodig vrienden uit met een kamercode.",
 		primaryAction: "Kies een spel",
-		stats: "2-8 spelers",
+		stats: "1-8 spelers",
 	},
 } satisfies Record<GameType, CatalogText>;

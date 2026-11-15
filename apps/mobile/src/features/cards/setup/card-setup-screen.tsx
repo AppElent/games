@@ -8,7 +8,7 @@ import {
 	generalOptions,
 	getCardGame,
 	isCardGameId,
-	switchOption,
+	toggleOption,
 } from "@arcadeclub/core/cards/engine";
 import { specialCards } from "@arcadeclub/core/cards/table-view";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
@@ -84,7 +84,9 @@ function Setup({
 	const houseRules = generalOptions(game);
 	const special = useMemo(() => specialCards(words, game), [words, game]);
 	const setOption = (id: string, on: boolean) =>
-		setOptions((current) => switchOption(game, current, id, on));
+		setOptions((current) =>
+			current.includes(id) === on ? current : toggleOption(game, current, id),
+		);
 	const solo = mode === "computer";
 	const headerOptions = useMemo(() => ({ title: text.name }), [text.name]);
 

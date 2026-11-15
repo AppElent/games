@@ -2,7 +2,7 @@ import {
 	type CardGameId,
 	generalOptions,
 	getCardGame,
-	switchOption,
+	toggleOption,
 } from "@arcadeclub/core/cards/engine";
 import { specialCards } from "@arcadeclub/core/cards/table-view";
 import { useNavigate } from "@tanstack/react-router";
@@ -88,9 +88,7 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 	const houseRules = generalOptions(game);
 	const special = specialCards(words, game);
 	const toggle = (id: string) =>
-		setOptions((current) =>
-			switchOption(game, current, id, !current.includes(id)),
-		);
+		setOptions((current) => toggleOption(game, current, id));
 	const { busy, error, create } = useCreateCardTable(gameId, {
 		mode,
 		opponents,

@@ -40,8 +40,8 @@ export const boerenbridge = {
 		highWins: true,
 	},
 	options: [
-		{ id: "upOnly", patch: { schedule: "up" } },
-		{ id: "downOnly", patch: { schedule: "down" } },
+		{ id: "upOnly", patch: { schedule: "up" }, group: "schedule" },
+		{ id: "downOnly", patch: { schedule: "down" }, group: "schedule" },
 		{
 			id: "dealerFree",
 			patch: { bidding: { ...BIDDING, dealerMayMatch: true } },
