@@ -1,6 +1,6 @@
 ---
 type: contract
-description: Read when changing card games (Pesten, Mau-Mau, Jokeren, Hartenjagen, Boerenbridge), the card engine, its stored state, seat claims or card art.
+description: Read when changing card games (Pesten, Mau-Mau, Jokeren, Hartenjagen, Gin Rummy, Boerenbridge), the card engine, its stored state, seat claims or card art.
 version: 1.2.0
 status: current
 ---
@@ -14,10 +14,13 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
 ## Behavior
 
 - One catalog entry (`card-games`) leads to a hub at `/cards` listing every game in
-  `CARD_GAMES` (Pesten, Mau-Mau, Jokeren, Hartenjagen, Boerenbridge).
+  `CARD_GAMES` (Pesten, Mau-Mau, Jokeren, Hartenjagen, Gin Rummy, Boerenbridge).
 - A game is a config file in `packages/core/src/cards/games/` for a rule family
-  (`shedding`, `rummy`, `tricks`), so adding one to a family needs no backend or UI
-  code.
+  (`shedding`, `rummy`, `tricks`, `gin`), so adding one to a family needs no backend
+  or UI code.
+- A view never holds another seat's hand. In gin the opponent's cards stay hidden until
+  a knock lays the knocker's melds and deadwood face up, and the hand result shows both
+  hands once it is scored.
 - House rules are options over a game's `rules`, off by default. An option with
   `withoutPowers` turns those special cards into plain cards, so a shedding game offers
   one such option per special card and the setup screens list them under "Special

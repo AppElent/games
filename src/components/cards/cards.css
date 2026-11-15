@@ -1306,6 +1306,12 @@ button.pile:disabled {
 	}
 }
 
+/* Gin: unmatched cards shown after a knock or at the end of a hand. */
+.meld[data-deadwood="true"] {
+	border-style: dashed;
+	border-color: rgba(244, 236, 216, 0.35);
+}
+
 button.meld[data-target="true"] {
 	border-color: var(--gold);
 	background: rgba(230, 192, 106, 0.16);
@@ -1433,6 +1439,11 @@ button.meld[data-target="true"] {
 .suit-choice svg {
 	width: 2.2rem;
 	height: 2.2rem;
+}
+
+.score-scroll {
+	overflow-x: auto;
+	touch-action: pan-x pan-y;
 }
 
 .score-table {

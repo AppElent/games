@@ -44,6 +44,10 @@ export const serverErrors = {
 		"Als gever mag je geen {count} bieden: dan komen de biedingen uit op het aantal slagen.",
 	cardsBidFirst: "Eerst bieden: wacht tot iedereen heeft geboden.",
 	cardsOptionsClash: "Die huisregels gaan niet samen.",
+	cardsKnockTooHigh:
+		"Kloppen mag met {limit} of minder; dit laat {deadwood} over.",
+	cardsAfterKnock: "Er is geklopt: alleen aanleggen kan nog.",
+	cardsNoKnock: "Er is nog niet geklopt.",
 	signInRequired: "Inloggen vereist.",
 	accountChanged:
 		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",

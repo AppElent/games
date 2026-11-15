@@ -41,6 +41,10 @@ export const serverErrors = {
 		"As the dealer you can't bid {count}: the bids would add up to the tricks in the round.",
 	cardsBidFirst: "Bids come first: wait for everyone to bid.",
 	cardsOptionsClash: "Those house rules can't be combined.",
+	cardsKnockTooHigh:
+		"You can knock with {limit} or less; this leaves {deadwood}.",
+	cardsAfterKnock: "Someone knocked: only laying off is left.",
+	cardsNoKnock: "Nobody has knocked yet.",
 	signInRequired: "Sign in required.",
 	accountChanged:
 		"You switched accounts. Sign in to the account you want to delete and try again.",

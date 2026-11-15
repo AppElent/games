@@ -3,6 +3,13 @@ import { CARD_ASPECT, cardBackArt, cardFaceArt } from "../cards/art";
 import { buildDeck, type CardId, parseCard } from "../cards/deck";
 import { getCardGame, resolvedRules } from "../cards/engine";
 import type { CardEvent } from "../cards/events";
+import {
+	applyGin,
+	createGin,
+	type GinRules,
+	type GinState,
+	viewGin,
+} from "../cards/gin";
 import { buildMeld, type Meld } from "../cards/melds";
 import type { RummyRules, RummyView } from "../cards/rummy";
 import type { SheddingView } from "../cards/shedding";
@@ -13,6 +20,10 @@ import {
 	cardTilt,
 	describeEvent,
 	eventsSince,
+	ginHint,
+	ginLayoffOrder,
+	ginTurn,
+	groupGinHand,
 	latestEventText,
 	meldCardNames,
 	nextFreshCards,
@@ -226,6 +237,16 @@ describe("narration", () => {
 		{ seq: 53, type: "moon", seat: 1 },
 		{ seq: 54, type: "bid", seat: 0, count: 2 },
 		{ seq: 55, type: "bid", seat: 1, count: 0 },
+		{ seq: 54, type: "knock", seat: 0, gin: false },
+		{ seq: 55, type: "knock", seat: 1, gin: false },
+		{ seq: 56, type: "knock", seat: 0, gin: true },
+		{ seq: 57, type: "knock", seat: 1, gin: true },
+		{ seq: 58, type: "handEnd", winner: 0, kind: "knock", points: 1 },
+		{ seq: 59, type: "handEnd", winner: 1, kind: "knock", points: 14 },
+		{ seq: 60, type: "handEnd", winner: 0, kind: "gin", points: 40 },
+		{ seq: 61, type: "handEnd", winner: 1, kind: "gin", points: 40 },
+		{ seq: 62, type: "handEnd", winner: 0, kind: "undercut", points: 25 },
+		{ seq: 63, type: "handEnd", winner: 1, kind: "undercut", points: 25 },
 	];
 
 	it.each([
@@ -447,6 +468,138 @@ describe("rummyHint", () => {
 		expect(hint({ hand, takenDiscard: "H2#0" }, ["H2#0"])).toBe(
 			en.serverErrors.cardsCannotReturnDiscard,
 		);
+	});
+});
+
+describe("gin turns", () => {
+	const gin = resolvedRules(getCardGame("gin-rummy"), []);
+	if (gin.family !== "gin") throw new Error("Gin Rummy is gin");
+	const ginRules: GinRules = gin.rules;
+	const ids = (faces: string) => faces.split(" ").map((face) => `${face}#0`);
+	const fixed = () => 0.5;
+	// Three runs for seat 0, then two loose cards; seat 1 holds nothing useful.
+	const KNOCKER = "S2 S3 S4 H5 H6 H7 D9 D10 DJ";
+	const DEFENDER = "S5 H8 DQ C3 C7 HK HQ D2 D4 CJ";
+
+	function state(seat0: string, over: Partial<GinState> = {}): GinState {
+		const hands = [ids(seat0), ids(DEFENDER)];
+		const used = new Set([...hands.flat(), "C5#0"]);
+		return {
+			...createGin(ginRules, 2, fixed),
+			hands,
+			stock: buildDeck(1, 0).filter((card) => !used.has(card)),
+			discard: ["C5#0"],
+			turn: 0,
+			phase: "play",
+			events: [],
+			...over,
+		};
+	}
+	const turnFor = (game: GinState, you: number | null, selected = "") => {
+		const view = viewGin(ginRules, game, you);
+		const turn = ginTurn({
+			view,
+			rules: ginRules,
+			you,
+			selected: selected ? ids(selected) : [],
+		});
+		const hint = ginHint(turn, view, {
+			cards,
+			fmt: words.fmt,
+			serverErrors: en.serverErrors,
+			knocker: "Hanna",
+		});
+		return { view, turn, hint };
+	};
+
+	it("draws first, from either pile", () => {
+		const game = state(DEFENDER.replace("S5", "SA"), { phase: "draw" });
+		const { turn, hint } = turnFor(game, 0);
+		expect(turn.drawing).toBe(true);
+		expect(turn.canTakeDiscard).toBe(true);
+		expect(hint).toBe(cards.gin.drawHint);
+	});
+
+	it("counts the deadwood the best discard leaves, and offers the knock", () => {
+		const game = state(`${KNOCKER} C9 SK`);
+		const none = turnFor(game, 0);
+		expect(none.turn.deadwood).toBe(9);
+		expect(none.turn.knockPossible).toBe(true);
+		expect(none.hint).toBe(cards.gin.canKnockHint);
+
+		const knock = turnFor(game, 0, "SK");
+		expect(knock.turn.canKnock).toBe(true);
+		expect(knock.turn.knockDeadwood).toBe(9);
+		expect(knock.turn.gin).toBe(false);
+		expect(knock.hint).toBe(words.fmt(cards.gin.knockHint, { deadwood: 9 }));
+
+		const breakRun = turnFor(game, 0, "S2");
+		expect(breakRun.turn.canDiscard).toBe(true);
+		expect(breakRun.turn.canKnock).toBe(false);
+		expect(breakRun.hint).toBe(cards.gin.discardHint);
+
+		expect(turnFor(game, 0, "S2 S3").hint).toBe(cards.gin.oneCard);
+	});
+
+	it("goes gin when the discard leaves no deadwood", () => {
+		const { turn, hint } = turnFor(state(`${KNOCKER} D8 CK`), 0, "CK");
+		expect(turn.gin).toBe(true);
+		expect(hint).toBe(cards.gin.ginHint);
+	});
+
+	it("won't discard the card just taken from the pile", () => {
+		const game = state(`${KNOCKER} C9 SK`, { takenDiscard: "SK#0" });
+		const { turn, hint } = turnFor(game, 0, "SK");
+		expect(turn.canDiscard).toBe(false);
+		expect(turn.canKnock).toBe(false);
+		expect(hint).toBe(en.serverErrors.cardsCannotReturnDiscard);
+		// The best discard skips the taken card too.
+		expect(turn.deadwood).toBe(9 + 10 - 9);
+	});
+
+	it("waits on the other player, and shows a spectator no count", () => {
+		const game = state(`${KNOCKER} C9 SK`);
+		const other = turnFor(game, 1);
+		expect(other.turn.mine).toBe(false);
+		expect(other.hint).toBeNull();
+		expect(other.turn.deadwood).toBeGreaterThan(0);
+		expect(turnFor(game, null).turn.deadwood).toBeNull();
+	});
+
+	it("lays off what fits on the knocker's melds", () => {
+		const knocked = applyGin(
+			ginRules,
+			state(`${KNOCKER} C2 SK`),
+			0,
+			{ type: "knock", card: "SK#0" },
+			fixed,
+		);
+		expect(knocked.phase).toBe("layoff");
+
+		const idle = turnFor(knocked, 1);
+		expect(idle.turn.layingOff).toBe(true);
+		// Everything the defender holds is still unmatched before laying off.
+		expect(idle.turn.deadwood).toBeGreaterThan(0);
+		expect(idle.hint).toBe(words.fmt(cards.gin.layoffHint, { name: "Hanna" }));
+
+		const fits = turnFor(knocked, 1, "S5");
+		const spades = fits.view.melds.find((meld) => meld.cards.includes("S2#0"));
+		if (!spades) throw new Error("spade run");
+		expect(ginLayoffOrder(fits.turn, spades)).toEqual(["S5#0"]);
+		expect(fits.hint).toBe(cards.gin.layoffTapMeld);
+
+		const loose = turnFor(knocked, 1, "CJ");
+		expect(
+			loose.view.melds.every((meld) => !ginLayoffOrder(loose.turn, meld)),
+		).toBe(true);
+		expect(loose.hint).toBe(cards.gin.layoffNoFit);
+	});
+
+	it("holds melds together, runs in their own order, then the deadwood", () => {
+		expect(groupGinHand(ids("HK S3 SA C9 S2"), ginRules)).toEqual([
+			...ids("SA S2 S3"),
+			...sortCards(ids("C9 HK"), "suit"),
+		]);
 	});
 });
 
