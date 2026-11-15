@@ -44,7 +44,7 @@ type Props = {
 	hintCells: ReadonlySet<number> | undefined;
 	cages?: KillerCage[];
 	hidden: boolean;
-	/** Outside digit mode the selected cell's frame is thicker. */
+	/** Outside digit mode the selected cell gets a deeper tint. */
 	mode: SudokuInputMode;
 	cornerLayout: CornerNoteLayout;
 	/** Whether a press on the selected cell switches mode, for its hint. */
@@ -327,18 +327,10 @@ const BoardCell = memo(function BoardCell({
 					]}
 				/>
 			) : null}
-			{selected ? (
-				// An overlay, not the cell's own border, so the space inside the
-				// cell (and the notes fitted to it) stays the same when selected.
-				<View
-					pointerEvents="none"
-					style={[
-						styles.selectedRing,
-						selectedMode !== undefined &&
-							selectedMode !== "digit" &&
-							styles.noteModeRing,
-					]}
-				/>
+			{selectedMode !== undefined && selectedMode !== "digit" ? (
+				// Outside digit mode a deeper tint: it takes no edge space, so
+				// the notes being entered stay clear.
+				<View pointerEvents="none" style={styles.noteModeTint} />
 			) : null}
 			{cageSum !== undefined ? (
 				<AppText
@@ -348,6 +340,11 @@ const BoardCell = memo(function BoardCell({
 				>
 					{cageSum}
 				</AppText>
+			) : null}
+			{selected ? (
+				// An overlay, not the cell's own border, so the space inside the
+				// cell (and the notes fitted to it) stays the same when selected.
+				<View pointerEvents="none" style={styles.selectedRing} />
 			) : null}
 			{value !== 0 ? (
 				<AppText
@@ -431,9 +428,15 @@ const createStyles = (colors: Tokens) =>
 			backgroundColor: colors.surface,
 			paddingHorizontal: 1,
 		},
-		// Outside digit mode: thicker, not dashed (dashed lines are Killer
-		// cages). Drawn under the cell's text, which renders after it.
-		noteModeRing: { borderWidth: 4 },
+		// Over the selected cell's own accentDim fill, roughly doubling it.
+		noteModeTint: {
+			position: "absolute",
+			top: 0,
+			left: 0,
+			right: 0,
+			bottom: 0,
+			backgroundColor: colors.accentDim,
+		},
 		corner: {
 			position: "absolute",
 			color: colors.textMuted,
