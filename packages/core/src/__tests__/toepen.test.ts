@@ -197,13 +197,15 @@ describe("knocking", () => {
 		);
 	});
 
-	it("refuses a knock in a game without stakes", () => {
+	it("refuses knocking and answering in a game without stakes", () => {
 		const hearts = getCardGame("hartenjagen");
 		const state = createCardGame(hearts, ["noPassing"], 3, mulberry32(5));
-		expectRule(
-			() => applyCardAction(hearts, ["noPassing"], state, 0, { type: "knock" }),
-			"cardsWrongAction",
-		);
+		for (const type of ["knock", "stay", "fold"] as const) {
+			expectRule(
+				() => applyCardAction(hearts, ["noPassing"], state, 0, { type }),
+				"cardsWrongAction",
+			);
+		}
 	});
 
 	it("refuses a knock when the points and stake already reach the limit", () => {
@@ -478,6 +480,29 @@ describe("the computer player", () => {
 				0,
 			),
 		).toBe(true);
+	});
+
+	it("judges the last trick by the cards already on it", () => {
+		const lastTrick = (mine: string, theirs: string, led: string) =>
+			dealt([[mine], [theirs], []], {
+				trick: [{ seat: 2, card: led }],
+				stake: 2,
+			});
+		// Beaten already: the 9 can't take a trick the 10 leads.
+		const beaten = lastTrick("S9#0", "HJ#0", "S10#0");
+		expect(wantsKnock(rules, beaten, 0, () => 0)).toBe(false);
+		expect(wantsToStay(rules, beaten, 0)).toBe(false);
+		// A 10 of another suit can't follow, so it can't win either.
+		const offSuit = lastTrick("H10#0", "DJ#0", "S7#0");
+		expect(wantsKnock(rules, offSuit, 0, () => 0)).toBe(false);
+		expect(wantsToStay(rules, offSuit, 0)).toBe(false);
+		// The seat's own 10 is winning and nothing can beat it.
+		const winning = dealt([[], ["SJ#0"], ["H7#0"]], {
+			trick: [{ seat: 0, card: "S10#0" }],
+			turn: 1,
+			stake: 2,
+		});
+		expect(wantsToStay(rules, winning, 0)).toBe(true);
 	});
 
 	it("keeps its best card for the last trick", () => {

@@ -250,7 +250,10 @@ export function TricksTable({
 								})}
 							</span>
 						) : null}
-						{playing && firstTrick && view.passDirection === "keep" ? (
+						{playing &&
+						firstTrick &&
+						rules.passing &&
+						view.passDirection === "keep" ? (
 							<span className="flag">{t.keepPill}</span>
 						) : null}
 						{view.broken && rules.breaking && playing ? (

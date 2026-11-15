@@ -810,6 +810,9 @@ function answerKnock(
 	seat: number,
 	stay: boolean,
 ) {
+	if (!rules.knocking) {
+		throw new GameRuleError("cardsWrongAction");
+	}
 	const pending = state.knock;
 	if (state.phase !== "knocking" || !pending) {
 		throw new GameRuleError("cardsNothingToAnswer");
@@ -1086,19 +1089,37 @@ function playedCards(state: TricksState) {
 }
 
 /**
- * Cards that no unseen card of their suit can beat: led, or followed with,
- * they take the trick.
+ * The seat's cards that can still take the trick that decides: any card in hand
+ * before the last trick; on it, the seat's own play if it is winning, or a card
+ * in hand that would beat the winner.
  */
-export function topCards(rules: TricksRules, state: TricksState, seat: number) {
-	const seen = playedCards(state);
+function liveCards(rules: TricksRules, state: TricksState, seat: number) {
 	const hand = state.hands[seat];
-	return hand.filter((card) => {
-		const suit = suitOf(card);
-		return rules.ranks.slice(rankIndex(rules, card) + 1).every((rank) => {
-			const higher = `${suit}${rank}`;
-			return [...seen, ...hand].some((known) => cardFace(known) === higher);
-		});
-	});
+	const takes = (plays: readonly TrickPlay[]) =>
+		trickWinner(rules, plays, state.trump) === seat;
+	const played = state.trick.find((play) => play.seat === seat);
+	if (hand.length + (played ? 1 : 0) !== 1) {
+		return hand;
+	}
+	if (played) {
+		return takes(state.trick) ? [played.card] : [];
+	}
+	return hand.filter(
+		(card) =>
+			state.trick.length === 0 || takes([...state.trick, { seat, card }]),
+	);
+}
+
+/** Live cards that no unseen card of their suit can beat. */
+function topCards(rules: TricksRules, state: TricksState, seat: number) {
+	const known = new Set(
+		[...playedCards(state), ...state.hands[seat]].map((card) => cardFace(card)),
+	);
+	return liveCards(rules, state, seat).filter((card) =>
+		rules.ranks
+			.slice(rankIndex(rules, card) + 1)
+			.every((rank) => known.has(`${suitOf(card)}${rank}`)),
+	);
 }
 
 /** The strongest card in a hand by rank, -1 for an empty hand. */
@@ -1126,7 +1147,8 @@ export function wantsKnock(
 	if (tops >= 2 || (tops === 1 && left <= 2)) {
 		return true;
 	}
-	return left <= 2 && bestRank(rules, state.hands[seat]) >= STRONG_FROM - 1
+	return left <= 2 &&
+		bestRank(rules, liveCards(rules, state, seat)) >= STRONG_FROM - 1
 		? random() < BLUFF_CHANCE
 		: false;
 }
@@ -1147,7 +1169,7 @@ export function wantsToStay(
 	if (topCards(rules, state, seat).length > 0) {
 		return true;
 	}
-	const best = bestRank(rules, state.hands[seat]);
+	const best = bestRank(rules, liveCards(rules, state, seat));
 	// Losing the raised stake would end the match for this seat: only stay when strong.
 	if (elimination && total + stake >= rules.target) {
 		return best >= STRONG_FROM + 1;

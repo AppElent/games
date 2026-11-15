@@ -488,7 +488,7 @@ export function tricksHint(
 	if (view.folded[you] && view.phase === "playing") {
 		return t.foldedHint;
 	}
-	if (view.canSwap) {
+	if (view.canSwap && view.turn !== you) {
 		return t.swapHint;
 	}
 	if (view.phase === "passing") {

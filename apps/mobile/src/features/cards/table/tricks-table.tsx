@@ -312,7 +312,10 @@ export function TricksTable({
 								})}
 							</Pill>
 						) : null}
-						{playing && firstTrick && view.passDirection === "keep" ? (
+						{playing &&
+						firstTrick &&
+						rules.passing &&
+						view.passDirection === "keep" ? (
 							<Pill>{tt.keepPill}</Pill>
 						) : null}
 						{view.broken && breaking && playing ? (
