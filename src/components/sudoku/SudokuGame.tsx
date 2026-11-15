@@ -17,18 +17,27 @@ import {
 import type { SudokuHint } from "@arcadeclub/core/sudoku-hints";
 import { describeHint, findHint } from "@arcadeclub/core/sudoku-hints";
 import {
+	nextTapMode,
+	type SudokuInputSettings,
+} from "@arcadeclub/core/sudoku-input";
+import {
 	boardConflictsWithCages,
 	isBoardSolved,
 } from "@arcadeclub/core/sudoku-killer";
 import { useMutation } from "convex/react";
 import { RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	loadSudokuInputSettings,
+	saveSudokuInputSettings,
+} from "#/lib/games/sudoku-input-settings";
 import { renameLocalSudokuSession } from "#/lib/games/sudoku-local";
-import { useMessages } from "#/lib/i18n";
+import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { CompletedBanner, PauseOverlay, PuzzleHeader } from "./PuzzleChrome";
 import { SUDOKU_COLORS, SudokuBoard } from "./SudokuBoard";
+import { SudokuInputSettingsPanel } from "./SudokuInputSettingsPanel";
 import { SudokuKeypad } from "./SudokuKeypad";
 import {
 	bestEffort,
@@ -63,6 +72,10 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 	);
 	const [selectedCell, setSelectedCell] = useState<number | null>(null);
 	const [mode, setMode] = useState<SudokuInputMode>("digit");
+	// Rendered only once the Convex bundle has loaded, so never on the server.
+	const [inputSettings, setInputSettings] = useState(loadSudokuInputSettings);
+	// Set when a tap or Space cycles the mode, so screen readers hear it.
+	const [modeAnnounced, setModeAnnounced] = useState(false);
 	const [autoCleanup, setAutoCleanup] = useState(state.autoCleanup);
 	const [hint, setHint] = useState<SudokuHint | null>(null);
 	const [hintLevel, setHintLevel] = useState<1 | 2 | 3>(1);
@@ -157,6 +170,31 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 		[selectedCell, mode, dispatch],
 	);
 
+	/** A second tap on the selected cell, or Space: the next mode in the cycle. */
+	const cycleMode = useCallback(() => {
+		if (!isActive()) {
+			return;
+		}
+		setMode((current) => nextTapMode(current, inputSettings));
+		setModeAnnounced(true);
+	}, [isActive, inputSettings]);
+
+	const selectCell = useCallback(
+		(cell: number) => {
+			if (cell === selectedCell) {
+				cycleMode();
+			} else {
+				setSelectedCell(cell);
+			}
+		},
+		[selectedCell, cycleMode],
+	);
+
+	const changeInputSettings = useCallback((next: SudokuInputSettings) => {
+		setInputSettings(next);
+		saveSudokuInputSettings(next);
+	}, []);
+
 	const requestHint = useCallback(() => {
 		if (!isActive() || hint) {
 			return;
@@ -232,16 +270,15 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 					}
 					break;
 				case " ":
+					// Space on the settings panel's summary opens it instead.
+					if (target?.tagName === "SUMMARY") {
+						break;
+					}
 					event.preventDefault();
-					setMode((current) =>
-						current === "digit"
-							? "corner"
-							: current === "corner"
-								? "center"
-								: current === "center"
-									? "color"
-									: "digit",
-					);
+					cycleMode();
+					break;
+				case "Escape":
+					setSelectedCell(null);
 					break;
 				default:
 					break;
@@ -249,7 +286,15 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [selectedCell, isActive, dispatch, handleDigit, handleUndo, handleRedo]);
+	}, [
+		selectedCell,
+		isActive,
+		dispatch,
+		handleDigit,
+		handleUndo,
+		handleRedo,
+		cycleMode,
+	]);
 
 	const hintCells = useMemo(() => {
 		if (!hint) {
@@ -339,13 +384,13 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 					<SudokuBoard
 						board={board}
 						selectedCell={selectedCell}
-						onSelectCell={(cell) =>
-							setSelectedCell((current) => (current === cell ? null : cell))
-						}
+						onSelectCell={selectCell}
 						conflicts={conflicts}
 						hintCells={hintCells}
 						hidden={status === "paused"}
 						cages={cages}
+						mode={mode}
+						cornerLayout={inputSettings.cornerLayout}
 					/>
 					{status === "paused" ? <PauseOverlay onResume={togglePause} /> : null}
 				</div>
@@ -388,9 +433,19 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 					</div>
 				) : null}
 
+				<p className="sr-only" aria-live="polite">
+					{modeAnnounced
+						? fmt(sudoku.keypad.modeAnnouncement, {
+								mode: sudoku.keypad.modes[mode],
+							})
+						: ""}
+				</p>
 				<SudokuKeypad
 					mode={mode}
-					onModeChange={setMode}
+					onModeChange={(next) => {
+						setMode(next);
+						setModeAnnounced(false);
+					}}
 					onDigit={handleDigit}
 					onColor={(color) =>
 						selectedCell !== null &&
@@ -435,6 +490,10 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 						{messages.common.gameShell.restart}
 					</button>
 				</div>
+				<SudokuInputSettingsPanel
+					settings={inputSettings}
+					onChange={changeInputSettings}
+				/>
 				<p className="text-center text-xs text-slate-500">
 					{sudoku.game.keyboardHelp}
 				</p>

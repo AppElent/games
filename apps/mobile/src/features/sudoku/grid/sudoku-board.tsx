@@ -10,7 +10,13 @@ import { colOf, digitsInMask, rowOf } from "@arcadeclub/core/sudoku";
 import {
 	effectiveGrid,
 	type SudokuBoardState,
+	type SudokuInputMode,
 } from "@arcadeclub/core/sudoku-board";
+import {
+	type CornerNoteLayout,
+	type CornerNoteSlot,
+	cornerNoteGroups,
+} from "@arcadeclub/core/sudoku-input";
 import {
 	type KillerCage,
 	type KillerCageLayout,
@@ -38,6 +44,11 @@ type Props = {
 	hintCells: ReadonlySet<number> | undefined;
 	cages?: KillerCage[];
 	hidden: boolean;
+	/** Outside digit mode the selected cell's frame turns dashed. */
+	mode: SudokuInputMode;
+	cornerLayout: CornerNoteLayout;
+	/** Whether a press on the selected cell switches mode, for its hint. */
+	canCycle: boolean;
 };
 
 const BOARD_BORDER = 2;
@@ -72,6 +83,9 @@ export function SudokuBoard({
 	hintCells,
 	cages,
 	hidden,
+	mode,
+	cornerLayout,
+	canCycle,
 }: Props) {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
@@ -139,6 +153,9 @@ export function SudokuBoard({
 						marker={hidden ? 0 : board.colors[index]}
 						cageSum={hidden ? undefined : cageInfo?.sumAt.get(index)}
 						selected={isSelected}
+						selectedMode={isSelected ? mode : undefined}
+						canCycle={isSelected && canCycle}
+						cornerLayout={cornerLayout}
 						peer={isPeer}
 						sameDigit={
 							!hidden &&
@@ -200,6 +217,10 @@ type CellProps = {
 	marker: number;
 	cageSum?: number;
 	selected: boolean;
+	/** The entry mode, on the selected cell only so other cells stay memoized. */
+	selectedMode?: SudokuInputMode;
+	canCycle: boolean;
+	cornerLayout: CornerNoteLayout;
 	peer: boolean;
 	sameDigit: boolean;
 	conflict: boolean;
@@ -207,17 +228,17 @@ type CellProps = {
 	onPress: (cell: number) => void;
 };
 
-/** Corner-note slots, in fill order: corners, then edge midpoints. */
-const CORNER_SLOTS = [
-	{ left: "6%", top: "2%" },
-	{ right: "6%", top: "2%" },
-	{ left: "6%", bottom: "2%" },
-	{ right: "6%", bottom: "2%" },
-	{ left: "40%", top: "2%" },
-	{ left: "40%", bottom: "2%" },
-	{ left: "6%", top: "34%" },
-	{ right: "6%", top: "34%" },
-] as const;
+/** Where each corner-note group sits in its cell. */
+const CORNER_SLOTS = {
+	topLeft: { left: "6%", top: "2%" },
+	topRight: { right: "6%", top: "2%" },
+	bottomLeft: { left: "6%", bottom: "2%" },
+	bottomRight: { right: "6%", bottom: "2%" },
+	top: { left: "40%", top: "2%" },
+	bottom: { left: "40%", bottom: "2%" },
+	left: { left: "6%", top: "34%" },
+	right: { right: "6%", top: "34%" },
+} as const satisfies Record<CornerNoteSlot, object>;
 
 const BoardCell = memo(function BoardCell({
 	cell,
@@ -229,6 +250,9 @@ const BoardCell = memo(function BoardCell({
 	marker,
 	cageSum,
 	selected,
+	selectedMode,
+	canCycle,
+	cornerLayout,
 	peer,
 	sameDigit,
 	conflict,
@@ -257,6 +281,7 @@ const BoardCell = memo(function BoardCell({
 			? tokens.text
 			: tokens.accent;
 	const cornerDigits = digitsInMask(corner);
+	const cornerGroups = cornerNoteGroups(corner, cornerLayout);
 	const centerDigits = digitsInMask(center);
 
 	const state =
@@ -281,6 +306,7 @@ const BoardCell = memo(function BoardCell({
 			accessibilityRole="button"
 			accessibilityLabel={label}
 			accessibilityState={{ selected }}
+			accessibilityHint={canCycle ? copy.retapHint : undefined}
 			onPress={() => onPress(cell)}
 			style={[
 				styles.cell,
@@ -292,6 +318,9 @@ const BoardCell = memo(function BoardCell({
 					backgroundColor: background,
 				},
 				selected && styles.selected,
+				selectedMode !== undefined &&
+					selectedMode !== "digit" &&
+					styles.selectedNoteMode,
 			]}
 		>
 			{marker > 0 ? (
@@ -321,15 +350,22 @@ const BoardCell = memo(function BoardCell({
 				</AppText>
 			) : (
 				<>
-					{cornerDigits.map((digit, index) => (
-						<AppText
-							key={digit}
-							variant="cellNote"
-							allowFontScaling={false}
-							style={[styles.corner, CORNER_SLOTS[index] ?? CORNER_SLOTS[7]]}
+					{cornerGroups.map((group) => (
+						<View
+							key={group.slot}
+							style={[styles.corner, CORNER_SLOTS[group.slot]]}
 						>
-							{digit}
-						</AppText>
+							{group.digits.map((digit) => (
+								<AppText
+									key={digit}
+									variant="cellNote"
+									allowFontScaling={false}
+									style={styles.cornerDigit}
+								>
+									{digit}
+								</AppText>
+							))}
+						</View>
 					))}
 					{centerDigits.length > 0 ? (
 						<AppText
@@ -373,10 +409,16 @@ const createStyles = (colors: Tokens) =>
 			backgroundColor: colors.surface,
 			paddingHorizontal: 1,
 		},
+		selectedNoteMode: { borderStyle: "dashed" },
 		corner: {
 			position: "absolute",
-			color: colors.textMuted,
+			maxWidth: "88%",
+			flexDirection: "row",
+			flexWrap: "wrap",
+			justifyContent: "flex-end",
+			columnGap: 1,
 		},
+		cornerDigit: { color: colors.textMuted },
 		centerNote: {
 			color: colors.textMuted,
 			paddingHorizontal: 2,

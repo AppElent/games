@@ -103,19 +103,39 @@ export const sudoku = {
 		notes: "notities {digits}",
 		cage: "kooisom {sum}",
 		conflict: "conflict",
+		retapHint: "Tik nog eens om van invoermodus te wisselen",
 	},
 	keypad: {
 		modeLabel: "Invoermodus",
 		digitLabel: "{digit}, nog {count}",
-		modeDigit: "Cijfer",
-		modeCorner: "Hoek",
-		modeCenter: "Midden",
-		modeColor: "Kleur",
+		modes: {
+			digit: "Cijfer",
+			corner: "Hoek",
+			center: "Midden",
+			color: "Kleur",
+		},
 		colorAriaLabel: "Kleur {number}",
+		modeAnnouncement: "Invoermodus: {mode}",
 		undo: "Ongedaan maken",
 		redo: "Opnieuw doen",
 		erase: "Wissen",
 		hint: "Hint",
+	},
+	inputSettings: {
+		title: "Invoerinstellingen",
+		tapCycleLabel: "Nog eens op het geselecteerde vakje tikken wisselt naar",
+		tapCycleNote: "Cijfer zit er altijd bij.",
+		tapCycleSwitchLabel: "Bij een tweede tik wisselen naar {mode}",
+		modes: {
+			corner: "Hoeknotities",
+			center: "Middennotities",
+			color: "Kleuren",
+		},
+		cornerLayoutLabel: "Hoeknotities",
+		cornerLayouts: {
+			spread: "Alle hoeken",
+			topRight: "Rechtsboven",
+		},
 	},
 	game: {
 		timer: "Tijd {time}",
@@ -139,7 +159,7 @@ export const sudoku = {
 		restartConfirm:
 			"Deze puzzel opnieuw starten? Je voortgang blijft bewaard in de geschiedenis van ongedaan maken.",
 		keyboardHelp:
-			"Toetsenbord: 1-9 cijfers · Shift+cijfer hoeknotitie · Ctrl+cijfer middennotitie · Spatie wisselt modus · Ctrl+Z/Y ongedaan maken/opnieuw doen · pijltjes bewegen",
+			"Toetsenbord: 1-9 cijfers · Shift+cijfer hoeknotitie · Ctrl+cijfer middennotitie · Spatie wisselt modus · Ctrl+Z/Y ongedaan maken/opnieuw doen · pijltjes bewegen · Esc deselecteert",
 	},
 	binary: {
 		restartBody: "Het raster gaat terug naar de gegeven cijfers.",
