@@ -12,6 +12,7 @@ import type { CardPower } from "@arcadeclub/core/cards/shedding";
 import {
 	powerEffect,
 	tricksRuleLines,
+	tricksRuleSections,
 } from "@arcadeclub/core/cards/table-view";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
@@ -49,21 +50,17 @@ function Lines({ lines }: { lines: string[] }) {
 
 function TricksRules({ lines }: { lines: ReturnType<typeof tricksRuleLines> }) {
 	const { t } = useI18n();
-	const r = t.games.cards.rules;
+	const cards = t.games.cards;
 	return (
 		<>
-			<Section heading={r.goalHeading}>
+			<Section heading={cards.rules.goalHeading}>
 				<Lines lines={[lines.goal]} />
 			</Section>
-			<Section heading={r.passHeading}>
-				<Lines lines={lines.passing} />
-			</Section>
-			<Section heading={r.turnHeading}>
-				<Lines lines={lines.turn} />
-			</Section>
-			<Section heading={r.pointsHeading}>
-				<Lines lines={lines.points} />
-			</Section>
+			{tricksRuleSections(lines, cards).map((section) => (
+				<Section key={section.heading} heading={section.heading}>
+					<Lines lines={section.lines} />
+				</Section>
+			))}
 		</>
 	);
 }

@@ -35,6 +35,13 @@ export const serverErrors = {
 	cardsAlreadyPassed: "You've already passed your cards.",
 	cardsPassCount: "Pick exactly {count} cards to pass.",
 	cardsPassFirst: "Pass your cards first.",
+	cardsNotCallingTrump: "Trump has already been called.",
+	cardsCallTrumpFirst: "Trump has to be called first.",
+	cardsMustChooseTrump: "You have to choose a trump.",
+	cardsTrumpNotOffered: "Play with the suit on offer, or pass.",
+	cardsMustTrump: "You can't follow suit, so you have to trump.",
+	cardsMustOvertrump: "You have to play a higher trump.",
+	cardsNoUndertrump: "You can't play a lower trump while you hold other cards.",
 	cardsKnockTooHigh:
 		"You can knock with {limit} or less; this leaves {deadwood}.",
 	cardsAfterKnock: "Someone knocked: only laying off is left.",

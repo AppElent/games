@@ -10,6 +10,7 @@ import type { Rng } from "../random";
 import { ginRummy } from "./games/gin-rummy";
 import { hartenjagen } from "./games/hartenjagen";
 import { jokeren } from "./games/jokeren";
+import { klaverjassen } from "./games/klaverjassen";
 import { maumau } from "./games/maumau";
 import { pesten } from "./games/pesten";
 import {
@@ -100,6 +101,7 @@ export const CARD_GAMES = {
 	maumau,
 	jokeren,
 	hartenjagen,
+	klaverjassen,
 	"gin-rummy": ginRummy,
 } as const satisfies Record<string, CardGameDefinition>;
 

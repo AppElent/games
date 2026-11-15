@@ -38,6 +38,13 @@ export const serverErrors = {
 	cardsAlreadyPassed: "Je hebt je kaarten al doorgegeven.",
 	cardsPassCount: "Kies precies {count} kaarten om door te geven.",
 	cardsPassFirst: "Geef eerst je kaarten door.",
+	cardsNotCallingTrump: "De troef is al gekozen.",
+	cardsCallTrumpFirst: "Eerst moet de troef gekozen worden.",
+	cardsMustChooseTrump: "Je moet een troef kiezen.",
+	cardsTrumpNotOffered: "Speel met de voorgestelde kleur, of pas.",
+	cardsMustTrump: "Je kunt niet bekennen, dus je moet troeven.",
+	cardsMustOvertrump: "Je moet hoger troeven.",
+	cardsNoUndertrump: "Ondertroeven mag niet zolang je andere kaarten hebt.",
 	cardsKnockTooHigh:
 		"Kloppen mag met {limit} of minder; dit laat {deadwood} over.",
 	cardsAfterKnock: "Er is geklopt: alleen aanleggen kan nog.",
