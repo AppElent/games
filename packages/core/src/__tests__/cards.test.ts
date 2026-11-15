@@ -1710,6 +1710,8 @@ describe("gin rummy", () => {
 
 	describe("view", () => {
 		it("never shows a hidden card over whole bot matches", () => {
+			// One expect at the end: thousands of matcher calls make this slow on CI.
+			const leaks: string[] = [];
 			for (let seed = 1; seed <= 20; seed += 1) {
 				const random = seeded(seed);
 				let state = createGin(rules, 2, random);
@@ -1728,17 +1730,20 @@ describe("gin rummy", () => {
 					});
 					const hidden = (cards: readonly string[]) =>
 						cards.filter((card) => !seen.has(card));
-					for (const card of hidden(state.stock)) {
-						for (const view of views) expect(view).not.toContain(`"${card}"`);
-					}
+					const check = (cards: readonly string[], seats: number[]) => {
+						for (const card of hidden(cards)) {
+							for (const viewer of seats) {
+								if (views[viewer].includes(`"${card}"`)) {
+									leaks.push(`seed ${seed}: ${card} to view ${viewer}`);
+								}
+							}
+						}
+					};
+					check(state.stock, [0, 1, 2]);
 					for (const seat of [0, 1]) {
 						// The knocker's hand is open from the knock; every hand once scored.
-						if (state.phase === "handOver" || state.knock?.seat === seat) {
-							continue;
-						}
-						for (const card of hidden(state.hands[seat])) {
-							expect(views[1 - seat]).not.toContain(`"${card}"`);
-							expect(views[2]).not.toContain(`"${card}"`);
+						if (state.phase !== "handOver" && state.knock?.seat !== seat) {
+							check(state.hands[seat], [1 - seat, 2]);
 						}
 					}
 					const move = botGinMove(rules, state, [0, 1]);
@@ -1746,7 +1751,8 @@ describe("gin rummy", () => {
 					state = applyGin(rules, state, move.seat, move.action, random);
 				}
 			}
-		});
+			expect(leaks).toEqual([]);
+		}, 30_000);
 
 		it("hides the other hand until it is scored, and shows the knocker's", () => {
 			const state = ginState([
