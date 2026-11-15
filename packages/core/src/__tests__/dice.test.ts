@@ -473,7 +473,7 @@ describe("Yatzy bots", () => {
 		for (let seed = 1; seed <= 24; seed += 1) {
 			const options = seed % 2 ? [] : ["yahtzeeSheet"];
 			const rules = diceRules(yatzy, options);
-			const seats = 1 + (seed % 3);
+			const seats = 1 + (seed % 6);
 			const state = playOut(options, seats, seed);
 			expect(state.phase).toBe("finished");
 			expect(state.winners.length).toBeGreaterThan(0);
@@ -490,6 +490,18 @@ describe("Yatzy bots", () => {
 		// A sensible player averages well over 150; random play is near 100.
 		const average = totals.reduce((a, b) => a + b, 0) / totals.length;
 		expect(average).toBeGreaterThan(150);
+	});
+
+	it("hands the next game's first turn round the table", () => {
+		let starter = 0;
+		const starters = [];
+		for (let game = 0; game < 4; game += 1) {
+			const state = createDiceGame(yatzy, [], 3, starter);
+			expect(state.turn).toBe(starter);
+			starters.push(starter);
+			starter = DICE_ENGINE.nextStarter(state);
+		}
+		expect(starters).toEqual([0, 1, 2, 0]);
 	});
 
 	it("only moves for a computer seat whose turn it is", () => {
