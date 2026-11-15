@@ -11,9 +11,9 @@ Every online game reuses the shared session platform (`gameSessions` + `sessionP
 
 ## Card games: config first
 
-A card game that fits a rule family in `packages/core/src/cards/` (`shedding`, `rummy`, `gin`) needs none of the steps below:
+A card game that fits a rule family in `packages/core/src/cards/` (`shedding`, `rummy`, `tricks`, `gin`) needs none of the steps below:
 
-1. Add a definition to `packages/core/src/cards/games/`, copying `pesten.ts`, `jokeren.ts` or `gin-rummy.ts`.
+1. Add a definition to `packages/core/src/cards/games/`, copying `pesten.ts`, `jokeren.ts`, `hartenjagen.ts` or `gin-rummy.ts`.
 2. List it in `CARD_GAMES` in `packages/core/src/cards/engine.ts`.
 3. Add its text under `games.cards.games` in `packages/core/src/i18n/{en,nl}/games/cards.ts`.
 4. Add rule tests to `packages/core/src/__tests__/cards.test.ts`.

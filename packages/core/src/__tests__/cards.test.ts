@@ -86,6 +86,7 @@ function allCards(state: CardGameState) {
 		case "shedding":
 			return [...state.stock, ...state.discard, ...state.hands.flat()];
 		case "rummy":
+		case "gin":
 			return [
 				...state.stock,
 				...state.discard,
