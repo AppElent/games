@@ -6,7 +6,7 @@ import {
 	tricksRuleLines,
 	tricksRuleSections,
 } from "@arcadeclub/core/cards/table-view";
-import { fmt, useMessages } from "#/lib/i18n";
+import { fmt, useI18n, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
 import { PlayingCard } from "./PlayingCard";
 import { useCardWords } from "./useCardWords";
@@ -68,6 +68,7 @@ export function RulesSheet({
 	open: boolean;
 	onClose: () => void;
 }) {
+	const { locale } = useI18n();
 	const cards = useMessages().games.cards;
 	const words = useCardWords();
 	const text = cards.games[game.id];
@@ -219,6 +220,51 @@ export function RulesSheet({
 								joker: resolved.rules.jokerPoints,
 							})}
 						</p>
+					</Section>
+				</>
+			) : resolved.family === "bank" ? (
+				<>
+					<Section heading={r.goalHeading}>
+						<p className="text-sm leading-snug">
+							{fmt(r.bank.goal, { rounds: resolved.rules.rounds })}
+						</p>
+					</Section>
+					<Section heading={r.turnHeading}>
+						<Lines
+							lines={[
+								fmt(r.bank.stake, {
+									stakes: resolved.rules.stakes.join(", "),
+								}),
+								r.bank.values,
+								r.bank.hit,
+								...(resolved.rules.doubleDown ? [r.bank.double] : []),
+							]}
+						/>
+					</Section>
+					<Section heading={r.bankHeading}>
+						<Lines
+							lines={[
+								fmt(r.bank.bank, { stand: resolved.rules.bankStandsOn }),
+								...(resolved.rules.bankHitsSoft
+									? [
+											fmt(r.bank.bankSoft, {
+												stand: resolved.rules.bankStandsOn,
+											}),
+										]
+									: []),
+								r.bank.bankNatural,
+							]}
+						/>
+					</Section>
+					<Section heading={r.pointsHeading}>
+						<Lines
+							lines={[
+								r.bank.payout,
+								fmt(r.bank.natural, {
+									pays: resolved.rules.naturalPays.toLocaleString(locale),
+								}),
+							]}
+						/>
 					</Section>
 				</>
 			) : (

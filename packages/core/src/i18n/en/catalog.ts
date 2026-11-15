@@ -94,6 +94,6 @@ export const catalog = {
 		description:
 			"Classic Dutch card games at one table. Play the computer straight away or invite friends with a room code.",
 		primaryAction: "Pick a game",
-		stats: "2-8 players",
+		stats: "1-8 players",
 	},
 } satisfies Record<GameType, CatalogText>;
