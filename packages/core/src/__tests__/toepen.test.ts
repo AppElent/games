@@ -200,9 +200,13 @@ describe("knocking", () => {
 	it("refuses knocking and answering in a game without stakes", () => {
 		const hearts = getCardGame("hartenjagen");
 		const state = createCardGame(hearts, ["noPassing"], 3, mulberry32(5));
-		for (const type of ["knock", "stay", "fold"] as const) {
+		for (const action of [
+			{ type: "knock" },
+			{ type: "stay" },
+			{ type: "fold" },
+		] as const) {
 			expectRule(
-				() => applyCardAction(hearts, ["noPassing"], state, 0, { type }),
+				() => applyCardAction(hearts, ["noPassing"], state, 0, action),
 				"cardsWrongAction",
 			);
 		}
