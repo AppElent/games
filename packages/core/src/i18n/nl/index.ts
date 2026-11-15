@@ -7,6 +7,7 @@ import { bluffDice } from "./games/bluffDice";
 import { cards } from "./games/cards";
 import { chess } from "./games/chess";
 import { connectFour } from "./games/connectFour";
+import { dice } from "./games/dice";
 import { hitster } from "./games/hitster";
 import { quiz } from "./games/quiz";
 import { signalWords } from "./games/signalWords";
@@ -38,5 +39,6 @@ export const nl = {
 		bluffDice,
 		squadSurge,
 		cards,
+		dice,
 	},
 } satisfies Messages;

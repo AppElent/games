@@ -13,11 +13,7 @@ import {
 	SUITS,
 	type Suit,
 } from "./deck";
-import {
-	type CardGameDefinition,
-	plainCardOption,
-	SEAT_SILENT_AFTER_MS,
-} from "./engine";
+import { type CardGameDefinition, plainCardOption } from "./engine";
 import type { CardEvent } from "./events";
 import {
 	arrangeHand,
@@ -137,16 +133,6 @@ export function opponentOrder(table: TableSeats): number[] {
 	return Array.from(
 		{ length: count - 1 },
 		(_, step) => (you + step + 1) % count,
-	);
-}
-
-/** Only a person can go quiet, and an autopilot seat keeps playing regardless. */
-export function seatIsSilent(seat: TableSeat, now: number) {
-	return (
-		seat.botIndex === null &&
-		!seat.autopilot &&
-		seat.lastSeen !== null &&
-		now - seat.lastSeen > SEAT_SILENT_AFTER_MS
 	);
 }
 

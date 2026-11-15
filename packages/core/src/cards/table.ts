@@ -3,22 +3,12 @@ import type { Rng } from "../random";
 import { type CardId, drawCards } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
 
-/** Where a stored table is: seating players, dealt and playing, or done. */
-export const CARD_TABLE_STATUSES = ["lobby", "playing", "finished"] as const;
-
 type Table = {
 	hands: CardId[][];
 	stock: CardId[];
 	discard: CardId[];
 	events: CardEvent[];
 	nextSeq: number;
-};
-
-export type BotMove<Action> = {
-	seat: number;
-	action: Action;
-	/** A new turn, the rest of a turn already under way, or a reply to someone else. */
-	pace: "turn" | "followUp" | "reaction";
 };
 
 /** Draws from the stock and logs a reshuffle if that needed one. */

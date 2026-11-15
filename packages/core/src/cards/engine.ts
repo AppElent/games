@@ -8,6 +8,12 @@
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
 import {
+	type HouseRule as BaseHouseRule,
+	type BotMove,
+	normalizeHouseRules,
+	type TableEngine,
+} from "../table-engine";
+import {
 	applyBank,
 	BANK_ACTIONS,
 	type BankAction,
@@ -61,7 +67,6 @@ import {
 	type SheddingView,
 	viewShedding,
 } from "./shedding";
-import type { BotMove } from "./table";
 import {
 	applyTricks,
 	botTricksMove,
@@ -89,16 +94,12 @@ type Definition<Family extends string, Rules> = {
 	options: ReadonlyArray<HouseRule<Rules>>;
 };
 
-export type HouseRule<Rules> = {
-	id: string;
-	patch?: Partial<Rules>;
+export type HouseRule<Rules> = BaseHouseRule<Rules> & {
 	/**
 	 * Special cards this rule turns into plain cards (keys of `rules.powers`).
 	 * Several such rules combine, which a `patch` on `powers` could not.
 	 */
 	withoutPowers?: readonly string[];
-	/** Rules in the same group exclude each other, such as match lengths. */
-	group?: string;
 };
 
 export type CardGameDefinition =
@@ -107,9 +108,6 @@ export type CardGameDefinition =
 	| Definition<"bank", BankRules>
 	| Definition<"tricks", TricksRules>
 	| Definition<"gin", GinRules>;
-
-/** How long a player can go without a heartbeat before others may hand their seat to autopilot. */
-export const SEAT_SILENT_AFTER_MS = 60_000;
 
 export const CARD_GAMES = {
 	pesten,
@@ -150,40 +148,12 @@ export function getCardGame(id: string): CardGame {
 	return CARD_GAMES[id];
 }
 
-function houseRules(game: CardGameDefinition) {
-	return game.options as ReadonlyArray<HouseRule<unknown>>;
-}
-
-/** Validates house-rule ids; unknown ones, or two from one group, are a client error. */
-export function normalizeOptions(game: CardGameDefinition, options: string[]) {
-	const known = houseRules(game);
-	for (const option of options) {
-		if (!known.some((rule) => rule.id === option)) {
-			throw new GameRuleError("cardsUnknownOption");
-		}
-	}
-	const chosen = known.filter((rule) => options.includes(rule.id));
-	const groups = chosen.flatMap((rule) => (rule.group ? [rule.group] : []));
-	if (new Set(groups).size < groups.length) {
-		throw new GameRuleError("cardsOptionsClash");
-	}
-	return chosen.map((rule) => rule.id);
-}
-
-/** Switches a house rule on or off; switching one on turns off the rest of its group. */
-export function toggleOption(
+/** Validates house-rule ids; unknown ones are a client error. */
+export function normalizeOptions(
 	game: CardGameDefinition,
 	options: readonly string[],
-	id: string,
-): string[] {
-	if (options.includes(id)) {
-		return options.filter((option) => option !== id);
-	}
-	const group = houseRules(game).find((rule) => rule.id === id)?.group;
-	const rivals = houseRules(game)
-		.filter((rule) => group !== undefined && rule.group === group)
-		.map((rule) => rule.id);
-	return [...options.filter((option) => !rivals.includes(option)), id];
+) {
+	return normalizeHouseRules(game.options, options);
 }
 
 function rulesOf<R>(
@@ -206,6 +176,10 @@ function rulesOf<R>(
 		}
 	}
 	return rules;
+}
+
+function houseRules(game: CardGameDefinition) {
+	return game.options as ReadonlyArray<HouseRule<unknown>>;
 }
 
 /** The house rule that turns this special card into a plain one, if the game has it. */
@@ -428,3 +402,23 @@ export function familyRules<F extends Family>(
 	const resolved = resolvedRules(game, options);
 	return resolved.family === family ? (resolved.rules as RulesOf[F]) : null;
 }
+
+/** The card games as the Convex table module plays them. */
+export const CARD_ENGINE: TableEngine<CardGameState, CardAction, CardView> = {
+	players: (gameId) => getCardGame(gameId).players,
+	normalizeOptions: (gameId, options) =>
+		normalizeOptions(getCardGame(gameId), options),
+	create: (gameId, options, seats, random, starter) =>
+		createCardGame(getCardGame(gameId), options, seats, random, starter),
+	apply: (gameId, options, state, seat, action, random) =>
+		applyCardAction(getCardGame(gameId), options, state, seat, action, random),
+	bot: (gameId, options, state, bots, random) =>
+		botMove(getCardGame(gameId), options, state, bots, random),
+	view: (gameId, options, state, seat) =>
+		viewCardGame(getCardGame(gameId), options, state, seat),
+	nextStarter,
+	outcome: (state) => ({
+		finished: state.phase === "finished",
+		winners: state.winners,
+	}),
+};
