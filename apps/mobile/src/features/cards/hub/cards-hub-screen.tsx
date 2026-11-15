@@ -2,12 +2,7 @@
  * Card Club's front door: one felt tile per game in the registry, so a new game
  * in the config shows up here by itself.
  */
-import type { CardId } from "@arcadeclub/core/cards/deck";
-import {
-	CARD_GAME_IDS,
-	getCardGame,
-	resolvedRules,
-} from "@arcadeclub/core/cards/engine";
+import { CARD_GAME_IDS, getCardGame } from "@arcadeclub/core/cards/engine";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
@@ -24,10 +19,6 @@ import { AppText } from "../../../ui/text";
 import { Felt } from "../deck/felt";
 import { PlayingCard } from "../deck/playing-card";
 
-const FANS: Record<"shedding" | "rummy", readonly CardId[]> = {
-	shedding: ["H2#0", "D7#0", "SJ#0", "JK#1"],
-	rummy: ["C9#0", "C10#0", "CJ#0", "JK#0"],
-};
 const FAN_CARD = 52;
 
 export function CardsHubScreen() {
@@ -42,7 +33,6 @@ export function CardsHubScreen() {
 				const game = getCardGame(id);
 				const text = cards.games[id];
 				const players = fmt(cards.hub.players, game.players);
-				const fan = FANS[resolvedRules(game, []).family];
 				return (
 					<Pressable
 						key={id}
@@ -76,7 +66,7 @@ export function CardsHubScreen() {
 							</View>
 							{stacked ? null : (
 								<View style={styles.fan}>
-									{fan.map((card, index) => (
+									{game.showcase.map((card, index) => (
 										<View
 											key={card}
 											style={[

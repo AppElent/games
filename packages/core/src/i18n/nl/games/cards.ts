@@ -160,6 +160,48 @@ export const cards = {
 		scoresHeading: "Scorebord",
 		noScores: "De stand verschijnt na de eerste ronde.",
 	},
+	tricks: {
+		passHint: "Kies {count} kaarten om {direction} door te geven.",
+		passWaiting: "Wachten tot de anderen hebben doorgegeven.",
+		passButton: "Geef deze kaarten door",
+		directions: {
+			left: "naar links",
+			right: "naar rechts",
+			across: "naar de overkant",
+			keep: "niet doorgeven",
+		},
+		passPill: "Doorgeven {direction}",
+		keepPill: "Deze ronde niet doorgeven",
+		receivedLabel: "Aan jou doorgegeven",
+		leadFirst: "Kom uit met {card}.",
+		lead: "Jij komt uit: speel een kaart.",
+		leadNotBroken: "Jij komt uit. Nog geen {suit}: die zijn niet gebroken.",
+		follow: "Kleur bekennen: speel {suit}.",
+		void: "Geen {suit} meer: speel een kaart naar keuze.",
+		broken: "{suit} gebroken",
+		tookTrick: "{name} pakte de slag",
+		youTookTrick: "Jij pakte de slag",
+		trickLabel: "Kaarten in deze slag",
+		passedNote: "Doorgegeven",
+		seatScore: "{total} ptn · {round}",
+		roundLabel: "Ronde {round} · tot {target}",
+		roundOver: "Ronde {round} is voorbij",
+		moon: "{name} schiet de maan! De anderen krijgen de punten.",
+		youMoon: "Jij schiet de maan! De anderen krijgen de punten.",
+		roundSummary: "Punten deze ronde",
+		nextRound: "Deel ronde {round}",
+		waitingNextRound: "Wachten tot iemand de volgende ronde deelt.",
+		seeResult: "Bekijk de uitslag",
+		scoreTotal: "Totaal",
+		scoresButton: "Scores",
+		scoresHeading: "Scorebord",
+		noScores: "Scores verschijnen na de eerste ronde.",
+		totalPoints: { one: "{count} punt", other: "{count} punten" },
+		matchWinner: "{name} wint het spel!",
+		matchYouWin: "Jij wint het spel!",
+		matchTie: "Gelijkspel!",
+		lowestWins: "De laagste score wint.",
+	},
 	suits: { S: "schoppen", H: "harten", D: "ruiten", C: "klaveren" },
 	ranks: {
 		A: "aas",
@@ -252,6 +294,22 @@ export const cards = {
 		youRoundEnd: "Jij bent uit. De ronde is voorbij!",
 		roundEndNobody: "De ronde wordt afgebroken.",
 		win: "{name} wint!",
+		passReady: "{name} heeft kaarten gekozen om door te geven.",
+		youPassReady: "Jij hebt je kaarten gekozen om door te geven.",
+		exchange: "De doorgegeven kaarten wisselen van hand.",
+		trickWon: {
+			one: "{name} pakt de slag: {count} punt.",
+			other: "{name} pakt de slag: {count} punten.",
+		},
+		trickWonClean: "{name} pakt de slag.",
+		youTrickWon: {
+			one: "Jij pakt de slag: {count} punt.",
+			other: "Jij pakt de slag: {count} punten.",
+		},
+		youTrickWonClean: "Jij pakt de slag.",
+		broken: "De {suit} zijn gebroken!",
+		moon: "{name} schiet de maan!",
+		youMoon: "Jij schiet de maan!",
 		winTie: "{name} winnen!",
 		youWin: "Jij wint!",
 	},
@@ -263,6 +321,7 @@ export const cards = {
 		extrasHeading: "Aan deze tafel",
 		meldsHeading: "Groepen en rijen",
 		pointsHeading: "Punten",
+		passHeading: "Doorgeven",
 		shedding: {
 			goal: "Ben als eerste al je kaarten kwijt.",
 			match:
@@ -305,6 +364,31 @@ export const cards = {
 				"Een joker vervangt elke kaart. Een combinatie heeft minstens {count} echte kaarten nodig.",
 			points:
 				"2-10 tellen hun waarde, B V H {face}, aas {ace} ({lowAce} in A-2-3), joker {joker}.",
+		},
+		tricks: {
+			goal: "Blijf weg bij de punten. Het spel eindigt zodra iemand {target} haalt; de laagste score wint.",
+			pass: "Voor elke ronde geef je {count} kaarten door. De richting wisselt elke ronde: {cycle}.",
+			passOdd:
+				"Met een oneven aantal spelers geeft niemand naar de overkant door.",
+			noPass: "Niemand geeft kaarten door.",
+			firstLead: "Wie {card} heeft, komt daarmee uit om de ronde te openen.",
+			follow:
+				"Beken kleur als het kan. Kan dat niet, speel dan een kaart naar keuze.",
+			trick:
+				"De hoogste kaart van de gevraagde kleur pakt de slag; wie de slag pakt, komt daarna uit.",
+			ranks: "Van hoog naar laag: {ranks}.",
+			breaking:
+				"Niemand komt uit met {suit} voordat er een gespeeld is, tenzij je niets anders hebt.",
+			breakingAlso: "Wie {card} speelt, breekt ze ook.",
+			pointSuit: {
+				one: "Elke kaart in {suit}: {count} punt",
+				other: "Elke kaart in {suit}: {count} punten",
+			},
+			pointCard: {
+				one: "{card}: {count} punt",
+				other: "{card}: {count} punten",
+			},
+			moon: "Pak je in één ronde alle strafkaarten, dan kosten ze jou niets: alle anderen krijgen ze.",
 		},
 	},
 	games: {
@@ -411,6 +495,31 @@ export const cards = {
 				openAt40: {
 					label: "Uitkomen met 40",
 					hint: "De eerste keer neerleggen moet 40 punten zijn in plaats van 30.",
+				},
+			},
+		},
+		hartenjagen: {
+			name: "Hartenjagen",
+			tagline: "Ontloop de harten",
+			blurb:
+				"Geef drie kaarten door, beken kleur en blijf weg bij de harten en schoppenvrouw. De laagste score wint.",
+			powers: {},
+			options: {
+				noPassing: {
+					label: "Niet doorgeven",
+					hint: "Je speelt met de kaarten die je krijgt.",
+				},
+				queenBreaksHearts: {
+					label: "Vrouw breekt harten",
+					hint: "Wie schoppenvrouw speelt, breekt de harten ook.",
+				},
+				jackOfDiamonds: {
+					label: "Ruitenboer",
+					hint: "Wie ruitenboer pakt, krijgt 10 punten minder.",
+				},
+				to50: {
+					label: "Kort spel",
+					hint: "Speel tot 50 punten in plaats van 100.",
 				},
 			},
 		},
