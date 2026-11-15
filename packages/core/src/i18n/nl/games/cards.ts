@@ -201,6 +201,24 @@ export const cards = {
 		matchYouWin: "Jij wint het spel!",
 		matchTie: "Gelijkspel!",
 		lowestWins: "De laagste score wint.",
+		highestWins: "De hoogste score wint.",
+		bidHint: "Bied hoeveel slagen je haalt: 0 tot en met {count}.",
+		bidDealer:
+			"Jij geeft: je mag geen {count} bieden, anders komen de biedingen uit.",
+		bidButton: "Bied {count}",
+		bidLess: "Eén minder",
+		bidMore: "Eén meer",
+		bidValue: "Jouw bod",
+		seatTotal: "{total} ptn",
+		seatBid: "Bod {bid} · {total} ptn",
+		seatTricks: "{taken}/{bid} · {total} ptn",
+		trumpPill: "Troef: {suit}",
+		noTrumpPill: "Geen troef",
+		turnedUpLabel: "Omgedraaid voor troef: {card}",
+		bidsPill: "Geboden {bids} · {tricks} slagen",
+		dealLabel: "Ronde {round} van {deals}",
+		cardsEach: { one: "{count} kaart", other: "{count} kaarten" },
+		roundBid: "bod {bid}, gehaald {taken}",
 	},
 	suits: { S: "schoppen", H: "harten", D: "ruiten", C: "klaveren" },
 	ranks: {
@@ -307,6 +325,8 @@ export const cards = {
 			other: "Jij pakt de slag: {count} punten.",
 		},
 		youTrickWonClean: "Jij pakt de slag.",
+		bid: "{name} biedt {count}.",
+		youBid: "Jij biedt {count}.",
 		broken: "De {suit} zijn gebroken!",
 		moon: "{name} schiet de maan!",
 		youMoon: "Jij schiet de maan!",
@@ -322,6 +342,7 @@ export const cards = {
 		meldsHeading: "Groepen en rijen",
 		pointsHeading: "Punten",
 		passHeading: "Doorgeven",
+		bidHeading: "Rondes en bieden",
 		shedding: {
 			goal: "Ben als eerste al je kaarten kwijt.",
 			match:
@@ -389,6 +410,30 @@ export const cards = {
 				other: "{card}: {count} punten",
 			},
 			moon: "Pak je in één ronde alle strafkaarten, dan kosten ze jou niets: alle anderen krijgen ze.",
+			goalHigh:
+				"Haal de meeste punten. Het spel eindigt zodra iemand {target} haalt; de hoogste score wint.",
+			goalLastHigh:
+				"Het spel eindigt na de laatste ronde; de hoogste score wint.",
+			goalLastLow:
+				"Het spel eindigt na de laatste ronde; de laagste score wint.",
+			schedules: {
+				fullDeck: "Elke ronde wordt het hele spel uitgedeeld.",
+				upDown:
+					"Ronde 1 krijgt iedereen één kaart, elke ronde één meer tot zoveel als het spel voor de tafel toelaat, en dan elke ronde één minder terug naar één.",
+				up: "Ronde 1 krijgt iedereen één kaart, en elke ronde één meer, tot zoveel als het spel voor de tafel toelaat.",
+				down: "De eerste ronde krijgt iedereen zoveel kaarten als het spel voor de tafel toelaat, en elke ronde één minder, tot één.",
+			},
+			bid: "Voor het spelen zegt iedereen hoeveel slagen hij haalt, te beginnen links van de gever. De gever biedt als laatste.",
+			dealerRule:
+				"De gever mag niet zo bieden dat de biedingen optellen tot het aantal slagen: iemand moet ernaast zitten.",
+			trumpTurnUp:
+				"Na het delen wordt de volgende kaart omgedraaid: die kleur is troef. Is alles gedeeld, dan is er geen troef.",
+			leftLeads: "Wie links van de gever zit, komt uit in de eerste slag.",
+			trickTrump:
+				"De hoogste troef pakt de slag, anders de hoogste kaart van de gevraagde kleur. Wie de slag pakt, komt daarna uit.",
+			bidMet: "Bod precies gehaald: {exact} punten plus {perTrick} per slag.",
+			bidMissed:
+				"Bod niet gehaald: {perTrickOff} punten eraf voor elke slag ernaast.",
 		},
 	},
 	games: {
@@ -520,6 +565,27 @@ export const cards = {
 				to50: {
 					label: "Kort spel",
 					hint: "Speel tot 50 punten in plaats van 100.",
+				},
+			},
+		},
+		boerenbridge: {
+			name: "Boerenbridge",
+			tagline: "Bied het, en haal het",
+			blurb:
+				"Zeg hoeveel slagen je haalt, en haal er precies zoveel. De handen groeien en krimpen per ronde, en een omgedraaide kaart bepaalt troef.",
+			powers: {},
+			options: {
+				upOnly: {
+					label: "Alleen omhoog",
+					hint: "Begin met één kaart en stop bij zoveel als het spel toelaat.",
+				},
+				downOnly: {
+					label: "Alleen omlaag",
+					hint: "Begin met de meeste kaarten en stop bij één.",
+				},
+				dealerFree: {
+					label: "Gever biedt vrij",
+					hint: "De gever mag de biedingen laten optellen tot het aantal slagen.",
 				},
 			},
 		},

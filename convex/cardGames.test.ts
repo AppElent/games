@@ -606,6 +606,84 @@ describe("hartenjagen", () => {
 	});
 });
 
+describe("boerenbridge", () => {
+	type BridgeView = {
+		hand: string[];
+		phase: string;
+		turn: number;
+		bids: Array<number | null> | null;
+		legalBids: number[];
+		handSize: number;
+		turnedUp: string | null;
+	};
+
+	it("bids, plays and finishes a solo table against two computers", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(t, "boerenbridge", 2);
+		const me = creds(sessionId, participantId);
+		const table = await read(t, me);
+		const start = table.view as unknown as BridgeView;
+		expect(start.phase).toBe("bidding");
+		expect(start.handSize).toBe(1);
+		expect(start.hand).toHaveLength(1);
+		expect(start.turnedUp).toBeTruthy();
+		// The host sits left of the dealer, so bids first.
+		expect(start.turn).toBe(table.you);
+		expect(start.legalBids).toEqual([0, 1]);
+
+		await expectCode(
+			t.mutation(api.cardGames.act, {
+				...me,
+				action: { type: "play", card: start.hand[0] },
+			}),
+			"cardsBidFirst",
+		);
+		await expectCode(
+			t.mutation(api.cardGames.act, {
+				...me,
+				action: { type: "bid", count: 2 },
+			}),
+			"cardsBidRange",
+			{ max: 1 },
+		);
+		await t.mutation(api.cardGames.act, {
+			...me,
+			action: { type: "bid", count: 0 },
+		});
+		await t.finishAllScheduledFunctions(vi.runAllTimers);
+		const bid = (await read(t, me)).view as unknown as BridgeView;
+		expect(bid.bids?.[0]).toBe(0);
+		expect(bid.bids?.every((count) => count !== null)).toBe(true);
+
+		await t.mutation(api.cardGames.setAutopilot, { ...me, seat: 0, on: true });
+		await (
+			t.finishAllScheduledFunctions as (
+				advance: () => void,
+				maxIterations: number,
+			) => Promise<void>
+		)(vi.runAllTimers, 20_000);
+		const done = await read(t, me);
+		expect(done.status).toBe("finished");
+		const session = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(session?.status).toBe("completed");
+	}, 30_000);
+
+	it("refuses house rules that change the same thing", async () => {
+		const t = setup();
+		await expectCode(
+			t.mutation(
+				api.cardGames.createTable,
+				tableArgs({
+					gameId: "boerenbridge",
+					bots: 2,
+					options: ["upOnly", "downOnly"],
+				}),
+			),
+			"cardsOptionsClash",
+		);
+	});
+});
+
 describe("getTable", () => {
 	it("answers a mistyped table link with nothing", async () => {
 		const t = setup();

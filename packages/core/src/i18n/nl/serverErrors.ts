@@ -38,6 +38,12 @@ export const serverErrors = {
 	cardsAlreadyPassed: "Je hebt je kaarten al doorgegeven.",
 	cardsPassCount: "Kies precies {count} kaarten om door te geven.",
 	cardsPassFirst: "Geef eerst je kaarten door.",
+	cardsNotBidding: "Er wordt nu niet geboden.",
+	cardsBidRange: "Bied tussen 0 en {max} slagen.",
+	cardsDealerBid:
+		"Als gever mag je geen {count} bieden: dan komen de biedingen uit op het aantal slagen.",
+	cardsBidFirst: "Eerst bieden: wacht tot iedereen heeft geboden.",
+	cardsOptionsClash: "Die huisregels gaan niet samen.",
 	signInRequired: "Inloggen vereist.",
 	accountChanged:
 		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",

@@ -7,6 +7,7 @@
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
+import { boerenbridge } from "./games/boerenbridge";
 import { hartenjagen } from "./games/hartenjagen";
 import { jokeren } from "./games/jokeren";
 import { maumau } from "./games/maumau";
@@ -86,6 +87,7 @@ export const CARD_GAMES = {
 	maumau,
 	jokeren,
 	hartenjagen,
+	boerenbridge,
 } as const satisfies Record<string, CardGameDefinition>;
 
 export type CardGameId = keyof typeof CARD_GAMES;
@@ -108,7 +110,20 @@ export function getCardGame(id: string): CardGame {
 	return CARD_GAMES[id];
 }
 
-/** Validates house-rule ids; unknown ones are a client error. */
+function houseRules(game: CardGameDefinition) {
+	return game.options as ReadonlyArray<HouseRule<unknown>>;
+}
+
+/** Two house rules that patch the same rule field can't both apply. */
+function clash(a: HouseRule<unknown>, b: HouseRule<unknown>) {
+	const fields = Object.keys(a.patch ?? {});
+	return (
+		a.id !== b.id &&
+		Object.keys(b.patch ?? {}).some((field) => fields.includes(field))
+	);
+}
+
+/** Validates house-rule ids; unknown or clashing ones are a client error. */
 export function normalizeOptions(game: CardGameDefinition, options: string[]) {
 	const known = game.options.map((option) => option.id as string);
 	for (const option of options) {
@@ -116,7 +131,34 @@ export function normalizeOptions(game: CardGameDefinition, options: string[]) {
 			throw new GameRuleError("cardsUnknownOption");
 		}
 	}
+	const chosen = houseRules(game).filter((option) =>
+		options.includes(option.id),
+	);
+	if (chosen.some((a) => chosen.some((b) => clash(a, b)))) {
+		throw new GameRuleError("cardsOptionsClash");
+	}
 	return known.filter((id) => options.includes(id));
+}
+
+/**
+ * The options after switching one on or off. Switching one on switches off
+ * any that change the same rule (only going up, only going down).
+ */
+export function switchOption(
+	game: CardGameDefinition,
+	options: readonly string[],
+	id: string,
+	on: boolean,
+) {
+	const rest = options.filter((option) => option !== id);
+	const option = houseRules(game).find((rule) => rule.id === id);
+	if (!on || !option) {
+		return rest;
+	}
+	const clashing = houseRules(game)
+		.filter((other) => clash(option, other))
+		.map((other) => other.id);
+	return [...rest.filter((other) => !clashing.includes(other)), id];
 }
 
 function rulesOf<R>(
