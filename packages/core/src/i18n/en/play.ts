@@ -21,6 +21,7 @@ export const play = {
 		hitster: "Place songs on your timeline. Host a party room.",
 		"card-games":
 			"Pesten, Mau-Mau, Jokeren, Hearts, Gin Rummy and Twenty-One, against the computer or friends.",
-		"dice-games": "Yatzy alone, against the computer or with friends.",
+		"dice-games":
+			"Yatzy and Mexico alone, against the computer or with friends.",
 	},
 };

@@ -99,6 +99,24 @@ export type DiceEvent = { seq: number } & (
 			bonus: number;
 	  }
 	| { type: "win"; seats: number[] }
+	/** Mexen: a player keeps their throw after `throws` throws. */
+	| {
+			type: "stand";
+			seat: number;
+			dice: number[];
+			throws: number;
+			kind: "mex" | "littleMex" | "double" | "plain";
+	  }
+	/** Mexen: these seats tied for the lowest throw and throw again. */
+	| { type: "throwOff"; seats: number[] }
+	/** Mexen: the round's lowest throw costs `amount` lives or points; `out` when no lives remain. */
+	| {
+			type: "lose";
+			seat: number;
+			amount: number;
+			unit: "lives" | "points";
+			out: boolean;
+	  }
 );
 
 type DiceEventInput = DiceEvent extends infer E

@@ -161,17 +161,114 @@ export const dice = {
 		chance: "Chance",
 		yatzy: "Yatzy",
 	} satisfies Record<ScoreCategory, string>,
+	/** Words for every game in the Mexen family's table and rules. */
+	mexen: {
+		round: "Round {round}",
+		throwOff: "Throw-off",
+		theirTurn: "{name} is throwing",
+		throw: "Throw",
+		throwAgain: "Throw again",
+		keep: "Keep {throw}",
+		throwCount: "Throw {used} of {cap}",
+		leaderHint:
+			"You go first, with up to {cap} throws. However many you use is the limit for everyone else this round.",
+		startHint: {
+			one: "You get {count} throw this round.",
+			other: "You get up to {count} throws this round.",
+		},
+		decideHint: "Keep this throw or throw again. Only your last throw counts.",
+		throwOffHint: "Tied for lowest: one throw each to settle it.",
+		limit: {
+			one: "This round: {count} throw each",
+			other: "This round: up to {count} throws each",
+		},
+		limitPending: "{name} sets this round's throws",
+		yourLimitPending: "You set this round's throws",
+		doubled: "A Mex was kept: this round's loss counts double.",
+		seatsLabel: "Players",
+		leader: "Goes first",
+		out: "Out",
+		toThrow: "Still to throw",
+		throwing: "Throwing",
+		inThrowOff: "In the throw-off",
+		lives: { one: "{count} life", other: "{count} lives" },
+		points: { one: "{count} point", other: "{count} points" },
+		kept: "Kept {throw}",
+		lastStand: "{name} keeps {throw}",
+		lastThrowOff: "Tied for lowest: {names} throw again",
+		lastLoseLife: "{name} loses a life",
+		lastLoseLives: "{name} loses {count} lives",
+		lastLosePoint: "{name} takes a point",
+		lastLosePoints: "{name} takes {count} points",
+		lastOut: "{name} is out",
+		throws: {
+			mex: "Mex",
+			littleMex: "Little Mex",
+			double: "Double {face}",
+			plain: "{value}",
+		},
+		rules: {
+			goalLives:
+				"Don't end a round with the lowest throw. It costs a life, and everyone starts with {lives}. With no lives left you're out; the last player with lives wins.",
+			goalPoints:
+				"Don't end a round with the lowest throw. It costs a point. The game ends when someone reaches {limit} points, and the fewest points win.",
+			roundHeading: "A round",
+			leader:
+				"The first player throws both dice up to {throws} times and keeps their last throw. The number of throws they used is the most anyone else may take that round.",
+			others: "Everyone else follows in turn and also keeps their last throw.",
+			loser:
+				"The lowest throw loses. Players tied for lowest throw once more each, until one of them is lowest. The loser starts the next round.",
+			mexDoublesLives:
+				"A round in which someone kept a Mex costs its loser two lives.",
+			mexDoublesPoints:
+				"A round in which someone kept a Mex costs its loser two points.",
+			rankHeading: "Which throw wins",
+			read: "The high die counts as tens: 6-3 is 63.",
+			mex: "2-1 is Mex, the highest throw.",
+			littleMex: "3-1 is Little Mex, second only to Mex.",
+			doubles: "Then doubles, from 6-6 down to 1-1.",
+			plain: "Then the rest, from 65 down to {lowest}.",
+		},
+	},
 	bots: cards.bots,
 	games: {
 		yatzy: {
 			name: "Yatzy",
 			tagline: "Five dice, three rolls",
 			blurb:
-				"Roll, hold and roll again to fill fifteen boxes. Chase the upper bonus, or gamble on a Yatzy.",
+				"Roll, hold and roll again to fill fifteen boxes. Chase the upper bonus, or go all out for a Yatzy.",
 			options: {
 				yahtzeeSheet: {
 					label: "Yahtzee sheet",
 					hint: "Thirteen boxes: full house 25, straights 30 and 40, bonus Yahtzees worth 100.",
+				},
+			},
+		},
+		mexen: {
+			name: "Mexico",
+			tagline: "Two dice, one Mex",
+			blurb:
+				"Throw up to three times, read the high die first, and don't end the round lowest. A 2-1 beats everything. The last player with lives left wins.",
+			options: {
+				lives3: {
+					label: "3 lives",
+					hint: "A quick game: everyone starts with 3 lives instead of 6.",
+				},
+				lives10: {
+					label: "10 lives",
+					hint: "A long game: everyone starts with 10 lives instead of 6.",
+				},
+				mexSingle: {
+					label: "Mex costs one",
+					hint: "A Mex in the round no longer doubles the round's loss.",
+				},
+				littleMex: {
+					label: "Little Mex",
+					hint: "3-1 ranks second, just below Mex and above every double.",
+				},
+				points: {
+					label: "Points instead of lives",
+					hint: "Nobody drops out. The loser takes points instead, the game ends when someone reaches the lives total, and the fewest points win.",
 				},
 			},
 		},

@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
-import type { DiceAction, DiceView } from "@arcadeclub/core/dice/engine";
+import type { DiceAction } from "@arcadeclub/core/dice/engine";
+import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -44,7 +45,7 @@ async function read(
 	if (!table?.view) {
 		throw new Error("table not found");
 	}
-	return { ...table, view: table.view as DiceView };
+	return { ...table, view: table.view as ScoresheetView };
 }
 
 async function rawState(t: T) {

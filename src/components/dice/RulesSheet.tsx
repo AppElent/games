@@ -1,4 +1,9 @@
-import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
+import {
+	type DiceGame,
+	diceRules,
+	type MexenGame,
+	type ScoresheetGame,
+} from "@arcadeclub/core/dice/engine";
 import { categoryEffect } from "@arcadeclub/core/dice/table-view";
 import { Sheet } from "#/components/table/Chrome";
 import { fmt, useMessages } from "#/lib/i18n";
@@ -39,16 +44,46 @@ export function DiceRulesSheet({
 		string,
 		{ label: string; hint: string }
 	>;
-	const rules = diceRules(game, options);
-	const r = dice.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
 	return (
 		<Sheet
 			open={open}
 			onClose={onClose}
-			title={fmt(r.heading, { game: text.name })}
+			title={fmt(dice.rules.heading, { game: text.name })}
 		>
+			{game.family === "mexen" ? (
+				<MexenRules game={game} options={options} />
+			) : (
+				<ScoresheetRules game={game} options={options} />
+			)}
+			{active.length > 0 ? (
+				<Section heading={dice.rules.extrasHeading}>
+					<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+						{active.map((option) => (
+							<li key={option.label}>
+								{option.label}: {option.hint}
+							</li>
+						))}
+					</ul>
+				</Section>
+			) : null}
+		</Sheet>
+	);
+}
+
+function ScoresheetRules({
+	game,
+	options,
+}: {
+	game: ScoresheetGame;
+	options: readonly string[];
+}) {
+	const dice = useMessages().games.dice;
+	const rules = diceRules(game, options);
+	const r = dice.rules;
+	return (
+		<>
 			<Section heading={r.goalHeading}>
 				<p className="text-sm leading-snug">
 					{fmt(r.goal, { rounds: rules.sheet.length })}
@@ -82,17 +117,49 @@ export function DiceRulesSheet({
 					</p>
 				) : null}
 			</Section>
-			{active.length > 0 ? (
-				<Section heading={r.extrasHeading}>
-					<ul className="flex flex-col gap-1.5 text-sm leading-snug">
-						{active.map((option) => (
-							<li key={option.label}>
-								{option.label}: {option.hint}
-							</li>
-						))}
-					</ul>
-				</Section>
-			) : null}
-		</Sheet>
+		</>
+	);
+}
+
+function MexenRules({
+	game,
+	options,
+}: {
+	game: MexenGame;
+	options: readonly string[];
+}) {
+	const dice = useMessages().games.dice;
+	const rules = diceRules(game, options);
+	const r = dice.mexen.rules;
+	const lives = rules.scoring === "lives";
+	return (
+		<>
+			<Section heading={dice.rules.goalHeading}>
+				<p className="text-sm leading-snug">
+					{lives
+						? fmt(r.goalLives, { lives: rules.lives })
+						: fmt(r.goalPoints, { limit: rules.lives })}
+				</p>
+			</Section>
+			<Section heading={r.roundHeading}>
+				<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+					<li>{fmt(r.leader, { throws: rules.maxThrows })}</li>
+					<li>{r.others}</li>
+					<li>{r.loser}</li>
+					{rules.mexDoubles ? (
+						<li>{lives ? r.mexDoublesLives : r.mexDoublesPoints}</li>
+					) : null}
+				</ul>
+			</Section>
+			<Section heading={r.rankHeading}>
+				<ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm leading-snug">
+					<li>{r.read}</li>
+					<li>{r.mex}</li>
+					{rules.littleMex ? <li>{r.littleMex}</li> : null}
+					<li>{r.doubles}</li>
+					<li>{fmt(r.plain, { lowest: rules.littleMex ? 32 : 31 })}</li>
+				</ol>
+			</Section>
+		</>
 	);
 }
