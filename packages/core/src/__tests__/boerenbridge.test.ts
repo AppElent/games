@@ -247,6 +247,22 @@ describe("bidding", () => {
 		expect(act(state, 2, { type: "bid", count: 2 }).phase).toBe("playing");
 	});
 
+	it("blocks a bid of none, or of every trick, when that adds up", () => {
+		for (const [first, second, blocked, allowed] of [
+			[1, 1, 0, [1, 2]],
+			[0, 0, 2, [0, 1]],
+		] as const) {
+			let state = bidding(hands);
+			state = act(state, 0, { type: "bid", count: first });
+			state = act(state, 1, { type: "bid", count: second });
+			expect(legalBids(rulesWith(), state, 2)).toEqual(allowed);
+			expectRule(
+				() => act(state, 2, { type: "bid", count: blocked }),
+				"cardsDealerBid",
+			);
+		}
+	});
+
 	it("blocks nothing when the others already bid past the tricks", () => {
 		let state = bidding(hands);
 		state = act(state, 0, { type: "bid", count: 2 });
@@ -331,6 +347,22 @@ describe("scoring", () => {
 		// Round scores 12, 10, -2 on top of 0, 5, 0.
 		expect(state.phase).toBe("finished");
 		expect(state.winners).toEqual([1]);
+	});
+
+	it("shares the win between tied highest totals", () => {
+		const options = ["upOnly"];
+		let state = bidding([["SA#0"], ["S3#0"], ["S2#0"]], {
+			bids: [1, 0, 1],
+			phase: "playing",
+			turn: 0,
+			round: dealsInMatch(rulesWith(options), 3) as number,
+			scores: [[5, 7, 0]],
+		});
+		for (const card of ["SA#0", "S3#0", "S2#0"]) {
+			state = act(state, state.turn, { type: "play", card }, options);
+		}
+		// Round scores 12, 10, -2 on top of 5, 7, 0: 17, 17, -2.
+		expect(state.winners).toEqual([0, 1]);
 	});
 });
 

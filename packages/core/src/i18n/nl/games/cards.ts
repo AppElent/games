@@ -215,7 +215,7 @@ export const cards = {
 		trumpPill: "Troef: {suit}",
 		noTrumpPill: "Geen troef",
 		turnedUpLabel: "Omgedraaid voor troef: {card}",
-		bidsPill: "Bod {bids} van {tricks} slagen",
+		bidsPill: "Geboden: {bids} van {tricks} slagen",
 		dealLabel: "Ronde {round} van {deals}",
 		cardsEach: { one: "{count} kaart", other: "{count} kaarten" },
 		roundBid: "bod {bid}, gehaald {taken}",
