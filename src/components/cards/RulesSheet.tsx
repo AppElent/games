@@ -42,9 +42,16 @@ function TricksRules({ lines }: { lines: ReturnType<typeof tricksRuleLines> }) {
 			<Section heading={r.goalHeading}>
 				<p className="text-sm leading-snug">{lines.goal}</p>
 			</Section>
-			<Section heading={r.passHeading}>
-				<Lines lines={lines.passing} />
-			</Section>
+			{lines.bidding ? (
+				<Section heading={r.bidHeading}>
+					<Lines lines={lines.bidding} />
+				</Section>
+			) : null}
+			{lines.passing ? (
+				<Section heading={r.passHeading}>
+					<Lines lines={lines.passing} />
+				</Section>
+			) : null}
 			<Section heading={r.turnHeading}>
 				<Lines lines={lines.turn} />
 			</Section>

@@ -630,6 +630,31 @@ describe("full games between computer players", () => {
 		}
 	});
 
+	it("finishes a table stored before bidding and turned-up trumps existed", () => {
+		const random = mulberry32(5);
+		const everyone = [0, 1, 2, 3];
+		const stored = (state: CardGameState) => {
+			const { bids: _bids, turnedUp: _turnedUp, ...old } = state as TricksState;
+			return old as CardGameState;
+		};
+		let state = stored(createCardGame(game, [], 4, random));
+		for (let step = 0; step < 20_000 && state.phase !== "finished"; step += 1) {
+			const view = viewCardGame(game, [], state, 0) as TricksView;
+			expect(view.bids).toBeNull();
+			expect(view.turnedUp).toBeNull();
+			expect(view.legalBids).toEqual([]);
+			expect(view.blockedBid).toBeNull();
+			const move = botMove(game, [], state, everyone, random);
+			if (!move) {
+				throw new Error(`bot stuck in ${state.phase}`);
+			}
+			state = stored(
+				applyCardAction(game, [], state, move.seat, move.action, random),
+			);
+		}
+		expect(state.phase).toBe("finished");
+	});
+
 	it("every deal scores 26 points between the players", () => {
 		const final = playOut([], 4, 77);
 		for (const round of final.scores) {

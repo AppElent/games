@@ -17,6 +17,7 @@ import type { SheddingView } from "../cards/shedding";
 import {
 	bankHint,
 	bankSeatNote,
+	bidTotal,
 	type CardWords,
 	cardName,
 	cardTilt,
@@ -265,6 +266,8 @@ describe("narration", () => {
 		{ seq: 78, type: "handEnd", winner: 1, kind: "gin", points: 40 },
 		{ seq: 79, type: "handEnd", winner: 0, kind: "undercut", points: 25 },
 		{ seq: 80, type: "handEnd", winner: 1, kind: "undercut", points: 25 },
+		{ seq: 81, type: "bid", seat: 0, count: 2 },
+		{ seq: 82, type: "bid", seat: 1, count: 0 },
 	];
 
 	it.each([
@@ -930,6 +933,8 @@ function tricksView(over: Partial<TricksView> = {}): TricksView {
 		phase: "playing",
 		round: 1,
 		target: 100,
+		deals: null,
+		handSize: 13,
 		turn: 1,
 		handCounts: [13, 13, 13],
 		hand: [],
@@ -942,6 +947,10 @@ function tricksView(over: Partial<TricksView> = {}): TricksView {
 		trick: [],
 		lastTrick: null,
 		trump: null,
+		turnedUp: null,
+		bids: null,
+		legalBids: [],
+		blockedBid: null,
 		broken: false,
 		roundPoints: [0, 0, 0],
 		tricksTaken: [0, 0, 0],
@@ -1044,7 +1053,7 @@ describe("tricksRuleLines", () => {
 			const lines = tricksRuleLines(wordsFor(messages), hartenjagen(options));
 			const all = [
 				lines.goal,
-				...lines.passing,
+				...(lines.passing ?? []),
 				...lines.turn,
 				...lines.points,
 			];
@@ -1058,7 +1067,7 @@ describe("tricksRuleLines", () => {
 	it("follows the house rules", () => {
 		const plain = tricksRuleLines(words, hartenjagen());
 		expect(plain.goal).toContain("100");
-		expect(plain.passing[0]).toContain("to the left, to the right, across");
+		expect(plain.passing?.[0]).toContain("to the left, to the right, across");
 		expect(plain.turn).toContain(
 			"From high to low: A K Q J 10 9 8 7 6 5 4 3 2.",
 		);
@@ -1090,5 +1099,96 @@ describe("trick flights", () => {
 			new Set(flights.map((flight) => `${flight.from}>${flight.to}`)),
 		).toEqual(new Set(["hand>seat-1", "seat-1>seat-2", "seat-2>hand"]));
 		expect(flash).toBe(2);
+	});
+});
+
+const boerenbridge = (options: string[] = []) => {
+	const resolved = resolvedRules(getCardGame("boerenbridge"), options);
+	if (resolved.family !== "tricks")
+		throw new Error("Boerenbridge takes tricks");
+	return resolved.rules;
+};
+
+describe("bidding at the table", () => {
+	const bidding = (over: Partial<TricksView> = {}) =>
+		tricksView({
+			phase: "bidding",
+			target: null,
+			deals: 25,
+			handSize: 3,
+			turn: 0,
+			bids: [null, null, null],
+			legalBids: [0, 1, 2, 3],
+			passDirection: "keep",
+			passCount: 0,
+			...over,
+		});
+
+	it("asks for a bid, and tells the dealer which number is off limits", () => {
+		const rules = boerenbridge();
+		expect(tricksHint(bidding(), 0, words, rules)).toBe(
+			"Bid how many tricks you'll take: 0 to 3.",
+		);
+		expect(tricksHint(bidding(), 1, words, rules)).toBeNull();
+		const dealer = bidding({
+			turn: 2,
+			bids: [1, 1, null],
+			blockedBid: 1,
+			legalBids: [0, 2, 3],
+		});
+		expect(tricksHint(dealer, 2, words, rules)).toContain("can't bid 1");
+	});
+
+	it("shows each seat's tricks against its bid, and adds the bids up", () => {
+		const view = bidding({ bids: [2, null, null] });
+		expect(tricksSeatNote(view, 0, words)).toBe("Bid 2 · 0 pts");
+		expect(tricksSeatNote(view, 1, words)).toBe("0 pts");
+		const playing = bidding({
+			phase: "playing",
+			bids: [2, 0, 1],
+			tricksTaken: [1, 0, 0],
+			totals: [14, -2, 10],
+		});
+		expect(tricksSeatNote(playing, 0, words)).toBe("1 of 2 · 14 pts");
+		expect(bidTotal(playing)).toBe(3);
+		expect(bidTotal(tricksView())).toBeNull();
+	});
+
+	it.each([
+		["en", en.games.cards],
+		["nl", nl.games.cards],
+	] as const)("writes the bidding rules in %s", (_, messages) => {
+		for (const options of [[], ["upOnly", "dealerFree"], ["downOnly"]]) {
+			const lines = tricksRuleLines(wordsFor(messages), boerenbridge(options));
+			expect(lines.passing).toBeNull();
+			const all = [
+				lines.goal,
+				...(lines.bidding ?? []),
+				...lines.turn,
+				...lines.points,
+			];
+			for (const line of all) {
+				expect(line.length).toBeGreaterThan(0);
+				expect(line).not.toMatch(/[{}]|undefined/);
+			}
+		}
+	});
+
+	it("follows the house rules", () => {
+		const plain = tricksRuleLines(words, boerenbridge());
+		const r = cards.rules.tricks;
+		expect(plain.goal).toBe(r.goalLastHigh);
+		expect(plain.bidding).toEqual([r.schedules.upDown, r.bid, r.dealerRule]);
+		expect(plain.turn).toContain(r.trumpTurnUp);
+		expect(plain.turn).toContain(r.trickTrump);
+		expect(plain.points).toEqual([
+			"Bid met exactly: 10 points plus 2 per trick.",
+			"Bid missed: 2 points off for every trick you're out by.",
+		]);
+		const house = tricksRuleLines(
+			words,
+			boerenbridge(["upOnly", "dealerFree"]),
+		);
+		expect(house.bidding).toEqual([r.schedules.up, r.bid]);
 	});
 });

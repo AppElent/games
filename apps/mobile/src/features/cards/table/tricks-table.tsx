@@ -3,6 +3,7 @@ import { isRedSuit } from "@arcadeclub/core/cards/art";
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import {
+	bidTotal,
 	cardName,
 	cardTilt,
 	seatName,
@@ -25,6 +26,7 @@ import { AppText } from "../../../ui/text";
 import { PlayingCard, SuitIcon } from "../deck/playing-card";
 import { Sheet } from "../deck/sheet";
 import { useCardWords } from "../deck/use-card-words";
+import { BidPicker } from "./bid-picker";
 import { FeltText, Pill, PillRow, TableButton } from "./felt-ui";
 import { type CardZones, useFlights } from "./flights";
 import { Hand } from "./hand";
@@ -177,7 +179,11 @@ export function TricksTable({
 	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "playing";
+	const bidding = view.phase === "bidding";
+	// Someone has the turn: to bid, or to play a card.
+	const live = playing || bidding;
 	const mine = playing && view.turn === you;
+	const myBid = bidding && view.turn === you;
 	const choosing = view.phase === "passing" && you !== null && !view.passed;
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";
@@ -242,15 +248,26 @@ export function TricksTable({
 	}
 
 	const hint = tricksHint(view, you, words, rules);
-	const roundLabel = fmt(tt.roundLabel, {
-		round: view.round,
-		target: view.target,
-	});
-	const best = Math.min(...view.totals);
+	const roundLabel =
+		view.deals === null
+			? fmt(tt.roundLabel, { round: view.round, target: view.target ?? "" })
+			: `${fmt(tt.dealLabel, { round: view.round, deals: view.deals })} · ${plural(locale, view.handSize, tt.cardsEach)}`;
+	const highWins = rules.highWins === true;
+	const best = highWins ? Math.max(...view.totals) : Math.min(...view.totals);
 	const standings = view.totals
 		.map((total, seat) => ({ total, seat }))
-		.sort((a, b) => a.total - b.total);
+		.sort((a, b) => (highWins ? b.total - a.total : a.total - b.total));
 	const lastRound = view.scores.at(-1);
+	const bids = bidTotal(view);
+	const winsLine = highWins ? tt.highestWins : tt.lowestWins;
+	const trump = view.trump;
+	// In a bidding game each seat's line says what it bid and took.
+	const roundName = (seat: number) => {
+		const name = seatName(cards, table, seat);
+		return view.bids
+			? `${name} · ${fmt(tt.roundBid, { bid: view.bids[seat] ?? 0, taken: view.tricksTaken[seat] })}`
+			: name;
+	};
 	const seats = table.seats.length;
 	const trickWidth = Math.round(
 		Math.min(
@@ -265,7 +282,7 @@ export function TricksTable({
 			game={game}
 			table={table}
 			name={name}
-			mine={mine}
+			mine={mine || myBid}
 			zones={flights.zones}
 			error={controls.error}
 			flightLayer={flights.layer}
@@ -274,7 +291,7 @@ export function TricksTable({
 				<SeatRow
 					table={table}
 					handCounts={view.handCounts}
-					turn={playing ? view.turn : null}
+					turn={live ? view.turn : null}
 					flash={flights.flash}
 					zones={flights.zones}
 					controls={controls}
@@ -292,6 +309,41 @@ export function TricksTable({
 					/>
 					<PillRow>
 						<Pill>{roundLabel}</Pill>
+						{rules.trumpChoice !== "none" && live ? (
+							trump ? (
+								<Pill
+									icon={
+										view.turnedUp ? (
+											<View
+												accessible
+												accessibilityLabel={fmt(tt.turnedUpLabel, {
+													card: cardName(cards, view.turnedUp),
+												})}
+											>
+												<PlayingCard card={view.turnedUp} width={14} />
+											</View>
+										) : (
+											<SuitIcon
+												suit={trump}
+												size={13}
+												color={
+													isRedSuit(trump)
+														? cardColors.suitRed
+														: cardColors.ivory
+												}
+											/>
+										)
+									}
+								>
+									{fmt(tt.trumpPill, { suit: cards.suits[trump] })}
+								</Pill>
+							) : (
+								<Pill>{tt.noTrumpPill}</Pill>
+							)
+						) : null}
+						{bids !== null && live ? (
+							<Pill>{fmt(tt.bidsPill, { bids, tricks: view.handSize })}</Pill>
+						) : null}
 						{view.phase === "passing" ? (
 							<Pill>
 								{fmt(tt.passPill, {
@@ -299,7 +351,10 @@ export function TricksTable({
 								})}
 							</Pill>
 						) : null}
-						{playing && firstTrick && view.passDirection === "keep" ? (
+						{playing &&
+						firstTrick &&
+						view.passDirection === "keep" &&
+						view.bids === null ? (
 							<Pill>{tt.keepPill}</Pill>
 						) : null}
 						{view.broken && breaking && playing ? (
@@ -330,9 +385,9 @@ export function TricksTable({
 						style={mine ? styles.mine : null}
 						testID="cards-turn"
 					>
-						{!playing
+						{!live
 							? " "
-							: mine
+							: mine || myBid
 								? cards.table.yourTurn
 								: fmt(cards.table.theirTurn, {
 										name: seatName(cards, table, view.turn),
@@ -348,6 +403,14 @@ export function TricksTable({
 					</FeltText>
 					<EventTicker events={view.events} table={table} />
 					<View style={styles.actions}>
+						{myBid ? (
+							<BidPicker
+								key={`${view.round}-${view.blockedBid}`}
+								view={view}
+								pending={controls.pending}
+								onBid={(count) => controls.act({ type: "bid", count })}
+							/>
+						) : null}
 						{choosing ? (
 							<TableButton
 								label={tt.passButton}
@@ -439,7 +502,7 @@ export function TricksTable({
 												numberOfLines={1}
 												style={styles.who}
 											>
-												{seatName(cards, table, seat)}
+												{roundName(seat)}
 											</FeltText>
 											<FeltText variant="body">
 												{plural(locale, points, tt.totalPoints)}
@@ -474,7 +537,7 @@ export function TricksTable({
 							}
 						>
 							<FeltText variant="caption" muted style={styles.centered}>
-								{tt.lowestWins}
+								{winsLine}
 							</FeltText>
 							{standings.map(({ total, seat }) => (
 								<View
@@ -504,7 +567,7 @@ export function TricksTable({
 							empty={tt.noScores}
 							totalLabel={tt.scoreTotal}
 						/>
-						<AppText variant="secondary">{tt.lowestWins}</AppText>
+						<AppText variant="secondary">{winsLine}</AppText>
 					</Sheet>
 				</>
 			}
