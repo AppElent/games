@@ -41,6 +41,7 @@ import { DiceRulesSheet } from "../rules/dice-rules-sheet";
 import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
+import { useNow } from "./use-now";
 
 type Props = {
 	game: MexenGame;
@@ -52,17 +53,6 @@ type Props = {
 const MAX_DIE = 72;
 const PIP = 8;
 /** How often a silent seat is checked for. */
-const PRESENCE_TICK_MS = 15_000;
-
-function useNow() {
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		const timer = setInterval(() => setNow(Date.now()), PRESENCE_TICK_MS);
-		return () => clearInterval(timer);
-	}, []);
-	return now;
-}
-
 export function MexenTable({ game, table, view, controls }: Props) {
 	const { t, locale } = useI18n();
 	const dice = t.games.dice;

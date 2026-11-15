@@ -250,7 +250,7 @@ function MexenTray({
 			{view.doubled && view.mexDoubles && view.phase === "playing" ? (
 				<p className="mexen-doubled">{words.doubled}</p>
 			) : null}
-			{news && !mine ? (
+			{news && (!mine || view.rollsUsed === 0) ? (
 				<p className="mexen-news" aria-hidden="true">
 					{news}
 				</p>

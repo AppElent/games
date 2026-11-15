@@ -41,6 +41,7 @@ import { DiceRulesSheet } from "../rules/dice-rules-sheet";
 import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
+import { useNow } from "./use-now";
 
 type Props = {
 	game: ScoresheetGame;
@@ -54,17 +55,6 @@ const DIE_GAP = spacing.sm;
 const NAME_COLUMN = 124;
 const SEAT_COLUMN = 64;
 /** How often a silent seat is checked for. */
-const PRESENCE_TICK_MS = 15_000;
-
-function useNow() {
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		const timer = setInterval(() => setNow(Date.now()), PRESENCE_TICK_MS);
-		return () => clearInterval(timer);
-	}, []);
-	return now;
-}
-
 export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const { t } = useI18n();
 	const dice = t.games.dice;
