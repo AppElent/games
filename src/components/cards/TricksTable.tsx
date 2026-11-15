@@ -380,8 +380,8 @@ export function TricksTable({
 						) : null}
 						{playing &&
 						firstTrick &&
-						view.passDirection === "keep" &&
-						view.bids === null ? (
+						rules.passing !== null &&
+						view.passDirection === "keep" ? (
 							<span className="flag">{t.keepPill}</span>
 						) : null}
 						{view.broken && rules.breaking && playing ? (

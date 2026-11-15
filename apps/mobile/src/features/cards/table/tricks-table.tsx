@@ -337,14 +337,6 @@ export function TricksTable({
 								{fmt(tt.offerPill, { suit: cards.suits[view.offered] })}
 							</Pill>
 						) : null}
-						{roem ? (
-							<Pill tone="gold">
-								{[
-									fmt(tt.roem, { points: roem.points }),
-									...roem.kinds.map((kind) => tt.roemKinds[kind]),
-								].join(" · ")}
-							</Pill>
-						) : null}
 						{(rules.trumpChoice !== "none" || rules.callTrump === true) &&
 						live ? (
 							trump ? (
@@ -381,6 +373,14 @@ export function TricksTable({
 						{bids !== null && live ? (
 							<Pill>{fmt(tt.bidsPill, { bids, tricks: view.handSize })}</Pill>
 						) : null}
+						{roem ? (
+							<Pill tone="gold">
+								{[
+									fmt(tt.roem, { points: roem.points }),
+									...roem.kinds.map((kind) => tt.roemKinds[kind]),
+								].join(" · ")}
+							</Pill>
+						) : null}
 						{view.phase === "passing" ? (
 							<Pill>
 								{fmt(tt.passPill, {
@@ -390,8 +390,8 @@ export function TricksTable({
 						) : null}
 						{playing &&
 						firstTrick &&
-						view.passDirection === "keep" &&
-						view.bids === null ? (
+						rules.passing !== null &&
+						view.passDirection === "keep" ? (
 							<Pill>{tt.keepPill}</Pill>
 						) : null}
 						{view.broken && breaking && playing ? (

@@ -579,7 +579,7 @@ export const cards = {
 				other: "The {card}: {count} points",
 			},
 			teams: "Two teams, partners sitting opposite, share their points.",
-			goalDeals: "After {deals} deals the highest total wins.",
+			goalDeals: "After {deals} rounds the highest total wins.",
 			callTrump:
 				"A trump suit is put to the table. Starting left of the dealer, everyone in turn plays with it or passes. If everyone passes, the player left of the dealer chooses trump.",
 			nameTrump: "The player left of the dealer chooses trump.",

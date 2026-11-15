@@ -585,7 +585,7 @@ export const cards = {
 				other: "{card}: {count} punten",
 			},
 			teams: "Twee teams, maten tegenover elkaar, delen hun punten.",
-			goalDeals: "Na {deals} spellen wint het hoogste totaal.",
+			goalDeals: "Na {deals} rondes wint het hoogste totaal.",
 			callTrump:
 				"Er wordt een troefkleur voorgesteld. Om de beurt, links van de gever beginnend, speelt iedereen daarmee of past. Past iedereen, dan kiest de speler links van de gever de troef.",
 			nameTrump: "De speler links van de gever kiest de troef.",

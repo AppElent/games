@@ -549,7 +549,7 @@ type TricksScoreView = Pick<
 	"teams" | "totals" | "roundPoints" | "roem" | "scores" | "deals"
 >;
 
-/** Where the match stands: "Deal 3 of 16 · 8 cards each", or "Round 2 · to 100". */
+/** Where the match stands: "Round 3 of 16 · 8 cards", or "Round 2 · to 100". */
 export function tricksRoundLabel(
 	view: Pick<TricksView, "round" | "deals" | "target" | "handSize">,
 	{ cards, fmt, countOf }: CardWords,
