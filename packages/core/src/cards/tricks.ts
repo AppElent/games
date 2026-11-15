@@ -7,6 +7,7 @@
  */
 import { GameRuleError } from "../errors";
 import { type Rng, shuffle } from "../random";
+import type { BotMove } from "../table-engine";
 import {
 	buildDeck,
 	type CardId,
@@ -21,11 +22,24 @@ import {
 } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
 import { type RoemKind, roemOf } from "./roem";
-import type { BotMove } from "./table";
 
 /** Where passed cards go: the next seat in play, the one before, or opposite. */
 export const PASS_DIRECTIONS = ["left", "right", "across", "keep"] as const;
 export type PassDirection = (typeof PASS_DIRECTIONS)[number];
+
+/**
+ * A bidding phase before play: each seat says how many tricks it will take,
+ * starting left of the dealer, and a deal scores bids met and missed.
+ */
+export type TricksBidding = {
+	/** The dealer may bid so the bids add up to the tricks in the deal. */
+	dealerMayMatch: boolean;
+	/** A bid met scores `exact` plus `perTrick` for every trick bid. */
+	exact: number;
+	perTrick: number;
+	/** A bid missed loses this for every trick it is off by. */
+	perTrickOff: number;
+};
 
 export type TricksRules = {
 	/** Low to high. Also which ranks are dealt, so a short deck is just fewer ranks. */
@@ -51,9 +65,19 @@ export type TricksRules = {
 	cardPoints: Readonly<Record<string, number>>;
 	/** Taking every positive card in a deal gives their total to everyone else instead. */
 	shootTheMoon: boolean;
-	/** The match ends after the deal in which someone reaches this; lowest total wins. */
-	target?: number;
-	/** Instead of `target`: the match is this many deals, and the highest total wins. */
+	/**
+	 * The match ends after the deal in which someone reaches this. Null: it ends
+	 * when the schedule runs out of deals.
+	 */
+	target: number | null;
+	/** Bids before play; absent or null for none. */
+	bidding?: TricksBidding | null;
+	/** The highest total wins instead of the lowest. */
+	highWins?: boolean;
+	/**
+	 * The match also ends after this many deals, for a schedule that never
+	 * runs out (a full deck every deal).
+	 */
 	deals?: number;
 	/** The trump suit's order, low to high, when it differs from `ranks`. */
 	trumpRanks?: readonly Rank[];
@@ -111,7 +135,7 @@ export type TricksState = {
 	dealer: number;
 	/** Deals played so far, counting this one. */
 	round: number;
-	phase: "trump" | "passing" | "playing" | "roundOver" | "finished";
+	phase: "trump" | "passing" | "bidding" | "playing" | "roundOver" | "finished";
 	/** This deal's direction; "keep" when nobody passes. */
 	passDirection: PassDirection;
 	/** Cards each seat set aside to pass, until everyone has. Private. */
@@ -121,8 +145,15 @@ export type TricksState = {
 	turn: number;
 	trick: TrickPlay[];
 	lastTrick: { plays: TrickPlay[]; winner: number; roem?: Roem } | null;
-	/** Hearts has none; `trumpChoice` or the trump call sets it per deal. */
+	/** Set per deal by `trumpChoice` or the trump call; Hearts has none. */
 	trump: Suit | null;
+	/** The card turned up to show trump, face up for all; null when none was. */
+	turnedUp?: CardId | null;
+	/**
+	 * Each seat's bid this deal, null until made. Absent for games without
+	 * bidding (and for tables dealt before bidding existed).
+	 */
+	bids?: Array<number | null>;
 	/**
 	 * While seats call trump (`callTrump`): the suit put to them, or null once
 	 * the seat left of the dealer must name one. Absent in tables dealt before
@@ -152,6 +183,7 @@ export type TricksState = {
 
 export type TricksAction =
 	| { type: "passCards"; cards: CardId[] }
+	| { type: "bid"; count: number }
 	| { type: "play"; card: CardId }
 	| { type: "nextRound" }
 	| { type: "passTrump" }
@@ -160,6 +192,7 @@ export type TricksAction =
 /** Keyed by action type, so a new action cannot be left out. */
 export const TRICKS_ACTIONS: Record<TricksAction["type"], true> = {
 	passCards: true,
+	bid: true,
 	play: true,
 	nextRound: true,
 	passTrump: true,
@@ -170,9 +203,11 @@ export type TricksView = {
 	family: "tricks";
 	phase: TricksState["phase"];
 	round: number;
-	/** The match ends at this total (lowest wins), or after `deals` deals (highest wins). */
 	target: number | null;
+	/** Deals in the whole match, or null when it ends on `target`. */
 	deals: number | null;
+	/** Cards each seat was dealt this deal, so also the tricks in it. */
+	handSize: number;
 	turn: number;
 	/** Each seat's team; partners share a total. A game without teams gives every seat its own. */
 	teams: number[];
@@ -199,6 +234,13 @@ export type TricksView = {
 	trick: TrickPlay[];
 	lastTrick: TricksState["lastTrick"];
 	trump: Suit | null;
+	turnedUp: CardId | null;
+	/** Bids so far this deal, public once made; null for a game without bidding. */
+	bids: Array<number | null> | null;
+	/** Bids this seat may make now; empty unless it is their turn to bid. */
+	legalBids: number[];
+	/** The bid the dealer may not make, as it would add up; null when none. */
+	blockedBid: number | null;
 	broken: boolean;
 	/** Points each seat has taken so far this deal, before any moon. */
 	roundPoints: number[];
@@ -441,30 +483,78 @@ export function legalTricksCards(
 	);
 }
 
+/** The most cards each seat can be dealt from this deck. */
+const mostCards = (deck: number, seats: number) => Math.floor(deck / seats);
+
 /**
- * Hand sizes by name: the whole deck shared out, or (for a later game such as
- * Boerenbridge) a size that changes with the round.
+ * Hand sizes by name: the whole deck shared out, or a size that changes with
+ * the round. Null means the schedule has no such round, so the match is over.
  */
 const SCHEDULES = {
 	fullDeck: (deck: number, seats: number, _round: number) => deck / seats,
+	/** One card, up to as many as the deck allows, and back down to one. */
+	upDown: (deck: number, seats: number, round: number) => {
+		const most = mostCards(deck, seats);
+		return round <= most ? round : round < most * 2 ? most * 2 - round : null;
+	},
+	up: (deck: number, seats: number, round: number) =>
+		round <= mostCards(deck, seats) ? round : null,
+	down: (deck: number, seats: number, round: number) => {
+		const most = mostCards(deck, seats);
+		return round <= most ? most + 1 - round : null;
+	},
 } satisfies Record<
 	string,
-	(deck: number, seats: number, round: number) => number
+	(deck: number, seats: number, round: number) => number | null
 >;
 
+/** A schedule that still deals after this many rounds is treated as endless. */
+const ENDLESS = 500;
+
+/** Cards per seat in `round`, or null when the schedule has no such round. */
+export function handSizeFor(rules: TricksRules, seats: number, round: number) {
+	return SCHEDULES[rules.schedule](
+		tricksDeck(rules, seats).length,
+		seats,
+		round,
+	);
+}
+
+/** How many deals the schedule has, or null when it never runs out. */
+export function dealsInMatch(rules: TricksRules, seats: number) {
+	const deck = tricksDeck(rules, seats).length;
+	const sizeOf = SCHEDULES[rules.schedule];
+	let round = 0;
+	while (round < ENDLESS && sizeOf(deck, seats, round + 1) !== null) {
+		round += 1;
+	}
+	return round === ENDLESS ? null : round;
+}
+
+type TrumpPick = { trump: Suit | null; turnedUp: CardId | null };
+
 /**
- * Trump choosers by name, given the cards left over after the deal. A later
- * game turns one up. With `callTrump` the suit is only put to the seats.
+ * Trump choosers by name, given the cards left over after the deal and the
+ * deal's random source. With `callTrump` the suit is only put to the seats.
  */
 const TRUMPS = {
-	none: (_rest: readonly CardId[], _random: Rng): Suit | null => null,
+	none: (_rest: readonly CardId[], _random: Rng): TrumpPick => ({
+		trump: null,
+		turnedUp: null,
+	}),
+	/** The top undealt card sets trump; when the deck dealt out exactly, there is none. */
+	turnUp: (rest: readonly CardId[], _random: Rng): TrumpPick => {
+		const top = rest[0];
+		return top
+			? { trump: suitOf(top), turnedUp: top }
+			: { trump: null, turnedUp: null };
+	},
 	/** A suit drawn at random, as Klaverjassen puts one to the table. */
-	random: (_rest: readonly CardId[], random: Rng): Suit | null =>
-		SUITS[Math.floor(random() * SUITS.length)],
-} satisfies Record<
-	string,
-	(rest: readonly CardId[], random: Rng) => Suit | null
->;
+	random: (_rest: readonly CardId[], random: Rng): TrumpPick => ({
+		trump: SUITS[Math.floor(random() * SUITS.length)],
+		turnedUp: null,
+	}),
+} satisfies Record<string, (rest: readonly CardId[], random: Rng) => TrumpPick>;
 
 /**
  * Teams by name: each seat's team number. Partners share a total, so a team
@@ -488,6 +578,7 @@ function dealTricks(
 	const round = carried?.round ?? 1;
 	const handSize = SCHEDULES[rules.schedule](stock.length, seats, round);
 	if (
+		handSize === null ||
 		!Number.isInteger(handSize) ||
 		handSize < 1 ||
 		handSize * seats > stock.length
@@ -500,22 +591,30 @@ function dealTricks(
 	// `deal` took the hands off the stock: what remains was never dealt.
 	const undealt = stock;
 	const direction = passDirectionFor(rules, seats, round);
-	const suit = TRUMPS[rules.trumpChoice](undealt, random);
+	const { trump, turnedUp } = TRUMPS[rules.trumpChoice](undealt, random);
 	const calling = rules.callTrump === true;
 	const state: TricksState = {
 		family: "tricks",
 		hands,
 		dealer,
 		round,
-		phase: calling ? "trump" : direction === "keep" ? "playing" : "passing",
+		phase: calling
+			? "trump"
+			: direction !== "keep"
+				? "passing"
+				: rules.bidding
+					? "bidding"
+					: "playing",
 		passDirection: direction,
 		passing: hands.map(() => null),
 		received: hands.map(() => []),
 		turn: 0,
 		trick: [],
 		lastTrick: null,
-		trump: calling ? null : suit,
-		offered: calling ? suit : null,
+		trump: calling ? null : trump,
+		turnedUp,
+		...(rules.bidding ? { bids: hands.map(() => null) } : {}),
+		offered: calling ? trump : null,
 		trumpPasses: 0,
 		maker: null,
 		roem: hands.map(() => 0),
@@ -531,7 +630,8 @@ function dealTricks(
 	};
 	// While cards are being passed nobody has the turn, and naming the 2 of
 	// clubs' holder early would say who was dealt it: the exchange picks the
-	// opener. A trump call starts left of the dealer.
+	// opener. A trump call and bidding start left of the dealer, so the dealer
+	// goes last.
 	state.turn =
 		state.phase === "playing" ? opener(rules, state) : (dealer + 1) % seats;
 	pushEvent(state, { type: "deal", round });
@@ -583,6 +683,23 @@ function scorePenaltyCards(rules: TricksRules, state: TricksState): DealScore {
 	};
 }
 
+/** Bids: met exactly scores a bonus plus points per trick, missed loses per trick off. */
+function scoreBids(rules: TricksRules, state: TricksState): DealScore {
+	const bidding = rules.bidding;
+	if (!bidding) {
+		throw new Error("scoring bids needs rules.bidding");
+	}
+	return {
+		points: state.tricksTaken.map((taken, seat) => {
+			const bid = state.bids?.[seat] ?? 0;
+			return taken === bid
+				? bidding.exact + bidding.perTrick * bid
+				: -bidding.perTrickOff * Math.abs(taken - bid);
+		}),
+		moon: null,
+	};
+}
+
 /**
  * Team points plus roem (Klaverjassen): each team scores the card points and
  * roem it took, unless the team that called trump took no more than half of
@@ -628,11 +745,12 @@ function scorePointsAndRoem(rules: TricksRules, state: TricksState): DealScore {
 }
 
 /**
- * Scorers by name. A new game whose deals score differently (bids met, the
- * last trick only) adds one here and names it in its rules.
+ * Scorers by name. A new game whose deals score differently (the last trick
+ * only) adds one here and names it in its rules.
  */
 const SCORERS = {
 	penaltyCards: scorePenaltyCards,
+	bids: scoreBids,
 	pointsAndRoem: scorePointsAndRoem,
 } satisfies Record<
 	string,
@@ -643,13 +761,6 @@ function totalsOf(scores: readonly number[][], seats: number) {
 	return Array.from({ length: seats }, (_, seat) =>
 		scores.reduce((sum, round) => sum + (round[seat] ?? 0), 0),
 	);
-}
-
-/** What the match is played to: a total (lowest wins) or a number of deals (highest wins). */
-function matchEnd(rules: Pick<TricksRules, "target" | "deals">) {
-	return rules.deals
-		? { deals: rules.deals, target: null }
-		: { deals: null, target: rules.target ?? null };
 }
 
 function scoreDeal(rules: TricksRules, state: TricksState) {
@@ -674,16 +785,15 @@ function scoreDeal(rules: TricksRules, state: TricksState) {
 	// match ends and is won by team.
 	const seats = state.hands.length;
 	const totals = totalsOf(state.scores, seats);
-	const end = matchEnd(rules);
-	const over =
-		end.deals !== null
-			? state.round >= end.deals
-			: end.target !== null && Math.max(...totals) >= end.target;
-	if (!over) {
+	const reached = rules.target !== null && Math.max(...totals) >= rules.target;
+	const lastDeal =
+		(rules.deals !== undefined && state.round >= rules.deals) ||
+		handSizeFor(rules, seats, state.round + 1) === null;
+	if (!reached && !lastDeal) {
 		state.phase = "roundOver";
 		return;
 	}
-	const best = end.deals !== null ? Math.max(...totals) : Math.min(...totals);
+	const best = rules.highWins ? Math.max(...totals) : Math.min(...totals);
 	state.phase = "finished";
 	state.winners = totals.flatMap((total, seat) =>
 		total === best ? [seat] : [],
@@ -725,8 +835,10 @@ function passCards(
 		state.received[to] = chosen ?? [];
 	});
 	state.passing = state.hands.map(() => null);
-	state.phase = "playing";
-	state.turn = opener(rules, state);
+	state.phase = rules.bidding ? "bidding" : "playing";
+	state.turn = rules.bidding
+		? (state.dealer + 1) % seats
+		: opener(rules, state);
 	pushEvent(state, { type: "exchange", shift, count });
 }
 
@@ -770,12 +882,81 @@ function chooseTrump(
 	state.offered = null;
 	state.maker = seat;
 	pushEvent(state, { type: "trump", seat, suit });
-	if (state.passDirection === "keep") {
+	if (state.passDirection !== "keep") {
+		state.phase = "passing";
+	} else if (rules.bidding) {
+		state.phase = "bidding";
+		state.turn = (state.dealer + 1) % state.hands.length;
+	} else {
 		state.phase = "playing";
 		state.turn = opener(rules, state);
-	} else {
-		state.phase = "passing";
 	}
+}
+
+/**
+ * The bid the dealer may not make because the bids would add up to the tricks
+ * in the deal, so someone must miss. Null when the rule is off, when it isn't
+ * the dealer's turn to bid, or when that total is out of reach.
+ */
+export function blockedBid(rules: TricksRules, state: TricksState) {
+	const bids = state.bids;
+	if (
+		!rules.bidding ||
+		rules.bidding.dealerMayMatch ||
+		!bids ||
+		state.phase !== "bidding" ||
+		state.turn !== state.dealer
+	) {
+		return null;
+	}
+	const others = bids.reduce<number>((sum, bid) => sum + (bid ?? 0), 0);
+	const blocked = state.hands[state.dealer].length - others;
+	return blocked >= 0 ? blocked : null;
+}
+
+/** Every bid `seat` may make now, low to high. */
+export function legalBids(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+) {
+	if (state.phase !== "bidding" || state.turn !== seat) {
+		return [];
+	}
+	const blocked = blockedBid(rules, state);
+	return Array.from(
+		{ length: state.hands[seat].length + 1 },
+		(_, count) => count,
+	).filter((count) => count !== blocked);
+}
+
+function placeBid(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+	count: number,
+) {
+	if (state.phase !== "bidding" || !state.bids) {
+		throw new GameRuleError("cardsNotBidding");
+	}
+	if (state.turn !== seat) {
+		throw new GameRuleError("notYourTurn");
+	}
+	const most = state.hands[seat].length;
+	if (!Number.isInteger(count) || count < 0 || count > most) {
+		throw new GameRuleError("cardsBidRange", { max: most });
+	}
+	if (count === blockedBid(rules, state)) {
+		throw new GameRuleError("cardsDealerBid", { count });
+	}
+	state.bids[seat] = count;
+	pushEvent(state, { type: "bid", seat, count });
+	if (seat === state.dealer) {
+		state.phase = "playing";
+		state.turn = opener(rules, state);
+		return;
+	}
+	state.turn = (seat + 1) % state.hands.length;
 }
 
 function playCard(
@@ -789,6 +970,9 @@ function playCard(
 	}
 	if (state.phase === "trump") {
 		throw new GameRuleError("cardsCallTrumpFirst");
+	}
+	if (state.phase === "bidding") {
+		throw new GameRuleError("cardsBidFirst");
 	}
 	if (state.phase !== "playing") {
 		throw new GameRuleError("noActiveRound");
@@ -854,6 +1038,9 @@ export function applyTricks(
 		case "passCards":
 			passCards(rules, state, seat, action.cards);
 			return state;
+		case "bid":
+			placeBid(rules, state, seat, action.count);
+			return state;
 		case "play":
 			playCard(rules, state, seat, action.card);
 			return state;
@@ -894,7 +1081,9 @@ export function viewTricks(
 		family: "tricks",
 		phase: state.phase,
 		round: state.round,
-		...matchEnd(rules),
+		target: rules.target,
+		deals: rules.deals ?? dealsInMatch(rules, seats),
+		handSize: handSizeFor(rules, seats, state.round) ?? 0,
 		turn: state.turn,
 		teams: teamsOf(rules, seats),
 		offered: state.phase === "trump" ? (state.offered ?? null) : null,
@@ -919,6 +1108,10 @@ export function viewTricks(
 		trick: state.trick,
 		lastTrick: state.lastTrick,
 		trump: state.trump,
+		turnedUp: state.turnedUp ?? null,
+		bids: state.bids ?? null,
+		legalBids: seat === null ? [] : legalBids(rules, state, seat),
+		blockedBid: blockedBid(rules, state),
 		broken: state.broken,
 		roundPoints: state.taken.map((cards) =>
 			pointsOf(rules, cards, state.trump),
@@ -992,6 +1185,84 @@ export function chooseTricksCard(
 		return highest(safe.length > 0 ? safe : following) as CardId;
 	}
 	return spare(following).sort(byRisk)[0];
+}
+
+/**
+ * How many tricks a hand should take: high trumps nearly always win, an ace
+ * usually does, a guarded king sometimes. Side cards win less often at a
+ * fuller table, where someone is more likely to be void and trump them.
+ */
+export function estimateBid(
+	rules: TricksRules,
+	hand: readonly CardId[],
+	trump: Suit | null,
+	seats: number,
+) {
+	const top = rules.ranks.length - 1;
+	const length = (suit: Suit) =>
+		hand.filter((card) => suitOf(card) === suit).length;
+	const crowd = Math.min(1.3, 4 / seats);
+	const TRUMP_ODDS = [1, 0.85, 0.65, 0.45, 0.45];
+	let expected = 0;
+	for (const card of hand) {
+		const fromTop = top - rankIndex(rules, card);
+		const suit = suitOf(card);
+		if (suit === trump) {
+			expected += TRUMP_ODDS[fromTop] ?? 0.25;
+		} else if (fromTop === 0) {
+			expected += (length(suit) <= 5 ? 0.85 : 0.6) * crowd;
+		} else if (fromTop === 1 && length(suit) >= 2) {
+			expected += 0.45 * crowd;
+		} else if (fromTop === 2 && length(suit) >= 3) {
+			expected += 0.2 * crowd;
+		}
+	}
+	return Math.min(hand.length, Math.round(expected));
+}
+
+/** The allowed bid nearest the hand's estimate, the lower one on a tie. */
+export function chooseBid(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+) {
+	const wanted = estimateBid(
+		rules,
+		state.hands[seat],
+		state.trump,
+		state.hands.length,
+	);
+	const allowed = legalBids(rules, state, seat);
+	return allowed.reduce((best, bid) =>
+		Math.abs(bid - wanted) < Math.abs(best - wanted) ? bid : best,
+	);
+}
+
+/**
+ * A card that steers towards the bid: short of it, win as cheaply as
+ * possible; at it, lose with the highest card that still loses.
+ */
+export function chooseBidCard(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+) {
+	const legal = legalTricksCards(rules, state, seat);
+	const strength = (card: CardId) =>
+		(suitOf(card) === state.trump ? rules.ranks.length : 0) +
+		rankIndex(rules, card);
+	const sorted = [...legal].sort((a, b) => strength(a) - strength(b));
+	const short = (state.bids?.[seat] ?? 0) > state.tricksTaken[seat];
+	if (state.trick.length === 0) {
+		return (short ? sorted.at(-1) : sorted[0]) as CardId;
+	}
+	const wins = (card: CardId) =>
+		trickWinner(rules, [...state.trick, { seat, card }], state.trump) === seat;
+	const winners = sorted.filter(wins);
+	const losers = sorted.filter((card) => !wins(card));
+	return (
+		short ? (winners[0] ?? losers[0]) : (losers.at(-1) ?? winners[0])
+	) as CardId;
 }
 
 /** Worth calling trump on: well over an average hand's strength. */
@@ -1121,6 +1392,7 @@ export function choosePointsCard(
 /** The card each scorer's bot plays, so a new scorer brings its own judgement. */
 const CARD_CHOOSERS = {
 	penaltyCards: chooseTricksCard,
+	bids: chooseBidCard,
 	pointsAndRoem: choosePointsCard,
 } satisfies Record<
 	keyof typeof SCORERS,
@@ -1165,6 +1437,15 @@ export function botTricksMove(
 					},
 					pace: "turn",
 				};
+	}
+	if (state.phase === "bidding") {
+		return bots.includes(state.turn)
+			? {
+					seat: state.turn,
+					action: { type: "bid", count: chooseBid(rules, state, state.turn) },
+					pace: "turn",
+				}
+			: null;
 	}
 	if (state.phase !== "playing" || !bots.includes(state.turn)) {
 		return null;

@@ -20,6 +20,7 @@ export const play = {
 		backgammon: "Pass-and-play on this phone, or challenge a friend.",
 		hitster: "Place songs on your timeline. Host a party room.",
 		"card-games":
-			"Pesten, Klaverjassen, Jokeren, Hearts, Twenty-One and more, against the computer or friends.",
+			"Pesten, Klaverjassen, Jokeren, Hearts, Boerenbridge and more, against the computer or friends.",
+		"dice-games": "Yatzy alone, against the computer or with friends.",
 	},
 };

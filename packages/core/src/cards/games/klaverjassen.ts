@@ -36,7 +36,9 @@ export const klaverjassen = {
 		roem: true,
 		pitBonus: 100,
 		shootTheMoon: false,
+		target: null,
 		deals: 16,
+		highWins: true,
 	},
 	options: [
 		// "Verplicht" (Utrechts): the seat left of the dealer names trump.

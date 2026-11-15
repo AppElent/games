@@ -84,10 +84,18 @@ export const catalog = {
 	},
 	"card-games": {
 		title: "Kaartclub",
-		tagline: "Pesten, Klaverjassen, Jokeren, Hartenjagen, Gin Rummy en meer",
+		tagline: "Pesten, Klaverjassen, Jokeren, Hartenjagen, Boerenbridge en meer",
 		description:
 			"Klassieke Nederlandse kaartspellen aan één tafel. Speel meteen tegen de computer of nodig vrienden uit met een kamercode.",
 		primaryAction: "Kies een spel",
 		stats: "1-8 spelers",
+	},
+	"dice-games": {
+		title: "Dobbelclub",
+		tagline: "Yatzy en meer",
+		description:
+			"Dobbelspellen aan één tafel. Gooi alleen, tegen de computer, of nodig vrienden uit met een kamercode.",
+		primaryAction: "Kies een spel",
+		stats: "1-6 spelers",
 	},
 } satisfies Record<GameType, CatalogText>;

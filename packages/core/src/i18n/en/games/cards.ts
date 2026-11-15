@@ -219,14 +219,29 @@ export const cards = {
 		matchTie: "It's a tie!",
 		lowestWins: "Lowest total wins.",
 		highestWins: "Highest total wins.",
-		dealLabel: "Deal {round} of {deals}",
+		bidHint: "Bid how many tricks you'll take: 0 to {count}.",
+		bidDealer:
+			"You're the dealer: you can't bid {count}, or the bids would add up.",
+		bidButton: "Bid {count}",
+		bidLess: "One trick fewer",
+		bidMore: "One trick more",
+		bidValue: "Your bid",
+		seatTotal: "{total} pts",
+		seatBid: "Bid {bid} · {total} pts",
+		seatTricks: "{taken} of {bid} · {total} pts",
+		trumpPill: "Trump: {suit}",
+		noTrumpPill: "No trump",
+		turnedUpLabel: "Turned up for trump: {card}",
+		bidsPill: "Bids {bids} · {tricks} tricks",
+		dealLabel: "Round {round} of {deals}",
+		cardsEach: { one: "{count} card", other: "{count} cards" },
+		roundBid: "bid {bid}, took {taken}",
 		trumpOfferHint: "Play with {suit} as trump, or pass.",
 		trumpChooseHint: "Choose the trump suit.",
 		trumpForcedHint: "Everyone passed: choose the trump suit.",
 		playTrump: "Play {suit}",
 		passTrump: "Pass",
 		offerPill: "On offer: {suit}",
-		trumpPill: "Trump: {suit}",
 		partnerNote: "Partner",
 		makerNote: "Plays",
 		trumpPassedNote: "Passed",
@@ -414,6 +429,8 @@ export const cards = {
 		passReady: "{name} has picked cards to pass.",
 		youPassReady: "You've picked your cards to pass.",
 		exchange: "The passed cards change hands.",
+		bid: "{name} bids {count}.",
+		youBid: "You bid {count}.",
 		trickWon: {
 			one: "{name} takes the trick: {count} point.",
 			other: "{name} takes the trick: {count} points.",
@@ -482,6 +499,7 @@ export const cards = {
 		roemHeading: "Roem",
 		bankHeading: "The bank",
 		passHeading: "Passing",
+		bidHeading: "Rounds and bids",
 		shedding: {
 			goal: "Be the first to play all your cards.",
 			match: "Play a card with the same suit or rank as the top of the pile.",
@@ -567,9 +585,6 @@ export const cards = {
 			nameTrump: "The player left of the dealer chooses trump.",
 			makerMust:
 				"The team that chose trump must score more than half of all points and roem, or it goes nat and the other team scores everything.",
-			leadLeft: "The player left of the dealer leads the first trick.",
-			trickTrump:
-				"The highest trump takes the trick, or else the highest card of the suit led. Its taker leads next.",
 			mustTrump:
 				"If you can't follow suit you must trump, higher than any trump already played. You may only play a lower trump when you hold nothing else. When trumps are led, go higher if you can.",
 			partnerWins:
@@ -585,6 +600,28 @@ export const cards = {
 			roemSquare: "Four of a kind: 100. Four jacks: 200.",
 			pit: "Take every trick: {count} extra (pit).",
 			moon: "Take every penalty card in one round and they cost you nothing: everyone else takes them instead.",
+			goalHigh:
+				"Score the most points. The game ends when someone reaches {target}; the highest total wins.",
+			goalLastHigh:
+				"The game ends after the last round; the highest total wins.",
+			goalLastLow: "The game ends after the last round; the lowest total wins.",
+			schedules: {
+				upDown:
+					"Round 1 deals one card each, every round one more up to as many as the deck allows for the table, then one fewer each round back down to one.",
+				up: "Round 1 deals one card each, and every round one more, up to as many as the deck allows for the table.",
+				down: "The first round deals as many cards as the deck allows for the table, and every round one fewer, down to one.",
+			},
+			bid: "Before play, everyone says how many tricks they'll take, starting left of the dealer. The dealer bids last.",
+			dealerRule:
+				"The dealer may not bid so the bids add up to the tricks in the round: someone has to miss.",
+			trumpTurnUp:
+				"After the deal the next card is turned up: its suit is trump. When every card is dealt, there is no trump.",
+			leftLeads: "The player left of the dealer leads the first trick.",
+			trickTrump:
+				"The highest trump takes the trick, or else the highest card of the suit led. Its taker leads next.",
+			bidMet: "Bid met exactly: {exact} points plus {perTrick} per trick.",
+			bidMissed:
+				"Bid missed: {perTrickOff} points off for every trick you're out by.",
 		},
 		gin: {
 			goal: "Build sets and runs in your hand, then knock to score the gap with your opponent's unmatched cards. First to {target} points wins.",
@@ -780,6 +817,27 @@ export const cards = {
 				shortMatch: {
 					label: "Short match",
 					hint: "Play 8 deals instead of 16.",
+				},
+			},
+		},
+		boerenbridge: {
+			name: "Boerenbridge",
+			tagline: "Bid it, then make it",
+			blurb:
+				"Say how many tricks you'll take, then take exactly that many. Hands grow and shrink each round, and a turned-up card sets trump.",
+			powers: {},
+			options: {
+				upOnly: {
+					label: "Only going up",
+					hint: "Start with one card and stop at the most the deck allows.",
+				},
+				downOnly: {
+					label: "Only going down",
+					hint: "Start with the most cards and stop at one.",
+				},
+				dealerFree: {
+					label: "Dealer bids freely",
+					hint: "The dealer may make the bids add up to the tricks in the round.",
 				},
 			},
 		},

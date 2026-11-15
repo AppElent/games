@@ -11,8 +11,8 @@ type ParticipantId = Id<"sessionParticipants">;
 /**
  * Which participant this tab is, per session. sessionStorage, so a second tab
  * can join the same game as someone else; blocked storage leaves the tab
- * unseated instead of failing the create or join that remembered it. Card
- * games also keep a longer-lived seat secret: see `card-seat.ts`.
+ * unseated instead of failing the create or join that remembered it. Table
+ * games also keep a longer-lived seat secret: see `table-seat.ts`.
  */
 const keyOf = (sessionId: string) => `arcade-club.seat.${sessionId}`;
 

@@ -13,11 +13,7 @@ import {
 	SUITS,
 	type Suit,
 } from "./deck";
-import {
-	type CardGameDefinition,
-	plainCardOption,
-	SEAT_SILENT_AFTER_MS,
-} from "./engine";
+import { type CardGameDefinition, plainCardOption } from "./engine";
 import type { CardEvent } from "./events";
 import {
 	arrangeHand,
@@ -137,16 +133,6 @@ export function opponentOrder(table: TableSeats): number[] {
 	return Array.from(
 		{ length: count - 1 },
 		(_, step) => (you + step + 1) % count,
-	);
-}
-
-/** Only a person can go quiet, and an autopilot seat keeps playing regardless. */
-export function seatIsSilent(seat: TableSeat, now: number) {
-	return (
-		seat.botIndex === null &&
-		!seat.autopilot &&
-		seat.lastSeen !== null &&
-		now - seat.lastSeen > SEAT_SILENT_AFTER_MS
 	);
 }
 
@@ -356,6 +342,10 @@ export function describeEvent(
 				: fmt(e.passReady, { name: name(event.seat) });
 		case "exchange":
 			return e.exchange;
+		case "bid":
+			return mine(event.seat)
+				? fmt(e.youBid, { count: event.count })
+				: fmt(e.bid, { name: name(event.seat), count: event.count });
 		case "trickWon":
 			if (event.points === 0) {
 				return mine(event.seat)
@@ -559,15 +549,15 @@ type TricksScoreView = Pick<
 	"teams" | "totals" | "roundPoints" | "roem" | "scores" | "deals"
 >;
 
-/** Where the match stands: "Deal 3 of 16", or "Round 2 · to 100". */
+/** Where the match stands: "Deal 3 of 16 · 8 cards each", or "Round 2 · to 100". */
 export function tricksRoundLabel(
-	view: Pick<TricksView, "round" | "deals" | "target">,
-	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	view: Pick<TricksView, "round" | "deals" | "target" | "handSize">,
+	{ cards, fmt, countOf }: CardWords,
 ) {
 	const t = cards.tricks;
-	return view.deals !== null
-		? fmt(t.dealLabel, { round: view.round, deals: view.deals })
-		: fmt(t.roundLabel, { round: view.round, target: view.target ?? 0 });
+	return view.deals === null
+		? fmt(t.roundLabel, { round: view.round, target: view.target ?? "" })
+		: `${fmt(t.dealLabel, { round: view.round, deals: view.deals })} · ${countOf(view.handSize, t.cardsEach)}`;
 }
 
 /** The scoreboard's rows: one per team in a team game, else one per seat. */
@@ -591,14 +581,14 @@ export function tricksScoreRows(
 	};
 }
 
-/** The final order, best first: by team in a team game; highest wins in a game of deals. */
+/** The final order, best first, by team in a team game. */
 export function tricksStandings(
 	view: TricksScoreView,
 	table: TableSeats,
 	cards: CardMessages,
+	highest: boolean,
 ) {
 	const rows = tricksScoreRows(view, table, cards);
-	const highest = view.deals !== null;
 	const best = highest ? Math.max(...rows.totals) : Math.min(...rows.totals);
 	return rows.labels
 		.map((label, row) => ({
@@ -717,6 +707,14 @@ export function tricksHint(
 			? t.trumpForcedHint
 			: t.trumpChooseHint;
 	}
+	if (view.phase === "bidding") {
+		if (view.turn !== you) {
+			return null;
+		}
+		return view.blockedBid !== null
+			? fmt(t.bidDealer, { count: view.blockedBid })
+			: fmt(t.bidHint, { count: view.handSize });
+	}
 	if (view.phase === "passing") {
 		return view.passed
 			? t.passWaiting
@@ -776,10 +774,17 @@ export function tricksHint(
 	return t.lead;
 }
 
+/** The bids made so far this deal, added up; null for a game without bidding. */
+export function bidTotal(view: Pick<TricksView, "bids">) {
+	return view.bids
+		? view.bids.reduce<number>((sum, bid) => sum + (bid ?? 0), 0)
+		: null;
+}
+
 /**
- * The line under a seat: passed while cards (or a trump) are being chosen,
- * else its points. In a team game: partner and who plays, as the team strip
- * carries the points.
+ * The line under a seat: passed while cards (or a trump) are being chosen;
+ * in a team game partner and who plays, as the team strip carries the points;
+ * in a bidding game its tricks against its bid; else its points.
  */
 export function tricksSeatNote(
 	view: Pick<
@@ -788,6 +793,8 @@ export function tricksSeatNote(
 		| "passReady"
 		| "totals"
 		| "roundPoints"
+		| "bids"
+		| "tricksTaken"
 		| "teams"
 		| "trumpPassed"
 		| "maker"
@@ -812,6 +819,20 @@ export function tricksSeatNote(
 		]
 			.filter(Boolean)
 			.join(" · ");
+	}
+	if (view.bids) {
+		const bid = view.bids[seat];
+		const total = view.totals[seat];
+		if (bid === null) {
+			return fmt(cards.tricks.seatTotal, { total });
+		}
+		return view.phase === "bidding"
+			? fmt(cards.tricks.seatBid, { bid, total })
+			: fmt(cards.tricks.seatTricks, {
+					bid,
+					taken: view.tricksTaken[seat],
+					total,
+				});
 	}
 	const round = view.roundPoints[seat];
 	return fmt(t.seatScore, {
@@ -850,13 +871,26 @@ export function tricksRuleLines(
 	const breaking = rules.breaking;
 	const trumpRanks = rules.trumpRanks;
 	const called = rules.callTrump === true;
+	const bidding = rules.bidding ?? null;
+	const end = rules.deals
+		? fmt(r.goalDeals, { deals: rules.deals })
+		: rules.target === null
+			? rules.highWins
+				? r.goalLastHigh
+				: r.goalLastLow
+			: fmt(rules.highWins ? r.goalHigh : r.goal, { target: rules.target });
 	return {
-		goal: [
-			...(rules.seating === "opposite" ? [r.teams] : []),
-			rules.deals
-				? fmt(r.goalDeals, { deals: rules.deals })
-				: fmt(r.goal, { target: rules.target ?? 0 }),
-		].join(" "),
+		goal: [...(rules.seating === "opposite" ? [r.teams] : []), end].join(" "),
+		/** Null when the game bids instead of passing. */
+		bidding: bidding
+			? [
+					...(rules.schedule === "fullDeck"
+						? []
+						: [r.schedules[rules.schedule]]),
+					r.bid,
+					...(bidding.dealerMayMatch ? [] : [r.dealerRule]),
+				]
+			: null,
 		passing: passing
 			? [
 					fmt(r.pass, {
@@ -867,25 +901,24 @@ export function tricksRuleLines(
 					}),
 					...(passing.cycle.includes("across") ? [r.passOdd] : []),
 				]
-			: called
-				? []
+			: bidding || called
+				? null
 				: [r.noPass],
 		trump: called
 			? [rules.trumpChoice === "none" ? r.nameTrump : r.callTrump, r.makerMust]
 			: [],
 		turn: [
-			...(rules.firstLead
-				? [fmt(r.firstLead, { card: faceName(cards, rules.firstLead) })]
-				: called
-					? [r.leadLeft]
-					: []),
+			...(rules.trumpChoice === "turnUp" ? [r.trumpTurnUp] : []),
+			rules.firstLead
+				? fmt(r.firstLead, { card: faceName(cards, rules.firstLead) })
+				: r.leftLeads,
 			...(rules.mustTrump
 				? [
 						r.mustTrump,
 						...(rules.mustTrump === "unlessPartnerWins" ? [r.partnerWins] : []),
 					]
 				: [r.follow]),
-			called ? r.trickTrump : r.trick,
+			rules.trumpChoice === "none" && !called ? r.trick : r.trickTrump,
 			...(trumpRanks
 				? [
 						fmt(r.trumpRanks, { ranks: highToLow(trumpRanks) }),
@@ -902,6 +935,15 @@ export function tricksRuleLines(
 				: []),
 		],
 		points: [
+			...(bidding
+				? [
+						fmt(r.bidMet, {
+							exact: bidding.exact,
+							perTrick: bidding.perTrick,
+						}),
+						fmt(r.bidMissed, { perTrickOff: bidding.perTrickOff }),
+					]
+				: []),
 			...(rules.trumpPoints
 				? [
 						fmt(r.trumpPoints, {
@@ -949,11 +991,14 @@ export function tricksRuleSections(
 	const r = cards.rules;
 	return [
 		{ heading: r.trumpHeading, lines: lines.trump },
+		{ heading: r.bidHeading, lines: lines.bidding },
 		{ heading: r.passHeading, lines: lines.passing },
 		{ heading: r.turnHeading, lines: lines.turn },
 		{ heading: r.pointsHeading, lines: lines.points },
 		{ heading: r.roemHeading, lines: lines.roem },
-	].filter((section) => section.lines.length > 0);
+	].flatMap(({ heading, lines }) =>
+		lines && lines.length > 0 ? [{ heading, lines }] : [],
+	);
 }
 
 /** Everything a rummy turn allows, given what this player has selected and set aside. */

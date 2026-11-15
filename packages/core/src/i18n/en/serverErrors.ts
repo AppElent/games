@@ -48,6 +48,17 @@ export const serverErrors = {
 	cardsMustTrump: "You can't follow suit, so you have to trump.",
 	cardsMustOvertrump: "You have to play a higher trump.",
 	cardsNoUndertrump: "You can't play a lower trump while you hold other cards.",
+	cardsNotBidding: "There's no bidding right now.",
+	cardsBidRange: "Bid between 0 and {max} tricks.",
+	cardsDealerBid:
+		"As the dealer you can't bid {count}: the bids would add up to the tricks in the round.",
+	cardsBidFirst: "Bids come first: wait for everyone to bid.",
+	diceInvalidHold: "Those dice can't be held.",
+	diceNoRollsLeft: "No rolls left: pick a box to score.",
+	diceRollFirst: "Roll the dice first.",
+	diceUnknownCategory: "That box isn't on this score sheet.",
+	diceCategoryTaken: "That box is already filled.",
+	diceJokerRule: "This extra Yatzy has to go somewhere else.",
 	cardsKnockTooHigh:
 		"You can knock with {limit} or less; this leaves {deadwood}.",
 	cardsAfterKnock: "Someone knocked: only laying off is left.",

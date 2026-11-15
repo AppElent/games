@@ -5,7 +5,7 @@ follow the [documentation standard](standards/documentation.md).
 
 | Folder | Holds |
 | --- | --- |
-| [`contracts/`](contracts/) | How a feature behaves: [game sessions](contracts/game-sessions.md), [card games](contracts/card-games.md), [auth](contracts/auth.md), [mobile app](contracts/mobile-app.md) |
+| [`contracts/`](contracts/) | How a feature behaves: [game sessions](contracts/game-sessions.md), [card games](contracts/card-games.md), [dice games](contracts/dice-games.md), [auth](contracts/auth.md), [mobile app](contracts/mobile-app.md) |
 | [`runbooks/`](runbooks/) | Project facts for repeatable tasks: [verification](runbooks/verification.md), [deploy](runbooks/deploy.md), [environment](runbooks/environment.md), [mobile](runbooks/mobile.md), [Sentry](runbooks/sentry.md) |
 | [`standards/`](standards/) | Shared standards installed by the toolkit; never edited here |
 | [`adr/`](adr/) | Decisions, below |
@@ -15,3 +15,4 @@ follow the [documentation standard](standards/documentation.md).
 
 - [0001: Build card games from rule families and per-game config](adr/0001-card-games-use-rule-families-and-config.md)
 - [0002: Ship every game on web and mobile](adr/0002-ship-every-game-on-web-and-mobile.md)
+- [0003: Run dice games on the card games' table machinery](adr/0003-dice-games-share-the-table-machinery.md)

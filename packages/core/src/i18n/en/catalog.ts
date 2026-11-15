@@ -90,10 +90,18 @@ export const catalog = {
 	},
 	"card-games": {
 		title: "Card Club",
-		tagline: "Pesten, Klaverjassen, Jokeren, Hearts, Gin Rummy and more",
+		tagline: "Pesten, Klaverjassen, Jokeren, Hearts, Boerenbridge and more",
 		description:
 			"Classic Dutch card games at one table. Play the computer straight away or invite friends with a room code.",
 		primaryAction: "Pick a game",
 		stats: "1-8 players",
+	},
+	"dice-games": {
+		title: "Dice Club",
+		tagline: "Yatzy and more",
+		description:
+			"Dice games at one table. Roll alone, against the computer, or invite friends with a room code.",
+		primaryAction: "Pick a game",
+		stats: "1-6 players",
 	},
 } satisfies Record<GameType, CatalogText>;

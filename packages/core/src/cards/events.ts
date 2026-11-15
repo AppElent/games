@@ -33,6 +33,7 @@ export type CardEvent = { seq: number } & (
 	| { type: "roundEnd"; winner: number | null; round: number }
 	| { type: "passReady"; seat: number }
 	| { type: "exchange"; shift: number; count: number }
+	| { type: "bid"; seat: number; count: number }
 	| { type: "trickWon"; seat: number; points: number }
 	| { type: "broken"; suit: Suit }
 	| { type: "moon"; seat: number }

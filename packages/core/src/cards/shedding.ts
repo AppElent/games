@@ -5,6 +5,7 @@
  */
 import { GameRuleError } from "../errors";
 import { type Rng, shuffle } from "../random";
+import type { BotMove } from "../table-engine";
 import {
 	buildDeck,
 	type CardId,
@@ -18,7 +19,7 @@ import {
 	type Suit,
 } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
-import { type BotMove, drawWithReshuffle, publicTable } from "./table";
+import { drawWithReshuffle, publicTable } from "./table";
 
 export type CardPower =
 	/** Next player draws `amount` unless they can stack. */

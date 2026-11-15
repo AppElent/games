@@ -3,6 +3,7 @@ import { isRedSuit } from "@arcadeclub/core/cards/art";
 import { type CardId, SUITS, type Suit } from "@arcadeclub/core/cards/deck";
 import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import {
+	bidTotal,
 	cardName,
 	cardTilt,
 	isTeamGame,
@@ -33,6 +34,7 @@ import { AppText } from "../../../ui/text";
 import { PlayingCard, SuitIcon } from "../deck/playing-card";
 import { Sheet } from "../deck/sheet";
 import { useCardWords } from "../deck/use-card-words";
+import { BidPicker } from "./bid-picker";
 import { FeltText, Pill, PillRow, TableButton } from "./felt-ui";
 import { type CardZones, useFlights } from "./flights";
 import { Hand } from "./hand";
@@ -185,9 +187,13 @@ export function TricksTable({
 	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "playing";
+	const bidding = view.phase === "bidding";
+	// Someone has the turn: to bid, or to play a card.
+	const live = playing || bidding;
 	const mine = playing && view.turn === you;
 	const calling = view.phase === "trump";
 	const callingMine = calling && view.turn === you;
+	const myBid = bidding && view.turn === you;
 	const choosing = view.phase === "passing" && you !== null && !view.passed;
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";
@@ -262,9 +268,9 @@ export function TricksTable({
 	const teams = teamGame ? tricksTeams(view, you) : [];
 	const scoreRows = tricksScoreRows(view, table, cards);
 	const scoreHeading = teamGame ? tt.teamHeading : undefined;
-	const standings = tricksStandings(view, table, cards);
+	const highWins = rules.highWins === true;
+	const standings = tricksStandings(view, table, cards, highWins);
 	const dealSummary = tricksDealSummary(view, table, words);
-	const winsLine = view.deals !== null ? tt.highestWins : tt.lowestWins;
 	// The roem of the trick on show, until the next card goes down.
 	const roem = view.trick.length === 0 ? (view.lastTrick?.roem ?? null) : null;
 	const suitIcon = (suit: Suit) => (
@@ -275,6 +281,16 @@ export function TricksTable({
 		/>
 	);
 	const lastRound = view.scores.at(-1);
+	const bids = bidTotal(view);
+	const winsLine = highWins ? tt.highestWins : tt.lowestWins;
+	const trump = view.trump;
+	// In a bidding game each seat's line says what it bid and took.
+	const roundName = (seat: number) => {
+		const name = seatName(cards, table, seat);
+		return view.bids
+			? `${name} · ${fmt(tt.roundBid, { bid: view.bids[seat] ?? 0, taken: view.tricksTaken[seat] })}`
+			: name;
+	};
 	const seats = table.seats.length;
 	const trickWidth = Math.round(
 		Math.min(
@@ -289,7 +305,7 @@ export function TricksTable({
 			game={game}
 			table={table}
 			name={name}
-			mine={mine || callingMine}
+			mine={mine || callingMine || myBid}
 			zones={flights.zones}
 			error={controls.error}
 			flightLayer={flights.layer}
@@ -298,7 +314,7 @@ export function TricksTable({
 				<SeatRow
 					table={table}
 					handCounts={view.handCounts}
-					turn={playing || calling ? view.turn : null}
+					turn={live || calling ? view.turn : null}
 					flash={flights.flash}
 					zones={flights.zones}
 					controls={controls}
@@ -321,11 +337,6 @@ export function TricksTable({
 								{fmt(tt.offerPill, { suit: cards.suits[view.offered] })}
 							</Pill>
 						) : null}
-						{view.trump ? (
-							<Pill icon={suitIcon(view.trump)}>
-								{fmt(tt.trumpPill, { suit: cards.suits[view.trump] })}
-							</Pill>
-						) : null}
 						{roem ? (
 							<Pill tone="gold">
 								{[
@@ -334,6 +345,42 @@ export function TricksTable({
 								].join(" · ")}
 							</Pill>
 						) : null}
+						{(rules.trumpChoice !== "none" || rules.callTrump === true) &&
+						live ? (
+							trump ? (
+								<Pill
+									icon={
+										view.turnedUp ? (
+											<View
+												accessible
+												accessibilityLabel={fmt(tt.turnedUpLabel, {
+													card: cardName(cards, view.turnedUp),
+												})}
+											>
+												<PlayingCard card={view.turnedUp} width={14} />
+											</View>
+										) : (
+											<SuitIcon
+												suit={trump}
+												size={13}
+												color={
+													isRedSuit(trump)
+														? cardColors.suitRed
+														: cardColors.ivory
+												}
+											/>
+										)
+									}
+								>
+									{fmt(tt.trumpPill, { suit: cards.suits[trump] })}
+								</Pill>
+							) : (
+								<Pill>{tt.noTrumpPill}</Pill>
+							)
+						) : null}
+						{bids !== null && live ? (
+							<Pill>{fmt(tt.bidsPill, { bids, tricks: view.handSize })}</Pill>
+						) : null}
 						{view.phase === "passing" ? (
 							<Pill>
 								{fmt(tt.passPill, {
@@ -341,7 +388,10 @@ export function TricksTable({
 								})}
 							</Pill>
 						) : null}
-						{playing && firstTrick && view.passDirection === "keep" ? (
+						{playing &&
+						firstTrick &&
+						view.passDirection === "keep" &&
+						view.bids === null ? (
 							<Pill>{tt.keepPill}</Pill>
 						) : null}
 						{view.broken && breaking && playing ? (
@@ -383,12 +433,12 @@ export function TricksTable({
 					<FeltText
 						variant="heading"
 						numberOfLines={1}
-						style={mine || callingMine ? styles.mine : null}
+						style={mine || callingMine || myBid ? styles.mine : null}
 						testID="cards-turn"
 					>
-						{!playing && !calling
+						{!live && !calling
 							? " "
-							: mine || callingMine
+							: mine || callingMine || myBid
 								? cards.table.yourTurn
 								: fmt(cards.table.theirTurn, {
 										name: seatName(cards, table, view.turn),
@@ -437,6 +487,14 @@ export function TricksTable({
 									/>
 								))
 							: null}
+						{myBid ? (
+							<BidPicker
+								key={`${view.round}-${view.blockedBid}`}
+								view={view}
+								pending={controls.pending}
+								onBid={(count) => controls.act({ type: "bid", count })}
+							/>
+						) : null}
 						{choosing ? (
 							<TableButton
 								label={tt.passButton}
@@ -551,7 +609,7 @@ export function TricksTable({
 												numberOfLines={1}
 												style={styles.who}
 											>
-												{seatName(cards, table, seat)}
+												{roundName(seat)}
 											</FeltText>
 											<FeltText variant="body">
 												{plural(locale, points, tt.totalPoints)}

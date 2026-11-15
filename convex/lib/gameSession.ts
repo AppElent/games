@@ -18,6 +18,8 @@ const STATE_TABLES = {
 	backgammon: "backgammonGameStates",
 	"bluff-dice": "bluffDiceStates",
 	"card-games": "cardGameStates",
+	// Dice tables share the card tables' storage (ADR 0003).
+	"dice-games": "cardGameStates",
 	chess: "chessGameStates",
 	"connect-four": "connectFourStates",
 	hitster: "hitsterGameStates",

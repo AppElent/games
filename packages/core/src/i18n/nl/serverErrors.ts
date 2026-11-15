@@ -51,6 +51,17 @@ export const serverErrors = {
 	cardsMustTrump: "Je kunt niet bekennen, dus je moet troeven.",
 	cardsMustOvertrump: "Je moet hoger troeven.",
 	cardsNoUndertrump: "Ondertroeven mag niet zolang je andere kaarten hebt.",
+	cardsNotBidding: "Er wordt nu niet geboden.",
+	cardsBidRange: "Bied tussen 0 en {max} slagen.",
+	cardsDealerBid:
+		"Als gever mag je geen {count} bieden: dan komen de biedingen uit op het aantal slagen.",
+	cardsBidFirst: "Eerst bieden: wacht tot iedereen heeft geboden.",
+	diceInvalidHold: "Die dobbelstenen kun je niet vasthouden.",
+	diceNoRollsLeft: "Je hebt geen worpen meer: kies een vak.",
+	diceRollFirst: "Gooi eerst de dobbelstenen.",
+	diceUnknownCategory: "Dat vak staat niet op dit scoreblok.",
+	diceCategoryTaken: "Dat vak is al ingevuld.",
+	diceJokerRule: "Deze extra Yatzy moet in een ander vak.",
 	cardsKnockTooHigh:
 		"Kloppen mag met {limit} of minder; dit laat {deadwood} over.",
 	cardsAfterKnock: "Er is geklopt: alleen aanleggen kan nog.",

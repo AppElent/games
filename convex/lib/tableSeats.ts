@@ -1,8 +1,21 @@
-import { type CardGameState, getCardGame } from "@arcadeclub/core/cards/engine";
+import { CARD_ENGINE } from "@arcadeclub/core/cards/engine";
+import { DICE_ENGINE } from "@arcadeclub/core/dice/engine";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { gameError } from "./errors";
 import { findGameState } from "./gameSession";
+
+/**
+ * Seats at a table game (cards, dice). Every such game keeps its table in
+ * `cardGameStates` and plays through `./tableGames`; this file is the one list
+ * of them and their engines.
+ */
+export const TABLE_ENGINES = {
+	"card-games": CARD_ENGINE,
+	"dice-games": DICE_ENGINE,
+} as const;
+
+export type TableGameType = keyof typeof TABLE_ENGINES;
 
 type Table = Doc<"cardGameStates">;
 type ParticipantId = Id<"sessionParticipants">;
@@ -16,13 +29,13 @@ export function requireSeatSecret(secret: string) {
 	}
 }
 
-/** The engine's state. The column is untyped because its shape belongs to the rule family. */
-export function tableGame(table: Pick<Table, "game">) {
-	return table.game as CardGameState;
-}
-
-export function isTableFull(table: Pick<Table, "gameId" | "seats">) {
-	return table.seats.length >= getCardGame(table.gameId).players.max;
+export function isTableFull(
+	gameType: TableGameType,
+	table: Pick<Table, "gameId" | "seats">,
+) {
+	return (
+		table.seats.length >= TABLE_ENGINES[gameType].players(table.gameId).max
+	);
 }
 
 export function humanSeat(participantId: ParticipantId, secret: string) {
@@ -67,6 +80,7 @@ export function seatIndexOf(
  */
 export async function claimSeatOnJoin(
 	ctx: MutationCtx,
+	gameType: TableGameType,
 	session: Doc<"gameSessions">,
 	participantId: ParticipantId,
 	seatSecret: string | undefined,
@@ -75,10 +89,10 @@ export async function claimSeatOnJoin(
 		return false;
 	}
 	requireSeatSecret(seatSecret);
-	const table = await findGameState(ctx, "card-games", session._id);
+	const table = await findGameState(ctx, gameType, session._id);
 	if (
 		table?.status !== "lobby" ||
-		isTableFull(table) ||
+		isTableFull(gameType, table) ||
 		occupiedSeatIndex(table, participantId) >= 0
 	) {
 		return false;

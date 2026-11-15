@@ -20,6 +20,17 @@ A card game that fits a rule family in `packages/core/src/cards/` (`shedding`, `
 
 A card game outside those families needs a new family module (`gin.ts` is the latest example), its actions in `cardActionValidator` (`convex/cardGames.ts`), and a table component on web (`src/components/cards/`) and mobile (`apps/mobile/src/features/cards/table/`), but no new Convex tables or functions. See [the decision](../../../docs/adr/0001-card-games-use-rule-families-and-config.md).
 
+## Dice games: config first
+
+A dice game that fits a rule family in `packages/core/src/dice/` (`scoresheet`) needs none of the steps below:
+
+1. Add a definition to `packages/core/src/dice/games/`, copying `yatzy.ts`.
+2. List it in `DICE_GAMES` in `packages/core/src/dice/engine.ts`.
+3. Add its text under `games.dice.games` in `packages/core/src/i18n/{en,nl}/games/dice.ts`.
+4. Add rule tests to `packages/core/src/__tests__/dice.test.ts`.
+
+A dice game outside those families (10.000, Mexen, Blufpoker) needs a family module in `packages/core/src/dice/`, listed in `FAMILIES` in `dice/engine.ts`, and a table component on web (`src/components/dice/`) and mobile (`apps/mobile/src/features/dice/table/`), but no new Convex tables or functions. Roll only through `rollDice`/`rollCup` from `dice/table.ts`, with the `random` the move receives, so rolls happen on the server and no stored state predicts them. See [the decision](../../../docs/adr/0003-dice-games-share-the-table-machinery.md).
+
 ## Step 0: Pick the shape
 
 | Join mode | Copy from | Notes |
@@ -75,7 +86,7 @@ Run `pnpm exec convex dev --once` (or keep `pnpm run dev:watch` running) so code
 
 Required: the game ships in the app in the same PR. Read `apps/mobile/CODING_STANDARDS.md` first. The web screen may start in the app as an Expo DOM component (`"use dom"`, the `expo-dom` skill) and get a native rewrite later. A new card game for an existing rule family needs no mobile code: the card hub and tables read the core config.
 
-1. Add the game to `APP_GAMES` in `apps/mobile/src/features/play/app-games.ts`: hub `href`, icon and tint, and for an online game `online` with its `create` mutation (`api.<game>.create`, exposed through `apps/mobile/src/convex/api.ts`) and the `sessionHref` a seated player opens; `seatSecret: true` when seats are proven by a secret the phone keeps (card tables), and `titledBySession: true` when one entry opens several games so Continue shows the session's title. The Play tab, Continue, `/join` (through `isOnlineAppGame`) and the hosting hook (`useHostSession("<game-id>")`) all read it. `app-games.test.ts` fails until `APP_GAMES` holds exactly the games `features.ts` lists on mobile.
+1. Add the game to `APP_GAMES` in `apps/mobile/src/features/play/app-games.ts`: hub `href`, icon and tint, and for an online game `online` with its `create` mutation (`api.<game>.create`, exposed through `apps/mobile/src/convex/api.ts`) and the `sessionHref` a seated player opens; seats proven by a secret the phone keeps (card and dice tables) come from `seatSecret: true` in `GAME_SESSION_POLICY` (`packages/core/src/games.ts`), and `titledBySession: true` when one entry opens several games so Continue shows the session's title. The Play tab, Continue, `/join` (through `isOnlineAppGame`) and the hosting hook (`useHostSession("<game-id>")`) all read it. `app-games.test.ts` fails until `APP_GAMES` holds exactly the games `features.ts` lists on mobile.
 2. Routes in `apps/mobile/app/<game-id>/` render one screen each from `apps/mobile/src/features/<game-id>/<subject>/`; the hub screen sets its own title. Online screens wrap their loading and missing states in `OnlineScreenFrame` (`src/features/sessions/components/`) and read the seat through `useSeatedSession`. A two-seat screen decides whether to offer a move with core `duelTurn`, as `src/features/backgammon/online/use-online-match.ts` does.
 3. Continue: online seats are listed by `src/features/sessions/session-seats.ts` with no per-game code. A local save gets a store that validates parsed data and degrades to "no save", and a `resumableItems()` that you add to `listContinueItems` in `src/features/play/home/continue-items.ts`.
 4. Add the Play-tab tagline under `taglines` in `packages/core/src/i18n/{en,nl}/play.ts`, and Jest tests next to the logic.
