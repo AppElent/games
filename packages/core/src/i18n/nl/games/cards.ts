@@ -499,8 +499,8 @@ export const cards = {
 				one: "{card}: {count} punt",
 				other: "{card}: {count} punten",
 			},
-			goalDeals:
-				"Twee teams, maten zitten tegenover elkaar. Na {deals} spellen wint het team met de meeste punten.",
+			teams: "Twee teams, maten tegenover elkaar, delen hun punten.",
+			goalDeals: "Na {deals} spellen wint het hoogste totaal.",
 			callTrump:
 				"Er wordt een troefkleur voorgesteld. Om de beurt, links van de gever beginnend, speelt iedereen daarmee of past. Past iedereen, dan kiest de speler links van de gever de troef.",
 			nameTrump: "De speler links van de gever kiest de troef.",
@@ -512,7 +512,7 @@ export const cards = {
 			mustTrump:
 				"Kun je niet bekennen, dan moet je troeven, hoger dan een troef die al ligt. Ondertroeven mag alleen als je niets anders hebt. Wordt er troef gevraagd, troef dan hoger als het kan.",
 			partnerWins:
-				"Zolang je maat de slag heeft hoef je niet te troeven of over te troeven.",
+				"Kun je niet bekennen terwijl je maat de slag heeft, dan hoef je niet te troeven.",
 			trumpRanks: "Troef, van hoog naar laag: {ranks}.",
 			otherRanks: "Andere kleuren, van hoog naar laag: {ranks}.",
 			trumpPoints: "Troef: {list}.",
@@ -689,7 +689,7 @@ export const cards = {
 				},
 				amsterdams: {
 					label: "Amsterdams",
-					hint: "Je hoeft niet te troeven of over te troeven als je maat de slag heeft.",
+					hint: "Je hoeft niet te troeven als je niet kunt bekennen en je maat de slag heeft.",
 				},
 				shortMatch: {
 					label: "Korte partij",

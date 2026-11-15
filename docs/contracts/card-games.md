@@ -64,7 +64,7 @@ Klaverjassen adds these optional fields; leaving one out keeps Hartenjagen's beh
 | --- | --- | --- |
 | `trumpRanks` | Rank order inside the trump suit, low to high | J 9 A 10 K Q 8 7 (high to low) |
 | `callTrump` | Seats call trump in a `trump` phase before play; `trumpChoice` picks the suit put to them (`random`), or `none` has the first seat name it | on, `random` |
-| `mustTrump` | A void seat must trump and overtrump (`always`, Rotterdams), or not while its partner holds the trick (`unlessPartnerWins`, Amsterdams). Undertrumping is refused while another card can be played | `always` |
+| `mustTrump` | A void seat must trump and overtrump (`always`, Rotterdams), or, when void, not while its partner holds the trick (`unlessPartnerWins`, Amsterdams). Going higher when trumps are led holds under both, and undertrumping is refused while another card can be played | `always` |
 | `rankPoints`, `trumpPoints` | Points per rank outside and inside trump, for the `pointsAndRoem` scorer | A 11, 10 10, K 4, Q 3, J 2; trump J 20, 9 14 |
 | `lastTrickBonus` | Points for taking the last trick | 10 |
 | `roem` | Each trick's roem (`roem.ts`) goes to its taker | on |

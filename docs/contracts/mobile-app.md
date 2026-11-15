@@ -17,7 +17,7 @@ the [mobile runbook](../runbooks/mobile.md).
 
 - The app offers Sudoku (local), Backgammon (local pass-and-play and online
   challenge), Music Timeline (id `hitster`, online room) and card games (Pesten, Mau-Mau,
-  Jokeren, Hartenjagen and Gin Rummy, against bots or in an online room). The other games are web-only for now
+  Jokeren, Hartenjagen, Klaverjassen and Gin Rummy, against bots or in an online room). The other games are web-only for now
   (`pending-port`, [ADR 0002](../adr/0002-ship-every-game-on-web-and-mobile.md)) and
   not listed; a new game ships on both.
 - Music Timeline is never shown under the trademarked name Hitster.

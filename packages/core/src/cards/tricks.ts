@@ -338,8 +338,9 @@ function tricksPlayed(state: TricksState) {
 /**
  * The `mustTrump` duties for a card that follows the rules of suit: trump when
  * void, go above the highest trump in the trick, never play a lower trump
- * while holding anything else. A partner taking the trick lifts the duties
- * under "unlessPartnerWins", but not the ban on a lower trump.
+ * while holding anything else. Under "unlessPartnerWins" a void seat need not
+ * trump while its partner takes the trick; going higher when trumps are led
+ * and the ban on a lower trump still hold.
  */
 function trumpRefusal(
 	rules: TricksRules,
@@ -368,8 +369,8 @@ function trumpRefusal(
 		suitOf(held) === trump && rankIndex(rules, held, trump) > top;
 	const canOver = hand.some(over);
 	if (following) {
-		// Trumps were led: go higher if you can.
-		return !partnerWins && canOver && !over(card) ? "cardsMustOvertrump" : null;
+		// Trumps were led: go higher if you can, whoever holds the trick.
+		return canOver && !over(card) ? "cardsMustOvertrump" : null;
 	}
 	if (!partnerWins && canOver) {
 		if (over(card)) {

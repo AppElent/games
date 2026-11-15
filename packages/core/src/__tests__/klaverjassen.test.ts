@@ -422,15 +422,19 @@ describe("klaverjassen follow and trump rules", () => {
 			);
 		});
 
-		it("Amsterdams lets a seat stay low when its partner leads trump", () => {
+		it("Amsterdams still makes a seat go higher when trumps are led", () => {
 			const state = midTrick([[0, "HA#0"]], 2, ["H7#0", "H9#0"], {
 				trick: [
 					{ seat: 0, card: "HA#0" },
 					{ seat: 1, card: "H8#0" },
 				],
 			});
-			expect(legalIn(state, AMSTERDAMS)).toEqual(["H7#0", "H9#0"]);
+			expect(legalIn(state, AMSTERDAMS)).toEqual(["H9#0"]);
 			expect(legalIn(state)).toEqual(["H9#0"]);
+			expectRule(
+				() => act(state, 2, { type: "play", card: "H7#0" }, AMSTERDAMS),
+				"cardsMustOvertrump",
+			);
 		});
 	});
 });

@@ -493,8 +493,8 @@ export const cards = {
 				one: "The {card}: {count} point",
 				other: "The {card}: {count} points",
 			},
-			goalDeals:
-				"Two teams, partners sitting opposite. After {deals} deals the team with the most points wins.",
+			teams: "Two teams, partners sitting opposite, share their points.",
+			goalDeals: "After {deals} deals the highest total wins.",
 			callTrump:
 				"A trump suit is put to the table. Starting left of the dealer, everyone in turn plays with it or passes. If everyone passes, the player left of the dealer chooses trump.",
 			nameTrump: "The player left of the dealer chooses trump.",
@@ -506,7 +506,7 @@ export const cards = {
 			mustTrump:
 				"If you can't follow suit you must trump, higher than any trump already played. You may only play a lower trump when you hold nothing else. When trumps are led, go higher if you can.",
 			partnerWins:
-				"While your partner is taking the trick you don't have to trump or go higher.",
+				"If you can't follow suit while your partner is taking the trick, you don't have to trump.",
 			trumpRanks: "Trump, from high to low: {ranks}.",
 			otherRanks: "Other suits, from high to low: {ranks}.",
 			trumpPoints: "Trump: {list}.",
@@ -683,7 +683,7 @@ export const cards = {
 				},
 				amsterdams: {
 					label: "Amsterdams",
-					hint: "No need to trump or overtrump while your partner is taking the trick.",
+					hint: "No need to trump when you can't follow suit and your partner is taking the trick.",
 				},
 				shortMatch: {
 					label: "Short match",

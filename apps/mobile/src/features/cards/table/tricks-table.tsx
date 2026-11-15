@@ -351,12 +351,7 @@ export function TricksTable({
 						) : null}
 					</PillRow>
 					{teamGame ? (
-						<View
-							accessible
-							accessibilityLabel={tt.teamsLabel}
-							style={styles.teams}
-							testID="cards-teams"
-						>
+						<View style={styles.teams} testID="cards-teams">
 							{teams.map((team) => (
 								<View
 									key={team.team}

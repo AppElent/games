@@ -277,7 +277,7 @@ export function TricksTable({
 							</span>
 						) : null}
 						{roem ? (
-							<span className="flag" data-tone="gold" role="status">
+							<span className="flag" data-tone="gold">
 								{[
 									fmt(t.roem, { points: roem.points }),
 									...roem.kinds.map((kind) => t.roemKinds[kind]),

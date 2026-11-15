@@ -804,9 +804,12 @@ export function tricksRuleLines(
 	const trumpRanks = rules.trumpRanks;
 	const called = rules.callTrump === true;
 	return {
-		goal: rules.deals
-			? fmt(r.goalDeals, { deals: rules.deals })
-			: fmt(r.goal, { target: rules.target ?? 0 }),
+		goal: [
+			...(rules.seating === "opposite" ? [r.teams] : []),
+			rules.deals
+				? fmt(r.goalDeals, { deals: rules.deals })
+				: fmt(r.goal, { target: rules.target ?? 0 }),
+		].join(" "),
 		passing: passing
 			? [
 					fmt(r.pass, {
