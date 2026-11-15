@@ -5,6 +5,7 @@
  */
 import { GameRuleError } from "../errors";
 import { type Rng, shuffle } from "../random";
+import type { BotMove } from "../table-engine";
 import {
 	buildDeck,
 	type CardId,
@@ -28,7 +29,7 @@ import {
 	meldPoints,
 	swapJoker,
 } from "./melds";
-import { type BotMove, drawWithReshuffle, publicTable } from "./table";
+import { drawWithReshuffle, publicTable } from "./table";
 
 export type RummyRules = MeldRules & {
 	decks: number;

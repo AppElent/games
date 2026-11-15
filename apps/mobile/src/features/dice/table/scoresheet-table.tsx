@@ -6,7 +6,7 @@ import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
-	lastScore,
+	latestNews,
 	standings,
 	turnStep,
 } from "@arcadeclub/core/dice/table-view";
@@ -71,18 +71,11 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const router = useRouter();
 	const you = table.you;
-	const scored = lastScore(view.events);
-	const scoredText = scored
-		? fmt(dice.table.lastScored, {
-				name: diceSeatName(dice, table, scored.seat),
-				points: scored.points + scored.bonus,
-				category: dice.categories[scored.category],
-			})
-		: "";
+	const news = latestNews({ dice, fmt }, table, view.events);
 
 	useEffect(() => {
-		if (scoredText) AccessibilityInfo.announceForAccessibility(scoredText);
-	}, [scoredText]);
+		if (news) AccessibilityInfo.announceForAccessibility(news);
+	}, [news]);
 
 	const headerOptions = useMemo(
 		() => ({
@@ -124,9 +117,9 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 					</View>
 				) : null}
 				<Notice message={controls.error} />
-				{scoredText ? (
+				{news ? (
 					<AppText variant="caption" testID="dice-last-score">
-						{scoredText}
+						{news}
 					</AppText>
 				) : null}
 				<ScoreSheet game={game} table={table} view={view} controls={controls} />
@@ -370,7 +363,16 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 					return cell(
 						seat,
 						points !== undefined ? (
-							<AppText variant="body">{String(points)}</AppText>
+							<AppText
+								variant="body"
+								accessibilityLabel={fmt(dice.table.cellLabel, {
+									category,
+									name: name(seat),
+									points,
+								})}
+							>
+								{String(points)}
+							</AppText>
 						) : option ? (
 							<Pressable
 								accessibilityRole="button"
@@ -402,7 +404,14 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 								</AppText>
 							</Pressable>
 						) : (
-							<AppText variant="caption" accessibilityLabel={dice.table.empty}>
+							<AppText
+								variant="caption"
+								accessibilityLabel={fmt(dice.table.cellLabel, {
+									category,
+									name: name(seat),
+									points: dice.table.empty,
+								})}
+							>
 								·
 							</AppText>
 						),

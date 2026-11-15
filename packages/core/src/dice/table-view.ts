@@ -94,21 +94,32 @@ export function turnStep(
 	return view.rollsUsed >= view.rollsPerTurn ? "score" : "hold";
 }
 
-/** The last box filled at the table, for a caption. */
-export function lastScore(events: readonly DiceEvent[]) {
+/**
+ * The latest roll or score, as a sentence for a screen reader's live region, so
+ * a player who cannot see the dice hears every roll and every filled box.
+ */
+export function latestNews(
+	{ dice, fmt }: { dice: DiceMessages; fmt: Fmt },
+	table: TableSeats,
+	events: readonly DiceEvent[],
+): string {
 	for (let index = events.length - 1; index >= 0; index -= 1) {
 		const event = events[index];
+		if (event.type === "roll") {
+			return fmt(dice.table.lastRolled, {
+				name: diceSeatName(dice, table, event.seat),
+				dice: event.dice.join(", "),
+			});
+		}
 		if (event.type === "score") {
-			return {
-				seat: event.seat,
-				category: event.category as ScoreCategory,
-				points: event.points,
-				bonus: event.bonus,
-				seq: event.seq,
-			};
+			return fmt(dice.table.lastScored, {
+				name: diceSeatName(dice, table, event.seat),
+				points: event.points + event.bonus,
+				category: dice.categories[event.category as ScoreCategory],
+			});
 		}
 	}
-	return null;
+	return "";
 }
 
 /** Seats from the highest total down, ties in seat order. */

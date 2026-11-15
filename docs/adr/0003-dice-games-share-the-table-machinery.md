@@ -23,9 +23,12 @@ the table module for each: `convex/cardGames.ts` and `convex/diceGames.ts` are a
 few lines each. Dice tables reuse the `cardGameStates` table and the seat
 secrets in `convex/lib/tableSeats.ts`, which lists every table engine.
 
-Every roll happens on the server from a seed stored in the game state
-(`rollDice` in `packages/core/src/dice/table.ts`). A client only says which dice
-it keeps, as indices the engine validates. Views never include the seed.
+Every roll happens on the server, drawn from the `random` that
+`TableEngine.apply` receives, which the Convex module passes as a fresh
+`Math.random` on every move (`rollDice` in `packages/core/src/dice/table.ts`).
+The state stores no seed, so nothing a client can read predicts the next roll.
+A client only says which dice it keeps, as indices the engine validates. Tests
+pass a seeded generator instead.
 
 ## Consequences
 
@@ -49,3 +52,5 @@ it keeps, as indices the engine validates. Views never include the seed.
   validates.
 - Client rolls with server checks: a client could still reroll until it liked
   the result.
+- One seed stored per game, advanced on each roll: every roll is public, so a
+  client could recover a 32-bit seed from a few rolls and predict the rest.

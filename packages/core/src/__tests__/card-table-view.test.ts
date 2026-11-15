@@ -20,7 +20,6 @@ import {
 	rummyHint,
 	rummyMeldAction,
 	rummyTurn,
-	seatIsSilent,
 	seatName,
 	sheddingHint,
 	sortCards,
@@ -33,6 +32,7 @@ import {
 import type { TricksRules, TricksView } from "../cards/tricks";
 import { en } from "../i18n/en";
 import { nl } from "../i18n/nl";
+import { seatIsSilent } from "../table-engine";
 
 function wordsFor(cards: typeof en.games.cards): CardWords {
 	return {

@@ -10,7 +10,6 @@ import type { BotMove } from "../table-engine";
 import {
 	type DiceEvent,
 	faceCounts,
-	newSeed,
 	nextSeat,
 	pushDiceEvent,
 	rollCup,
@@ -94,8 +93,6 @@ export type ScoresheetState = {
 	/** Points from extra all-same rolls, per seat. */
 	extras: number[];
 	winners: number[];
-	/** Where the dice generator is. Never leaves the server: see `viewScoresheet`. */
-	seed: number;
 	events: DiceEvent[];
 	nextSeq: number;
 };
@@ -312,7 +309,6 @@ function isComplete(rules: ScoresheetRules, scores: Scores) {
 export function createScoresheet(
 	_rules: ScoresheetRules,
 	seats: number,
-	random: Rng,
 	starter = 0,
 ): ScoresheetState {
 	const first = starter % seats;
@@ -329,7 +325,6 @@ export function createScoresheet(
 		sheets: Array.from({ length: seats }, () => ({})),
 		extras: Array.from({ length: seats }, () => 0),
 		winners: [],
-		seed: newSeed(random),
 		events: [],
 		nextSeq: 0,
 	};
@@ -364,18 +359,27 @@ function finish(rules: ScoresheetRules, state: ScoresheetState) {
 	pushDiceEvent(state, { type: "win", seats: state.winners });
 }
 
-function roll(rules: ScoresheetRules, state: ScoresheetState, keep: number[]) {
+function roll(
+	rules: ScoresheetRules,
+	state: ScoresheetState,
+	keep: number[],
+	random: Rng,
+) {
 	if (state.rollsUsed >= rules.rollsPerTurn) {
 		throw new GameRuleError("diceNoRollsLeft");
 	}
-	if (state.rollsUsed === 0 && keep.length > 0) {
+	// Nothing to keep before the first roll, and keeping every die would spend a roll on nothing.
+	if (
+		(state.rollsUsed === 0 && keep.length > 0) ||
+		(state.rollsUsed > 0 && keep.length >= state.dice.length)
+	) {
 		throw new GameRuleError("diceInvalidHold");
 	}
 	const values =
 		state.rollsUsed === 0
 			? Array.from({ length: rules.dice }, () => 0)
 			: state.dice;
-	const rolled = rollCup(state, values, keep);
+	const rolled = rollCup(random, values, keep);
 	state.dice = rolled.values;
 	state.held = rolled.held;
 	state.rollsUsed += 1;
@@ -443,6 +447,7 @@ export function applyScoresheet(
 	state: ScoresheetState,
 	seat: number,
 	action: ScoresheetAction,
+	random: Rng,
 ): ScoresheetState {
 	if (state.phase !== "playing") {
 		throw new GameRuleError("noActiveGame");
@@ -452,14 +457,14 @@ export function applyScoresheet(
 	}
 	const next = copy(state);
 	if (action.type === "roll") {
-		roll(rules, next, action.keep);
+		roll(rules, next, action.keep, random);
 	} else {
 		score(rules, next, action.category);
 	}
 	return next;
 }
 
-/** Everything is public in this family except where the dice generator stands. */
+/** Everything is public in this family. */
 export function viewScoresheet(
 	rules: ScoresheetRules,
 	state: ScoresheetState,

@@ -1,6 +1,5 @@
 /**
- * What every dice family shares: rolls that come from the table's own seeded
- * generator, a cup of dice some of which are held, turn order that skips
+ * What every dice family shares: rolls drawn from the server's generator, a cup of dice some of which are held, turn order that skips
  * players who are out, and the public event log clients animate from.
  *
  * Built for the families still to come: the cup holds any number of dice
@@ -9,31 +8,17 @@
  * and hides them in its view (Blufpoker).
  */
 import { GameRuleError } from "../errors";
-import { mulberry32, type Rng } from "../random";
+import type { Rng } from "../random";
 
 export const DIE_FACES = [1, 2, 3, 4, 5, 6] as const;
 
 /**
- * State that rolls dice. The seed is the generator's position: each roll reads
- * from it and moves it on, so a table's dice follow from its stored state alone
- * and never from a client. Views must leave it out.
+ * Rolls `count` dice. The server passes a fresh `Math.random` on every move, so
+ * no stored state predicts the next roll and a client never chooses one; tests
+ * pass a seeded generator.
  */
-export type Seeded = { seed: number };
-
-/** A fresh, unpredictable seed for a new game; tests pass a seeded `random`. */
-export function newSeed(random: Rng) {
-	return Math.floor(random() * 2 ** 32) >>> 0;
-}
-
-/** Rolls `count` dice from the state's generator and moves it on. */
-export function rollDice(state: Seeded, count: number, faces = 6) {
-	const random = mulberry32(state.seed);
-	const values = Array.from(
-		{ length: count },
-		() => 1 + Math.floor(random() * faces),
-	);
-	state.seed = newSeed(random);
-	return values;
+export function rollDice(random: Rng, count: number, faces = 6) {
+	return Array.from({ length: count }, () => 1 + Math.floor(random() * faces));
 }
 
 /**
@@ -60,13 +45,13 @@ export function requireKeep(keep: readonly number[], cupSize: number) {
  * marks still point at the same dice. Returns the new values and held marks.
  */
 export function rollCup(
-	state: Seeded,
+	random: Rng,
 	values: readonly number[],
 	keep: readonly number[],
 	faces = 6,
 ) {
 	requireKeep(keep, values.length);
-	const fresh = rollDice(state, values.length - keep.length, faces);
+	const fresh = rollDice(random, values.length - keep.length, faces);
 	let next = 0;
 	const held = values.map((_, index) => keep.includes(index));
 	return {

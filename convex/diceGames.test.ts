@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { DiceView } from "@arcadeclub/core/dice/engine";
+import type { DiceAction, DiceView } from "@arcadeclub/core/dice/engine";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -114,18 +114,26 @@ describe("a solo Yatzy table", () => {
 		expect(table.view.round).toBe(1);
 	});
 
-	it("keeps the dice seed on the server", async () => {
+	it("refuses a roll that names its own dice", async () => {
 		const t = setup();
 		const { sessionId, participantId } = await t.mutation(
 			api.diceGames.createTable,
 			tableArgs(),
 		);
-		const table = await t.query(
-			api.diceGames.getTable,
-			creds(sessionId, participantId),
-		);
-		expect(JSON.stringify(table)).not.toContain("seed");
-		expect(typeof (await rawState(t)).game.seed).toBe("number");
+		const me = creds(sessionId, participantId);
+		await expect(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: {
+					type: "roll",
+					keep: [],
+					dice: [6, 6, 6, 6, 6],
+				} as DiceAction,
+			}),
+		).rejects.toThrow(/Validator error/);
+		expect((await read(t, me)).view.rollsUsed).toBe(0);
+		// Nothing stored would let anyone predict the next roll.
+		expect(Object.keys((await rawState(t)).game)).not.toContain("seed");
 	});
 
 	it("refuses bad moves with their own codes", async () => {

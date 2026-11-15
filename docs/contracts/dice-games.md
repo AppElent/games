@@ -19,8 +19,8 @@ engine, its rolls or stored state, read [the decision](../adr/0003-dice-games-sh
   (`scoresheet`). Its house rules are options over its `rules`, off by default, shown
   as switches on the setup screens. Yatzy's `yahtzeeSheet` swaps the Scandinavian
   15-box sheet for the 13-box Yahtzee sheet with bonus Yahtzees.
-- The server rolls every die from the seed in the stored state; the client sends only
-  the indices it keeps. Views leave the seed out. A score-sheet turn is up to
+- The server rolls every die from fresh randomness on each move and stores no seed;
+  the client sends only the indices it keeps, and a roll must reroll at least one die. A score-sheet turn is up to
   `rollsPerTurn` rolls, then one open box; a full sheet ends the game.
 - A table is created by `diceGames.createTable` and seats work exactly as card seats
   (`convex/lib/tableSeats.ts`): 1 to `players.max` seats, computer players, autopilot

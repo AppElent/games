@@ -2,7 +2,7 @@ import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
-	lastScore,
+	latestNews,
 	standings,
 	turnStep,
 } from "@arcadeclub/core/dice/table-view";
@@ -32,8 +32,6 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const text = dice.games[game.id];
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const you = table.you;
-	const scored = lastScore(view.events);
-	const name = (seat: number) => diceSeatName(dice, table, seat);
 
 	return (
 		<DicePage
@@ -83,13 +81,7 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 				<ScoreSheet game={game} table={table} view={view} controls={controls} />
 			</div>
 			<p className="sr-only" aria-live="polite">
-				{scored
-					? fmt(dice.table.lastScored, {
-							name: name(scored.seat),
-							points: scored.points + scored.bonus,
-							category: dice.categories[scored.category],
-						})
-					: ""}
+				{latestNews({ dice, fmt }, table, view.events)}
 			</p>
 			{controls.error ? (
 				<p className="dice-error" role="alert">

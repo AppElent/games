@@ -3,8 +3,6 @@ import type { Rng } from "../random";
 import { type CardId, drawCards } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
 
-export type { BotMove } from "../table-engine";
-
 type Table = {
 	hands: CardId[][];
 	stock: CardId[];

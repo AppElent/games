@@ -12,11 +12,7 @@ import {
 	SUITS,
 	type Suit,
 } from "./deck";
-import {
-	type CardGameDefinition,
-	plainCardOption,
-	SEAT_SILENT_AFTER_MS,
-} from "./engine";
+import { type CardGameDefinition, plainCardOption } from "./engine";
 import type { CardEvent } from "./events";
 import {
 	buildMeld,
@@ -130,8 +126,6 @@ export function opponentOrder(table: TableSeats): number[] {
 		(_, step) => (you + step + 1) % count,
 	);
 }
-
-export { seatIsSilent } from "../table-engine";
 
 export function cardName(cards: CardMessages, id: CardId) {
 	const card = parseCard(id);

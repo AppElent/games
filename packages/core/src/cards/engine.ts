@@ -7,6 +7,7 @@
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
+import type { BotMove } from "../table-engine";
 import {
 	type HouseRule as BaseHouseRule,
 	normalizeHouseRules,
@@ -40,7 +41,6 @@ import {
 	type SheddingView,
 	viewShedding,
 } from "./shedding";
-import type { BotMove } from "./table";
 import {
 	applyTricks,
 	botTricksMove,
@@ -80,8 +80,6 @@ export type CardGameDefinition =
 	| Definition<"shedding", SheddingRules>
 	| Definition<"rummy", RummyRules>
 	| Definition<"tricks", TricksRules>;
-
-export { SEAT_SILENT_AFTER_MS } from "../table-engine";
 
 export const CARD_GAMES = {
 	pesten,

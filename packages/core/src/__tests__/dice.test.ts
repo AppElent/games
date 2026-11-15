@@ -20,7 +20,7 @@ import { nextSeat, rollCup, rollDice } from "../dice/table";
 import {
 	categoryEffect,
 	diceSeatName,
-	lastScore,
+	latestNews,
 	turnStep,
 } from "../dice/table-view";
 import { GameRuleError } from "../errors";
@@ -190,7 +190,7 @@ describe("Yahtzee sheet scoring", () => {
 	});
 
 	it("pays 100 for an extra yahtzee and plays it as a joker", () => {
-		let state = createDiceGame(yatzy, ["yahtzeeSheet"], 1, mulberry32(1));
+		let state = createDiceGame(yatzy, ["yahtzeeSheet"], 1);
 		state.sheets[0] = { yatzy: 50, fours: 8 };
 		// Fours is taken, so the joker may fill any open lower box as made.
 		const options = scoreOptions(YAHTZEE, state.sheets[0], [4, 4, 4, 4, 4]);
@@ -212,7 +212,7 @@ describe("Yahtzee sheet scoring", () => {
 	});
 
 	it("forces an extra yahtzee into its own upper box when that is open", () => {
-		const state = createDiceGame(yatzy, ["yahtzeeSheet"], 1, mulberry32(1));
+		const state = createDiceGame(yatzy, ["yahtzeeSheet"], 1);
 		state.sheets[0] = { yatzy: 50 };
 		expect(scoreOptions(YAHTZEE, state.sheets[0], [3, 3, 3, 3, 3])).toEqual([
 			{ category: "threes", points: 15 },
@@ -231,7 +231,7 @@ describe("Yahtzee sheet scoring", () => {
 	});
 
 	it("pays no bonus after a scratched yahtzee, but keeps the joker", () => {
-		let state = createDiceGame(yatzy, ["yahtzeeSheet"], 1, mulberry32(1));
+		let state = createDiceGame(yatzy, ["yahtzeeSheet"], 1);
 		state.sheets[0] = { yatzy: 0, twos: 4 };
 		state = applyDiceAction(
 			yatzy,
@@ -273,20 +273,16 @@ describe("Yahtzee sheet scoring", () => {
 });
 
 describe("dice table", () => {
-	it("rolls from the state's seed and moves it on", () => {
-		const a = { seed: 42 };
-		const b = { seed: 42 };
-		expect(rollDice(a, 5)).toEqual(rollDice(b, 5));
-		expect(a.seed).toBe(b.seed);
-		expect(a.seed).not.toBe(42);
-		for (const value of rollDice(a, 200)) {
+	it("rolls from the generator it is given", () => {
+		expect(rollDice(mulberry32(42), 5)).toEqual(rollDice(mulberry32(42), 5));
+		for (const value of rollDice(mulberry32(1), 200)) {
 			expect(value).toBeGreaterThanOrEqual(1);
 			expect(value).toBeLessThanOrEqual(6);
 		}
 	});
 
 	it("keeps held dice in place", () => {
-		const rolled = rollCup({ seed: 7 }, [6, 1, 6, 2, 6], [0, 2, 4]);
+		const rolled = rollCup(mulberry32(7), [6, 1, 6, 2, 6], [0, 2, 4]);
 		expect(rolled.held).toEqual([true, false, true, false, true]);
 		expect([rolled.values[0], rolled.values[2], rolled.values[4]]).toEqual([
 			6, 6, 6,
@@ -296,7 +292,7 @@ describe("dice table", () => {
 	it("refuses holds that are not dice in the cup", () => {
 		for (const keep of [[5], [-1], [0, 0], [1.5]]) {
 			expectRule(
-				() => rollCup({ seed: 1 }, [1, 2, 3, 4, 5], keep),
+				() => rollCup(mulberry32(1), [1, 2, 3, 4, 5], keep),
 				"diceInvalidHold",
 			);
 		}
@@ -310,7 +306,7 @@ describe("dice table", () => {
 });
 
 describe("Yatzy turns", () => {
-	const fresh = (seats = 2) => createDiceGame(yatzy, [], seats, mulberry32(9));
+	const fresh = (seats = 2) => createDiceGame(yatzy, [], seats);
 
 	it("takes 1 to 6 players", () => {
 		expect(() => fresh(1)).not.toThrow();
@@ -374,6 +370,14 @@ describe("Yatzy turns", () => {
 		);
 		expectRule(
 			() =>
+				applyDiceAction(yatzy, [], rolled, 0, {
+					type: "roll",
+					keep: [0, 1, 2, 3, 4],
+				}),
+			"diceInvalidHold",
+		);
+		expectRule(
+			() =>
 				applyDiceAction(yatzy, ["yahtzeeSheet"], rolled, 0, {
 					type: "score",
 					category: "onePair",
@@ -425,10 +429,8 @@ describe("Yatzy turns", () => {
 		expectRule(() => DICE_ENGINE.players("farkle"), "gameNotFound");
 	});
 
-	it("never shows the dice seed", () => {
-		const state = fresh();
-		const view = viewDiceGame(yatzy, [], state, null);
-		expect(JSON.stringify(view)).not.toContain("seed");
+	it("offers no boxes before the first roll", () => {
+		const view = viewDiceGame(yatzy, [], fresh(), null);
 		expect(view.options).toEqual([]);
 	});
 
@@ -445,20 +447,22 @@ describe("Yatzy turns", () => {
 /** Plays a whole game with bots in every seat; returns the final state. */
 function playOut(options: string[], seats: number, seed: number) {
 	const bots = Array.from({ length: seats }, (_, seat) => seat);
-	let state = createDiceGame(
-		yatzy,
-		options,
-		seats,
-		mulberry32(seed),
-		seed % seats,
-	);
+	const random = mulberry32(seed);
+	let state = createDiceGame(yatzy, options, seats, seed % seats);
 	const limit = seats * yatzy.rules.sheet.length * 4;
 	for (let step = 0; step < limit; step += 1) {
 		const move = diceBotMove(yatzy, options, state, bots);
 		if (!move) {
 			break;
 		}
-		state = applyDiceAction(yatzy, options, state, move.seat, move.action);
+		state = applyDiceAction(
+			yatzy,
+			options,
+			state,
+			move.seat,
+			move.action,
+			random,
+		);
 	}
 	return state;
 }
@@ -489,7 +493,7 @@ describe("Yatzy bots", () => {
 	});
 
 	it("only moves for a computer seat whose turn it is", () => {
-		const state = createDiceGame(yatzy, [], 2, mulberry32(3));
+		const state = createDiceGame(yatzy, [], 2);
 		expect(diceBotMove(yatzy, [], state, [1])).toBeNull();
 		expect(diceBotMove(yatzy, [], state, [0])).toMatchObject({
 			seat: 0,
@@ -517,22 +521,22 @@ describe("dice table view", () => {
 	});
 
 	it("tells the viewer what to do", () => {
-		let state = createDiceGame(yatzy, [], 2, mulberry32(4));
+		let state = createDiceGame(yatzy, [], 2);
 		const view = () => viewDiceGame(yatzy, [], state, 0);
 		expect(turnStep(view(), 0)).toBe("start");
 		expect(turnStep(view(), 1)).toBe("waiting");
 		expect(turnStep(view(), null)).toBe("waiting");
 		state = applyDiceAction(yatzy, [], state, 0, { type: "roll", keep: [] });
 		expect(turnStep(view(), 0)).toBe("hold");
+		const seats = { seats: [{ botIndex: null, name: "Eric" }], you: 0 };
+		const news = () =>
+			latestNews({ dice: en.games.dice, fmt }, seats, state.events);
+		expect(news()).toMatch(/^You rolled [1-6](, [1-6]){4}$/);
 		state = applyDiceAction(yatzy, [], withDice(state, [1, 1, 1, 1, 1], 3), 0, {
 			type: "score",
 			category: "yatzy",
 		});
-		expect(lastScore(state.events)).toMatchObject({
-			seat: 0,
-			category: "yatzy",
-			points: 50,
-		});
+		expect(news()).toBe("You scored 50 in Yatzy");
 		state = { ...state, phase: "finished" };
 		expect(turnStep(view(), 0)).toBe("over");
 	});

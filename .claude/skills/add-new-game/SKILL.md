@@ -29,7 +29,7 @@ A dice game that fits a rule family in `packages/core/src/dice/` (`scoresheet`) 
 3. Add its text under `games.dice.games` in `packages/core/src/i18n/{en,nl}/games/dice.ts`.
 4. Add rule tests to `packages/core/src/__tests__/dice.test.ts`.
 
-A dice game outside those families (10.000, Mexen, Blufpoker) needs a family module in `packages/core/src/dice/`, listed in `FAMILIES` in `dice/engine.ts`, and a table component on web (`src/components/dice/`) and mobile (`apps/mobile/src/features/dice/table/`), but no new Convex tables or functions. Roll only through `rollDice`/`rollCup` from `dice/table.ts` so rolls stay seeded on the server. See [the decision](../../../docs/adr/0003-dice-games-share-the-table-machinery.md).
+A dice game outside those families (10.000, Mexen, Blufpoker) needs a family module in `packages/core/src/dice/`, listed in `FAMILIES` in `dice/engine.ts`, and a table component on web (`src/components/dice/`) and mobile (`apps/mobile/src/features/dice/table/`), but no new Convex tables or functions. Roll only through `rollDice`/`rollCup` from `dice/table.ts`, with the `random` the move receives, so rolls happen on the server and no stored state predicts them. See [the decision](../../../docs/adr/0003-dice-games-share-the-table-machinery.md).
 
 ## Step 0: Pick the shape
 

@@ -84,16 +84,16 @@ type FamilyModule<F extends Family> = {
 	create: (
 		rules: FamilyTypes[F]["rules"],
 		seats: number,
-		random: Rng,
 		starter: number,
 	) => FamilyTypes[F]["state"];
 	nextStarter: (state: FamilyTypes[F]["state"]) => number;
-	/** Rolls come from the state's own seed, so no `random` reaches a move. */
+	/** Every roll draws from `random`, which the server passes fresh on each move. */
 	apply: (
 		rules: FamilyTypes[F]["rules"],
 		state: FamilyTypes[F]["state"],
 		seat: number,
 		action: FamilyTypes[F]["action"],
+		random: Rng,
 	) => FamilyTypes[F]["state"];
 	view: (
 		rules: FamilyTypes[F]["rules"],
@@ -134,18 +134,12 @@ export function createDiceGame(
 	game: DiceGameDefinition,
 	options: readonly string[],
 	seats: number,
-	random: Rng = Math.random,
 	starter = 0,
 ): DiceGameState {
 	if (seats < game.players.min || seats > game.players.max) {
 		throw new GameRuleError("notEnoughPlayers");
 	}
-	return familyOf(game.family).create(
-		diceRules(game, options),
-		seats,
-		random,
-		starter,
-	);
+	return familyOf(game.family).create(diceRules(game, options), seats, starter);
 }
 
 export function applyDiceAction(
@@ -154,15 +148,16 @@ export function applyDiceAction(
 	state: DiceGameState,
 	seat: number,
 	action: DiceAction,
+	random: Rng = Math.random,
 ): DiceGameState {
 	const family = familyOf(game.family);
 	if (!Object.keys(family.actions).includes(action.type)) {
 		throw new GameRuleError("cardsWrongAction");
 	}
-	return family.apply(diceRules(game, options), state, seat, action);
+	return family.apply(diceRules(game, options), state, seat, action, random);
 }
 
-/** What one seat may see; `null` is a spectator. Never includes the dice seed. */
+/** What one seat may see; `null` is a spectator. */
 export function viewDiceGame(
 	game: DiceGameDefinition,
 	options: readonly string[],
@@ -186,10 +181,10 @@ export const DICE_ENGINE: TableEngine<DiceGameState, DiceAction, DiceView> = {
 	players: (gameId) => getDiceGame(gameId).players,
 	normalizeOptions: (gameId, options) =>
 		normalizeHouseRules(getDiceGame(gameId).options, options),
-	create: (gameId, options, seats, random, starter) =>
-		createDiceGame(getDiceGame(gameId), options, seats, random, starter),
-	apply: (gameId, options, state, seat, action) =>
-		applyDiceAction(getDiceGame(gameId), options, state, seat, action),
+	create: (gameId, options, seats, _random, starter) =>
+		createDiceGame(getDiceGame(gameId), options, seats, starter),
+	apply: (gameId, options, state, seat, action, random) =>
+		applyDiceAction(getDiceGame(gameId), options, state, seat, action, random),
 	bot: (gameId, options, state, bots) =>
 		diceBotMove(getDiceGame(gameId), options, state, bots),
 	view: (gameId, options, state, seat) =>

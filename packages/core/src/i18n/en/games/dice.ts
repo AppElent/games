@@ -94,6 +94,7 @@ export const dice = {
 		bonusProgress: "{have} of {needed}",
 		extra: "Yahtzee bonus",
 		total: "Total",
+		cellLabel: "{category}, {name}: {points}",
 		scoreFor: "Score {points} in {category}",
 		empty: "Open",
 		winner: "{name} wins!",
@@ -112,6 +113,7 @@ export const dice = {
 		rejoin: "Playing here? Rejoin",
 		actionFailed: "That didn't work. Try again.",
 		rules: "Rules",
+		lastRolled: "{name} rolled {dice}",
 		lastScored: "{name} scored {points} in {category}",
 	},
 	rules: {
