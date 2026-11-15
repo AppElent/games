@@ -122,7 +122,7 @@ export function SudokuBoard({
 				// its edge: clear of the notes, and unlike the dashed cage lines.
 				const modeRing =
 					isSelected && mode !== "digit"
-						? "ring-[3px] ring-inset ring-sky-700 dark:ring-sky-300"
+						? "inset-ring-2 inset-ring-sky-700 dark:inset-ring-sky-300"
 						: "";
 
 				const background = isSelected
@@ -148,7 +148,7 @@ export function SudokuBoard({
 							col: col + 1,
 						})}
 						onClick={() => onSelectCell?.(cell)}
-						className={`relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} ${modeRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
+						className={`@container relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} ${modeRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
 					>
 						{cageEdges && !hidden ? (
 							<span
@@ -189,18 +189,32 @@ export function SudokuBoard({
 						) : (
 							<>
 								{cornerNoteGroups(board.corner[cell], cornerLayout).map(
-									(group) => (
-										<span
-											key={group.slot}
-											className={`absolute flex max-w-[calc(100%-0.25rem)] flex-wrap justify-end gap-x-[0.15em] text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300 ${
-												CORNER_SLOTS[group.slot]
-											}`}
-										>
-											{group.digits.map((digit) => (
-												<span key={digit}>{digit}</span>
-											))}
-										</span>
-									),
+									(group) =>
+										cornerLayout === "topRight" ? (
+											// One line that shrinks with the cell (cqw) rather than
+											// wrapping into the center notes; the class is the
+											// fallback where container units are unsupported.
+											<span
+												key={group.slot}
+												className="absolute inset-x-0.5 top-0 whitespace-nowrap text-right text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight tracking-[0.1em] text-slate-600 dark:text-slate-300"
+												style={{
+													fontSize: `min(clamp(0.5rem, 1.7vw, 0.72rem), calc((100cqw - 0.25rem) / ${(
+														group.digits.length * 0.7
+													).toFixed(2)}))`,
+												}}
+											>
+												{group.digits.join("")}
+											</span>
+										) : (
+											<span
+												key={group.slot}
+												className={`absolute whitespace-nowrap text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300 ${
+													CORNER_SLOTS[group.slot]
+												}`}
+											>
+												{group.digits.join("")}
+											</span>
+										),
 								)}
 								{board.center[cell] !== 0 ? (
 									<span className="text-[clamp(0.5rem,1.9vw,0.82rem)] font-semibold tracking-tight text-slate-600 dark:text-slate-300">

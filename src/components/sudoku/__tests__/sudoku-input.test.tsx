@@ -53,8 +53,10 @@ describe("SudokuBoard corner notes", () => {
 		);
 		const groups = firstCell().querySelectorAll(":scope > span");
 		expect(groups).toHaveLength(1);
-		expect(groups[0].className).toContain("right-0.5 top-0");
-		expect(groups[0].className).toContain("flex-wrap");
+		expect(groups[0].className).toContain("top-0");
+		expect(groups[0].className).toContain("text-right");
+		// One line that shrinks with the cell, so it stays clear of center notes.
+		expect(groups[0].className).toContain("whitespace-nowrap");
 		expect(groups[0].textContent).toBe("147");
 	});
 
@@ -63,13 +65,13 @@ describe("SudokuBoard corner notes", () => {
 		const { rerender } = inEnglish(
 			<SudokuBoard board={board} selectedCell={0} mode="digit" />,
 		);
-		expect(firstCell().className).not.toContain("ring-inset");
+		expect(firstCell().className).not.toContain("inset-ring-2");
 		rerender(
 			<LocaleProvider initialLocale="en">
 				<SudokuBoard board={board} selectedCell={0} mode="corner" />
 			</LocaleProvider>,
 		);
-		expect(firstCell().className).toContain("ring-inset");
+		expect(firstCell().className).toContain("inset-ring-2");
 	});
 });
 

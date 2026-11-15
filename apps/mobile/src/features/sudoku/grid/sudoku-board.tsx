@@ -318,9 +318,6 @@ const BoardCell = memo(function BoardCell({
 					backgroundColor: background,
 				},
 				selected && styles.selected,
-				selectedMode !== undefined &&
-					selectedMode !== "digit" &&
-					styles.selectedNoteMode,
 			]}
 		>
 			{marker > 0 ? (
@@ -330,6 +327,10 @@ const BoardCell = memo(function BoardCell({
 						{ backgroundColor: markerColors[marker - 1] },
 					]}
 				/>
+			) : null}
+			{selectedMode !== undefined && selectedMode !== "digit" ? (
+				// Over the 2pt selection border, so nothing inside the cell moves.
+				<View pointerEvents="none" style={styles.noteModeRing} />
 			) : null}
 			{cageSum !== undefined ? (
 				<AppText
@@ -350,23 +351,31 @@ const BoardCell = memo(function BoardCell({
 				</AppText>
 			) : (
 				<>
-					{cornerGroups.map((group) => (
-						<View
-							key={group.slot}
-							style={[styles.corner, CORNER_SLOTS[group.slot]]}
-						>
-							{group.digits.map((digit) => (
-								<AppText
-									key={digit}
-									variant="cellNote"
-									allowFontScaling={false}
-									style={styles.cornerDigit}
-								>
-									{digit}
-								</AppText>
-							))}
-						</View>
-					))}
+					{cornerGroups.map((group) =>
+						cornerLayout === "topRight" ? (
+							// One line that shrinks to fit rather than wrapping into
+							// the center notes.
+							<AppText
+								key={group.slot}
+								variant="cellNote"
+								allowFontScaling={false}
+								numberOfLines={1}
+								adjustsFontSizeToFit
+								style={[styles.corner, styles.topRightNotes]}
+							>
+								{group.digits.join("")}
+							</AppText>
+						) : (
+							<AppText
+								key={group.slot}
+								variant="cellNote"
+								allowFontScaling={false}
+								style={[styles.corner, CORNER_SLOTS[group.slot]]}
+							>
+								{group.digits.join("")}
+							</AppText>
+						),
+					)}
 					{centerDigits.length > 0 ? (
 						<AppText
 							variant="cellCenterNote"
@@ -409,17 +418,28 @@ const createStyles = (colors: Tokens) =>
 			backgroundColor: colors.surface,
 			paddingHorizontal: 1,
 		},
-		// Thicker, not dashed: dashed lines are Killer cages.
-		selectedNoteMode: { borderWidth: 4 },
+		// Thicker, not dashed: dashed lines are Killer cages. Drawn under the
+		// cell's text, which renders after it.
+		noteModeRing: {
+			position: "absolute",
+			top: -2,
+			left: -2,
+			right: -2,
+			bottom: -2,
+			borderWidth: 4,
+			borderColor: colors.accent,
+		},
 		corner: {
 			position: "absolute",
-			maxWidth: "88%",
-			flexDirection: "row",
-			flexWrap: "wrap",
-			justifyContent: "flex-end",
-			columnGap: 1,
+			color: colors.textMuted,
 		},
-		cornerDigit: { color: colors.textMuted },
+		topRightNotes: {
+			top: "2%",
+			left: "6%",
+			right: "6%",
+			textAlign: "right",
+			letterSpacing: 1,
+		},
 		centerNote: {
 			color: colors.textMuted,
 			paddingHorizontal: 2,
