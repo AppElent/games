@@ -16,6 +16,12 @@
 	transform: rotate(calc((var(--i) - 2) * 9deg));
 }
 
+/* What 10.000 has set aside this turn: small, beside the dice in play. */
+.push-aside-dice .die-face {
+	width: 1.9rem;
+	height: 1.9rem;
+}
+
 .dice-top {
 	display: flex;
 	align-items: flex-end;
@@ -347,4 +353,174 @@ button.die {
 .dice-rules-boxes {
 	display: grid;
 	gap: 0.5rem;
+}
+
+/* Push-your-luck tables (10.000): six dice in a row, what is set aside, and a scoreboard. */
+
+.push-row {
+	--die-size: clamp(2.75rem, 12vw, 3.5rem);
+	gap: 0.25rem;
+	min-height: calc(var(--die-size) + 1.25rem);
+}
+
+.push-final {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.75rem;
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.65rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--gold);
+	background: rgba(230, 192, 106, 0.12);
+	box-shadow: inset 0 0 0 1px var(--gold-soft);
+}
+
+.push-total {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: center;
+	gap: 0.25rem 0.6rem;
+}
+
+.push-points {
+	font-family: var(--font-display);
+	font-size: 1.6rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.push-selected {
+	font-size: 0.875rem;
+	font-weight: 700;
+	color: var(--gold);
+}
+
+.push-bust {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.die[data-bust="true"] .die-face {
+	opacity: 0.45;
+	filter: grayscale(1);
+}
+
+.push-bust-tag {
+	font-family: var(--font-display);
+	font-size: 1.15rem;
+	font-weight: 700;
+	color: #ffb38a;
+}
+
+.push-aside {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.35rem;
+	width: 100%;
+	padding-top: 0.6rem;
+	border-top: 1px solid rgba(248, 242, 226, 0.12);
+}
+
+.push-aside-dice {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.3rem;
+}
+
+.push-buttons {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.5rem;
+	width: 100%;
+	max-width: 22rem;
+}
+
+.dice-actions .push-buttons .btn-gold {
+	max-width: none;
+}
+
+.push-problem {
+	min-height: 1.25rem;
+	font-size: 0.875rem;
+	color: var(--ivory-muted);
+}
+
+.push-board {
+	padding: 1rem;
+}
+
+.push-board ol {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin-top: 0.5rem;
+}
+
+.push-board li {
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.7rem;
+	background: rgba(0, 0, 0, 0.28);
+}
+
+.push-board li[data-active="true"] {
+	background: rgba(230, 192, 106, 0.12);
+	box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+.push-seat {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-height: 2.75rem;
+}
+
+.push-name {
+	display: inline-flex;
+	flex: 1;
+	align-items: center;
+	gap: 0.3rem;
+	min-width: 0;
+	font-weight: 700;
+}
+
+.push-board li[data-active="true"] .push-name {
+	color: var(--gold);
+}
+
+.push-score {
+	font-family: var(--font-display);
+	font-size: 1.2rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.push-bar {
+	height: 0.35rem;
+	margin-top: 0.25rem;
+	overflow: hidden;
+	border-radius: 999px;
+	background: rgba(248, 242, 226, 0.12);
+}
+
+.push-bar span {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--gold);
+	transition: width 0.4s ease;
+}
+
+.push-seat-note {
+	min-height: 1rem;
+	margin-top: 0.2rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--ivory-muted);
 }

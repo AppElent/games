@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 import type { DiceAction, DiceView } from "@arcadeclub/core/dice/engine";
+import type {
+	PushluckState,
+	PushluckView,
+} from "@arcadeclub/core/dice/pushluck";
+import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -32,7 +37,7 @@ const creds = (
 	seatSecret = SECRET_A,
 ) => ({ sessionId, participantId, seatSecret });
 
-async function read(
+async function read<View extends DiceView = ScoresheetView>(
 	t: T,
 	args: {
 		sessionId: SessionId;
@@ -44,7 +49,7 @@ async function read(
 	if (!table?.view) {
 		throw new Error("table not found");
 	}
-	return { ...table, view: table.view as DiceView };
+	return { ...table, view: table.view as View };
 }
 
 async function rawState(t: T) {
@@ -295,5 +300,155 @@ describe("a Yatzy room", () => {
 			}),
 			"gameUnavailable",
 		);
+	});
+});
+
+describe("a solo 10.000 table", () => {
+	const tienduizend = (overrides: Record<string, unknown> = {}) =>
+		tableArgs({
+			title: "10.000",
+			gameId: "tienduizend",
+			bots: 1,
+			...overrides,
+		});
+
+	/** Puts known dice on the table, in front of the first seat. */
+	async function setDice(t: T, dice: number[]) {
+		const row = await rawState(t);
+		await t.run((ctx) =>
+			ctx.db.patch(row._id, {
+				game: { ...(row.game as PushluckState), dice, turn: 0 },
+			}),
+		);
+	}
+
+	it("needs a second player", async () => {
+		const t = setup();
+		await expectCode(
+			t.mutation(api.diceGames.createTable, tienduizend({ bots: 0 })),
+			"notEnoughPlayers",
+		);
+	});
+
+	it("rolls, sets aside and banks through the server, then the computer plays", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.diceGames.createTable,
+			tienduizend(),
+		);
+		const me = creds(sessionId, participantId);
+		let table = await read<PushluckView>(t, me);
+		expect(table.view.family).toBe("pushluck");
+		expect(table.view.rules.target).toBe(10_000);
+		expect(table.view.turn).toBe(0);
+		await t.mutation(api.diceGames.act, {
+			...me,
+			action: { type: "roll", keep: [] },
+		});
+		table = await read<PushluckView>(t, me);
+		// Six fresh dice, unless that roll scored nothing and bust the turn.
+		if (table.view.turn === 0) {
+			expect(table.view.dice).toHaveLength(6);
+		} else {
+			expect(table.view.events.at(-1)?.type).toBe("bust");
+		}
+		// The roll came from the server; nothing stored predicts the next one.
+		expect(Object.keys((await rawState(t)).game)).not.toContain("seed");
+
+		await setDice(t, [1, 5, 2, 3, 4, 6]);
+		await t.mutation(api.diceGames.act, {
+			...me,
+			action: { type: "bank", keep: [0, 1] },
+		});
+		table = await read<PushluckView>(t, me);
+		expect(table.view.scores[0]).toBe(150);
+		expect(table.view.turn).toBe(1);
+		await runBots(t);
+		table = await read<PushluckView>(t, me);
+		expect(table.view.turn).toBe(0);
+		expect(table.view.round).toBe(2);
+	});
+
+	it("refuses illegal set-asides with their own codes", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.diceGames.createTable,
+			tienduizend({ options: ["opening500"] }),
+		);
+		const me = creds(sessionId, participantId);
+		await expectCode(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: { type: "bank", keep: [0] },
+			}),
+			"diceRollFirst",
+		);
+		await setDice(t, [1, 5, 2, 3, 4, 6]);
+		await expectCode(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: { type: "roll", keep: [] },
+			}),
+			"diceSetAsideFirst",
+		);
+		await expectCode(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: { type: "roll", keep: [0, 2] },
+			}),
+			"diceNotScoring",
+		);
+		await expectCode(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: { type: "bank", keep: [0, 1] },
+			}),
+			"diceBelowOpening",
+			{ needed: 500, have: 150 },
+		);
+		await expectCode(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: { type: "roll", keep: [9] },
+			}),
+			"diceInvalidHold",
+		);
+		await expectCode(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: { type: "score", category: "chance" },
+			}),
+			"cardsWrongAction",
+		);
+		const table = await read<PushluckView>(t, me);
+		expect(table.view.dice).toEqual([1, 5, 2, 3, 4, 6]);
+		expect(table.view.turnTotal).toBe(0);
+	});
+
+	it("finishes a game played entirely by the computer and deals a rematch", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.diceGames.createTable,
+			tienduizend({ bots: 2, options: ["opening350", "fixedKinds"] }),
+		);
+		const me = creds(sessionId, participantId);
+		await t.mutation(api.diceGames.setAutopilot, { ...me, seat: 0, on: true });
+		await runBots(t);
+		let table = await read<PushluckView>(t, me);
+		expect(table.status).toBe("finished");
+		const best = Math.max(...table.view.scores);
+		expect(best).toBeGreaterThanOrEqual(10_000);
+		expect(
+			table.view.winners.every((seat) => table.view.scores[seat] === best),
+		).toBe(true);
+		const done = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(done?.status).toBe("completed");
+
+		await t.mutation(api.diceGames.setAutopilot, { ...me, seat: 0, on: false });
+		await t.mutation(api.diceGames.rematch, me);
+		table = await read<PushluckView>(t, me);
+		expect(table.status).toBe("playing");
+		expect(table.view.scores).toEqual([0, 0, 0]);
+		expect(table.view.turn).toBe(1);
 	});
 });

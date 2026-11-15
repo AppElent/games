@@ -10,6 +10,7 @@ import {
 } from "../dice/engine";
 import {
 	type ScoreCategory,
+	type ScoresheetAction,
 	type ScoresheetRules,
 	type ScoresheetState,
 	scoreCategory,
@@ -496,7 +497,7 @@ describe("Yatzy turns", () => {
 					0,
 					{
 						type: "draw",
-					} as unknown as Parameters<typeof applyDiceAction>[4],
+					} as unknown as ScoresheetAction,
 					rng,
 				),
 			"cardsWrongAction",

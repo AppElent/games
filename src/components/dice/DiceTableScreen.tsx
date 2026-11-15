@@ -3,6 +3,7 @@ import { useMessages } from "#/lib/i18n";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { DiceNotFound, DicePage } from "./Chrome";
 import { DiceLobby } from "./Lobby";
+import { PushluckTable } from "./PushluckTable";
 import { ScoresheetTable } from "./ScoresheetTable";
 import { useDiceTable } from "./useDiceTable";
 
@@ -45,6 +46,15 @@ export function DiceTableScreen({
 		case "scoresheet":
 			return (
 				<ScoresheetTable
+					game={game}
+					table={table}
+					view={table.view}
+					controls={controls}
+				/>
+			);
+		case "pushluck":
+			return (
+				<PushluckTable
 					game={game}
 					table={table}
 					view={table.view}

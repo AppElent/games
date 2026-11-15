@@ -1,22 +1,25 @@
-import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
+import { type DiceGame, familyRules } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
 	latestNews,
-	standings,
 	turnStep,
 } from "@arcadeclub/core/dice/table-view";
-import { buildInviteUrl } from "@arcadeclub/core/sessions";
-import { seatIsSilent } from "@arcadeclub/core/table-engine";
-import { Link } from "@tanstack/react-router";
-import { Bot, MoreHorizontal, ScrollText } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { Sheet } from "#/components/table/Chrome";
+import { Bot, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
 import { DicePage } from "./Chrome";
 import { DieFace } from "./Die";
 import { DiceRulesSheet } from "./RulesSheet";
+import {
+	AutopilotNote,
+	DiceEnd,
+	DiceTableTop,
+	SeatMenu,
+	SpectatorNote,
+	seatManagement,
+} from "./TableParts";
 import type { DiceTableBundle, DiceTableControls } from "./useDiceTable";
 
 type Props = {
@@ -32,7 +35,6 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const text = dice.games[game.id];
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const news = latestNews({ dice, fmt }, table, view.events);
-	const you = table.you;
 
 	return (
 		<DicePage
@@ -44,39 +46,15 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 				{ label: dice.table.crumb },
 			]}
 		>
-			<div className="dice-top">
-				<div className="min-w-0">
-					<p className="cards-kicker">
-						{fmt(dice.table.round, {
-							round: Math.min(view.round, view.rounds),
-							rounds: view.rounds,
-						})}
-					</p>
-					<h1 className="cards-title text-3xl">{text.name}</h1>
-				</div>
-				<button
-					type="button"
-					className="icon-chip"
-					aria-label={dice.table.rules}
-					onClick={() => setRulesOpen(true)}
-				>
-					<ScrollText className="h-4 w-4" aria-hidden="true" />
-					<span>{dice.table.rules}</span>
-				</button>
-			</div>
-			{you === null ? (
-				<p className="dice-note">
-					{dice.table.spectating}
-					{table.session.joinCode ? (
-						<>
-							{" · "}
-							<a href={buildInviteUrl("", { code: table.session.joinCode })}>
-								{dice.table.rejoin}
-							</a>
-						</>
-					) : null}
-				</p>
-			) : null}
+			<DiceTableTop
+				kicker={fmt(dice.table.round, {
+					round: Math.min(view.round, view.rounds),
+					rounds: view.rounds,
+				})}
+				name={text.name}
+				onRules={() => setRulesOpen(true)}
+			/>
+			<SpectatorNote table={table} />
 			<div className="dice-layout">
 				<DiceTray table={table} view={view} controls={controls} />
 				<ScoreSheet game={game} table={table} view={view} controls={controls} />
@@ -132,8 +110,6 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 				: step === "score"
 					? dice.table.scoreHint
 					: null;
-	const autopilot = you !== null && table.seats[you]?.autopilot;
-
 	return (
 		<section
 			className="cards-panel dice-tray"
@@ -221,18 +197,7 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 					</p>
 				</div>
 			) : null}
-			{autopilot && you !== null ? (
-				<div className="dice-actions">
-					<p className="text-sm">{dice.table.autopilotActive}</p>
-					<button
-						type="button"
-						className="btn-gold"
-						onClick={() => controls.setAutopilot(you, false)}
-					>
-						{dice.table.autopilotBack}
-					</button>
-				</div>
-			) : null}
+			<AutopilotNote table={table} controls={controls} />
 		</section>
 	);
 }
@@ -242,7 +207,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 	const dice = useMessages().games.dice;
 	const now = useNow(15_000);
 	const [menuSeat, setMenuSeat] = useState<number | null>(null);
-	const rules = diceRules(game, table.options);
+	const rules = familyRules(game, table.options, "scoresheet");
 	const you = table.you;
 	const step = turnStep(view, you);
 	const choosing = step === "hold" || step === "score";
@@ -317,14 +282,11 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 							<th scope="col">{dice.table.category}</th>
 							{seats.map((seat) => {
 								const entry = table.seats[seat];
-								const human = entry.botIndex === null;
-								const silent = seatIsSilent(entry, now);
-								const canManage =
-									you !== null &&
-									seat !== you &&
-									human &&
-									!entry.autopilot &&
-									(table.isHost || silent);
+								const { human, silent, canManage } = seatManagement(
+									table,
+									seat,
+									now,
+								);
 								return (
 									<th
 										key={seat}
@@ -375,109 +337,19 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 					</tbody>
 					<tbody>{lower.map(row)}</tbody>
 					<tfoot>
-						{rules.extraAllSame
+						{rules?.extraAllSame
 							? totals(dice.table.extra, (seat) => view.sheets[seat].extra)
 							: null}
 						{totals(dice.table.total, (seat) => view.sheets[seat].total, true)}
 					</tfoot>
 				</table>
 			</div>
-			<Sheet
-				open={menuSeat !== null}
-				title={
-					menuSeat === null
-						? ""
-						: fmt(dice.table.seatMenu, { name: name(menuSeat) })
-				}
+			<SeatMenu
+				table={table}
+				seat={menuSeat}
+				controls={controls}
 				onClose={() => setMenuSeat(null)}
-			>
-				{menuSeat === null ? null : (
-					<button
-						type="button"
-						className="btn-gold w-full"
-						onClick={() => {
-							controls.setAutopilot(menuSeat, true);
-							setMenuSeat(null);
-						}}
-					>
-						{fmt(dice.table.autopilotOn, { name: name(menuSeat) })}
-					</button>
-				)}
-			</Sheet>
+			/>
 		</section>
-	);
-}
-
-/** The final sheet: who won, everyone's total, and what next. */
-function DiceEnd({ table, view, controls }: Omit<Props, "game">) {
-	const dice = useMessages().games.dice;
-	const dialog = useRef<HTMLDialogElement>(null);
-	const heading = useRef<HTMLHeadingElement>(null);
-	const you = table.you;
-	const title =
-		view.winners.length > 1
-			? dice.table.tie
-			: view.winners[0] === you
-				? dice.table.youWin
-				: fmt(dice.table.winner, {
-						name: diceSeatName(dice, table, view.winners[0]),
-					});
-
-	// Modal, so nothing on the table behind it can be reached.
-	useEffect(() => {
-		dialog.current?.showModal();
-		heading.current?.focus();
-	}, []);
-
-	return (
-		<dialog
-			ref={dialog}
-			className="end-backdrop"
-			aria-labelledby="dice-end"
-			onCancel={(event) => event.preventDefault()}
-			// Browsers can close a dialog despite the cancelled event above.
-			onClose={() => dialog.current?.showModal()}
-		>
-			<section className="cards-panel end-panel" aria-labelledby="dice-end">
-				<h2
-					id="dice-end"
-					ref={heading}
-					tabIndex={-1}
-					className="cards-title text-3xl outline-none"
-				>
-					{title}
-				</h2>
-				<h3 className="cards-kicker mt-4 mb-2">{dice.table.standings}</h3>
-				<ol className="dice-standings">
-					{standings(view).map(({ seat, total }) => (
-						<li key={seat} data-winner={view.winners.includes(seat)}>
-							<span className="min-w-0 flex-1 truncate">
-								{diceSeatName(dice, table, seat)}
-							</span>
-							<span className="font-bold">{total}</span>
-						</li>
-					))}
-				</ol>
-				<div className="end-actions mt-2 flex flex-wrap items-center justify-center gap-2">
-					{you !== null ? (
-						<button
-							type="button"
-							className="btn-gold"
-							disabled={controls.pending}
-							onClick={controls.rematch}
-						>
-							{dice.table.playAgain}
-						</button>
-					) : (
-						<p className="w-full text-sm text-[var(--ivory-muted)]">
-							{dice.table.waitingRematch}
-						</p>
-					)}
-					<Link to="/dice" className="btn-ghost">
-						{dice.table.newGame}
-					</Link>
-				</div>
-			</section>
-		</dialog>
 	);
 }

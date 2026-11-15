@@ -47,6 +47,10 @@ export const serverErrors = {
 	diceUnknownCategory: "That box isn't on this score sheet.",
 	diceCategoryTaken: "That box is already filled.",
 	diceJokerRule: "This extra Yatzy has to go somewhere else.",
+	diceSetAsideFirst: "Set aside at least one scoring die first.",
+	diceNotScoring: "Every die you set aside has to score.",
+	diceBelowOpening:
+		"You need {needed} points in one turn to get on the board; this is {have}.",
 	cardsKnockTooHigh:
 		"You can knock with {limit} or less; this leaves {deadwood}.",
 	cardsAfterKnock: "Someone knocked: only laying off is left.",

@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useI18n } from "../../../i18n";
 import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
 import { DiceLobby } from "./dice-lobby";
+import { PushluckTable } from "./pushluck-table";
 import { ScoresheetTable } from "./scoresheet-table";
 import { useDiceTable } from "./use-dice-table";
 
@@ -39,6 +40,15 @@ export function DiceTableScreen({ sessionId }: { sessionId: string }) {
 		case "scoresheet":
 			return (
 				<ScoresheetTable
+					game={game}
+					table={table}
+					view={table.view}
+					controls={controls}
+				/>
+			);
+		case "pushluck":
+			return (
+				<PushluckTable
 					game={game}
 					table={table}
 					view={table.view}

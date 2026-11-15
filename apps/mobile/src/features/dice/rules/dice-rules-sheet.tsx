@@ -1,9 +1,14 @@
 /**
  * How to play, written from the game's config and the table's house rules:
- * every box's line comes from its rule, so a new sheet needs no new text.
+ * every line comes from a rule, so a new game in a family needs no new text.
  */
 import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
-import { categoryEffect } from "@arcadeclub/core/dice/table-view";
+import type { PushluckRules } from "@arcadeclub/core/dice/pushluck";
+import type { ScoresheetRules } from "@arcadeclub/core/dice/scoresheet";
+import {
+	categoryEffect,
+	pushluckRuleLines,
+} from "@arcadeclub/core/dice/table-view";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
@@ -28,6 +33,14 @@ function Section({
 	);
 }
 
+function Lines({ lines }: { lines: readonly string[] }) {
+	return lines.map((line) => (
+		<AppText key={line} variant="secondary" tone="default">
+			{line}
+		</AppText>
+	));
+}
+
 export function DiceRulesSheet({
 	game,
 	options,
@@ -46,7 +59,6 @@ export function DiceRulesSheet({
 		string,
 		{ label: string; hint: string }
 	>;
-	const rules = diceRules(game, options);
 	const r = dice.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
@@ -56,18 +68,53 @@ export function DiceRulesSheet({
 			onClose={onClose}
 			title={fmt(r.heading, { game: text.name })}
 		>
+			<RulesBody game={game} options={options} />
+			{active.length > 0 ? (
+				<Section heading={r.extrasHeading}>
+					{active.map((option) => (
+						<AppText key={option.label} variant="secondary" tone="default">
+							{`${option.label}: ${option.hint}`}
+						</AppText>
+					))}
+				</Section>
+			) : null}
+		</Sheet>
+	);
+}
+
+/** The family's own rules; every family names its game's rules in its own words. */
+function RulesBody({
+	game,
+	options,
+}: {
+	game: DiceGame;
+	options: readonly string[];
+}) {
+	switch (game.family) {
+		case "scoresheet":
+			return <ScoresheetRulesBody rules={diceRules(game, options)} />;
+		case "pushluck":
+			return <PushluckRulesBody rules={diceRules(game, options)} />;
+	}
+}
+
+function ScoresheetRulesBody({ rules }: { rules: ScoresheetRules }) {
+	const dice = useI18n().t.games.dice;
+	const r = dice.rules;
+	return (
+		<>
 			<Section heading={r.goalHeading}>
 				<AppText variant="secondary" tone="default">
 					{fmt(r.goal, { rounds: rules.sheet.length })}
 				</AppText>
 			</Section>
 			<Section heading={r.turnHeading}>
-				<AppText variant="secondary" tone="default">
-					{fmt(r.turnRoll, { dice: rules.dice, rolls: rules.rollsPerTurn })}
-				</AppText>
-				<AppText variant="secondary" tone="default">
-					{r.turnScore}
-				</AppText>
+				<Lines
+					lines={[
+						fmt(r.turnRoll, { dice: rules.dice, rolls: rules.rollsPerTurn }),
+						r.turnScore,
+					]}
+				/>
 			</Section>
 			<Section heading={r.boxesHeading}>
 				{rules.sheet.map((entry) => (
@@ -87,16 +134,26 @@ export function DiceRulesSheet({
 					</AppText>
 				) : null}
 			</Section>
-			{active.length > 0 ? (
-				<Section heading={r.extrasHeading}>
-					{active.map((option) => (
-						<AppText key={option.label} variant="secondary" tone="default">
-							{`${option.label}: ${option.hint}`}
-						</AppText>
-					))}
-				</Section>
-			) : null}
-		</Sheet>
+		</>
+	);
+}
+
+function PushluckRulesBody({ rules }: { rules: PushluckRules }) {
+	const { t, locale } = useI18n();
+	const dice = t.games.dice;
+	const lines = pushluckRuleLines({ dice, fmt, locale }, rules);
+	return (
+		<>
+			<Section heading={dice.rules.goalHeading}>
+				<Lines lines={lines.goal} />
+			</Section>
+			<Section heading={dice.rules.turnHeading}>
+				<Lines lines={lines.turn} />
+			</Section>
+			<Section heading={dice.pushluck.rules.scoringHeading}>
+				<Lines lines={lines.scoring} />
+			</Section>
+		</>
 	);
 }
 

@@ -15,7 +15,20 @@ import {
 	normalizeHouseRules,
 	type TableEngine,
 } from "../table-engine";
+import { tienduizend } from "./games/tienduizend";
 import { yatzy } from "./games/yatzy";
+import {
+	applyPushluck,
+	botPushluckMove,
+	createPushluck,
+	nextPushluckStarter,
+	PUSHLUCK_ACTIONS,
+	type PushluckAction,
+	type PushluckRules,
+	type PushluckState,
+	type PushluckView,
+	viewPushluck,
+} from "./pushluck";
 import {
 	applyScoresheet,
 	botScoresheetMove,
@@ -41,9 +54,11 @@ type Definition<Family extends string, Rules> = {
 	options: ReadonlyArray<HouseRule<Rules>>;
 };
 
-export type DiceGameDefinition = Definition<"scoresheet", ScoresheetRules>;
+export type DiceGameDefinition =
+	| Definition<"scoresheet", ScoresheetRules>
+	| Definition<"pushluck", PushluckRules>;
 
-export const DICE_GAMES = { yatzy } as const satisfies Record<
+export const DICE_GAMES = { yatzy, tienduizend } as const satisfies Record<
 	string,
 	DiceGameDefinition
 >;
@@ -56,9 +71,9 @@ export function isDiceGameId(value: string): value is DiceGameId {
 	return (DICE_GAME_IDS as string[]).includes(value);
 }
 
-export type DiceGameState = ScoresheetState;
-export type DiceAction = ScoresheetAction;
-export type DiceView = ScoresheetView;
+export type DiceGameState = ScoresheetState | PushluckState;
+export type DiceAction = ScoresheetAction | PushluckAction;
+export type DiceView = ScoresheetView | PushluckView;
 
 export function getDiceGame(id: string): DiceGame {
 	if (!isDiceGameId(id)) {
@@ -73,6 +88,12 @@ type FamilyTypes = {
 		state: ScoresheetState;
 		action: ScoresheetAction;
 		view: ScoresheetView;
+	};
+	pushluck: {
+		rules: PushluckRules;
+		state: PushluckState;
+		action: PushluckAction;
+		view: PushluckView;
 	};
 };
 
@@ -116,40 +137,69 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		view: viewScoresheet,
 		bot: botScoresheetMove,
 	},
+	pushluck: {
+		actions: PUSHLUCK_ACTIONS,
+		create: createPushluck,
+		nextStarter: nextPushluckStarter,
+		apply: applyPushluck,
+		view: viewPushluck,
+		bot: botPushluckMove,
+	},
 };
 
+/** The one cast: a game id picks the family, and its state and actions belong to that family. */
 function familyOf(family: Family) {
-	return FAMILIES[family];
+	return FAMILIES[family] as unknown as FamilyModule<Family>;
 }
 
-/** The game's rules with its chosen house rules applied. */
-export function diceRules(
+type Of<G extends DiceGameDefinition> = FamilyTypes[G["family"]];
+type RulesOf<G extends DiceGameDefinition> = Of<G>["rules"];
+
+/**
+ * The game's rules with its chosen house rules applied. Narrow a game by its
+ * `family` first to get that family's rules.
+ */
+export function diceRules<G extends DiceGameDefinition>(
+	game: G,
+	options: readonly string[],
+): RulesOf<G> {
+	return applyHouseRules<RulesOf<G>>(
+		game as { rules: RulesOf<G>; options: G["options"] },
+		options,
+	);
+}
+
+/** The game's rules with its house rules applied, or null when it plays another family. */
+export function familyRules<F extends Family>(
 	game: DiceGameDefinition,
 	options: readonly string[],
-): ScoresheetRules {
-	return applyHouseRules<ScoresheetRules>(game, options);
+	family: F,
+): FamilyTypes[F]["rules"] | null {
+	return game.family === family
+		? (diceRules(game, options) as FamilyTypes[F]["rules"])
+		: null;
 }
 
-export function createDiceGame(
-	game: DiceGameDefinition,
+export function createDiceGame<G extends DiceGameDefinition>(
+	game: G,
 	options: readonly string[],
 	seats: number,
 	starter = 0,
-): DiceGameState {
+): Of<G>["state"] {
 	if (seats < game.players.min || seats > game.players.max) {
 		throw new GameRuleError("notEnoughPlayers");
 	}
 	return familyOf(game.family).create(diceRules(game, options), seats, starter);
 }
 
-export function applyDiceAction(
-	game: DiceGameDefinition,
+export function applyDiceAction<G extends DiceGameDefinition>(
+	game: G,
 	options: readonly string[],
-	state: DiceGameState,
+	state: Of<G>["state"],
 	seat: number,
-	action: DiceAction,
+	action: Of<G>["action"],
 	random: Rng,
-): DiceGameState {
+): Of<G>["state"] {
 	const family = familyOf(game.family);
 	if (!Object.keys(family.actions).includes(action.type)) {
 		throw new GameRuleError("cardsWrongAction");
@@ -158,21 +208,21 @@ export function applyDiceAction(
 }
 
 /** What one seat may see; `null` is a spectator. */
-export function viewDiceGame(
-	game: DiceGameDefinition,
+export function viewDiceGame<G extends DiceGameDefinition>(
+	game: G,
 	options: readonly string[],
-	state: DiceGameState,
+	state: Of<G>["state"],
 	seat: number | null,
-): DiceView {
+): Of<G>["view"] {
 	return familyOf(game.family).view(diceRules(game, options), state, seat);
 }
 
-export function diceBotMove(
-	game: DiceGameDefinition,
+export function diceBotMove<G extends DiceGameDefinition>(
+	game: G,
 	options: readonly string[],
-	state: DiceGameState,
+	state: Of<G>["state"],
 	bots: readonly number[],
-): BotMove<DiceAction> | null {
+): BotMove<Of<G>["action"]> | null {
 	return familyOf(game.family).bot(diceRules(game, options), state, bots);
 }
 

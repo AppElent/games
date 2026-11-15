@@ -24,6 +24,6 @@ export const play = {
 		hitster: "Zet nummers op je tijdlijn. Host een feestkamer.",
 		"card-games":
 			"Pesten, Mau-Mau, Jokeren, Hartenjagen, Gin Rummy en Eenentwintigen, tegen de computer of vrienden.",
-		"dice-games": "Yatzy alleen, tegen de computer of met vrienden.",
+		"dice-games": "Yatzy en 10.000, alleen, tegen de computer of met vrienden.",
 	},
 } satisfies typeof en;

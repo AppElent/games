@@ -1,7 +1,12 @@
 import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
-import { categoryEffect } from "@arcadeclub/core/dice/table-view";
+import type { PushluckRules } from "@arcadeclub/core/dice/pushluck";
+import type { ScoresheetRules } from "@arcadeclub/core/dice/scoresheet";
+import {
+	categoryEffect,
+	pushluckRuleLines,
+} from "@arcadeclub/core/dice/table-view";
 import { Sheet } from "#/components/table/Chrome";
-import { fmt, useMessages } from "#/lib/i18n";
+import { fmt, useI18n, useMessages } from "#/lib/i18n";
 
 function Section({
 	heading,
@@ -18,9 +23,19 @@ function Section({
 	);
 }
 
+function Lines({ lines }: { lines: readonly string[] }) {
+	return (
+		<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+			{lines.map((line) => (
+				<li key={line}>{line}</li>
+			))}
+		</ul>
+	);
+}
+
 /**
- * Written from the game's config and the table's house rules: every box's
- * line comes from its rule, so a new sheet needs no new text.
+ * Written from the game's config and the table's house rules: every line
+ * comes from a rule, so a new game in a family needs no new text.
  */
 export function DiceRulesSheet({
 	game,
@@ -39,7 +54,6 @@ export function DiceRulesSheet({
 		string,
 		{ label: string; hint: string }
 	>;
-	const rules = diceRules(game, options);
 	const r = dice.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
@@ -49,18 +63,55 @@ export function DiceRulesSheet({
 			onClose={onClose}
 			title={fmt(r.heading, { game: text.name })}
 		>
+			<RulesBody game={game} options={options} />
+			{active.length > 0 ? (
+				<Section heading={r.extrasHeading}>
+					<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+						{active.map((option) => (
+							<li key={option.label}>
+								{option.label}: {option.hint}
+							</li>
+						))}
+					</ul>
+				</Section>
+			) : null}
+		</Sheet>
+	);
+}
+
+/** The family's own rules; every family names its game's rules in its own words. */
+function RulesBody({
+	game,
+	options,
+}: {
+	game: DiceGame;
+	options: readonly string[];
+}) {
+	switch (game.family) {
+		case "scoresheet":
+			return <ScoresheetRulesBody rules={diceRules(game, options)} />;
+		case "pushluck":
+			return <PushluckRulesBody rules={diceRules(game, options)} />;
+	}
+}
+
+function ScoresheetRulesBody({ rules }: { rules: ScoresheetRules }) {
+	const dice = useMessages().games.dice;
+	const r = dice.rules;
+	return (
+		<>
 			<Section heading={r.goalHeading}>
 				<p className="text-sm leading-snug">
 					{fmt(r.goal, { rounds: rules.sheet.length })}
 				</p>
 			</Section>
 			<Section heading={r.turnHeading}>
-				<ul className="flex flex-col gap-1.5 text-sm leading-snug">
-					<li>
-						{fmt(r.turnRoll, { dice: rules.dice, rolls: rules.rollsPerTurn })}
-					</li>
-					<li>{r.turnScore}</li>
-				</ul>
+				<Lines
+					lines={[
+						fmt(r.turnRoll, { dice: rules.dice, rolls: rules.rollsPerTurn }),
+						r.turnScore,
+					]}
+				/>
 			</Section>
 			<Section heading={r.boxesHeading}>
 				<dl className="dice-rules-boxes text-sm leading-snug">
@@ -82,17 +133,25 @@ export function DiceRulesSheet({
 					</p>
 				) : null}
 			</Section>
-			{active.length > 0 ? (
-				<Section heading={r.extrasHeading}>
-					<ul className="flex flex-col gap-1.5 text-sm leading-snug">
-						{active.map((option) => (
-							<li key={option.label}>
-								{option.label}: {option.hint}
-							</li>
-						))}
-					</ul>
-				</Section>
-			) : null}
-		</Sheet>
+		</>
+	);
+}
+
+function PushluckRulesBody({ rules }: { rules: PushluckRules }) {
+	const { locale } = useI18n();
+	const dice = useMessages().games.dice;
+	const lines = pushluckRuleLines({ dice, fmt, locale }, rules);
+	return (
+		<>
+			<Section heading={dice.rules.goalHeading}>
+				<Lines lines={lines.goal} />
+			</Section>
+			<Section heading={dice.rules.turnHeading}>
+				<Lines lines={lines.turn} />
+			</Section>
+			<Section heading={dice.pushluck.rules.scoringHeading}>
+				<Lines lines={lines.scoring} />
+			</Section>
+		</>
 	);
 }
