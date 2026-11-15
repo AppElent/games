@@ -205,6 +205,12 @@ describe("a Mexen round", () => {
 		expect(state.order).toEqual([1, 2, 0]);
 		expect(state.results).toEqual([null, null, null]);
 		expect(state.limit).toBeNull();
+		// The round ended on seat 2's throw; it shows until seat 1 throws.
+		expect(viewDiceGame(mexen, [], state, 1).lastKept).toMatchObject({
+			seat: 2,
+			dice: [5, 5],
+		});
+		state = act(state, ROLL, rigged(6, 1));
 		expect(viewDiceGame(mexen, [], state, 1).lastKept).toBeNull();
 	});
 

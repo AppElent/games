@@ -176,7 +176,7 @@ export const dice = {
 			other: "Je hebt deze ronde maximaal {count} worpen.",
 		},
 		decideHint: "Houd deze worp of gooi opnieuw. Alleen je laatste worp telt.",
-		throwOffHint: "Gelijk als laagste: ieder één worp om het te beslissen.",
+		throwOffHint: "Samen laagste: ieder één worp om het te beslissen.",
 		limit: {
 			one: "Deze ronde: {count} worp per speler",
 			other: "Deze ronde: maximaal {count} worpen per speler",
@@ -195,7 +195,7 @@ export const dice = {
 		points: { one: "{count} punt", other: "{count} punten" },
 		kept: "Houdt {throw}",
 		lastStand: "{name} houdt {throw}",
-		lastThrowOff: "Gelijk als laagste: {names} gooien opnieuw",
+		lastThrowOff: "Samen laagste: {names} gooien opnieuw",
 		lastLoseLife: "{name} verliest een leven",
 		lastLoseLives: "{name} verliest {count} levens",
 		lastLosePoint: "{name} krijgt een punt",

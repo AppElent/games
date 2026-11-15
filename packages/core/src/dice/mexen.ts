@@ -115,8 +115,9 @@ export type MexenView = {
 	/** Seats that ran out of lives, in the order they went out. */
 	eliminated: number[];
 	/**
-	 * This round's latest kept throw, so a throw kept as it lands (the last one
-	 * allowed) still shows its dice once they leave the table.
+	 * The latest kept throw until the next roll, so a throw kept as it lands
+	 * (the last one allowed, often the one that ends the round) still shows
+	 * its dice once they leave the table.
 	 */
 	lastKept: (MexenThrow & { seat: number; dice: number[] }) | null;
 	winners: number[];
@@ -439,14 +440,14 @@ export function viewMexen(rules: MexenRules, state: MexenState): MexenView {
 	};
 }
 
-/** This round's latest kept throw; null once a new round or throw-off clears it. */
+/** The latest kept throw until someone throws again, even across a round's end. */
 function lastKept(rules: MexenRules, state: MexenState) {
 	for (let index = state.events.length - 1; index >= 0; index -= 1) {
 		const event = state.events[index];
+		if (event.type === "roll") {
+			return null;
+		}
 		if (event.type === "mexenStand") {
-			if (state.results[event.seat] === null) {
-				return null;
-			}
 			return {
 				...readThrow(event.dice, rules),
 				seat: event.seat,
