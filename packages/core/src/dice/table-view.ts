@@ -232,9 +232,13 @@ export function pushluckPick(view: PushluckView, picked: readonly boolean[]) {
 	};
 }
 
-/** The latest bust, while no new roll has replaced it, so the table can show the dice that bust. */
+/**
+ * The latest bust, while no new roll has replaced it, so the table can show
+ * the dice that bust; a bust that ended the game is followed only by its win.
+ */
 export function lastBust(view: PushluckView) {
-	const last = view.events.at(-1);
+	const events = view.events.filter((event) => event.type !== "win");
+	const last = events.at(-1);
 	return last?.type === "bust" && view.dice.length === 0 ? last : null;
 }
 

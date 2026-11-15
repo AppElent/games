@@ -380,6 +380,11 @@ describe("10.000 endings", () => {
 		expect(state.phase).toBe("finished");
 		expect(state.winners).toEqual([1]);
 		expect(state.events.at(-1)).toMatchObject({ type: "win", seats: [1] });
+		// The table still shows the roll that ended it.
+		expect(lastBust(viewDiceGame(game, [], state, 2))).toMatchObject({
+			seat: 2,
+			dice: [2, 2, 3, 4, 6, 6],
+		});
 	});
 
 	it("does not restart the final round when someone else passes the target", () => {
