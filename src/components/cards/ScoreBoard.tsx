@@ -21,33 +21,36 @@ export function ScoreBoard({
 	if (scores.length === 0) {
 		return <p className="text-sm">{empty}</p>;
 	}
+	// A long match has more rounds than fit, so the columns scroll sideways.
 	return (
-		<table className="score-table">
-			<thead>
-				<tr>
-					<th scope="col">{cards.table.playerHeading}</th>
-					{scores.map((_, index) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: rounds only ever append.
-						<th key={index} scope="col">
-							{index + 1}
-						</th>
-					))}
-					<th scope="col">{totalLabel}</th>
-				</tr>
-			</thead>
-			<tbody>
-				{table.seats.map((_, seat) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: seats are fixed during a game.
-					<tr key={seat}>
-						<td>{seatName(cards, table, seat)}</td>
-						{scores.map((round, index) => (
+		<div className="score-scroll">
+			<table className="score-table">
+				<thead>
+					<tr>
+						<th scope="col">{cards.table.playerHeading}</th>
+						{scores.map((_, index) => (
 							// biome-ignore lint/suspicious/noArrayIndexKey: rounds only ever append.
-							<td key={index}>{round[seat]}</td>
+							<th key={index} scope="col">
+								{index + 1}
+							</th>
 						))}
-						<td className="font-bold">{totals[seat]}</td>
+						<th scope="col">{totalLabel}</th>
 					</tr>
-				))}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{table.seats.map((_, seat) => (
+						// biome-ignore lint/suspicious/noArrayIndexKey: seats are fixed during a game.
+						<tr key={seat}>
+							<td>{seatName(cards, table, seat)}</td>
+							{scores.map((round, index) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: rounds only ever append.
+								<td key={index}>{round[seat]}</td>
+							))}
+							<td className="font-bold">{totals[seat]}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
 	);
 }

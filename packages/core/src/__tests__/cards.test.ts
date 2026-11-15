@@ -18,6 +18,16 @@ import {
 	viewCardGame,
 } from "../cards/engine";
 import {
+	applyGin,
+	arrangeHand,
+	botGinMove,
+	createGin,
+	type GinAction,
+	type GinRules,
+	type GinState,
+	viewGin,
+} from "../cards/gin";
+import {
 	buildMeld,
 	extendMeld,
 	fitOnMeld,
@@ -76,6 +86,7 @@ function allCards(state: CardGameState) {
 		case "shedding":
 			return [...state.stock, ...state.discard, ...state.hands.flat()];
 		case "rummy":
+		case "gin":
 			return [
 				...state.stock,
 				...state.discard,
@@ -339,6 +350,17 @@ describe("pesten", () => {
 			nextStarter(rummy),
 		);
 		expect(again.family === "rummy" && again.turn).toBe(1);
+
+		const gin = createCardGame(getCardGame("gin-rummy"), [], 2, seeded(2));
+		expect(gin.family === "gin" && gin.turn).toBe(0);
+		const rematch = createCardGame(
+			getCardGame("gin-rummy"),
+			[],
+			2,
+			seeded(2),
+			nextStarter(gin),
+		);
+		expect(rematch.family === "gin" && rematch.turn).toBe(1);
 	});
 
 	it("drawing after a forgotten call leaves nothing to catch", () => {
@@ -996,7 +1018,8 @@ describe("jokeren", () => {
 describe("views keep hands private", () => {
 	it.each(CARD_GAME_IDS)("%s hides other hands and the stock", (id) => {
 		const game = getCardGame(id);
-		const state = createCardGame(game, [], 3, seeded(21));
+		const seats = Math.min(3, game.players.max);
+		const state = createCardGame(game, [], seats, seeded(21));
 		const mine = viewCardGame(game, [], state, 0);
 		const otherCards = state.hands[1];
 		const serialized = JSON.stringify(mine);
@@ -1008,11 +1031,9 @@ describe("views keep hands private", () => {
 		}
 		const spectator = viewCardGame(game, [], state, null);
 		expect(spectator.hand).toEqual([]);
-		expect(spectator.handCounts).toEqual([
-			state.hands[0].length,
-			state.hands[1].length,
-			state.hands[2].length,
-		]);
+		expect(spectator.handCounts).toEqual(
+			state.hands.map((hand) => hand.length),
+		);
 	});
 });
 
@@ -1075,6 +1096,18 @@ describe("full games between computer players", () => {
 		},
 	);
 
+	it("gin rummy bots never make an illegal move over many matches", () => {
+		for (let seed = 1; seed <= 150; seed += 1) {
+			const final = playOut(getCardGame("gin-rummy"), [], 2, seed);
+			if (final.family !== "gin") throw new Error("gin");
+			expect(final.phase).toBe("finished");
+			const totals = [0, 1].map((seat) =>
+				final.scores.reduce((sum, hand) => sum + hand[seat], 0),
+			);
+			expect(Math.max(...totals)).toBeGreaterThanOrEqual(100);
+		}
+	}, 60_000);
+
 	// A throwing bot move freezes a live table for good, so play plenty of matches.
 	it.each([2, 3, 4])(
 		"jokeren bots never make an illegal move with %i seats",
@@ -1105,9 +1138,12 @@ describe("full games between computer players", () => {
 			],
 		],
 		["jokeren", ["fullMatch", "stockOnly", "openAt40"]],
+		["gin-rummy", ["shortMatch"]],
 	] as const)("%s finishes with every house rule on", (id, options) => {
 		for (let seed = 1; seed <= 12; seed += 1) {
-			const final = playOut(getCardGame(id), [...options], 4, seed * 41);
+			const game = getCardGame(id);
+			const seats = Math.min(4, game.players.max);
+			const final = playOut(game, [...options], seats, seed * 41);
 			expect(final.phase).toBe("finished");
 		}
 	});
@@ -1203,5 +1239,605 @@ describe("fitting cards onto a meld", () => {
 		};
 		expect(extendMeld(full, "HA#1")).toBeNull();
 		expect(extendMeld(full, "JK#0")).toBeNull();
+	});
+});
+
+describe("gin rummy", () => {
+	const rules = CARD_GAMES["gin-rummy"].rules as GinRules;
+	const shortRules = resolvedRules(getCardGame("gin-rummy"), ["shortMatch"])
+		.rules as GinRules;
+	const ids = (faces: string) => faces.split(" ").map((face) => `${face}#0`);
+
+	/** Seat 0 on turn with a full hand to play; the stock is whatever is left. */
+	function ginState(
+		hands: [string, string],
+		overrides: Partial<GinState> = {},
+	): GinState {
+		const held = hands.map(ids);
+		const discard = overrides.discard ?? ids("C5");
+		const used = new Set([...held.flat(), ...discard]);
+		return {
+			...createGin(rules, 2, seeded(5)),
+			hands: held,
+			stock: buildDeck(1, 0).filter((card) => !used.has(card)),
+			discard,
+			turn: 0,
+			phase: "play",
+			events: [],
+			...overrides,
+		};
+	}
+
+	const act = (
+		state: GinState,
+		seat: number,
+		action: GinAction,
+		withRules = rules,
+	) => applyGin(withRules, state, seat, action, seeded(9));
+
+	// Spades 2-4, hearts 5-7, diamonds 9-J: three runs, then deadwood.
+	const KNOCKER = "S2 S3 S4 H5 H6 H7 D9 D10 DJ";
+
+	it("deals ten each from one deck without jokers, the non-dealer first", () => {
+		const state = createCardGame(getCardGame("gin-rummy"), [], 2, seeded(3));
+		if (state.family !== "gin") throw new Error("gin");
+		expect(state.hands.map((hand) => hand.length)).toEqual([10, 10]);
+		const all = [...state.stock, ...state.discard, ...state.hands.flat()];
+		expect(all).toHaveLength(52);
+		expect(all.some((card) => card.startsWith("JK"))).toBe(false);
+		expect(state.discard).toHaveLength(1);
+		expect(state.turn).toBe((state.dealer + 1) % 2);
+		expect(state.phase).toBe("draw");
+	});
+
+	it("takes exactly two players", () => {
+		expectRule(
+			() => createCardGame(getCardGame("gin-rummy"), [], 3, seeded(1)),
+			"notEnoughPlayers",
+		);
+	});
+
+	describe("deadwood", () => {
+		it("counts ace 1, face cards 10", () => {
+			expect(arrangeHand(ids("SA SK HQ DJ C9"), rules).points).toBe(40);
+		});
+
+		it("picks the melds that leave the least deadwood", () => {
+			// The seven of spades fits the set or the run, not both.
+			const hand = ids("S7 S8 S9 H7 D7");
+			expect(arrangeHand(hand, rules).points).toBe(14);
+			expect(arrangeHand([...hand, "C7#0"], rules).points).toBe(0);
+		});
+
+		it("plays the ace low only", () => {
+			expect(arrangeHand(ids("SA S2 S3"), rules).points).toBe(0);
+			expect(arrangeHand(ids("SQ SK SA"), rules).points).toBe(21);
+		});
+
+		it("finds a set of four and runs of any length", () => {
+			const hand = ids("H4 S4 D4 C4 C5 C6 C7 C8 HK DK");
+			const arranged = arrangeHand(hand, rules);
+			// The club four goes to the run or the set; either way only the kings are left.
+			expect(arranged.points).toBe(20);
+			expect(arranged.deadwood.sort()).toEqual(ids("DK HK").sort());
+		});
+	});
+
+	describe("illegal moves", () => {
+		const drawState = () =>
+			ginState([`${KNOCKER} C2`, "S5 H8 DQ C3 C4 HK SK DK C7 H2"], {
+				phase: "draw",
+			});
+		const playState = () =>
+			ginState([`${KNOCKER} C2 CK`, "S5 H8 DQ C3 C4 HK SK DK C7 H2"]);
+
+		it("refuses moves out of turn", () => {
+			expectRule(
+				() => act(drawState(), 1, { type: "drawStock" }),
+				"notYourTurn",
+			);
+			expectRule(
+				() => act(playState(), 1, { type: "discard", card: "H8#0" }),
+				"notYourTurn",
+			);
+			expectRule(
+				() => act(playState(), 1, { type: "knock", card: "H8#0" }),
+				"notYourTurn",
+			);
+		});
+
+		it("draws exactly once, before discarding or knocking", () => {
+			expectRule(
+				() => act(drawState(), 0, { type: "discard", card: "C2#0" }),
+				"cardsDrawFirst",
+			);
+			expectRule(
+				() => act(drawState(), 0, { type: "knock", card: "C2#0" }),
+				"cardsDrawFirst",
+			);
+			expectRule(
+				() => act(playState(), 0, { type: "drawStock" }),
+				"cardsAlreadyDrew",
+			);
+			expectRule(
+				() => act(playState(), 0, { type: "takeDiscard" }),
+				"cardsAlreadyDrew",
+			);
+		});
+
+		it("refuses a card that isn't held", () => {
+			expectRule(
+				() => act(playState(), 0, { type: "discard", card: "H8#0" }),
+				"cardsNotInHand",
+			);
+			expectRule(
+				() => act(playState(), 0, { type: "knock", card: "H8#0" }),
+				"cardsNotInHand",
+			);
+		});
+
+		it("never returns the card just taken from the pile", () => {
+			const taken = act(drawState(), 0, { type: "takeDiscard" });
+			expect(taken.takenDiscard).toBe("C5#0");
+			expectRule(
+				() => act(taken, 0, { type: "discard", card: "C5#0" }),
+				"cardsCannotReturnDiscard",
+			);
+			expectRule(
+				() => act(taken, 0, { type: "knock", card: "C5#0" }),
+				"cardsCannotReturnDiscard",
+			);
+		});
+
+		it("refuses to knock above the limit", () => {
+			const state = ginState([
+				"S2 S3 S4 H5 H6 H7 C9 D8 CQ SQ CK",
+				"S5 H8 DQ C3 C4 HK SK DK C7 H2",
+			]);
+			try {
+				act(state, 0, { type: "knock", card: "CK#0" });
+				throw new Error("expected a refusal");
+			} catch (caught) {
+				expect((caught as GameRuleError).code).toBe("cardsKnockTooHigh");
+				expect((caught as GameRuleError).params).toEqual({
+					deadwood: 37,
+					limit: 10,
+				});
+			}
+		});
+
+		it("lays off only after a knock, only by the defender, only cards that fit", () => {
+			expectRule(
+				() =>
+					act(playState(), 0, { type: "layOff", meldId: 1, cards: ["S5#0"] }),
+				"cardsNoKnock",
+			);
+			expectRule(
+				() => act(playState(), 0, { type: "finishLayoff" }),
+				"cardsNoKnock",
+			);
+			const knocked = act(playState(), 0, { type: "knock", card: "CK#0" });
+			expect(knocked.phase).toBe("layoff");
+			expectRule(
+				() => act(knocked, 1, { type: "drawStock" }),
+				"cardsAfterKnock",
+			);
+			expectRule(
+				() => act(knocked, 1, { type: "discard", card: "C3#0" }),
+				"cardsAfterKnock",
+			);
+			expectRule(
+				() => act(knocked, 0, { type: "layOff", meldId: 1, cards: ["C2#0"] }),
+				"notYourTurn",
+			);
+			expectRule(
+				() => act(knocked, 0, { type: "finishLayoff" }),
+				"notYourTurn",
+			);
+			expectRule(
+				() => act(knocked, 1, { type: "layOff", meldId: 1, cards: [] }),
+				"cardsNothingToLay",
+			);
+			expectRule(
+				() => act(knocked, 1, { type: "layOff", meldId: 99, cards: ["S5#0"] }),
+				"cardsInvalidMeld",
+			);
+			expectRule(
+				() => act(knocked, 1, { type: "layOff", meldId: 1, cards: ["S6#0"] }),
+				"cardsNotInHand",
+			);
+			expectRule(
+				() =>
+					act(knocked, 1, {
+						type: "layOff",
+						meldId: 1,
+						cards: ["S5#0", "S5#0"],
+					}),
+				"cardsNotInHand",
+			);
+			expectRule(
+				() => act(knocked, 1, { type: "layOff", meldId: 1, cards: ["H8#0"] }),
+				"cardsDoesNotExtend",
+			);
+		});
+
+		it("keeps the ace low when laying off", () => {
+			const state = ginState([
+				"SJ SQ SK H5 H6 H7 D9 D10 DJ C2 CK",
+				"SA H8 DQ C3 C4 HK DK CQ C7 H2",
+			]);
+			const knocked = act(state, 0, { type: "knock", card: "CK#0" });
+			const spades = knocked.melds.find((meld) => meld.cards.includes("SK#0"));
+			expectRule(
+				() =>
+					act(knocked, 1, {
+						type: "layOff",
+						meldId: spades?.id ?? 0,
+						cards: ["SA#0"],
+					}),
+				"cardsDoesNotExtend",
+			);
+		});
+
+		it("waits for the next deal once a hand is over", () => {
+			const over = act(
+				ginState([`${KNOCKER} C2 CK`, "S5 H8 DQ C3 C4 HK SK DK C7 H2"]),
+				0,
+				{ type: "knock", card: "CK#0" },
+			);
+			const scored = act(over, 1, { type: "finishLayoff" });
+			expect(scored.phase).toBe("handOver");
+			expectRule(() => act(scored, 0, { type: "drawStock" }), "noActiveRound");
+			expectRule(
+				() => act(scored, 1, { type: "finishLayoff" }),
+				"noActiveRound",
+			);
+			expectRule(
+				() => act(playState(), 0, { type: "nextRound" }),
+				"currentGameNotFinished",
+			);
+		});
+
+		it("refuses another family's moves", () => {
+			const game = getCardGame("gin-rummy");
+			const state = createCardGame(game, [], 2, seeded(1));
+			expectRule(
+				() =>
+					applyCardAction(game, [], state, state.turn, {
+						type: "play",
+						card: "S2#0",
+					}),
+				"cardsWrongAction",
+			);
+		});
+	});
+
+	describe("scoring", () => {
+		const DEFENDER = "S5 H8 DQ C3 C4 HK SK DK C7 H2";
+
+		it("lays an ace off below a run that starts at two", () => {
+			const state = ginState([
+				"S5 S6 S7 S8 S9 S10 SJ SQ SK C2 CK",
+				"SA S2 S3 S4 H8 DQ C3 C4 HK DK",
+			]);
+			const knocked = act(state, 0, { type: "knock", card: "CK#0" });
+			const laid = act(knocked, 1, {
+				type: "layOff",
+				meldId: knocked.melds[0].id,
+				cards: ids("SA S2 S3 S4"),
+			});
+			expect(laid.melds[0]).toMatchObject({ low: 1 });
+			expect(laid.melds[0].cards.slice(0, 5)).toEqual(ids("SA S2 S3 S4 S5"));
+		});
+
+		it("knocks, lets the defender lay off, and scores the difference", () => {
+			let state = act(ginState([`${KNOCKER} C2 CK`, DEFENDER]), 0, {
+				type: "knock",
+				card: "CK#0",
+			});
+			expect(state.discard.at(-1)).toBe("CK#0");
+			expect(state.melds).toHaveLength(3);
+			expect(state.hands[0]).toEqual(["C2#0"]);
+			expect(state.turn).toBe(1);
+			expect(state.events.map((event) => event.type)).toEqual([
+				"discard",
+				"meld",
+				"knock",
+			]);
+			// Lay-off order doesn't matter: the queen of diamonds goes after the jack.
+			for (const [suit, card] of [
+				["S", "S5#0"],
+				["H", "H8#0"],
+				["D", "DQ#0"],
+			]) {
+				const meld = state.melds.find(
+					(m) => m.kind === "run" && m.suit === suit,
+				);
+				state = act(state, 1, {
+					type: "layOff",
+					meldId: meld?.id ?? 0,
+					cards: [card],
+				});
+			}
+			expect(state.hands[1]).toHaveLength(7);
+			state = act(state, 1, { type: "finishLayoff" });
+			// Defender keeps K K K and 3+4+7+2 = 16 deadwood; the knocker has 2.
+			expect(state.result).toMatchObject({
+				kind: "knock",
+				knocker: 0,
+				winner: 0,
+				points: 14,
+				deadwood: [2, 16],
+			});
+			expect(state.scores).toEqual([[14, 0]]);
+			expect(state.phase).toBe("handOver");
+		});
+
+		it("scores what the defender holds when they lay nothing off", () => {
+			const state = act(
+				act(ginState([`${KNOCKER} C2 CK`, DEFENDER]), 0, {
+					type: "knock",
+					card: "CK#0",
+				}),
+				1,
+				{ type: "finishLayoff" },
+			);
+			expect(state.result?.points).toBe(39 - 2);
+		});
+
+		const knockAndFinish = (knocker: string, defender: string) =>
+			act(
+				act(ginState([`${KNOCKER} ${knocker} CK`, defender]), 0, {
+					type: "knock",
+					card: "CK#0",
+				}),
+				1,
+				{ type: "finishLayoff" },
+			);
+
+		it("gives an undercut to a defender with less deadwood", () => {
+			// Defender keeps three melds and the three of clubs: 3 under the knocker's 8.
+			const state = knockAndFinish("C8", "D2 D3 D4 HK SK DK HQ SQ DQ C3");
+			expect(state.result).toMatchObject({
+				kind: "undercut",
+				winner: 1,
+				points: 8 - 3 + 25,
+				deadwood: [8, 3],
+			});
+			expect(state.scores).toEqual([[0, 30]]);
+		});
+
+		it("undercuts after laying off", () => {
+			let state = act(
+				ginState([`${KNOCKER} C9 CK`, "S5 S6 H8 HK SK DK HQ SQ DQ C3"]),
+				0,
+				{ type: "knock", card: "CK#0" },
+			);
+			const spades = state.melds.find((meld) => meld.cards.includes("S2#0"));
+			const hearts = state.melds.find((meld) => meld.cards.includes("H5#0"));
+			state = act(state, 1, {
+				type: "layOff",
+				meldId: spades?.id ?? 0,
+				cards: ids("S6 S5"),
+			});
+			state = act(state, 1, {
+				type: "layOff",
+				meldId: hearts?.id ?? 0,
+				cards: ids("H8"),
+			});
+			state = act(state, 1, { type: "finishLayoff" });
+			// Kings and queens are sets; the three of clubs is under the knocker's 9.
+			expect(state.result).toMatchObject({
+				kind: "undercut",
+				winner: 1,
+				points: 9 - 3 + 25,
+				deadwood: [9, 3],
+			});
+			expect(state.events.at(-1)).toMatchObject({
+				type: "handEnd",
+				winner: 1,
+				kind: "undercut",
+				points: 31,
+			});
+		});
+
+		it("counts equal deadwood as an undercut", () => {
+			const state = knockAndFinish("C4", "D2 D3 D4 C6 C7 C8 HK SK DK H4");
+			expect(state.result).toMatchObject({
+				kind: "undercut",
+				winner: 1,
+				points: 25,
+				deadwood: [4, 4],
+			});
+		});
+
+		it("goes gin with no deadwood: a bonus and no lay-offs", () => {
+			const state = act(ginState([`${KNOCKER} D8 CK`, DEFENDER]), 0, {
+				type: "knock",
+				card: "CK#0",
+			});
+			expect(state.phase).toBe("handOver");
+			expect(state.events.slice(-2)).toMatchObject([
+				{ type: "knock", gin: true },
+				{ type: "handEnd", winner: 0, kind: "gin", points: 64 },
+			]);
+			// The defender's 39 stays whole, though S5 and H8 would have fit.
+			expect(state.result).toMatchObject({
+				kind: "gin",
+				winner: 0,
+				points: 39 + 25,
+			});
+		});
+
+		it("calls the hand off when the stock runs low without a knock", () => {
+			const base = ginState([`${KNOCKER} C9 CK`, DEFENDER]);
+			const state = act({ ...base, stock: base.stock.slice(0, 2) }, 0, {
+				type: "discard",
+				card: "CK#0",
+			});
+			expect(state.phase).toBe("handOver");
+			expect(state.result).toMatchObject({
+				kind: "void",
+				winner: null,
+				points: 0,
+			});
+			expect(state.scores).toEqual([[0, 0]]);
+			const next = act(state, 1, { type: "nextRound" });
+			expect(next.round).toBe(2);
+			expect(next.scores).toEqual([[0, 0]]);
+			expect(next.hands.map((hand) => hand.length)).toEqual([10, 10]);
+			expect(next.dealer).toBe((state.dealer + 1) % 2);
+		});
+
+		it("ends the match at the target, or at 50 with the short-match rule", () => {
+			const knock = (scores: number[][], withRules: GinRules) =>
+				act(
+					act(ginState([`${KNOCKER} C2 CK`, DEFENDER], { scores }), 0, {
+						type: "knock",
+						card: "CK#0",
+					}),
+					1,
+					{ type: "finishLayoff" },
+					withRules,
+				);
+			const full = knock([[90, 40]], rules);
+			expect(full.phase).toBe("finished");
+			expect(full.winners).toEqual([0]);
+			expect(knock([[40, 40]], rules).phase).toBe("handOver");
+			expect(knock([[40, 40]], shortRules).phase).toBe("finished");
+		});
+	});
+
+	describe("view", () => {
+		it("never shows a hidden card over whole bot matches", () => {
+			// One expect at the end: thousands of matcher calls make this slow on CI.
+			const leaks: string[] = [];
+			for (let seed = 1; seed <= 20; seed += 1) {
+				const random = seeded(seed);
+				let state = createGin(rules, 2, random);
+				while (state.phase !== "finished") {
+					// Only this hand counts: the log keeps earlier deals, and a card
+					// that has been on the discard pile is public.
+					const dealt = state.events.map((e) => e.type).lastIndexOf("deal");
+					const thisHand = state.events.slice(dealt);
+					const seen = new Set([
+						...state.discard,
+						...thisHand.flatMap((e) => (e.type === "discard" ? [e.card] : [])),
+					]);
+					const views = [0, 1, null].map((seat) => {
+						const { events: _, ...rest } = viewGin(rules, state, seat);
+						return JSON.stringify([rest, thisHand]);
+					});
+					const hidden = (cards: readonly string[]) =>
+						cards.filter((card) => !seen.has(card));
+					const check = (cards: readonly string[], seats: number[]) => {
+						for (const card of hidden(cards)) {
+							for (const viewer of seats) {
+								if (views[viewer].includes(`"${card}"`)) {
+									leaks.push(`seed ${seed}: ${card} to view ${viewer}`);
+								}
+							}
+						}
+					};
+					check(state.stock, [0, 1, 2]);
+					for (const seat of [0, 1]) {
+						// The knocker's hand is open from the knock; every hand once scored.
+						if (state.phase !== "handOver" && state.knock?.seat !== seat) {
+							check(state.hands[seat], [1 - seat, 2]);
+						}
+					}
+					const move = botGinMove(rules, state, [0, 1]);
+					if (!move) throw new Error(`bot stuck in ${state.phase}`);
+					state = applyGin(rules, state, move.seat, move.action, random);
+				}
+			}
+			expect(leaks).toEqual([]);
+		}, 30_000);
+
+		it("hides the other hand until it is scored, and shows the knocker's", () => {
+			const state = ginState([
+				`${KNOCKER} C2 CK`,
+				"S5 H8 DQ C3 C4 HK SK DK C7 H2",
+			]);
+			const defenderCards = state.hands[1];
+			const before = JSON.stringify(viewGin(rules, state, 0));
+			for (const card of defenderCards) {
+				expect(before).not.toContain(`"${card}"`);
+			}
+			const knocked = act(state, 0, { type: "knock", card: "CK#0" });
+			const knockerView = viewGin(rules, knocked, 0);
+			for (const card of defenderCards) {
+				expect(JSON.stringify(knockerView)).not.toContain(`"${card}"`);
+			}
+			const defenderView = viewGin(rules, knocked, 1);
+			expect(defenderView.knockerDeadwood).toEqual(["C2#0"]);
+			expect(defenderView.melds).toHaveLength(3);
+			const scored = act(knocked, 1, { type: "finishLayoff" });
+			expect(viewGin(rules, scored, 0).result?.shown[1].deadwood).toContain(
+				"C3#0",
+			);
+		});
+	});
+
+	describe("computer player", () => {
+		it("knocks as soon as it can", () => {
+			const state = ginState([
+				`${KNOCKER} C2 CK`,
+				"S5 H8 DQ C3 C4 HK SK DK C7 H2",
+			]);
+			expect(botGinMove(rules, state, [0])?.action).toEqual({
+				type: "knock",
+				card: "CK#0",
+			});
+		});
+
+		it("takes a discard that completes a meld", () => {
+			const state = ginState(
+				["S2 S3 H9 C9 D8 HK CQ DJ S7 H4", "S5 H8 DQ C3 C4 D5 SK DK C7 H2"],
+				{
+					phase: "draw",
+					discard: ["S4#0"],
+				},
+			);
+			expect(botGinMove(rules, state, [0])?.action).toEqual({
+				type: "takeDiscard",
+			});
+		});
+
+		it("lays off what lowers its deadwood, then finishes", () => {
+			let state = act(
+				ginState([`${KNOCKER} C2 CK`, "S5 H8 DQ C3 C4 HK SK DK C7 H2"]),
+				0,
+				{ type: "knock", card: "CK#0" },
+			);
+			const moves: string[] = [];
+			for (let step = 0; step < 10 && state.phase === "layoff"; step += 1) {
+				const move = botGinMove(rules, state, [1]);
+				if (!move) throw new Error("bot stuck");
+				moves.push(move.action.type);
+				state = act(state, move.seat, move.action);
+			}
+			expect(moves).toEqual(["layOff", "layOff", "layOff", "finishLayoff"]);
+			expect(state.result?.deadwood[1]).toBe(16);
+		});
+
+		it("leaves the next deal to a person", () => {
+			const over = act(
+				act(
+					ginState([`${KNOCKER} C2 CK`, "S5 H8 DQ C3 C4 HK SK DK C7 H2"]),
+					0,
+					{
+						type: "knock",
+						card: "CK#0",
+					},
+				),
+				1,
+				{ type: "finishLayoff" },
+			);
+			expect(botGinMove(rules, over, [1])).toBeNull();
+			expect(botGinMove(rules, over, [0, 1])?.action).toEqual({
+				type: "nextRound",
+			});
+		});
 	});
 });
