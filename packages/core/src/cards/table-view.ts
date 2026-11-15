@@ -325,6 +325,33 @@ export function describeEvent(
 			return mine(event.seat)
 				? e.youMoon
 				: fmt(e.moon, { name: name(event.seat) });
+		case "knock":
+			if (event.seat === null) {
+				return fmt(e.lastLifeKnock, { stake: event.stake });
+			}
+			return mine(event.seat)
+				? fmt(e.youKnock, { stake: event.stake })
+				: fmt(e.knock, { stake: event.stake, name: name(event.seat) });
+		case "stay":
+			return mine(event.seat)
+				? e.youStay
+				: fmt(e.stay, { name: name(event.seat) });
+		case "fold":
+			return mine(event.seat)
+				? countOf(event.cost, e.youFold)
+				: fmt(countOf(event.cost, e.fold), { name: name(event.seat) });
+		case "swapHand":
+			return mine(event.seat)
+				? e.youSwapHand
+				: fmt(e.swapHand, { name: name(event.seat) });
+		case "dealWon":
+			return mine(event.seat)
+				? e.youDealWon
+				: fmt(e.dealWon, { name: name(event.seat) });
+		case "out":
+			return mine(event.seat)
+				? e.youOut
+				: fmt(e.out, { name: name(event.seat) });
 		case "win":
 			if (event.seats.length > 1) {
 				return fmt(e.winTie, { name: event.seats.map(name).join(" & ") });
@@ -395,12 +422,32 @@ export function sheddingHint(
 export function tricksHint(
 	view: TricksView,
 	you: number | null,
-	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	{ cards, fmt, countOf }: Pick<CardWords, "cards" | "fmt" | "countOf">,
 	rules: Pick<TricksRules, "firstLead" | "breaking">,
 ) {
 	const t = cards.tricks;
 	if (you === null) {
 		return null;
+	}
+	if (view.out[you]) {
+		return view.phase === "finished" ? null : t.outHint;
+	}
+	const knock = view.knock;
+	if (view.phase === "knocking" && knock) {
+		if (!knock.asked.includes(you) || knock.answers[you] !== null) {
+			return t.knockWaiting;
+		}
+		const stake = view.stake ?? 1;
+		return fmt(
+			countOf(stake - 1, knock.by === null ? t.lastLifeAnswer : t.knockAnswer),
+			{ stake },
+		);
+	}
+	if (view.folded[you] && view.phase === "playing") {
+		return t.foldedHint;
+	}
+	if (view.canSwap) {
+		return t.swapHint;
 	}
 	if (view.phase === "passing") {
 		return view.passed
@@ -444,12 +491,43 @@ export function tricksHint(
 
 /** The line under a seat: passed while cards are being chosen, else its points. */
 export function tricksSeatNote(
-	view: Pick<TricksView, "phase" | "passReady" | "totals" | "roundPoints">,
+	view: Pick<
+		TricksView,
+		| "phase"
+		| "passReady"
+		| "totals"
+		| "roundPoints"
+		| "target"
+		| "stake"
+		| "folded"
+		| "out"
+		| "knock"
+	>,
 	seat: number,
 	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
 ) {
+	const t = cards.tricks;
 	if (view.phase === "passing" && view.passReady[seat]) {
-		return cards.tricks.passedNote;
+		return t.passedNote;
+	}
+	if (view.stake !== null) {
+		const points = fmt(t.penaltyNote, {
+			total: view.totals[seat],
+			target: view.target,
+		});
+		const knock = view.knock;
+		const status = view.out[seat]
+			? t.outNote
+			: view.folded[seat]
+				? t.foldedNote
+				: knock?.by === seat
+					? t.knockedNote
+					: knock?.asked.includes(seat)
+						? knock.answers[seat] === "stay"
+							? t.stayedNote
+							: t.decidingNote
+						: null;
+		return status ? `${points} · ${status}` : points;
 	}
 	const round = view.roundPoints[seat];
 	return fmt(cards.tricks.seatScore, {
@@ -474,8 +552,17 @@ export function tricksRuleLines(
 	const glyph = (rank: (typeof RANKS)[number]) =>
 		(cards.rankGlyphs as Record<string, string>)[rank] ?? rank;
 	const breaking = rules.breaking;
+	const lastTrick = rules.scoring === "lastTrick";
+	const ranks = (set: readonly (typeof RANKS)[number][]) =>
+		set.map(glyph).join(" ");
 	return {
-		goal: fmt(r.goal, { target: rules.target }),
+		goal: [
+			lastTrick ? r.goalLastTrick : fmt(r.goal, { target: rules.target }),
+			...(rules.matchEnd === "lastStanding"
+				? [fmt(r.out, { target: rules.target })]
+				: []),
+		].join(" "),
+		// Empty when nobody passes; the house rule that stops it says so itself.
 		passing: passing
 			? [
 					fmt(r.pass, {
@@ -486,14 +573,30 @@ export function tricksRuleLines(
 					}),
 					...(passing.cycle.includes("across") ? [r.passOdd] : []),
 				]
-			: [r.noPass],
+			: [],
+		stakes: rules.knocking
+			? [
+					r.stake,
+					r.knock,
+					r.fold,
+					r.knockAgain,
+					...(rules.matchEnd === "lastStanding"
+						? [fmt(r.knockLimit, { target: rules.target })]
+						: []),
+					...(rules.knocking.lastLife ? [r.lastLife] : []),
+					...(rules.swapHands ?? []).map((set) =>
+						fmt(r.swap, { ranks: ranks(set) }),
+					),
+				]
+			: [],
 		turn: [
 			...(rules.firstLead
 				? [fmt(r.firstLead, { card: faceName(cards, rules.firstLead) })]
 				: []),
 			r.follow,
 			r.trick,
-			fmt(r.ranks, { ranks: [...rules.ranks].reverse().map(glyph).join(" ") }),
+			...(lastTrick ? [r.lastTrick] : []),
+			fmt(r.ranks, { ranks: ranks([...rules.ranks].reverse()) }),
 			...(breaking
 				? [
 						fmt(r.breaking, { suit: cards.suits[breaking.suit] }),
@@ -515,6 +618,35 @@ export function tricksRuleLines(
 			...(rules.shootTheMoon ? [r.moon] : []),
 		],
 	};
+}
+
+/** The stake buttons this seat gets now: knock, answer a knock, or swap its hand. */
+export function tricksChoices(view: TricksView, you: number | null) {
+	const knock = view.knock;
+	return {
+		knock: view.canKnock,
+		answer:
+			you !== null &&
+			view.phase === "knocking" &&
+			knock?.asked.includes(you) === true &&
+			knock.answers[you] === null,
+		swap: view.canSwap,
+	};
+}
+
+/** The round label above the table: the target to play to, or to stay under. */
+export function tricksRoundLabel(
+	view: Pick<TricksView, "round" | "target" | "matchEnd">,
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+) {
+	const t = cards.tricks;
+	return fmt(
+		view.matchEnd === "lastStanding" ? t.outRoundLabel : t.roundLabel,
+		{
+			round: view.round,
+			target: view.target,
+		},
+	);
 }
 
 /** Everything a rummy turn allows, given what this player has selected and set aside. */
@@ -779,7 +911,9 @@ export function planFlights(
 			case "deal":
 				for (let round = 0; round < DEAL_CARDS_PER_SEAT; round += 1) {
 					for (let seat = 0; seat < seatCount; seat += 1) {
-						fly(null, "stock", seatZone(seat));
+						if (!event.skipped?.includes(seat)) {
+							fly(null, "stock", seatZone(seat));
+						}
 					}
 				}
 				break;

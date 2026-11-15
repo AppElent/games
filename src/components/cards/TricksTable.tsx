@@ -5,7 +5,9 @@ import {
 	cardTilt,
 	seatName,
 	sortCards,
+	tricksChoices,
 	tricksHint,
+	tricksRoundLabel,
 	tricksSeatNote,
 } from "@arcadeclub/core/cards/table-view";
 import type { TricksView } from "@arcadeclub/core/cards/tricks";
@@ -130,6 +132,8 @@ export function TricksTable({
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";
 	const firstTrick = view.tricksTaken.every((count) => count === 0);
+	const choices = tricksChoices(view, you);
+	const sittingOut = you !== null && (view.out[you] || view.folded[you]);
 
 	useEffect(() => {
 		if (!choosing) {
@@ -187,10 +191,11 @@ export function TricksTable({
 		controls.act({ type: "passCards", cards: selected });
 	}
 
-	const roundLabel = fmt(t.roundLabel, {
-		round: view.round,
-		target: view.target,
-	});
+	const roundLabel = tricksRoundLabel(view, words);
+	const howToWin =
+		view.matchEnd === "lastStanding"
+			? fmt(t.lastStanding, { target: view.target })
+			: t.lowestWins;
 	const best = Math.min(...view.totals);
 	const standings = view.totals
 		.map((total, seat) => ({ total, seat }))
@@ -233,6 +238,11 @@ export function TricksTable({
 				<>
 					<TrickArea table={table} view={view} landing={flights.landing} />
 					<div className="table-flags">
+						{view.stake !== null ? (
+							<span className="flag" data-tone="gold">
+								{fmt(t.stakePill, { stake: view.stake })}
+							</span>
+						) : null}
 						{view.phase === "passing" ? (
 							<span className="flag">
 								{fmt(t.passPill, {
@@ -275,6 +285,46 @@ export function TricksTable({
 							{t.passButton}
 						</button>
 					) : null}
+					{choices.answer ? (
+						<>
+							<button
+								type="button"
+								className="btn-gold"
+								disabled={controls.pending}
+								onClick={() => controls.act({ type: "stay" })}
+							>
+								{t.stayButton}
+							</button>
+							<button
+								type="button"
+								className="btn-ghost"
+								disabled={controls.pending}
+								onClick={() => controls.act({ type: "fold" })}
+							>
+								{t.foldButton}
+							</button>
+						</>
+					) : null}
+					{choices.knock ? (
+						<button
+							type="button"
+							className="btn-gold"
+							disabled={controls.pending}
+							onClick={() => controls.act({ type: "knock" })}
+						>
+							{t.knockButton}
+						</button>
+					) : null}
+					{choices.swap ? (
+						<button
+							type="button"
+							className="btn-ghost"
+							disabled={controls.pending}
+							onClick={() => controls.act({ type: "swapHand" })}
+						>
+							{t.swapButton}
+						</button>
+					) : null}
 				</TurnStatus>
 			}
 			hand={
@@ -299,7 +349,7 @@ export function TricksTable({
 								aria-pressed={choosing ? selected.includes(card) : undefined}
 								aria-disabled={!choosing && !canPlay}
 								data-legal={canPlay}
-								data-dim={mine && !canPlay}
+								data-dim={(mine && !canPlay) || sittingOut}
 								data-selected={selected.includes(card)}
 								data-new={fresh.has(card) || passedIn}
 								data-shake={shake === card}
@@ -326,9 +376,7 @@ export function TricksTable({
 							empty={t.noScores}
 							totalLabel={t.scoreTotal}
 						/>
-						<p className="mt-3 text-sm text-[var(--ivory-muted)]">
-							{t.lowestWins}
-						</p>
+						<p className="mt-3 text-sm text-[var(--ivory-muted)]">{howToWin}</p>
 					</Sheet>
 					<Sheet
 						open={view.phase === "roundOver" || (finished && !resultShown)}
@@ -347,6 +395,15 @@ export function TricksTable({
 									: fmt(t.moon, { name: seatName(cards, table, view.moon) })}
 							</p>
 						) : null}
+						{view.dealWinner !== null ? (
+							<p className="mb-3 text-base font-bold">
+								{view.dealWinner === you
+									? t.youDealWinner
+									: fmt(t.dealWinner, {
+											name: seatName(cards, table, view.dealWinner),
+										})}
+							</p>
+						) : null}
 						{lastRound ? (
 							<ul
 								className="mb-4 flex flex-col gap-1 text-sm"
@@ -363,6 +420,7 @@ export function TricksTable({
 										</span>
 										<span className="font-bold">
 											{plural(locale, points, t.totalPoints)}
+											{view.out[seat] ? ` · ${t.outNote}` : ""}
 										</span>
 									</li>
 								))}

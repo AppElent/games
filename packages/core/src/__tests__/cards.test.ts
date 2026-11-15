@@ -88,6 +88,8 @@ function allCards(state: CardGameState) {
 				...state.passing.flatMap((cards) => cards ?? []),
 				...state.trick.map((play) => play.card),
 				...state.taken.flat(),
+				...(state.stock ?? []),
+				...(state.mucked ?? []),
 			];
 	}
 }
@@ -1003,7 +1005,7 @@ describe("views keep hands private", () => {
 		for (const card of otherCards) {
 			expect(serialized).not.toContain(`"${card}"`);
 		}
-		for (const card of "stock" in state ? state.stock : []) {
+		for (const card of ("stock" in state ? state.stock : undefined) ?? []) {
 			expect(serialized).not.toContain(`"${card}"`);
 		}
 		const spectator = viewCardGame(game, [], state, null);

@@ -7,7 +7,9 @@ import {
 	cardTilt,
 	seatName,
 	sortCards,
+	tricksChoices,
 	tricksHint,
+	tricksRoundLabel,
 	tricksSeatNote,
 } from "@arcadeclub/core/cards/table-view";
 import type { TricksView } from "@arcadeclub/core/cards/tricks";
@@ -182,6 +184,8 @@ export function TricksTable({
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";
 	const firstTrick = view.tricksTaken.every((count) => count === 0);
+	const choices = tricksChoices(view, you);
+	const sittingOut = you !== null && (view.out[you] || view.folded[you]);
 
 	useEffect(() => {
 		if (!choosing) setSelected([]);
@@ -242,10 +246,16 @@ export function TricksTable({
 	}
 
 	const hint = tricksHint(view, you, words, rules);
-	const roundLabel = fmt(tt.roundLabel, {
-		round: view.round,
-		target: view.target,
-	});
+	const roundLabel = tricksRoundLabel(view, words);
+	const howToWin =
+		view.matchEnd === "lastStanding"
+			? fmt(tt.lastStanding, { target: view.target })
+			: tt.lowestWins;
+
+	function choose(action: "knock" | "stay" | "fold" | "swapHand") {
+		haptics.moveMade();
+		controls.act({ type: action });
+	}
 	const best = Math.min(...view.totals);
 	const standings = view.totals
 		.map((total, seat) => ({ total, seat }))
@@ -292,6 +302,9 @@ export function TricksTable({
 					/>
 					<PillRow>
 						<Pill>{roundLabel}</Pill>
+						{view.stake !== null ? (
+							<Pill>{fmt(tt.stakePill, { stake: view.stake })}</Pill>
+						) : null}
 						{view.phase === "passing" ? (
 							<Pill>
 								{fmt(tt.passPill, {
@@ -358,6 +371,40 @@ export function TricksTable({
 								testID="cards-pass-cards"
 							/>
 						) : null}
+						{choices.answer ? (
+							<>
+								<TableButton
+									label={tt.stayButton}
+									disabled={controls.pending}
+									onPress={() => choose("stay")}
+									testID="cards-stay"
+								/>
+								<TableButton
+									label={tt.foldButton}
+									ghost
+									disabled={controls.pending}
+									onPress={() => choose("fold")}
+									testID="cards-fold"
+								/>
+							</>
+						) : null}
+						{choices.knock ? (
+							<TableButton
+								label={tt.knockButton}
+								disabled={controls.pending}
+								onPress={() => choose("knock")}
+								testID="cards-knock"
+							/>
+						) : null}
+						{choices.swap ? (
+							<TableButton
+								label={tt.swapButton}
+								ghost
+								disabled={controls.pending}
+								onPress={() => choose("swapHand")}
+								testID="cards-swap-hand"
+							/>
+						) : null}
 						{you !== null && table.seats[you]?.autopilot ? (
 							<TableButton
 								label={cards.table.autopilotBack}
@@ -381,7 +428,7 @@ export function TricksTable({
 						const canPlay = mine && legal.has(card);
 						return {
 							playable: canPlay,
-							dim: mine && !canPlay,
+							dim: (mine && !canPlay) || sittingOut,
 							disabled: !canPlay,
 						};
 					}}
@@ -426,6 +473,15 @@ export function TricksTable({
 											})}
 								</FeltText>
 							) : null}
+							{view.dealWinner !== null ? (
+								<FeltText variant="body" style={styles.centered}>
+									{view.dealWinner === you
+										? tt.youDealWinner
+										: fmt(tt.dealWinner, {
+												name: seatName(cards, table, view.dealWinner),
+											})}
+								</FeltText>
+							) : null}
 							{lastRound ? (
 								<View accessibilityLabel={tt.roundSummary}>
 									{lastRound.map((points, seat) => (
@@ -443,6 +499,7 @@ export function TricksTable({
 											</FeltText>
 											<FeltText variant="body">
 												{plural(locale, points, tt.totalPoints)}
+												{view.out[seat] ? ` · ${tt.outNote}` : ""}
 											</FeltText>
 										</View>
 									))}
@@ -474,7 +531,7 @@ export function TricksTable({
 							}
 						>
 							<FeltText variant="caption" muted style={styles.centered}>
-								{tt.lowestWins}
+								{howToWin}
 							</FeltText>
 							{standings.map(({ total, seat }) => (
 								<View
@@ -504,7 +561,7 @@ export function TricksTable({
 							empty={tt.noScores}
 							totalLabel={tt.scoreTotal}
 						/>
-						<AppText variant="secondary">{tt.lowestWins}</AppText>
+						<AppText variant="secondary">{howToWin}</AppText>
 					</Sheet>
 				</>
 			}

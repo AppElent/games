@@ -55,15 +55,24 @@ function TricksRules({ lines }: { lines: ReturnType<typeof tricksRuleLines> }) {
 			<Section heading={r.goalHeading}>
 				<Lines lines={[lines.goal]} />
 			</Section>
-			<Section heading={r.passHeading}>
-				<Lines lines={lines.passing} />
-			</Section>
+			{lines.passing.length > 0 ? (
+				<Section heading={r.passHeading}>
+					<Lines lines={lines.passing} />
+				</Section>
+			) : null}
 			<Section heading={r.turnHeading}>
 				<Lines lines={lines.turn} />
 			</Section>
-			<Section heading={r.pointsHeading}>
-				<Lines lines={lines.points} />
-			</Section>
+			{lines.stakes.length > 0 ? (
+				<Section heading={r.stakesHeading}>
+					<Lines lines={lines.stakes} />
+				</Section>
+			) : null}
+			{lines.points.length > 0 ? (
+				<Section heading={r.pointsHeading}>
+					<Lines lines={lines.points} />
+				</Section>
+			) : null}
 		</>
 	);
 }

@@ -26,7 +26,9 @@ import {
 	sortCards,
 	specialCards,
 	startFreshCards,
+	tricksChoices,
 	tricksHint,
+	tricksRoundLabel,
 	tricksRuleLines,
 	tricksSeatNote,
 } from "../cards/table-view";
@@ -223,6 +225,20 @@ describe("narration", () => {
 		{ seq: 51, type: "broken", suit: "H" },
 		{ seq: 52, type: "moon", seat: 0 },
 		{ seq: 53, type: "moon", seat: 1 },
+		{ seq: 54, type: "knock", seat: 0, stake: 2 },
+		{ seq: 55, type: "knock", seat: 1, stake: 3 },
+		{ seq: 56, type: "knock", seat: null, stake: 2 },
+		{ seq: 57, type: "stay", seat: 0 },
+		{ seq: 58, type: "stay", seat: 1 },
+		{ seq: 59, type: "fold", seat: 0, cost: 1 },
+		{ seq: 60, type: "fold", seat: 1, cost: 2 },
+		{ seq: 61, type: "swapHand", seat: 0 },
+		{ seq: 62, type: "swapHand", seat: 1 },
+		{ seq: 63, type: "dealWon", seat: 0 },
+		{ seq: 64, type: "dealWon", seat: 1 },
+		{ seq: 65, type: "out", seat: 0 },
+		{ seq: 66, type: "out", seat: 1 },
+		{ seq: 67, type: "deal", round: 2, skipped: [1] },
 	];
 
 	it.each([
@@ -638,6 +654,15 @@ function tricksView(over: Partial<TricksView> = {}): TricksView {
 		moon: null,
 		winners: [],
 		events: [],
+		matchEnd: "lowestAtTarget",
+		stake: null,
+		folded: [false, false, false],
+		out: [false, false, false],
+		knock: null,
+		lastKnocker: null,
+		canKnock: false,
+		canSwap: false,
+		dealWinner: null,
 		...over,
 	};
 }
@@ -757,9 +782,141 @@ describe("tricksRuleLines", () => {
 			hartenjagen(["noPassing", "queenBreaksHearts", "jackOfDiamonds", "to50"]),
 		);
 		expect(house.goal).toContain("50");
-		expect(house.passing).toEqual([cards.rules.tricks.noPass]);
+		expect(house.passing).toEqual([]);
 		expect(house.turn.join(" ")).toContain("queen of spades");
 		expect(house.points.join(" ")).toContain("jack of diamonds");
+	});
+});
+
+const toepen = (options: string[] = []) => {
+	const resolved = resolvedRules(getCardGame("toepen"), options);
+	if (resolved.family !== "tricks") throw new Error("Toepen takes tricks");
+	return resolved.rules;
+};
+
+/** A Toepen table: three seats with a stake. */
+function stakesView(over: Partial<TricksView> = {}) {
+	return tricksView({
+		target: 10,
+		passDirection: "keep",
+		passCount: 0,
+		handCounts: [4, 4, 4],
+		matchEnd: "lastStanding",
+		stake: 1,
+		...over,
+	});
+}
+
+describe("toepen at the table", () => {
+	const rules = toepen();
+
+	it("asks the seats a knock waits on, and tells the rest to wait", () => {
+		const knock = {
+			by: 0,
+			asked: [1, 2],
+			answers: [null, "stay", null],
+		} as const;
+		const view = stakesView({
+			phase: "knocking",
+			stake: 3,
+			knock: { ...knock, answers: [...knock.answers] },
+		});
+		expect(tricksHint(view, 2, words, rules)).toBe(
+			"The stake is now 3. Stay in, or fold and take 2 points.",
+		);
+		expect(tricksHint(view, 1, words, rules)).toBe(cards.tricks.knockWaiting);
+		expect(tricksHint(view, 0, words, rules)).toBe(cards.tricks.knockWaiting);
+		expect(tricksChoices(view, 2).answer).toBe(true);
+		expect(tricksChoices(view, 1).answer).toBe(false);
+		expect(tricksChoices(view, null).answer).toBe(false);
+		const lastLife = stakesView({
+			phase: "knocking",
+			stake: 2,
+			knock: { by: null, asked: [0], answers: [null, null, null] },
+		});
+		expect(tricksHint(lastLife, 0, words, rules)).toBe(
+			"Someone is one point from out: the stake starts at 2. Stay in, or fold and take 1 point.",
+		);
+	});
+
+	it("tells a folded or knocked-out seat to wait, and offers a swap", () => {
+		expect(
+			tricksHint(stakesView({ folded: [true, false, false] }), 0, words, rules),
+		).toBe(cards.tricks.foldedHint);
+		expect(
+			tricksHint(stakesView({ out: [true, false, false] }), 0, words, rules),
+		).toBe(cards.tricks.outHint);
+		const swap = stakesView({ canSwap: true, canKnock: true });
+		expect(tricksHint(swap, 0, words, rules)).toBe(cards.tricks.swapHint);
+		expect(tricksChoices(swap, 0)).toEqual({
+			knock: true,
+			answer: false,
+			swap: true,
+		});
+	});
+
+	it("notes each seat's penalty points and what it did", () => {
+		const view = stakesView({
+			phase: "knocking",
+			totals: [3, 9, 10],
+			folded: [false, true, false],
+			out: [false, false, true],
+			knock: { by: 0, asked: [1], answers: [null, "fold", null] },
+		});
+		expect(tricksSeatNote(view, 0, words)).toBe("3 of 10 · Knocked");
+		expect(tricksSeatNote(view, 1, words)).toBe("9 of 10 · Folded");
+		expect(tricksSeatNote(view, 2, words)).toBe("10 of 10 · Out");
+		const waiting = stakesView({
+			phase: "knocking",
+			knock: { by: 2, asked: [0, 1], answers: ["stay", null, null] },
+		});
+		expect(tricksSeatNote(waiting, 0, words)).toBe("0 of 10 · Stays in");
+		expect(tricksSeatNote(waiting, 1, words)).toBe("0 of 10 · Deciding…");
+		expect(tricksSeatNote(stakesView(), 1, words)).toBe("0 of 10");
+		expect(tricksRoundLabel(stakesView({ round: 3 }), words)).toBe(
+			"Round 3 · out at 10",
+		);
+	});
+
+	it.each([
+		["en", en.games.cards],
+		["nl", nl.games.cards],
+	] as const)("writes every rule in %s", (_, messages) => {
+		const all = ["outAt15", "vuileWas", "armoede", "lastLife"];
+		const lines = tricksRuleLines(wordsFor(messages), toepen(all));
+		for (const line of [lines.goal, ...lines.turn, ...lines.stakes]) {
+			expect(line.length).toBeGreaterThan(0);
+			expect(line).not.toMatch(/[{}]|undefined/);
+		}
+		expect(lines.passing).toEqual([]);
+		expect(lines.points).toEqual([]);
+	});
+
+	it("writes the stakes from the house rules", () => {
+		const plain = tricksRuleLines(words, toepen());
+		expect(plain.goal).toContain("At 10 penalty points you're out.");
+		expect(plain.turn).toContain("From high to low: 10 9 8 7 A K Q J.");
+		expect(plain.turn).toContain(cards.rules.tricks.lastTrick);
+		expect(plain.stakes).not.toContain(cards.rules.tricks.lastLife);
+		const house = tricksRuleLines(
+			words,
+			toepen(["outAt15", "vuileWas", "armoede", "lastLife"]),
+		);
+		expect(house.goal).toContain("15");
+		expect(house.stakes).toContain(cards.rules.tricks.lastLife);
+		expect(house.stakes.filter((line) => line.includes("swapped"))).toEqual([
+			"A hand of only J Q K A may be swapped for new cards before the first card is played.",
+			"A hand of only 7 8 9 10 may be swapped for new cards before the first card is played.",
+		]);
+	});
+
+	it("deals no cards to a seat that is out", () => {
+		const { flights } = planFlights(
+			[{ seq: 1, type: "deal", round: 2, skipped: [1] }],
+			{ you: 0, seatCount: 3, meldCard: () => null },
+		);
+		expect(flights.some((flight) => flight.to === "seat-1")).toBe(false);
+		expect(flights.some((flight) => flight.to === "seat-2")).toBe(true);
 	});
 });
 
