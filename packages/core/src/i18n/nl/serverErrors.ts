@@ -25,11 +25,17 @@ export const serverErrors = {
 	cardsStockOnly: "In dit spel pak je alleen van de trekstapel.",
 	cardsDiscardEmpty: "De aflegstapel is leeg.",
 	cardsUnknownOption: "Die huisregel bestaat niet.",
+	cardsOptionsClash: "Kies maar één van die huisregels.",
 	cardsWrongAction: "Die zet hoort niet bij dit spel.",
 	cardsTableFull: "Deze tafel is vol.",
 	cardsSeatCredential: "Deze stoel hoort bij een ander apparaat.",
 	cardsPlayerStillActive: "Die speler is nog actief.",
 	cardsNotSeated: "Neem plaats om mee te spelen.",
+	cardsBadStake: "Kies een van de puntenwaarden.",
+	cardsAlreadyStaked: "Je hebt je punten voor deze ronde al gekozen.",
+	cardsStakesClosed: "Punten kies je voordat de kaarten worden gedeeld.",
+	cardsWaitForStakes: "Wacht tot iedereen punten heeft gekozen.",
+	cardsCannotDouble: "Verdubbelen kan alleen op je eerste twee kaarten.",
 	cardsMustFollow:
 		"Kleur bekennen: je hebt nog een kaart van de gevraagde kleur.",
 	cardsMustOpenWith: "Kom uit met klaveren twee om de ronde te openen.",
@@ -44,6 +50,10 @@ export const serverErrors = {
 	diceUnknownCategory: "Dat vak staat niet op dit scoreblok.",
 	diceCategoryTaken: "Dat vak is al ingevuld.",
 	diceJokerRule: "Deze extra Yatzy moet in een ander vak.",
+	cardsKnockTooHigh:
+		"Kloppen mag met {limit} of minder; dit laat {deadwood} over.",
+	cardsAfterKnock: "Er is geklopt: alleen aanleggen kan nog.",
+	cardsNoKnock: "Er is nog niet geklopt.",
 	signInRequired: "Inloggen vereist.",
 	accountChanged:
 		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",

@@ -158,6 +158,25 @@ export const cards = {
 		scoresHeading: "Scoreboard",
 		noScores: "Scores appear after the first round.",
 	},
+	bank: {
+		bankName: "Bank",
+		stakeHint: "How many points is this hand worth?",
+		stakeButton: { one: "{count} point", other: "{count} points" },
+		stakeWaiting: "Waiting for the others to pick their points.",
+		playingFor: { one: "for {count} point", other: "for {count} points" },
+		hit: "Another card",
+		stand: "Stop",
+		double: "Double",
+		playHint: "You have {total}. Another card, or stop?",
+		natural: "Twenty-one!",
+		over: "Over 21",
+		hidden: "Face-down card",
+		bankTotal: "Bank has {total}",
+		resultWin: "+{count}",
+		resultLose: "−{count}",
+		resultEven: "±0",
+		highestWins: "Highest total wins.",
+	},
 	tricks: {
 		passHint: "Pick {count} cards to pass {direction}.",
 		passWaiting: "Waiting for the others to pass.",
@@ -199,6 +218,67 @@ export const cards = {
 		matchYouWin: "You win the game!",
 		matchTie: "It's a tie!",
 		lowestWins: "Lowest total wins.",
+	},
+	gin: {
+		drawHint: "Draw from the stock or take the top discard.",
+		drawStock: "Draw from the stock",
+		takeDiscard: "Take the {card} from the discard pile",
+		pickDiscard: "Tap the card you want to discard.",
+		canKnockHint: "You can knock: tap the card to discard.",
+		oneCard: "Pick just one card to discard.",
+		discardHint: "Discard it to end your turn.",
+		knockHint: "Discard it, or knock with {deadwood} deadwood.",
+		ginHint: "Discard it and go gin!",
+		discardCard: "Discard",
+		knock: "Knock ({deadwood})",
+		goGin: "Go gin!",
+		deadwood: "Deadwood: {points}",
+		layoffHint:
+			"{name} knocked. Select cards that fit their melds, then tap the meld.",
+		layoffTapMeld: "Tap a highlighted meld to lay off.",
+		layoffNoFit: "Those cards don't fit any of the melds.",
+		layoffWait: "Waiting for {name} to lay off.",
+		finishLayoff: "Done laying off",
+		layOffOn: "Lay off on this {kind}",
+		knockerMelds: "{name}'s melds",
+		knockerDeadwood: "{name}'s deadwood",
+		sortByMelds: "Group melds",
+		handLabel: "Hand {round} · to {target}",
+		handOver: "Hand {round}",
+		resultGin: {
+			one: "{name} goes gin and scores {count} point",
+			other: "{name} goes gin and scores {count} points",
+		},
+		resultYouGin: {
+			one: "You go gin and score {count} point",
+			other: "You go gin and score {count} points",
+		},
+		resultKnock: {
+			one: "{name} knocks and scores {count} point",
+			other: "{name} knocks and scores {count} points",
+		},
+		resultYouKnock: {
+			one: "You knock and score {count} point",
+			other: "You knock and score {count} points",
+		},
+		resultUndercut: {
+			one: "{name} undercuts and scores {count} point",
+			other: "{name} undercuts and scores {count} points",
+		},
+		resultYouUndercut: {
+			one: "You undercut and score {count} point",
+			other: "You undercut and score {count} points",
+		},
+		resultVoid: "The stock ran low: nobody scores this hand.",
+		deadwoodPoints: {
+			one: "{count} deadwood point",
+			other: "{count} deadwood points",
+		},
+		nextHand: "Deal hand {round}",
+		waitingNextHand: "Waiting for a player to deal the next hand.",
+		firstTo: "First to {target} points wins.",
+		noScores: "Scores appear after the first hand.",
+		scoreTotal: "Total",
 	},
 	suits: { S: "spades", H: "hearts", D: "diamonds", C: "clubs" },
 	ranks: {
@@ -289,6 +369,10 @@ export const cards = {
 		youSwap: "You swap out a joker.",
 		discard: "{name} discards the {card}.",
 		youDiscard: "You discard the {card}.",
+		knock: "{name} knocks!",
+		youKnock: "You knock!",
+		gin: "{name} goes gin!",
+		youGin: "You go gin!",
 		roundEnd: "{name} goes out. Round over!",
 		youRoundEnd: "You go out. Round over!",
 		roundEndNobody: "The round is called off.",
@@ -311,6 +395,36 @@ export const cards = {
 		youMoon: "You shoot the moon!",
 		winTie: "{name} win!",
 		youWin: "You win!",
+		stake: {
+			one: "{name} plays this hand for {count} point.",
+			other: "{name} plays this hand for {count} points.",
+		},
+		youStake: {
+			one: "You play this hand for {count} point.",
+			other: "You play this hand for {count} points.",
+		},
+		natural: "{name} has twenty-one in two cards!",
+		youNatural: "You have twenty-one in two cards!",
+		hit: "{name} takes the {card}: {total}.",
+		youHit: "You take the {card}: {total}.",
+		double: "{name} doubles and takes the {card}: {total}.",
+		youDouble: "You double and take the {card}: {total}.",
+		stand: "{name} stops on {total}.",
+		youStand: "You stop on {total}.",
+		bust: "{name} is over 21.",
+		youBust: "You're over 21.",
+		bankReveal: "The bank turns over the {card}: {total}.",
+		bankDraw: "The bank takes the {card}: {total}.",
+		settle: "Round {round} is over.",
+		settleYouWin: {
+			one: "Round over: you win {count} point.",
+			other: "Round over: you win {count} points.",
+		},
+		settleYouLose: {
+			one: "Round over: you lose {count} point.",
+			other: "Round over: you lose {count} points.",
+		},
+		settleYouEven: "Round over: you're level with the bank.",
 	},
 	rules: {
 		heading: "How to play {game}",
@@ -320,6 +434,7 @@ export const cards = {
 		extrasHeading: "At this table",
 		meldsHeading: "Sets and runs",
 		pointsHeading: "Points",
+		bankHeading: "The bank",
 		passHeading: "Passing",
 		shedding: {
 			goal: "Be the first to play all your cards.",
@@ -361,6 +476,23 @@ export const cards = {
 			points:
 				"2-10 count their face value, J Q K {face}, ace {ace} ({lowAce} in A-2-3), joker {joker}.",
 		},
+		bank: {
+			goal: "Get closer to 21 than the bank without going over. The highest total after {rounds} rounds wins.",
+			values: "2-10 count their face value, J Q K count 10, an ace 1 or 11.",
+			stake: "Before the deal, pick what your hand is worth: {stakes} points.",
+			hit: "Take another card as often as you like, or stop. Over 21 and you lose your points straight away.",
+			double:
+				"On your first two cards you may double your points, take one more card and stop.",
+			bank: "The bank shows one card. When everyone is done it turns the other over and takes cards until it has {stand} or more.",
+			bankSoft:
+				"The bank also takes a card on {stand} when it counts an ace as 11.",
+			payout:
+				"Beat the bank, or see it go over 21, and you win your points. Level with the bank: nothing changes.",
+			natural:
+				"Twenty-one in two cards wins {pays} times your points, rounded, unless the bank has it too.",
+			bankNatural:
+				"Twenty-one in the bank's two cards beats everything but another two-card 21.",
+		},
 		tricks: {
 			goal: "Stay away from points. The game ends when someone reaches {target}; the lowest total wins.",
 			pass: "Before each round, pass {count} cards. The direction changes every round: {cycle}.",
@@ -383,6 +515,24 @@ export const cards = {
 				other: "The {card}: {count} points",
 			},
 			moon: "Take every penalty card in one round and they cost you nothing: everyone else takes them instead.",
+		},
+		gin: {
+			goal: "Build sets and runs in your hand, then knock to score the gap with your opponent's unmatched cards. First to {target} points wins.",
+			turnDraw: "Draw from the stock or take the top discard.",
+			turnDiscard:
+				"End by discarding one card, but not the one you just took from the pile.",
+			knock:
+				"Knock when your unmatched cards (deadwood) total {limit} or less after your discard: your hand goes face up.",
+			gin: "Gin: no deadwood at all. You score your opponent's deadwood plus {bonus}, and they can't lay off.",
+			layoff:
+				"After a knock, the other player lays off unmatched cards on the knocker's sets and runs.",
+			score: "The knocker scores the difference in deadwood.",
+			undercut:
+				"Undercut: if the other player's deadwood is as low or lower, they score the difference plus {bonus}.",
+			void: "If only {count} cards are left in the stock and nobody knocked, the hand is called off.",
+			set: "Set: 3 or 4 cards of the same rank.",
+			run: "Run: 3 or more cards of one suit in order. The ace is always low: A-2-3, never Q-K-A.",
+			points: "Deadwood counts ace 1, 2-10 their face value, J Q K {face}.",
 		},
 	},
 	games: {
@@ -492,6 +642,31 @@ export const cards = {
 				},
 			},
 		},
+		eenentwintigen: {
+			name: "Twenty-One",
+			tagline: "Beat the bank to 21",
+			blurb:
+				"Everyone against the bank. Pick what each hand is worth, draw towards 21 and stop in time. Points only.",
+			powers: {},
+			options: {
+				doubleDown: {
+					label: "Doubling",
+					hint: "Double your points on two cards for one more card.",
+				},
+				bankHitsSoft17: {
+					label: "Bank draws on soft 17",
+					hint: "The bank takes a card on 17 with an ace counted as 11.",
+				},
+				shortMatch: {
+					label: "Short match",
+					hint: "Play 5 rounds instead of 10.",
+				},
+				longMatch: {
+					label: "Long match",
+					hint: "Play 20 rounds instead of 10.",
+				},
+			},
+		},
 		hartenjagen: {
 			name: "Hearts",
 			tagline: "Dodge the hearts",
@@ -513,6 +688,19 @@ export const cards = {
 				},
 				to50: {
 					label: "Short game",
+					hint: "Play to 50 points instead of 100.",
+				},
+			},
+		},
+		"gin-rummy": {
+			name: "Gin Rummy",
+			tagline: "Knock, gin or undercut",
+			blurb:
+				"The two-player classic. Build hidden sets and runs, knock when your deadwood is low, or go gin.",
+			powers: {},
+			options: {
+				shortMatch: {
+					label: "Short match",
 					hint: "Play to 50 points instead of 100.",
 				},
 			},

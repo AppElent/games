@@ -4,6 +4,7 @@
  * which cards cross the table. No drawing and no framework.
  */
 import type { Messages } from "../i18n/en";
+import type { BankView } from "./bank";
 import {
 	type CardId,
 	cardFace,
@@ -14,6 +15,14 @@ import {
 } from "./deck";
 import { type CardGameDefinition, plainCardOption } from "./engine";
 import type { CardEvent } from "./events";
+import {
+	arrangeHand,
+	bestDiscard,
+	fitLayoff,
+	type GinHandResult,
+	type GinRules,
+	type GinView,
+} from "./gin";
 import {
 	buildMeld,
 	fitOnMeld,
@@ -183,6 +192,29 @@ export function cardTilt(id: CardId) {
 	return (hash % 15) - 7;
 }
 
+/** How a gin hand ended, for the ticker and the hand result. */
+export function ginResultText(
+	outcome: Pick<GinHandResult, "winner" | "kind" | "points">,
+	{ cards, fmt, countOf }: CardWords,
+	table: TableSeats,
+): string {
+	const g = cards.gin;
+	if (outcome.kind === "void" || outcome.winner === null) {
+		return g.resultVoid;
+	}
+	const forms =
+		outcome.winner === table.you
+			? {
+					gin: g.resultYouGin,
+					knock: g.resultYouKnock,
+					undercut: g.resultYouUndercut,
+				}
+			: { gin: g.resultGin, knock: g.resultKnock, undercut: g.resultUndercut };
+	return fmt(countOf(outcome.points, forms[outcome.kind]), {
+		name: seatName(cards, table, outcome.winner),
+	});
+}
+
 /** One sentence for the ticker; screen readers hear it through a live region. */
 export function describeEvent(
 	event: CardEvent,
@@ -284,6 +316,17 @@ export function describeEvent(
 				? fmt(e.youDiscard, { card })
 				: fmt(e.discard, { card, name: name(event.seat) });
 		}
+		case "knock":
+			if (event.gin) {
+				return mine(event.seat)
+					? e.youGin
+					: fmt(e.gin, { name: name(event.seat) });
+			}
+			return mine(event.seat)
+				? e.youKnock
+				: fmt(e.knock, { name: name(event.seat) });
+		case "handEnd":
+			return ginResultText(event, words, table);
 		case "roundEnd":
 			return event.winner === null
 				? e.roundEndNobody
@@ -318,6 +361,52 @@ export function describeEvent(
 			return mine(event.seats[0])
 				? e.youWin
 				: fmt(e.win, { name: name(event.seats[0]) });
+		case "stake":
+			return mine(event.seat)
+				? countOf(event.amount, e.youStake)
+				: fmt(countOf(event.amount, e.stake), { name: name(event.seat) });
+		case "natural":
+			return mine(event.seat)
+				? e.youNatural
+				: fmt(e.natural, { name: name(event.seat) });
+		case "hit":
+		case "double": {
+			const params = {
+				card: cardName(cards, event.card),
+				total: event.total,
+				name: name(event.seat),
+			};
+			const [yours, theirs] =
+				event.type === "hit" ? [e.youHit, e.hit] : [e.youDouble, e.double];
+			return fmt(mine(event.seat) ? yours : theirs, params);
+		}
+		case "stand":
+			return mine(event.seat)
+				? fmt(e.youStand, { total: event.total })
+				: fmt(e.stand, { total: event.total, name: name(event.seat) });
+		case "bust":
+			return mine(event.seat)
+				? e.youBust
+				: fmt(e.bust, { name: name(event.seat) });
+		case "bankReveal":
+		case "bankDraw":
+			return fmt(event.type === "bankReveal" ? e.bankReveal : e.bankDraw, {
+				card: cardName(cards, event.card),
+				total: event.total,
+			});
+		case "settle": {
+			const result = table.you === null ? null : event.results[table.you];
+			if (result === null || result === undefined) {
+				return fmt(e.settle, { round: event.round });
+			}
+			if (result === 0) {
+				return e.settleYouEven;
+			}
+			return countOf(
+				Math.abs(result),
+				result > 0 ? e.settleYouWin : e.settleYouLose,
+			);
+		}
 	}
 }
 
@@ -594,6 +683,64 @@ export function rummyMeldAction(turn: RummyTurn, meld: Meld) {
 	return order ? { type: "add" as const, order } : null;
 }
 
+/** What to do now at a bank table; null when there is nothing for this player to do. */
+export function bankHint(
+	view: BankView,
+	you: number | null,
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+) {
+	if (you === null || view.phase === "finished") {
+		return null;
+	}
+	if (view.phase === "stake") {
+		return view.canStake ? cards.bank.stakeHint : cards.bank.stakeWaiting;
+	}
+	if (view.turn !== you) {
+		return null;
+	}
+	return fmt(cards.bank.playHint, { total: view.handTotals[you] });
+}
+
+/** Points won or lost in a round, signed: "+3", "−2" or "±0". */
+export function signedPoints(
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	points: number,
+) {
+	if (points === 0) {
+		return cards.bank.resultEven;
+	}
+	return fmt(points > 0 ? cards.bank.resultWin : cards.bank.resultLose, {
+		count: Math.abs(points),
+	});
+}
+
+/**
+ * A player's line at a bank table: their total and what the hand is played
+ * for, or last round's result while the next one is being picked.
+ */
+export function bankSeatNote(
+	words: Pick<CardWords, "cards" | "fmt" | "countOf">,
+	view: BankView,
+	seat: number,
+) {
+	const { cards, countOf } = words;
+	const stake = view.stakes[seat];
+	if (view.phase !== "play") {
+		const last = view.results.at(-1)?.[seat];
+		return last === undefined ? "" : signedPoints(words, last);
+	}
+	const total = view.handTotals[seat];
+	const state =
+		total > 21
+			? cards.bank.over
+			: view.hands[seat].length === 2 && total === 21
+				? cards.bank.natural
+				: String(total);
+	return stake === null
+		? state
+		: `${state} · ${countOf(stake, cards.bank.playingFor)}`;
+}
+
 /** What to do now on a rummy turn; null when it isn't this player's turn. */
 export function rummyHint(
 	turn: RummyTurn,
@@ -637,6 +784,127 @@ export function rummyHint(
 		return fmt(cards.rummy.openingNeeded, { needed: rules.openingPoints });
 	}
 	return staged.length > 0 ? stagedNote() : cards.rummy.discardHint;
+}
+
+/** Everything a gin turn allows, given what this player has selected. */
+export function ginTurn({
+	view,
+	rules,
+	you,
+	selected,
+}: {
+	view: GinView;
+	rules: GinRules;
+	you: number | null;
+	selected: readonly CardId[];
+}) {
+	const live =
+		view.phase === "draw" || view.phase === "play" || view.phase === "layoff";
+	const mine = live && view.turn === you;
+	const drawing = mine && view.phase === "draw";
+	const playing = mine && view.phase === "play";
+	const layingOff = mine && view.phase === "layoff";
+	const selection = selected.filter((card) => view.hand.includes(card));
+	const singleCard = selection.length === 1 ? selection[0] : null;
+	const cantReturn = singleCard !== null && singleCard === view.takenDiscard;
+	const canDiscard = playing && singleCard !== null && !cantReturn;
+	const knockDeadwood = canDiscard
+		? arrangeHand(
+				view.hand.filter((card) => card !== singleCard),
+				rules,
+			).points
+		: null;
+	const canKnock = knockDeadwood !== null && knockDeadwood <= rules.knockLimit;
+	// With eleven cards the count that matters is what the best discard leaves;
+	// while laying off, it's what the hand would leave to score now.
+	const deadwood =
+		you === null || !live
+			? null
+			: playing
+				? (bestDiscard(view.hand, rules, view.takenDiscard)?.points ?? 0)
+				: arrangeHand(view.hand, rules).points;
+	return {
+		live,
+		mine,
+		drawing,
+		playing,
+		layingOff,
+		selection,
+		singleCard,
+		cantReturn,
+		canDiscard,
+		knockDeadwood,
+		canKnock,
+		gin: canKnock && knockDeadwood === 0,
+		knockPossible: playing && deadwood !== null && deadwood <= rules.knockLimit,
+		deadwood,
+		canTakeDiscard: drawing && view.top !== null,
+	};
+}
+
+export type GinTurn = ReturnType<typeof ginTurn>;
+
+/** The order the selection lays off onto this meld, or null when it can't. */
+export function ginLayoffOrder(turn: GinTurn, meld: Meld) {
+	if (!turn.layingOff || turn.selection.length === 0) {
+		return null;
+	}
+	return fitLayoff(meld, turn.selection)?.order ?? null;
+}
+
+/** What to do now on a gin turn; null when it isn't this player's turn. */
+export function ginHint(
+	turn: GinTurn,
+	view: GinView,
+	{
+		cards,
+		fmt,
+		serverErrors,
+		knocker,
+	}: Pick<CardWords, "cards" | "fmt"> &
+		Pick<Messages, "serverErrors"> & { knocker: string },
+) {
+	if (turn.drawing) {
+		return cards.gin.drawHint;
+	}
+	if (turn.layingOff) {
+		if (turn.selection.length === 0) {
+			return fmt(cards.gin.layoffHint, { name: knocker });
+		}
+		return view.melds.some((meld) => ginLayoffOrder(turn, meld))
+			? cards.gin.layoffTapMeld
+			: cards.gin.layoffNoFit;
+	}
+	if (!turn.playing) {
+		return null;
+	}
+	if (turn.cantReturn) {
+		return serverErrors.cardsCannotReturnDiscard;
+	}
+	if (turn.selection.length > 1) {
+		return cards.gin.oneCard;
+	}
+	if (turn.singleCard === null) {
+		return turn.knockPossible ? cards.gin.canKnockHint : cards.gin.pickDiscard;
+	}
+	if (turn.gin) {
+		return cards.gin.ginHint;
+	}
+	return turn.canKnock
+		? fmt(cards.gin.knockHint, { deadwood: turn.knockDeadwood ?? 0 })
+		: cards.gin.discardHint;
+}
+
+/** The hand as its best melds, then the deadwood by suit: how a gin player holds it. */
+export function groupGinHand(hand: readonly CardId[], rules: GinRules) {
+	const arranged = arrangeHand(hand, rules);
+	return [
+		// A run keeps its own order, so A-2-3 doesn't sort its ace to the end.
+		...arranged.melds.flatMap((meld) =>
+			meld.kind === "run" ? meld.cards : sortCards(meld.cards, "suit"),
+		),
+		...sortCards(arranged.deadwood, "suit"),
+	];
 }
 
 /** The newest event number, or null for an empty log. */
@@ -696,11 +964,12 @@ export function nextFreshCards(
 	};
 }
 
-/** Where a card can travel: a seat, the player's hand, the piles, or a meld. */
+/** Where a card can travel: a seat, the player's hand, the piles, a meld, or the bank. */
 export type FlightZone =
 	| "hand"
 	| "stock"
 	| "discard"
+	| "bank"
 	| `seat-${number}`
 	| `meld-${number}`;
 
@@ -763,9 +1032,16 @@ export function planFlights(
 	for (const event of events) {
 		switch (event.type) {
 			case "deal":
-				for (let round = 0; round < DEAL_CARDS_PER_SEAT; round += 1) {
+				for (
+					let pass = 0;
+					pass < (event.perSeat ?? DEAL_CARDS_PER_SEAT);
+					pass += 1
+				) {
 					for (let seat = 0; seat < seatCount; seat += 1) {
 						fly(null, "stock", seatZone(seat));
+					}
+					if (event.bank) {
+						fly(null, "stock", "bank");
 					}
 				}
 				break;
@@ -800,6 +1076,13 @@ export function planFlights(
 				break;
 			case "swap":
 				fly(event.card, seatZone(event.seat), `meld-${event.meldId}`);
+				break;
+			case "hit":
+			case "double":
+				fly(event.card, "stock", seatZone(event.seat));
+				break;
+			case "bankDraw":
+				fly(event.card, "stock", "bank");
 				break;
 			case "exchange":
 				for (let seat = 0; seat < seatCount; seat += 1) {

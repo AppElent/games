@@ -143,10 +143,3 @@ export function HouseRuleSwitches({
 		</div>
 	);
 }
-
-/** Adds or removes one house rule. */
-export function toggleOption(current: readonly string[], id: string) {
-	return current.includes(id)
-		? current.filter((option) => option !== id)
-		: [...current, id];
-}

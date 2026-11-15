@@ -11,6 +11,7 @@ import {
 } from "@arcadeclub/core/cards/engine";
 import { specialCards } from "@arcadeclub/core/cards/table-view";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
+import { setHouseRule } from "@arcadeclub/core/table-engine";
 import { Stack, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
@@ -30,7 +31,6 @@ import {
 	OpponentStepper,
 	RuleSwitch,
 	SetupSection,
-	setOption,
 } from "../../table/setup-fields";
 import { PlayingCard } from "../deck/playing-card";
 import { RulesSheet } from "../deck/rules-sheet";
@@ -78,7 +78,7 @@ function Setup({
 	const houseRules = generalOptions(game);
 	const special = useMemo(() => specialCards(words, game), [words, game]);
 	const toggle = (id: string, on: boolean) =>
-		setOptions((current) => setOption(current, id, on));
+		setOptions((current) => setHouseRule(game.options, current, id, on));
 	const solo = mode === "computer";
 	const headerOptions = useMemo(() => ({ title: text.name }), [text.name]);
 

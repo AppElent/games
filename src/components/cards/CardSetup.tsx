@@ -4,6 +4,7 @@ import {
 	getCardGame,
 } from "@arcadeclub/core/cards/engine";
 import { specialCards } from "@arcadeclub/core/cards/table-view";
+import { toggleHouseRule } from "@arcadeclub/core/table-engine";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { HostGate } from "#/components/games/HostGate";
@@ -11,7 +12,6 @@ import {
 	HouseRuleSwitches,
 	ModePicker,
 	OpponentStepper,
-	toggleOption,
 } from "#/components/table/Setup";
 import { type TableMode, useCreateTable } from "#/lib/games/use-create-table";
 import { plural, useI18n, useMessages } from "#/lib/i18n";
@@ -39,7 +39,7 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 	const houseRules = generalOptions(game);
 	const special = specialCards(words, game);
 	const toggle = (id: string) =>
-		setOptions((current) => toggleOption(current, id));
+		setOptions((current) => toggleHouseRule(game.options, current, id));
 	const navigate = useNavigate();
 	const table = useCreateTable("card-games", api.cardGames.createTable, (id) =>
 		navigate({ to: "/cards/table/$sessionId", params: { sessionId: id } }),

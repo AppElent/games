@@ -7,16 +7,42 @@
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
-import type { BotMove } from "../table-engine";
 import {
 	type HouseRule as BaseHouseRule,
+	type BotMove,
 	normalizeHouseRules,
 	type TableEngine,
 } from "../table-engine";
+import {
+	applyBank,
+	BANK_ACTIONS,
+	type BankAction,
+	type BankRules,
+	type BankState,
+	type BankView,
+	botBankMove,
+	createBank,
+	nextBankStarter,
+	viewBank,
+} from "./bank";
+import { eenentwintigen } from "./games/eenentwintigen";
+import { ginRummy } from "./games/gin-rummy";
 import { hartenjagen } from "./games/hartenjagen";
 import { jokeren } from "./games/jokeren";
 import { maumau } from "./games/maumau";
 import { pesten } from "./games/pesten";
+import {
+	applyGin,
+	botGinMove,
+	GIN_ACTIONS,
+	type GinAction,
+	type GinRules,
+	type GinState,
+	type GinView,
+	nextGinStarter,
+	startGin,
+	viewGin,
+} from "./gin";
 import {
 	applyRummy,
 	botRummyMove,
@@ -79,13 +105,17 @@ export type HouseRule<Rules> = BaseHouseRule<Rules> & {
 export type CardGameDefinition =
 	| Definition<"shedding", SheddingRules>
 	| Definition<"rummy", RummyRules>
-	| Definition<"tricks", TricksRules>;
+	| Definition<"bank", BankRules>
+	| Definition<"tricks", TricksRules>
+	| Definition<"gin", GinRules>;
 
 export const CARD_GAMES = {
 	pesten,
 	maumau,
 	jokeren,
+	eenentwintigen,
 	hartenjagen,
+	"gin-rummy": ginRummy,
 } as const satisfies Record<string, CardGameDefinition>;
 
 export type CardGameId = keyof typeof CARD_GAMES;
@@ -97,9 +127,19 @@ export function isCardGameId(value: string): value is CardGameId {
 	return (CARD_GAME_IDS as string[]).includes(value);
 }
 
-export type CardGameState = SheddingState | RummyState | TricksState;
-export type CardAction = SheddingAction | RummyAction | TricksAction;
-type CardView = SheddingView | RummyView | TricksView;
+export type CardGameState =
+	| SheddingState
+	| RummyState
+	| BankState
+	| TricksState
+	| GinState;
+export type CardAction =
+	| SheddingAction
+	| RummyAction
+	| BankAction
+	| TricksAction
+	| GinAction;
+type CardView = SheddingView | RummyView | BankView | TricksView | GinView;
 
 export function getCardGame(id: string): CardGame {
 	if (!isCardGameId(id)) {
@@ -138,22 +178,26 @@ function rulesOf<R>(
 	return rules;
 }
 
+function houseRules(game: CardGameDefinition) {
+	return game.options as ReadonlyArray<HouseRule<unknown>>;
+}
+
 /** The house rule that turns this special card into a plain one, if the game has it. */
 export function plainCardOption(game: CardGameDefinition, power: string) {
-	return (game.options as ReadonlyArray<HouseRule<unknown>>).find((option) =>
+	return houseRules(game).find((option) =>
 		option.withoutPowers?.includes(power),
 	);
 }
 
 /** House rules that are not about a single special card. */
 export function generalOptions(game: CardGameDefinition) {
-	return (game.options as ReadonlyArray<HouseRule<unknown>>).filter(
-		(option) => !option.withoutPowers,
-	);
+	return houseRules(game).filter((option) => !option.withoutPowers);
 }
 
 function rulesFor(game: CardGameDefinition, options: readonly string[]) {
-	return rulesOf<SheddingRules | RummyRules | TricksRules>(game, options);
+	return rulesOf<
+		SheddingRules | RummyRules | BankRules | TricksRules | GinRules
+	>(game, options);
 }
 
 type FamilyTypes = {
@@ -169,11 +213,23 @@ type FamilyTypes = {
 		action: RummyAction;
 		view: RummyView;
 	};
+	bank: {
+		rules: BankRules;
+		state: BankState;
+		action: BankAction;
+		view: BankView;
+	};
 	tricks: {
 		rules: TricksRules;
 		state: TricksState;
 		action: TricksAction;
 		view: TricksView;
+	};
+	gin: {
+		rules: GinRules;
+		state: GinState;
+		action: GinAction;
+		view: GinView;
 	};
 };
 
@@ -226,6 +282,14 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		view: viewRummy,
 		bot: botRummyMove,
 	},
+	bank: {
+		actions: BANK_ACTIONS,
+		create: createBank,
+		nextStarter: nextBankStarter,
+		apply: applyBank,
+		view: viewBank,
+		bot: botBankMove,
+	},
 	tricks: {
 		actions: TRICKS_ACTIONS,
 		create: createTricks,
@@ -233,6 +297,14 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		apply: applyTricks,
 		view: viewTricks,
 		bot: botTricksMove,
+	},
+	gin: {
+		actions: GIN_ACTIONS,
+		create: startGin,
+		nextStarter: nextGinStarter,
+		apply: applyGin,
+		view: viewGin,
+		bot: botGinMove,
 	},
 };
 
@@ -279,7 +351,7 @@ export function applyCardAction(
 	return family.apply(rulesFor(game, options), state, seat, action, random);
 }
 
-/** What one seat may see; `null` is a spectator. Never includes other hands. */
+/** What one seat may see; `null` is a spectator. Never includes a hand the rules keep hidden. */
 export function viewCardGame(
 	game: CardGameDefinition,
 	options: readonly string[],

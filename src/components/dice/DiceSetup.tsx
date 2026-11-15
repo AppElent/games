@@ -1,4 +1,5 @@
 import { type DiceGameId, getDiceGame } from "@arcadeclub/core/dice/engine";
+import { toggleHouseRule } from "@arcadeclub/core/table-engine";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { HostGate } from "#/components/games/HostGate";
@@ -6,7 +7,6 @@ import {
 	HouseRuleSwitches,
 	ModePicker,
 	OpponentStepper,
-	toggleOption,
 } from "#/components/table/Setup";
 import { type TableMode, useCreateTable } from "#/lib/games/use-create-table";
 import { plural, useI18n, useMessages } from "#/lib/i18n";
@@ -87,7 +87,9 @@ export function DiceSetup({ gameId }: { gameId: DiceGameId }) {
 						}))}
 						chosen={options}
 						onToggle={(id) =>
-							setOptions((current) => toggleOption(current, id))
+							setOptions((current) =>
+								toggleHouseRule(game.options, current, id),
+							)
 						}
 					/>
 					{table.error ? (

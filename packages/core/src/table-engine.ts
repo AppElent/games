@@ -34,7 +34,11 @@ export const TABLE_STATUSES = ["lobby", "playing", "finished"] as const;
 export type HouseRule<Rules> = {
 	id: string;
 	patch?: Partial<Rules>;
+	/** Rules in the same group exclude each other, such as match lengths. */
+	group?: string;
 };
+
+type HouseRuleId = { id: string; group?: string };
 
 export type BotMove<Action> = {
 	seat: number;
@@ -44,20 +48,53 @@ export type BotMove<Action> = {
 };
 
 /**
- * Validates house-rule ids against a game's options; unknown ones are a client
- * error. Returns them in the game's own order, each once.
+ * Validates house-rule ids against a game's options; unknown ones, or two from
+ * one group, are a client error. Returns them in the game's own order, each once.
  */
 export function normalizeHouseRules(
-	options: ReadonlyArray<{ id: string }>,
+	options: ReadonlyArray<HouseRuleId>,
 	chosen: readonly string[],
 ) {
-	const known = options.map((option) => option.id);
-	for (const option of chosen) {
-		if (!known.includes(option)) {
+	for (const id of chosen) {
+		if (!options.some((option) => option.id === id)) {
 			throw new GameRuleError("cardsUnknownOption");
 		}
 	}
-	return known.filter((id) => chosen.includes(id));
+	const picked = options.filter((option) => chosen.includes(option.id));
+	const groups = picked.flatMap((option) =>
+		option.group ? [option.group] : [],
+	);
+	if (new Set(groups).size < groups.length) {
+		throw new GameRuleError("cardsOptionsClash");
+	}
+	return picked.map((option) => option.id);
+}
+
+/** Turns one house rule on or off; turning one on turns off the rest of its group. */
+export function setHouseRule(
+	options: ReadonlyArray<HouseRuleId>,
+	chosen: readonly string[],
+	id: string,
+	on: boolean,
+): string[] {
+	const rest = chosen.filter((option) => option !== id);
+	if (!on) {
+		return rest;
+	}
+	const group = options.find((option) => option.id === id)?.group;
+	const rivals = options
+		.filter((option) => group !== undefined && option.group === group)
+		.map((option) => option.id);
+	return [...rest.filter((option) => !rivals.includes(option)), id];
+}
+
+/** Flips one house rule, as a switch tap does. */
+export function toggleHouseRule(
+	options: ReadonlyArray<HouseRuleId>,
+	chosen: readonly string[],
+	id: string,
+) {
+	return setHouseRule(options, chosen, id, !chosen.includes(id));
 }
 
 /** A game's rules with the chosen house rules patched over them, in the game's order. */

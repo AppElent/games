@@ -89,6 +89,9 @@ async function read(
 			phase: string;
 			canPass?: boolean;
 			events: unknown[];
+			family?: string;
+			handCounts?: number[];
+			totals?: number[];
 		};
 	};
 }
@@ -531,6 +534,121 @@ describe("play", () => {
 	});
 });
 
+describe("eenentwintigen", () => {
+	type BankRead = {
+		phase: string;
+		hands: string[][];
+		bank: (string | null)[];
+		stakes: (number | null)[];
+		canStake: boolean;
+		round: number;
+	};
+	const bankView = (table: { view: unknown }) => table.view as BankRead;
+
+	it("plays a solo table against the bank, keeping the hole card hidden", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(
+			t,
+			"eenentwintigen",
+			2,
+		);
+		const opening = bankView(await read(t, creds(sessionId, participantId)));
+		expect(opening).toMatchObject({ phase: "stake", canStake: true, round: 1 });
+		await expect(
+			t.mutation(api.cardGames.act, {
+				...creds(sessionId, participantId),
+				action: { type: "hit" },
+			}),
+		).rejects.toMatchObject({ data: { code: "cardsWaitForStakes" } });
+		await expect(
+			t.mutation(api.cardGames.act, {
+				...creds(sessionId, participantId),
+				action: { type: "stake", amount: 3 },
+			}),
+		).rejects.toMatchObject({ data: { code: "cardsBadStake" } });
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "stake", amount: 2 },
+		});
+		await t.finishAllScheduledFunctions(vi.runAllTimers);
+		const dealt = bankView(await read(t, creds(sessionId, participantId)));
+		// Dealt; a natural would already have settled the round.
+		expect(dealt.hands[0].length).toBeGreaterThanOrEqual(2);
+		expect(dealt.stakes[0] === 2 || dealt.round === 2).toBe(true);
+		// Pin the round mid-play, so the face-down card is certain to be hidden.
+		const stored = await t.run((ctx) =>
+			ctx.db.query("cardGameStates").unique(),
+		);
+		if (!stored) throw new Error("no table");
+		const game = stored.game as {
+			bank: string[];
+			stock: string[];
+			done: boolean[];
+		};
+		// The face-down card comes from the stock, which no view or event has shown.
+		const hole = game.stock[0];
+		await t.run((ctx) =>
+			ctx.db.patch(stored._id, {
+				game: {
+					...stored.game,
+					phase: "play",
+					turn: 0,
+					bank: [game.bank[0], hole],
+					stock: game.stock.slice(1),
+					bankRevealed: false,
+					done: game.done.map(() => false),
+				} as typeof stored.game,
+			}),
+		);
+		const playing = await read(t, creds(sessionId, participantId));
+		expect(bankView(playing).bank).toEqual([game.bank[0], null]);
+		expect(JSON.stringify(playing)).not.toContain(`"${hole}"`);
+	});
+
+	it("plays alone against the bank", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(
+			t,
+			"eenentwintigen",
+			0,
+		);
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "stake", amount: 5 },
+		});
+		const dealt = bankView(await read(t, creds(sessionId, participantId)));
+		// A natural settles at once; otherwise it is this player's turn.
+		expect(
+			(dealt.phase === "play" && dealt.hands[0].length === 2) ||
+				(dealt.phase === "stake" && dealt.round === 2),
+		).toBe(true);
+	});
+
+	it("a table on autopilot plays a whole match to the end", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(
+			t,
+			"eenentwintigen",
+			3,
+		);
+		await t.mutation(api.cardGames.setAutopilot, {
+			...creds(sessionId, participantId),
+			seat: 0,
+			on: true,
+		});
+		await (
+			t.finishAllScheduledFunctions as (
+				advance: () => void,
+				maxIterations: number,
+			) => Promise<void>
+		)(vi.runAllTimers, 10_000);
+		const done = await read(t, creds(sessionId, participantId));
+		expect(done.status).toBe("finished");
+		const session = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(session?.status).toBe("completed");
+	});
+});
+
 describe("hartenjagen", () => {
 	type HeartsView = {
 		hand: string[];
@@ -603,6 +721,75 @@ describe("hartenjagen", () => {
 	it("needs at least three players", async () => {
 		const t = setup();
 		await expect(soloTable(t, "hartenjagen", 1)).rejects.toThrow();
+	});
+});
+
+describe("gin rummy", () => {
+	it("refuses a table with two computer players", async () => {
+		const t = setup();
+		await expectCode(
+			t.mutation(api.cardGames.createTable, tableArgs({ gameId: "gin-rummy" })),
+			"cardsTableFull",
+		);
+	});
+
+	it("deals a solo table, keeps the computer's hand hidden, and plays a turn", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(t, "gin-rummy", 1);
+		const table = await read(t, creds(sessionId, participantId));
+		expect(table.status).toBe("playing");
+		expect(table.view.family).toBe("gin");
+		expect(table.view.hand).toHaveLength(10);
+		expect(table.view.handCounts).toEqual([10, 10]);
+		const stored = await t.run((ctx) =>
+			ctx.db.query("cardGameStates").unique(),
+		);
+		const theirs: string[] = stored?.game.hands[1] ?? [];
+		for (const card of theirs) {
+			expect(JSON.stringify(table.view)).not.toContain(`"${card}"`);
+		}
+		// The person on the first seat leads the first hand.
+		expect(table.view.turn).toBe(0);
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "drawStock" },
+		});
+		const drawn = await read(t, creds(sessionId, participantId));
+		expect(drawn.view.hand).toHaveLength(11);
+		await expectCode(
+			t.mutation(api.cardGames.act, {
+				...creds(sessionId, participantId),
+				action: { type: "finishLayoff" },
+			}),
+			"cardsNoKnock",
+		);
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "discard", card: drawn.view.hand[0] },
+		});
+		const after = await read(t, creds(sessionId, participantId));
+		expect(after.view.hand).toHaveLength(10);
+	});
+
+	it("plays a whole match on autopilot", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(t, "gin-rummy", 1);
+		await t.mutation(api.cardGames.setAutopilot, {
+			...creds(sessionId, participantId),
+			seat: 0,
+			on: true,
+		});
+		await (
+			t.finishAllScheduledFunctions as (
+				advance: () => void,
+				maxIterations: number,
+			) => Promise<void>
+		)(vi.runAllTimers, 10_000);
+		const done = await read(t, creds(sessionId, participantId));
+		expect(done.status).toBe("finished");
+		expect(Math.max(...(done.view.totals ?? []))).toBeGreaterThanOrEqual(100);
+		const session = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(session?.status).toBe("completed");
 	});
 });
 

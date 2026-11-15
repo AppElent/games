@@ -1090,6 +1090,75 @@ button.pile:disabled {
 	}
 }
 
+/* Bank: the bank's hand beside the stock, and your own line under it */
+.bank-board {
+	--card-w: clamp(50px, min(22vw, 14vh), 104px);
+	display: grid;
+	grid-template-columns: auto auto;
+	grid-template-areas:
+		"bank stock"
+		"note note"
+		"flags flags";
+	align-items: center;
+	justify-content: center;
+	column-gap: clamp(1.5rem, 6vw, 3.5rem);
+}
+
+.bank-seat {
+	grid-area: bank;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.bank-name {
+	display: flex;
+	align-items: baseline;
+	gap: 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--ivory-muted);
+}
+
+.bank-name strong {
+	font-size: 1.125rem;
+	letter-spacing: 0;
+	color: var(--ivory);
+}
+
+.bank-cards {
+	display: flex;
+	min-height: calc(var(--card-w) * 1.4);
+}
+
+.bank-cards > * + * {
+	margin-left: calc(var(--card-w) * -0.55);
+}
+
+.bank-stock {
+	--card-w: clamp(40px, min(14vw, 10vh), 76px);
+	grid-area: stock;
+}
+
+.bank-board > .seat-note {
+	grid-area: note;
+	margin-top: 0.5rem;
+	text-align: center;
+}
+
+.bank-board .table-flags {
+	grid-area: flags;
+	margin-top: 0.75rem;
+}
+
+/* Match standings: the best score stands out */
+.standing[data-best="true"] {
+	background: rgba(230, 192, 106, 0.16);
+}
+
 /* Rummy: the middle of the table */
 .rummy-board {
 	display: grid;
@@ -1306,6 +1375,12 @@ button.pile:disabled {
 	}
 }
 
+/* Gin: unmatched cards shown after a knock or at the end of a hand. */
+.meld[data-deadwood="true"] {
+	border-style: dashed;
+	border-color: rgba(244, 236, 216, 0.35);
+}
+
 button.meld[data-target="true"] {
 	border-color: var(--gold);
 	background: rgba(230, 192, 106, 0.16);
@@ -1433,6 +1508,11 @@ button.meld[data-target="true"] {
 .suit-choice svg {
 	width: 2.2rem;
 	height: 2.2rem;
+}
+
+.score-scroll {
+	overflow-x: auto;
+	touch-action: pan-x pan-y;
 }
 
 .score-table {

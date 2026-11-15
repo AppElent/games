@@ -173,12 +173,6 @@ export function HouseRuleSwitches({
 	);
 }
 
-/** Turns one house rule on or off. */
-export function setOption(current: readonly string[], id: string, on: boolean) {
-	const rest = current.filter((option) => option !== id);
-	return on ? [...rest, id] : rest;
-}
-
 const createStyles = (colors: Tokens) =>
 	StyleSheet.create({
 		section: { gap: spacing.sm },

@@ -11,14 +11,14 @@ Every online game reuses the shared session platform (`gameSessions` + `sessionP
 
 ## Card games: config first
 
-A card game that fits a rule family in `packages/core/src/cards/` (`shedding`, `rummy`) needs none of the steps below:
+A card game that fits a rule family in `packages/core/src/cards/` (`shedding`, `rummy`, `bank`, `tricks`, `gin`) needs none of the steps below:
 
-1. Add a definition to `packages/core/src/cards/games/`, copying `pesten.ts` or `jokeren.ts`.
+1. Add a definition to `packages/core/src/cards/games/`, copying `pesten.ts`, `jokeren.ts`, `hartenjagen.ts` or `gin-rummy.ts`.
 2. List it in `CARD_GAMES` in `packages/core/src/cards/engine.ts`.
 3. Add its text under `games.cards.games` in `packages/core/src/i18n/{en,nl}/games/cards.ts`.
 4. Add rule tests to `packages/core/src/__tests__/cards.test.ts`.
 
-A card game outside those families needs a new family module and a table component in `src/components/cards/`, but no new Convex tables or functions. See [the decision](../../../docs/adr/0001-card-games-use-rule-families-and-config.md).
+A card game outside those families needs a new family module (`gin.ts` is the latest example), its actions in `cardActionValidator` (`convex/cardGames.ts`), and a table component on web (`src/components/cards/`) and mobile (`apps/mobile/src/features/cards/table/`), but no new Convex tables or functions. See [the decision](../../../docs/adr/0001-card-games-use-rule-families-and-config.md).
 
 ## Dice games: config first
 

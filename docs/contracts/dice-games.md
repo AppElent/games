@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing dice games (Yatzy), the dice engine, its rolls, stored state or score sheets.
-version: 1.0.0
+version: 1.1.0
 status: current
 ---
 
@@ -17,7 +17,8 @@ engine, its rolls or stored state, read [the decision](../adr/0003-dice-games-sh
   `DICE_GAMES` (Yatzy).
 - A game is a config file in `packages/core/src/dice/games/` for a rule family
   (`scoresheet`). Its house rules are options over its `rules`, off by default, shown
-  as switches on the setup screens. Yatzy's `yahtzeeSheet` swaps the Scandinavian
+  as switches on the setup screens; options that share a `group` exclude each other
+  (`setHouseRule` in `packages/core/src/table-engine.ts`). Yatzy's `yahtzeeSheet` swaps the Scandinavian
   15-box sheet for the 13-box Yahtzee sheet with bonus Yahtzees.
 - The server rolls every die from fresh randomness on each move and stores no seed;
   the client sends only the indices it keeps, and a roll must reroll at least one die. A score-sheet turn is up to

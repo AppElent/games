@@ -4,6 +4,8 @@ import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
 import { useI18n } from "../../../i18n";
 import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
+import { BankTable } from "./bank-table";
+import { GinTable } from "./gin-table";
 import { LobbyPanel } from "./lobby-panel";
 import { RummyTable } from "./rummy-table";
 import { SheddingTable } from "./shedding-table";
@@ -56,9 +58,27 @@ export function CardTableScreen({ sessionId }: { sessionId: string }) {
 					controls={controls}
 				/>
 			);
+		case "bank":
+			return (
+				<BankTable
+					game={game}
+					table={table}
+					view={table.view}
+					controls={controls}
+				/>
+			);
 		case "tricks":
 			return (
 				<TricksTable
+					game={game}
+					table={table}
+					view={table.view}
+					controls={controls}
+				/>
+			);
+		case "gin":
+			return (
+				<GinTable
 					game={game}
 					table={table}
 					view={table.view}

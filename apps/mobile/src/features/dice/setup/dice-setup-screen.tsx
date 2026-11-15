@@ -8,6 +8,7 @@ import {
 	isDiceGameId,
 } from "@arcadeclub/core/dice/engine";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
+import { setHouseRule } from "@arcadeclub/core/table-engine";
 import { Stack, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
@@ -25,7 +26,6 @@ import {
 	HouseRuleSwitches,
 	OpponentStepper,
 	SetupSection,
-	setOption,
 } from "../../table/setup-fields";
 import { DiceRulesSheet } from "../rules/dice-rules-sheet";
 
@@ -130,7 +130,7 @@ function Setup({ gameId }: { gameId: DiceGameId }) {
 					}))}
 					chosen={options}
 					onChange={(id, on) =>
-						setOptions((current) => setOption(current, id, on))
+						setOptions((current) => setHouseRule(game.options, current, id, on))
 					}
 					testPrefix="dice"
 				/>
