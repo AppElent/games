@@ -66,8 +66,10 @@ export type TricksRules = {
 	/**
 	 * A seat that can't follow must trump, above any trump already played, and
 	 * may only play a lower trump when it holds nothing else; when trumps are
-	 * led it must go higher if it can. "unlessPartnerWins" lifts both duties
-	 * while a partner is taking the trick. Unset: a void seat plays anything.
+	 * led it must go higher if it can. "unlessPartnerWins" lets a void seat
+	 * skip trumping while its partner takes the trick; going higher on a trump
+	 * lead and the ban on a lower trump still hold. Unset: a void seat plays
+	 * anything.
 	 */
 	mustTrump?: "always" | "unlessPartnerWins";
 	/** Points per rank, below `cardPoints` and above `suitPoints`. */

@@ -645,21 +645,34 @@ describe("klaverjassen match", () => {
 
 describe("klaverjassen view", () => {
 	it("shows only the seat's own hand, in the call and in play", () => {
-		const state = deal();
-		const views = [0, 1, 2, 3].map(
-			(seat) => viewCardGame(game, [], state, seat) as TricksView,
-		);
-		views.forEach((view, seat) => {
-			expect(view.hand).toEqual(state.hands[seat]);
-			const serialized = JSON.stringify(view);
-			for (const other of [0, 1, 2, 3].filter((s) => s !== seat)) {
-				for (const card of state.hands[other]) {
-					expect(serialized).not.toContain(`"${card}"`);
+		const hidden = (state: TricksState) => {
+			for (const seat of [0, 1, 2, 3]) {
+				const view = viewCardGame(game, [], state, seat) as TricksView;
+				expect(view.hand).toEqual(state.hands[seat]);
+				const serialized = JSON.stringify(view);
+				for (const other of [0, 1, 2, 3].filter((s) => s !== seat)) {
+					for (const card of state.hands[other]) {
+						expect(serialized).not.toContain(`"${card}"`);
+					}
 				}
 			}
+		};
+		const state = deal();
+		hidden(state);
+		for (const seat of [0, 1, 2, 3]) {
+			const view = viewCardGame(game, [], state, seat) as TricksView;
 			expect(view.offered).toBe(state.offered);
 			expect(view.legal).toEqual([]);
-		});
+		}
+		const offered = state.offered;
+		if (!offered) throw new Error("a suit is on offer");
+		let played = act(state, state.turn, { type: "chooseTrump", suit: offered });
+		for (let step = 0; step < 3; step += 1) {
+			const seat = played.turn;
+			const card = legalTricksCards(rules, played, seat)[0];
+			played = act(played, seat, { type: "play", card });
+			hidden(played);
+		}
 		const spectator = viewCardGame(game, [], state, null) as TricksView;
 		expect(spectator.hand).toEqual([]);
 		expect(spectator.handCounts).toEqual([8, 8, 8, 8]);
