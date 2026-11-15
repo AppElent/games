@@ -225,6 +225,13 @@ export const FEATURES = defineFeatures([
 		routes: { web: ["cards/**"], mobile: ["cards/**"] },
 	},
 	{
+		id: "dice-games",
+		kind: "product",
+		status: "parity",
+		platforms: ["web", "mobile"],
+		routes: { web: ["dice/**"], mobile: ["dice/**"] },
+	},
+	{
 		// Includes the quiz sets a host writes.
 		id: "live-quiz",
 		kind: "product",

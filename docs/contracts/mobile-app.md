@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing which games the Arcade Club mobile app offers, or how it talks to Convex and stores seats and saves.
-version: 1.0.0
+version: 1.1.0
 status: current
 ---
 
@@ -25,13 +25,13 @@ the [mobile runbook](../runbooks/mobile.md).
   `apps/mobile/src/features/play/app-games.ts` (`APP_GAMES`) holds exactly those games
   with the app's wiring: it drives the Play tab, Continue, which sessions the app
   opens, and each online game's `create` mutation (`backgammon.create`,
-  `hitster.create`, `cardGames.createTable`) for `useHostSession`.
+  `hitster.create`, `cardGames.createTable`, `diceGames.createTable`) for `useHostSession`.
 - A join for a game the app cannot play opens the web join page in an in-app browser
   (`openWebPage`), never `Linking.openURL`, so a future universal link cannot loop
   back into the app.
 - The app calls the same Convex functions as web, only via
-  `apps/mobile/src/convex/api.ts`. It stores its seats (with a card table's seat
-  secret) and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=`
+  `apps/mobile/src/convex/api.ts`. It stores its seats (with a card or dice table's
+  seat secret) and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=`
   links.
 
 ## Acceptance

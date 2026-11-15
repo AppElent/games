@@ -1,10 +1,10 @@
 import { seatsCarrySecret } from "@arcadeclub/core/games";
 import { normalizeJoinCode } from "@arcadeclub/core/sessions";
 import { useMutation } from "convex/react";
-import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
 import { getSessionPath } from "#/lib/games/catalog";
 import { rememberSeat } from "#/lib/games/seat";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { newTableSeatSecret, rememberTableSeat } from "#/lib/games/table-seat";
 import { api } from "../../../convex/_generated/api";
 
 type JoinRequest = {
@@ -30,7 +30,7 @@ export function useJoinSession() {
 		const displayName = name.trim() || guest.displayName;
 		// A room code may open a card table, whose seat needs a secret; the
 		// server ignores it for every other game.
-		const seatSecret = token ? undefined : newCardSeatSecret();
+		const seatSecret = token ? undefined : newTableSeatSecret();
 		const result = token
 			? await joinByToken({
 					shareToken: token,
@@ -47,7 +47,7 @@ export function useJoinSession() {
 				});
 		const { sessionId, participantId, gameType } = result;
 		if (seatsCarrySecret(gameType) && seatSecret) {
-			rememberCardSeat(
+			rememberTableSeat(
 				sessionId,
 				participantId,
 				seatSecret,

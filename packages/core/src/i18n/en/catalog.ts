@@ -96,4 +96,12 @@ export const catalog = {
 		primaryAction: "Pick a game",
 		stats: "2-8 players",
 	},
+	"dice-games": {
+		title: "Dice Club",
+		tagline: "Yatzy and more",
+		description:
+			"Dice games at one table. Roll alone, against the computer, or invite friends with a room code.",
+		primaryAction: "Pick a game",
+		stats: "1-6 players",
+	},
 } satisfies Record<GameType, CatalogText>;

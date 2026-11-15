@@ -7,6 +7,11 @@
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
+import {
+	type HouseRule as BaseHouseRule,
+	normalizeHouseRules,
+	type TableEngine,
+} from "../table-engine";
 import { hartenjagen } from "./games/hartenjagen";
 import { jokeren } from "./games/jokeren";
 import { maumau } from "./games/maumau";
@@ -63,9 +68,7 @@ type Definition<Family extends string, Rules> = {
 	options: ReadonlyArray<HouseRule<Rules>>;
 };
 
-export type HouseRule<Rules> = {
-	id: string;
-	patch?: Partial<Rules>;
+export type HouseRule<Rules> = BaseHouseRule<Rules> & {
 	/**
 	 * Special cards this rule turns into plain cards (keys of `rules.powers`).
 	 * Several such rules combine, which a `patch` on `powers` could not.
@@ -78,8 +81,7 @@ export type CardGameDefinition =
 	| Definition<"rummy", RummyRules>
 	| Definition<"tricks", TricksRules>;
 
-/** How long a player can go without a heartbeat before others may hand their seat to autopilot. */
-export const SEAT_SILENT_AFTER_MS = 60_000;
+export { SEAT_SILENT_AFTER_MS } from "../table-engine";
 
 export const CARD_GAMES = {
 	pesten,
@@ -109,14 +111,11 @@ export function getCardGame(id: string): CardGame {
 }
 
 /** Validates house-rule ids; unknown ones are a client error. */
-export function normalizeOptions(game: CardGameDefinition, options: string[]) {
-	const known = game.options.map((option) => option.id as string);
-	for (const option of options) {
-		if (!known.includes(option)) {
-			throw new GameRuleError("cardsUnknownOption");
-		}
-	}
-	return known.filter((id) => options.includes(id));
+export function normalizeOptions(
+	game: CardGameDefinition,
+	options: readonly string[],
+) {
+	return normalizeHouseRules(game.options, options);
 }
 
 function rulesOf<R>(
@@ -333,3 +332,23 @@ export function familyRules<F extends Family>(
 	const resolved = resolvedRules(game, options);
 	return resolved.family === family ? (resolved.rules as RulesOf[F]) : null;
 }
+
+/** The card games as the Convex table module plays them. */
+export const CARD_ENGINE: TableEngine<CardGameState, CardAction, CardView> = {
+	players: (gameId) => getCardGame(gameId).players,
+	normalizeOptions: (gameId, options) =>
+		normalizeOptions(getCardGame(gameId), options),
+	create: (gameId, options, seats, random, starter) =>
+		createCardGame(getCardGame(gameId), options, seats, random, starter),
+	apply: (gameId, options, state, seat, action, random) =>
+		applyCardAction(getCardGame(gameId), options, state, seat, action, random),
+	bot: (gameId, options, state, bots, random) =>
+		botMove(getCardGame(gameId), options, state, bots, random),
+	view: (gameId, options, state, seat) =>
+		viewCardGame(getCardGame(gameId), options, state, seat),
+	nextStarter,
+	outcome: (state) => ({
+		finished: state.phase === "finished",
+		winners: state.winners,
+	}),
+};

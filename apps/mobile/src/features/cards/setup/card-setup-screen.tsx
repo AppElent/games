@@ -12,29 +12,26 @@ import {
 import { specialCards } from "@arcadeclub/core/cards/table-view";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { Stack, useRouter } from "expo-router";
-import { type ReactNode, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Switch, View } from "react-native";
+import { useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
 import { plural, useI18n } from "../../../i18n";
-import {
-	metrics,
-	radius,
-	spacing,
-	type Tokens,
-	useThemedStyles,
-	useTokens,
-} from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
 import { CenteredState } from "../../../ui/centered-state";
 import { ChoiceList } from "../../../ui/choice-list";
-import { Icon } from "../../../ui/icon";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { onlineSessionHref } from "../../play/app-games";
 import { HostGate } from "../../sessions/host/host-gate";
 import { useHostSession } from "../../sessions/host/use-host-session";
+import {
+	HouseRuleSwitches,
+	OpponentStepper,
+	RuleSwitch,
+	SetupSection,
+	setOption,
+} from "../../table/setup-fields";
 import { PlayingCard } from "../deck/playing-card";
 import { RulesSheet } from "../deck/rules-sheet";
 import { useCardWords } from "../deck/use-card-words";
@@ -72,8 +69,6 @@ function Setup({
 		string,
 		{ label: string; hint: string }
 	>;
-	const tokens = useTokens();
-	const styles = useThemedStyles(createStyles);
 	const hosting = useHostSession("card-games");
 	const [mode, setMode] = useState<"computer" | "friends">("computer");
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 3));
@@ -82,12 +77,8 @@ function Setup({
 	const words = useCardWords();
 	const houseRules = generalOptions(game);
 	const special = useMemo(() => specialCards(words, game), [words, game]);
-	const setOption = (id: string, on: boolean) =>
-		setOptions((current) =>
-			on
-				? [...current.filter((option) => option !== id), id]
-				: current.filter((option) => option !== id),
-		);
+	const toggle = (id: string, on: boolean) =>
+		setOptions((current) => setOption(current, id, on));
 	const solo = mode === "computer";
 	const headerOptions = useMemo(() => ({ title: text.name }), [text.name]);
 
@@ -105,34 +96,12 @@ function Setup({
 		router.replace(onlineSessionHref("card-games", session.sessionId));
 	};
 
-	const stepper = (delta: number, label: string, disabled: boolean) => (
-		<Pressable
-			accessibilityRole="button"
-			accessibilityLabel={label}
-			accessibilityState={{ disabled }}
-			disabled={disabled}
-			onPress={() => {
-				haptics.selectionChanged();
-				setOpponents((count) => count + delta);
-			}}
-			testID={delta > 0 ? "cards-opponents-more" : "cards-opponents-fewer"}
-			style={[styles.step, disabled && styles.stepDisabled]}
-		>
-			<Icon
-				ios={delta > 0 ? "plus" : "minus"}
-				android={delta > 0 ? "add" : "remove"}
-				size={18}
-				color={tokens.accent}
-			/>
-		</Pressable>
-	);
-
 	return (
 		<>
 			<Stack.Screen options={headerOptions} />
 			<Screen>
 				<AppText variant="secondary">{text.blurb}</AppText>
-				<Section label={cards.setup.modeLabel}>
+				<SetupSection label={cards.setup.modeLabel}>
 					<ChoiceList
 						choices={[
 							{
@@ -151,93 +120,56 @@ function Setup({
 						accessibilityLabel={cards.setup.modeLabel}
 						testID="cards-mode"
 					/>
-				</Section>
+				</SetupSection>
 				{solo ? (
-					<Section label={cards.setup.opponentsLabel}>
-						<View style={styles.stepper}>
-							{stepper(
-								-1,
-								cards.setup.fewerOpponents,
-								opponents <= game.players.min - 1,
-							)}
-							<AppText
-								variant="body"
-								accessibilityLiveRegion="polite"
-								style={styles.count}
-							>
-								{plural(locale, opponents, cards.setup.opponents)}
-							</AppText>
-							{stepper(
-								1,
-								cards.setup.moreOpponents,
-								opponents >= game.players.max - 1,
-							)}
-						</View>
-					</Section>
+					<SetupSection label={cards.setup.opponentsLabel}>
+						<OpponentStepper
+							value={opponents}
+							min={game.players.min - 1}
+							max={game.players.max - 1}
+							label={plural(locale, opponents, cards.setup.opponents)}
+							fewer={cards.setup.fewerOpponents}
+							more={cards.setup.moreOpponents}
+							onChange={setOpponents}
+							testPrefix="cards"
+						/>
+					</SetupSection>
 				) : null}
 				{special.length > 0 ? (
-					<Section label={cards.setup.specialCards}>
+					<SetupSection label={cards.setup.specialCards}>
 						<AppText variant="caption">{cards.setup.specialCardsHint}</AppText>
 						<Card>
 							{special.map((card) => {
 								const plain = card.plainOption;
 								const on = plain === null || !options.includes(plain);
 								return (
-									<View key={card.key} style={styles.rule}>
-										<View
-											accessible={false}
-											importantForAccessibility="no-hide-descendants"
-											accessibilityElementsHidden
-										>
-											<PlayingCard card={card.sample} width={36} />
-										</View>
-										<View style={styles.ruleText}>
-											<AppText variant="body">{card.name}</AppText>
-											<AppText variant="caption">{card.effect}</AppText>
-										</View>
-										<Switch
-											accessibilityLabel={card.name}
-											accessibilityHint={card.effect}
-											value={on}
-											disabled={plain === null}
-											trackColor={{ true: tokens.accent }}
-											onValueChange={(next) => {
-												if (plain !== null) setOption(plain, !next);
-											}}
-											testID={`cards-power-${card.key}`}
-										/>
-									</View>
+									<RuleSwitch
+										key={card.key}
+										label={card.name}
+										hint={card.effect}
+										value={on}
+										disabled={plain === null}
+										onChange={(next) => {
+											if (plain !== null) toggle(plain, !next);
+										}}
+										leading={<PlayingCard card={card.sample} width={36} />}
+										testID={`cards-power-${card.key}`}
+									/>
 								);
 							})}
 						</Card>
-					</Section>
+					</SetupSection>
 				) : null}
-				{houseRules.length > 0 ? (
-					<Section label={cards.setup.houseRules}>
-						<Card>
-							{houseRules.map((option) => {
-								const on = options.includes(option.id);
-								const label = optionText[option.id];
-								return (
-									<View key={option.id} style={styles.rule}>
-										<View style={styles.ruleText}>
-											<AppText variant="body">{label.label}</AppText>
-											<AppText variant="caption">{label.hint}</AppText>
-										</View>
-										<Switch
-											accessibilityLabel={label.label}
-											accessibilityHint={label.hint}
-											value={on}
-											trackColor={{ true: tokens.accent }}
-											onValueChange={(next) => setOption(option.id, next)}
-											testID={`cards-option-${option.id}`}
-										/>
-									</View>
-								);
-							})}
-						</Card>
-					</Section>
-				) : null}
+				<HouseRuleSwitches
+					heading={cards.setup.houseRules}
+					rules={houseRules.map((option) => ({
+						id: option.id,
+						...optionText[option.id],
+					}))}
+					chosen={options}
+					onChange={toggle}
+					testPrefix="cards"
+				/>
 				<Notice
 					message={
 						hosting.error
@@ -272,45 +204,3 @@ function Setup({
 		</>
 	);
 }
-
-function Section({ label, children }: { label: string; children: ReactNode }) {
-	const styles = useThemedStyles(createStyles);
-	return (
-		<View style={styles.section}>
-			<AppText variant="label" accessibilityRole="header">
-				{label.toUpperCase()}
-			</AppText>
-			{children}
-		</View>
-	);
-}
-
-const createStyles = (colors: Tokens) =>
-	StyleSheet.create({
-		section: { gap: spacing.sm },
-		stepper: {
-			flexDirection: "row",
-			alignItems: "center",
-			gap: spacing.sm,
-			padding: spacing.xs,
-			borderRadius: radius.md,
-			backgroundColor: colors.surface2,
-		},
-		step: {
-			width: metrics.hitTarget,
-			height: metrics.hitTarget,
-			borderRadius: radius.sm,
-			alignItems: "center",
-			justifyContent: "center",
-			backgroundColor: colors.surface,
-		},
-		stepDisabled: { opacity: 0.45 },
-		count: { flex: 1, textAlign: "center" },
-		rule: {
-			minHeight: metrics.hitTarget,
-			flexDirection: "row",
-			alignItems: "center",
-			gap: spacing.md,
-		},
-		ruleText: { flex: 1, gap: spacing.xxs },
-	});

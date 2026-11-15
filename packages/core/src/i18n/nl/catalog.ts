@@ -90,4 +90,12 @@ export const catalog = {
 		primaryAction: "Kies een spel",
 		stats: "2-8 spelers",
 	},
+	"dice-games": {
+		title: "Dobbelclub",
+		tagline: "Yatzy en meer",
+		description:
+			"Dobbelspellen aan één tafel. Gooi alleen, tegen de computer, of nodig vrienden uit met een kamercode.",
+		primaryAction: "Kies een spel",
+		stats: "1-6 spelers",
+	},
 } satisfies Record<GameType, CatalogText>;

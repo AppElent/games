@@ -22,6 +22,7 @@ Before the task, read the matching project doc:
 | Adding a game | the `add-new-game` skill |
 | Changing how a game creates, joins, seats, starts, finishes or reopens a session, or a game route's fullscreen shell | [Game sessions](docs/contracts/game-sessions.md) |
 | Changing card games, the card engine, its stored state or seat claims | [Card games](docs/contracts/card-games.md), then [its decision](docs/adr/0001-card-games-use-rule-families-and-config.md) |
+| Changing dice games, the dice engine, its rolls, or the table machinery cards and dice share | [Dice games](docs/contracts/dice-games.md), then [its decision](docs/adr/0003-dice-games-share-the-table-machinery.md) |
 | Drafting puzzles, word packs, quiz sets or prompts | the `generate-game-content` skill |
 | Changing sign-in, account, theme sync, or how Clerk reaches Convex | [Auth](docs/contracts/auth.md) |
 | Changing which games the phone app offers, or its seats and saves | [Mobile app](docs/contracts/mobile-app.md), then [ADR 0002](docs/adr/0002-ship-every-game-on-web-and-mobile.md) |

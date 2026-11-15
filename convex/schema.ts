@@ -10,7 +10,6 @@ import {
 	BACKGAMMON_PHASES,
 } from "@arcadeclub/core/backgammon";
 import { BLUFF_PHASES } from "@arcadeclub/core/bluff-dice";
-import { CARD_TABLE_STATUSES } from "@arcadeclub/core/cards/table";
 import {
 	CONNECT_FOUR_CELLS,
 	CONNECT_FOUR_COLORS,
@@ -41,6 +40,7 @@ import {
 	SUDOKU_STATUSES,
 	SUDOKU_VARIANTS,
 } from "@arcadeclub/core/sudoku";
+import { TABLE_STATUSES } from "@arcadeclub/core/table-engine";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { literals } from "./lib/validators";
@@ -402,12 +402,14 @@ export default defineSchema({
 
 	cardGameStates: defineTable({
 		sessionId: v.id("gameSessions"),
-		// A key of CARD_GAMES, checked in code so that a new game is config only.
+		// Every table game's table: card and dice games alike (ADR 0003). A key
+		// of CARD_GAMES or DICE_GAMES, checked in code so a new game is config only.
 		gameId: v.string(),
 		options: v.array(v.string()),
 		seats: v.array(cardSeatValidator),
-		status: literals(CARD_TABLE_STATUSES),
-		// Engine state, including every hand: read it only through viewCardGame.
+		status: literals(TABLE_STATUSES),
+		// Engine state, including every hand and the dice seed: read it only
+		// through the engine's view.
 		// Its shape belongs to the rule family, so Convex cannot validate it here.
 		game: v.optional(v.any()),
 		version: v.number(),

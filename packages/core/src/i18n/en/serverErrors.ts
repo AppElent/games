@@ -35,6 +35,12 @@ export const serverErrors = {
 	cardsAlreadyPassed: "You've already passed your cards.",
 	cardsPassCount: "Pick exactly {count} cards to pass.",
 	cardsPassFirst: "Pass your cards first.",
+	diceInvalidHold: "Those dice can't be held.",
+	diceNoRollsLeft: "No rolls left: pick a box to score.",
+	diceRollFirst: "Roll the dice first.",
+	diceUnknownCategory: "That box isn't on this score sheet.",
+	diceCategoryTaken: "That box is already filled.",
+	diceJokerRule: "This extra Yatzy has to go somewhere else.",
 	signInRequired: "Sign in required.",
 	accountChanged:
 		"You switched accounts. Sign in to the account you want to delete and try again.",

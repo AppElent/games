@@ -21,5 +21,6 @@ export const play = {
 		hitster: "Place songs on your timeline. Host a party room.",
 		"card-games":
 			"Pesten, Mau-Mau, Jokeren and Hearts, against the computer or friends.",
+		"dice-games": "Yatzy alone, against the computer or with friends.",
 	},
 };

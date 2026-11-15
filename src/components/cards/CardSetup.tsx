@@ -5,69 +5,21 @@ import {
 } from "@arcadeclub/core/cards/engine";
 import { specialCards } from "@arcadeclub/core/cards/table-view";
 import { useNavigate } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
-import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { HostGate } from "#/components/games/HostGate";
-import { newCardSeatSecret, rememberCardSeat } from "#/lib/games/card-seat";
-import { useHostSession } from "#/lib/games/use-host-session";
+import {
+	HouseRuleSwitches,
+	ModePicker,
+	OpponentStepper,
+	toggleOption,
+} from "#/components/table/Setup";
+import { type TableMode, useCreateTable } from "#/lib/games/use-create-table";
 import { plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import { CardsPage } from "./Chrome";
 import { PlayingCard } from "./PlayingCard";
 import { RulesSheet } from "./RulesSheet";
 import { useCardWords } from "./useCardWords";
-
-type CardTableMode = "computer" | "friends";
-
-/**
- * Opening a table: against the computer it deals at once with bots in the
- * other seats, with friends it opens a room to share. This device keeps the
- * host's seat, then goes to the table.
- */
-function useCreateCardTable(
-	gameId: CardGameId,
-	{
-		mode,
-		opponents,
-		options,
-	}: { mode: CardTableMode; opponents: number; options: string[] },
-) {
-	const cards = useMessages().games.cards;
-	const navigate = useNavigate();
-	const createTable = useMutation(api.cardGames.createTable);
-	const { busy, error, host } = useHostSession("card-games", {
-		open: ({ sessionId }) =>
-			navigate({ to: "/cards/table/$sessionId", params: { sessionId } }),
-	});
-
-	function create() {
-		const solo = mode === "computer";
-		return host(async ({ displayName, guestId }) => {
-			const seatSecret = newCardSeatSecret();
-			const created = await createTable({
-				seatSecret,
-				joinMode: solo ? "solo" : "room",
-				title: cards.games[gameId].name,
-				displayName,
-				guestId,
-				gameId,
-				options,
-				bots: solo ? opponents : 0,
-				start: solo,
-			});
-			rememberCardSeat(
-				created.sessionId,
-				created.participantId,
-				seatSecret,
-				true,
-			);
-			return created;
-		}, cards.setup.couldNotCreate);
-	}
-
-	return { busy, error, create };
-}
 
 /** Picking how to play a card game, then opening its table. */
 export function CardSetup({ gameId }: { gameId: CardGameId }) {
@@ -79,7 +31,7 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 		string,
 		{ label: string; hint: string }
 	>;
-	const [mode, setMode] = useState<CardTableMode>("computer");
+	const [mode, setMode] = useState<TableMode>("computer");
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 3));
 	const [options, setOptions] = useState<string[]>([]);
 	const [rulesOpen, setRulesOpen] = useState(false);
@@ -87,16 +39,17 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 	const houseRules = generalOptions(game);
 	const special = specialCards(words, game);
 	const toggle = (id: string) =>
-		setOptions((current) =>
-			current.includes(id)
-				? current.filter((option) => option !== id)
-				: [...current, id],
+		setOptions((current) => toggleOption(current, id));
+	const navigate = useNavigate();
+	const table = useCreateTable("card-games", api.cardGames.createTable, (id) =>
+		navigate({ to: "/cards/table/$sessionId", params: { sessionId: id } }),
+	);
+	const { busy, error } = table;
+	const create = () =>
+		table.create(
+			{ gameId, title: text.name, mode, opponents, options },
+			cards.setup.couldNotCreate,
 		);
-	const { busy, error, create } = useCreateCardTable(gameId, {
-		mode,
-		opponents,
-		options,
-	});
 
 	const button = (
 		<button
@@ -124,72 +77,16 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 				<h1 className="cards-title mb-2 text-4xl sm:text-5xl">{text.name}</h1>
 				<p className="mb-5 text-[var(--ivory-muted)]">{text.blurb}</p>
 				<div className="cards-panel flex flex-col gap-5 p-5">
-					<fieldset>
-						<legend className="cards-kicker mb-2">
-							{cards.setup.modeLabel}
-						</legend>
-						<div className="grid grid-cols-2 gap-2">
-							{(
-								[
-									[
-										"computer",
-										cards.setup.vsComputer,
-										cards.setup.vsComputerHint,
-									],
-									[
-										"friends",
-										cards.setup.withFriends,
-										cards.setup.withFriendsHint,
-									],
-								] as const
-							).map(([value, label, hint]) => (
-								<label key={value} className="mode-option">
-									<input
-										type="radio"
-										name="mode"
-										value={value}
-										checked={mode === value}
-										onChange={() => setMode(value)}
-										className="sr-only"
-									/>
-									<span className="block font-bold">{label}</span>
-									<span className="mt-0.5 block text-xs leading-snug text-[var(--ivory-muted)]">
-										{hint}
-									</span>
-								</label>
-							))}
-						</div>
-					</fieldset>
+					<ModePicker mode={mode} onChange={setMode} words={cards.setup} />
 					{mode === "computer" ? (
-						<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-							<span className="cards-kicker">{cards.setup.opponentsLabel}</span>
-							<div className="flex items-center justify-between gap-2 sm:justify-start">
-								<button
-									type="button"
-									className="stepper-btn"
-									aria-label={cards.setup.fewerOpponents}
-									disabled={opponents <= game.players.min - 1}
-									onClick={() => setOpponents((count) => count - 1)}
-								>
-									<Minus className="h-4 w-4" />
-								</button>
-								<output
-									aria-live="polite"
-									className="min-w-[9rem] text-center font-bold whitespace-nowrap"
-								>
-									{plural(locale, opponents, cards.setup.opponents)}
-								</output>
-								<button
-									type="button"
-									className="stepper-btn"
-									aria-label={cards.setup.moreOpponents}
-									disabled={opponents >= game.players.max - 1}
-									onClick={() => setOpponents((count) => count + 1)}
-								>
-									<Plus className="h-4 w-4" />
-								</button>
-							</div>
-						</div>
+						<OpponentStepper
+							value={opponents}
+							min={game.players.min - 1}
+							max={game.players.max - 1}
+							label={plural(locale, opponents, cards.setup.opponents)}
+							onChange={setOpponents}
+							words={cards.setup}
+						/>
 					) : null}
 					{special.length > 0 ? (
 						<div>
@@ -240,37 +137,15 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 							</div>
 						</div>
 					) : null}
-					{houseRules.length > 0 ? (
-						<div>
-							<h2 className="cards-kicker mb-1">{cards.setup.houseRules}</h2>
-							<div className="divide-y divide-white/10">
-								{houseRules.map((option) => {
-									const on = options.includes(option.id);
-									const label = optionText[option.id];
-									return (
-										<button
-											key={option.id}
-											type="button"
-											role="switch"
-											aria-checked={on}
-											className="rule-switch"
-											onClick={() => toggle(option.id)}
-										>
-											<span className="min-w-0">
-												<span className="block font-semibold">
-													{label.label}
-												</span>
-												<span className="block text-xs leading-snug text-[var(--ivory-muted)]">
-													{label.hint}
-												</span>
-											</span>
-											<span className="rule-switch-track" aria-hidden="true" />
-										</button>
-									);
-								})}
-							</div>
-						</div>
-					) : null}
+					<HouseRuleSwitches
+						heading={cards.setup.houseRules}
+						rules={houseRules.map((option) => ({
+							id: option.id,
+							...optionText[option.id],
+						}))}
+						chosen={options}
+						onToggle={toggle}
+					/>
 					{error ? (
 						<p role="alert" className="text-sm font-semibold text-orange-200">
 							{error}

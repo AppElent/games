@@ -83,6 +83,22 @@ export const APP_GAMES = {
 			}),
 		},
 	},
+	"dice-games": {
+		id: "dice-games",
+		href: "/dice",
+		icon: "die.face.5.fill",
+		androidIcon: "ifl",
+		tint: "orange",
+		tintDim: "orangeDim",
+		titledBySession: true,
+		online: {
+			create: api.diceGames.createTable,
+			sessionHref: (sessionId: string) => ({
+				pathname: "/dice/table/[sessionId]",
+				params: { sessionId },
+			}),
+		},
+	},
 } as const satisfies { [G in GameType]?: AppGame<G> };
 
 export type AppGameType = keyof typeof APP_GAMES;
