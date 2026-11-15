@@ -26,6 +26,7 @@ import {
 	latestEventText,
 	meldCardNames,
 	nextFreshCards,
+	openTrickSlots,
 	opponentOrder,
 	planFlights,
 	rummyHint,
@@ -962,6 +963,17 @@ function stakesView(over: Partial<TricksView> = {}) {
 
 describe("toepen at the table", () => {
 	const rules = toepen();
+
+	it("leaves an empty place in the trick only for seats still to play", () => {
+		const view = stakesView({
+			handCounts: [3, 4, 0, 4],
+			trick: [{ seat: 0, card: "S7#0" }],
+			folded: [false, false, false, true],
+			out: [false, false, true, false],
+		});
+		expect(openTrickSlots(view)).toBe(1);
+		expect(openTrickSlots({ ...view, phase: "knocking" })).toBe(0);
+	});
 
 	it("asks the seats a knock waits on, and tells the rest to wait", () => {
 		const view = stakesView({

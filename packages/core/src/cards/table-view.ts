@@ -662,6 +662,19 @@ export function tricksRuleLines(
 	};
 }
 
+/** Empty places left in the open trick: seats still in the deal that have yet to play. */
+export function openTrickSlots(
+	view: Pick<TricksView, "phase" | "trick" | "folded" | "out">,
+) {
+	if (view.phase !== "playing") {
+		return 0;
+	}
+	const played = new Set(view.trick.map((play) => play.seat));
+	return view.out.filter(
+		(out, seat) => !out && !view.folded[seat] && !played.has(seat),
+	).length;
+}
+
 /** The stake buttons this seat gets now: knock, answer a knock, or swap its hand. */
 export function tricksChoices(view: TricksView, you: number | null) {
 	const knock = view.knock;

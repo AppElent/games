@@ -5,6 +5,7 @@ import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import {
 	cardName,
 	cardTilt,
+	openTrickSlots,
 	seatName,
 	sortCards,
 	tricksChoices,
@@ -63,8 +64,7 @@ function TrickArea({
 	const live = view.trick.length > 0 || !view.lastTrick;
 	const plays = live ? view.trick : (view.lastTrick?.plays ?? []);
 	const winner = live ? null : (view.lastTrick?.winner ?? null);
-	const open =
-		view.phase === "playing" ? table.seats.length - view.trick.length : 0;
+	const open = openTrickSlots(view);
 	const height = width * 1.4;
 	return (
 		<View style={styles.trickWrap}>
