@@ -259,17 +259,44 @@ describe("folding", () => {
 		expect(state.scores).toEqual([[1, 1, 0]]);
 	});
 
-	it("takes a folded card out of the trick and finishes the trick without it", () => {
+	it("leaves a folded card in the trick, where it can't win", () => {
 		let state = act(dealt(HANDS), 0, { type: "play", card: "S10#0" });
 		state = act(state, 1, { type: "play", card: "S9#0" });
 		// Seat 2 knocks before playing; seat 0, who led the winning ten, folds.
 		state = act(state, 2, { type: "knock" });
 		state = act(act(state, 0, { type: "fold" }), 1, { type: "stay" });
-		expect(state.trick).toEqual([{ seat: 1, card: "S9#0" }]);
+		expect(state.trick).toEqual([
+			{ seat: 0, card: "S10#0" },
+			{ seat: 1, card: "S9#0" },
+		]);
 		expect(state.turn).toBe(2);
 		state = act(state, 2, { type: "play", card: "S8#0" });
 		expect(state.lastTrick?.winner).toBe(1);
 		expect(state.turn).toBe(1);
+	});
+
+	it("keeps the suit a folded seat led", () => {
+		let state = dealt([
+			["S7#0", "D7#0"],
+			["H10#0", "D8#0"],
+			["SJ#0", "H8#0"],
+		]);
+		state = act(state, 0, { type: "play", card: "S7#0" });
+		// No spades: seat 1 throws its ten of hearts.
+		state = act(state, 1, { type: "play", card: "H10#0" });
+		state = act(state, 2, { type: "knock" });
+		state = act(act(state, 0, { type: "fold" }), 1, { type: "stay" });
+		// Spades still lead, so seat 2 must follow and its jack beats the ten of hearts.
+		expectRule(
+			() => act(state, 2, { type: "play", card: "H8#0" }),
+			"cardsMustFollow",
+		);
+		state = act(state, 2, { type: "play", card: "SJ#0" });
+		expect(state.lastTrick?.winner).toBe(2);
+		state = act(state, 2, { type: "play", card: "H8#0" });
+		state = act(state, 1, { type: "play", card: "D8#0" });
+		expect(state.dealWinner).toBe(2);
+		expect(state.scores).toEqual([[1, 2, 0]]);
 	});
 
 	it("passes the turn on when the seat to play folds", () => {

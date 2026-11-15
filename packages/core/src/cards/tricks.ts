@@ -251,25 +251,35 @@ export function passShift(direction: PassDirection, seats: number) {
 	}
 }
 
-/** Who takes the trick: the highest trump, else the highest card of the suit led. */
+/**
+ * Who takes the trick: the highest trump, else the highest card of the suit led.
+ * A seat that folded (`live` false) left its card in the trick: it still set the
+ * suit if it led, but cannot win.
+ */
 export function trickWinner(
 	rules: Pick<TricksRules, "ranks">,
 	plays: readonly TrickPlay[],
 	trump: Suit | null,
+	live: (seat: number) => boolean = () => true,
 ) {
-	let best = plays[0];
-	for (const play of plays.slice(1)) {
-		const suit = suitOf(play.card);
-		// The best card so far is of the suit led or a trump: off-suit cards never beat it.
+	const led = suitOf(plays[0].card);
+	// Trumps beat the suit led, which beats the rest; those never win.
+	const tier = (card: CardId) =>
+		suitOf(card) === trump ? 2 : suitOf(card) === led ? 1 : 0;
+	let best: TrickPlay | undefined;
+	for (const play of plays.filter((candidate) => live(candidate.seat))) {
+		const [mine, theirs] = [tier(play.card), best ? tier(best.card) : -1];
 		const beats =
-			suit === suitOf(best.card)
-				? rankIndex(rules, play.card) > rankIndex(rules, best.card)
-				: suit === trump;
+			mine > theirs ||
+			(best !== undefined &&
+				mine === theirs &&
+				mine > 0 &&
+				rankIndex(rules, play.card) > rankIndex(rules, best.card));
 		if (beats) {
 			best = play;
 		}
 	}
-	return best.seat;
+	return (best ?? plays[0]).seat;
 }
 
 function opener(rules: TricksRules, state: TricksState) {
@@ -726,15 +736,23 @@ function playCard(
 		state.broken = true;
 		pushEvent(state, { type: "broken", suit: breaking.suit });
 	}
-	if (state.trick.length < seatsInDeal(state).length) {
+	if (!trickComplete(state)) {
 		state.turn = nextInDeal(state, seat);
 		return;
 	}
 	takeTrick(rules, state);
 }
 
+/** Every seat still in the deal has played to the trick; folded seats' cards stay in it. */
+function trickComplete(state: TricksState) {
+	const plays = state.trick.filter((play) => inDeal(state, play.seat));
+	return plays.length > 0 && plays.length === seatsInDeal(state).length;
+}
+
 function takeTrick(rules: TricksRules, state: TricksState) {
-	const winner = trickWinner(rules, state.trick, state.trump);
+	const winner = trickWinner(rules, state.trick, state.trump, (seat) =>
+		inDeal(state, seat),
+	);
 	const cards = state.trick.map((play) => play.card);
 	state.taken[winner].push(...cards);
 	state.tricksTaken[winner] += 1;
@@ -862,18 +880,11 @@ function resumeAfterKnock(rules: TricksRules, state: TricksState) {
 		scoreDeal(rules, state);
 		return;
 	}
-	// A folded seat's card leaves the trick with the rest of its hand.
-	muck(
-		state,
-		state.trick.flatMap((play) =>
-			inDeal(state, play.seat) ? [] : [play.card],
-		),
-	);
-	state.trick = state.trick.filter((play) => inDeal(state, play.seat));
+	// A folded seat's card stays in the trick: it still sets the suit, but can't win.
 	if (!inDeal(state, state.turn)) {
 		state.turn = nextInDeal(state, state.turn);
 	}
-	if (state.trick.length > 0 && state.trick.length === left.length) {
+	if (trickComplete(state)) {
 		takeTrick(rules, state);
 	}
 }
@@ -1096,7 +1107,8 @@ function playedCards(state: TricksState) {
 function liveCards(rules: TricksRules, state: TricksState, seat: number) {
 	const hand = state.hands[seat];
 	const takes = (plays: readonly TrickPlay[]) =>
-		trickWinner(rules, plays, state.trump) === seat;
+		trickWinner(rules, plays, state.trump, (other) => inDeal(state, other)) ===
+		seat;
 	const played = state.trick.find((play) => play.seat === seat);
 	if (hand.length + (played ? 1 : 0) !== 1) {
 		return hand;

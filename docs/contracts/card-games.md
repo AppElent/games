@@ -82,10 +82,11 @@ House rules are shallow patches on these fields, as in the other families.
 - A seat may not knock twice in a row (`cardsKnockedLast`), nor once its total plus
   the stake reaches `target` under `lastStanding` (`cardsKnockAtLimit`).
 - Folding costs the stake from before the raise, at once (`paid`), and the seat's
-  hand and any card it has in the open trick go face down (`mucked`). If only one
-  seat is left, it wins the deal on the spot. Otherwise play resumes; if the seat to
-  play folded, the next seat still in plays, and a trick everyone left has played to
-  is taken.
+  hand goes face down (`mucked`). A card it already played stays in the open trick:
+  if it led, it still sets the suit to follow, but it cannot win. If only one seat is
+  left, it wins the deal on the spot. Otherwise play resumes; if the seat to play
+  folded, the next seat still in plays, and a trick everyone left has played to is
+  taken.
 - Swapping (`swapHands`): before the deal's first card, a seat whose hand is made only
   of one set's ranks may swap it for undealt cards, face down. A new hand that
   qualifies again may be swapped again while undealt cards last.
