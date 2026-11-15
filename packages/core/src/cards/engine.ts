@@ -25,6 +25,7 @@ import {
 	nextBankStarter,
 	viewBank,
 } from "./bank";
+import { boerenbridge } from "./games/boerenbridge";
 import { eenentwintigen } from "./games/eenentwintigen";
 import { ginRummy } from "./games/gin-rummy";
 import { hartenjagen } from "./games/hartenjagen";
@@ -115,6 +116,7 @@ export const CARD_GAMES = {
 	jokeren,
 	eenentwintigen,
 	hartenjagen,
+	boerenbridge,
 	"gin-rummy": ginRummy,
 } as const satisfies Record<string, CardGameDefinition>;
 
