@@ -38,20 +38,24 @@ export function DiceTableScreen({ sessionId }: { sessionId: string }) {
 		return <DiceLobby game={game} table={table} controls={controls} />;
 	}
 	// The stored state was dealt by this game, so its family always matches.
-	if (game.family === "mexen" && view.family === "mexen") {
-		return (
-			<MexenTable game={game} table={table} view={view} controls={controls} />
-		);
+	// A family without a branch here fails to compile.
+	switch (game.family) {
+		case "mexen":
+			return view.family === "mexen" ? (
+				<MexenTable game={game} table={table} view={view} controls={controls} />
+			) : null;
+		case "scoresheet":
+			return view.family === "scoresheet" ? (
+				<ScoresheetTable
+					game={game}
+					table={table}
+					view={view}
+					controls={controls}
+				/>
+			) : null;
+		default: {
+			const unhandled: never = game;
+			return unhandled;
+		}
 	}
-	if (game.family === "scoresheet" && view.family === "scoresheet") {
-		return (
-			<ScoresheetTable
-				game={game}
-				table={table}
-				view={view}
-				controls={controls}
-			/>
-		);
-	}
-	return null;
 }

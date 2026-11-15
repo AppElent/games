@@ -4,7 +4,7 @@
  * happened. No drawing and no framework.
  */
 import type { Messages } from "../i18n/en";
-import type { MexenThrowKind, MexenView } from "./mexen";
+import { type MexenThrowKind, type MexenView, throwValue } from "./mexen";
 import type { CategoryRule, ScoreCategory, ScoresheetView } from "./scoresheet";
 import type { DiceEvent } from "./table";
 
@@ -164,9 +164,7 @@ function mexenNews(
 				name: name(event.seat),
 				throw: mexenThrowLabel(dice, fmt, {
 					kind: event.kind,
-					value:
-						Math.max(event.dice[0], event.dice[1]) * 10 +
-						Math.min(event.dice[0], event.dice[1]),
+					value: throwValue(event.dice),
 				}),
 			});
 		case "mexenThrowOff":

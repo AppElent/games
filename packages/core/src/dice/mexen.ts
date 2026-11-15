@@ -128,22 +128,25 @@ const MEX_RANK = 1000;
 const LITTLE_MEX_RANK = 900;
 const DOUBLE_RANK = 100;
 
+/** Two dice read high die first: 6 and 3 make 63. */
+export function throwValue(dice: readonly number[]) {
+	return Math.max(dice[0], dice[1]) * 10 + Math.min(dice[0], dice[1]);
+}
+
 /** Reads two dice as a Mexen throw. */
 export function readThrow(
 	dice: readonly number[],
 	rules: Pick<MexenRules, "littleMex">,
 ): MexenThrow {
-	const high = Math.max(dice[0], dice[1]);
-	const low = Math.min(dice[0], dice[1]);
-	const value = high * 10 + low;
+	const value = throwValue(dice);
 	if (value === 21) {
 		return { kind: "mex", value, rank: MEX_RANK };
 	}
 	if (rules.littleMex && value === 31) {
 		return { kind: "littleMex", value, rank: LITTLE_MEX_RANK };
 	}
-	if (high === low) {
-		return { kind: "double", value, rank: DOUBLE_RANK + high };
+	if (dice[0] === dice[1]) {
+		return { kind: "double", value, rank: DOUBLE_RANK + dice[0] };
 	}
 	return { kind: "plain", value, rank: value };
 }
@@ -189,6 +192,7 @@ function roundOrder(rules: MexenRules, state: MexenState, from: number) {
 }
 
 function throwCap(rules: MexenRules, state: MexenState) {
+	// A throw-off is one throw each; the leader's `limit` waits for the next round.
 	if (state.throwOff) {
 		return 1;
 	}

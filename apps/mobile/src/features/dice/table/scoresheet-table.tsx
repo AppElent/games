@@ -54,7 +54,7 @@ const MAX_DIE = 64;
 const DIE_GAP = spacing.sm;
 const NAME_COLUMN = 124;
 const SEAT_COLUMN = 64;
-/** How often a silent seat is checked for. */
+
 export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const { t } = useI18n();
 	const dice = t.games.dice;

@@ -52,7 +52,7 @@ type Props = {
 
 const MAX_DIE = 72;
 const PIP = 8;
-/** How often a silent seat is checked for. */
+
 export function MexenTable({ game, table, view, controls }: Props) {
 	const { t, locale } = useI18n();
 	const dice = t.games.dice;
@@ -431,11 +431,7 @@ function MexenSeats({ table, view, controls }: Omit<Props, "game">) {
 						</View>
 					</>
 				);
-				const rowStyle = [
-					styles.seat,
-					active && styles.active,
-					view.out[seat] && styles.out,
-				];
+				const rowStyle = [styles.seat, active && styles.active];
 				const label = [name(seat), line, score].filter(Boolean).join(", ");
 				return canManage ? (
 					<Pressable
@@ -514,7 +510,6 @@ const createStyles = (colors: Tokens) =>
 			borderBottomColor: colors.border,
 		},
 		active: { backgroundColor: colors.accentDim },
-		out: { opacity: 0.55 },
 		flex: { flex: 1, minWidth: 0 },
 		score: { alignItems: "flex-end", gap: spacing.xxs },
 		pips: {

@@ -399,16 +399,17 @@ button.die {
 	background: rgba(230, 192, 106, 0.12);
 }
 
-.mexen-seats li[data-out="true"] {
-	opacity: 0.55;
-}
-
 .mexen-seat-name {
 	display: flex;
 	align-items: center;
 	gap: 0.35rem;
 	min-width: 0;
 	font-weight: 700;
+}
+
+/* Muted, not faded: an out seat's name stays readable. */
+.mexen-seats li[data-out="true"] .mexen-seat-name {
+	color: var(--ivory-muted);
 }
 
 .mexen-seat-line {
