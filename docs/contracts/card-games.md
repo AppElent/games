@@ -86,6 +86,9 @@ House rules are shallow patches on these fields, as in the other families.
   seat is left, it wins the deal on the spot. Otherwise play resumes; if the seat to
   play folded, the next seat still in plays, and a trick everyone left has played to
   is taken.
+- Swapping (`swapHands`): before the deal's first card, a seat whose hand is made only
+  of one set's ranks may swap it for undealt cards, face down. A new hand that
+  qualifies again may be swapped again while undealt cards last.
 - `lastTrick` scoring: the winner of the last trick, or the last seat in, wins; every
   other seat still in loses the stake.
 - The bot knocks with cards no unseen card of their suit can beat (now and then
