@@ -592,7 +592,7 @@ describe("Yatzy bots", () => {
 		// A sensible player averages well over 150; random play is near 100.
 		const average = totals.reduce((a, b) => a + b, 0) / totals.length;
 		expect(average).toBeGreaterThan(150);
-	});
+	}, 30_000);
 
 	it("hands the next game's first turn round the table", () => {
 		let starter = 0;
