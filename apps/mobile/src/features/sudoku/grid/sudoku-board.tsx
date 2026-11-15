@@ -228,6 +228,12 @@ type CellProps = {
 	onPress: (cell: number) => void;
 };
 
+/**
+ * Top-right notes leave a Killer cage sum its corner up to this many digits;
+ * more need the full width to stay legible.
+ */
+const CAGE_SUM_NOTE_LIMIT = 4;
+
 /** Where each corner-note group sits in its cell. */
 const CORNER_SLOTS = {
 	topLeft: { left: "6%", top: "2%" },
@@ -354,14 +360,20 @@ const BoardCell = memo(function BoardCell({
 					{cornerGroups.map((group) =>
 						cornerLayout === "topRight" ? (
 							// One line that shrinks to fit rather than wrapping into
-							// the center notes.
+							// the center notes, and clear of a Killer cage sum.
 							<AppText
 								key={group.slot}
 								variant="cellNote"
 								allowFontScaling={false}
 								numberOfLines={1}
 								adjustsFontSizeToFit
-								style={[styles.corner, styles.topRightNotes]}
+								style={[
+									styles.corner,
+									styles.topRightNotes,
+									cageSum !== undefined &&
+										group.digits.length <= CAGE_SUM_NOTE_LIMIT &&
+										styles.besideCageSum,
+								]}
 							>
 								{group.digits.join("")}
 							</AppText>
@@ -438,8 +450,9 @@ const createStyles = (colors: Tokens) =>
 			left: "6%",
 			right: "6%",
 			textAlign: "right",
-			letterSpacing: 1,
 		},
+		// A Killer cage sum holds the top-left corner.
+		besideCageSum: { left: "42%" },
 		centerNote: {
 			color: colors.textMuted,
 			paddingHorizontal: 2,

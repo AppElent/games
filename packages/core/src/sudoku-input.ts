@@ -133,7 +133,7 @@ export type CornerNoteGroup = { slot: CornerNoteSlot; digits: number[] };
  * A cell's corner notes (a digit bitmask) as groups to draw, in ascending
  * digit order. Spread gives each digit its own slot; nine notes share the
  * last slot so none is drawn over another. Top-right puts them all in one
- * group, which a board wraps onto a second line in a small cell.
+ * group, which a board draws as one line that shrinks to fit the cell.
  */
 export function cornerNoteGroups(
 	mask: number,
