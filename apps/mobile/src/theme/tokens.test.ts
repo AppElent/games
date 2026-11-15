@@ -59,6 +59,19 @@ describe.each(schemes)("%s colour pairs meet WCAG AA", (_name, t) => {
 		expect(contrast(parse(t[ink]), fill)).toBeGreaterThanOrEqual(4.5);
 	});
 
+	// An empty selected Sudoku cell in a note mode: notes on accentTint over
+	// accentDim, and the tint still visibly deeper than the plain fill.
+	it("textMuted notes on accentTint over accentDim reach 4.5:1", () => {
+		const fill = parse(t.accentTint, parse(t.accentDim, surface));
+		expect(contrast(parse(t.textMuted), fill)).toBeGreaterThanOrEqual(4.5);
+	});
+
+	it("accentTint over accentDim stands out from accentDim alone", () => {
+		const plain = parse(t.accentDim, surface);
+		const tinted = parse(t.accentTint, plain);
+		expect(contrast(tinted, plain)).toBeGreaterThanOrEqual(1.2);
+	});
+
 	it.each([
 		["bg", bg],
 		["surface", surface],
