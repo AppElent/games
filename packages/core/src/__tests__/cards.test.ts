@@ -1058,7 +1058,7 @@ function playOut(
 	const random = seeded(seed);
 	let state: CardGameState = createCardGame(game, options, seats, random);
 	const everyone = Array.from({ length: seats }, (_, seat) => seat);
-	const total = allCards(state).length;
+	let total = allCards(state).length;
 	for (let step = 0; step < 40_000; step += 1) {
 		if (state.phase === "finished") {
 			return state;
@@ -1081,6 +1081,10 @@ function playOut(
 			move.action,
 			random,
 		);
+		// A schedule of growing hands leaves cards undealt: count each deal afresh.
+		if (move.action.type === "nextRound") {
+			total = allCards(state).length;
+		}
 		const cards = allCards(state);
 		expect(cards.length).toBe(total);
 		expect(new Set(cards).size).toBe(total);

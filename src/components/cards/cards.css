@@ -1761,3 +1761,35 @@ button.meld[data-target="true"] {
 		outline: 2px solid #ffb35a;
 	}
 }
+
+/* Bidding: the card turned up for trump, and the bid stepper. */
+.flag-card {
+	display: block;
+	width: 1.05rem;
+	margin-left: -0.3rem;
+}
+
+.bid-picker {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.6rem;
+}
+
+.bid-stepper {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.bid-value {
+	min-width: 2ch;
+	text-align: center;
+	font-size: 1.25rem;
+	font-weight: 800;
+	font-variant-numeric: tabular-nums;
+}
