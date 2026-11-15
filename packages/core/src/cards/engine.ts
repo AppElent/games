@@ -7,11 +7,24 @@
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
+import { ginRummy } from "./games/gin-rummy";
 import { hartenjagen } from "./games/hartenjagen";
 import { jokeren } from "./games/jokeren";
 import { maumau } from "./games/maumau";
 import { pesten } from "./games/pesten";
 import { toepen } from "./games/toepen";
+import {
+	applyGin,
+	botGinMove,
+	GIN_ACTIONS,
+	type GinAction,
+	type GinRules,
+	type GinState,
+	type GinView,
+	nextGinStarter,
+	startGin,
+	viewGin,
+} from "./gin";
 import {
 	applyRummy,
 	botRummyMove,
@@ -85,7 +98,8 @@ type ListField<Field> =
 export type CardGameDefinition =
 	| Definition<"shedding", SheddingRules>
 	| Definition<"rummy", RummyRules>
-	| Definition<"tricks", TricksRules>;
+	| Definition<"tricks", TricksRules>
+	| Definition<"gin", GinRules>;
 
 /** How long a player can go without a heartbeat before others may hand their seat to autopilot. */
 export const SEAT_SILENT_AFTER_MS = 60_000;
@@ -96,6 +110,7 @@ export const CARD_GAMES = {
 	jokeren,
 	hartenjagen,
 	toepen,
+	"gin-rummy": ginRummy,
 } as const satisfies Record<string, CardGameDefinition>;
 
 export type CardGameId = keyof typeof CARD_GAMES;
@@ -107,9 +122,13 @@ export function isCardGameId(value: string): value is CardGameId {
 	return (CARD_GAME_IDS as string[]).includes(value);
 }
 
-export type CardGameState = SheddingState | RummyState | TricksState;
-export type CardAction = SheddingAction | RummyAction | TricksAction;
-type CardView = SheddingView | RummyView | TricksView;
+export type CardGameState = SheddingState | RummyState | TricksState | GinState;
+export type CardAction =
+	| SheddingAction
+	| RummyAction
+	| TricksAction
+	| GinAction;
+type CardView = SheddingView | RummyView | TricksView | GinView;
 
 export function getCardGame(id: string): CardGame {
 	if (!isCardGameId(id)) {
@@ -173,7 +192,10 @@ export function generalOptions(game: CardGameDefinition) {
 }
 
 function rulesFor(game: CardGameDefinition, options: readonly string[]) {
-	return rulesOf<SheddingRules | RummyRules | TricksRules>(game, options);
+	return rulesOf<SheddingRules | RummyRules | TricksRules | GinRules>(
+		game,
+		options,
+	);
 }
 
 type FamilyTypes = {
@@ -194,6 +216,12 @@ type FamilyTypes = {
 		state: TricksState;
 		action: TricksAction;
 		view: TricksView;
+	};
+	gin: {
+		rules: GinRules;
+		state: GinState;
+		action: GinAction;
+		view: GinView;
 	};
 };
 
@@ -253,6 +281,14 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		apply: applyTricks,
 		view: viewTricks,
 		bot: botTricksMove,
+	},
+	gin: {
+		actions: GIN_ACTIONS,
+		create: startGin,
+		nextStarter: nextGinStarter,
+		apply: applyGin,
+		view: viewGin,
+		bot: botGinMove,
 	},
 };
 

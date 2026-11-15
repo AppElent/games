@@ -495,7 +495,7 @@ function raiseForLastLife(rules: TricksRules, state: TricksState) {
 	}
 	state.stake = 2;
 	const asked = live.filter((seat) => !lastLife(seat));
-	pushEvent(state, { type: "knock", seat: null, stake: 2 });
+	pushEvent(state, { type: "raise", seat: null, stake: 2 });
 	if (asked.length === 0) {
 		return;
 	}
@@ -801,7 +801,7 @@ function knock(rules: TricksRules, state: TricksState, seat: number) {
 		next = nextInDeal(state, next);
 	}
 	state.knock = { by: seat, asked, answers: state.hands.map(() => null) };
-	pushEvent(state, { type: "knock", seat, stake: state.stake });
+	pushEvent(state, { type: "raise", seat, stake: state.stake });
 }
 
 function answerKnock(
@@ -812,7 +812,7 @@ function answerKnock(
 ) {
 	const pending = state.knock;
 	if (state.phase !== "knocking" || !pending) {
-		throw new GameRuleError("cardsNoKnock");
+		throw new GameRuleError("cardsNothingToAnswer");
 	}
 	if (pending.by === seat) {
 		throw new GameRuleError("cardsOwnKnock");

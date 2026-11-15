@@ -39,7 +39,7 @@ export const serverErrors = {
 	cardsPassCount: "Kies precies {count} kaarten om door te geven.",
 	cardsPassFirst: "Geef eerst je kaarten door.",
 	cardsKnockPending: "Wacht tot iedereen op de toep heeft gereageerd.",
-	cardsNoKnock: "Er is geen toep om op te reageren.",
+	cardsNothingToAnswer: "Er is geen toep om op te reageren.",
 	cardsOwnKnock: "Je kunt niet op je eigen toep reageren.",
 	cardsNotAsked: "Deze toep is niet aan jou.",
 	cardsAlreadyAnswered: "Je hebt al op deze toep gereageerd.",
@@ -50,6 +50,10 @@ export const serverErrors = {
 	cardsSwapTooLate: "Te laat: de eerste kaart is al gespeeld.",
 	cardsHandNotSwappable: "Deze hand mag je niet ruilen.",
 	cardsStockEmpty: "Er zijn geen kaarten meer voor een nieuwe hand.",
+	cardsKnockTooHigh:
+		"Kloppen mag met {limit} of minder; dit laat {deadwood} over.",
+	cardsAfterKnock: "Er is geklopt: alleen aanleggen kan nog.",
+	cardsNoKnock: "Er is nog niet geklopt.",
 	signInRequired: "Inloggen vereist.",
 	accountChanged:
 		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",

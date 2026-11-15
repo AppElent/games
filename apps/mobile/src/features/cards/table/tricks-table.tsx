@@ -12,7 +12,7 @@ import {
 	tricksRoundLabel,
 	tricksSeatNote,
 } from "@arcadeclub/core/cards/table-view";
-import type { TricksView } from "@arcadeclub/core/cards/tricks";
+import type { TricksAction, TricksView } from "@arcadeclub/core/cards/tricks";
 import { useEffect, useMemo, useState } from "react";
 import {
 	type HostInstance,
@@ -252,9 +252,9 @@ export function TricksTable({
 			? fmt(tt.lastStanding, { target: view.target })
 			: tt.lowestWins;
 
-	function choose(action: "knock" | "stay" | "fold" | "swapHand") {
+	function choose(action: TricksAction) {
 		haptics.moveMade();
-		controls.act({ type: action });
+		controls.act(action);
 	}
 	const best = Math.min(...view.totals);
 	const standings = view.totals
@@ -376,14 +376,14 @@ export function TricksTable({
 								<TableButton
 									label={tt.stayButton}
 									disabled={controls.pending}
-									onPress={() => choose("stay")}
+									onPress={() => choose({ type: "stay" })}
 									testID="cards-stay"
 								/>
 								<TableButton
 									label={tt.foldButton}
 									ghost
 									disabled={controls.pending}
-									onPress={() => choose("fold")}
+									onPress={() => choose({ type: "fold" })}
 									testID="cards-fold"
 								/>
 							</>
@@ -392,7 +392,7 @@ export function TricksTable({
 							<TableButton
 								label={tt.knockButton}
 								disabled={controls.pending}
-								onPress={() => choose("knock")}
+								onPress={() => choose({ type: "knock" })}
 								testID="cards-knock"
 							/>
 						) : null}
@@ -401,7 +401,7 @@ export function TricksTable({
 								label={tt.swapButton}
 								ghost
 								disabled={controls.pending}
-								onPress={() => choose("swapHand")}
+								onPress={() => choose({ type: "swapHand" })}
 								testID="cards-swap-hand"
 							/>
 						) : null}

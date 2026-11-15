@@ -89,6 +89,9 @@ async function read(
 			phase: string;
 			canPass?: boolean;
 			events: unknown[];
+			family?: string;
+			handCounts?: number[];
+			totals?: number[];
 		};
 	};
 }
@@ -640,7 +643,7 @@ describe("toepen", () => {
 
 		await expectCode(
 			t.mutation(api.cardGames.act, { ...me, action: { type: "stay" } }),
-			"cardsNoKnock",
+			"cardsNothingToAnswer",
 		);
 		await t.mutation(api.cardGames.act, { ...me, action: { type: "knock" } });
 		const knocked = (await read(t, me)).view as unknown as ToepenView;
@@ -686,6 +689,75 @@ describe("toepen", () => {
 			),
 			"cardsUnknownOption",
 		);
+	});
+});
+
+describe("gin rummy", () => {
+	it("refuses a table with two computer players", async () => {
+		const t = setup();
+		await expectCode(
+			t.mutation(api.cardGames.createTable, tableArgs({ gameId: "gin-rummy" })),
+			"cardsTableFull",
+		);
+	});
+
+	it("deals a solo table, keeps the computer's hand hidden, and plays a turn", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(t, "gin-rummy", 1);
+		const table = await read(t, creds(sessionId, participantId));
+		expect(table.status).toBe("playing");
+		expect(table.view.family).toBe("gin");
+		expect(table.view.hand).toHaveLength(10);
+		expect(table.view.handCounts).toEqual([10, 10]);
+		const stored = await t.run((ctx) =>
+			ctx.db.query("cardGameStates").unique(),
+		);
+		const theirs: string[] = stored?.game.hands[1] ?? [];
+		for (const card of theirs) {
+			expect(JSON.stringify(table.view)).not.toContain(`"${card}"`);
+		}
+		// The person on the first seat leads the first hand.
+		expect(table.view.turn).toBe(0);
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "drawStock" },
+		});
+		const drawn = await read(t, creds(sessionId, participantId));
+		expect(drawn.view.hand).toHaveLength(11);
+		await expectCode(
+			t.mutation(api.cardGames.act, {
+				...creds(sessionId, participantId),
+				action: { type: "finishLayoff" },
+			}),
+			"cardsNoKnock",
+		);
+		await t.mutation(api.cardGames.act, {
+			...creds(sessionId, participantId),
+			action: { type: "discard", card: drawn.view.hand[0] },
+		});
+		const after = await read(t, creds(sessionId, participantId));
+		expect(after.view.hand).toHaveLength(10);
+	});
+
+	it("plays a whole match on autopilot", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(t, "gin-rummy", 1);
+		await t.mutation(api.cardGames.setAutopilot, {
+			...creds(sessionId, participantId),
+			seat: 0,
+			on: true,
+		});
+		await (
+			t.finishAllScheduledFunctions as (
+				advance: () => void,
+				maxIterations: number,
+			) => Promise<void>
+		)(vi.runAllTimers, 10_000);
+		const done = await read(t, creds(sessionId, participantId));
+		expect(done.status).toBe("finished");
+		expect(Math.max(...(done.view.totals ?? []))).toBeGreaterThanOrEqual(100);
+		const session = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(session?.status).toBe("completed");
 	});
 });
 

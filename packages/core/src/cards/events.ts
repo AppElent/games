@@ -22,6 +22,7 @@ export type CardEvent = { seq: number } & (
 	| { type: "layoff"; seat: number; meldId: number; cards: CardId[] }
 	| { type: "swap"; seat: number; meldId: number; card: CardId }
 	| { type: "discard"; seat: number; card: CardId }
+	| { type: "knock"; seat: number; gin: boolean }
 	| { type: "roundEnd"; winner: number | null; round: number }
 	| { type: "passReady"; seat: number }
 	| { type: "exchange"; shift: number; count: number }
@@ -29,12 +30,18 @@ export type CardEvent = { seq: number } & (
 	| { type: "broken"; suit: Suit }
 	| { type: "moon"; seat: number }
 	/** A raise; `seat` is null when a seat on its last life raised it. */
-	| { type: "knock"; seat: number | null; stake: number }
+	| { type: "raise"; seat: number | null; stake: number }
 	| { type: "stay"; seat: number }
 	| { type: "fold"; seat: number; cost: number }
 	| { type: "swapHand"; seat: number }
 	| { type: "dealWon"; seat: number }
 	| { type: "out"; seat: number }
+	| {
+			type: "handEnd";
+			winner: number;
+			kind: "knock" | "gin" | "undercut";
+			points: number;
+	  }
 	| { type: "win"; seats: number[] }
 );
 

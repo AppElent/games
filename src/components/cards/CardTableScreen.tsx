@@ -2,6 +2,7 @@ import { getCardGame } from "@arcadeclub/core/cards/engine";
 import { useMessages } from "#/lib/i18n";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { CardsNotFound, CardsPage } from "./Chrome";
+import { GinTable } from "./GinTable";
 import { Lobby } from "./Lobby";
 import { RummyTable } from "./RummyTable";
 import { SheddingTable } from "./SheddingTable";
@@ -65,6 +66,15 @@ export function CardTableScreen({
 		case "tricks":
 			return (
 				<TricksTable
+					game={game}
+					table={table}
+					view={table.view}
+					controls={controls}
+				/>
+			);
+		case "gin":
+			return (
+				<GinTable
 					game={game}
 					table={table}
 					view={table.view}

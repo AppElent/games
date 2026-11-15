@@ -186,8 +186,8 @@ describe("knocking", () => {
 
 	it("refuses answers to no knock, to your own knock, and a second answer", () => {
 		const fresh = dealt(HANDS);
-		expectRule(() => act(fresh, 1, { type: "stay" }), "cardsNoKnock");
-		expectRule(() => act(fresh, 1, { type: "fold" }), "cardsNoKnock");
+		expectRule(() => act(fresh, 1, { type: "stay" }), "cardsNothingToAnswer");
+		expectRule(() => act(fresh, 1, { type: "fold" }), "cardsNothingToAnswer");
 		const knocked = act(fresh, 0, { type: "knock" });
 		expectRule(() => act(knocked, 0, { type: "fold" }), "cardsOwnKnock");
 		const answered = act(knocked, 1, { type: "stay" });

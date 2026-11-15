@@ -36,7 +36,7 @@ export const serverErrors = {
 	cardsPassCount: "Pick exactly {count} cards to pass.",
 	cardsPassFirst: "Pass your cards first.",
 	cardsKnockPending: "Wait until everyone has answered the knock.",
-	cardsNoKnock: "There's no knock to answer.",
+	cardsNothingToAnswer: "There's no knock to answer.",
 	cardsOwnKnock: "You can't answer your own knock.",
 	cardsNotAsked: "This knock isn't yours to answer.",
 	cardsAlreadyAnswered: "You've already answered this knock.",
@@ -47,6 +47,10 @@ export const serverErrors = {
 	cardsSwapTooLate: "Too late: the first card has been played.",
 	cardsHandNotSwappable: "This hand can't be swapped.",
 	cardsStockEmpty: "There are no cards left for a new hand.",
+	cardsKnockTooHigh:
+		"You can knock with {limit} or less; this leaves {deadwood}.",
+	cardsAfterKnock: "Someone knocked: only laying off is left.",
+	cardsNoKnock: "Nobody has knocked yet.",
 	signInRequired: "Sign in required.",
 	accountChanged:
 		"You switched accounts. Sign in to the account you want to delete and try again.",
