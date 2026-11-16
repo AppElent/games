@@ -22,6 +22,11 @@ export const darkColors = {
 	accent: "#22d3ee",
 	accentPressed: "#67e8f9",
 	accentDim: "rgba(34, 211, 238, 0.14)",
+	/**
+	 * Laid over an `accentDim` fill to mark it more strongly: an empty Sudoku
+	 * cell in a note mode. Too deep under digits or over colour markers.
+	 */
+	accentTint: "rgba(34, 211, 238, 0.14)",
 	onAccent: "#04121a",
 	green: "#34d399",
 	greenDim: "rgba(52, 211, 153, 0.16)",
@@ -48,6 +53,7 @@ export const lightColors: Tokens = {
 	accent: "#0e7490",
 	accentPressed: "#155e75",
 	accentDim: "rgba(14, 116, 144, 0.09)",
+	accentTint: "rgba(14, 116, 144, 0.16)",
 	onAccent: "#ffffff",
 	green: "#047857",
 	greenDim: "rgba(4, 120, 87, 0.10)",

@@ -21,6 +21,7 @@ export const STORAGE_KEYS = {
 	backgammonLocal: "arcade:backgammon:local",
 	sudokuIndex: "arcade:sudoku:index",
 	sudokuSave: (id: string) => `arcade:sudoku:save:${id}`,
+	sudokuInputSettings: "arcade:sudoku:input-settings",
 } as const;
 
 /** What was stored under this key, or `null` if nothing readable was. */

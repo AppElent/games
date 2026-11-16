@@ -10,7 +10,13 @@ import { colOf, digitsInMask, rowOf } from "@arcadeclub/core/sudoku";
 import {
 	effectiveGrid,
 	type SudokuBoardState,
+	type SudokuInputMode,
 } from "@arcadeclub/core/sudoku-board";
+import {
+	type CornerNoteLayout,
+	type CornerNoteSlot,
+	cornerNoteGroups,
+} from "@arcadeclub/core/sudoku-input";
 import {
 	type KillerCage,
 	type KillerCageLayout,
@@ -38,6 +44,11 @@ type Props = {
 	hintCells: ReadonlySet<number> | undefined;
 	cages?: KillerCage[];
 	hidden: boolean;
+	/** Outside digit mode an empty, unmarked selected cell gets a deeper tint. */
+	mode: SudokuInputMode;
+	cornerLayout: CornerNoteLayout;
+	/** Whether a press on the selected cell switches mode, for its hint. */
+	canCycle: boolean;
 };
 
 const BOARD_BORDER = 2;
@@ -72,6 +83,9 @@ export function SudokuBoard({
 	hintCells,
 	cages,
 	hidden,
+	mode,
+	cornerLayout,
+	canCycle,
 }: Props) {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
@@ -139,6 +153,9 @@ export function SudokuBoard({
 						marker={hidden ? 0 : board.colors[index]}
 						cageSum={hidden ? undefined : cageInfo?.sumAt.get(index)}
 						selected={isSelected}
+						selectedMode={isSelected && !hidden ? mode : undefined}
+						canCycle={isSelected && canCycle}
+						cornerLayout={cornerLayout}
 						peer={isPeer}
 						sameDigit={
 							!hidden &&
@@ -200,6 +217,10 @@ type CellProps = {
 	marker: number;
 	cageSum?: number;
 	selected: boolean;
+	/** The entry mode, on the selected cell only so other cells stay memoized. */
+	selectedMode?: SudokuInputMode;
+	canCycle: boolean;
+	cornerLayout: CornerNoteLayout;
 	peer: boolean;
 	sameDigit: boolean;
 	conflict: boolean;
@@ -207,17 +228,17 @@ type CellProps = {
 	onPress: (cell: number) => void;
 };
 
-/** Corner-note slots, in fill order: corners, then edge midpoints. */
-const CORNER_SLOTS = [
-	{ left: "6%", top: "2%" },
-	{ right: "6%", top: "2%" },
-	{ left: "6%", bottom: "2%" },
-	{ right: "6%", bottom: "2%" },
-	{ left: "40%", top: "2%" },
-	{ left: "40%", bottom: "2%" },
-	{ left: "6%", top: "34%" },
-	{ right: "6%", top: "34%" },
-] as const;
+/** Where each corner-note group sits in its cell. */
+const CORNER_SLOTS = {
+	topLeft: { left: "6%", top: "2%" },
+	topRight: { right: "6%", top: "2%" },
+	bottomLeft: { left: "6%", bottom: "2%" },
+	bottomRight: { right: "6%", bottom: "2%" },
+	top: { left: "40%", top: "2%" },
+	bottom: { left: "40%", bottom: "2%" },
+	left: { left: "6%", top: "34%" },
+	right: { right: "6%", top: "34%" },
+} as const satisfies Record<CornerNoteSlot, object>;
 
 const BoardCell = memo(function BoardCell({
 	cell,
@@ -229,6 +250,9 @@ const BoardCell = memo(function BoardCell({
 	marker,
 	cageSum,
 	selected,
+	selectedMode,
+	canCycle,
+	cornerLayout,
 	peer,
 	sameDigit,
 	conflict,
@@ -257,6 +281,7 @@ const BoardCell = memo(function BoardCell({
 			? tokens.text
 			: tokens.accent;
 	const cornerDigits = digitsInMask(corner);
+	const cornerGroups = cornerNoteGroups(corner, cornerLayout);
 	const centerDigits = digitsInMask(center);
 
 	const state =
@@ -281,6 +306,7 @@ const BoardCell = memo(function BoardCell({
 			accessibilityRole="button"
 			accessibilityLabel={label}
 			accessibilityState={{ selected }}
+			accessibilityHint={canCycle ? copy.retapHint : undefined}
 			onPress={() => onPress(cell)}
 			style={[
 				styles.cell,
@@ -291,7 +317,6 @@ const BoardCell = memo(function BoardCell({
 					height: size,
 					backgroundColor: background,
 				},
-				selected && styles.selected,
 			]}
 		>
 			{marker > 0 ? (
@@ -302,6 +327,15 @@ const BoardCell = memo(function BoardCell({
 					]}
 				/>
 			) : null}
+			{selectedMode !== undefined &&
+			selectedMode !== "digit" &&
+			value === 0 &&
+			marker === 0 ? (
+				// Outside digit mode an empty cell gets a deeper tint: it takes no
+				// edge space, so the notes being entered stay clear. A filled or
+				// colour-marked cell keeps its fill so text on it keeps contrast.
+				<View pointerEvents="none" style={styles.noteModeTint} />
+			) : null}
 			{cageSum !== undefined ? (
 				<AppText
 					variant="cellNote"
@@ -310,6 +344,11 @@ const BoardCell = memo(function BoardCell({
 				>
 					{cageSum}
 				</AppText>
+			) : null}
+			{selected ? (
+				// An overlay, not the cell's own border, so the space inside the
+				// cell (and the notes fitted to it) stays the same when selected.
+				<View pointerEvents="none" style={styles.selectedRing} />
 			) : null}
 			{value !== 0 ? (
 				<AppText
@@ -321,16 +360,31 @@ const BoardCell = memo(function BoardCell({
 				</AppText>
 			) : (
 				<>
-					{cornerDigits.map((digit, index) => (
-						<AppText
-							key={digit}
-							variant="cellNote"
-							allowFontScaling={false}
-							style={[styles.corner, CORNER_SLOTS[index] ?? CORNER_SLOTS[7]]}
-						>
-							{digit}
-						</AppText>
-					))}
+					{cornerGroups.map((group) =>
+						cornerLayout === "topRight" ? (
+							// One line that shrinks to fit rather than wrapping into
+							// the center notes.
+							<AppText
+								key={group.slot}
+								variant="cellNote"
+								allowFontScaling={false}
+								numberOfLines={1}
+								adjustsFontSizeToFit
+								style={[styles.corner, styles.topRightNotes]}
+							>
+								{group.digits.join("")}
+							</AppText>
+						) : (
+							<AppText
+								key={group.slot}
+								variant="cellNote"
+								allowFontScaling={false}
+								style={[styles.corner, CORNER_SLOTS[group.slot]]}
+							>
+								{group.digits.join("")}
+							</AppText>
+						),
+					)}
 					{centerDigits.length > 0 ? (
 						<AppText
 							variant="cellCenterNote"
@@ -362,7 +416,12 @@ const createStyles = (colors: Tokens) =>
 			alignItems: "center",
 			justifyContent: "center",
 		},
-		selected: {
+		selectedRing: {
+			position: "absolute",
+			top: 0,
+			left: 0,
+			right: 0,
+			bottom: 0,
 			borderWidth: 2,
 			borderColor: colors.accent,
 		},
@@ -373,9 +432,24 @@ const createStyles = (colors: Tokens) =>
 			backgroundColor: colors.surface,
 			paddingHorizontal: 1,
 		},
+		// Over the selected cell's own accentDim fill, so note modes read deeper.
+		noteModeTint: {
+			position: "absolute",
+			top: 0,
+			left: 0,
+			right: 0,
+			bottom: 0,
+			backgroundColor: colors.accentTint,
+		},
 		corner: {
 			position: "absolute",
 			color: colors.textMuted,
+		},
+		topRightNotes: {
+			top: "2%",
+			left: "6%",
+			right: "6%",
+			textAlign: "right",
 		},
 		centerNote: {
 			color: colors.textMuted,

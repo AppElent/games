@@ -36,7 +36,10 @@ function SudokuSessionPage() {
 				return (
 					<FullscreenGamePage
 						title={loaded.session.title}
-						maxWidthClassName="max-w-2xl"
+						// Wide enough on desktop for the board and the 360px
+						// controls column side by side; narrower would squeeze
+						// the keypad.
+						maxWidthClassName="max-w-2xl lg:max-w-5xl"
 					>
 						<Game
 							// Remount when switching sessions so local state resets.

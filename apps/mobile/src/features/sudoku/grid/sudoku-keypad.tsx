@@ -4,6 +4,7 @@
  * digit dims but stays pressable so it can be toggled off again.
  */
 import type { SudokuInputMode } from "@arcadeclub/core/sudoku-board";
+import { SUDOKU_INPUT_MODES } from "@arcadeclub/core/sudoku-input";
 import { Pressable, StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
 import {
@@ -19,12 +20,6 @@ import { Icon } from "../../../ui/icon";
 import { Segmented } from "../../../ui/segmented";
 import { AppText } from "../../../ui/text";
 
-const MODES: readonly SudokuInputMode[] = [
-	"digit",
-	"corner",
-	"center",
-	"color",
-];
 /** The digits, each placed once per row, so `DIGITS.length` times in all. */
 const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
@@ -62,18 +57,15 @@ export function SudokuKeypad({
 	const copy = t.games.sudoku.keypad;
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
-	const modeLabels: Record<SudokuInputMode, string> = {
-		digit: copy.modeDigit,
-		corner: copy.modeCorner,
-		center: copy.modeCenter,
-		color: copy.modeColor,
-	};
 
 	return (
 		<View style={styles.root} pointerEvents={disabled ? "none" : "auto"}>
 			<Segmented
 				accessibilityLabel={copy.modeLabel}
-				options={MODES.map((value) => ({ value, label: modeLabels[value] }))}
+				options={SUDOKU_INPUT_MODES.map((value) => ({
+					value,
+					label: copy.modes[value],
+				}))}
 				value={mode}
 				onChange={onModeChange}
 				testID="sudoku-mode"

@@ -21,18 +21,30 @@ import {
 } from "@arcadeclub/core/sudoku-board";
 import { findHint, type SudokuHint } from "@arcadeclub/core/sudoku-hints";
 import {
+	isModeCycleTap,
+	nextTapMode,
+	type SudokuInputSettings,
+} from "@arcadeclub/core/sudoku-input";
+import {
 	boardConflictsWithCages,
 	isBoardSolved,
 } from "@arcadeclub/core/sudoku-killer";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { AccessibilityInfo } from "react-native";
 import { haptics } from "../../../feedback/haptics";
+import { fmt, useI18n } from "../../../i18n";
 import {
 	type PuzzleProgress,
 	usePuzzleSession,
 } from "../components/use-puzzle-session";
 import { type GridSave, writeSudokuSave } from "../saves/sudoku-save-store";
 
-export function useSudokuGame(save: GridSave) {
+export function useSudokuGame(
+	save: GridSave,
+	inputSettings: SudokuInputSettings,
+) {
+	const { t } = useI18n();
+	const keypadCopy = t.games.sudoku.keypad;
 	const [history, setHistory] = useState<SudokuHistory>(() =>
 		createHistory(deserializeBoard(save.board)),
 	);
@@ -182,10 +194,46 @@ export function useSudokuGame(save: GridSave) {
 		return cells;
 	}, [hint, hintLevel]);
 
-	const selectCell = useCallback((cell: number) => {
-		setSelectedCell((current) => (current === cell ? null : cell));
-		haptics.selectionChanged();
-	}, []);
+	// What a cell press reads at event time. Kept in a ref so `selectCell`
+	// stays the same function and the memoized cells don't all re-render.
+	const latest = useRef({ selectedCell, mode, inputSettings, keypadCopy });
+	latest.current = { selectedCell, mode, inputSettings, keypadCopy };
+	// When the selected cell was picked, so a quick double tap only selects.
+	const selectedAt = useRef(0);
+
+	/** A press on the selected cell steps to the next mode in the tap cycle. */
+	const selectCell = useCallback(
+		(cell: number) => {
+			const current = latest.current;
+			const now = Date.now();
+			const selection = {
+				cell: current.selectedCell,
+				selectedAt: selectedAt.current,
+			};
+			// Updated in place too, so a second tap that lands before the
+			// re-render still counts as a tap on the selected cell.
+			if (cell !== current.selectedCell) {
+				current.selectedCell = cell;
+				selectedAt.current = now;
+				setSelectedCell(cell);
+				haptics.selectionChanged();
+				return;
+			}
+			if (!isModeCycleTap(cell, selection, now)) return;
+			if (statusRef.current !== "active") return;
+			const next = nextTapMode(current.mode, current.inputSettings);
+			if (next === current.mode) return;
+			current.mode = next;
+			setMode(next);
+			haptics.selectionChanged();
+			AccessibilityInfo.announceForAccessibility(
+				fmt(current.keypadCopy.modeAnnouncement, {
+					mode: current.keypadCopy.modes[next],
+				}),
+			);
+		},
+		[statusRef],
+	);
 
 	return {
 		board,
