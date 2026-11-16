@@ -1,4 +1,5 @@
 import type { SudokuInputMode } from "@arcadeclub/core/sudoku-board";
+import { SUDOKU_INPUT_MODES } from "@arcadeclub/core/sudoku-input";
 import { Eraser, Lightbulb, Palette, Pencil, Redo2, Undo2 } from "lucide-react";
 import { fmt, useMessages } from "#/lib/i18n";
 import { SUDOKU_COLORS } from "./SudokuBoard";
@@ -18,8 +19,12 @@ type SudokuKeypadProps = {
 	disabled?: boolean;
 };
 
-const toolButton =
-	"flex items-center justify-center gap-1 rounded-md club-btn-outline bg-slate-800/70 px-2 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40";
+// Labels wrap only between words ("Ongedaan maken" at phone width), never
+// inside one.
+const labelWrap = "break-normal hyphens-none text-center leading-tight";
+
+// Icon above the label, as on mobile, so a long label gets the full width.
+const toolButton = `flex flex-col items-center justify-start gap-0.5 rounded-md club-btn-outline bg-slate-800/70 px-1.5 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 ${labelWrap}`;
 
 export function SudokuKeypad({
 	mode,
@@ -37,41 +42,37 @@ export function SudokuKeypad({
 }: SudokuKeypadProps) {
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
-	const MODES: { id: SudokuInputMode; label: string }[] = [
-		{ id: "digit", label: sudoku.keypad.modeDigit },
-		{ id: "corner", label: sudoku.keypad.modeCorner },
-		{ id: "center", label: sudoku.keypad.modeCenter },
-		{ id: "color", label: sudoku.keypad.modeColor },
-	];
 	return (
 		<div className="flex w-full max-w-[min(92vw,540px)] flex-col gap-2">
-			<div className="grid grid-cols-4 gap-1.5">
-				{MODES.map((entry) => (
+			<fieldset className="grid min-w-0 grid-cols-4 gap-1.5">
+				<legend className="sr-only">{sudoku.keypad.modeLabel}</legend>
+				{SUDOKU_INPUT_MODES.map((id) => (
 					<button
-						key={entry.id}
+						key={id}
 						type="button"
 						disabled={disabled}
-						onClick={() => onModeChange(entry.id)}
-						className={`rounded-md px-2 py-1.5 text-xs font-bold transition ${
-							mode === entry.id
+						aria-pressed={mode === id}
+						onClick={() => onModeChange(id)}
+						className={`min-w-0 whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs font-bold transition ${labelWrap} ${
+							mode === id
 								? "bg-sky-400 text-slate-950"
 								: "club-btn-outline bg-slate-800/70 text-slate-300 hover:bg-slate-700"
 						} disabled:cursor-not-allowed disabled:opacity-40`}
 					>
-						{entry.id === "corner" ? (
+						{id === "corner" ? (
 							<span className="inline-flex items-center gap-1">
-								<Pencil className="h-3 w-3" /> {entry.label}
+								<Pencil className="h-3 w-3" /> {sudoku.keypad.modes[id]}
 							</span>
-						) : entry.id === "color" ? (
+						) : id === "color" ? (
 							<span className="inline-flex items-center gap-1">
-								<Palette className="h-3 w-3" /> {entry.label}
+								<Palette className="h-3 w-3" /> {sudoku.keypad.modes[id]}
 							</span>
 						) : (
-							entry.label
+							sudoku.keypad.modes[id]
 						)}
 					</button>
 				))}
-			</div>
+			</fieldset>
 			{mode === "color" ? (
 				<div className="grid grid-cols-8 gap-1.5">
 					{SUDOKU_COLORS.map(({ swatch }, index) => (

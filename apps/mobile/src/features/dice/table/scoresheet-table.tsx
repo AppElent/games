@@ -2,11 +2,12 @@
  * A score-sheet game in play: whose turn, the dice (tap to hold), the sheet
  * with what your open boxes would score, and the final standings.
  */
-import { type DiceGame, familyRules } from "@arcadeclub/core/dice/engine";
+import { diceRules, type ScoresheetGame } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
 	latestNews,
+	standings,
 	turnStep,
 } from "@arcadeclub/core/dice/table-view";
 import {
@@ -39,21 +40,21 @@ import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { DiceRulesSheet } from "../rules/dice-rules-sheet";
+import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
 import {
 	AutopilotNote,
 	DiceTableHeader,
-	EndPanel,
 	SeatMenu,
 	SpectatorNote,
 	seatManagement,
 	useAnnounce,
-	useNow,
 } from "./table-parts";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
+import { useNow } from "./use-now";
 
 type Props = {
-	game: DiceGame;
+	game: ScoresheetGame;
 	table: DiceTableBundle;
 	view: ScoresheetView;
 	controls: DiceTableControls;
@@ -78,7 +79,15 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 			<DiceTableHeader name={text.name} onRules={openRules} />
 			<Screen>
 				{view.phase === "finished" ? (
-					<EndPanel table={table} view={view} controls={controls} />
+					<DiceEndPanel
+						table={table}
+						winners={view.winners}
+						rows={standings(view).map(({ seat, total }) => ({
+							seat,
+							value: String(total),
+						}))}
+						controls={controls}
+					/>
 				) : null}
 				<DiceTray table={table} view={view} controls={controls} />
 				<SpectatorNote table={table} />
@@ -283,7 +292,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 	const styles = useThemedStyles(createStyles);
 	const now = useNow();
 	const [menuSeat, setMenuSeat] = useState<number | null>(null);
-	const rules = familyRules(game, table.options, "scoresheet");
+	const rules = diceRules(game, table.options);
 	const you = table.you;
 	const step = turnStep(view, you);
 	const choosing = step === "hold" || step === "score";
@@ -461,7 +470,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 						String(view.sheets[seat].upperBonus),
 					)}
 					{lower.map(row)}
-					{rules?.extraAllSame
+					{rules.extraAllSame
 						? totals(dice.table.extra, (seat) =>
 								String(view.sheets[seat].extra),
 							)

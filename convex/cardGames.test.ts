@@ -849,6 +849,89 @@ describe("klaverjassen", () => {
 	});
 });
 
+describe("toepen", () => {
+	type ToepenView = {
+		hand: string[];
+		phase: string;
+		stake: number | null;
+		canKnock: boolean;
+		knock: { by: number | null } | null;
+		totals: number[];
+	};
+
+	it("knocks, gets answers from the computers, and plays a solo table to the end", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.cardGames.createTable,
+			tableArgs({ gameId: "toepen", bots: 3, options: ["vuileWas"] }),
+		);
+		const me = creds(sessionId, participantId);
+		const start = (await read(t, me)).view as unknown as ToepenView;
+		expect(start.hand).toHaveLength(4);
+		expect(start.stake).toBe(1);
+		expect(start.canKnock).toBe(true);
+
+		const stored = await t.run((ctx) =>
+			ctx.db.query("cardGameStates").unique(),
+		);
+		if (!stored) throw new Error("the table has no state");
+		const game = stored.game as { hands: string[][]; stock: string[] };
+		const mine = JSON.stringify(await read(t, me));
+		for (const card of [...game.hands.slice(1).flat(), ...game.stock]) {
+			expect(mine).not.toContain(`"${card}"`);
+		}
+
+		await expectCode(
+			t.mutation(api.cardGames.act, { ...me, action: { type: "stay" } }),
+			"cardsNothingToAnswer",
+		);
+		await t.mutation(api.cardGames.act, { ...me, action: { type: "knock" } });
+		const knocked = (await read(t, me)).view as unknown as ToepenView;
+		expect(knocked.phase).toBe("knocking");
+		expect(knocked.stake).toBe(2);
+		expect(knocked.knock?.by).toBe(0);
+		await expectCode(
+			t.mutation(api.cardGames.act, { ...me, action: { type: "fold" } }),
+			"cardsOwnKnock",
+		);
+
+		// The computers answer; the seat that knocked can't knock again straight away.
+		await t.finishAllScheduledFunctions(vi.runAllTimers);
+		const answered = (await read(t, me)).view as unknown as ToepenView;
+		expect(answered.phase).not.toBe("knocking");
+		await expectCode(
+			t.mutation(api.cardGames.act, { ...me, action: { type: "knock" } }),
+			answered.phase === "playing" ? "cardsKnockedLast" : "noActiveRound",
+		);
+
+		await t.mutation(api.cardGames.setAutopilot, { ...me, seat: 0, on: true });
+		await (
+			t.finishAllScheduledFunctions as (
+				advance: () => void,
+				maxIterations: number,
+			) => Promise<void>
+		)(vi.runAllTimers, 20_000);
+		const done = await read(t, me);
+		expect(done.status).toBe("finished");
+		const final = done.view as unknown as ToepenView & { winners: number[] };
+		expect(final.winners).toHaveLength(1);
+		expect(final.totals.filter((total) => total < 10)).toHaveLength(1);
+		const session = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(session?.status).toBe("completed");
+	});
+
+	it("refuses an unknown house rule", async () => {
+		const t = setup();
+		await expectCode(
+			t.mutation(
+				api.cardGames.createTable,
+				tableArgs({ gameId: "toepen", options: ["blindKnock"] }),
+			),
+			"cardsUnknownOption",
+		);
+	});
+});
+
 describe("boerenbridge", () => {
 	type BridgeView = {
 		hand: string[];

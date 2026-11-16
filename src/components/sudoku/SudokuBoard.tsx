@@ -1,6 +1,14 @@
 import { colOf, digitsInMask, rowOf } from "@arcadeclub/core/sudoku";
-import type { SudokuBoardState } from "@arcadeclub/core/sudoku-board";
+import type {
+	SudokuBoardState,
+	SudokuInputMode,
+} from "@arcadeclub/core/sudoku-board";
 import { effectiveGrid } from "@arcadeclub/core/sudoku-board";
+import {
+	type CornerNoteLayout,
+	type CornerNoteSlot,
+	cornerNoteGroups,
+} from "@arcadeclub/core/sudoku-input";
 import {
 	type KillerCage,
 	killerCageLayout,
@@ -24,16 +32,16 @@ export const SUDOKU_COLORS = [
 	{ tint: "bg-pink-500/40", swatch: "bg-pink-500" },
 ] as const;
 
-const CORNER_SLOTS = [
-	"left-0.5 top-0",
-	"right-0.5 top-0",
-	"left-0.5 bottom-0",
-	"right-0.5 bottom-0",
-	"left-1/2 top-0 -translate-x-1/2",
-	"left-1/2 bottom-0 -translate-x-1/2",
-	"left-0.5 top-1/2 -translate-y-1/2",
-	"right-0.5 top-1/2 -translate-y-1/2",
-];
+const CORNER_SLOTS: Record<CornerNoteSlot, string> = {
+	topLeft: "left-0.5 top-0",
+	topRight: "right-0.5 top-0",
+	bottomLeft: "left-0.5 bottom-0",
+	bottomRight: "right-0.5 bottom-0",
+	top: "left-1/2 top-0 -translate-x-1/2",
+	bottom: "left-1/2 bottom-0 -translate-x-1/2",
+	left: "left-0.5 top-1/2 -translate-y-1/2",
+	right: "right-0.5 top-1/2 -translate-y-1/2",
+};
 
 type SudokuBoardProps = {
 	board: SudokuBoardState;
@@ -45,6 +53,9 @@ type SudokuBoardProps = {
 	className?: string;
 	/** Killer sudoku cages: dashed outlines plus a sum in each cage's corner. */
 	cages?: KillerCage[];
+	/** Outside digit mode the selected cell gets a ring on its edge. */
+	mode?: SudokuInputMode;
+	cornerLayout?: CornerNoteLayout;
 };
 
 export function SudokuBoard({
@@ -56,6 +67,8 @@ export function SudokuBoard({
 	hidden = false,
 	className = "",
 	cages,
+	mode = "digit",
+	cornerLayout = "spread",
 }: SudokuBoardProps) {
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
@@ -70,7 +83,7 @@ export function SudokuBoard({
 
 	return (
 		<div
-			className={`puzzle-board grid aspect-square w-full select-none grid-cols-9 grid-rows-9 rounded-lg border-2 border-slate-600 bg-white shadow-lg dark:border-slate-300/80 dark:bg-slate-900 ${className}`}
+			className={`puzzle-board grid aspect-square w-full touch-manipulation select-none grid-cols-9 grid-rows-9 rounded-lg border-2 border-slate-600 bg-white shadow-lg dark:border-slate-300/80 dark:bg-slate-900 ${className}`}
 		>
 			{grid.map((value, cell) => {
 				const row = rowOf(cell);
@@ -105,6 +118,13 @@ export function SudokuBoard({
 						: "",
 				].join(" ");
 
+				// Outside digit mode the selected cell also gets a solid ring on
+				// its edge: clear of the notes, and unlike the dashed cage lines.
+				const modeRing =
+					isSelected && mode !== "digit"
+						? "inset-ring-2 inset-ring-sky-700 dark:inset-ring-sky-300"
+						: "";
+
 				const background = isSelected
 					? "bg-sky-300/60 dark:bg-sky-400/30"
 					: isHint
@@ -128,7 +148,7 @@ export function SudokuBoard({
 							col: col + 1,
 						})}
 						onClick={() => onSelectCell?.(cell)}
-						className={`relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
+						className={`@container relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} ${modeRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
 					>
 						{cageEdges && !hidden ? (
 							<span
@@ -168,16 +188,32 @@ export function SudokuBoard({
 							</span>
 						) : (
 							<>
-								{digitsInMask(board.corner[cell]).map((digit, index) => (
-									<span
-										key={digit}
-										className={`absolute text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300 ${
-											CORNER_SLOTS[index] ?? CORNER_SLOTS[7]
-										}`}
-									>
-										{digit}
-									</span>
-								))}
+								{cornerNoteGroups(board.corner[cell], cornerLayout).map(
+									(group) =>
+										cornerLayout === "topRight" ? (
+											// One line that shrinks with the cell (cqw) rather than
+											// wrapping into the center notes; the class is the
+											// fallback where container units are unsupported.
+											<span
+												key={group.slot}
+												className="absolute inset-x-0.5 top-0 whitespace-nowrap text-right text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300"
+												style={{
+													fontSize: `min(clamp(0.5rem, 1.7vw, 0.72rem), calc((100cqw - 0.25rem) / ${(group.digits.length * 0.62).toFixed(2)}))`,
+												}}
+											>
+												{group.digits.join("")}
+											</span>
+										) : (
+											<span
+												key={group.slot}
+												className={`absolute whitespace-nowrap text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300 ${
+													CORNER_SLOTS[group.slot]
+												}`}
+											>
+												{group.digits.join("")}
+											</span>
+										),
+								)}
 								{board.center[cell] !== 0 ? (
 									<span className="text-[clamp(0.5rem,1.9vw,0.82rem)] font-semibold tracking-tight text-slate-600 dark:text-slate-300">
 										{digitsInMask(board.center[cell]).join("")}

@@ -1,4 +1,4 @@
-import type { DiceGame } from "@arcadeclub/core/dice/engine";
+import type { PushluckGame } from "@arcadeclub/core/dice/engine";
 import type { PushluckView } from "@arcadeclub/core/dice/pushluck";
 import {
 	diceSeatName,
@@ -6,6 +6,7 @@ import {
 	latestNews,
 	pushluckPick,
 	pushluckStep,
+	standings,
 } from "@arcadeclub/core/dice/table-view";
 import { Bot, Flag, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
@@ -13,10 +14,10 @@ import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
 import { DicePage } from "./Chrome";
 import { DieFace } from "./Die";
+import { DiceEnd } from "./End";
 import { DiceRulesSheet } from "./RulesSheet";
 import {
 	AutopilotNote,
-	DiceEnd,
 	DiceTableTop,
 	SeatMenu,
 	SpectatorNote,
@@ -36,7 +37,7 @@ export function PushluckTable({
 	table,
 	view,
 	controls,
-}: Props & { game: DiceGame }) {
+}: Props & { game: PushluckGame }) {
 	const { locale } = useI18n();
 	const dice = useMessages().games.dice;
 	const words = dice.pushluck.table;
@@ -85,7 +86,15 @@ export function PushluckTable({
 				</p>
 			) : null}
 			{view.phase === "finished" ? (
-				<DiceEnd table={table} view={view} controls={controls} />
+				<DiceEnd
+					table={table}
+					winners={view.winners}
+					rows={standings(view).map(({ seat, total }) => ({
+						seat,
+						value: total.toLocaleString(locale),
+					}))}
+					controls={controls}
+				/>
 			) : null}
 			<DiceRulesSheet
 				game={game}

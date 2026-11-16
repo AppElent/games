@@ -7,9 +7,11 @@ import {
 	cardName,
 	cardTilt,
 	isTeamGame,
+	openTrickSlots,
 	seatName,
 	sortTricksHand,
 	teamName,
+	tricksChoices,
 	tricksDealSummary,
 	tricksHint,
 	tricksMatchTitle,
@@ -18,8 +20,9 @@ import {
 	tricksSeatNote,
 	tricksStandings,
 	tricksTeams,
+	tricksWinsLine,
 } from "@arcadeclub/core/cards/table-view";
-import type { TricksView } from "@arcadeclub/core/cards/tricks";
+import type { TricksAction, TricksView } from "@arcadeclub/core/cards/tricks";
 import { useEffect, useMemo, useState } from "react";
 import {
 	type HostInstance,
@@ -71,8 +74,7 @@ function TrickArea({
 	const live = view.trick.length > 0 || !view.lastTrick;
 	const plays = live ? view.trick : (view.lastTrick?.plays ?? []);
 	const winner = live ? null : (view.lastTrick?.winner ?? null);
-	const open =
-		view.phase === "playing" ? table.seats.length - view.trick.length : 0;
+	const open = openTrickSlots(view);
 	const height = width * 1.4;
 	return (
 		<View style={styles.trickWrap}>
@@ -198,6 +200,8 @@ export function TricksTable({
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";
 	const firstTrick = view.tricksTaken.every((count) => count === 0);
+	const choices = tricksChoices(view, you);
+	const sittingOut = you !== null && (view.out[you] || view.folded[you]);
 
 	useEffect(() => {
 		if (!choosing) setSelected([]);
@@ -263,6 +267,10 @@ export function TricksTable({
 	}
 
 	const hint = tricksHint(view, you, words, rules);
+	function choose(action: TricksAction) {
+		haptics.moveMade();
+		controls.act(action);
+	}
 	const roundLabel = tricksRoundLabel(view, words);
 	const teamGame = isTeamGame(view);
 	const teams = teamGame ? tricksTeams(view, you) : [];
@@ -282,7 +290,7 @@ export function TricksTable({
 	);
 	const lastRound = view.scores.at(-1);
 	const bids = bidTotal(view);
-	const winsLine = highWins ? tt.highestWins : tt.lowestWins;
+	const winsLine = tricksWinsLine(view, rules, words);
 	const trump = view.trump;
 	// In a bidding game each seat's line says what it bid and took.
 	const roundName = (seat: number) => {
@@ -332,6 +340,9 @@ export function TricksTable({
 					/>
 					<PillRow>
 						<Pill>{roundLabel}</Pill>
+						{view.stake !== null ? (
+							<Pill>{fmt(tt.stakePill, { stake: view.stake })}</Pill>
+						) : null}
 						{calling && view.offered ? (
 							<Pill icon={suitIcon(view.offered)}>
 								{fmt(tt.offerPill, { suit: cards.suits[view.offered] })}
@@ -505,6 +516,40 @@ export function TricksTable({
 								testID="cards-pass-cards"
 							/>
 						) : null}
+						{choices.answer ? (
+							<>
+								<TableButton
+									label={tt.stayButton}
+									disabled={controls.pending}
+									onPress={() => choose({ type: "stay" })}
+									testID="cards-stay"
+								/>
+								<TableButton
+									label={tt.foldButton}
+									ghost
+									disabled={controls.pending}
+									onPress={() => choose({ type: "fold" })}
+									testID="cards-fold"
+								/>
+							</>
+						) : null}
+						{choices.knock ? (
+							<TableButton
+								label={tt.knockButton}
+								disabled={controls.pending}
+								onPress={() => choose({ type: "knock" })}
+								testID="cards-knock"
+							/>
+						) : null}
+						{choices.swap ? (
+							<TableButton
+								label={tt.swapButton}
+								ghost
+								disabled={controls.pending}
+								onPress={() => choose({ type: "swapHand" })}
+								testID="cards-swap-hand"
+							/>
+						) : null}
 						{you !== null && table.seats[you]?.autopilot ? (
 							<TableButton
 								label={cards.table.autopilotBack}
@@ -528,7 +573,7 @@ export function TricksTable({
 						const canPlay = mine && legal.has(card);
 						return {
 							playable: canPlay,
-							dim: mine && !canPlay,
+							dim: (mine && !canPlay) || sittingOut,
 							disabled: !canPlay,
 						};
 					}}
@@ -573,6 +618,15 @@ export function TricksTable({
 											})}
 								</FeltText>
 							) : null}
+							{view.dealWinner !== null ? (
+								<FeltText variant="body" style={styles.centered}>
+									{view.dealWinner === you
+										? tt.youDealWinner
+										: fmt(tt.dealWinner, {
+												name: seatName(cards, table, view.dealWinner),
+											})}
+								</FeltText>
+							) : null}
 							{dealSummary?.headlines.map((line) => (
 								<FeltText key={line} variant="body" style={styles.centered}>
 									{line}
@@ -613,6 +667,7 @@ export function TricksTable({
 											</FeltText>
 											<FeltText variant="body">
 												{plural(locale, points, tt.totalPoints)}
+												{view.out[seat] ? ` · ${tt.outNote}` : ""}
 											</FeltText>
 										</View>
 									))}

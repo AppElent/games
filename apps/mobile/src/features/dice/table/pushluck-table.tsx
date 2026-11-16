@@ -3,7 +3,7 @@
  * aside), what is already set aside, the turn total, roll or bank, and
  * everyone's score against the target.
  */
-import type { DiceGame } from "@arcadeclub/core/dice/engine";
+import type { PushluckGame } from "@arcadeclub/core/dice/engine";
 import type { PushluckView } from "@arcadeclub/core/dice/pushluck";
 import {
 	diceSeatName,
@@ -11,6 +11,7 @@ import {
 	latestNews,
 	pushluckPick,
 	pushluckStep,
+	standings,
 } from "@arcadeclub/core/dice/table-view";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
@@ -30,18 +31,18 @@ import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { DiceRulesSheet } from "../rules/dice-rules-sheet";
+import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
 import {
 	AutopilotNote,
 	DiceTableHeader,
-	EndPanel,
 	SeatMenu,
 	SpectatorNote,
 	seatManagement,
 	useAnnounce,
-	useNow,
 } from "./table-parts";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
+import { useNow } from "./use-now";
 
 type Props = {
 	table: DiceTableBundle;
@@ -58,7 +59,7 @@ export function PushluckTable({
 	table,
 	view,
 	controls,
-}: Props & { game: DiceGame }) {
+}: Props & { game: PushluckGame }) {
 	const { t, locale } = useI18n();
 	const dice = t.games.dice;
 	const words = dice.pushluck.table;
@@ -75,7 +76,15 @@ export function PushluckTable({
 			<DiceTableHeader name={text.name} onRules={openRules} />
 			<Screen>
 				{view.phase === "finished" ? (
-					<EndPanel table={table} view={view} controls={controls} />
+					<DiceEndPanel
+						table={table}
+						winners={view.winners}
+						rows={standings(view).map(({ seat, total }) => ({
+							seat,
+							value: total.toLocaleString(locale),
+						}))}
+						controls={controls}
+					/>
 				) : null}
 				{view.finalRoundBy !== null && view.phase === "playing" ? (
 					<View

@@ -1,8 +1,9 @@
-import { type DiceGame, familyRules } from "@arcadeclub/core/dice/engine";
+import { diceRules, type ScoresheetGame } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
 	latestNews,
+	standings,
 	turnStep,
 } from "@arcadeclub/core/dice/table-view";
 import { Bot, MoreHorizontal } from "lucide-react";
@@ -11,10 +12,10 @@ import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
 import { DicePage } from "./Chrome";
 import { DieFace } from "./Die";
+import { DiceEnd } from "./End";
 import { DiceRulesSheet } from "./RulesSheet";
 import {
 	AutopilotNote,
-	DiceEnd,
 	DiceTableTop,
 	SeatMenu,
 	SpectatorNote,
@@ -23,7 +24,7 @@ import {
 import type { DiceTableBundle, DiceTableControls } from "./useDiceTable";
 
 type Props = {
-	game: DiceGame;
+	game: ScoresheetGame;
 	table: DiceTableBundle;
 	view: ScoresheetView;
 	controls: DiceTableControls;
@@ -68,7 +69,15 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 				</p>
 			) : null}
 			{view.phase === "finished" ? (
-				<DiceEnd table={table} view={view} controls={controls} />
+				<DiceEnd
+					table={table}
+					winners={view.winners}
+					rows={standings(view).map(({ seat, total }) => ({
+						seat,
+						value: total,
+					}))}
+					controls={controls}
+				/>
 			) : null}
 			<DiceRulesSheet
 				game={game}
@@ -207,7 +216,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 	const dice = useMessages().games.dice;
 	const now = useNow(15_000);
 	const [menuSeat, setMenuSeat] = useState<number | null>(null);
-	const rules = familyRules(game, table.options, "scoresheet");
+	const rules = diceRules(game, table.options);
 	const you = table.you;
 	const step = turnStep(view, you);
 	const choosing = step === "hold" || step === "score";
@@ -337,7 +346,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 					</tbody>
 					<tbody>{lower.map(row)}</tbody>
 					<tfoot>
-						{rules?.extraAllSame
+						{rules.extraAllSame
 							? totals(dice.table.extra, (seat) => view.sheets[seat].extra)
 							: null}
 						{totals(dice.table.total, (seat) => view.sheets[seat].total, true)}

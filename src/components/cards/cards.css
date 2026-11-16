@@ -878,6 +878,10 @@ button.pile:disabled {
 	color: #b81f2d;
 }
 
+.flag[data-tone="gold"] {
+	background: var(--gold);
+}
+
 .flag[data-tone="danger"] {
 	color: #fff;
 	background: #c32a2a;

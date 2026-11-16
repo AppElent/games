@@ -28,6 +28,13 @@ export const PASS_DIRECTIONS = ["left", "right", "across", "keep"] as const;
 export type PassDirection = (typeof PASS_DIRECTIONS)[number];
 
 /**
+ * How a match ends: once someone reaches `target` and the lowest total wins,
+ * or seats drop out at `target` and the last one in wins.
+ */
+export const MATCH_ENDS = ["lowestAtTarget", "lastStanding"] as const;
+export type MatchEnd = (typeof MATCH_ENDS)[number];
+
+/**
  * A bidding phase before play: each seat says how many tricks it will take,
  * starting left of the dealer, and a deal scores bids met and missed.
  */
@@ -66,10 +73,23 @@ export type TricksRules = {
 	/** Taking every positive card in a deal gives their total to everyone else instead. */
 	shootTheMoon: boolean;
 	/**
-	 * The match ends after the deal in which someone reaches this. Null: it ends
-	 * when the schedule runs out of deals.
+	 * The total that ends the match, or puts a seat out (see `matchEnd`). Null:
+	 * the match ends when the schedule runs out of deals.
 	 */
 	target: number | null;
+	/** Absent: the lowest total wins once someone reaches `target`. */
+	matchEnd?: MatchEnd;
+	/**
+	 * Absent: no stakes. Present: each deal is played for a stake of 1 that any
+	 * seat may raise by knocking; everyone else then stays in or folds. With
+	 * `lastLife`, a deal starts at 2 while someone is one point from out.
+	 */
+	knocking?: { lastLife: boolean };
+	/**
+	 * Rank sets: a hand made only of one set's ranks may be swapped for a fresh
+	 * one before the deal's first card. Absent or empty: no swapping.
+	 */
+	swapHands?: readonly (readonly Rank[])[];
 	/** Bids before play; absent or null for none. */
 	bidding?: TricksBidding | null;
 	/** The highest total wins instead of the lowest. */
@@ -135,7 +155,15 @@ export type TricksState = {
 	dealer: number;
 	/** Deals played so far, counting this one. */
 	round: number;
-	phase: "trump" | "passing" | "bidding" | "playing" | "roundOver" | "finished";
+	/** "trump": a seat chooses trump; "knocking": a knock (or the last-life raise) waits for answers. */
+	phase:
+		| "trump"
+		| "passing"
+		| "bidding"
+		| "knocking"
+		| "playing"
+		| "roundOver"
+		| "finished";
 	/** This deal's direction; "keep" when nobody passes. */
 	passDirection: PassDirection;
 	/** Cards each seat set aside to pass, until everyone has. Private. */
@@ -179,6 +207,32 @@ export type TricksState = {
 	winners: number[];
 	events: CardEvent[];
 	nextSeq: number;
+	// Optional, so tables dealt before stakes and elimination still read.
+	/** Seats out of the match; they are dealt no cards. */
+	out?: boolean[];
+	/** Seats that folded this deal: their cards are gone and they play no more. */
+	folded?: boolean[];
+	/** Points each seat has already lost this deal by folding. */
+	paid?: number[];
+	/** This deal's stake, with `knocking`. */
+	stake?: number;
+	/** Who knocked last: they may not knock again until someone else has. */
+	lastKnocker?: number | null;
+	knock?: KnockState | null;
+	/** Who won the last scored deal, for scorers that name one. */
+	dealWinner?: number | null;
+	/** Cards nobody was dealt, kept for games that swap hands. Private. */
+	stock?: CardId[];
+	/** Folded and swapped-away cards, face down. Private. */
+	mucked?: CardId[];
+};
+
+/** A raise waiting for answers. `by` is null for the last-life raise. */
+export type KnockState = {
+	by: number | null;
+	/** Seats that must answer, in answering order. */
+	asked: number[];
+	answers: Array<"stay" | "fold" | null>;
 };
 
 export type TricksAction =
@@ -186,6 +240,10 @@ export type TricksAction =
 	| { type: "bid"; count: number }
 	| { type: "play"; card: CardId }
 	| { type: "nextRound" }
+	| { type: "knock" }
+	| { type: "stay" }
+	| { type: "fold" }
+	| { type: "swapHand" }
 	| { type: "passTrump" }
 	| { type: "chooseTrump"; suit: Suit };
 
@@ -195,6 +253,10 @@ export const TRICKS_ACTIONS: Record<TricksAction["type"], true> = {
 	bid: true,
 	play: true,
 	nextRound: true,
+	knock: true,
+	stay: true,
+	fold: true,
+	swapHand: true,
 	passTrump: true,
 	chooseTrump: true,
 };
@@ -250,6 +312,17 @@ export type TricksView = {
 	moon: number | null;
 	winners: number[];
 	events: CardEvent[];
+	matchEnd: MatchEnd;
+	/** This deal's stake; null when the game has no stakes. */
+	stake: number | null;
+	folded: boolean[];
+	out: boolean[];
+	knock: KnockState | null;
+	lastKnocker: number | null;
+	/** Whether this seat may knock, or swap its hand, right now. */
+	canKnock: boolean;
+	canSwap: boolean;
+	dealWinner: number | null;
 };
 
 const suitOf = (card: CardId) => parseCard(card).suit as Suit;
@@ -340,26 +413,36 @@ export function passShift(direction: PassDirection, seats: number) {
 	}
 }
 
-/** Who takes the trick: the highest trump, else the highest card of the suit led. */
+/**
+ * Who takes the trick: the highest trump, else the highest card of the suit led.
+ * A seat that folded (`live` false) left its card in the trick: it still set the
+ * suit if it led, but cannot win.
+ */
 export function trickWinner(
 	rules: Pick<TricksRules, "ranks" | "trumpRanks">,
 	plays: readonly TrickPlay[],
 	trump: Suit | null,
+	live: (seat: number) => boolean = () => true,
 ) {
-	let best = plays[0];
-	for (const play of plays.slice(1)) {
-		const suit = suitOf(play.card);
-		// The best card so far is of the suit led or a trump: off-suit cards never beat it.
+	const led = suitOf(plays[0].card);
+	// Trumps beat the suit led, which beats the rest; those never win.
+	const tier = (card: CardId) =>
+		suitOf(card) === trump ? 2 : suitOf(card) === led ? 1 : 0;
+	let best: TrickPlay | undefined;
+	for (const play of plays.filter((candidate) => live(candidate.seat))) {
+		const [mine, theirs] = [tier(play.card), best ? tier(best.card) : -1];
 		const beats =
-			suit === suitOf(best.card)
-				? rankIndex(rules, play.card, trump) >
-					rankIndex(rules, best.card, trump)
-				: suit === trump;
+			mine > theirs ||
+			(best !== undefined &&
+				mine === theirs &&
+				mine > 0 &&
+				rankIndex(rules, play.card, trump) >
+					rankIndex(rules, best.card, trump));
 		if (beats) {
 			best = play;
 		}
 	}
-	return best.seat;
+	return (best ?? plays[0]).seat;
 }
 
 function opener(rules: TricksRules, state: TricksState) {
@@ -372,7 +455,42 @@ function opener(rules: TricksRules, state: TricksState) {
 			return holder;
 		}
 	}
-	return (state.dealer + 1) % state.hands.length;
+	return nextLive(state, state.dealer);
+}
+
+const isOut = (state: TricksState, seat: number) => state.out?.[seat] === true;
+
+/** Still playing this deal: not out of the match and not folded. */
+const inDeal = (state: TricksState, seat: number) =>
+	!isOut(state, seat) && state.folded?.[seat] !== true;
+
+function nextWhere(
+	state: TricksState,
+	seat: number,
+	keep: (seat: number) => boolean,
+) {
+	const seats = state.hands.length;
+	for (let step = 1; step <= seats; step += 1) {
+		const next = (seat + step) % seats;
+		if (keep(next)) {
+			return next;
+		}
+	}
+	return seat;
+}
+
+/** The next seat along that is still in the match. */
+function nextLive(state: TricksState, seat: number) {
+	return nextWhere(state, seat, (next) => !isOut(state, next));
+}
+
+/** The next seat along that is still in this deal. */
+function nextInDeal(state: TricksState, seat: number) {
+	return nextWhere(state, seat, (next) => inDeal(state, next));
+}
+
+function seatsInDeal(state: TricksState) {
+	return state.hands.flatMap((_, seat) => (inDeal(state, seat) ? [seat] : []));
 }
 
 function tricksPlayed(state: TricksState) {
@@ -492,6 +610,7 @@ const mostCards = (deck: number, seats: number) => Math.floor(deck / seats);
  */
 const SCHEDULES = {
 	fullDeck: (deck: number, seats: number, _round: number) => deck / seats,
+	fourEach: (_deck: number, _seats: number, _round: number) => 4,
 	/** One card, up to as many as the deck allows, and back down to one. */
 	upDown: (deck: number, seats: number, round: number) => {
 		const most = mostCards(deck, seats);
@@ -572,22 +691,32 @@ function dealTricks(
 	seats: number,
 	random: Rng,
 	dealer: number,
-	carried?: Pick<TricksState, "round" | "scores" | "events" | "nextSeq">,
+	carried?: Pick<
+		TricksState,
+		"round" | "scores" | "events" | "nextSeq" | "out"
+	>,
 ): TricksState {
 	const stock = shuffle(tricksDeck(rules, seats), random);
 	const round = carried?.round ?? 1;
-	const handSize = SCHEDULES[rules.schedule](stock.length, seats, round);
+	const out = carried?.out ?? Array.from({ length: seats }, () => false);
+	const live = out.flatMap((gone, seat) => (gone ? [] : [seat]));
+	const handSize = SCHEDULES[rules.schedule](stock.length, live.length, round);
 	if (
 		handSize === null ||
 		!Number.isInteger(handSize) ||
 		handSize < 1 ||
-		handSize * seats > stock.length
+		handSize * live.length > stock.length
 	) {
 		throw new Error(
-			`the deck does not deal ${handSize} cards to ${seats} seats`,
+			`the deck does not deal ${handSize} cards to ${live.length} seats`,
 		);
 	}
-	const hands = deal(stock, seats, handSize);
+	// Seats out of the match get nothing.
+	const dealt = deal(stock, live.length, handSize);
+	const hands: CardId[][] = Array.from({ length: seats }, () => []);
+	live.forEach((seat, index) => {
+		hands[seat] = dealt[index];
+	});
 	// `deal` took the hands off the stock: what remains was never dealt.
 	const undealt = stock;
 	const direction = passDirectionFor(rules, seats, round);
@@ -627,15 +756,60 @@ function dealTricks(
 		winners: [],
 		events: carried?.events ?? [],
 		nextSeq: carried?.nextSeq ?? 0,
+		...(rules.matchEnd === "lastStanding" ? { out } : {}),
+		...(rules.swapHands ? { stock: undealt } : {}),
 	};
+	if (rules.knocking) {
+		state.folded = hands.map(() => false);
+		state.paid = hands.map(() => 0);
+		state.stake = 1;
+		state.lastKnocker = null;
+		state.knock = null;
+		state.dealWinner = null;
+	}
 	// While cards are being passed nobody has the turn, and naming the 2 of
 	// clubs' holder early would say who was dealt it: the exchange picks the
 	// opener. A trump call and bidding start left of the dealer, so the dealer
 	// goes last.
 	state.turn =
 		state.phase === "playing" ? opener(rules, state) : (dealer + 1) % seats;
-	pushEvent(state, { type: "deal", round });
+	const skipped = out.flatMap((gone, seat) => (gone ? [seat] : []));
+	pushEvent(state, {
+		type: "deal",
+		round,
+		...(skipped.length > 0 ? { skipped } : {}),
+	});
+	if (rules.knocking?.lastLife) {
+		raiseForLastLife(rules, state);
+	}
 	return state;
+}
+
+/** The total that ends the match or puts a seat out; never reached when only the schedule ends it. */
+function limitOf(rules: TricksRules) {
+	return rules.target ?? Number.POSITIVE_INFINITY;
+}
+
+/** Seats one point from out: the deal starts at 2, and the others choose first. */
+function raiseForLastLife(rules: TricksRules, state: TricksState) {
+	const totals = totalsOf(state.scores, state.hands.length);
+	const lastLife = (seat: number) => totals[seat] === limitOf(rules) - 1;
+	const live = seatsInDeal(state);
+	if (!live.some(lastLife)) {
+		return;
+	}
+	state.stake = 2;
+	const asked = live.filter((seat) => !lastLife(seat));
+	pushEvent(state, { type: "raise", seat: null, stake: 2 });
+	if (asked.length === 0) {
+		return;
+	}
+	state.phase = "knocking";
+	state.knock = {
+		by: null,
+		asked,
+		answers: state.hands.map(() => null),
+	};
 }
 
 /** Deals so `starter` sits left of the dealer. */
@@ -657,7 +831,13 @@ export function nextTricksStarter(state: TricksState) {
  * A deal's points per seat. In a team game every seat scores its team's
  * points, so a team's total is any of its seats' totals.
  */
-type DealScore = { points: number[]; moon: number | null; teams?: TeamDeal };
+type DealScore = {
+	points: number[];
+	moon: number | null;
+	teams?: TeamDeal;
+	/** The seat that won the deal, for scorers that have one. */
+	winner?: number;
+};
 
 /** Penalty cards: each card scores its value, unless someone shot the moon. */
 function scorePenaltyCards(rules: TricksRules, state: TricksState): DealScore {
@@ -697,6 +877,27 @@ function scoreBids(rules: TricksRules, state: TricksState): DealScore {
 				: -bidding.perTrickOff * Math.abs(taken - bid);
 		}),
 		moon: null,
+	};
+}
+
+/**
+ * Only the last trick counts: whoever takes it (or is the last one in after
+ * everyone else folded) wins the deal, and everyone else still in loses the
+ * stake. Folded seats lost theirs when they folded.
+ */
+function scoreLastTrick(_rules: TricksRules, state: TricksState): DealScore {
+	const playing = seatsInDeal(state);
+	const winner =
+		playing.length === 1 ? playing[0] : (state.lastTrick?.winner ?? -1);
+	const stake = state.stake ?? 1;
+	return {
+		points: state.hands.map(
+			(_, seat) =>
+				(state.paid?.[seat] ?? 0) +
+				(inDeal(state, seat) && seat !== winner ? stake : 0),
+		),
+		moon: null,
+		winner,
 	};
 }
 
@@ -745,12 +946,13 @@ function scorePointsAndRoem(rules: TricksRules, state: TricksState): DealScore {
 }
 
 /**
- * Scorers by name. A new game whose deals score differently (the last trick
- * only) adds one here and names it in its rules.
+ * Scorers by name. A new game whose deals score differently adds one here
+ * and names it in its rules.
  */
 const SCORERS = {
 	penaltyCards: scorePenaltyCards,
 	bids: scoreBids,
+	lastTrick: scoreLastTrick,
 	pointsAndRoem: scorePointsAndRoem,
 } satisfies Record<
 	string,
@@ -764,12 +966,16 @@ function totalsOf(scores: readonly number[][], seats: number) {
 }
 
 function scoreDeal(rules: TricksRules, state: TricksState) {
-	const { points, moon, teams } = SCORERS[rules.scoring](rules, state);
+	const { points, moon, teams, winner } = SCORERS[rules.scoring](rules, state);
 	state.scores.push(points);
 	state.moon = moon;
 	state.lastDeal = teams ?? null;
 	if (moon !== null) {
 		pushEvent(state, { type: "moon", seat: moon });
+	}
+	if (winner !== undefined) {
+		state.dealWinner = winner;
+		pushEvent(state, { type: "dealWon", seat: winner });
 	}
 	const seatsOf = (team: number) =>
 		teamsOf(rules, state.hands.length).flatMap((own, seat) =>
@@ -780,6 +986,10 @@ function scoreDeal(rules: TricksRules, state: TricksState) {
 	}
 	if (teams && teams.pit !== null) {
 		pushEvent(state, { type: "pit", seats: seatsOf(teams.pit) });
+	}
+	if (rules.matchEnd === "lastStanding") {
+		endByElimination(rules, state);
+		return;
 	}
 	// Partners score the same points, so a seat's total is its team's: the
 	// match ends and is won by team.
@@ -799,6 +1009,29 @@ function scoreDeal(rules: TricksRules, state: TricksState) {
 		total === best ? [seat] : [],
 	);
 	pushEvent(state, { type: "win", seats: state.winners });
+}
+
+/** Seats reaching `target` drop out; the match ends when one is left. */
+function endByElimination(rules: TricksRules, state: TricksState) {
+	const totals = totalsOf(state.scores, state.hands.length);
+	const out = state.out ?? state.hands.map(() => false);
+	const dropped = totals.flatMap((total, seat) =>
+		!out[seat] && total >= limitOf(rules) ? [seat] : [],
+	);
+	for (const seat of dropped) {
+		out[seat] = true;
+		pushEvent(state, { type: "out", seat });
+	}
+	state.out = out;
+	const live = out.flatMap((gone, seat) => (gone ? [] : [seat]));
+	if (live.length > 1) {
+		state.phase = "roundOver";
+		return;
+	}
+	state.phase = "finished";
+	// The deal's winner never loses points, so someone is always left.
+	state.winners = live;
+	pushEvent(state, { type: "win", seats: live });
 }
 
 function passCards(
@@ -974,6 +1207,9 @@ function playCard(
 	if (state.phase === "bidding") {
 		throw new GameRuleError("cardsBidFirst");
 	}
+	if (state.phase === "knocking") {
+		throw new GameRuleError("cardsKnockPending");
+	}
 	if (state.phase !== "playing") {
 		throw new GameRuleError("noActiveRound");
 	}
@@ -997,12 +1233,23 @@ function playCard(
 		state.broken = true;
 		pushEvent(state, { type: "broken", suit: breaking.suit });
 	}
-	const seats = state.hands.length;
-	if (state.trick.length < seats) {
-		state.turn = (seat + 1) % seats;
+	if (!trickComplete(state)) {
+		state.turn = nextInDeal(state, seat);
 		return;
 	}
-	const winner = trickWinner(rules, state.trick, state.trump);
+	takeTrick(rules, state);
+}
+
+/** Every seat still in the deal has played to the trick; folded seats' cards stay in it. */
+function trickComplete(state: TricksState) {
+	const plays = state.trick.filter((play) => inDeal(state, play.seat));
+	return plays.length > 0 && plays.length === seatsInDeal(state).length;
+}
+
+function takeTrick(rules: TricksRules, state: TricksState) {
+	const winner = trickWinner(rules, state.trick, state.trump, (seat) =>
+		inDeal(state, seat),
+	);
 	const cards = state.trick.map((play) => play.card);
 	state.taken[winner].push(...cards);
 	state.tricksTaken[winner] += 1;
@@ -1026,6 +1273,170 @@ function playCard(
 	}
 }
 
+function muck(state: TricksState, cards: readonly CardId[]) {
+	state.mucked = [...(state.mucked ?? []), ...cards];
+}
+
+/** Why `seat` can't knock now, or null when it can. */
+function knockRefusal(rules: TricksRules, state: TricksState, seat: number) {
+	if (!rules.knocking) {
+		return "cardsWrongAction";
+	}
+	if (state.phase === "knocking") {
+		return "cardsKnockPending";
+	}
+	if (state.phase !== "playing") {
+		return "noActiveRound";
+	}
+	if (isOut(state, seat)) {
+		return "cardsOutOfMatch";
+	}
+	if (!inDeal(state, seat)) {
+		return "cardsFolded";
+	}
+	if (state.lastKnocker === seat) {
+		return "cardsKnockedLast";
+	}
+	// Losing more than this would put the seat past the limit for nothing.
+	const total = totalsOf(state.scores, state.hands.length)[seat];
+	if (
+		rules.matchEnd === "lastStanding" &&
+		total + (state.stake ?? 1) >= limitOf(rules)
+	) {
+		return "cardsKnockAtLimit";
+	}
+	return null;
+}
+
+function knock(rules: TricksRules, state: TricksState, seat: number) {
+	const why = knockRefusal(rules, state, seat);
+	if (why) {
+		throw new GameRuleError(why);
+	}
+	state.stake = (state.stake ?? 1) + 1;
+	state.lastKnocker = seat;
+	state.phase = "knocking";
+	// Answers go round from the knocker's left.
+	const asked: number[] = [];
+	for (let next = nextInDeal(state, seat); next !== seat; ) {
+		asked.push(next);
+		next = nextInDeal(state, next);
+	}
+	state.knock = { by: seat, asked, answers: state.hands.map(() => null) };
+	pushEvent(state, { type: "raise", seat, stake: state.stake });
+}
+
+function answerKnock(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+	stay: boolean,
+) {
+	if (!rules.knocking) {
+		throw new GameRuleError("cardsWrongAction");
+	}
+	const pending = state.knock;
+	if (state.phase !== "knocking" || !pending) {
+		throw new GameRuleError("cardsNothingToAnswer");
+	}
+	if (pending.by === seat) {
+		throw new GameRuleError("cardsOwnKnock");
+	}
+	if (!pending.asked.includes(seat)) {
+		throw new GameRuleError("cardsNotAsked");
+	}
+	if (pending.answers[seat] !== null) {
+		throw new GameRuleError("cardsAlreadyAnswered");
+	}
+	pending.answers[seat] = stay ? "stay" : "fold";
+	if (stay) {
+		pushEvent(state, { type: "stay", seat });
+	} else {
+		// Folding costs the stake as it was before this raise.
+		const cost = (state.stake ?? 1) - 1;
+		const folded = state.folded ?? state.hands.map(() => false);
+		const paid = state.paid ?? state.hands.map(() => 0);
+		folded[seat] = true;
+		paid[seat] += cost;
+		state.folded = folded;
+		state.paid = paid;
+		muck(state, state.hands[seat]);
+		state.hands[seat] = [];
+		pushEvent(state, { type: "fold", seat, cost });
+	}
+	if (pending.asked.some((asked) => pending.answers[asked] === null)) {
+		return;
+	}
+	resumeAfterKnock(rules, state);
+}
+
+/** Everyone has answered: play on without the folded seats, or end the deal. */
+function resumeAfterKnock(rules: TricksRules, state: TricksState) {
+	state.knock = null;
+	state.phase = "playing";
+	const left = seatsInDeal(state);
+	if (left.length === 1) {
+		muck(
+			state,
+			state.trick.map((play) => play.card),
+		);
+		state.trick = [];
+		scoreDeal(rules, state);
+		return;
+	}
+	// A folded seat's card stays in the trick: it still sets the suit, but can't win.
+	if (!inDeal(state, state.turn)) {
+		state.turn = nextInDeal(state, state.turn);
+	}
+	if (trickComplete(state)) {
+		takeTrick(rules, state);
+	}
+}
+
+/** Why `seat` can't swap its hand now, or null when it can. */
+function swapRefusal(rules: TricksRules, state: TricksState, seat: number) {
+	const sets = rules.swapHands ?? [];
+	if (sets.length === 0) {
+		return "cardsWrongAction";
+	}
+	if (
+		(state.phase !== "playing" && state.phase !== "knocking") ||
+		state.trick.length > 0 ||
+		tricksPlayed(state) > 0
+	) {
+		return "cardsSwapTooLate";
+	}
+	if (isOut(state, seat)) {
+		return "cardsOutOfMatch";
+	}
+	if (!inDeal(state, seat)) {
+		return "cardsFolded";
+	}
+	const hand = state.hands[seat];
+	const fits = sets.some((ranks) =>
+		hand.every((card) => ranks.includes(parseCard(card).rank as Rank)),
+	);
+	if (hand.length === 0 || !fits) {
+		return "cardsHandNotSwappable";
+	}
+	if ((state.stock?.length ?? 0) < hand.length) {
+		return "cardsStockEmpty";
+	}
+	return null;
+}
+
+function swapHand(rules: TricksRules, state: TricksState, seat: number) {
+	const why = swapRefusal(rules, state, seat);
+	if (why) {
+		throw new GameRuleError(why);
+	}
+	const stock = state.stock ?? [];
+	// The old hand is set aside face down; it does not come back this deal.
+	muck(state, state.hands[seat]);
+	state.hands[seat] = stock.splice(stock.length - state.hands[seat].length);
+	pushEvent(state, { type: "swapHand", seat });
+}
+
 export function applyTricks(
 	rules: TricksRules,
 	previous: TricksState,
@@ -1044,6 +1455,16 @@ export function applyTricks(
 		case "play":
 			playCard(rules, state, seat, action.card);
 			return state;
+		case "knock":
+			knock(rules, state, seat);
+			return state;
+		case "stay":
+		case "fold":
+			answerKnock(rules, state, seat, action.type === "stay");
+			return state;
+		case "swapHand":
+			swapHand(rules, state, seat);
+			return state;
 		case "passTrump":
 			passTrump(state, seat);
 			return state;
@@ -1058,12 +1479,13 @@ export function applyTricks(
 				rules,
 				state.hands.length,
 				random,
-				(state.dealer + 1) % state.hands.length,
+				nextLive(state, state.dealer),
 				{
 					round: state.round + 1,
 					scores: state.scores,
 					events: state.events,
 					nextSeq: state.nextSeq,
+					out: state.out,
 				},
 			);
 	}
@@ -1122,6 +1544,15 @@ export function viewTricks(
 		moon: state.moon,
 		winners: state.winners,
 		events: state.events,
+		matchEnd: rules.matchEnd ?? "lowestAtTarget",
+		stake: rules.knocking ? (state.stake ?? 1) : null,
+		folded: state.hands.map((_, index) => state.folded?.[index] === true),
+		out: state.hands.map((_, index) => isOut(state, index)),
+		knock: state.knock ?? null,
+		lastKnocker: state.lastKnocker ?? null,
+		canKnock: seat !== null && knockRefusal(rules, state, seat) === null,
+		canSwap: seat !== null && swapRefusal(rules, state, seat) === null,
+		dealWinner: state.dealWinner ?? null,
 	};
 }
 
@@ -1150,6 +1581,12 @@ export function chooseTricksCard(
 	seat: number,
 ) {
 	const legal = legalTricksCards(rules, state, seat);
+	if (rules.scoring === "lastTrick") {
+		// Only the last trick counts: spend the weakest card, keep the best for it.
+		return [...legal].sort(
+			(a, b) => rankIndex(rules, a) - rankIndex(rules, b),
+		)[0];
+	}
 	const byRisk = (a: CardId, b: CardId) => risk(rules, a) - risk(rules, b);
 	// A card worth taking (the jack of diamonds) stays home rather than be given away.
 	const spare = (cards: CardId[]) => {
@@ -1185,6 +1622,112 @@ export function chooseTricksCard(
 		return highest(safe.length > 0 ? safe : following) as CardId;
 	}
 	return spare(following).sort(byRisk)[0];
+}
+
+/** Cards nobody can see in a hand any more: taken in tricks or on the table. */
+function playedCards(state: TricksState) {
+	return new Set([
+		...state.taken.flat(),
+		...state.trick.map((play) => play.card),
+	]);
+}
+
+/**
+ * The seat's cards that can still take the trick that decides: any card in hand
+ * before the last trick; on it, the seat's own play if it is winning, or a card
+ * in hand that would beat the winner.
+ */
+function liveCards(rules: TricksRules, state: TricksState, seat: number) {
+	const hand = state.hands[seat];
+	const takes = (plays: readonly TrickPlay[]) =>
+		trickWinner(rules, plays, state.trump, (other) => inDeal(state, other)) ===
+		seat;
+	const played = state.trick.find((play) => play.seat === seat);
+	if (hand.length + (played ? 1 : 0) !== 1) {
+		return hand;
+	}
+	if (played) {
+		return takes(state.trick) ? [played.card] : [];
+	}
+	return hand.filter(
+		(card) =>
+			state.trick.length === 0 || takes([...state.trick, { seat, card }]),
+	);
+}
+
+/** Live cards that no unseen card of their suit can beat. */
+function topCards(rules: TricksRules, state: TricksState, seat: number) {
+	const known = new Set(
+		[...playedCards(state), ...state.hands[seat]].map((card) => cardFace(card)),
+	);
+	return liveCards(rules, state, seat).filter((card) =>
+		rules.ranks
+			.slice(rankIndex(rules, card) + 1)
+			.every((rank) => known.has(`${suitOf(card)}${rank}`)),
+	);
+}
+
+/** The strongest card in a hand by rank, -1 for an empty hand. */
+function bestRank(rules: TricksRules, hand: readonly CardId[]) {
+	return Math.max(-1, ...hand.map((card) => rankIndex(rules, card)));
+}
+
+/** How often the computer knocks on a hand it doesn't trust, so knocks aren't a tell. */
+const BLUFF_CHANCE = 0.08;
+/** From this rank index up (Toepen: the 9 and 10) a card is worth staying in for. */
+const STRONG_FROM = 6;
+
+/** Knock with cards that should take the last trick, and now and then without. */
+export function wantsKnock(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+	random: Rng,
+) {
+	if (knockRefusal(rules, state, seat) !== null) {
+		return false;
+	}
+	const left = state.hands[seat].length;
+	const tops = topCards(rules, state, seat).length;
+	if (tops >= 2 || (tops === 1 && left <= 2)) {
+		return true;
+	}
+	return left <= 2 &&
+		bestRank(rules, liveCards(rules, state, seat)) >= STRONG_FROM - 1
+		? random() < BLUFF_CHANCE
+		: false;
+}
+
+/** Stay in with a card that could take the last trick, or when folding costs as much. */
+export function wantsToStay(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+) {
+	const stake = state.stake ?? 1;
+	const total = totalsOf(state.scores, state.hands.length)[seat];
+	const elimination = rules.matchEnd === "lastStanding";
+	// Out either way: losing more changes nothing.
+	if (elimination && total + stake - 1 >= limitOf(rules)) {
+		return true;
+	}
+	if (topCards(rules, state, seat).length > 0) {
+		return true;
+	}
+	const best = bestRank(rules, liveCards(rules, state, seat));
+	// Losing the raised stake would end the match for this seat: only stay when strong.
+	if (elimination && total + stake >= limitOf(rules)) {
+		return best >= STRONG_FROM + 1;
+	}
+	return best >= STRONG_FROM;
+}
+
+/** Swap a hand of only weak cards; a strong one stays. */
+function wantsSwap(rules: TricksRules, state: TricksState, seat: number) {
+	return (
+		swapRefusal(rules, state, seat) === null &&
+		bestRank(rules, state.hands[seat]) < rules.ranks.length / 2
+	);
 }
 
 /**
@@ -1394,6 +1937,7 @@ const CARD_CHOOSERS = {
 	penaltyCards: chooseTricksCard,
 	bids: chooseBidCard,
 	pointsAndRoem: choosePointsCard,
+	lastTrick: chooseTricksCard,
 } satisfies Record<
 	keyof typeof SCORERS,
 	(rules: TricksRules, state: TricksState, seat: number) => CardId
@@ -1403,6 +1947,7 @@ export function botTricksMove(
 	rules: TricksRules,
 	state: TricksState,
 	bots: readonly number[],
+	random: Rng = Math.random,
 ): BotMove<TricksAction> | null {
 	if (state.phase === "trump") {
 		if (!bots.includes(state.turn)) {
@@ -1420,10 +1965,28 @@ export function botTricksMove(
 		};
 	}
 	if (state.phase === "roundOver") {
-		// Humans deal the next round, unless all of them are on autopilot.
-		return bots.length === state.hands.length
+		// Humans deal the next round, unless every one still in is on autopilot.
+		const live = state.hands.flatMap((_, seat) =>
+			isOut(state, seat) ? [] : [seat],
+		);
+		return live.every((seat) => bots.includes(seat))
 			? { seat: bots[0], action: { type: "nextRound" }, pace: "reaction" }
 			: null;
+	}
+	if (state.phase === "knocking") {
+		const pending = state.knock;
+		const seat = bots.find(
+			(bot) => pending?.asked.includes(bot) && pending.answers[bot] === null,
+		);
+		return seat === undefined
+			? null
+			: {
+					seat,
+					action: {
+						type: wantsToStay(rules, state, seat) ? "stay" : "fold",
+					},
+					pace: "turn",
+				};
 	}
 	if (state.phase === "passing") {
 		const seat = bots.find((bot) => state.passing[bot] === null);
@@ -1447,15 +2010,30 @@ export function botTricksMove(
 				}
 			: null;
 	}
-	if (state.phase !== "playing" || !bots.includes(state.turn)) {
+	if (state.phase !== "playing") {
 		return null;
 	}
+	const swapper = bots.find((bot) => wantsSwap(rules, state, bot));
+	if (swapper !== undefined) {
+		return { seat: swapper, action: { type: "swapHand" }, pace: "turn" };
+	}
+	if (!bots.includes(state.turn)) {
+		return null;
+	}
+	if (wantsKnock(rules, state, state.turn, random)) {
+		return { seat: state.turn, action: { type: "knock" }, pace: "turn" };
+	}
+	// Before the first card, people may still swap their hands: give them time.
+	const opening =
+		(rules.swapHands?.length ?? 0) > 0 &&
+		state.trick.length === 0 &&
+		tricksPlayed(state) === 0;
 	return {
 		seat: state.turn,
 		action: {
 			type: "play",
 			card: CARD_CHOOSERS[rules.scoring](rules, state, state.turn),
 		},
-		pace: "turn",
+		pace: opening ? "reaction" : "turn",
 	};
 }

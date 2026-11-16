@@ -1,6 +1,10 @@
-import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
-import type { PushluckRules } from "@arcadeclub/core/dice/pushluck";
-import type { ScoresheetRules } from "@arcadeclub/core/dice/scoresheet";
+import {
+	type DiceGame,
+	diceRules,
+	type MexenGame,
+	type PushluckGame,
+	type ScoresheetGame,
+} from "@arcadeclub/core/dice/engine";
 import {
 	categoryEffect,
 	pushluckRuleLines,
@@ -23,19 +27,9 @@ function Section({
 	);
 }
 
-function Lines({ lines }: { lines: readonly string[] }) {
-	return (
-		<ul className="flex flex-col gap-1.5 text-sm leading-snug">
-			{lines.map((line) => (
-				<li key={line}>{line}</li>
-			))}
-		</ul>
-	);
-}
-
 /**
- * Written from the game's config and the table's house rules: every line
- * comes from a rule, so a new game in a family needs no new text.
+ * Written from the game's config and the table's house rules: every box's
+ * line comes from its rule, so a new sheet needs no new text.
  */
 export function DiceRulesSheet({
 	game,
@@ -54,18 +48,17 @@ export function DiceRulesSheet({
 		string,
 		{ label: string; hint: string }
 	>;
-	const r = dice.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
 	return (
 		<Sheet
 			open={open}
 			onClose={onClose}
-			title={fmt(r.heading, { game: text.name })}
+			title={fmt(dice.rules.heading, { game: text.name })}
 		>
 			<RulesBody game={game} options={options} />
 			{active.length > 0 ? (
-				<Section heading={r.extrasHeading}>
+				<Section heading={dice.rules.extrasHeading}>
 					<ul className="flex flex-col gap-1.5 text-sm leading-snug">
 						{active.map((option) => (
 							<li key={option.label}>
@@ -89,14 +82,33 @@ function RulesBody({
 }) {
 	switch (game.family) {
 		case "scoresheet":
-			return <ScoresheetRulesBody rules={diceRules(game, options)} />;
+			return <ScoresheetRules game={game} options={options} />;
 		case "pushluck":
-			return <PushluckRulesBody rules={diceRules(game, options)} />;
+			return <PushluckRules game={game} options={options} />;
+		case "mexen":
+			return <MexenRules game={game} options={options} />;
 	}
 }
 
-function ScoresheetRulesBody({ rules }: { rules: ScoresheetRules }) {
+function Lines({ lines }: { lines: readonly string[] }) {
+	return (
+		<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+			{lines.map((line) => (
+				<li key={line}>{line}</li>
+			))}
+		</ul>
+	);
+}
+
+function ScoresheetRules({
+	game,
+	options,
+}: {
+	game: ScoresheetGame;
+	options: readonly string[];
+}) {
 	const dice = useMessages().games.dice;
+	const rules = diceRules(game, options);
 	const r = dice.rules;
 	return (
 		<>
@@ -106,12 +118,12 @@ function ScoresheetRulesBody({ rules }: { rules: ScoresheetRules }) {
 				</p>
 			</Section>
 			<Section heading={r.turnHeading}>
-				<Lines
-					lines={[
-						fmt(r.turnRoll, { dice: rules.dice, rolls: rules.rollsPerTurn }),
-						r.turnScore,
-					]}
-				/>
+				<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+					<li>
+						{fmt(r.turnRoll, { dice: rules.dice, rolls: rules.rollsPerTurn })}
+					</li>
+					<li>{r.turnScore}</li>
+				</ul>
 			</Section>
 			<Section heading={r.boxesHeading}>
 				<dl className="dice-rules-boxes text-sm leading-snug">
@@ -137,10 +149,62 @@ function ScoresheetRulesBody({ rules }: { rules: ScoresheetRules }) {
 	);
 }
 
-function PushluckRulesBody({ rules }: { rules: PushluckRules }) {
+function MexenRules({
+	game,
+	options,
+}: {
+	game: MexenGame;
+	options: readonly string[];
+}) {
+	const dice = useMessages().games.dice;
+	const rules = diceRules(game, options);
+	const r = dice.mexen.rules;
+	const lives = rules.scoring === "lives";
+	return (
+		<>
+			<Section heading={dice.rules.goalHeading}>
+				<p className="text-sm leading-snug">
+					{lives
+						? fmt(r.goalLives, { lives: rules.lives })
+						: fmt(r.goalPoints, { limit: rules.lives })}
+				</p>
+			</Section>
+			<Section heading={r.roundHeading}>
+				<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+					<li>{fmt(r.leader, { throws: rules.maxThrows })}</li>
+					<li>{r.others}</li>
+					<li>{r.loser}</li>
+					{rules.mexDoubles ? (
+						<li>{lives ? r.mexDoublesLives : r.mexDoublesPoints}</li>
+					) : null}
+				</ul>
+			</Section>
+			<Section heading={r.rankHeading}>
+				<p className="mb-1.5 text-sm leading-snug">{r.read}</p>
+				<ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm leading-snug">
+					<li>{r.mex}</li>
+					{rules.littleMex ? <li>{r.littleMex}</li> : null}
+					<li>{r.doubles}</li>
+					<li>{fmt(r.plain, { lowest: rules.littleMex ? 32 : 31 })}</li>
+				</ol>
+			</Section>
+		</>
+	);
+}
+
+function PushluckRules({
+	game,
+	options,
+}: {
+	game: PushluckGame;
+	options: readonly string[];
+}) {
 	const { locale } = useI18n();
 	const dice = useMessages().games.dice;
-	const lines = pushluckRuleLines({ dice, fmt, locale }, rules);
+	const lines = pushluckRuleLines(
+		{ dice, fmt, locale },
+		diceRules(game, options),
+	);
 	return (
 		<>
 			<Section heading={dice.rules.goalHeading}>

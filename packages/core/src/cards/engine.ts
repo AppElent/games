@@ -33,6 +33,7 @@ import { jokeren } from "./games/jokeren";
 import { klaverjassen } from "./games/klaverjassen";
 import { maumau } from "./games/maumau";
 import { pesten } from "./games/pesten";
+import { toepen } from "./games/toepen";
 import {
 	applyGin,
 	botGinMove,
@@ -102,7 +103,15 @@ export type HouseRule<Rules> = BaseHouseRule<Rules> & {
 	 * Several such rules combine, which a `patch` on `powers` could not.
 	 */
 	withoutPowers?: readonly string[];
+	/**
+	 * Items added to list fields of `rules`. Several such rules combine (two
+	 * kinds of hand that may be swapped), which a `patch` would overwrite.
+	 */
+	append?: { readonly [K in keyof Rules]?: ListField<Rules[K]> };
 };
+
+type ListField<Field> =
+	NonNullable<Field> extends readonly unknown[] ? NonNullable<Field> : never;
 
 export type CardGameDefinition =
 	| Definition<"shedding", SheddingRules>
@@ -117,6 +126,7 @@ export const CARD_GAMES = {
 	jokeren,
 	eenentwintigen,
 	hartenjagen,
+	toepen,
 	klaverjassen,
 	boerenbridge,
 	"gin-rummy": ginRummy,
@@ -170,6 +180,13 @@ function rulesOf<R>(
 			continue;
 		}
 		rules = { ...rules, ...option.patch };
+		for (const [key, items] of Object.entries(option.append ?? {})) {
+			const field = (rules as Record<string, unknown>)[key];
+			rules = {
+				...rules,
+				[key]: [...((field as readonly unknown[]) ?? []), ...(items as [])],
+			};
+		}
 		const powers = (rules as { powers?: Record<string, unknown> }).powers;
 		if (option.withoutPowers && powers) {
 			const kept = { ...powers };

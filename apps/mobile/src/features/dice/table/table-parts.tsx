@@ -1,34 +1,19 @@
 /**
  * What every dice table shows whatever its family: the header, the
  * spectator's way back in, news read out to screen readers, the seat menu,
- * the autopilot note and the end of the game.
+ * and the autopilot note. The end of the game is `DiceEndPanel`.
  */
-import type { DiceView } from "@arcadeclub/core/dice/engine";
-import { diceSeatName, standings } from "@arcadeclub/core/dice/table-view";
+import { diceSeatName } from "@arcadeclub/core/dice/table-view";
 import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { Stack, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { AccessibilityInfo, StyleSheet, View } from "react-native";
-import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
-import { metrics, spacing } from "../../../theme";
+import { spacing } from "../../../theme";
 import { Button, HeaderButton } from "../../../ui/button";
-import { Card } from "../../../ui/card";
 import { AppText } from "../../../ui/text";
 import { Sheet } from "../../cards/deck/sheet";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
-
-/** How often a silent seat is checked for. */
-const PRESENCE_TICK_MS = 15_000;
-
-export function useNow() {
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		const timer = setInterval(() => setNow(Date.now()), PRESENCE_TICK_MS);
-		return () => clearInterval(timer);
-	}, []);
-	return now;
-}
 
 /** Reads the latest news out once; keyed on `seq` too, so a second identical roll is still read. */
 export function useAnnounce(news: { seq: number; text: string } | null) {
@@ -173,76 +158,6 @@ export function AutopilotNote({
 	);
 }
 
-/** The end of any dice game: who won, everyone's total, and what next. */
-export function EndPanel({
-	table,
-	view,
-	controls,
-}: {
-	table: DiceTableBundle;
-	view: DiceView;
-	controls: DiceTableControls;
-}) {
-	const router = useRouter();
-	const { t, locale } = useI18n();
-	const dice = t.games.dice;
-	const you = table.you;
-	const won = you !== null && view.winners.includes(you);
-	const title =
-		view.winners.length > 1
-			? dice.table.tie
-			: won
-				? dice.table.youWin
-				: fmt(dice.table.winner, {
-						name: diceSeatName(dice, table, view.winners[0]),
-					});
-
-	useEffect(() => {
-		AccessibilityInfo.announceForAccessibility(title);
-		if (won) haptics.gameWon();
-	}, [title, won]);
-
-	return (
-		<Card testID="dice-end">
-			<AppText variant="title" accessibilityRole="header">
-				{title}
-			</AppText>
-			<AppText variant="label">{dice.table.standings.toUpperCase()}</AppText>
-			{standings(view).map(({ seat, total }) => (
-				<View key={seat} style={styles.standing}>
-					<AppText variant="body" numberOfLines={1} style={styles.flex}>
-						{diceSeatName(dice, table, seat)}
-					</AppText>
-					<AppText variant="heading">{total.toLocaleString(locale)}</AppText>
-				</View>
-			))}
-			{you !== null ? (
-				<Button
-					label={dice.table.playAgain}
-					busy={controls.pending}
-					onPress={controls.rematch}
-					testID="dice-rematch"
-				/>
-			) : (
-				<AppText variant="secondary">{dice.table.waitingRematch}</AppText>
-			)}
-			<Button
-				variant="secondary"
-				label={dice.table.newGame}
-				onPress={() => router.dismissTo("/dice")}
-				testID="dice-new-game"
-			/>
-		</Card>
-	);
-}
-
 const styles = StyleSheet.create({
 	spectator: { alignItems: "center", gap: spacing.xs },
-	standing: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: spacing.md,
-		minHeight: metrics.hitTarget,
-	},
-	flex: { flex: 1 },
 });

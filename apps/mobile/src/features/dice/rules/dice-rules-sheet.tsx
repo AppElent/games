@@ -1,10 +1,14 @@
 /**
  * How to play, written from the game's config and the table's house rules:
- * every line comes from a rule, so a new game in a family needs no new text.
+ * every box's line comes from its rule, so a new sheet needs no new text.
  */
-import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
-import type { PushluckRules } from "@arcadeclub/core/dice/pushluck";
-import type { ScoresheetRules } from "@arcadeclub/core/dice/scoresheet";
+import {
+	type DiceGame,
+	diceRules,
+	type MexenGame,
+	type PushluckGame,
+	type ScoresheetGame,
+} from "@arcadeclub/core/dice/engine";
 import {
 	categoryEffect,
 	pushluckRuleLines,
@@ -33,14 +37,6 @@ function Section({
 	);
 }
 
-function Lines({ lines }: { lines: readonly string[] }) {
-	return lines.map((line) => (
-		<AppText key={line} variant="secondary" tone="default">
-			{line}
-		</AppText>
-	));
-}
-
 export function DiceRulesSheet({
 	game,
 	options,
@@ -59,18 +55,17 @@ export function DiceRulesSheet({
 		string,
 		{ label: string; hint: string }
 	>;
-	const r = dice.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
 	return (
 		<Sheet
 			open={open}
 			onClose={onClose}
-			title={fmt(r.heading, { game: text.name })}
+			title={fmt(dice.rules.heading, { game: text.name })}
 		>
 			<RulesBody game={game} options={options} />
 			{active.length > 0 ? (
-				<Section heading={r.extrasHeading}>
+				<Section heading={dice.rules.extrasHeading}>
 					{active.map((option) => (
 						<AppText key={option.label} variant="secondary" tone="default">
 							{`${option.label}: ${option.hint}`}
@@ -92,14 +87,32 @@ function RulesBody({
 }) {
 	switch (game.family) {
 		case "scoresheet":
-			return <ScoresheetRulesBody rules={diceRules(game, options)} />;
+			return <ScoresheetRules game={game} options={options} />;
 		case "pushluck":
-			return <PushluckRulesBody rules={diceRules(game, options)} />;
+			return <PushluckRules game={game} options={options} />;
+		case "mexen":
+			return <MexenRules game={game} options={options} />;
 	}
 }
 
-function ScoresheetRulesBody({ rules }: { rules: ScoresheetRules }) {
-	const dice = useI18n().t.games.dice;
+function Lines({ lines }: { lines: readonly string[] }) {
+	return lines.map((line) => (
+		<AppText key={line} variant="secondary" tone="default">
+			{line}
+		</AppText>
+	));
+}
+
+function ScoresheetRules({
+	game,
+	options,
+}: {
+	game: ScoresheetGame;
+	options: readonly string[];
+}) {
+	const { t } = useI18n();
+	const dice = t.games.dice;
+	const rules = diceRules(game, options);
 	const r = dice.rules;
 	return (
 		<>
@@ -109,12 +122,12 @@ function ScoresheetRulesBody({ rules }: { rules: ScoresheetRules }) {
 				</AppText>
 			</Section>
 			<Section heading={r.turnHeading}>
-				<Lines
-					lines={[
-						fmt(r.turnRoll, { dice: rules.dice, rolls: rules.rollsPerTurn }),
-						r.turnScore,
-					]}
-				/>
+				<AppText variant="secondary" tone="default">
+					{fmt(r.turnRoll, { dice: rules.dice, rolls: rules.rollsPerTurn })}
+				</AppText>
+				<AppText variant="secondary" tone="default">
+					{r.turnScore}
+				</AppText>
 			</Section>
 			<Section heading={r.boxesHeading}>
 				{rules.sheet.map((entry) => (
@@ -138,10 +151,64 @@ function ScoresheetRulesBody({ rules }: { rules: ScoresheetRules }) {
 	);
 }
 
-function PushluckRulesBody({ rules }: { rules: PushluckRules }) {
+function MexenRules({
+	game,
+	options,
+}: {
+	game: MexenGame;
+	options: readonly string[];
+}) {
+	const { t } = useI18n();
+	const dice = t.games.dice;
+	const rules = diceRules(game, options);
+	const r = dice.mexen.rules;
+	const lives = rules.scoring === "lives";
+	const line = (text: string) => (
+		<AppText key={text} variant="secondary" tone="default">
+			{text}
+		</AppText>
+	);
+	return (
+		<>
+			<Section heading={dice.rules.goalHeading}>
+				{line(
+					lives
+						? fmt(r.goalLives, { lives: rules.lives })
+						: fmt(r.goalPoints, { limit: rules.lives }),
+				)}
+			</Section>
+			<Section heading={r.roundHeading}>
+				{line(fmt(r.leader, { throws: rules.maxThrows }))}
+				{line(r.others)}
+				{line(r.loser)}
+				{rules.mexDoubles
+					? line(lives ? r.mexDoublesLives : r.mexDoublesPoints)
+					: null}
+			</Section>
+			<Section heading={r.rankHeading}>
+				{line(r.read)}
+				{line(r.mex)}
+				{rules.littleMex ? line(r.littleMex) : null}
+				{line(r.doubles)}
+				{line(fmt(r.plain, { lowest: rules.littleMex ? 32 : 31 }))}
+			</Section>
+		</>
+	);
+}
+
+function PushluckRules({
+	game,
+	options,
+}: {
+	game: PushluckGame;
+	options: readonly string[];
+}) {
 	const { t, locale } = useI18n();
 	const dice = t.games.dice;
-	const lines = pushluckRuleLines({ dice, fmt, locale }, rules);
+	const lines = pushluckRuleLines(
+		{ dice, fmt, locale },
+		diceRules(game, options),
+	);
 	return (
 		<>
 			<Section heading={dice.rules.goalHeading}>

@@ -218,6 +218,35 @@ export const cards = {
 		matchYouWin: "You win the game!",
 		matchTie: "It's a tie!",
 		lowestWins: "Lowest total wins.",
+		knockButton: "Knock",
+		stayButton: "Stay in",
+		foldButton: "Fold",
+		swapButton: "New hand",
+		stakePill: "Stake {stake}",
+		knockAnswer: {
+			one: "The stake is now {stake}. Stay in, or fold and take {count} point.",
+			other:
+				"The stake is now {stake}. Stay in, or fold and take {count} points.",
+		},
+		lastLifeAnswer: {
+			one: "Someone is one point from out: the stake starts at {stake}. Stay in, or fold and take {count} point.",
+			other:
+				"Someone is one point from out: the stake starts at {stake}. Stay in, or fold and take {count} points.",
+		},
+		knockWaiting: "Waiting for everyone to answer the knock.",
+		swapHint: "Your hand may be swapped for new cards.",
+		foldedHint: "You folded. Wait for the next round.",
+		outHint: "You're out. Watch the others play on.",
+		knockedNote: "Knocked",
+		stayedNote: "Stays in",
+		foldedNote: "Folded",
+		outNote: "Out",
+		decidingNote: "Deciding…",
+		penaltyNote: "{total} of {target}",
+		outRoundLabel: "Round {round} · out at {target}",
+		dealWinner: "{name} wins the round",
+		youDealWinner: "You win the round",
+		lastStanding: "At {target} you're out. The last player in wins.",
 		highestWins: "Highest total wins.",
 		bidHint: "Bid how many tricks you'll take: 0 to {count}.",
 		bidDealer:
@@ -456,6 +485,25 @@ export const cards = {
 		youPit: "Your team takes every trick: pit!",
 		winTie: "{name} win!",
 		youWin: "You win!",
+		raise: "{name} knocks: the stake is now {stake}.",
+		youRaise: "You knock: the stake is now {stake}.",
+		lastLifeRaise: "Someone is one point from out: the stake is {stake}.",
+		stay: "{name} stays in.",
+		youStay: "You stay in.",
+		fold: {
+			one: "{name} folds and takes {count} point.",
+			other: "{name} folds and takes {count} points.",
+		},
+		youFold: {
+			one: "You fold and take {count} point.",
+			other: "You fold and take {count} points.",
+		},
+		swapHand: "{name} swaps for a new hand.",
+		youSwapHand: "You swap for a new hand.",
+		dealWon: "{name} wins the round.",
+		youDealWon: "You win the round.",
+		out: "{name} is out.",
+		youOut: "You're out.",
 		stake: {
 			one: "{name} plays this hand for {count} point.",
 			other: "{name} plays this hand for {count} points.",
@@ -499,6 +547,7 @@ export const cards = {
 		roemHeading: "Roem",
 		bankHeading: "The bank",
 		passHeading: "Passing",
+		stakesHeading: "Stakes",
 		bidHeading: "Rounds and bids",
 		shedding: {
 			goal: "Be the first to play all your cards.",
@@ -600,6 +649,22 @@ export const cards = {
 			roemSquare: "Four of a kind: 100. Four jacks: 200.",
 			pit: "Take every trick: {count} extra (pit).",
 			moon: "Take every penalty card in one round and they cost you nothing: everyone else takes them instead.",
+			goalLastTrick:
+				"Win the last trick. Everyone else still in takes the stake as penalty points.",
+			out: "At {target} penalty points you're out. The last player in wins.",
+			lastTrickOnly:
+				"Only the last trick counts. The ones before it decide who leads.",
+			stake: "Every round starts at a stake of 1.",
+			knock:
+				"Anyone still in may knock at any time to raise the stake by 1. Everyone else then stays in or folds.",
+			fold: "Folding costs the stake from before the knock, and you sit out the rest of the round.",
+			knockAgain:
+				"Nobody knocks twice in a row: someone else has to knock first.",
+			knockLimit:
+				"You can't knock once your points plus the stake reach {target}.",
+			lastLife:
+				"While someone is one point from out, every round starts at a stake of 2.",
+			swap: "A hand of only {ranks} may be swapped for new cards before the first card is played.",
 			goalHigh:
 				"Score the most points. The game ends when someone reaches {target}; the highest total wins.",
 			goalLastHigh:
@@ -796,6 +861,31 @@ export const cards = {
 				to50: {
 					label: "Short game",
 					hint: "Play to 50 points instead of 100.",
+				},
+			},
+		},
+		toepen: {
+			name: "Toepen",
+			tagline: "Knock and take the last trick",
+			blurb:
+				"Four cards each, and only the last trick counts. Knock to raise the stake: the others stay in or fold. Reach 10 and you're out.",
+			powers: {},
+			options: {
+				outAt15: {
+					label: "Out at 15",
+					hint: "Play until 15 penalty points instead of 10.",
+				},
+				vuileWas: {
+					label: "Vuile was",
+					hint: "A hand of only jacks, queens, kings and aces may be swapped for a new one.",
+				},
+				armoede: {
+					label: "Armoede",
+					hint: "A hand of only 7s, 8s, 9s and 10s may be swapped for a new one.",
+				},
+				lastLife: {
+					label: "Last life",
+					hint: "While someone is one point from out, every round starts at a stake of 2.",
 				},
 			},
 		},

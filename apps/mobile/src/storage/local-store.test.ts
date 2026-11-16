@@ -23,6 +23,7 @@ describe("local store", () => {
 			seats: "arcade:seats",
 			backgammonLocal: "arcade:backgammon:local",
 			sudokuIndex: "arcade:sudoku:index",
+			sudokuInputSettings: "arcade:sudoku:input-settings",
 		});
 		expect(STORAGE_KEYS.sudokuSave("abc")).toBe("arcade:sudoku:save:abc");
 	});
