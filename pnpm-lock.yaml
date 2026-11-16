@@ -167,8 +167,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@clerk/expo':
-        specifier: ^4.15.1
-        version: 4.15.1(@types/react@19.3.0)(expo-application@58.1.2(expo@58.0.20))(expo-auth-session@58.0.15(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3))(expo-constants@58.0.13)(expo-crypto@58.0.7(expo@58.0.20))(expo-secure-store@58.0.2(expo@58.0.20))(expo-web-browser@58.0.7(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)))(expo@58.0.20)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3)(use-sync-external-store@1.6.0(react@19.3.0))(zod@4.6.7)
+        specifier: ^4.14.5
+        version: 4.14.5(@types/react@19.3.0)(expo-auth-session@58.0.15(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3))(expo-constants@58.0.13)(expo-crypto@58.0.7(expo@58.0.20))(expo-secure-store@58.0.2(expo@58.0.20))(expo-web-browser@58.0.7(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)))(expo@58.0.20)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3)(use-sync-external-store@1.6.0(react@19.3.0))(zod@4.6.7)
       '@expo/ui':
         specifier: ~58.0.0
         version: 58.0.24(@babel/core@7.29.13)(expo@58.0.20)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -1243,8 +1243,8 @@ packages:
     resolution: {integrity: sha512-rea5JvX1GpC48Ma9r7HTmP8rmjWuh0ROe9/cehHTTPOUb3/RgbVr7U90PvtfpxZumEEkWUqdjkLr7Pb6+KGjSA==}
     engines: {node: '>=20.9.0'}
 
-  '@clerk/expo@4.15.1':
-    resolution: {integrity: sha512-+HxlXXqo5LWTB+kVIqaeuSw8NVe8aEy19Wr+Le5kIshCAfe3WAf9Ai/iCdpFzFy3LUxc20YMNPRM4FJXJYFIkw==}
+  '@clerk/expo@4.14.5':
+    resolution: {integrity: sha512-7ZurNLPw5sI9nd+kE2XhU9p14XnRCMg/9oqQKVHUbgZ4eodqvsjnlIAkUfBZWgASNi8CXSSnnRh78qcHk+5rlA==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       '@clerk/expo-biometrics': '>=0.1.0'
@@ -1253,7 +1253,6 @@ packages:
       '@clerk/expo-passkeys': '>=0.0.6'
       expo: '>=54 <59'
       expo-apple-authentication: '>=7.0.0'
-      expo-application: '>=5.0.0'
       expo-auth-session: '>=5'
       expo-constants: '>=12'
       expo-crypto: '>=12'
@@ -1273,8 +1272,6 @@ packages:
       '@clerk/expo-passkeys':
         optional: true
       expo-apple-authentication:
-        optional: true
-      expo-application:
         optional: true
       expo-auth-session:
         optional: true
@@ -11055,7 +11052,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@clerk/expo@4.15.1(@types/react@19.3.0)(expo-application@58.1.2(expo@58.0.20))(expo-auth-session@58.0.15(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3))(expo-constants@58.0.13)(expo-crypto@58.0.7(expo@58.0.20))(expo-secure-store@58.0.2(expo@58.0.20))(expo-web-browser@58.0.7(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)))(expo@58.0.20)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3)(use-sync-external-store@1.6.0(react@19.3.0))(zod@4.6.7)':
+  '@clerk/expo@4.14.5(@types/react@19.3.0)(expo-auth-session@58.0.15(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3))(expo-constants@58.0.13)(expo-crypto@58.0.7(expo@58.0.20))(expo-secure-store@58.0.2(expo@58.0.20))(expo-web-browser@58.0.7(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)))(expo@58.0.20)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3)(use-sync-external-store@1.6.0(react@19.3.0))(zod@4.6.7)':
     dependencies:
       '@clerk/clerk-js': 6.43.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(use-sync-external-store@1.6.0(react@19.3.0))(zod@4.6.7)
       '@clerk/react': 6.18.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -11066,7 +11063,6 @@ snapshots:
       react-native: 0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
       react-native-url-polyfill: 4.0.0(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
     optionalDependencies:
-      expo-application: 58.1.2(expo@58.0.20)
       expo-auth-session: 58.0.15(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3)
       expo-constants: 58.0.13(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(typescript@6.0.3)
       expo-crypto: 58.0.7(expo@58.0.20)
