@@ -40,6 +40,8 @@ const cardActionValidator = v.union(
 	v.object({ type: v.literal("stand") }),
 	v.object({ type: v.literal("double") }),
 	v.object({ type: v.literal("passCards"), cards: v.array(v.string()) }),
+	v.object({ type: v.literal("passTrump") }),
+	v.object({ type: v.literal("chooseTrump"), suit: literals(SUITS) }),
 	v.object({ type: v.literal("bid"), count: v.number() }),
 	v.object({ type: v.literal("knock"), card: v.string() }),
 	v.object({

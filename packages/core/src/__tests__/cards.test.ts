@@ -1029,7 +1029,7 @@ describe("views keep hands private", () => {
 	);
 	it.each(privateHands)("%s hides other hands and the stock", (id) => {
 		const game = getCardGame(id);
-		const seats = Math.min(3, game.players.max);
+		const seats = Math.min(Math.max(3, game.players.min), game.players.max);
 		const state = createCardGame(game, [], seats, seeded(21));
 		const mine = viewCardGame(game, [], state, 0);
 		const otherCards = state.hands[1];
@@ -1165,6 +1165,7 @@ describe("full games between computer players", () => {
 			],
 		],
 		["jokeren", ["fullMatch", "stockOnly", "openAt40"]],
+		["klaverjassen", ["forcedTrump", "amsterdams", "shortMatch"]],
 		["eenentwintigen", ["doubleDown", "bankHitsSoft17", "longMatch"]],
 		["gin-rummy", ["shortMatch"]],
 	] as const)("%s finishes with every house rule on", (id, options) => {

@@ -1,15 +1,23 @@
 /** A table for the trick-taking family: follow suit, and take the tricks you want. */
 import { isRedSuit } from "@arcadeclub/core/cards/art";
-import type { CardId } from "@arcadeclub/core/cards/deck";
+import { type CardId, SUITS, type Suit } from "@arcadeclub/core/cards/deck";
 import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import {
 	bidTotal,
 	cardName,
 	cardTilt,
+	isTeamGame,
 	seatName,
-	sortCards,
+	sortTricksHand,
+	teamName,
+	tricksDealSummary,
 	tricksHint,
+	tricksMatchTitle,
+	tricksRoundLabel,
+	tricksScoreRows,
 	tricksSeatNote,
+	tricksStandings,
+	tricksTeams,
 } from "@arcadeclub/core/cards/table-view";
 import type { TricksView } from "@arcadeclub/core/cards/tricks";
 import { useEffect, useMemo, useState } from "react";
@@ -183,6 +191,8 @@ export function TricksTable({
 	// Someone has the turn: to bid, or to play a card.
 	const live = playing || bidding;
 	const mine = playing && view.turn === you;
+	const calling = view.phase === "trump";
+	const callingMine = calling && view.turn === you;
 	const myBid = bidding && view.turn === you;
 	const choosing = view.phase === "passing" && you !== null && !view.passed;
 	const legal = new Set(view.legal);
@@ -241,6 +251,11 @@ export function TricksTable({
 		return true;
 	}
 
+	function callTrump(suit: Suit) {
+		haptics.moveMade();
+		controls.act({ type: "chooseTrump", suit });
+	}
+
 	function pass() {
 		haptics.moveMade();
 		// The selection clears once the pass is in, and survives a refusal.
@@ -248,15 +263,23 @@ export function TricksTable({
 	}
 
 	const hint = tricksHint(view, you, words, rules);
-	const roundLabel =
-		view.deals === null
-			? fmt(tt.roundLabel, { round: view.round, target: view.target ?? "" })
-			: `${fmt(tt.dealLabel, { round: view.round, deals: view.deals })} · ${plural(locale, view.handSize, tt.cardsEach)}`;
+	const roundLabel = tricksRoundLabel(view, words);
+	const teamGame = isTeamGame(view);
+	const teams = teamGame ? tricksTeams(view, you) : [];
+	const scoreRows = tricksScoreRows(view, table, cards);
+	const scoreHeading = teamGame ? tt.teamHeading : undefined;
 	const highWins = rules.highWins === true;
-	const best = highWins ? Math.max(...view.totals) : Math.min(...view.totals);
-	const standings = view.totals
-		.map((total, seat) => ({ total, seat }))
-		.sort((a, b) => (highWins ? b.total - a.total : a.total - b.total));
+	const standings = tricksStandings(view, table, cards, highWins);
+	const dealSummary = tricksDealSummary(view, table, words);
+	// The roem of the trick on show, until the next card goes down.
+	const roem = view.trick.length === 0 ? (view.lastTrick?.roem ?? null) : null;
+	const suitIcon = (suit: Suit) => (
+		<SuitIcon
+			suit={suit}
+			size={13}
+			color={isRedSuit(suit) ? cardColors.suitRed : cardColors.ivory}
+		/>
+	);
 	const lastRound = view.scores.at(-1);
 	const bids = bidTotal(view);
 	const winsLine = highWins ? tt.highestWins : tt.lowestWins;
@@ -282,7 +305,7 @@ export function TricksTable({
 			game={game}
 			table={table}
 			name={name}
-			mine={mine || myBid}
+			mine={mine || callingMine || myBid}
 			zones={flights.zones}
 			error={controls.error}
 			flightLayer={flights.layer}
@@ -291,11 +314,11 @@ export function TricksTable({
 				<SeatRow
 					table={table}
 					handCounts={view.handCounts}
-					turn={live ? view.turn : null}
+					turn={live || calling ? view.turn : null}
 					flash={flights.flash}
 					zones={flights.zones}
 					controls={controls}
-					note={(seat) => tricksSeatNote(view, seat, words)}
+					note={(seat) => tricksSeatNote(view, seat, words, you)}
 				/>
 			}
 			center={
@@ -309,7 +332,13 @@ export function TricksTable({
 					/>
 					<PillRow>
 						<Pill>{roundLabel}</Pill>
-						{rules.trumpChoice !== "none" && live ? (
+						{calling && view.offered ? (
+							<Pill icon={suitIcon(view.offered)}>
+								{fmt(tt.offerPill, { suit: cards.suits[view.offered] })}
+							</Pill>
+						) : null}
+						{(rules.trumpChoice !== "none" || rules.callTrump === true) &&
+						live ? (
 							trump ? (
 								<Pill
 									icon={
@@ -344,6 +373,14 @@ export function TricksTable({
 						{bids !== null && live ? (
 							<Pill>{fmt(tt.bidsPill, { bids, tricks: view.handSize })}</Pill>
 						) : null}
+						{roem ? (
+							<Pill tone="gold">
+								{[
+									fmt(tt.roem, { points: roem.points }),
+									...roem.kinds.map((kind) => tt.roemKinds[kind]),
+								].join(" · ")}
+							</Pill>
+						) : null}
 						{view.phase === "passing" ? (
 							<Pill>
 								{fmt(tt.passPill, {
@@ -353,28 +390,42 @@ export function TricksTable({
 						) : null}
 						{playing &&
 						firstTrick &&
-						view.passDirection === "keep" &&
-						view.bids === null ? (
+						rules.passing !== null &&
+						view.passDirection === "keep" ? (
 							<Pill>{tt.keepPill}</Pill>
 						) : null}
 						{view.broken && breaking && playing ? (
-							<Pill
-								icon={
-									<SuitIcon
-										suit={breaking.suit}
-										size={13}
-										color={
-											isRedSuit(breaking.suit)
-												? cardColors.suitRed
-												: cardColors.ivory
-										}
-									/>
-								}
-							>
+							<Pill icon={suitIcon(breaking.suit)}>
 								{fmt(tt.broken, { suit: cards.suits[breaking.suit] })}
 							</Pill>
 						) : null}
 					</PillRow>
+					{teamGame ? (
+						<View style={styles.teams} testID="cards-teams">
+							{teams.map((team) => (
+								<View
+									key={team.team}
+									style={[styles.team, team.yours && styles.teamYours]}
+								>
+									<FeltText
+										variant="caption"
+										numberOfLines={1}
+										style={styles.who}
+									>
+										{teamName(cards, table, team.seats)}
+									</FeltText>
+									<FeltText variant="caption" style={styles.teamTotal}>
+										{playing
+											? `${team.total} · ${fmt(tt.teamDeal, {
+													points: team.points,
+													roem: team.roem,
+												})}`
+											: String(team.total)}
+									</FeltText>
+								</View>
+							))}
+						</View>
+					) : null}
 				</View>
 			}
 			status={
@@ -382,12 +433,12 @@ export function TricksTable({
 					<FeltText
 						variant="heading"
 						numberOfLines={1}
-						style={mine ? styles.mine : null}
+						style={mine || callingMine || myBid ? styles.mine : null}
 						testID="cards-turn"
 					>
-						{!live
+						{!live && !calling
 							? " "
-							: mine || myBid
+							: mine || callingMine || myBid
 								? cards.table.yourTurn
 								: fmt(cards.table.theirTurn, {
 										name: seatName(cards, table, view.turn),
@@ -403,6 +454,39 @@ export function TricksTable({
 					</FeltText>
 					<EventTicker events={view.events} table={table} />
 					<View style={styles.actions}>
+						{callingMine && view.offered ? (
+							<>
+								<TableButton
+									label={fmt(tt.playTrump, {
+										suit: cards.suits[view.offered],
+									})}
+									disabled={controls.pending}
+									onPress={() => view.offered && callTrump(view.offered)}
+									testID="cards-play-trump"
+								/>
+								<TableButton
+									label={tt.passTrump}
+									ghost
+									disabled={controls.pending}
+									onPress={() => {
+										haptics.moveMade();
+										controls.act({ type: "passTrump" });
+									}}
+									testID="cards-pass-trump"
+								/>
+							</>
+						) : null}
+						{callingMine && !view.offered
+							? SUITS.map((suit) => (
+									<TableButton
+										key={suit}
+										label={fmt(tt.playTrump, { suit: cards.suits[suit] })}
+										disabled={controls.pending}
+										onPress={() => callTrump(suit)}
+										testID={`cards-trump-${suit}`}
+									/>
+								))
+							: null}
 						{myBid ? (
 							<BidPicker
 								key={`${view.round}-${view.blockedBid}`}
@@ -433,7 +517,7 @@ export function TricksTable({
 			}
 			hand={
 				<Hand
-					cards={sortCards(view.hand, "suit")}
+					cards={sortTricksHand(view.hand, rules, view.trump)}
 					handSize={view.hand.length}
 					fresh={fresh}
 					zones={flights.zones}
@@ -489,7 +573,30 @@ export function TricksTable({
 											})}
 								</FeltText>
 							) : null}
-							{lastRound ? (
+							{dealSummary?.headlines.map((line) => (
+								<FeltText key={line} variant="body" style={styles.centered}>
+									{line}
+								</FeltText>
+							))}
+							{dealSummary ? (
+								<View accessibilityLabel={tt.roundSummary}>
+									{dealSummary.teams.map((team) => (
+										<View key={team.team} style={styles.standing}>
+											<View style={styles.who}>
+												<FeltText variant="body" numberOfLines={1}>
+													{team.label}
+												</FeltText>
+												<FeltText variant="caption" muted>
+													{team.detail}
+												</FeltText>
+											</View>
+											<FeltText variant="body">
+												{plural(locale, team.score, tt.totalPoints)}
+											</FeltText>
+										</View>
+									))}
+								</View>
+							) : lastRound ? (
 								<View accessibilityLabel={tt.roundSummary}>
 									{lastRound.map((points, seat) => (
 										<View
@@ -513,8 +620,10 @@ export function TricksTable({
 							) : null}
 							<ScoreBoard
 								table={table}
-								scores={view.scores}
-								totals={view.totals}
+								scores={scoreRows.scores}
+								totals={scoreRows.totals}
+								labels={scoreRows.labels}
+								heading={scoreHeading}
 								empty={tt.noScores}
 								totalLabel={tt.scoreTotal}
 								onFelt
@@ -526,26 +635,15 @@ export function TricksTable({
 							table={table}
 							winners={view.winners}
 							controls={controls}
-							title={
-								view.winners.length > 1
-									? tt.matchTie
-									: you !== null && view.winners.includes(you)
-										? tt.matchYouWin
-										: fmt(tt.matchWinner, {
-												name: seatName(cards, table, view.winners[0]),
-											})
-							}
+							title={tricksMatchTitle(view, table, words)}
 						>
 							<FeltText variant="caption" muted style={styles.centered}>
 								{winsLine}
 							</FeltText>
-							{standings.map(({ total, seat }) => (
-								<View
-									key={seat}
-									style={[styles.standing, total === best && styles.best]}
-								>
+							{standings.map(({ row, label, total, best }) => (
+								<View key={row} style={[styles.standing, best && styles.best]}>
 									<FeltText variant="body" numberOfLines={1} style={styles.who}>
-										{seatName(cards, table, seat)}
+										{label}
 									</FeltText>
 									<FeltText variant="body">
 										{plural(locale, total, tt.totalPoints)}
@@ -562,8 +660,10 @@ export function TricksTable({
 						<AppText variant="secondary">{roundLabel}</AppText>
 						<ScoreBoard
 							table={table}
-							scores={view.scores}
-							totals={view.totals}
+							scores={scoreRows.scores}
+							totals={scoreRows.totals}
+							labels={scoreRows.labels}
+							heading={scoreHeading}
 							empty={tt.noScores}
 							totalLabel={tt.scoreTotal}
 						/>
@@ -627,5 +727,24 @@ const styles = StyleSheet.create({
 		borderRadius: radius.sm,
 	},
 	best: { backgroundColor: cardColors.goldSoft },
+	teams: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		justifyContent: "center",
+		gap: spacing.xs,
+		paddingHorizontal: spacing.lg,
+	},
+	team: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: spacing.sm,
+		maxWidth: "100%",
+		minHeight: 26,
+		paddingHorizontal: spacing.md,
+		borderRadius: radius.pill,
+		backgroundColor: cardColors.chip,
+	},
+	teamYours: { borderWidth: 1, borderColor: cardColors.gold },
+	teamTotal: { fontWeight: "800" },
 	who: { flexShrink: 1 },
 });
