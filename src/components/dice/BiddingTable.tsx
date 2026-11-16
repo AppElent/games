@@ -105,7 +105,7 @@ function YourCup({ table, view, controls }: PanelProps) {
 
 	return (
 		<section className="cards-panel dice-tray" aria-label={bidding.yourDice}>
-			<p className="dice-status" data-mine={mine} aria-live="polite">
+			<p className="dice-status" data-mine={mine}>
 				{status}
 			</p>
 			{you === null ? null : step === "out" ? (

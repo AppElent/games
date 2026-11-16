@@ -497,6 +497,12 @@ function RevealPanel({
 							</View>
 						))}
 					</View>
+					{/* The sentences above already say who lost a die. */}
+					{reveal.losers.includes(seat) ? (
+						<AppText variant="caption" tone="default" style={styles.lostMark}>
+							{bidding.lostMark}
+						</AppText>
+					) : null}
 				</View>
 			))}
 		</View>
@@ -561,6 +567,14 @@ const createStyles = (colors: Tokens) =>
 		},
 		cupName: { width: 96 },
 		cupDice: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xxs },
+		lostMark: {
+			color: colors.danger,
+			backgroundColor: colors.dangerDim,
+			fontWeight: "700",
+			paddingHorizontal: spacing.xs,
+			borderRadius: 999,
+			overflow: "hidden",
+		},
 		dim: { opacity: 0.4 },
 		standing: {
 			flexDirection: "row",

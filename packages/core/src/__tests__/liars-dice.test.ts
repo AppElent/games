@@ -23,6 +23,7 @@ import {
 	biddingStandings,
 	biddingStep,
 	bidText,
+	defaultBid,
 	revealSentences,
 } from "../dice/table-view";
 import { GameRuleError } from "../errors";
@@ -489,6 +490,23 @@ describe("liar's dice table view", () => {
 		],
 	};
 	const words = { dice: en.games.dice, locale: "en" };
+
+	it("suggests opening on the face your cup backs best", () => {
+		const cup = { bids: [], totalDice: 15, yourDice: [5, 1, 1, 4, 4] };
+		// Wild ones back the fours, so a pair of ones is no reason to bid ones.
+		expect(
+			defaultBid({
+				...cup,
+				rules: { startingDice: 5, wildOnes: true, spotOn: false },
+			}),
+		).toEqual({ quantity: 1, face: 4 });
+		expect(
+			defaultBid({
+				...cup,
+				rules: { startingDice: 5, wildOnes: false, spotOn: false },
+			})?.face,
+		).toBe(1);
+	});
 
 	it("tells the viewer what to do", () => {
 		let state = withCups([[1, 2], [3], [4]]);

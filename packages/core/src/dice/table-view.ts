@@ -5,7 +5,13 @@
  */
 import type { Messages } from "../i18n/en";
 import { fmt as fill, plural } from "../i18n/format";
-import { type Bid, type BiddingView, lowestBids, type Reveal } from "./bidding";
+import {
+	type Bid,
+	type BiddingView,
+	countMatching,
+	lowestBids,
+	type Reveal,
+} from "./bidding";
 import type { CategoryRule, ScoreCategory, ScoresheetView } from "./scoresheet";
 import type { DiceEvent } from "./table";
 
@@ -180,8 +186,8 @@ export function biddingStep(view: BiddingView, you: number | null): BidStep {
 export function defaultBid(
 	view: Pick<BiddingView, "bids" | "totalDice" | "rules" | "yourDice">,
 ): Bid | null {
-	const held = (face: number) =>
-		view.yourDice.filter((value) => value === face).length;
+	// Wild ones back every other face, so they count towards it here too.
+	const held = (face: number) => countMatching(view.yourDice, face, view.rules);
 	return lowestBids(
 		view.bids.at(-1) ?? null,
 		view.totalDice,
