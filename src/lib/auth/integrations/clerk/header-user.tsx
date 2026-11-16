@@ -2,8 +2,10 @@ import { Show, useClerk, useUser } from "@clerk/react";
 import { useState } from "react";
 import { useAuthConfig } from "#/lib/auth/components/auth/AuthConfigProvider";
 import { cn } from "#/lib/auth/lib/utils";
+import { useMessages } from "#/lib/i18n";
 
 export default function HeaderUser() {
+	const messages = useMessages();
 	const { user } = useUser();
 	const { signOut } = useClerk();
 	const config = useAuthConfig();
@@ -21,7 +23,7 @@ export default function HeaderUser() {
 					<button
 						type="button"
 						onClick={() => setOpen((v) => !v)}
-						className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--auth-accent)] text-sm font-medium text-[var(--auth-accent-fg)]"
+						className="club-header-button"
 						aria-label="Account menu"
 					>
 						{initials}
@@ -57,7 +59,7 @@ export default function HeaderUser() {
 					href={config.paths.signIn}
 					className="club-nav-link text-sm font-bold hover:underline"
 				>
-					Sign in
+					{messages.common.actions.signIn}
 				</a>
 			</Show>
 		</>
