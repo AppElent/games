@@ -217,6 +217,34 @@ export const cards = {
 		noScores: "Scores verschijnen na de eerste ronde.",
 		totalPoints: { one: "{count} punt", other: "{count} punten" },
 		matchWinner: "{name} wint het spel!",
+		knockButton: "Toepen",
+		stayButton: "Meegaan",
+		foldButton: "Passen",
+		swapButton: "Nieuwe hand",
+		stakePill: "Inzet {stake}",
+		knockAnswer: {
+			one: "De inzet is nu {stake}. Ga mee, of pas en krijg {count} punt.",
+			other: "De inzet is nu {stake}. Ga mee, of pas en krijg {count} punten.",
+		},
+		lastLifeAnswer: {
+			one: "Iemand is bijna af: de inzet begint op {stake}. Ga mee, of pas en krijg {count} punt.",
+			other:
+				"Iemand is bijna af: de inzet begint op {stake}. Ga mee, of pas en krijg {count} punten.",
+		},
+		knockWaiting: "Wachten tot iedereen op de toep heeft gereageerd.",
+		swapHint: "Je mag deze hand ruilen voor nieuwe kaarten.",
+		foldedHint: "Je hebt gepast. Wacht op de volgende ronde.",
+		outHint: "Je bent af. Kijk hoe de anderen verder spelen.",
+		knockedNote: "Toept",
+		stayedNote: "Gaat mee",
+		foldedNote: "Gepast",
+		outNote: "Af",
+		decidingNote: "Beslist…",
+		penaltyNote: "{total} van {target}",
+		outRoundLabel: "Ronde {round} · af bij {target}",
+		dealWinner: "{name} wint de ronde",
+		youDealWinner: "Jij wint de ronde",
+		lastStanding: "Bij {target} ben je af. Wie als laatste overblijft, wint.",
 		matchYouWin: "Jij wint het spel!",
 		matchTie: "Gelijkspel!",
 		lowestWins: "De laagste score wint.",
@@ -457,6 +485,25 @@ export const cards = {
 		youPit: "Jullie halen alle slagen: pit!",
 		winTie: "{name} winnen!",
 		youWin: "Jij wint!",
+		raise: "{name} toept: de inzet is nu {stake}.",
+		youRaise: "Jij toept: de inzet is nu {stake}.",
+		lastLifeRaise: "Iemand is bijna af: de inzet is {stake}.",
+		stay: "{name} gaat mee.",
+		youStay: "Jij gaat mee.",
+		fold: {
+			one: "{name} past en krijgt {count} punt.",
+			other: "{name} past en krijgt {count} punten.",
+		},
+		youFold: {
+			one: "Jij past en krijgt {count} punt.",
+			other: "Jij past en krijgt {count} punten.",
+		},
+		swapHand: "{name} ruilt voor een nieuwe hand.",
+		youSwapHand: "Jij ruilt voor een nieuwe hand.",
+		dealWon: "{name} wint de ronde.",
+		youDealWon: "Jij wint de ronde.",
+		out: "{name} is af.",
+		youOut: "Jij bent af.",
 		stake: {
 			one: "{name} speelt deze hand voor {count} punt.",
 			other: "{name} speelt deze hand voor {count} punten.",
@@ -500,6 +547,7 @@ export const cards = {
 		roemHeading: "Roem",
 		bankHeading: "De bank",
 		passHeading: "Doorgeven",
+		stakesHeading: "Inzet",
 		bidHeading: "Rondes en bieden",
 		shedding: {
 			goal: "Ben als eerste al je kaarten kwijt.",
@@ -606,6 +654,22 @@ export const cards = {
 			roemSquare: "Vier gelijke kaarten: 100. Vier boeren: 200.",
 			pit: "Alle slagen halen: {count} extra (pit).",
 			moon: "Pak je in één ronde alle strafkaarten, dan kosten ze jou niets: alle anderen krijgen ze.",
+			goalLastTrick:
+				"Win de laatste slag. Iedereen die nog meedoet, krijgt de inzet als strafpunten.",
+			out: "Bij {target} strafpunten ben je af. Wie als laatste overblijft, wint.",
+			lastTrickOnly:
+				"Alleen de laatste slag telt. De slagen ervoor bepalen wie uitkomt.",
+			stake: "Elke ronde begint met inzet 1.",
+			knock:
+				"Wie nog meedoet, mag op elk moment toepen: de inzet gaat 1 omhoog. De anderen gaan dan mee of passen.",
+			fold: "Passen kost de inzet van vóór de toep, en je doet de rest van de ronde niet meer mee.",
+			knockAgain:
+				"Niemand toept twee keer achter elkaar: eerst moet een ander toepen.",
+			knockLimit:
+				"Je mag niet toepen als je punten plus de inzet al {target} halen.",
+			lastLife:
+				"Zolang iemand één punt van af is, begint elke ronde met inzet 2.",
+			swap: "Een hand met alleen {ranks} mag je vóór de eerste kaart ruilen voor nieuwe kaarten.",
 			goalHigh:
 				"Haal de meeste punten. Het spel eindigt zodra iemand {target} haalt; de hoogste score wint.",
 			goalLastHigh:
@@ -803,6 +867,31 @@ export const cards = {
 				to50: {
 					label: "Kort spel",
 					hint: "Speel tot 50 punten in plaats van 100.",
+				},
+			},
+		},
+		toepen: {
+			name: "Toepen",
+			tagline: "Toep en pak de laatste slag",
+			blurb:
+				"Vier kaarten per speler, en alleen de laatste slag telt. Toep om de inzet te verhogen: de anderen gaan mee of passen. Bij 10 punten ben je af.",
+			powers: {},
+			options: {
+				outAt15: {
+					label: "Af bij 15",
+					hint: "Speel tot 15 strafpunten in plaats van 10.",
+				},
+				vuileWas: {
+					label: "Vuile was",
+					hint: "Een hand met alleen boeren, vrouwen, heren en azen mag je ruilen voor een nieuwe.",
+				},
+				armoede: {
+					label: "Armoede",
+					hint: "Een hand met alleen zevens, achten, negens en tienen mag je ruilen voor een nieuwe.",
+				},
+				lastLife: {
+					label: "Pelt",
+					hint: "Zolang iemand één punt van af is, begint elke ronde met inzet 2.",
 				},
 			},
 		},

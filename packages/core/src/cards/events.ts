@@ -4,11 +4,13 @@ import type { RoemKind } from "./roem";
 /**
  * What just happened at the table, in order. Public: anything hidden (which
  * card someone drew) stays out. Clients animate and caption from this log.
+ * A deal's `skipped` seats are out of the match and were dealt nothing.
  */
 export type CardEvent = { seq: number } & (
 	| {
 			type: "deal";
 			round: number;
+			skipped?: number[];
 			/** Cards dealt to each seat; three are animated when absent. */
 			perSeat?: number;
 			/** The bank was dealt cards too, one per pass. */
@@ -37,6 +39,13 @@ export type CardEvent = { seq: number } & (
 	| { type: "trickWon"; seat: number; points: number }
 	| { type: "broken"; suit: Suit }
 	| { type: "moon"; seat: number }
+	/** A raise; `seat` is null when a seat on its last life raised it. */
+	| { type: "raise"; seat: number | null; stake: number }
+	| { type: "stay"; seat: number }
+	| { type: "fold"; seat: number; cost: number }
+	| { type: "swapHand"; seat: number }
+	| { type: "dealWon"; seat: number }
+	| { type: "out"; seat: number }
 	| { type: "trumpPass"; seat: number }
 	| { type: "trump"; seat: number; suit: Suit }
 	| { type: "roem"; seat: number; points: number; kinds: RoemKind[] }
