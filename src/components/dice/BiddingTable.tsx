@@ -112,21 +112,24 @@ function YourCup({ table, view, controls }: PanelProps) {
 				<p className="dice-empty">{bidding.outOfDice}</p>
 			) : (
 				<>
-					<ul
+					<div
+						role="img"
 						className="dice-row"
 						aria-label={fmt(bidding.yourDiceLabel, {
 							dice: view.yourDice.join(", "),
 						})}
 					>
 						{view.yourDice.map((value, index) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: a new round rolls every cup again, so the dice tumble again.
-							<li key={`${view.round}-${index}`} aria-hidden="true">
-								<span className="die" data-fresh="true">
-									<DieFace value={value} />
-								</span>
-							</li>
+							<span
+								// biome-ignore lint/suspicious/noArrayIndexKey: a new round rolls every cup again, so the dice tumble again.
+								key={`${view.round}-${index}`}
+								className="die"
+								data-fresh="true"
+							>
+								<DieFace value={value} />
+							</span>
 						))}
-					</ul>
+					</div>
 					<p className="dice-hint">{bidding.yourDiceHint}</p>
 				</>
 			)}
@@ -168,6 +171,29 @@ function BidPicker({
 
 	return (
 		<div className="bid-picker">
+			<fieldset className="bid-field">
+				<legend className="cards-kicker">{bidding.face}</legend>
+				<div className="bid-faces">
+					{FACES.map((value) => (
+						<button
+							key={value}
+							type="button"
+							className="die bid-face"
+							aria-pressed={face === value}
+							aria-label={fmt(bidding.faceButton, { face: value })}
+							disabled={
+								minimumQuantity(previous, value, view.rules) > view.totalDice
+							}
+							onClick={() => {
+								setFace(value);
+								setChosen(minimumQuantity(previous, value, view.rules));
+							}}
+						>
+							<DieFace value={value} />
+						</button>
+					))}
+				</div>
+			</fieldset>
 			<div className="bid-field">
 				<span className="cards-kicker">{bidding.quantity}</span>
 				<div className="bid-stepper">
@@ -194,26 +220,6 @@ function BidPicker({
 					</button>
 				</div>
 			</div>
-			<fieldset className="bid-field">
-				<legend className="cards-kicker">{bidding.face}</legend>
-				<div className="bid-faces">
-					{FACES.map((value) => (
-						<button
-							key={value}
-							type="button"
-							className="die bid-face"
-							aria-pressed={face === value}
-							aria-label={fmt(bidding.faceButton, { face: value })}
-							disabled={
-								minimumQuantity(previous, value, view.rules) > view.totalDice
-							}
-							onClick={() => setFace(value)}
-						>
-							<DieFace value={value} />
-						</button>
-					))}
-				</div>
-			</fieldset>
 			<div className="dice-actions">
 				<button
 					type="button"
@@ -383,7 +389,6 @@ function RevealPanel({
 					<li
 						// biome-ignore lint/suspicious/noArrayIndexKey: seats never reorder
 						key={seat}
-						data-lost={reveal.losers.includes(seat)}
 					>
 						<span className="sr-only">
 							{cup.length === 0
@@ -408,6 +413,12 @@ function RevealPanel({
 								</span>
 							))}
 						</span>
+						{/* The sentences above already say who lost a die. */}
+						{reveal.losers.includes(seat) ? (
+							<span className="flag" data-tone="danger" aria-hidden="true">
+								{bidding.lostMark}
+							</span>
+						) : null}
 					</li>
 				))}
 			</ul>

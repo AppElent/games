@@ -155,6 +155,7 @@ export const dice = {
 		revealSpotOn: "{bidder} bood {bid}. {caller} noemde het precies goed.",
 		revealCount: { one: "Er lag er {count}.", other: "Er lagen er {count}." },
 		lostOne: "{name} verloor een steen.",
+		lostMark: "−1 steen",
 		lostEveryoneElse: "Alle anderen verloren een steen.",
 		cupOf: "{name}: {dice}",
 		cupOut: "{name}: uit",

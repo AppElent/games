@@ -519,10 +519,6 @@ button.die {
 	font-weight: 700;
 }
 
-.bid-cups li[data-lost="true"] .bid-cup-name {
-	color: #f3a3a3;
-}
-
 .bid-cup-dice {
 	display: flex;
 	flex-wrap: wrap;

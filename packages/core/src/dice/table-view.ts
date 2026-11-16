@@ -225,12 +225,13 @@ export function revealSentences(
 
 /**
  * The latest bid or call as a sentence for a screen reader's live region;
- * `seq` tells two identical bids apart. A call reads out the whole reveal.
+ * `seq` tells two identical bids apart. A call reads out the whole reveal,
+ * then the viewer's freshly rolled cup when the game goes on.
  */
 export function biddingNews(
 	words: BidWords,
 	table: TableSeats,
-	view: Pick<BiddingView, "events" | "reveal">,
+	view: Pick<BiddingView, "events" | "reveal" | "phase" | "yourDice">,
 ): { seq: number; text: string } | null {
 	for (let index = view.events.length - 1; index >= 0; index -= 1) {
 		const event = view.events[index];
@@ -244,9 +245,17 @@ export function biddingNews(
 			};
 		}
 		if (event.type === "call" && view.reveal) {
+			const cup =
+				view.phase === "playing" && view.yourDice.length > 0
+					? [
+							fill(words.dice.bidding.yourDiceLabel, {
+								dice: view.yourDice.join(", "),
+							}),
+						]
+					: [];
 			return {
 				seq: event.seq,
-				text: revealSentences(words, table, view.reveal).join(" "),
+				text: [...revealSentences(words, table, view.reveal), ...cup].join(" "),
 			};
 		}
 	}

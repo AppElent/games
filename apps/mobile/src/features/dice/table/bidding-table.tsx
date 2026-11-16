@@ -220,17 +220,6 @@ function BidPicker({
 
 	return (
 		<View style={styles.picker}>
-			<AppText variant="label">{bidding.quantity.toUpperCase()}</AppText>
-			<CountStepper
-				value={quantity}
-				min={least}
-				max={view.totalDice}
-				label={String(quantity)}
-				fewer={bidding.fewer}
-				more={bidding.more}
-				onChange={setChosen}
-				testID="dice-bid-quantity"
-			/>
 			<AppText variant="label">{bidding.face.toUpperCase()}</AppText>
 			<View style={styles.faces}>
 				{FACES.map((value) => {
@@ -247,6 +236,7 @@ function BidPicker({
 							onPress={() => {
 								haptics.selectionChanged();
 								setFace(value);
+								setChosen(minimumQuantity(previous, value, view.rules));
 							}}
 							testID={`dice-bid-face-${value}`}
 							style={[styles.face, disabled && styles.faceDisabled]}
@@ -261,6 +251,17 @@ function BidPicker({
 					);
 				})}
 			</View>
+			<AppText variant="label">{bidding.quantity.toUpperCase()}</AppText>
+			<CountStepper
+				value={quantity}
+				min={least}
+				max={view.totalDice}
+				label={String(quantity)}
+				fewer={bidding.fewer}
+				more={bidding.more}
+				onChange={setChosen}
+				testID="dice-bid-quantity"
+			/>
 			<Button
 				label={fmt(bidding.placeBid, { bid: bidText({ dice, locale }, bid) })}
 				disabled={quantity > view.totalDice}

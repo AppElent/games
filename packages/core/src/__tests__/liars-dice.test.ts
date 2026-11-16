@@ -531,8 +531,12 @@ describe("liar's dice table view", () => {
 			).join(" ");
 			expect(text).not.toMatch(/[{}]/);
 		}
-		expect(biddingNews(words, table, view(state, 0))?.text).toContain(
-			"spot on",
+		const news = biddingNews(words, table, view(state, 0))?.text;
+		expect(news).toContain("spot on");
+		// The round goes on, so the viewer hears the cup they rolled for it.
+		expect(news).toMatch(/Your dice: \d(, \d)*\.?$/);
+		expect(biddingNews(words, table, view(state, null))?.text).not.toContain(
+			"Your dice",
 		);
 	});
 
