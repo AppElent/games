@@ -92,7 +92,7 @@ export const catalog = {
 	},
 	"dice-games": {
 		title: "Dobbelclub",
-		tagline: "Yatzy, Blufpoker en meer",
+		tagline: "Yatzy, Mexen, Blufpoker en meer",
 		description:
 			"Dobbelspellen aan één tafel. Gooi alleen, tegen de computer, of nodig vrienden uit met een kamercode.",
 		primaryAction: "Kies een spel",

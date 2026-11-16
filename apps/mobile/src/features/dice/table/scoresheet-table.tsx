@@ -2,14 +2,13 @@
  * A score-sheet game in play: whose turn, the dice (tap to hold), the sheet
  * with what your open boxes would score, and the final standings.
  */
-import { type DiceGameOf, diceRules } from "@arcadeclub/core/dice/engine";
+import { diceRules, type ScoresheetGame } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
 	latestNews,
 	standings,
 	turnStep,
-	winnerTitle,
 } from "@arcadeclub/core/dice/table-view";
 import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -33,18 +32,14 @@ import {
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
 import { AppText } from "../../../ui/text";
+import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
-import {
-	AutopilotNotice,
-	DiceEndPanel,
-	DiceTableFrame,
-	useNow,
-	useSeatMenu,
-} from "./table-parts";
+import { AutopilotNotice, DiceTableFrame, useSeatMenu } from "./table-parts";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
+import { useNow } from "./use-now";
 
 type Props = {
-	game: DiceGameOf<"scoresheet">;
+	game: ScoresheetGame;
 	table: DiceTableBundle;
 	view: ScoresheetView;
 	controls: DiceTableControls;
@@ -54,11 +49,10 @@ const MAX_DIE = 64;
 const DIE_GAP = spacing.sm;
 const NAME_COLUMN = 124;
 const SEAT_COLUMN = 64;
+
 export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const { t } = useI18n();
 	const dice = t.games.dice;
-	const styles = useThemedStyles(createStyles);
-	const won = table.you !== null && view.winners.includes(table.you);
 	return (
 		<DiceTableFrame
 			game={game}
@@ -69,20 +63,13 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 				view.phase === "finished" ? (
 					<DiceEndPanel
 						table={table}
+						winners={view.winners}
+						rows={standings(view).map(({ seat, total }) => ({
+							seat,
+							value: String(total),
+						}))}
 						controls={controls}
-						title={winnerTitle(dice, table, view.winners)}
-						won={won}
-						heading={dice.table.standings}
-					>
-						{standings(view).map(({ seat, total }) => (
-							<View key={seat} style={styles.standing}>
-								<AppText variant="body" numberOfLines={1} style={styles.flex}>
-									{diceSeatName(dice, table, seat)}
-								</AppText>
-								<AppText variant="heading">{String(total)}</AppText>
-							</View>
-						))}
-					</DiceEndPanel>
+					/>
 				) : null
 			}
 			tray={<DiceTray table={table} view={view} controls={controls} />}
@@ -515,11 +502,4 @@ const createStyles = (colors: Tokens) =>
 			borderStyle: "dashed",
 			borderRadius: radius.sm,
 		},
-		standing: {
-			flexDirection: "row",
-			alignItems: "center",
-			gap: spacing.md,
-			minHeight: metrics.hitTarget,
-		},
-		flex: { flex: 1 },
 	});

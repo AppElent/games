@@ -9,29 +9,15 @@ import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { Stack, useRouter } from "expo-router";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { AccessibilityInfo, StyleSheet, View } from "react-native";
-import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
 import { spacing } from "../../../theme";
 import { Button, HeaderButton } from "../../../ui/button";
-import { Card } from "../../../ui/card";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { Sheet } from "../../cards/deck/sheet";
 import { DiceRulesSheet } from "../rules/dice-rules-sheet";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
-
-/** How often a silent seat is checked for. */
-const PRESENCE_TICK_MS = 15_000;
-
-export function useNow() {
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		const timer = setInterval(() => setNow(Date.now()), PRESENCE_TICK_MS);
-		return () => clearInterval(timer);
-	}, []);
-	return now;
-}
 
 type News = { seq: number; text: string } | null;
 
@@ -199,58 +185,6 @@ export function useSeatMenu(
 	);
 
 	return { canManage, open: setMenuSeat, sheet };
-}
-
-/** Who won and in what order, then play again or pick another game. */
-export function DiceEndPanel({
-	table,
-	controls,
-	title,
-	won,
-	heading,
-	children,
-}: {
-	table: DiceTableBundle;
-	controls: DiceTableControls;
-	title: string;
-	won: boolean;
-	heading: string;
-	children: ReactNode;
-}) {
-	const router = useRouter();
-	const { t } = useI18n();
-	const dice = t.games.dice;
-
-	useEffect(() => {
-		AccessibilityInfo.announceForAccessibility(title);
-		if (won) haptics.gameWon();
-	}, [title, won]);
-
-	return (
-		<Card testID="dice-end">
-			<AppText variant="title" accessibilityRole="header">
-				{title}
-			</AppText>
-			<AppText variant="label">{heading.toUpperCase()}</AppText>
-			{children}
-			{table.you !== null ? (
-				<Button
-					label={dice.table.playAgain}
-					busy={controls.pending}
-					onPress={controls.rematch}
-					testID="dice-rematch"
-				/>
-			) : (
-				<AppText variant="secondary">{dice.table.waitingRematch}</AppText>
-			)}
-			<Button
-				variant="secondary"
-				label={dice.table.newGame}
-				onPress={() => router.dismissTo("/dice")}
-				testID="dice-new-game"
-			/>
-		</Card>
-	);
 }
 
 const styles = StyleSheet.create({

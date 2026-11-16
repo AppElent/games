@@ -221,17 +221,114 @@ export const dice = {
 		chance: "Kans",
 		yatzy: "Yatzy",
 	},
+	mexen: {
+		round: "Ronde {round}",
+		throwOff: "Afgooien",
+		theirTurn: "{name} gooit",
+		throw: "Gooi",
+		throwAgain: "Nog een keer",
+		keep: "Houd {throw}",
+		throwCount: "Worp {used} van {cap}",
+		leaderHint:
+			"Jij begint, met maximaal {cap} worpen. Hoeveel je er gebruikt, is deze ronde het maximum voor de rest.",
+		startHint: {
+			one: "Je hebt deze ronde {count} worp.",
+			other: "Je hebt deze ronde maximaal {count} worpen.",
+		},
+		decideHint: "Houd deze worp of gooi opnieuw. Alleen je laatste worp telt.",
+		throwOffHint: "Samen laagste: ieder één worp om het te beslissen.",
+		limit: {
+			one: "Deze ronde: {count} worp per speler",
+			other: "Deze ronde: maximaal {count} worpen per speler",
+		},
+		limitPending: "{name} bepaalt het aantal worpen",
+		yourLimitPending: "Jij bepaalt het aantal worpen",
+		pointLimit: "Het spel eindigt bij {limit} punten.",
+		doubled: "Er is een mex gehouden: het verlies telt deze ronde dubbel.",
+		seatsLabel: "Spelers",
+		leader: "Begint",
+		out: "Uit",
+		toThrow: "Moet nog gooien",
+		throwing: "Gooit",
+		inThrowOff: "Gooit af",
+		lives: { one: "{count} leven", other: "{count} levens" },
+		points: { one: "{count} punt", other: "{count} punten" },
+		kept: "Houdt {throw}",
+		lastStand: "{name} houdt {throw}",
+		lastThrowOff: "Samen laagste: {names} gooien opnieuw",
+		lastLoseLife: "{name} verliest een leven",
+		lastLoseLives: "{name} verliest {count} levens",
+		lastLosePoint: "{name} krijgt een punt",
+		lastLosePoints: "{name} krijgt {count} punten",
+		lastOut: "{name} ligt eruit",
+		throws: {
+			mex: "Mex",
+			littleMex: "Kleine mex",
+			double: "Dubbel {face}",
+			plain: "{value}",
+		},
+		rules: {
+			goalLives:
+				"Eindig een ronde niet met de laagste worp. Dat kost een leven, en iedereen begint met {lives}. Zonder levens lig je eruit; wie als laatste levens over heeft, wint.",
+			goalPoints:
+				"Eindig een ronde niet met de laagste worp. Dat kost een punt. Het spel eindigt zodra iemand {limit} punten heeft, en wie de minste punten heeft, wint.",
+			roundHeading: "Een ronde",
+			leader:
+				"De eerste speler gooit beide stenen maximaal {throws} keer en houdt de laatste worp. Het aantal worpen dat die speler gebruikte, is die ronde het maximum voor de rest.",
+			others: "Daarna gooit iedereen om de beurt en houdt ook de laatste worp.",
+			loser:
+				"De laagste worp verliest. Wie gelijk staat als laagste, gooit nog één keer, tot er één de laagste is. De verliezer begint de volgende ronde.",
+			mexDoublesLives:
+				"Een ronde waarin iemand mex hield, kost de verliezer twee levens.",
+			mexDoublesPoints:
+				"Een ronde waarin iemand mex hield, kost de verliezer twee punten.",
+			rankHeading: "Welke worp wint",
+			read: "De hoogste steen telt als tientallen: 6-3 is 63.",
+			mex: "2-1 is mex, de hoogste worp.",
+			littleMex: "3-1 is kleine mex, alleen mex is hoger.",
+			doubles: "Dan dubbels, van 6-6 tot 1-1.",
+			plain: "Dan de rest, van 65 tot {lowest}.",
+		},
+	},
 	bots: cards.bots,
 	games: {
 		yatzy: {
 			name: "Yatzy",
 			tagline: "Vijf stenen, drie worpen",
 			blurb:
-				"Gooi, houd vast en gooi opnieuw om vijftien vakken te vullen. Ga voor de bonus, of waag een gok op Yatzy.",
+				"Gooi, houd vast en gooi opnieuw om vijftien vakken te vullen. Ga voor de bonus, of ga voluit voor Yatzy.",
 			options: {
 				yahtzeeSheet: {
 					label: "Yahtzee-scoreblok",
 					hint: "Dertien vakken: full house 25, straten 30 en 40, extra Yahtzees 100 punten.",
+				},
+			},
+		},
+		mexen: {
+			name: "Mexen",
+			tagline: "Twee stenen, één mex",
+			blurb:
+				"Gooi maximaal drie keer, lees de hoogste steen eerst en eindig de ronde niet als laagste. Een 2-1 verslaat alles. Wie als laatste levens over heeft, wint.",
+			options: {
+				lives3: {
+					label: "3 levens",
+					hint: "Een kort spel: iedereen begint met 3 levens in plaats van 6.",
+				},
+				lives10: {
+					label: "10 levens",
+					hint: "Een lang spel: iedereen begint met 10 levens in plaats van 6.",
+				},
+				mexSingle: {
+					label: "Mex kost één",
+					hint: "Een mex in de ronde verdubbelt het verlies niet meer.",
+				},
+				littleMex: {
+					label: "Kleine mex",
+					hint: "3-1 is de op één na hoogste worp, onder mex en boven alle dubbels.",
+				},
+				points: {
+					label: "Punten in plaats van levens",
+					hint: "Niemand ligt eruit. De verliezer krijgt punten; het aantal levens wordt de puntengrens, en de minste punten winnen.",
 				},
 			},
 		},

@@ -6,6 +6,7 @@ import { useI18n } from "../../../i18n";
 import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
 import { BiddingTable } from "./bidding-table";
 import { DiceLobby } from "./dice-lobby";
+import { MexenTable } from "./mexen-table";
 import { ScoresheetTable } from "./scoresheet-table";
 import { useDiceTable } from "./use-dice-table";
 
@@ -33,25 +34,38 @@ export function DiceTableScreen({ sessionId }: { sessionId: string }) {
 	}
 
 	const game = getDiceGame(table.gameId);
-	if (table.status === "lobby" || !table.view) {
+	const view = table.view;
+	if (table.status === "lobby" || !view) {
 		return <DiceLobby game={game} table={table} controls={controls} />;
 	}
-	// The game picks the family; its view always comes from the same family.
-	const view = table.view;
-	if (game.family === "scoresheet" && view.family === "scoresheet") {
-		return (
-			<ScoresheetTable
-				game={game}
-				table={table}
-				view={view}
-				controls={controls}
-			/>
-		);
+	// The stored state was dealt by this game, so its family always matches.
+	// A family without a branch here fails to compile.
+	switch (game.family) {
+		case "bidding":
+			return view.family === "bidding" ? (
+				<BiddingTable
+					game={game}
+					table={table}
+					view={view}
+					controls={controls}
+				/>
+			) : null;
+		case "mexen":
+			return view.family === "mexen" ? (
+				<MexenTable game={game} table={table} view={view} controls={controls} />
+			) : null;
+		case "scoresheet":
+			return view.family === "scoresheet" ? (
+				<ScoresheetTable
+					game={game}
+					table={table}
+					view={view}
+					controls={controls}
+				/>
+			) : null;
+		default: {
+			const unhandled: never = game;
+			return unhandled;
+		}
 	}
-	if (game.family === "bidding" && view.family === "bidding") {
-		return (
-			<BiddingTable game={game} table={table} view={view} controls={controls} />
-		);
-	}
-	return null;
 }

@@ -477,8 +477,8 @@ function VerifyStep({
 								<div key={kind} className="flex items-center gap-1">
 									<span className="w-14 text-xs text-slate-400">
 										{kind === "corner"
-											? sudoku.keypad.modeCorner
-											: sudoku.keypad.modeCenter}
+											? sudoku.keypad.modes.corner
+											: sudoku.keypad.modes.center}
 									</span>
 									{Array.from({ length: 9 }, (_, i) => i + 1).map((digit) => {
 										const mask =

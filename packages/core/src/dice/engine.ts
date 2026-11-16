@@ -28,7 +28,20 @@ import {
 	viewBidding,
 } from "./bidding";
 import { liarsDice } from "./games/liars-dice";
+import { mexen } from "./games/mexen";
 import { yatzy } from "./games/yatzy";
+import {
+	applyMexen,
+	botMexenMove,
+	createMexen,
+	MEXEN_ACTIONS,
+	type MexenAction,
+	type MexenRules,
+	type MexenState,
+	type MexenView,
+	nextMexenStarter,
+	viewMexen,
+} from "./mexen";
 import {
 	applyScoresheet,
 	botScoresheetMove,
@@ -54,45 +67,18 @@ type Definition<Family extends string, Rules> = {
 	options: ReadonlyArray<HouseRule<Rules>>;
 };
 
-export type DiceGameDefinition =
-	| Definition<"scoresheet", ScoresheetRules>
-	| Definition<"bidding", BiddingRules>;
-
-export const DICE_GAMES = {
-	yatzy,
-	"liars-dice": liarsDice,
-} as const satisfies Record<string, DiceGameDefinition>;
-
-export type DiceGameId = keyof typeof DICE_GAMES;
-export type DiceGame = (typeof DICE_GAMES)[DiceGameId];
-/** The listed games that play one rule family. */
-export type DiceGameOf<F extends DiceGame["family"]> = Extract<
-	DiceGame,
-	{ family: F }
->;
-export const DICE_GAME_IDS = Object.keys(DICE_GAMES) as DiceGameId[];
-
-export function isDiceGameId(value: string): value is DiceGameId {
-	return (DICE_GAME_IDS as string[]).includes(value);
-}
-
-export type DiceGameState = ScoresheetState | BiddingState;
-export type DiceAction = ScoresheetAction | BiddingAction;
-export type DiceView = ScoresheetView | BiddingView;
-
-export function getDiceGame(id: string): DiceGame {
-	if (!isDiceGameId(id)) {
-		throw new GameRuleError("gameNotFound");
-	}
-	return DICE_GAMES[id];
-}
-
 type FamilyTypes = {
 	scoresheet: {
 		rules: ScoresheetRules;
 		state: ScoresheetState;
 		action: ScoresheetAction;
 		view: ScoresheetView;
+	};
+	mexen: {
+		rules: MexenRules;
+		state: MexenState;
+		action: MexenAction;
+		view: MexenView;
 	};
 	bidding: {
 		rules: BiddingRules;
@@ -103,6 +89,41 @@ type FamilyTypes = {
 };
 
 type Family = keyof FamilyTypes;
+
+/** A game of one family; `GameOf<Family>` takes a game of any family. */
+type GameOf<F extends Family> = Definition<F, FamilyTypes[F]["rules"]>;
+
+export type DiceGameDefinition = { [F in Family]: GameOf<F> }[Family];
+
+export const DICE_GAMES = {
+	yatzy,
+	mexen,
+	"liars-dice": liarsDice,
+} as const satisfies Record<string, DiceGameDefinition>;
+
+export type DiceGameId = keyof typeof DICE_GAMES;
+export type DiceGame = (typeof DICE_GAMES)[DiceGameId];
+/** The games of one family, for screens that draw only that family. */
+export type DiceGameOf<F extends Family> = Extract<DiceGame, { family: F }>;
+export type ScoresheetGame = DiceGameOf<"scoresheet">;
+export type MexenGame = DiceGameOf<"mexen">;
+export type BiddingGame = DiceGameOf<"bidding">;
+export const DICE_GAME_IDS = Object.keys(DICE_GAMES) as DiceGameId[];
+
+export function isDiceGameId(value: string): value is DiceGameId {
+	return (DICE_GAME_IDS as string[]).includes(value);
+}
+
+export type DiceGameState = FamilyTypes[Family]["state"];
+export type DiceAction = FamilyTypes[Family]["action"];
+export type DiceView = FamilyTypes[Family]["view"];
+
+export function getDiceGame(id: string): DiceGame {
+	if (!isDiceGameId(id)) {
+		throw new GameRuleError("gameNotFound");
+	}
+	return DICE_GAMES[id];
+}
 
 /** Everything the engine asks of a dice family. */
 type FamilyModule<F extends Family> = {
@@ -145,6 +166,14 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		view: viewScoresheet,
 		bot: botScoresheetMove,
 	},
+	mexen: {
+		actions: MEXEN_ACTIONS,
+		create: createMexen,
+		nextStarter: nextMexenStarter,
+		apply: applyMexen,
+		view: viewMexen,
+		bot: botMexenMove,
+	},
 	bidding: {
 		actions: BIDDING_ACTIONS,
 		create: createBidding,
@@ -155,38 +184,29 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 	},
 };
 
-/** The one cast: a game id picks the family, and its state and actions belong to that family. */
-function familyOf(family: Family) {
-	return FAMILIES[family] as unknown as FamilyModule<Family>;
+function familyOf<F extends Family>(family: F): FamilyModule<F> {
+	return FAMILIES[family];
 }
-
-type RulesOf<G> = G extends { rules: infer R } ? R : never;
 
 /** The game's rules with its chosen house rules applied. */
-export function diceRules<G extends DiceGameDefinition>(
-	game: G,
+export function diceRules<F extends Family>(
+	game: GameOf<F>,
 	options: readonly string[],
-): RulesOf<G> {
-	return applyHouseRules(
-		game as unknown as {
-			rules: RulesOf<G>;
-			options: ReadonlyArray<HouseRule<RulesOf<G>>>;
-		},
-		options,
-	);
+): FamilyTypes[F]["rules"] {
+	return applyHouseRules<FamilyTypes[F]["rules"]>(game, options);
 }
 
-export function createDiceGame(
-	game: DiceGameDefinition,
+export function createDiceGame<F extends Family>(
+	game: GameOf<F>,
 	options: readonly string[],
 	seats: number,
 	starter = 0,
 	random: Rng = Math.random,
-): DiceGameState {
+): FamilyTypes[F]["state"] {
 	if (seats < game.players.min || seats > game.players.max) {
 		throw new GameRuleError("notEnoughPlayers");
 	}
-	return familyOf(game.family).create(
+	return familyOf<F>(game.family).create(
 		diceRules(game, options),
 		seats,
 		starter,
@@ -194,39 +214,46 @@ export function createDiceGame(
 	);
 }
 
-export function applyDiceAction(
-	game: DiceGameDefinition,
+export function applyDiceAction<F extends Family>(
+	game: GameOf<F>,
 	options: readonly string[],
-	state: DiceGameState,
+	state: FamilyTypes[F]["state"],
 	seat: number,
 	action: DiceAction,
 	random: Rng,
-): DiceGameState {
-	const family = familyOf(game.family);
-	if (!Object.keys(family.actions).includes(action.type)) {
+): FamilyTypes[F]["state"] {
+	const family = familyOf<F>(game.family);
+	if (!isFamilyAction(family, action)) {
 		throw new GameRuleError("cardsWrongAction");
 	}
 	return family.apply(diceRules(game, options), state, seat, action, random);
 }
 
-/** What one seat may see; `null` is a spectator. */
-export function viewDiceGame(
-	game: DiceGameDefinition,
-	options: readonly string[],
-	state: DiceGameState,
-	seat: number | null,
-): DiceView {
-	return familyOf(game.family).view(diceRules(game, options), state, seat);
+function isFamilyAction<F extends Family>(
+	family: FamilyModule<F>,
+	action: DiceAction,
+): action is FamilyTypes[F]["action"] {
+	return Object.keys(family.actions).includes(action.type);
 }
 
-export function diceBotMove(
-	game: DiceGameDefinition,
+/** What one seat may see; `null` is a spectator. */
+export function viewDiceGame<F extends Family>(
+	game: GameOf<F>,
 	options: readonly string[],
-	state: DiceGameState,
+	state: FamilyTypes[F]["state"],
+	seat: number | null,
+): FamilyTypes[F]["view"] {
+	return familyOf<F>(game.family).view(diceRules(game, options), state, seat);
+}
+
+export function diceBotMove<F extends Family>(
+	game: GameOf<F>,
+	options: readonly string[],
+	state: FamilyTypes[F]["state"],
 	bots: readonly number[],
 	random: Rng = Math.random,
-): BotMove<DiceAction> | null {
-	return familyOf(game.family).bot(
+): BotMove<FamilyTypes[F]["action"]> | null {
+	return familyOf<F>(game.family).bot(
 		diceRules(game, options),
 		state,
 		bots,
@@ -234,7 +261,12 @@ export function diceBotMove(
 	);
 }
 
-/** The dice games as the Convex table module plays them. */
+/**
+ * The dice games as the Convex table module plays them. Here `F` widens to
+ * every family, so the compiler no longer ties the state to the game: that
+ * holds because a session's state is only ever made by `create` for that
+ * session's own game id, which never changes.
+ */
 export const DICE_ENGINE: TableEngine<DiceGameState, DiceAction, DiceView> = {
 	players: (gameId) => getDiceGame(gameId).players,
 	normalizeOptions: (gameId, options) =>

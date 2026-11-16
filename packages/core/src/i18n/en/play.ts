@@ -22,6 +22,6 @@ export const play = {
 		"card-games":
 			"Pesten, Klaverjassen, Jokeren, Hearts, Boerenbridge and more, against the computer or friends.",
 		"dice-games":
-			"Yatzy and Liar's Dice, against the computer or with friends.",
+			"Yatzy, Mexico and Liar's Dice, alone, against the computer or with friends.",
 	},
 };

@@ -18,6 +18,7 @@ const diceActionValidator = v.union(
 	v.object({ type: v.literal("bid"), quantity: v.number(), face: v.number() }),
 	v.object({ type: v.literal("liar") }),
 	v.object({ type: v.literal("spotOn") }),
+	v.object({ type: v.literal("stand") }),
 );
 
 // Fails typecheck as soon as the validator and core's actions disagree.

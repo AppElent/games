@@ -9,7 +9,7 @@ import {
 	minimumQuantity,
 	type Reveal,
 } from "@arcadeclub/core/dice/bidding";
-import type { DiceGameOf } from "@arcadeclub/core/dice/engine";
+import type { BiddingGame } from "@arcadeclub/core/dice/engine";
 import {
 	biddingNews,
 	biddingStandings,
@@ -18,7 +18,6 @@ import {
 	defaultBid,
 	diceSeatName,
 	revealSentences,
-	winnerTitle,
 } from "@arcadeclub/core/dice/table-view";
 import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { useEffect, useRef, useState } from "react";
@@ -37,18 +36,14 @@ import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
 import { AppText } from "../../../ui/text";
 import { CountStepper } from "../../table/setup-fields";
+import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
-import {
-	AutopilotNotice,
-	DiceEndPanel,
-	DiceTableFrame,
-	useNow,
-	useSeatMenu,
-} from "./table-parts";
+import { AutopilotNotice, DiceTableFrame, useSeatMenu } from "./table-parts";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
+import { useNow } from "./use-now";
 
 type Props = {
-	game: DiceGameOf<"bidding">;
+	game: BiddingGame;
 	table: DiceTableBundle;
 	view: BiddingView;
 	controls: DiceTableControls;
@@ -64,8 +59,6 @@ const SMALL_DIE = 22;
 export function BiddingTable({ game, table, view, controls }: Props) {
 	const { t, locale } = useI18n();
 	const dice = t.games.dice;
-	const styles = useThemedStyles(createStyles);
-	const won = table.you !== null && view.winners.includes(table.you);
 	return (
 		<DiceTableFrame
 			game={game}
@@ -76,24 +69,17 @@ export function BiddingTable({ game, table, view, controls }: Props) {
 				view.phase === "finished" ? (
 					<DiceEndPanel
 						table={table}
-						controls={controls}
-						title={winnerTitle(dice, table, view.winners)}
-						won={won}
+						winners={view.winners}
 						heading={dice.bidding.standings}
-					>
-						{biddingStandings(view).map(({ seat, outIn }) => (
-							<View key={seat} style={styles.standing}>
-								<AppText variant="body" numberOfLines={1} style={styles.flex}>
-									{diceSeatName(dice, table, seat)}
-								</AppText>
-								<AppText variant="secondary">
-									{view.winners.includes(seat) || outIn === null
-										? dice.bidding.lastStanding
-										: fmt(dice.bidding.outIn, { round: outIn })}
-								</AppText>
-							</View>
-						))}
-					</DiceEndPanel>
+						rows={biddingStandings(view).map(({ seat, outIn }) => ({
+							seat,
+							value:
+								view.winners.includes(seat) || outIn === null
+									? dice.bidding.lastStanding
+									: fmt(dice.bidding.outIn, { round: outIn }),
+						}))}
+						controls={controls}
+					/>
 				) : null
 			}
 			tray={<YourCup table={table} view={view} controls={controls} />}
@@ -576,11 +562,5 @@ const createStyles = (colors: Tokens) =>
 			overflow: "hidden",
 		},
 		dim: { opacity: 0.4 },
-		standing: {
-			flexDirection: "row",
-			alignItems: "center",
-			gap: spacing.md,
-			minHeight: metrics.hitTarget,
-		},
 		flex: { flex: 1 },
 	});

@@ -2,6 +2,7 @@
  * A Classic or Killer puzzle in play.
  */
 import { describeHint } from "@arcadeclub/core/sudoku-hints";
+import { nextTapMode } from "@arcadeclub/core/sudoku-input";
 import { StyleSheet, Switch, View } from "react-native";
 import { useI18n } from "../../../i18n";
 import {
@@ -19,15 +20,18 @@ import { puzzleTitle } from "../components/puzzle-title";
 import { useBoardSize } from "../components/use-board-size";
 import type { GridSave } from "../saves/sudoku-save-store";
 import { SudokuBoard } from "./sudoku-board";
+import { SudokuInputSettingsPanel } from "./sudoku-input-settings-panel";
 import { SudokuKeypad } from "./sudoku-keypad";
 import { useSudokuGame } from "./use-sudoku-game";
+import { useSudokuInputSettings } from "./use-sudoku-input-settings";
 
 export function SudokuGameScreen({ save }: { save: GridSave }) {
 	const { t } = useI18n();
 	const copy = t.games.sudoku;
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
-	const game = useSudokuGame(save);
+	const [inputSettings, setInputSettings] = useSudokuInputSettings();
+	const game = useSudokuGame(save, inputSettings);
 	const { status } = game.session;
 	const { size, wide } = useBoardSize(400);
 
@@ -104,6 +108,10 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 						disabled={status !== "active"}
 					/>
 				</View>
+				<SudokuInputSettingsPanel
+					settings={inputSettings}
+					onChange={setInputSettings}
+				/>
 			</View>
 		);
 
@@ -124,6 +132,12 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 					hintCells={game.hintCells}
 					cages={game.cages}
 					hidden={status === "paused"}
+					mode={game.mode}
+					cornerLayout={inputSettings.cornerLayout}
+					canCycle={
+						status === "active" &&
+						nextTapMode(game.mode, inputSettings) !== game.mode
+					}
 				/>
 			}
 			beside={controls}

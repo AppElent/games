@@ -5,7 +5,7 @@ import {
 	minimumQuantity,
 	type Reveal,
 } from "@arcadeclub/core/dice/bidding";
-import type { DiceGameOf } from "@arcadeclub/core/dice/engine";
+import type { BiddingGame } from "@arcadeclub/core/dice/engine";
 import {
 	biddingNews,
 	biddingStandings,
@@ -14,7 +14,6 @@ import {
 	defaultBid,
 	diceSeatName,
 	revealSentences,
-	winnerTitle,
 } from "@arcadeclub/core/dice/table-view";
 import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { Bot, Minus, MoreHorizontal, Plus } from "lucide-react";
@@ -22,16 +21,12 @@ import { useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
 import { DieFace } from "./Die";
-import {
-	AutopilotNotice,
-	DiceEndDialog,
-	DiceTableFrame,
-	useSeatMenu,
-} from "./TableParts";
+import { DiceEnd } from "./End";
+import { AutopilotNotice, DiceTableFrame, useSeatMenu } from "./TableParts";
 import type { DiceTableBundle, DiceTableControls } from "./useDiceTable";
 
 type Props = {
-	game: DiceGameOf<"bidding">;
+	game: BiddingGame;
 	table: DiceTableBundle;
 	view: BiddingView;
 	controls: DiceTableControls;
@@ -53,25 +48,19 @@ export function BiddingTable({ game, table, view, controls }: Props) {
 			news={biddingNews(words, table, view)}
 			end={
 				view.phase === "finished" ? (
-					<DiceEndDialog
+					<DiceEnd
 						table={table}
-						controls={controls}
-						title={winnerTitle(dice, table, view.winners)}
+						winners={view.winners}
 						heading={dice.bidding.standings}
-					>
-						{biddingStandings(view).map(({ seat, outIn }) => (
-							<li key={seat} data-winner={view.winners.includes(seat)}>
-								<span className="min-w-0 flex-1 truncate">
-									{diceSeatName(dice, table, seat)}
-								</span>
-								<span className="text-sm">
-									{view.winners.includes(seat) || outIn === null
-										? dice.bidding.lastStanding
-										: fmt(dice.bidding.outIn, { round: outIn })}
-								</span>
-							</li>
-						))}
-					</DiceEndDialog>
+						rows={biddingStandings(view).map(({ seat, outIn }) => ({
+							seat,
+							value:
+								view.winners.includes(seat) || outIn === null
+									? dice.bidding.lastStanding
+									: fmt(dice.bidding.outIn, { round: outIn }),
+						}))}
+						controls={controls}
+					/>
 				) : null
 			}
 		>

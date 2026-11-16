@@ -3,9 +3,11 @@
  * every box's line comes from its rule, so a new sheet needs no new text.
  */
 import {
+	type BiddingGame,
 	type DiceGame,
-	type DiceGameOf,
 	diceRules,
+	type MexenGame,
+	type ScoresheetGame,
 } from "@arcadeclub/core/dice/engine";
 import { categoryEffect } from "@arcadeclub/core/dice/table-view";
 import type { ReactNode } from "react";
@@ -50,22 +52,23 @@ export function DiceRulesSheet({
 		string,
 		{ label: string; hint: string }
 	>;
-	const r = dice.rules;
 	const active = options.map((id) => optionText[id]).filter(Boolean);
 
 	return (
 		<Sheet
 			open={open}
 			onClose={onClose}
-			title={fmt(r.heading, { game: text.name })}
+			title={fmt(dice.rules.heading, { game: text.name })}
 		>
 			{game.family === "scoresheet" ? (
 				<ScoresheetRules game={game} options={options} />
+			) : game.family === "mexen" ? (
+				<MexenRules game={game} options={options} />
 			) : (
 				<BiddingRules game={game} options={options} />
 			)}
 			{active.length > 0 ? (
-				<Section heading={r.extrasHeading}>
+				<Section heading={dice.rules.extrasHeading}>
 					{active.map((option) => (
 						<AppText key={option.label} variant="secondary" tone="default">
 							{`${option.label}: ${option.hint}`}
@@ -81,7 +84,7 @@ function ScoresheetRules({
 	game,
 	options,
 }: {
-	game: DiceGameOf<"scoresheet">;
+	game: ScoresheetGame;
 	options: readonly string[];
 }) {
 	const { t } = useI18n();
@@ -125,12 +128,57 @@ function ScoresheetRules({
 	);
 }
 
+function MexenRules({
+	game,
+	options,
+}: {
+	game: MexenGame;
+	options: readonly string[];
+}) {
+	const { t } = useI18n();
+	const dice = t.games.dice;
+	const rules = diceRules(game, options);
+	const r = dice.mexen.rules;
+	const lives = rules.scoring === "lives";
+	const line = (text: string) => (
+		<AppText key={text} variant="secondary" tone="default">
+			{text}
+		</AppText>
+	);
+	return (
+		<>
+			<Section heading={dice.rules.goalHeading}>
+				{line(
+					lives
+						? fmt(r.goalLives, { lives: rules.lives })
+						: fmt(r.goalPoints, { limit: rules.lives }),
+				)}
+			</Section>
+			<Section heading={r.roundHeading}>
+				{line(fmt(r.leader, { throws: rules.maxThrows }))}
+				{line(r.others)}
+				{line(r.loser)}
+				{rules.mexDoubles
+					? line(lives ? r.mexDoublesLives : r.mexDoublesPoints)
+					: null}
+			</Section>
+			<Section heading={r.rankHeading}>
+				{line(r.read)}
+				{line(r.mex)}
+				{rules.littleMex ? line(r.littleMex) : null}
+				{line(r.doubles)}
+				{line(fmt(r.plain, { lowest: rules.littleMex ? 32 : 31 }))}
+			</Section>
+		</>
+	);
+}
+
 /** The round, then each house rule that changes it, said in full. */
 function BiddingRules({
 	game,
 	options,
 }: {
-	game: DiceGameOf<"bidding">;
+	game: BiddingGame;
 	options: readonly string[];
 }) {
 	const { t } = useI18n();

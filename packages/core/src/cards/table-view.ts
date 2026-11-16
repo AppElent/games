@@ -361,6 +361,33 @@ export function describeEvent(
 			return mine(event.seat)
 				? e.youMoon
 				: fmt(e.moon, { name: name(event.seat) });
+		case "raise":
+			if (event.seat === null) {
+				return fmt(e.lastLifeRaise, { stake: event.stake });
+			}
+			return mine(event.seat)
+				? fmt(e.youRaise, { stake: event.stake })
+				: fmt(e.raise, { stake: event.stake, name: name(event.seat) });
+		case "stay":
+			return mine(event.seat)
+				? e.youStay
+				: fmt(e.stay, { name: name(event.seat) });
+		case "fold":
+			return mine(event.seat)
+				? countOf(event.cost, e.youFold)
+				: fmt(countOf(event.cost, e.fold), { name: name(event.seat) });
+		case "swapHand":
+			return mine(event.seat)
+				? e.youSwapHand
+				: fmt(e.swapHand, { name: name(event.seat) });
+		case "dealWon":
+			return mine(event.seat)
+				? e.youDealWon
+				: fmt(e.dealWon, { name: name(event.seat) });
+		case "out":
+			return mine(event.seat)
+				? e.youOut
+				: fmt(e.out, { name: name(event.seat) });
 		case "trumpPass":
 			return mine(event.seat)
 				? e.youTrumpPass
@@ -551,13 +578,20 @@ type TricksScoreView = Pick<
 
 /** Where the match stands: "Round 3 of 16 · 8 cards", or "Round 2 · to 100". */
 export function tricksRoundLabel(
-	view: Pick<TricksView, "round" | "deals" | "target" | "handSize">,
+	view: Pick<
+		TricksView,
+		"round" | "deals" | "target" | "handSize" | "matchEnd"
+	>,
 	{ cards, fmt, countOf }: CardWords,
 ) {
 	const t = cards.tricks;
-	return view.deals === null
-		? fmt(t.roundLabel, { round: view.round, target: view.target ?? "" })
-		: `${fmt(t.dealLabel, { round: view.round, deals: view.deals })} · ${countOf(view.handSize, t.cardsEach)}`;
+	if (view.deals !== null) {
+		return `${fmt(t.dealLabel, { round: view.round, deals: view.deals })} · ${countOf(view.handSize, t.cardsEach)}`;
+	}
+	return fmt(
+		view.matchEnd === "lastStanding" ? t.outRoundLabel : t.roundLabel,
+		{ round: view.round, target: view.target ?? "" },
+	);
 }
 
 /** The scoreboard's rows: one per team in a team game, else one per seat. */
@@ -689,12 +723,32 @@ export function sortTricksHand(
 export function tricksHint(
 	view: TricksView,
 	you: number | null,
-	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	{ cards, fmt, countOf }: Pick<CardWords, "cards" | "fmt" | "countOf">,
 	rules: Pick<TricksRules, "firstLead" | "breaking" | "mustTrump">,
 ) {
 	const t = cards.tricks;
 	if (you === null) {
 		return null;
+	}
+	if (view.out[you]) {
+		return view.phase === "finished" ? null : t.outHint;
+	}
+	const knock = view.knock;
+	if (view.phase === "knocking" && knock) {
+		if (!knock.asked.includes(you) || knock.answers[you] !== null) {
+			return t.knockWaiting;
+		}
+		const stake = view.stake ?? 1;
+		return fmt(
+			countOf(stake - 1, knock.by === null ? t.lastLifeAnswer : t.knockAnswer),
+			{ stake },
+		);
+	}
+	if (view.folded[you] && view.phase === "playing") {
+		return t.foldedHint;
+	}
+	if (view.canSwap && view.turn !== you) {
+		return t.swapHint;
 	}
 	if (view.phase === "trump") {
 		if (view.turn !== you) {
@@ -793,6 +847,11 @@ export function tricksSeatNote(
 		| "passReady"
 		| "totals"
 		| "roundPoints"
+		| "target"
+		| "stake"
+		| "folded"
+		| "out"
+		| "knock"
 		| "bids"
 		| "tricksTaken"
 		| "teams"
@@ -806,6 +865,25 @@ export function tricksSeatNote(
 	const t = cards.tricks;
 	if (view.phase === "passing" && view.passReady[seat]) {
 		return t.passedNote;
+	}
+	if (view.stake !== null) {
+		const points = fmt(t.penaltyNote, {
+			total: view.totals[seat],
+			target: view.target ?? "",
+		});
+		const knock = view.knock;
+		const status = view.out[seat]
+			? t.outNote
+			: view.folded[seat]
+				? t.foldedNote
+				: knock?.by === seat
+					? t.knockedNote
+					: knock?.asked.includes(seat)
+						? knock.answers[seat] === "stay"
+							? t.stayedNote
+							: t.decidingNote
+						: null;
+		return status ? `${points} · ${status}` : points;
 	}
 	if (view.phase === "trump" && view.trumpPassed[seat]) {
 		return t.trumpPassedNote;
@@ -869,28 +947,40 @@ export function tricksRuleLines(
 			)
 			.join(", ");
 	const breaking = rules.breaking;
+	const lastTrick = rules.scoring === "lastTrick";
+	const ranks = (set: readonly (typeof RANKS)[number][]) =>
+		set.map(glyph).join(" ");
 	const trumpRanks = rules.trumpRanks;
 	const called = rules.callTrump === true;
 	const bidding = rules.bidding ?? null;
-	const end = rules.deals
-		? fmt(r.goalDeals, { deals: rules.deals })
-		: rules.target === null
-			? rules.highWins
-				? r.goalLastHigh
-				: r.goalLastLow
-			: fmt(rules.highWins ? r.goalHigh : r.goal, { target: rules.target });
+	const target = rules.target;
+	const outLimit = rules.matchEnd === "lastStanding" ? target : null;
+	const end = lastTrick
+		? r.goalLastTrick
+		: rules.deals
+			? fmt(r.goalDeals, { deals: rules.deals })
+			: target === null
+				? rules.highWins
+					? r.goalLastHigh
+					: r.goalLastLow
+				: fmt(rules.highWins ? r.goalHigh : r.goal, { target });
 	return {
-		goal: [...(rules.seating === "opposite" ? [r.teams] : []), end].join(" "),
+		goal: [
+			...(rules.seating === "opposite" ? [r.teams] : []),
+			end,
+			...(outLimit === null ? [] : [fmt(r.out, { target: outLimit })]),
+		].join(" "),
 		/** Null when the game bids instead of passing. */
 		bidding: bidding
 			? [
-					...(rules.schedule === "fullDeck"
+					...(rules.schedule === "fullDeck" || rules.schedule === "fourEach"
 						? []
 						: [r.schedules[rules.schedule]]),
 					r.bid,
 					...(bidding.dealerMayMatch ? [] : [r.dealerRule]),
 				]
 			: null,
+		/** Null when the game bids, calls trump or plays for stakes instead of passing. */
 		passing: passing
 			? [
 					fmt(r.pass, {
@@ -901,9 +991,24 @@ export function tricksRuleLines(
 					}),
 					...(passing.cycle.includes("across") ? [r.passOdd] : []),
 				]
-			: bidding || called
+			: bidding || called || rules.knocking
 				? null
 				: [r.noPass],
+		stakes: rules.knocking
+			? [
+					r.stake,
+					r.knock,
+					r.fold,
+					r.knockAgain,
+					...(outLimit === null
+						? []
+						: [fmt(r.knockLimit, { target: outLimit })]),
+					...(rules.knocking.lastLife ? [r.lastLife] : []),
+					...(rules.swapHands ?? []).map((set) =>
+						fmt(r.swap, { ranks: ranks(set) }),
+					),
+				]
+			: [],
 		trump: called
 			? [rules.trumpChoice === "none" ? r.nameTrump : r.callTrump, r.makerMust]
 			: [],
@@ -919,6 +1024,7 @@ export function tricksRuleLines(
 					]
 				: [r.follow]),
 			rules.trumpChoice === "none" && !called ? r.trick : r.trickTrump,
+			...(lastTrick ? [r.lastTrickOnly] : []),
 			...(trumpRanks
 				? [
 						fmt(r.trumpRanks, { ranks: highToLow(trumpRanks) }),
@@ -983,6 +1089,46 @@ export function tricksRuleLines(
 	};
 }
 
+/** Empty places left in the open trick: seats still in the deal that have yet to play. */
+export function openTrickSlots(
+	view: Pick<TricksView, "phase" | "trick" | "folded" | "out">,
+) {
+	if (view.phase !== "playing") {
+		return 0;
+	}
+	const played = new Set(view.trick.map((play) => play.seat));
+	return view.out.filter(
+		(out, seat) => !out && !view.folded[seat] && !played.has(seat),
+	).length;
+}
+
+/** The stake buttons this seat gets now: knock, answer a knock, or swap its hand. */
+export function tricksChoices(view: TricksView, you: number | null) {
+	const knock = view.knock;
+	return {
+		knock: view.canKnock,
+		answer:
+			you !== null &&
+			view.phase === "knocking" &&
+			knock?.asked.includes(you) === true &&
+			knock.answers[you] === null,
+		swap: view.canSwap,
+	};
+}
+
+/** How the match is won, for the scores sheet. */
+export function tricksWinsLine(
+	view: Pick<TricksView, "target" | "matchEnd">,
+	rules: Pick<TricksRules, "highWins">,
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+) {
+	const t = cards.tricks;
+	if (view.matchEnd === "lastStanding" && view.target !== null) {
+		return fmt(t.lastStanding, { target: view.target });
+	}
+	return rules.highWins ? t.highestWins : t.lowestWins;
+}
+
 /** The rules sheet's sections after the goal, leaving out any with nothing to say. */
 export function tricksRuleSections(
 	lines: ReturnType<typeof tricksRuleLines>,
@@ -993,6 +1139,7 @@ export function tricksRuleSections(
 		{ heading: r.trumpHeading, lines: lines.trump },
 		{ heading: r.bidHeading, lines: lines.bidding },
 		{ heading: r.passHeading, lines: lines.passing },
+		{ heading: r.stakesHeading, lines: lines.stakes },
 		{ heading: r.turnHeading, lines: lines.turn },
 		{ heading: r.pointsHeading, lines: lines.points },
 		{ heading: r.roemHeading, lines: lines.roem },
@@ -1447,7 +1594,9 @@ export function planFlights(
 					pass += 1
 				) {
 					for (let seat = 0; seat < seatCount; seat += 1) {
-						fly(null, "stock", seatZone(seat));
+						if (!event.skipped?.includes(seat)) {
+							fly(null, "stock", seatZone(seat));
+						}
 					}
 					if (event.bank) {
 						fly(null, "stock", "bank");

@@ -1,3 +1,6 @@
+import type { SudokuInputMode } from "../../../sudoku-board";
+import type { CornerNoteLayout, SudokuCycleMode } from "../../../sudoku-input";
+
 /** Sudoku + binary-puzzle copy, including the hint templates that
  * `describeHint` in sudoku-hints.ts fills. */
 export const sudoku = {
@@ -104,19 +107,39 @@ export const sudoku = {
 		notes: "notes {digits}",
 		cage: "cage sum {sum}",
 		conflict: "conflict",
+		retapHint: "Tap again to switch entry mode",
 	},
 	keypad: {
 		modeLabel: "Entry mode",
 		digitLabel: "{digit}, {count} left",
-		modeDigit: "Digit",
-		modeCorner: "Corner",
-		modeCenter: "Center",
-		modeColor: "Color",
+		modes: {
+			digit: "Digit",
+			corner: "Corner",
+			center: "Center",
+			color: "Color",
+		} satisfies Record<SudokuInputMode, string>,
 		colorAriaLabel: "Color {number}",
+		modeAnnouncement: "Entry mode: {mode}",
 		undo: "Undo",
 		redo: "Redo",
 		erase: "Erase",
 		hint: "Hint",
+	},
+	inputSettings: {
+		title: "Input settings",
+		tapCycleLabel: "Tapping the selected cell again switches to",
+		tapCycleNote: "Digit is always included.",
+		tapCycleSwitchLabel: "{mode} in the tap cycle",
+		modes: {
+			corner: "Corner notes",
+			center: "Center notes",
+			color: "Colors",
+		} satisfies Record<SudokuCycleMode, string>,
+		cornerLayoutLabel: "Corner note position",
+		cornerLayouts: {
+			spread: "All corners",
+			topRight: "Top right",
+		} satisfies Record<CornerNoteLayout, string>,
 	},
 	game: {
 		timer: "Time {time}",
@@ -139,7 +162,7 @@ export const sudoku = {
 		restartConfirm:
 			"Restart this puzzle? Your progress is kept in undo history.",
 		keyboardHelp:
-			"Keyboard: 1-9 digits · Shift+digit corner note · Ctrl+digit center note · Space cycles mode · Ctrl+Z/Y undo/redo · arrows move",
+			"Keyboard: 1-9 digits · Shift+digit corner note · Ctrl+digit center note · Space cycles mode · Ctrl+Z/Y undo/redo · arrows move · Esc deselects",
 	},
 	binary: {
 		restartBody: "The grid goes back to its givens.",

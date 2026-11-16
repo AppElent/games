@@ -5,9 +5,11 @@ import {
 	bidTotal,
 	cardTilt,
 	isTeamGame,
+	openTrickSlots,
 	seatName,
 	sortTricksHand,
 	teamName,
+	tricksChoices,
 	tricksDealSummary,
 	tricksHint,
 	tricksMatchTitle,
@@ -16,6 +18,7 @@ import {
 	tricksSeatNote,
 	tricksStandings,
 	tricksTeams,
+	tricksWinsLine,
 } from "@arcadeclub/core/cards/table-view";
 import type { TricksView } from "@arcadeclub/core/cards/tricks";
 import { ListOrdered, Minus, Plus } from "lucide-react";
@@ -132,8 +135,7 @@ function TrickArea({
 	const live = view.trick.length > 0 || !view.lastTrick;
 	const plays = live ? view.trick : (view.lastTrick?.plays ?? []);
 	const winner = live ? null : (view.lastTrick?.winner ?? null);
-	const open =
-		view.phase === "playing" ? table.seats.length - view.trick.length : 0;
+	const open = openTrickSlots(view);
 	return (
 		<section
 			className="trick"
@@ -224,6 +226,8 @@ export function TricksTable({
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";
 	const firstTrick = view.tricksTaken.every((count) => count === 0);
+	const choices = tricksChoices(view, you);
+	const sittingOut = you !== null && (view.out[you] || view.folded[you]);
 
 	useEffect(() => {
 		if (!choosing) {
@@ -302,7 +306,7 @@ export function TricksTable({
 	);
 	const highWins = rules.highWins === true;
 	const standings = tricksStandings(view, table, cards, highWins);
-	const winsLine = highWins ? t.highestWins : t.lowestWins;
+	const winsLine = tricksWinsLine(view, rules, words);
 	const bids = bidTotal(view);
 	const dealSummary = tricksDealSummary(view, table, words);
 	const lastRound = view.scores.at(-1);
@@ -345,6 +349,11 @@ export function TricksTable({
 				<>
 					<TrickArea table={table} view={view} landing={flights.landing} />
 					<div className="table-flags">
+						{view.stake !== null ? (
+							<span className="flag" data-tone="gold">
+								{fmt(t.stakePill, { stake: view.stake })}
+							</span>
+						) : null}
 						{calling && view.offered ? (
 							<span
 								className="flag"
@@ -479,6 +488,46 @@ export function TricksTable({
 							{t.passButton}
 						</button>
 					) : null}
+					{choices.answer ? (
+						<>
+							<button
+								type="button"
+								className="btn-gold"
+								disabled={controls.pending}
+								onClick={() => controls.act({ type: "stay" })}
+							>
+								{t.stayButton}
+							</button>
+							<button
+								type="button"
+								className="btn-ghost"
+								disabled={controls.pending}
+								onClick={() => controls.act({ type: "fold" })}
+							>
+								{t.foldButton}
+							</button>
+						</>
+					) : null}
+					{choices.knock ? (
+						<button
+							type="button"
+							className="btn-gold"
+							disabled={controls.pending}
+							onClick={() => controls.act({ type: "knock" })}
+						>
+							{t.knockButton}
+						</button>
+					) : null}
+					{choices.swap ? (
+						<button
+							type="button"
+							className="btn-ghost"
+							disabled={controls.pending}
+							onClick={() => controls.act({ type: "swapHand" })}
+						>
+							{t.swapButton}
+						</button>
+					) : null}
 				</TurnStatus>
 			}
 			hand={
@@ -503,7 +552,7 @@ export function TricksTable({
 								aria-pressed={choosing ? selected.includes(card) : undefined}
 								aria-disabled={!choosing && !canPlay}
 								data-legal={canPlay}
-								data-dim={mine && !canPlay}
+								data-dim={(mine && !canPlay) || sittingOut}
 								data-selected={selected.includes(card)}
 								data-new={fresh.has(card) || passedIn}
 								data-shake={shake === card}
@@ -541,6 +590,15 @@ export function TricksTable({
 								{view.moon === you
 									? t.youMoon
 									: fmt(t.moon, { name: seatName(cards, table, view.moon) })}
+							</p>
+						) : null}
+						{view.dealWinner !== null ? (
+							<p className="mb-3 text-base font-bold">
+								{view.dealWinner === you
+									? t.youDealWinner
+									: fmt(t.dealWinner, {
+											name: seatName(cards, table, view.dealWinner),
+										})}
 							</p>
 						) : null}
 						{dealSummary?.headlines.map((line) => (
@@ -594,6 +652,7 @@ export function TricksTable({
 										</span>
 										<span className="font-bold">
 											{plural(locale, points, t.totalPoints)}
+											{view.out[seat] ? ` · ${t.outNote}` : ""}
 										</span>
 									</li>
 								))}

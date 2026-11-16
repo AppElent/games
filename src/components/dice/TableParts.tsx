@@ -2,9 +2,8 @@ import type { DiceGame } from "@arcadeclub/core/dice/engine";
 import { diceSeatName } from "@arcadeclub/core/dice/table-view";
 import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { seatIsSilent } from "@arcadeclub/core/table-engine";
-import { Link } from "@tanstack/react-router";
 import { ScrollText } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Sheet } from "#/components/table/Chrome";
 import { fmt, useMessages } from "#/lib/i18n";
 import { DicePage } from "./Chrome";
@@ -172,72 +171,4 @@ export function useSeatMenu(
 	);
 
 	return { canManage, open: setMenuSeat, sheet };
-}
-
-/** Who won and in what order, then play again or pick another game. */
-export function DiceEndDialog({
-	table,
-	controls,
-	title,
-	heading,
-	children,
-}: {
-	table: DiceTableBundle;
-	controls: DiceTableControls;
-	title: string;
-	heading: string;
-	children: ReactNode;
-}) {
-	const dice = useMessages().games.dice;
-	const dialog = useRef<HTMLDialogElement>(null);
-	const titleRef = useRef<HTMLHeadingElement>(null);
-
-	// Modal, so nothing on the table behind it can be reached.
-	useEffect(() => {
-		dialog.current?.showModal();
-		titleRef.current?.focus();
-	}, []);
-
-	return (
-		<dialog
-			ref={dialog}
-			className="end-backdrop"
-			aria-labelledby="dice-end"
-			onCancel={(event) => event.preventDefault()}
-			// Browsers can close a dialog despite the cancelled event above.
-			onClose={() => dialog.current?.showModal()}
-		>
-			<section className="cards-panel end-panel" aria-labelledby="dice-end">
-				<h2
-					id="dice-end"
-					ref={titleRef}
-					tabIndex={-1}
-					className="cards-title text-3xl outline-none"
-				>
-					{title}
-				</h2>
-				<h3 className="cards-kicker mt-4 mb-2">{heading}</h3>
-				<ol className="dice-standings">{children}</ol>
-				<div className="end-actions mt-2 flex flex-wrap items-center justify-center gap-2">
-					{table.you !== null ? (
-						<button
-							type="button"
-							className="btn-gold"
-							disabled={controls.pending}
-							onClick={controls.rematch}
-						>
-							{dice.table.playAgain}
-						</button>
-					) : (
-						<p className="w-full text-sm text-[var(--ivory-muted)]">
-							{dice.table.waitingRematch}
-						</p>
-					)}
-					<Link to="/dice" className="btn-ghost">
-						{dice.table.newGame}
-					</Link>
-				</div>
-			</section>
-		</dialog>
-	);
 }

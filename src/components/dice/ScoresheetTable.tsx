@@ -1,11 +1,10 @@
-import { type DiceGameOf, diceRules } from "@arcadeclub/core/dice/engine";
+import { diceRules, type ScoresheetGame } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
 	latestNews,
 	standings,
 	turnStep,
-	winnerTitle,
 } from "@arcadeclub/core/dice/table-view";
 import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { Bot, MoreHorizontal } from "lucide-react";
@@ -13,16 +12,12 @@ import { useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
 import { DieFace } from "./Die";
-import {
-	AutopilotNotice,
-	DiceEndDialog,
-	DiceTableFrame,
-	useSeatMenu,
-} from "./TableParts";
+import { DiceEnd } from "./End";
+import { AutopilotNotice, DiceTableFrame, useSeatMenu } from "./TableParts";
 import type { DiceTableBundle, DiceTableControls } from "./useDiceTable";
 
 type Props = {
-	game: DiceGameOf<"scoresheet">;
+	game: ScoresheetGame;
 	table: DiceTableBundle;
 	view: ScoresheetView;
 	controls: DiceTableControls;
@@ -43,21 +38,15 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 			news={latestNews({ dice, fmt }, table, view.events)}
 			end={
 				view.phase === "finished" ? (
-					<DiceEndDialog
+					<DiceEnd
 						table={table}
+						winners={view.winners}
+						rows={standings(view).map(({ seat, total }) => ({
+							seat,
+							value: total,
+						}))}
 						controls={controls}
-						title={winnerTitle(dice, table, view.winners)}
-						heading={dice.table.standings}
-					>
-						{standings(view).map(({ seat, total }) => (
-							<li key={seat} data-winner={view.winners.includes(seat)}>
-								<span className="min-w-0 flex-1 truncate">
-									{diceSeatName(dice, table, seat)}
-								</span>
-								<span className="font-bold">{total}</span>
-							</li>
-						))}
-					</DiceEndDialog>
+					/>
 				) : null
 			}
 		>
