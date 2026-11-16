@@ -144,6 +144,64 @@ export const dice = {
 			allSame: "All {count} dice alike: {points} points.",
 		},
 	},
+	pushluck: {
+		table: {
+			round: "Round {round}",
+			target: "First to {target}",
+			turnTotal: "This turn",
+			selected: "+{points} set aside",
+			setAsideLabel: "Set aside this turn",
+			nothingSetAside: "Nothing set aside yet",
+			startHint: "Roll all {count} dice to start your turn.",
+			pickHint:
+				"Tap the dice that score to set them aside, then roll the rest or bank.",
+			roll: "Roll",
+			rollRest: {
+				one: "Roll {count} die",
+				other: "Roll {count} dice",
+			},
+			hotDice: "Hot dice! Roll all {count}",
+			bank: "Bank {points}",
+			notScoring: "Those dice don't all score.",
+			pickFirst: "Set aside at least one scoring die.",
+			needOpening: "You need {needed} in one turn to get on the board.",
+			pickTag: "Aside",
+			bust: "Bust!",
+			scoreboard: "Scores",
+			scoreLabel: "{name}: {score} of {target}",
+			notOnBoard: "Not on the board yet",
+			finalRound:
+				"Final round: everyone else gets one last turn to beat {name}.",
+			lastBust: "{name} bust and lost {points}",
+			lastBustEmpty: "{name} bust",
+			lastBank: "{name} banked {points}, now {total}",
+			lastFinalRound: "{name} reached the target: final round",
+			lastHotDice: "{name} got hot dice at {points}, all six roll again",
+		},
+		rules: {
+			goal: "Bank {target} points before anyone else.",
+			finalRound:
+				"Once someone reaches {target}, everyone else gets one more turn. The highest score wins.",
+			noFinalRound: "The first to reach {target} wins at once.",
+			turnRoll:
+				"Roll all {dice} dice and set aside at least one die that scores.",
+			turnChoice:
+				"Then roll the rest to add more, or bank the points set aside this turn.",
+			bust: "A roll with nothing that scores is a bust: you lose this turn's points.",
+			hotDice:
+				"Set aside all {dice} dice and you roll every one again, keeping your turn's points.",
+			opening: "You need {points} in one turn before your first bank counts.",
+			scoringHeading: "What scores",
+			single: "A single {face}: {points}",
+			threeKind: "Three alike: the face times {perFace}; three 1s: {ones}",
+			manyDouble:
+				"Four, five or six alike: three alike doubled for each extra die.",
+			manyFixed: "Four alike {four}, five alike {five}, six alike {six}.",
+			threePairs: "Three pairs: {points}",
+			straight: "1-2-3-4-5-6: {points}",
+			sameRoll: "Dice only combine with others from the same roll.",
+		},
+	},
 	categories: {
 		ones: "Ones",
 		twos: "Twos",
@@ -242,6 +300,38 @@ export const dice = {
 				yahtzeeSheet: {
 					label: "Yahtzee sheet",
 					hint: "Thirteen boxes: full house 25, straights 30 and 40, bonus Yahtzees worth 100.",
+				},
+			},
+		},
+		tienduizend: {
+			name: "Ten Thousand",
+			tagline: "Six dice, push your luck",
+			blurb:
+				"Set aside 1s, 5s and three alike, then roll on or bank. One roll without points and the turn is gone. First to 10,000.",
+			options: {
+				opening350: {
+					label: "350 to get on the board",
+					hint: "Your first bank needs at least 350 points in one turn.",
+				},
+				opening500: {
+					label: "500 to get on the board",
+					hint: "Your first bank needs at least 500 points in one turn.",
+				},
+				fixedKinds: {
+					label: "Fixed points for four or more alike",
+					hint: "Four alike 1,000, five alike 2,000, six alike 3,000, instead of doubling.",
+				},
+				noThreePairs: {
+					label: "No three pairs",
+					hint: "Three pairs score nothing as a set.",
+				},
+				noStraight: {
+					label: "No straight",
+					hint: "1-2-3-4-5-6 scores only its 1 and 5.",
+				},
+				noFinalRound: {
+					label: "No final round",
+					hint: "The first to reach 10,000 wins at once.",
 				},
 			},
 		},

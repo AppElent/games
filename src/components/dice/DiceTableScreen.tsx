@@ -4,6 +4,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { DiceNotFound, DicePage } from "./Chrome";
 import { DiceLobby } from "./Lobby";
 import { MexenTable } from "./MexenTable";
+import { PushluckTable } from "./PushluckTable";
 import { ScoresheetTable } from "./ScoresheetTable";
 import { useDiceTable } from "./useDiceTable";
 
@@ -53,6 +54,15 @@ export function DiceTableScreen({
 		case "scoresheet":
 			return view.family === "scoresheet" ? (
 				<ScoresheetTable
+					game={game}
+					table={table}
+					view={view}
+					controls={controls}
+				/>
+			) : null;
+		case "pushluck":
+			return view.family === "pushluck" ? (
+				<PushluckTable
 					game={game}
 					table={table}
 					view={view}

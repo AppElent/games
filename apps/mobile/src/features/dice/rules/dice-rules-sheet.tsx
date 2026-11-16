@@ -6,9 +6,13 @@ import {
 	type DiceGame,
 	diceRules,
 	type MexenGame,
+	type PushluckGame,
 	type ScoresheetGame,
 } from "@arcadeclub/core/dice/engine";
-import { categoryEffect } from "@arcadeclub/core/dice/table-view";
+import {
+	categoryEffect,
+	pushluckRuleLines,
+} from "@arcadeclub/core/dice/table-view";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
@@ -59,11 +63,7 @@ export function DiceRulesSheet({
 			onClose={onClose}
 			title={fmt(dice.rules.heading, { game: text.name })}
 		>
-			{game.family === "mexen" ? (
-				<MexenRules game={game} options={options} />
-			) : (
-				<ScoresheetRules game={game} options={options} />
-			)}
+			<RulesBody game={game} options={options} />
 			{active.length > 0 ? (
 				<Section heading={dice.rules.extrasHeading}>
 					{active.map((option) => (
@@ -75,6 +75,32 @@ export function DiceRulesSheet({
 			) : null}
 		</Sheet>
 	);
+}
+
+/** The family's own rules; every family names its game's rules in its own words. */
+function RulesBody({
+	game,
+	options,
+}: {
+	game: DiceGame;
+	options: readonly string[];
+}) {
+	switch (game.family) {
+		case "scoresheet":
+			return <ScoresheetRules game={game} options={options} />;
+		case "pushluck":
+			return <PushluckRules game={game} options={options} />;
+		case "mexen":
+			return <MexenRules game={game} options={options} />;
+	}
+}
+
+function Lines({ lines }: { lines: readonly string[] }) {
+	return lines.map((line) => (
+		<AppText key={line} variant="secondary" tone="default">
+			{line}
+		</AppText>
+	));
 }
 
 function ScoresheetRules({
@@ -165,6 +191,34 @@ function MexenRules({
 				{rules.littleMex ? line(r.littleMex) : null}
 				{line(r.doubles)}
 				{line(fmt(r.plain, { lowest: rules.littleMex ? 32 : 31 }))}
+			</Section>
+		</>
+	);
+}
+
+function PushluckRules({
+	game,
+	options,
+}: {
+	game: PushluckGame;
+	options: readonly string[];
+}) {
+	const { t, locale } = useI18n();
+	const dice = t.games.dice;
+	const lines = pushluckRuleLines(
+		{ dice, fmt, locale },
+		diceRules(game, options),
+	);
+	return (
+		<>
+			<Section heading={dice.rules.goalHeading}>
+				<Lines lines={lines.goal} />
+			</Section>
+			<Section heading={dice.rules.turnHeading}>
+				<Lines lines={lines.turn} />
+			</Section>
+			<Section heading={dice.pushluck.rules.scoringHeading}>
+				<Lines lines={lines.scoring} />
 			</Section>
 		</>
 	);

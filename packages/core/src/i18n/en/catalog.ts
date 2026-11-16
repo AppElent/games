@@ -98,7 +98,7 @@ export const catalog = {
 	},
 	"dice-games": {
 		title: "Dice Club",
-		tagline: "Yatzy, Mexico and more",
+		tagline: "Yatzy, Ten Thousand, Mexico and more",
 		description:
 			"Dice games at one table. Roll alone, against the computer, or invite friends with a room code.",
 		primaryAction: "Pick a game",

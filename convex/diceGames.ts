@@ -15,6 +15,7 @@ import { literals } from "./lib/validators";
 const diceActionValidator = v.union(
 	v.object({ type: v.literal("roll"), keep: v.array(v.number()) }),
 	v.object({ type: v.literal("score"), category: literals(SCORE_CATEGORIES) }),
+	v.object({ type: v.literal("bank"), keep: v.array(v.number()) }),
 	v.object({ type: v.literal("stand") }),
 );
 

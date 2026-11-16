@@ -10,11 +10,14 @@ import {
 	standings,
 	turnStep,
 } from "@arcadeclub/core/dice/table-view";
-import { seatIsSilent } from "@arcadeclub/core/table-engine";
-import { Stack, useRouter } from "expo-router";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
-	AccessibilityInfo,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
+import {
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -31,15 +34,22 @@ import {
 	useThemedStyles,
 	useTokens,
 } from "../../../theme";
-import { Button, HeaderButton } from "../../../ui/button";
+import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
-import { Sheet } from "../../cards/deck/sheet";
 import { DiceRulesSheet } from "../rules/dice-rules-sheet";
 import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
+import {
+	AutopilotNote,
+	DiceTableHeader,
+	SeatMenu,
+	SpectatorNote,
+	seatManagement,
+	useAnnounce,
+} from "./table-parts";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
 import { useNow } from "./use-now";
 
@@ -60,37 +70,13 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const dice = t.games.dice;
 	const text = dice.games[game.id];
 	const [rulesOpen, setRulesOpen] = useState(false);
-	const router = useRouter();
-	const you = table.you;
+	const openRules = useCallback(() => setRulesOpen(true), []);
 	const news = latestNews({ dice, fmt }, table, view.events);
-	const newsSeq = news?.seq;
-	const newsText = news?.text;
-
-	useEffect(() => {
-		// Keyed on `seq` too, so a second identical roll is still read out.
-		if (newsSeq !== undefined && newsText) {
-			AccessibilityInfo.announceForAccessibility(newsText);
-		}
-	}, [newsSeq, newsText]);
-
-	const headerOptions = useMemo(
-		() => ({
-			title: text.name,
-			headerRight: () => (
-				<HeaderButton
-					label={dice.table.rules}
-					onPress={() => setRulesOpen(true)}
-					testID="dice-table-rules"
-				/>
-			),
-		}),
-		[text.name, dice.table.rules],
-	);
-	const code = table.session.joinCode;
+	useAnnounce(news);
 
 	return (
 		<>
-			<Stack.Screen options={headerOptions} />
+			<DiceTableHeader name={text.name} onRules={openRules} />
 			<Screen>
 				{view.phase === "finished" ? (
 					<DiceEndPanel
@@ -104,22 +90,7 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 					/>
 				) : null}
 				<DiceTray table={table} view={view} controls={controls} />
-				{you === null ? (
-					<View style={styles.spectator}>
-						<AppText variant="secondary">{dice.table.spectating}</AppText>
-						{code ? (
-							<Button
-								variant="plain"
-								compact
-								label={dice.table.rejoin}
-								onPress={() =>
-									router.replace({ pathname: "/join", params: { code } })
-								}
-								testID="dice-rejoin"
-							/>
-						) : null}
-					</View>
-				) : null}
+				<SpectatorNote table={table} />
 				<Notice message={controls.error} />
 				{news ? (
 					<AppText variant="caption" testID="dice-last-score">
@@ -186,8 +157,6 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 				: step === "score"
 					? dice.table.scoreHint
 					: null;
-	const autopilot = you !== null && table.seats[you]?.autopilot;
-
 	return (
 		<Card>
 			<View style={styles.tray}>
@@ -309,17 +278,7 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 						</AppText>
 					</>
 				) : null}
-				{autopilot && you !== null ? (
-					<>
-						<AppText variant="secondary">{dice.table.autopilotActive}</AppText>
-						<Button
-							variant="secondary"
-							label={dice.table.autopilotBack}
-							onPress={() => controls.setAutopilot(you, false)}
-							testID="dice-autopilot-back"
-						/>
-					</>
-				) : null}
+				<AutopilotNote table={table} controls={controls} />
 			</View>
 		</Card>
 	);
@@ -464,15 +423,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 							{dice.table.category}
 						</AppText>
 						{seats.map((seat) => {
-							const entry = table.seats[seat];
-							const human = entry.botIndex === null;
-							const silent = seatIsSilent(entry, now);
-							const canManage =
-								you !== null &&
-								seat !== you &&
-								human &&
-								!entry.autopilot &&
-								(table.isHost || silent);
+							const { silent, canManage } = seatManagement(table, seat, now);
 							const label = (
 								<>
 									<AppText
@@ -531,33 +482,15 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 					)}
 				</View>
 			</ScrollView>
-			<Sheet
-				open={menuSeat !== null}
-				title={
-					menuSeat === null
-						? ""
-						: fmt(dice.table.seatMenu, { name: name(menuSeat) })
-				}
+			<SeatMenu
+				table={table}
+				seat={menuSeat}
+				controls={controls}
 				onClose={() => setMenuSeat(null)}
-			>
-				{menuSeat === null ? null : (
-					<Button
-						label={fmt(dice.table.autopilotOn, { name: name(menuSeat) })}
-						onPress={() => {
-							controls.setAutopilot(menuSeat, true);
-							setMenuSeat(null);
-						}}
-						testID="dice-autopilot-on"
-					/>
-				)}
-			</Sheet>
+			/>
 		</Card>
 	);
 }
-
-const styles = StyleSheet.create({
-	spectator: { alignItems: "center", gap: spacing.xs },
-});
 
 const createStyles = (colors: Tokens) =>
 	StyleSheet.create({

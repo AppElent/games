@@ -16,6 +16,7 @@ import {
 	type TableEngine,
 } from "../table-engine";
 import { mexen } from "./games/mexen";
+import { tienduizend } from "./games/tienduizend";
 import { yatzy } from "./games/yatzy";
 import {
 	applyMexen,
@@ -29,6 +30,18 @@ import {
 	nextMexenStarter,
 	viewMexen,
 } from "./mexen";
+import {
+	applyPushluck,
+	botPushluckMove,
+	createPushluck,
+	nextPushluckStarter,
+	PUSHLUCK_ACTIONS,
+	type PushluckAction,
+	type PushluckRules,
+	type PushluckState,
+	type PushluckView,
+	viewPushluck,
+} from "./pushluck";
 import {
 	applyScoresheet,
 	botScoresheetMove,
@@ -67,6 +80,12 @@ type FamilyTypes = {
 		action: MexenAction;
 		view: MexenView;
 	};
+	pushluck: {
+		rules: PushluckRules;
+		state: PushluckState;
+		action: PushluckAction;
+		view: PushluckView;
+	};
 };
 
 type Family = keyof FamilyTypes;
@@ -76,10 +95,11 @@ type GameOf<F extends Family> = Definition<F, FamilyTypes[F]["rules"]>;
 
 export type DiceGameDefinition = { [F in Family]: GameOf<F> }[Family];
 
-export const DICE_GAMES = { yatzy, mexen } as const satisfies Record<
-	string,
-	DiceGameDefinition
->;
+export const DICE_GAMES = {
+	yatzy,
+	tienduizend,
+	mexen,
+} as const satisfies Record<string, DiceGameDefinition>;
 
 export type DiceGameId = keyof typeof DICE_GAMES;
 export type DiceGame = (typeof DICE_GAMES)[DiceGameId];
@@ -87,6 +107,7 @@ export type DiceGame = (typeof DICE_GAMES)[DiceGameId];
 export type DiceGameOf<F extends Family> = Extract<DiceGame, { family: F }>;
 export type ScoresheetGame = DiceGameOf<"scoresheet">;
 export type MexenGame = DiceGameOf<"mexen">;
+export type PushluckGame = DiceGameOf<"pushluck">;
 export const DICE_GAME_IDS = Object.keys(DICE_GAMES) as DiceGameId[];
 
 export function isDiceGameId(value: string): value is DiceGameId {
@@ -149,6 +170,14 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		apply: applyMexen,
 		view: viewMexen,
 		bot: botMexenMove,
+	},
+	pushluck: {
+		actions: PUSHLUCK_ACTIONS,
+		create: createPushluck,
+		nextStarter: nextPushluckStarter,
+		apply: applyPushluck,
+		view: viewPushluck,
+		bot: botPushluckMove,
 	},
 };
 
