@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useI18n } from "../../../i18n";
 import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
 import { DiceLobby } from "./dice-lobby";
+import { MexenTable } from "./mexen-table";
 import { ScoresheetTable } from "./scoresheet-table";
 import { useDiceTable } from "./use-dice-table";
 
@@ -32,18 +33,29 @@ export function DiceTableScreen({ sessionId }: { sessionId: string }) {
 	}
 
 	const game = getDiceGame(table.gameId);
-	if (table.status === "lobby" || !table.view) {
+	const view = table.view;
+	if (table.status === "lobby" || !view) {
 		return <DiceLobby game={game} table={table} controls={controls} />;
 	}
-	switch (table.view.family) {
+	// The stored state was dealt by this game, so its family always matches.
+	// A family without a branch here fails to compile.
+	switch (game.family) {
+		case "mexen":
+			return view.family === "mexen" ? (
+				<MexenTable game={game} table={table} view={view} controls={controls} />
+			) : null;
 		case "scoresheet":
-			return (
+			return view.family === "scoresheet" ? (
 				<ScoresheetTable
 					game={game}
 					table={table}
-					view={table.view}
+					view={view}
 					controls={controls}
 				/>
-			);
+			) : null;
+		default: {
+			const unhandled: never = game;
+			return unhandled;
+		}
 	}
 }

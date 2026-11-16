@@ -1,4 +1,4 @@
-import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
+import { diceRules, type ScoresheetGame } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
@@ -8,19 +8,19 @@ import {
 } from "@arcadeclub/core/dice/table-view";
 import { buildInviteUrl } from "@arcadeclub/core/sessions";
 import { seatIsSilent } from "@arcadeclub/core/table-engine";
-import { Link } from "@tanstack/react-router";
 import { Bot, MoreHorizontal, ScrollText } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Sheet } from "#/components/table/Chrome";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
 import { DicePage } from "./Chrome";
 import { DieFace } from "./Die";
+import { DiceEnd } from "./End";
 import { DiceRulesSheet } from "./RulesSheet";
 import type { DiceTableBundle, DiceTableControls } from "./useDiceTable";
 
 type Props = {
-	game: DiceGame;
+	game: ScoresheetGame;
 	table: DiceTableBundle;
 	view: ScoresheetView;
 	controls: DiceTableControls;
@@ -90,7 +90,15 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 				</p>
 			) : null}
 			{view.phase === "finished" ? (
-				<DiceEnd table={table} view={view} controls={controls} />
+				<DiceEnd
+					table={table}
+					winners={view.winners}
+					rows={standings(view).map(({ seat, total }) => ({
+						seat,
+						value: total,
+					}))}
+					controls={controls}
+				/>
 			) : null}
 			<DiceRulesSheet
 				game={game}
@@ -405,79 +413,5 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 				)}
 			</Sheet>
 		</section>
-	);
-}
-
-/** The final sheet: who won, everyone's total, and what next. */
-function DiceEnd({ table, view, controls }: Omit<Props, "game">) {
-	const dice = useMessages().games.dice;
-	const dialog = useRef<HTMLDialogElement>(null);
-	const heading = useRef<HTMLHeadingElement>(null);
-	const you = table.you;
-	const title =
-		view.winners.length > 1
-			? dice.table.tie
-			: view.winners[0] === you
-				? dice.table.youWin
-				: fmt(dice.table.winner, {
-						name: diceSeatName(dice, table, view.winners[0]),
-					});
-
-	// Modal, so nothing on the table behind it can be reached.
-	useEffect(() => {
-		dialog.current?.showModal();
-		heading.current?.focus();
-	}, []);
-
-	return (
-		<dialog
-			ref={dialog}
-			className="end-backdrop"
-			aria-labelledby="dice-end"
-			onCancel={(event) => event.preventDefault()}
-			// Browsers can close a dialog despite the cancelled event above.
-			onClose={() => dialog.current?.showModal()}
-		>
-			<section className="cards-panel end-panel" aria-labelledby="dice-end">
-				<h2
-					id="dice-end"
-					ref={heading}
-					tabIndex={-1}
-					className="cards-title text-3xl outline-none"
-				>
-					{title}
-				</h2>
-				<h3 className="cards-kicker mt-4 mb-2">{dice.table.standings}</h3>
-				<ol className="dice-standings">
-					{standings(view).map(({ seat, total }) => (
-						<li key={seat} data-winner={view.winners.includes(seat)}>
-							<span className="min-w-0 flex-1 truncate">
-								{diceSeatName(dice, table, seat)}
-							</span>
-							<span className="font-bold">{total}</span>
-						</li>
-					))}
-				</ol>
-				<div className="end-actions mt-2 flex flex-wrap items-center justify-center gap-2">
-					{you !== null ? (
-						<button
-							type="button"
-							className="btn-gold"
-							disabled={controls.pending}
-							onClick={controls.rematch}
-						>
-							{dice.table.playAgain}
-						</button>
-					) : (
-						<p className="w-full text-sm text-[var(--ivory-muted)]">
-							{dice.table.waitingRematch}
-						</p>
-					)}
-					<Link to="/dice" className="btn-ghost">
-						{dice.table.newGame}
-					</Link>
-				</div>
-			</section>
-		</dialog>
 	);
 }

@@ -2,7 +2,7 @@
  * A score-sheet game in play: whose turn, the dice (tap to hold), the sheet
  * with what your open boxes would score, and the final standings.
  */
-import { type DiceGame, diceRules } from "@arcadeclub/core/dice/engine";
+import { diceRules, type ScoresheetGame } from "@arcadeclub/core/dice/engine";
 import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import {
 	diceSeatName,
@@ -38,11 +38,13 @@ import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { Sheet } from "../../cards/deck/sheet";
 import { DiceRulesSheet } from "../rules/dice-rules-sheet";
+import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
+import { useNow } from "./use-now";
 
 type Props = {
-	game: DiceGame;
+	game: ScoresheetGame;
 	table: DiceTableBundle;
 	view: ScoresheetView;
 	controls: DiceTableControls;
@@ -52,17 +54,6 @@ const MAX_DIE = 64;
 const DIE_GAP = spacing.sm;
 const NAME_COLUMN = 124;
 const SEAT_COLUMN = 64;
-/** How often a silent seat is checked for. */
-const PRESENCE_TICK_MS = 15_000;
-
-function useNow() {
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		const timer = setInterval(() => setNow(Date.now()), PRESENCE_TICK_MS);
-		return () => clearInterval(timer);
-	}, []);
-	return now;
-}
 
 export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const { t } = useI18n();
@@ -102,7 +93,15 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 			<Stack.Screen options={headerOptions} />
 			<Screen>
 				{view.phase === "finished" ? (
-					<EndPanel table={table} view={view} controls={controls} />
+					<DiceEndPanel
+						table={table}
+						winners={view.winners}
+						rows={standings(view).map(({ seat, total }) => ({
+							seat,
+							value: String(total),
+						}))}
+						controls={controls}
+					/>
 				) : null}
 				<DiceTray table={table} view={view} controls={controls} />
 				{you === null ? (
@@ -556,62 +555,6 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 	);
 }
 
-/** The final sheet: who won, everyone's total, and what next. */
-function EndPanel({ table, view, controls }: Omit<Props, "game">) {
-	const router = useRouter();
-	const { t } = useI18n();
-	const dice = t.games.dice;
-	const styles = useThemedStyles(createStyles);
-	const you = table.you;
-	const won = you !== null && view.winners.includes(you);
-	const title =
-		view.winners.length > 1
-			? dice.table.tie
-			: won
-				? dice.table.youWin
-				: fmt(dice.table.winner, {
-						name: diceSeatName(dice, table, view.winners[0]),
-					});
-
-	useEffect(() => {
-		AccessibilityInfo.announceForAccessibility(title);
-		if (won) haptics.gameWon();
-	}, [title, won]);
-
-	return (
-		<Card testID="dice-end">
-			<AppText variant="title" accessibilityRole="header">
-				{title}
-			</AppText>
-			<AppText variant="label">{dice.table.standings.toUpperCase()}</AppText>
-			{standings(view).map(({ seat, total }) => (
-				<View key={seat} style={styles.standing}>
-					<AppText variant="body" numberOfLines={1} style={styles.flex}>
-						{diceSeatName(dice, table, seat)}
-					</AppText>
-					<AppText variant="heading">{String(total)}</AppText>
-				</View>
-			))}
-			{you !== null ? (
-				<Button
-					label={dice.table.playAgain}
-					busy={controls.pending}
-					onPress={controls.rematch}
-					testID="dice-rematch"
-				/>
-			) : (
-				<AppText variant="secondary">{dice.table.waitingRematch}</AppText>
-			)}
-			<Button
-				variant="secondary"
-				label={dice.table.newGame}
-				onPress={() => router.dismissTo("/dice")}
-				testID="dice-new-game"
-			/>
-		</Card>
-	);
-}
-
 const styles = StyleSheet.create({
 	spectator: { alignItems: "center", gap: spacing.xs },
 });
@@ -659,11 +602,4 @@ const createStyles = (colors: Tokens) =>
 			borderStyle: "dashed",
 			borderRadius: radius.sm,
 		},
-		standing: {
-			flexDirection: "row",
-			alignItems: "center",
-			gap: spacing.md,
-			minHeight: metrics.hitTarget,
-		},
-		flex: { flex: 1 },
 	});

@@ -348,3 +348,107 @@ button.die {
 	display: grid;
 	gap: 0.5rem;
 }
+
+/* Mexen: the throw in words, and every player's lives round the table. */
+.mexen-throw {
+	font-family: var(--font-display);
+	font-size: 1.6rem;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.mexen-throw[data-kind="mex"],
+.mexen-throw[data-kind="littleMex"] {
+	color: var(--gold);
+}
+
+.mexen-doubled,
+.mexen-news {
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+
+.mexen-doubled {
+	color: var(--gold);
+}
+
+.mexen-seats {
+	min-width: 0;
+	padding: 0.75rem;
+}
+
+.mexen-seats ol {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	margin-top: 0.5rem;
+}
+
+.mexen-seats li {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	min-height: 3.25rem;
+	padding: 0.35rem 0.6rem;
+	border-radius: 0.6rem;
+	background: rgba(0, 0, 0, 0.3);
+}
+
+.mexen-seats li[data-active="true"] {
+	box-shadow: inset 0 0 0 2px var(--gold);
+	background: rgba(230, 192, 106, 0.12);
+}
+
+.mexen-seat-name {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	min-width: 0;
+	font-weight: 700;
+}
+
+/* Muted, not faded: an out seat's name stays readable. */
+.mexen-seats li[data-out="true"] .mexen-seat-name {
+	color: var(--ivory-muted);
+}
+
+.mexen-seat-line {
+	min-height: 1.1rem;
+	font-size: 0.8rem;
+	color: var(--ivory-muted);
+}
+
+.mexen-badge {
+	flex: none;
+	padding: 0.05rem 0.4rem;
+	border-radius: 999px;
+	font-size: 0.65rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	/* Dark on gold, as the card tables' gold chips. */
+	color: #231704;
+	background: var(--gold);
+}
+
+.mexen-lives {
+	flex: none;
+	font-size: 0.85rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.mexen-hearts {
+	display: grid;
+	gap: 0.15rem;
+	color: var(--club-pink);
+}
+
+.mexen-hearts svg {
+	fill: currentColor;
+}
+
+.mexen-hearts svg[data-lost="true"] {
+	fill: none;
+	color: var(--ivory-line);
+}
