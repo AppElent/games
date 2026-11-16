@@ -278,7 +278,7 @@ export const FEATURES = defineFeatures([
 		status: "exclusive",
 		platforms: ["web"],
 		reason:
-			"Retiring: it plays on as liar's dice in dice-games on both platforms. The web only keeps its old sessions open until migrations:bluffDiceToDiceTables moves them (APP-158).",
+			"Retiring: it plays on as liar's dice in dice-games on both platforms. The web only keeps its old rooms open until they move to dice tables (APP-158).",
 		routes: { web: ["bluff-dice/**"] },
 	},
 	{

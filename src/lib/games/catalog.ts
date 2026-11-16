@@ -122,8 +122,7 @@ const GAME_CATALOG: CatalogEntries = {
 
 /**
  * Games that keep their sessions but no longer get a tile. Bluff Dice plays on
- * as liar's dice among the dice games; its type goes once the migration that
- * moves its sessions has run (see `convex/migrations.ts`).
+ * as liar's dice among the dice games; its old rooms still open here.
  */
 const UNLISTED: ReadonlySet<GameType> = new Set(["bluff-dice"]);
 

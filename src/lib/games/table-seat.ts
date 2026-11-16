@@ -38,21 +38,6 @@ export function rememberTableSeat(
 	return seat;
 }
 
-/**
- * Carries a seat over from a game that moved onto the table games, unless this
- * device already holds one there. The guest id proves a guest's seat; an
- * account re-keys its seat with whatever secret arrives.
- */
-export function adoptTableSeat(
-	sessionId: string,
-	participantId: Id<"sessionParticipants">,
-	seatSecret: string,
-) {
-	if (!readTableSeat(sessionId)) {
-		writeJson(keyOf(sessionId), { participantId, seatSecret });
-	}
-}
-
 export function readTableSeat(sessionId: string): TableSeat | null {
 	return readJson<TableSeat | null>(keyOf(sessionId), null);
 }

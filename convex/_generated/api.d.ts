@@ -27,7 +27,6 @@ import type * as lib_join from "../lib/join.js";
 import type * as lib_tableGames from "../lib/tableGames.js";
 import type * as lib_tableSeats from "../lib/tableSeats.js";
 import type * as lib_validators from "../lib/validators.js";
-import type * as migrations from "../migrations.js";
 import type * as quiz from "../quiz.js";
 import type * as sessions from "../sessions.js";
 import type * as signalWords from "../signalWords.js";
@@ -60,7 +59,6 @@ declare const fullApi: ApiFromModules<{
   "lib/tableGames": typeof lib_tableGames;
   "lib/tableSeats": typeof lib_tableSeats;
   "lib/validators": typeof lib_validators;
-  migrations: typeof migrations;
   quiz: typeof quiz;
   sessions: typeof sessions;
   signalWords: typeof signalWords;

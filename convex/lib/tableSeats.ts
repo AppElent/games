@@ -23,15 +23,8 @@ type ParticipantId = Id<"sessionParticipants">;
 const MIN_SECRET_LENGTH = 16;
 const MAX_SECRET_LENGTH = 128;
 
-/** Whether a string is long enough to prove a seat, and short enough to store. */
-export function isSeatSecret(secret: string) {
-	return (
-		secret.length >= MIN_SECRET_LENGTH && secret.length <= MAX_SECRET_LENGTH
-	);
-}
-
 export function requireSeatSecret(secret: string) {
-	if (!isSeatSecret(secret)) {
+	if (secret.length < MIN_SECRET_LENGTH || secret.length > MAX_SECRET_LENGTH) {
 		throw gameError("cardsSeatCredential");
 	}
 }

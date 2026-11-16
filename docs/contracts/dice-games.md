@@ -35,11 +35,8 @@ engine, its rolls or stored state, read [the decision](../adr/0003-dice-games-sh
 - A bidding view carries only the viewer's own cup (`yourDice`) and every seat's dice
   count; other cups appear only in `reveal`, after a call. Spectators see no cup.
 - Bluff Dice was liar's dice with every house rule off. Its catalog tile is gone and
-  `/bluff-dice/new` opens the Liar's Dice setup. `migrations:bluffDiceToDiceTables`
-  moves its sessions onto dice tables with the same seats and state; a guest's guest
-  id becomes their seat secret, and `/bluff-dice/$sessionId` hands it to the table.
-  Its module, route, `bluffDiceStates` table and game type go once production has run
-  the migration.
+  `/bluff-dice` and `/bluff-dice/new` open the Liar's Dice setup; its existing rooms
+  still play at `/bluff-dice/$sessionId` until they move to dice tables.
 - A table is created by `diceGames.createTable` and seats work exactly as card seats
   (`convex/lib/tableSeats.ts`): 1 to `players.max` seats, computer players, autopilot
   for silent players, rematch.
@@ -51,6 +48,6 @@ engine, its rolls or stored state, read [the decision](../adr/0003-dice-games-sh
 ## Acceptance
 
 - `packages/core/src/__tests__/dice.test.ts`, `packages/core/src/__tests__/liars-dice.test.ts`,
-  `convex/diceGames.test.ts` and `convex/migrations.test.ts` pass.
+  and `convex/diceGames.test.ts` pass.
 - The liar's dice leak test plays whole games over many seeds and finds no view that
   changes when another player's cup does.
