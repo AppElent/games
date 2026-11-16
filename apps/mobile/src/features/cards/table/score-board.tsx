@@ -1,4 +1,7 @@
-/** Round by round, plus the total. Rounds scroll sideways in a long match. */
+/**
+ * Round by round, plus the total. Rounds scroll sideways in a long match.
+ * One row per seat, or per entry of `labels` (such as teams).
+ */
 import { seatName } from "@arcadeclub/core/cards/table-view";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useI18n } from "../../../i18n";
@@ -12,12 +15,18 @@ export function ScoreBoard({
 	totals,
 	empty,
 	totalLabel,
+	labels,
+	heading,
 	onFelt = false,
 }: {
 	table: CardTableBundle;
 	/** Each round's points per seat. */
 	scores: readonly (readonly number[])[];
 	totals: readonly number[];
+	/** Row names, when rows are not seats; `scores` and `totals` follow them. */
+	labels?: readonly string[];
+	/** The first column's heading, when rows are not players. */
+	heading?: string;
 	/** Shown before the first round is scored. */
 	empty: string;
 	totalLabel: string;
@@ -37,24 +46,26 @@ export function ScoreBoard({
 			</AppText>
 		);
 	}
-	const seats = table.seats.map((_, seat) => seat);
+	const names =
+		labels ?? table.seats.map((_, seat) => seatName(cards, table, seat));
+	const rows = names.map((_, row) => row);
 	const cell = [styles.cell, { borderBottomColor: line }];
 	return (
 		<View style={styles.table}>
 			<View style={styles.names}>
 				<View style={cell}>
 					<AppText variant="caption" style={{ color: muted }}>
-						{cards.table.playerHeading}
+						{heading ?? cards.table.playerHeading}
 					</AppText>
 				</View>
-				{seats.map((seat) => (
-					<View key={seat} style={cell}>
+				{rows.map((row) => (
+					<View key={row} style={cell}>
 						<AppText
 							variant="secondary"
 							numberOfLines={1}
 							style={{ color: ink }}
 						>
-							{seatName(cards, table, seat)}
+							{names[row]}
 						</AppText>
 					</View>
 				))}
@@ -72,10 +83,10 @@ export function ScoreBoard({
 								{index + 1}
 							</AppText>
 						</View>
-						{seats.map((seat) => (
-							<View key={seat} style={[cell, styles.number]}>
+						{rows.map((row) => (
+							<View key={row} style={[cell, styles.number]}>
 								<AppText variant="secondary" style={{ color: ink }}>
-									{round[seat]}
+									{round[row]}
 								</AppText>
 							</View>
 						))}
@@ -88,10 +99,10 @@ export function ScoreBoard({
 						{totalLabel}
 					</AppText>
 				</View>
-				{seats.map((seat) => (
-					<View key={seat} style={[cell, styles.number]}>
+				{rows.map((row) => (
+					<View key={row} style={[cell, styles.number]}>
 						<AppText variant="body" style={{ color: ink }}>
-							{totals[seat]}
+							{totals[row]}
 						</AppText>
 					</View>
 				))}

@@ -1,16 +1,23 @@
 import { isRedSuit } from "@arcadeclub/core/cards/art";
-import type { CardId } from "@arcadeclub/core/cards/deck";
+import { type CardId, SUITS, type Suit } from "@arcadeclub/core/cards/deck";
 import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import {
 	bidTotal,
 	cardTilt,
+	isTeamGame,
 	openTrickSlots,
 	seatName,
-	sortCards,
+	sortTricksHand,
+	teamName,
 	tricksChoices,
+	tricksDealSummary,
 	tricksHint,
+	tricksMatchTitle,
 	tricksRoundLabel,
+	tricksScoreRows,
 	tricksSeatNote,
+	tricksStandings,
+	tricksTeams,
 	tricksWinsLine,
 } from "@arcadeclub/core/cards/table-view";
 import type { TricksView } from "@arcadeclub/core/cards/tricks";
@@ -212,6 +219,8 @@ export function TricksTable({
 	// Someone has the turn: to bid, or to play a card.
 	const live = playing || bidding;
 	const mine = playing && view.turn === you;
+	const calling = view.phase === "trump";
+	const callingMine = calling && view.turn === you;
 	const myBid = bidding && view.turn === you;
 	const choosing = view.phase === "passing" && you !== null && !view.passed;
 	const legal = new Set(view.legal);
@@ -276,18 +285,33 @@ export function TricksTable({
 		controls.act({ type: "passCards", cards: selected });
 	}
 
-	const roundLabel =
-		view.deals === null
-			? tricksRoundLabel(view, words)
-			: `${fmt(t.dealLabel, { round: view.round, deals: view.deals })} · ${plural(locale, view.handSize, t.cardsEach)}`;
+	function callTrump(suit: Suit) {
+		controls.act({ type: "chooseTrump", suit });
+	}
+
+	const roundLabel = tricksRoundLabel(view, words);
+	const teamGame = isTeamGame(view);
+	const teams = teamGame ? tricksTeams(view, you) : [];
+	const scoreRows = tricksScoreRows(view, table, cards);
+	const scoreBoard = (
+		<ScoreBoard
+			table={table}
+			scores={scoreRows.scores}
+			totals={scoreRows.totals}
+			labels={scoreRows.labels}
+			heading={teamGame ? t.teamHeading : undefined}
+			empty={t.noScores}
+			totalLabel={t.scoreTotal}
+		/>
+	);
 	const highWins = rules.highWins === true;
-	const best = highWins ? Math.max(...view.totals) : Math.min(...view.totals);
-	const standings = view.totals
-		.map((total, seat) => ({ total, seat }))
-		.sort((a, b) => (highWins ? b.total - a.total : a.total - b.total));
-	const lastRound = view.scores.at(-1);
-	const bids = bidTotal(view);
+	const standings = tricksStandings(view, table, cards, highWins);
 	const winsLine = tricksWinsLine(view, rules, words);
+	const bids = bidTotal(view);
+	const dealSummary = tricksDealSummary(view, table, words);
+	const lastRound = view.scores.at(-1);
+	// The roem of the trick on show, until the next card goes down.
+	const roem = view.trick.length === 0 ? (view.lastTrick?.roem ?? null) : null;
 
 	return (
 		<TableFrame
@@ -315,10 +339,10 @@ export function TricksTable({
 				<SeatRow
 					table={table}
 					handCounts={view.handCounts}
-					turn={live ? view.turn : null}
+					turn={live || calling ? view.turn : null}
 					flash={flights.flash}
 					controls={controls}
-					note={(seat) => tricksSeatNote(view, seat, words)}
+					note={(seat) => tricksSeatNote(view, seat, words, you)}
 				/>
 			}
 			center={
@@ -330,12 +354,30 @@ export function TricksTable({
 								{fmt(t.stakePill, { stake: view.stake })}
 							</span>
 						) : null}
-						{rules.trumpChoice !== "none" && live ? (
+						{calling && view.offered ? (
+							<span
+								className="flag"
+								data-tone={isRedSuit(view.offered) ? "red" : undefined}
+							>
+								<SuitIcon suit={view.offered} />
+								{fmt(t.offerPill, { suit: cards.suits[view.offered] })}
+							</span>
+						) : null}
+						{(rules.trumpChoice !== "none" || rules.callTrump === true) &&
+						live ? (
 							<TrumpFlag view={view} />
 						) : null}
 						{bids !== null && live ? (
 							<span className="flag">
 								{fmt(t.bidsPill, { bids, tricks: view.handSize })}
+							</span>
+						) : null}
+						{roem ? (
+							<span className="flag" data-tone="gold">
+								{[
+									fmt(t.roem, { points: roem.points }),
+									...roem.kinds.map((kind) => t.roemKinds[kind]),
+								].join(" · ")}
 							</span>
 						) : null}
 						{view.phase === "passing" ? (
@@ -347,7 +389,7 @@ export function TricksTable({
 						) : null}
 						{playing &&
 						firstTrick &&
-						rules.passing &&
+						rules.passing !== null &&
 						view.passDirection === "keep" ? (
 							<span className="flag">{t.keepPill}</span>
 						) : null}
@@ -361,6 +403,26 @@ export function TricksTable({
 							</span>
 						) : null}
 					</div>
+					{teamGame ? (
+						<ul className="table-flags team-strip" aria-label={t.teamsLabel}>
+							{teams.map((team) => (
+								<li key={team.team} className="flag" data-yours={team.yours}>
+									<span className="truncate">
+										{teamName(cards, table, team.seats)}
+									</span>
+									<span>{team.total}</span>
+									{view.phase === "playing" ? (
+										<span className="team-deal">
+											{fmt(t.teamDeal, {
+												points: team.points,
+												roem: team.roem,
+											})}
+										</span>
+									) : null}
+								</li>
+							))}
+						</ul>
+					) : null}
 				</>
 			}
 			status={
@@ -369,10 +431,45 @@ export function TricksTable({
 					controls={controls}
 					events={view.events}
 					turn={view.turn}
-					live={live}
-					mine={mine || myBid}
+					live={live || calling}
+					mine={mine || callingMine || myBid}
 					hint={tricksHint(view, you, words, rules)}
 				>
+					{callingMine && view.offered ? (
+						<>
+							<button
+								type="button"
+								className="btn-gold"
+								disabled={controls.pending}
+								onClick={() => view.offered && callTrump(view.offered)}
+							>
+								<SuitIcon suit={view.offered} />
+								{fmt(t.playTrump, { suit: cards.suits[view.offered] })}
+							</button>
+							<button
+								type="button"
+								className="btn-ghost"
+								disabled={controls.pending}
+								onClick={() => controls.act({ type: "passTrump" })}
+							>
+								{t.passTrump}
+							</button>
+						</>
+					) : null}
+					{callingMine && !view.offered
+						? SUITS.map((suit) => (
+								<button
+									key={suit}
+									type="button"
+									className="btn-gold"
+									disabled={controls.pending}
+									onClick={() => callTrump(suit)}
+								>
+									<SuitIcon suit={suit} />
+									{fmt(t.playTrump, { suit: cards.suits[suit] })}
+								</button>
+							))
+						: null}
 					{myBid ? (
 						<BidPicker
 							key={`${view.round}-${view.blockedBid}`}
@@ -435,7 +532,7 @@ export function TricksTable({
 			}
 			hand={
 				<Hand
-					cards={sortCards(view.hand, "suit")}
+					cards={sortTricksHand(view.hand, rules, view.trump)}
 					label={cards.table.handLabel}
 					fresh={fresh}
 					render={(card, style) => {
@@ -475,13 +572,7 @@ export function TricksTable({
 						onClose={() => setScoresOpen(false)}
 					>
 						<p className="mb-3 text-sm font-semibold">{roundLabel}</p>
-						<ScoreBoard
-							table={table}
-							scores={view.scores}
-							totals={view.totals}
-							empty={t.noScores}
-							totalLabel={t.scoreTotal}
-						/>
+						{scoreBoard}
 						<p className="mt-3 text-sm text-[var(--ivory-muted)]">{winsLine}</p>
 					</Sheet>
 					<Sheet
@@ -510,7 +601,33 @@ export function TricksTable({
 										})}
 							</p>
 						) : null}
-						{lastRound ? (
+						{dealSummary?.headlines.map((line) => (
+							<p key={line} className="mb-3 text-base font-bold">
+								{line}
+							</p>
+						))}
+						{dealSummary ? (
+							<ul
+								className="mb-4 flex flex-col gap-1 text-sm"
+								aria-label={t.roundSummary}
+							>
+								{dealSummary.teams.map((team) => (
+									<li key={team.team} className="flex justify-between gap-3">
+										<span className="min-w-0">
+											<span className="block truncate font-semibold">
+												{team.label}
+											</span>
+											<span className="text-[var(--ivory-muted)]">
+												{team.detail}
+											</span>
+										</span>
+										<span className="font-bold">
+											{plural(locale, team.score, t.totalPoints)}
+										</span>
+									</li>
+								))}
+							</ul>
+						) : lastRound ? (
 							<ul
 								className="mb-4 flex flex-col gap-1 text-sm"
 								aria-label={t.roundSummary}
@@ -541,13 +658,7 @@ export function TricksTable({
 								))}
 							</ul>
 						) : null}
-						<ScoreBoard
-							table={table}
-							scores={view.scores}
-							totals={view.totals}
-							empty={t.noScores}
-							totalLabel={t.scoreTotal}
-						/>
+						{scoreBoard}
 						{!finished && you === null ? (
 							<p className="status-hint sheet-foot">{t.waitingNextRound}</p>
 						) : (
@@ -574,30 +685,18 @@ export function TricksTable({
 							table={table}
 							winners={view.winners}
 							controls={controls}
-							title={
-								view.winners.length > 1
-									? t.matchTie
-									: you !== null && view.winners.includes(you)
-										? t.matchYouWin
-										: fmt(t.matchWinner, {
-												name: seatName(cards, table, view.winners[0]),
-											})
-							}
+							title={tricksMatchTitle(view, table, words)}
 						>
 							<ol className="mt-4 flex flex-col gap-1 text-left">
-								{standings.map(({ total, seat }) => (
+								{standings.map(({ row, label, total, best }) => (
 									<li
-										key={seat}
+										key={row}
 										className="flex justify-between gap-3 rounded-md px-2 py-1.5"
 										style={
-											total === best
-												? { background: "var(--gold-soft)" }
-												: undefined
+											best ? { background: "var(--gold-soft)" } : undefined
 										}
 									>
-										<span className="truncate font-semibold">
-											{seatName(cards, table, seat)}
-										</span>
+										<span className="truncate font-semibold">{label}</span>
 										<span>{plural(locale, total, t.totalPoints)}</span>
 									</li>
 								))}

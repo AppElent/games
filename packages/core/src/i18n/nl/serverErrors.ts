@@ -56,6 +56,13 @@ export const serverErrors = {
 	cardsSwapTooLate: "Te laat: de eerste kaart is al gespeeld.",
 	cardsHandNotSwappable: "Deze hand mag je niet ruilen.",
 	cardsStockEmpty: "Er zijn geen kaarten meer voor een nieuwe hand.",
+	cardsNotCallingTrump: "De troef is al gekozen.",
+	cardsCallTrumpFirst: "Eerst moet de troef gekozen worden.",
+	cardsMustChooseTrump: "Je moet een troef kiezen.",
+	cardsTrumpNotOffered: "Speel met de voorgestelde kleur, of pas.",
+	cardsMustTrump: "Je kunt niet bekennen, dus je moet troeven.",
+	cardsMustOvertrump: "Je moet hoger troeven.",
+	cardsNoUndertrump: "Ondertroeven mag niet zolang je andere kaarten hebt.",
 	cardsNotBidding: "Er wordt nu niet geboden.",
 	cardsBidRange: "Bied tussen 0 en {max} slagen.",
 	cardsDealerBid:

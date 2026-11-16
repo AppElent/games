@@ -1,4 +1,5 @@
 import type { CardId, Suit } from "./deck";
+import type { RoemKind } from "./roem";
 
 /**
  * What just happened at the table, in order. Public: anything hidden (which
@@ -45,6 +46,12 @@ export type CardEvent = { seq: number } & (
 	| { type: "swapHand"; seat: number }
 	| { type: "dealWon"; seat: number }
 	| { type: "out"; seat: number }
+	| { type: "trumpPass"; seat: number }
+	| { type: "trump"; seat: number; suit: Suit }
+	| { type: "roem"; seat: number; points: number; kinds: RoemKind[] }
+	/** A team's seats: the one that went nat, or took every trick. */
+	| { type: "nat"; seats: number[] }
+	| { type: "pit"; seats: number[] }
 	| {
 			type: "handEnd";
 			winner: number;

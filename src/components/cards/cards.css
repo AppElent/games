@@ -888,6 +888,35 @@ button.pile:disabled {
 	animation: flag-pop 0.3s ease;
 }
 
+.flag[data-tone="gold"] {
+	background: var(--gold);
+	animation: flag-pop 0.3s ease;
+}
+
+/* Team totals in a partnership game, the viewer's team first. */
+.team-strip {
+	margin-top: 0.4rem;
+	padding: 0;
+	list-style: none;
+}
+
+.team-strip .flag {
+	max-width: 100%;
+	color: var(--ivory);
+	background: rgba(0, 0, 0, 0.32);
+	box-shadow: none;
+}
+
+.team-strip .flag[data-yours="true"] {
+	color: #231704;
+	background: var(--ivory);
+}
+
+.team-deal {
+	font-weight: 500;
+	opacity: 0.8;
+}
+
 @keyframes flag-pop {
 	0% {
 		transform: scale(0.6);

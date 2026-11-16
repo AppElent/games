@@ -40,13 +40,20 @@ import {
 	sheddingHint,
 	signedPoints,
 	sortCards,
+	sortTricksHand,
 	specialCards,
 	startFreshCards,
 	tricksChoices,
+	tricksDealSummary,
 	tricksHint,
+	tricksMatchTitle,
 	tricksRoundLabel,
 	tricksRuleLines,
+	tricksRuleSections,
+	tricksScoreRows,
 	tricksSeatNote,
+	tricksStandings,
+	tricksTeams,
 } from "../cards/table-view";
 import type { TricksRules, TricksView } from "../cards/tricks";
 import { en } from "../i18n/en";
@@ -953,6 +960,12 @@ function tricksView(over: Partial<TricksView> = {}): TricksView {
 		deals: null,
 		handSize: 13,
 		turn: 1,
+		teams: [0, 1, 2],
+		offered: null,
+		trumpPassed: [false, false, false],
+		maker: null,
+		roem: [0, 0, 0],
+		lastDeal: null,
 		handCounts: [13, 13, 13],
 		hand: [],
 		legal: [],
@@ -1224,7 +1237,7 @@ describe("toepen at the table", () => {
 		const plain = tricksRuleLines(words, toepen());
 		expect(plain.goal).toContain("At 10 penalty points you're out.");
 		expect(plain.turn).toContain("From high to low: 10 9 8 7 A K Q J.");
-		expect(plain.turn).toContain(cards.rules.tricks.lastTrick);
+		expect(plain.turn).toContain(cards.rules.tricks.lastTrickOnly);
 		expect(plain.stakes).not.toContain(cards.rules.tricks.lastLife);
 		const house = tricksRuleLines(
 			words,
@@ -1245,6 +1258,305 @@ describe("toepen at the table", () => {
 		);
 		expect(flights.some((flight) => flight.to === "seat-1")).toBe(false);
 		expect(flights.some((flight) => flight.to === "seat-2")).toBe(true);
+	});
+});
+
+const klaverjassen = (options: string[] = []) => {
+	const resolved = resolvedRules(getCardGame("klaverjassen"), options);
+	if (resolved.family !== "tricks")
+		throw new Error("Klaverjassen takes tricks");
+	return resolved.rules;
+};
+
+const fourSeats = {
+	you: 1,
+	seats: [
+		seat({ name: "Anna" }),
+		seat({ name: "Me" }),
+		seat({ name: "Bram" }),
+		seat({ name: "Cas" }),
+	],
+};
+
+/** A Klaverjassen deal in progress: seats 0 and 2 against 1 and 3. */
+function teamView(over: Partial<TricksView> = {}): TricksView {
+	return tricksView({
+		target: null,
+		deals: 16,
+		handSize: 8,
+		round: 3,
+		teams: [0, 1, 0, 1],
+		trumpPassed: [false, false, false, false],
+		roem: [20, 0, 0, 50],
+		handCounts: [8, 8, 8, 8],
+		passDirection: "keep",
+		passCount: 0,
+		passReady: [false, false, false, false],
+		roundPoints: [30, 12, 8, 0],
+		tricksTaken: [0, 0, 0, 0],
+		scores: [
+			[100, 82, 100, 82],
+			[0, 262, 0, 262],
+		],
+		totals: [100, 344, 100, 344],
+		...over,
+	});
+}
+
+describe("team tables", () => {
+	it("groups seats in teams, the viewer's own first", () => {
+		const teams = tricksTeams(teamView(), 1);
+		expect(teams).toEqual([
+			{ team: 1, seats: [1, 3], total: 344, points: 12, roem: 50, yours: true },
+			{
+				team: 0,
+				seats: [0, 2],
+				total: 100,
+				points: 38,
+				roem: 20,
+				yours: false,
+			},
+		]);
+		expect(tricksTeams(teamView(), null)[0].team).toBe(0);
+	});
+
+	it("scores one row per team, and one per seat without teams", () => {
+		const rows = tricksScoreRows(teamView(), fourSeats, cards);
+		expect(rows.labels).toEqual(["You & Cas", "Anna & Bram"]);
+		expect(rows.scores).toEqual([
+			[82, 100],
+			[262, 0],
+		]);
+		expect(rows.totals).toEqual([344, 100]);
+		const solo = tricksScoreRows(
+			tricksView({ totals: [4, 9, 2] }),
+			table,
+			cards,
+		);
+		expect(solo.labels).toHaveLength(3);
+		expect(solo.totals).toEqual([4, 9, 2]);
+	});
+
+	it("ranks the highest first when the highest wins, else the lowest first", () => {
+		expect(
+			tricksStandings(teamView(), fourSeats, cards, true).map((row) => [
+				row.label,
+				row.best,
+			]),
+		).toEqual([
+			["You & Cas", true],
+			["Anna & Bram", false],
+		]);
+		const solo = tricksStandings(
+			tricksView({ totals: [4, 9, 2] }),
+			table,
+			cards,
+			false,
+		);
+		expect(solo.map((row) => row.total)).toEqual([2, 4, 9]);
+		expect(solo[0].best).toBe(true);
+	});
+
+	it("labels the round by deals or by target", () => {
+		expect(tricksRoundLabel(teamView(), words)).toBe("Round 3 of 16 · 8 cards");
+		expect(tricksRoundLabel(tricksView(), words)).toBe("Round 1 · to 100");
+	});
+
+	it("names the winning team, or yours", () => {
+		const theirs = teamView({ phase: "finished", winners: [0, 2] });
+		expect(tricksMatchTitle(theirs, fourSeats, words)).toBe(
+			"Anna & Bram win the game!",
+		);
+		const yours = teamView({ phase: "finished", winners: [1, 3] });
+		expect(tricksMatchTitle(yours, fourSeats, words)).toBe(
+			cards.tricks.matchYourTeamWins,
+		);
+		const tie = teamView({ phase: "finished", winners: [0, 1, 2, 3] });
+		expect(tricksMatchTitle(tie, fourSeats, words)).toBe(cards.tricks.matchTie);
+	});
+
+	it("sums up the last deal with its nat and pit headlines", () => {
+		expect(tricksDealSummary(teamView(), fourSeats, words)).toBeNull();
+		const nat = teamView({
+			lastDeal: {
+				points: [70, 92],
+				roem: [20, 0],
+				maker: 0,
+				nat: true,
+				pit: null,
+				scores: [0, 182],
+			},
+		});
+		expect(tricksDealSummary(nat, fourSeats, words)).toEqual({
+			headlines: ["Anna & Bram went nat: the other team scores everything."],
+			teams: [
+				{
+					team: 1,
+					label: "You & Cas",
+					detail: "92 points + 0 roem",
+					score: 182,
+				},
+				{
+					team: 0,
+					label: "Anna & Bram",
+					detail: "70 points + 20 roem",
+					score: 0,
+				},
+			],
+		});
+		const pit = teamView({
+			lastDeal: {
+				points: [0, 162],
+				roem: [0, 100],
+				maker: 1,
+				nat: false,
+				pit: 1,
+				scores: [0, 262],
+			},
+		});
+		expect(tricksDealSummary(pit, fourSeats, words)?.headlines).toEqual([
+			cards.tricks.youPit,
+		]);
+	});
+
+	it("marks partner and maker under the seats, and who passed on trump", () => {
+		const playing = teamView({ maker: 3 });
+		expect(tricksSeatNote(playing, 3, words, 1)).toBe("Partner · Plays");
+		expect(tricksSeatNote(playing, 0, words, 1)).toBe("");
+		const calling = teamView({
+			phase: "trump",
+			trumpPassed: [false, false, true, false],
+		});
+		expect(tricksSeatNote(calling, 2, words, 1)).toBe(
+			cards.tricks.trumpPassedNote,
+		);
+	});
+});
+
+describe("klaverjassen hints", () => {
+	const rules = klaverjassen();
+
+	it("asks for a trump call in turn", () => {
+		const offer = teamView({ phase: "trump", turn: 1, offered: "H" });
+		expect(tricksHint(offer, 1, words, rules)).toBe(
+			"Play with hearts as trump, or pass.",
+		);
+		expect(tricksHint(offer, 0, words, rules)).toBeNull();
+		const named = teamView({ phase: "trump", turn: 1 });
+		expect(tricksHint(named, 1, words, rules)).toBe(
+			cards.tricks.trumpChooseHint,
+		);
+		const forced = teamView({
+			phase: "trump",
+			turn: 1,
+			trumpPassed: [true, true, true, true],
+		});
+		expect(tricksHint(forced, 1, words, rules)).toBe(
+			cards.tricks.trumpForcedHint,
+		);
+	});
+
+	it("explains the trump duties", () => {
+		const base = { trump: "H" as const, turn: 1 };
+		const ruffed = teamView({
+			...base,
+			trick: [{ seat: 0, card: "S9#0" }],
+			hand: ["H7#0", "HJ#0", "D7#0"],
+			legal: ["H7#0", "HJ#0"],
+		});
+		expect(tricksHint(ruffed, 1, words, rules)).toBe(
+			"No spades left: play a trump.",
+		);
+		const over = teamView({
+			...base,
+			trick: [
+				{ seat: 3, card: "S9#0" },
+				{ seat: 0, card: "H10#0" },
+			],
+			hand: ["H7#0", "HJ#0", "D7#0"],
+			legal: ["HJ#0"],
+		});
+		expect(tricksHint(over, 1, words, rules)).toBe(
+			"No spades left: play a higher trump.",
+		);
+		const under = teamView({
+			...base,
+			trick: [
+				{ seat: 3, card: "S9#0" },
+				{ seat: 0, card: "HJ#0" },
+			],
+			hand: ["H7#0", "D7#0"],
+			legal: ["D7#0"],
+		});
+		expect(tricksHint(under, 1, words, rules)).toBe(
+			"No spades left: any card but a lower trump.",
+		);
+		const led = teamView({
+			...base,
+			trick: [{ seat: 0, card: "H10#0" }],
+			hand: ["H7#0", "HJ#0", "D7#0"],
+			legal: ["HJ#0"],
+		});
+		expect(tricksHint(led, 1, words, rules)).toBe(cards.tricks.overtrump);
+	});
+
+	it("sorts a hand by suit, trumps by trump rank", () => {
+		const hand: CardId[] = ["HJ#0", "H9#0", "HA#0", "SJ#0", "SA#0", "S9#0"];
+		expect(sortTricksHand(hand, rules, "H")).toEqual([
+			"S9#0",
+			"SJ#0",
+			"SA#0",
+			"HA#0",
+			"H9#0",
+			"HJ#0",
+		]);
+	});
+});
+
+describe("klaverjassen rules sheet", () => {
+	it.each([
+		["en", en.games.cards],
+		["nl", nl.games.cards],
+	] as const)("writes every rule in %s", (_, messages) => {
+		for (const options of [[], ["forcedTrump", "amsterdams", "shortMatch"]]) {
+			const lines = tricksRuleLines(wordsFor(messages), klaverjassen(options));
+			const sections = tricksRuleSections(lines, messages);
+			expect(sections.map((section) => section.heading)).toEqual([
+				messages.rules.trumpHeading,
+				messages.rules.turnHeading,
+				messages.rules.pointsHeading,
+				messages.rules.roemHeading,
+			]);
+			for (const line of [lines.goal, ...sections.flatMap((s) => s.lines)]) {
+				expect(line).not.toMatch(/[{}]|undefined/);
+			}
+		}
+	});
+
+	it("follows the house rules", () => {
+		const plain = tricksRuleLines(words, klaverjassen());
+		expect(plain.goal).toContain("16");
+		expect(plain.trump[0]).toBe(cards.rules.tricks.callTrump);
+		expect(plain.turn).not.toContain(cards.rules.tricks.partnerWins);
+		expect(plain.turn).toContain("Trump, from high to low: J 9 A 10 K Q 8 7.");
+		const house = tricksRuleLines(
+			words,
+			klaverjassen(["forcedTrump", "amsterdams", "shortMatch"]),
+		);
+		expect(house.goal).toContain("8");
+		expect(house.trump[0]).toBe(cards.rules.tricks.nameTrump);
+		expect(house.turn).toContain(cards.rules.tricks.partnerWins);
+	});
+
+	it("keeps Hartenjagen's sections", () => {
+		const lines = tricksRuleLines(words, hartenjagen());
+		expect(
+			tricksRuleSections(lines, cards).map((section) => section.heading),
+		).toEqual([
+			cards.rules.passHeading,
+			cards.rules.turnHeading,
+			cards.rules.pointsHeading,
+		]);
 	});
 });
 

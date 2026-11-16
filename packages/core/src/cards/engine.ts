@@ -30,6 +30,7 @@ import { eenentwintigen } from "./games/eenentwintigen";
 import { ginRummy } from "./games/gin-rummy";
 import { hartenjagen } from "./games/hartenjagen";
 import { jokeren } from "./games/jokeren";
+import { klaverjassen } from "./games/klaverjassen";
 import { maumau } from "./games/maumau";
 import { pesten } from "./games/pesten";
 import { toepen } from "./games/toepen";
@@ -126,6 +127,7 @@ export const CARD_GAMES = {
 	eenentwintigen,
 	hartenjagen,
 	toepen,
+	klaverjassen,
 	boerenbridge,
 	"gin-rummy": ginRummy,
 } as const satisfies Record<string, CardGameDefinition>;
