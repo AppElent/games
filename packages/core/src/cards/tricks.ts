@@ -221,7 +221,7 @@ export type TricksState = {
 	knock?: KnockState | null;
 	/** Who won the last scored deal, for scorers that name one. */
 	dealWinner?: number | null;
-	/** Cards nobody was dealt, for swapped hands. Private; absent on older tables. */
+	/** Cards nobody was dealt, kept for games that swap hands. Private. */
 	stock?: CardId[];
 	/** Folded and swapped-away cards, face down. Private. */
 	mucked?: CardId[];
@@ -757,8 +757,7 @@ function dealTricks(
 		events: carried?.events ?? [],
 		nextSeq: carried?.nextSeq ?? 0,
 		...(rules.matchEnd === "lastStanding" ? { out } : {}),
-		// The turned-up card is public, so it leaves the stock.
-		stock: undealt.filter((card) => card !== turnedUp),
+		...(rules.swapHands ? { stock: undealt } : {}),
 	};
 	if (rules.knocking) {
 		state.folded = hands.map(() => false);

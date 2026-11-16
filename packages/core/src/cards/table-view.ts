@@ -980,7 +980,7 @@ export function tricksRuleLines(
 					...(bidding.dealerMayMatch ? [] : [r.dealerRule]),
 				]
 			: null,
-		// Null when nobody passes; a house rule that stops it says so itself.
+		/** Null when the game bids, calls trump or plays for stakes instead of passing. */
 		passing: passing
 			? [
 					fmt(r.pass, {
@@ -991,7 +991,9 @@ export function tricksRuleLines(
 					}),
 					...(passing.cycle.includes("across") ? [r.passOdd] : []),
 				]
-			: null,
+			: bidding || called || rules.knocking
+				? null
+				: [r.noPass],
 		stakes: rules.knocking
 			? [
 					r.stake,

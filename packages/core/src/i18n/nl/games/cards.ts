@@ -614,6 +614,7 @@ export const cards = {
 			pass: "Voor elke ronde geef je {count} kaarten door. De richting wisselt elke ronde: {cycle}.",
 			passOdd:
 				"Met een oneven aantal spelers geeft niemand naar de overkant door.",
+			noPass: "Niemand geeft kaarten door.",
 			firstLead: "Wie {card} heeft, komt daarmee uit om de ronde te openen.",
 			follow:
 				"Beken kleur als het kan. Kan dat niet, speel dan een kaart naar keuze.",

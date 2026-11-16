@@ -610,6 +610,7 @@ export const cards = {
 			goal: "Stay away from points. The game ends when someone reaches {target}; the lowest total wins.",
 			pass: "Before each round, pass {count} cards. The direction changes every round: {cycle}.",
 			passOdd: "With an odd number of players nobody passes across.",
+			noPass: "Nobody passes cards.",
 			firstLead: "Whoever holds the {card} leads it to open the round.",
 			follow: "Follow suit if you can. If you can't, play any card.",
 			trick:

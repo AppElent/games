@@ -1117,7 +1117,7 @@ describe("tricksRuleLines", () => {
 			hartenjagen(["noPassing", "queenBreaksHearts", "jackOfDiamonds", "to50"]),
 		);
 		expect(house.goal).toContain("50");
-		expect(house.passing).toBeNull();
+		expect(house.passing).toEqual([cards.rules.tricks.noPass]);
 		expect(house.turn.join(" ")).toContain("queen of spades");
 		expect(house.points.join(" ")).toContain("jack of diamonds");
 	});
