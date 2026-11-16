@@ -16,6 +16,7 @@ import {
 } from "../dice/mexen";
 import {
 	latestNews,
+	mexenLivesPerRow,
 	mexenStandings,
 	mexenThrowLabel,
 	mexenTurnStep,
@@ -390,6 +391,12 @@ describe("Mexen lives and the end", () => {
 });
 
 describe("Mexen views and news", () => {
+	it("draws up to six lives on one row and more in two even rows", () => {
+		expect(mexenLivesPerRow(3)).toBe(3);
+		expect(mexenLivesPerRow(6)).toBe(6);
+		expect(mexenLivesPerRow(10)).toBe(5);
+	});
+
 	it("tells the player on turn what to do", () => {
 		let state = createDiceGame(mexen, [], 2);
 		let view = viewDiceGame(mexen, [], state, 0);

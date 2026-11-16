@@ -7,6 +7,7 @@ import type { MexenView } from "@arcadeclub/core/dice/mexen";
 import {
 	diceSeatName,
 	latestNews,
+	mexenLivesPerRow,
 	mexenStandings,
 	mexenThrowLabel,
 	mexenTurnStep,
@@ -105,7 +106,12 @@ export function MexenTable({ game, table, view, controls }: Props) {
 						controls={controls}
 					/>
 				) : null}
-				<MexenTray table={table} view={view} controls={controls} />
+				<MexenTray
+					table={table}
+					view={view}
+					controls={controls}
+					news={news?.text ?? null}
+				/>
 				{you === null ? (
 					<View style={styles.spectator}>
 						<AppText variant="secondary">{dice.table.spectating}</AppText>
@@ -123,11 +129,6 @@ export function MexenTable({ game, table, view, controls }: Props) {
 					</View>
 				) : null}
 				<Notice message={controls.error} />
-				{news ? (
-					<AppText variant="caption" testID="dice-last-score">
-						{news.text}
-					</AppText>
-				) : null}
 				<MexenSeats table={table} view={view} controls={controls} />
 			</Screen>
 			<DiceRulesSheet
@@ -141,7 +142,12 @@ export function MexenTable({ game, table, view, controls }: Props) {
 }
 
 /** Whose turn, the two dice, and the choice between keeping and throwing again. */
-function MexenTray({ table, view, controls }: Omit<Props, "game">) {
+function MexenTray({
+	table,
+	view,
+	controls,
+	news,
+}: Omit<Props, "game"> & { news: string | null }) {
 	const { t, locale } = useI18n();
 	const dice = t.games.dice;
 	const words = dice.mexen;
@@ -195,14 +201,9 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 			: null;
 	const shown = kept ? kept.dice : view.dice;
 	const shownKind = kept ? kept.kind : view.current?.kind;
-	const throwLine = current
-		? current
-		: kept
-			? fmt(words.lastStand, {
-					name: name(kept.seat),
-					throw: mexenThrowLabel(dice, fmt, kept),
-				})
-			: null;
+	// The kept throw's dice stay on the table, read out by the latest news
+	// ("Cato keeps Mex. You lose a life").
+	const throwLine = current ?? (kept ? news : null);
 
 	return (
 		<Card>
@@ -312,6 +313,11 @@ function MexenTray({ table, view, controls }: Omit<Props, "game">) {
 						{words.doubled}
 					</AppText>
 				) : null}
+				{news && !kept && (!mine || view.rollsUsed === 0) ? (
+					<AppText variant="caption" testID="dice-last-score">
+						{news}
+					</AppText>
+				) : null}
 				{autopilot && you !== null ? (
 					<>
 						<AppText variant="secondary">{dice.table.autopilotActive}</AppText>
@@ -407,7 +413,10 @@ function MexenSeats({ table, view, controls }: Omit<Props, "game">) {
 						<View style={styles.score}>
 							{view.scoring === "lives" ? (
 								<View
-									style={styles.pips}
+									style={[
+										styles.pips,
+										{ maxWidth: (PIP + 3) * mexenLivesPerRow(view.lives) },
+									]}
 									accessibilityElementsHidden
 									importantForAccessibility="no-hide-descendants"
 								>
@@ -517,7 +526,6 @@ const createStyles = (colors: Tokens) =>
 			flexWrap: "wrap",
 			justifyContent: "flex-end",
 			gap: 3,
-			maxWidth: (PIP + 3) * 5,
 		},
 		pip: {
 			width: PIP,

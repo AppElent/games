@@ -130,6 +130,11 @@ export function mexenTurnStep(
 	return view.rollsUsed === 0 ? "start" : "decide";
 }
 
+/** Lives drawn per row: up to six on one line, more in two even rows. */
+export function mexenLivesPerRow(lives: number) {
+	return lives <= 6 ? lives : Math.ceil(lives / 2);
+}
+
 /**
  * Mexen seats from best to worst: fewest lives lost (or points) first; anyone
  * out ranks below everyone still in, the last to go out highest. Ties keep seat order.

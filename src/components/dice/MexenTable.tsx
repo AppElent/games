@@ -3,6 +3,7 @@ import type { MexenView } from "@arcadeclub/core/dice/mexen";
 import {
 	diceSeatName,
 	latestNews,
+	mexenLivesPerRow,
 	mexenStandings,
 	mexenThrowLabel,
 	mexenTurnStep,
@@ -201,12 +202,10 @@ function MexenTray({
 				<p className="mexen-throw" data-kind={view.current?.kind}>
 					{current}
 				</p>
-			) : kept ? (
-				<p className="mexen-throw" data-kind={kept.kind}>
-					{fmt(words.lastStand, {
-						name: name(kept.seat),
-						throw: mexenThrowLabel(dice, fmt, kept),
-					})}
+			) : kept && news ? (
+				// The kept throw's dice stay on the table, read out by the latest news.
+				<p className="mexen-throw" data-kind={kept.kind} aria-hidden="true">
+					{news}
 				</p>
 			) : null}
 			{view.rollsUsed > 0 ? (
@@ -250,7 +249,7 @@ function MexenTray({
 			{view.doubled && view.mexDoubles && view.phase === "playing" ? (
 				<p className="mexen-doubled">{words.doubled}</p>
 			) : null}
-			{news && (!mine || view.rollsUsed === 0) ? (
+			{news && !kept && (!mine || view.rollsUsed === 0) ? (
 				<p className="mexen-news" aria-hidden="true">
 					{news}
 				</p>
@@ -352,7 +351,13 @@ function MexenSeats({ table, view, controls }: Omit<Props, "game">) {
 							{view.scoring === "lives" ? (
 								<p className="mexen-lives">
 									<span className="sr-only">{score}</span>
-									<span className="mexen-hearts" aria-hidden="true">
+									<span
+										className="mexen-hearts"
+										aria-hidden="true"
+										style={{
+											gridTemplateColumns: `repeat(${mexenLivesPerRow(view.lives)}, 0.875rem)`,
+										}}
+									>
 										{Array.from({ length: view.lives }, (_, life) => (
 											<Heart
 												// biome-ignore lint/suspicious/noArrayIndexKey: hearts are interchangeable
