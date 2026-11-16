@@ -22,7 +22,7 @@ type SessionPath = (sessionId: string, participantId: string) => string;
 
 type GameCatalogItem = {
 	readonly type: GameType;
-	readonly accent: string;
+	readonly accent: "cyan" | "green" | "pink" | "orange" | "amber" | "violet";
 	readonly icon: ComponentType<{ className?: string }>;
 	readonly route: string;
 	/** Where a seated player plays. `null`: this game has no sessions to join. */
@@ -43,7 +43,7 @@ type CatalogEntries = {
 /** A new game in `GAME_TYPES` fails to compile here until it has an entry. */
 const GAME_CATALOG: CatalogEntries = {
 	"live-quiz": {
-		accent: "from-emerald-400 to-cyan-300",
+		accent: "green",
 		icon: Trophy,
 		route: "/quiz/new",
 		sessionPath: (sessionId, participantId) =>
@@ -51,25 +51,25 @@ const GAME_CATALOG: CatalogEntries = {
 		hostPath: (sessionId) => `/quiz/${sessionId}/host`,
 	},
 	backgammon: {
-		accent: "from-fuchsia-400 to-orange-300",
+		accent: "pink",
 		icon: Dices,
 		route: "/backgammon/new",
 		sessionPath: (sessionId) => `/backgammon/${sessionId}`,
 	},
 	sudoku: {
-		accent: "from-sky-400 to-blue-500",
+		accent: "cyan",
 		icon: Grid3X3,
 		route: "/sudoku/new",
 		sessionPath: (sessionId) => `/sudoku/${sessionId}`,
 	},
 	chess: {
-		accent: "from-violet-400 to-indigo-400",
+		accent: "violet",
 		icon: Brain,
 		route: "/chess/new",
 		sessionPath: (sessionId) => `/chess/${sessionId}`,
 	},
 	hitster: {
-		accent: "from-pink-400 to-rose-300",
+		accent: "pink",
 		icon: Music,
 		route: "/hitster/new",
 		sessionPath: (sessionId, participantId) =>
@@ -77,43 +77,43 @@ const GAME_CATALOG: CatalogEntries = {
 		hostPath: (sessionId) => `/hitster/${sessionId}/host`,
 	},
 	"word-links": {
-		accent: "from-lime-300 to-emerald-400",
+		accent: "green",
 		icon: CircleDot,
 		route: "/word-links",
 		sessionPath: null,
 	},
 	"connect-four": {
-		accent: "from-amber-300 to-red-400",
+		accent: "amber",
 		icon: CircleDot,
 		route: "/connect-four/new",
 		sessionPath: (sessionId) => `/connect-four/${sessionId}`,
 	},
 	"signal-words": {
-		accent: "from-rose-400 to-sky-400",
+		accent: "pink",
 		icon: Users,
 		route: "/signal-words/new",
 		sessionPath: (sessionId) => `/signal-words/${sessionId}`,
 	},
 	"bluff-dice": {
-		accent: "from-orange-300 to-rose-400",
+		accent: "orange",
 		icon: Dices,
 		route: "/bluff-dice/new",
 		sessionPath: (sessionId) => `/bluff-dice/${sessionId}`,
 	},
 	"squad-surge": {
-		accent: "from-red-500 to-orange-400",
+		accent: "orange",
 		icon: Swords,
 		route: "/squad-surge",
 		sessionPath: null,
 	},
 	"card-games": {
-		accent: "from-rose-400 to-emerald-400",
+		accent: "pink",
 		icon: Spade,
 		route: "/cards",
 		sessionPath: (sessionId) => `/cards/table/${sessionId}`,
 	},
 	"dice-games": {
-		accent: "from-amber-300 to-emerald-400",
+		accent: "amber",
 		icon: Dice5,
 		route: "/dice",
 		sessionPath: (sessionId) => `/dice/table/${sessionId}`,

@@ -1,3 +1,4 @@
+import { Monitor, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
 	applyThemeMode,
@@ -50,9 +51,15 @@ export default function ThemeToggle() {
 			onClick={toggleMode}
 			aria-label={label}
 			title={label}
-			className="rounded-md border border-white/60 bg-white/10 px-3 py-2 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/15"
+			className="club-header-button"
 		>
-			{mode === "auto" ? "Auto" : mode === "dark" ? "Dark" : "Light"}
+			{mode === "auto" ? (
+				<Monitor size={18} />
+			) : mode === "dark" ? (
+				<Moon size={18} />
+			) : (
+				<Sun size={18} />
+			)}
 		</button>
 	);
 }
