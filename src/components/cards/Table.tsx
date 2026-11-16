@@ -6,11 +6,11 @@ import {
 	latestEventText,
 	nextFreshCards,
 	opponentOrder,
-	seatIsSilent,
 	seatName,
 	startFreshCards,
 } from "@arcadeclub/core/cards/table-view";
 import { buildInviteUrl } from "@arcadeclub/core/sessions";
+import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { Bot, MoreHorizontal, ScrollText } from "lucide-react";
 import {
 	type CSSProperties,

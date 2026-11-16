@@ -8,6 +8,7 @@
  */
 import { GameRuleError } from "../errors";
 import { type Rng, shuffle } from "../random";
+import type { BotMove } from "../table-engine";
 import {
 	buildDeck,
 	type CardId,
@@ -28,7 +29,7 @@ import {
 	type MeldRules,
 	type MeldShape,
 } from "./melds";
-import { type BotMove, publicTable } from "./table";
+import { publicTable } from "./table";
 
 export type GinRules = MeldRules & {
 	handSize: number;

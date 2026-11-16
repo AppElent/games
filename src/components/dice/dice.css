@@ -1,0 +1,350 @@
+/* The dice table: dice you can hold, and a score sheet that fits a phone.
+   Felt, panels and buttons come from the card room's stylesheet. */
+
+.tile-dice {
+	position: absolute;
+	right: 0.9rem;
+	bottom: 0.9rem;
+	display: flex;
+	gap: 0.3rem;
+	pointer-events: none;
+}
+
+.tile-dice .die-face {
+	width: 2rem;
+	height: 2rem;
+	transform: rotate(calc((var(--i) - 2) * 9deg));
+}
+
+.dice-top {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+
+.dice-note {
+	margin-bottom: 0.75rem;
+	font-size: 0.875rem;
+	color: var(--ivory-muted);
+}
+
+.dice-note a {
+	color: var(--gold);
+	font-weight: 700;
+	text-decoration: underline;
+}
+
+.dice-layout {
+	display: grid;
+	gap: 1rem;
+	align-items: start;
+}
+
+@media (min-width: 52rem) {
+	.dice-layout {
+		grid-template-columns: minmax(17rem, 22rem) minmax(0, 1fr);
+	}
+
+	.dice-tray {
+		position: sticky;
+		top: 0.75rem;
+	}
+}
+
+.dice-tray {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 1rem;
+	text-align: center;
+}
+
+.dice-status {
+	min-height: 1.5rem;
+	font-family: var(--font-display);
+	font-size: 1.15rem;
+	font-weight: 700;
+}
+
+.dice-status[data-mine="true"] {
+	color: var(--gold);
+}
+
+.dice-hint,
+.dice-empty {
+	font-size: 0.875rem;
+	color: var(--ivory-muted);
+}
+
+.dice-empty {
+	display: grid;
+	place-items: center;
+	min-height: calc(var(--die-size) + 1.5rem);
+}
+
+.dice-row,
+.dice-empty {
+	--die-size: clamp(3rem, 15vw, 3.75rem);
+}
+
+.dice-row {
+	display: flex;
+	justify-content: center;
+	gap: 0.5rem;
+}
+
+.die {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.2rem;
+	border-radius: 0.8rem;
+}
+
+.die .die-face {
+	width: var(--die-size);
+	height: var(--die-size);
+	filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.45));
+	transition: transform 0.15s ease;
+}
+
+.die-body {
+	fill: var(--ivory);
+	stroke: rgba(0, 0, 0, 0.25);
+	stroke-width: 2;
+}
+
+.die-pip {
+	fill: #1b1310;
+}
+
+.die-tag {
+	min-height: 1rem;
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--gold);
+}
+
+button.die {
+	cursor: pointer;
+}
+
+.die[aria-pressed="true"] .die-face,
+.die[data-held="true"] .die-face {
+	transform: translateY(-4px);
+}
+
+.die[aria-pressed="true"] .die-body,
+.die[data-held="true"] .die-body {
+	stroke: var(--gold);
+	stroke-width: 7;
+}
+
+.die:disabled {
+	cursor: default;
+}
+
+.dice-actions {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.4rem;
+	width: 100%;
+}
+
+.dice-actions .btn-gold {
+	width: 100%;
+	max-width: 16rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.die[data-fresh="true"] .die-face {
+		animation: die-tumble 0.45s cubic-bezier(0.2, 0.7, 0.3, 1);
+	}
+}
+
+@keyframes die-tumble {
+	0% {
+		transform: translateY(-18px) rotate(-120deg) scale(0.85);
+		opacity: 0.4;
+	}
+	70% {
+		transform: translateY(2px) rotate(8deg);
+		opacity: 1;
+	}
+	100% {
+		transform: none;
+	}
+}
+
+.score-sheet {
+	padding: 0.25rem;
+	min-width: 0;
+}
+
+/* The sheet scrolls sideways on its own when many players share a phone. */
+.score-scroll {
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+}
+
+.score-sheet table {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+	font-variant-numeric: tabular-nums;
+	font-size: 0.9rem;
+}
+
+.score-sheet th,
+.score-sheet td {
+	height: 2.75rem;
+	padding: 0.15rem 0.4rem;
+	border-bottom: 1px solid rgba(248, 242, 226, 0.12);
+	text-align: center;
+}
+
+.score-sheet th[scope="row"],
+.score-sheet thead th:first-child {
+	position: sticky;
+	left: 0;
+	z-index: 1;
+	min-width: 7.5rem;
+	text-align: left;
+	font-weight: 600;
+	background: #13100e;
+}
+
+.score-sheet thead th {
+	vertical-align: bottom;
+	font-size: 0.8rem;
+	font-weight: 700;
+}
+
+.score-sheet thead th:first-child {
+	color: var(--ivory-muted);
+}
+
+.score-sheet [data-active="true"] {
+	background: rgba(230, 192, 106, 0.12);
+}
+
+.score-sheet thead th[data-active="true"] {
+	color: var(--gold);
+	box-shadow: inset 0 -3px 0 var(--gold);
+}
+
+.score-name {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	max-width: 6.5rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.score-note,
+.score-progress {
+	display: block;
+	font-size: 0.68rem;
+	font-weight: 600;
+	color: var(--ivory-muted);
+}
+
+.score-manage {
+	display: inline-grid;
+	place-items: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	margin-inline: auto;
+	border-radius: 999px;
+	color: var(--ivory);
+}
+
+.score-sheet tbody[data-section="subtotal"] th,
+.score-sheet tbody[data-section="subtotal"] td {
+	color: var(--ivory-muted);
+	font-size: 0.82rem;
+}
+
+.score-sheet tr[data-total="true"] th,
+.score-sheet tr[data-total="true"] td {
+	border-bottom: 0;
+	font-family: var(--font-display);
+	font-size: 1.05rem;
+	font-weight: 700;
+	color: var(--gold);
+}
+
+.score-option {
+	min-width: 2.75rem;
+	min-height: 2.5rem;
+	padding: 0 0.5rem;
+	border: 1px dashed var(--gold);
+	border-radius: 0.6rem;
+	font-weight: 700;
+	color: var(--gold);
+	background: rgba(0, 0, 0, 0.3);
+}
+
+.score-option[data-zero="true"] {
+	border-color: var(--ivory-line);
+	color: var(--ivory-muted);
+}
+
+@media (hover: hover) {
+	.score-option:hover:not(:disabled) {
+		background: rgba(230, 192, 106, 0.22);
+	}
+}
+
+.dice-error {
+	position: fixed;
+	left: 50%;
+	bottom: max(1rem, env(safe-area-inset-bottom));
+	transform: translateX(-50%);
+	z-index: 30;
+	width: max-content;
+	max-width: calc(100% - 2rem);
+	padding: 0.5rem 0.9rem;
+	border-radius: 0.65rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: #fff;
+	background: #8f1f1f;
+	box-shadow: 0 8px 20px -8px #000;
+}
+
+.dice-standings {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	margin-bottom: 0.75rem;
+	text-align: left;
+}
+
+.dice-standings li {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	min-height: 2.75rem;
+	padding: 0.25rem 0.75rem;
+	border-radius: 0.6rem;
+	background: rgba(0, 0, 0, 0.3);
+}
+
+.dice-standings li[data-winner="true"] {
+	box-shadow: inset 0 0 0 1px var(--gold);
+	color: var(--gold);
+}
+
+.dice-rules-boxes {
+	display: grid;
+	gap: 0.5rem;
+}

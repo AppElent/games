@@ -55,7 +55,12 @@ function TricksRules({ lines }: { lines: ReturnType<typeof tricksRuleLines> }) {
 			<Section heading={r.goalHeading}>
 				<Lines lines={[lines.goal]} />
 			</Section>
-			{lines.passing.length > 0 ? (
+			{lines.bidding ? (
+				<Section heading={r.bidHeading}>
+					<Lines lines={lines.bidding} />
+				</Section>
+			) : null}
+			{lines.passing ? (
 				<Section heading={r.passHeading}>
 					<Lines lines={lines.passing} />
 				</Section>
@@ -88,7 +93,7 @@ export function RulesSheet({
 	open: boolean;
 	onClose: () => void;
 }) {
-	const { t } = useI18n();
+	const { t, locale } = useI18n();
 	const cards = t.games.cards;
 	const words = useCardWords();
 	const text = cards.games[game.id as CardGameId];
@@ -237,6 +242,51 @@ export function RulesSheet({
 									ace: resolved.rules.points.A,
 									lowAce: resolved.rules.lowAcePoints,
 									joker: resolved.rules.jokerPoints,
+								}),
+							]}
+						/>
+					</Section>
+				</>
+			) : resolved.family === "bank" ? (
+				<>
+					<Section heading={r.goalHeading}>
+						<Lines
+							lines={[fmt(r.bank.goal, { rounds: resolved.rules.rounds })]}
+						/>
+					</Section>
+					<Section heading={r.turnHeading}>
+						<Lines
+							lines={[
+								fmt(r.bank.stake, {
+									stakes: resolved.rules.stakes.join(", "),
+								}),
+								r.bank.values,
+								r.bank.hit,
+								...(resolved.rules.doubleDown ? [r.bank.double] : []),
+							]}
+						/>
+					</Section>
+					<Section heading={r.bankHeading}>
+						<Lines
+							lines={[
+								fmt(r.bank.bank, { stand: resolved.rules.bankStandsOn }),
+								...(resolved.rules.bankHitsSoft
+									? [
+											fmt(r.bank.bankSoft, {
+												stand: resolved.rules.bankStandsOn,
+											}),
+										]
+									: []),
+								r.bank.bankNatural,
+							]}
+						/>
+					</Section>
+					<Section heading={r.pointsHeading}>
+						<Lines
+							lines={[
+								r.bank.payout,
+								fmt(r.bank.natural, {
+									pays: resolved.rules.naturalPays.toLocaleString(locale),
 								}),
 							]}
 						/>

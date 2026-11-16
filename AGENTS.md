@@ -22,6 +22,7 @@ Before the task, read the matching project doc:
 | Adding a game | the `add-new-game` skill |
 | Changing how a game creates, joins, seats, starts, finishes or reopens a session, or a game route's fullscreen shell | [Game sessions](docs/contracts/game-sessions.md) |
 | Changing card games, the card engine, its stored state or seat claims | [Card games](docs/contracts/card-games.md), then [its decision](docs/adr/0001-card-games-use-rule-families-and-config.md) |
+| Changing dice games, the dice engine, its rolls, or the table machinery cards and dice share | [Dice games](docs/contracts/dice-games.md), then [its decision](docs/adr/0003-dice-games-share-the-table-machinery.md) |
 | Drafting puzzles, word packs, quiz sets or prompts | the `generate-game-content` skill |
 | Changing sign-in, account, theme sync, or how Clerk reaches Convex | [Auth](docs/contracts/auth.md) |
 | Changing which games the phone app offers, or its seats and saves | [Mobile app](docs/contracts/mobile-app.md), then [ADR 0002](docs/adr/0002-ship-every-game-on-web-and-mobile.md) |
@@ -47,7 +48,7 @@ Work lives in Linear, not GitHub Issues; do not open or track work as GitHub Iss
 
 - `ready-for-agent`: the issue has sharp, testable acceptance criteria and a blast radius, so an agent can pick it up.
 - `ready-for-human`: Eric must do or decide something. Add a comment saying what, where, and roughly how long.
-- The moment you start a T3 thread for an issue, post a Linear comment `T3 thread: <title> (<thread id>), started by <bot or fallback>` and move the issue to In Progress. An issue with such a comment is taken; do not start a second thread for it.
+- The moment you start a T3 thread for an issue, post a Linear comment `T3 thread: <title> (<thread id>), started by <hub, grok, or claude-code>` and move the issue to In Progress. An issue with such a comment is taken; do not start a second thread for it.
 
 Work in a worktree from `origin/main` on a branch `<type>/app-123-short-slug` (type: feat, fix, refactor, chore, docs, or test). Put `Fixes APP-123` in the PR description. End in a PR with tests (and a PR preview where the repo has one). Do not merge the PR yourself.
 
@@ -60,4 +61,4 @@ Blast radius (`low` / `med` / `high`, also `blast-radius:low|med|high` on the PR
 - med: data model changes with migration and rollback, new dependencies, CI/workflows, shared behaviour across several screens.
 - high: auth, payments, production config, secrets, deleting data, permissions, anything affecting other users without a way back.
 
-Agents never merge med or high PRs. Never read or change production secrets, and never approve production deployments.
+Coding agents never merge. The manager (the Claude Projects hub, the Grok fallback, or the Claude Code Chief of Staff thread) merges `low` and `med` after green CI, green QA, and council `PROCEED` (at least two reviewers ran, each 9 or higher, no blockers); `high` and the changes the [factory runbook](https://github.com/AppElent/developer-home/blob/main/RUNBOOK.md) lists as waiting for Eric stay open for Eric. Never read or change production secrets, and never approve production deployments.

@@ -4,6 +4,7 @@
  * which cards cross the table. No drawing and no framework.
  */
 import type { Messages } from "../i18n/en";
+import type { BankView } from "./bank";
 import {
 	type CardId,
 	cardFace,
@@ -12,11 +13,7 @@ import {
 	SUITS,
 	type Suit,
 } from "./deck";
-import {
-	type CardGameDefinition,
-	plainCardOption,
-	SEAT_SILENT_AFTER_MS,
-} from "./engine";
+import { type CardGameDefinition, plainCardOption } from "./engine";
 import type { CardEvent } from "./events";
 import {
 	arrangeHand,
@@ -136,16 +133,6 @@ export function opponentOrder(table: TableSeats): number[] {
 	return Array.from(
 		{ length: count - 1 },
 		(_, step) => (you + step + 1) % count,
-	);
-}
-
-/** Only a person can go quiet, and an autopilot seat keeps playing regardless. */
-export function seatIsSilent(seat: TableSeat, now: number) {
-	return (
-		seat.botIndex === null &&
-		!seat.autopilot &&
-		seat.lastSeen !== null &&
-		now - seat.lastSeen > SEAT_SILENT_AFTER_MS
 	);
 }
 
@@ -352,6 +339,10 @@ export function describeEvent(
 				: fmt(e.passReady, { name: name(event.seat) });
 		case "exchange":
 			return e.exchange;
+		case "bid":
+			return mine(event.seat)
+				? fmt(e.youBid, { count: event.count })
+				: fmt(e.bid, { name: name(event.seat), count: event.count });
 		case "trickWon":
 			if (event.points === 0) {
 				return mine(event.seat)
@@ -401,6 +392,52 @@ export function describeEvent(
 			return mine(event.seats[0])
 				? e.youWin
 				: fmt(e.win, { name: name(event.seats[0]) });
+		case "stake":
+			return mine(event.seat)
+				? countOf(event.amount, e.youStake)
+				: fmt(countOf(event.amount, e.stake), { name: name(event.seat) });
+		case "natural":
+			return mine(event.seat)
+				? e.youNatural
+				: fmt(e.natural, { name: name(event.seat) });
+		case "hit":
+		case "double": {
+			const params = {
+				card: cardName(cards, event.card),
+				total: event.total,
+				name: name(event.seat),
+			};
+			const [yours, theirs] =
+				event.type === "hit" ? [e.youHit, e.hit] : [e.youDouble, e.double];
+			return fmt(mine(event.seat) ? yours : theirs, params);
+		}
+		case "stand":
+			return mine(event.seat)
+				? fmt(e.youStand, { total: event.total })
+				: fmt(e.stand, { total: event.total, name: name(event.seat) });
+		case "bust":
+			return mine(event.seat)
+				? e.youBust
+				: fmt(e.bust, { name: name(event.seat) });
+		case "bankReveal":
+		case "bankDraw":
+			return fmt(event.type === "bankReveal" ? e.bankReveal : e.bankDraw, {
+				card: cardName(cards, event.card),
+				total: event.total,
+			});
+		case "settle": {
+			const result = table.you === null ? null : event.results[table.you];
+			if (result === null || result === undefined) {
+				return fmt(e.settle, { round: event.round });
+			}
+			if (result === 0) {
+				return e.settleYouEven;
+			}
+			return countOf(
+				Math.abs(result),
+				result > 0 ? e.settleYouWin : e.settleYouLose,
+			);
+		}
 	}
 }
 
@@ -491,6 +528,14 @@ export function tricksHint(
 	if (view.canSwap && view.turn !== you) {
 		return t.swapHint;
 	}
+	if (view.phase === "bidding") {
+		if (view.turn !== you) {
+			return null;
+		}
+		return view.blockedBid !== null
+			? fmt(t.bidDealer, { count: view.blockedBid })
+			: fmt(t.bidHint, { count: view.handSize });
+	}
 	if (view.phase === "passing") {
 		return view.passed
 			? t.passWaiting
@@ -531,7 +576,17 @@ export function tricksHint(
 	return t.lead;
 }
 
-/** The line under a seat: passed while cards are being chosen, else its points. */
+/** The bids made so far this deal, added up; null for a game without bidding. */
+export function bidTotal(view: Pick<TricksView, "bids">) {
+	return view.bids
+		? view.bids.reduce<number>((sum, bid) => sum + (bid ?? 0), 0)
+		: null;
+}
+
+/**
+ * The line under a seat: passed while cards are being chosen; in a bidding
+ * game its tricks against its bid; else its points.
+ */
 export function tricksSeatNote(
 	view: Pick<
 		TricksView,
@@ -544,6 +599,8 @@ export function tricksSeatNote(
 		| "folded"
 		| "out"
 		| "knock"
+		| "bids"
+		| "tricksTaken"
 	>,
 	seat: number,
 	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
@@ -555,7 +612,7 @@ export function tricksSeatNote(
 	if (view.stake !== null) {
 		const points = fmt(t.penaltyNote, {
 			total: view.totals[seat],
-			target: view.target,
+			target: view.target ?? "",
 		});
 		const knock = view.knock;
 		const status = view.out[seat]
@@ -570,6 +627,20 @@ export function tricksSeatNote(
 							: t.decidingNote
 						: null;
 		return status ? `${points} · ${status}` : points;
+	}
+	if (view.bids) {
+		const bid = view.bids[seat];
+		const total = view.totals[seat];
+		if (bid === null) {
+			return fmt(cards.tricks.seatTotal, { total });
+		}
+		return view.phase === "bidding"
+			? fmt(cards.tricks.seatBid, { bid, total })
+			: fmt(cards.tricks.seatTricks, {
+					bid,
+					taken: view.tricksTaken[seat],
+					total,
+				});
 	}
 	const round = view.roundPoints[seat];
 	return fmt(cards.tricks.seatScore, {
@@ -597,14 +668,31 @@ export function tricksRuleLines(
 	const lastTrick = rules.scoring === "lastTrick";
 	const ranks = (set: readonly (typeof RANKS)[number][]) =>
 		set.map(glyph).join(" ");
+	const bidding = rules.bidding ?? null;
+	const target = rules.target;
+	const outLimit = rules.matchEnd === "lastStanding" ? target : null;
 	return {
 		goal: [
-			lastTrick ? r.goalLastTrick : fmt(r.goal, { target: rules.target }),
-			...(rules.matchEnd === "lastStanding"
-				? [fmt(r.out, { target: rules.target })]
-				: []),
+			lastTrick
+				? r.goalLastTrick
+				: target === null
+					? rules.highWins
+						? r.goalLastHigh
+						: r.goalLastLow
+					: fmt(rules.highWins ? r.goalHigh : r.goal, { target }),
+			...(outLimit === null ? [] : [fmt(r.out, { target: outLimit })]),
 		].join(" "),
-		// Empty when nobody passes; the house rule that stops it says so itself.
+		/** Null when the game bids instead of passing. */
+		bidding: bidding
+			? [
+					...(rules.schedule === "fullDeck" || rules.schedule === "fourEach"
+						? []
+						: [r.schedules[rules.schedule]]),
+					r.bid,
+					...(bidding.dealerMayMatch ? [] : [r.dealerRule]),
+				]
+			: null,
+		// Null when nobody passes; a house rule that stops it says so itself.
 		passing: passing
 			? [
 					fmt(r.pass, {
@@ -615,16 +703,16 @@ export function tricksRuleLines(
 					}),
 					...(passing.cycle.includes("across") ? [r.passOdd] : []),
 				]
-			: [],
+			: null,
 		stakes: rules.knocking
 			? [
 					r.stake,
 					r.knock,
 					r.fold,
 					r.knockAgain,
-					...(rules.matchEnd === "lastStanding"
-						? [fmt(r.knockLimit, { target: rules.target })]
-						: []),
+					...(outLimit === null
+						? []
+						: [fmt(r.knockLimit, { target: outLimit })]),
 					...(rules.knocking.lastLife ? [r.lastLife] : []),
 					...(rules.swapHands ?? []).map((set) =>
 						fmt(r.swap, { ranks: ranks(set) }),
@@ -632,11 +720,12 @@ export function tricksRuleLines(
 				]
 			: [],
 		turn: [
-			...(rules.firstLead
-				? [fmt(r.firstLead, { card: faceName(cards, rules.firstLead) })]
-				: []),
+			...(rules.trumpChoice === "turnUp" ? [r.trumpTurnUp] : []),
+			rules.firstLead
+				? fmt(r.firstLead, { card: faceName(cards, rules.firstLead) })
+				: r.leftLeads,
 			r.follow,
-			r.trick,
+			rules.trumpChoice === "none" ? r.trick : r.trickTrump,
 			...(lastTrick ? [r.lastTrick] : []),
 			fmt(r.ranks, { ranks: ranks([...rules.ranks].reverse()) }),
 			...(breaking
@@ -649,6 +738,15 @@ export function tricksRuleLines(
 				: []),
 		],
 		points: [
+			...(bidding
+				? [
+						fmt(r.bidMet, {
+							exact: bidding.exact,
+							perTrick: bidding.perTrick,
+						}),
+						fmt(r.bidMissed, { perTrickOff: bidding.perTrickOff }),
+					]
+				: []),
 			...Object.entries(rules.suitPoints).map(([suit, points]) =>
 				fmt(countOf(points as number, r.pointSuit), {
 					suit: cards.suits[suit as Suit],
@@ -699,9 +797,22 @@ export function tricksRoundLabel(
 		view.matchEnd === "lastStanding" ? t.outRoundLabel : t.roundLabel,
 		{
 			round: view.round,
-			target: view.target,
+			target: view.target ?? "",
 		},
 	);
+}
+
+/** How the match is won, for the scores sheet. */
+export function tricksWinsLine(
+	view: Pick<TricksView, "target" | "matchEnd">,
+	rules: Pick<TricksRules, "highWins">,
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+) {
+	const t = cards.tricks;
+	if (view.matchEnd === "lastStanding" && view.target !== null) {
+		return fmt(t.lastStanding, { target: view.target });
+	}
+	return rules.highWins ? t.highestWins : t.lowestWins;
 }
 
 /** Everything a rummy turn allows, given what this player has selected and set aside. */
@@ -793,6 +904,64 @@ export function rummyMeldAction(turn: RummyTurn, meld: Meld) {
 	}
 	const order = turn.keepsOne ? fitOnMeld(meld, [...turn.selection]) : null;
 	return order ? { type: "add" as const, order } : null;
+}
+
+/** What to do now at a bank table; null when there is nothing for this player to do. */
+export function bankHint(
+	view: BankView,
+	you: number | null,
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+) {
+	if (you === null || view.phase === "finished") {
+		return null;
+	}
+	if (view.phase === "stake") {
+		return view.canStake ? cards.bank.stakeHint : cards.bank.stakeWaiting;
+	}
+	if (view.turn !== you) {
+		return null;
+	}
+	return fmt(cards.bank.playHint, { total: view.handTotals[you] });
+}
+
+/** Points won or lost in a round, signed: "+3", "−2" or "±0". */
+export function signedPoints(
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	points: number,
+) {
+	if (points === 0) {
+		return cards.bank.resultEven;
+	}
+	return fmt(points > 0 ? cards.bank.resultWin : cards.bank.resultLose, {
+		count: Math.abs(points),
+	});
+}
+
+/**
+ * A player's line at a bank table: their total and what the hand is played
+ * for, or last round's result while the next one is being picked.
+ */
+export function bankSeatNote(
+	words: Pick<CardWords, "cards" | "fmt" | "countOf">,
+	view: BankView,
+	seat: number,
+) {
+	const { cards, countOf } = words;
+	const stake = view.stakes[seat];
+	if (view.phase !== "play") {
+		const last = view.results.at(-1)?.[seat];
+		return last === undefined ? "" : signedPoints(words, last);
+	}
+	const total = view.handTotals[seat];
+	const state =
+		total > 21
+			? cards.bank.over
+			: view.hands[seat].length === 2 && total === 21
+				? cards.bank.natural
+				: String(total);
+	return stake === null
+		? state
+		: `${state} · ${countOf(stake, cards.bank.playingFor)}`;
 }
 
 /** What to do now on a rummy turn; null when it isn't this player's turn. */
@@ -1018,11 +1187,12 @@ export function nextFreshCards(
 	};
 }
 
-/** Where a card can travel: a seat, the player's hand, the piles, or a meld. */
+/** Where a card can travel: a seat, the player's hand, the piles, a meld, or the bank. */
 export type FlightZone =
 	| "hand"
 	| "stock"
 	| "discard"
+	| "bank"
 	| `seat-${number}`
 	| `meld-${number}`;
 
@@ -1085,11 +1255,18 @@ export function planFlights(
 	for (const event of events) {
 		switch (event.type) {
 			case "deal":
-				for (let round = 0; round < DEAL_CARDS_PER_SEAT; round += 1) {
+				for (
+					let pass = 0;
+					pass < (event.perSeat ?? DEAL_CARDS_PER_SEAT);
+					pass += 1
+				) {
 					for (let seat = 0; seat < seatCount; seat += 1) {
 						if (!event.skipped?.includes(seat)) {
 							fly(null, "stock", seatZone(seat));
 						}
+					}
+					if (event.bank) {
+						fly(null, "stock", "bank");
 					}
 				}
 				break;
@@ -1124,6 +1301,13 @@ export function planFlights(
 				break;
 			case "swap":
 				fly(event.card, seatZone(event.seat), `meld-${event.meldId}`);
+				break;
+			case "hit":
+			case "double":
+				fly(event.card, "stock", seatZone(event.seat));
+				break;
+			case "bankDraw":
+				fly(event.card, "stock", "bank");
 				break;
 			case "exchange":
 				for (let seat = 0; seat < seatCount; seat += 1) {

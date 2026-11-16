@@ -54,8 +54,8 @@ function intercept(
 /**
  * A backend whose calls act as the participant their arguments name
  * (`participantId`, or `hostParticipantId`), as that player's own client
- * would: signed in as its account, or sending its guest id. Card games are
- * left alone, since their seat secret is the proof. `impostor(t)` calls with
+ * would: signed in as its account, or sending its guest id. Card and dice
+ * tables are left alone, since their seat secret is the proof. `impostor(t)` calls with
  * no proof at all.
  */
 export function setup() {
@@ -65,7 +65,7 @@ export function setup() {
 		if (
 			typeof named !== "string" ||
 			"guestId" in args ||
-			getFunctionName(fn).startsWith("cardGames:")
+			/^(cardGames|diceGames):/.test(getFunctionName(fn))
 		) {
 			return [backend, args];
 		}

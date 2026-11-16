@@ -17,11 +17,11 @@ verify the app with the [mobile runbook](../../docs/runbooks/mobile.md).
   deterministic).
 - Online games call the same Convex functions as web through
   `src/convex/api.ts`, and host through each game's `create`
-  (`backgammon.create`, `hitster.create`, `cardGames.createTable`), named with
+  (`backgammon.create`, `hitster.create`, `cardGames.createTable`, `diceGames.createTable`), named with
   the game's screens in `src/features/play/app-games.ts`. A device's seat in an
   online session is stored by `src/features/sessions/session-seats.ts`. Every
   game screen resolves its `participantId` from there, never from route params.
-  A card table also needs the seat's `seatSecret`: the phone makes one
+  A card or dice table also needs the seat's `seatSecret`: the phone makes one
   (`seat-secret.ts`), sends it with `createTable` or `joinByCode`, and keeps it
   in the same store, because a participant id alone is public.
 - Local saves (Sudoku puzzles, the one pass-and-play backgammon match) use

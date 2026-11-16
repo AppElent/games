@@ -6,7 +6,15 @@ import type { CardId, Suit } from "./deck";
  * A deal's `skipped` seats are out of the match and were dealt nothing.
  */
 export type CardEvent = { seq: number } & (
-	| { type: "deal"; round: number; skipped?: number[] }
+	| {
+			type: "deal";
+			round: number;
+			skipped?: number[];
+			/** Cards dealt to each seat; three are animated when absent. */
+			perSeat?: number;
+			/** The bank was dealt cards too, one per pass. */
+			bank?: boolean;
+	  }
 	| { type: "play"; seat: number; card: CardId; suit?: Suit }
 	| { type: "draw"; seat: number; count: number; source: "stock" | "discard" }
 	| { type: "penalty"; seat: number; count: number }
@@ -26,6 +34,7 @@ export type CardEvent = { seq: number } & (
 	| { type: "roundEnd"; winner: number | null; round: number }
 	| { type: "passReady"; seat: number }
 	| { type: "exchange"; shift: number; count: number }
+	| { type: "bid"; seat: number; count: number }
 	| { type: "trickWon"; seat: number; points: number }
 	| { type: "broken"; suit: Suit }
 	| { type: "moon"; seat: number }
@@ -43,6 +52,21 @@ export type CardEvent = { seq: number } & (
 			points: number;
 	  }
 	| { type: "win"; seats: number[] }
+	| { type: "stake"; seat: number; amount: number }
+	| { type: "natural"; seat: number }
+	| { type: "hit"; seat: number; card: CardId; total: number }
+	| { type: "double"; seat: number; card: CardId; total: number }
+	| { type: "stand"; seat: number; total: number }
+	| { type: "bust"; seat: number; total: number }
+	| { type: "bankReveal"; card: CardId; total: number }
+	| { type: "bankDraw"; card: CardId; total: number }
+	| {
+			type: "settle";
+			round: number;
+			/** Points each seat won (positive) or lost (negative). */
+			results: number[];
+			bankTotal: number;
+	  }
 );
 
 type CardEventInput = CardEvent extends infer E

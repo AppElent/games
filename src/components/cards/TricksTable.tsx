@@ -2,6 +2,7 @@ import { isRedSuit } from "@arcadeclub/core/cards/art";
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import {
+	bidTotal,
 	cardTilt,
 	openTrickSlots,
 	seatName,
@@ -10,9 +11,10 @@ import {
 	tricksHint,
 	tricksRoundLabel,
 	tricksSeatNote,
+	tricksWinsLine,
 } from "@arcadeclub/core/cards/table-view";
 import type { TricksView } from "@arcadeclub/core/cards/tricks";
-import { ListOrdered } from "lucide-react";
+import { ListOrdered, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
@@ -28,6 +30,85 @@ import { cardAttr, zoneAttr } from "./zones";
 const SHAKE_MS = 300;
 
 const NO_MELD = () => null;
+
+/** The trump suit for this deal, with the card turned up for it. */
+function TrumpFlag({ view }: { view: TricksView }) {
+	const cards = useMessages().games.cards;
+	const t = cards.tricks;
+	const cardName = useCardName();
+	if (!view.trump) {
+		return <span className="flag">{t.noTrumpPill}</span>;
+	}
+	return (
+		<span
+			className="flag"
+			data-tone={isRedSuit(view.trump) ? "red" : undefined}
+			title={
+				view.turnedUp
+					? fmt(t.turnedUpLabel, { card: cardName(view.turnedUp) })
+					: undefined
+			}
+		>
+			{view.turnedUp ? (
+				<span className="flag-card" aria-hidden="true">
+					<PlayingCard card={view.turnedUp} />
+				</span>
+			) : (
+				<SuitIcon suit={view.trump} />
+			)}
+			{fmt(t.trumpPill, { suit: cards.suits[view.trump] })}
+		</span>
+	);
+}
+
+/** Pick a number of tricks and bid it; numbers the rules forbid can't be sent. */
+function BidPicker({
+	view,
+	pending,
+	onBid,
+}: {
+	view: TricksView;
+	pending: boolean;
+	onBid: (count: number) => void;
+}) {
+	const t = useMessages().games.cards.tricks;
+	const [draft, setDraft] = useState(view.legalBids[0] ?? 0);
+	return (
+		<div className="bid-picker">
+			<fieldset className="bid-stepper" aria-label={t.bidValue}>
+				<button
+					type="button"
+					className="stepper-btn"
+					aria-label={t.bidLess}
+					disabled={draft <= 0}
+					onClick={() => setDraft((count) => count - 1)}
+				>
+					<Minus className="h-4 w-4" aria-hidden="true" />
+				</button>
+				<output aria-live="polite" className="bid-value">
+					{draft}
+				</output>
+				<button
+					type="button"
+					className="stepper-btn"
+					aria-label={t.bidMore}
+					disabled={draft >= view.handSize}
+					onClick={() => setDraft((count) => count + 1)}
+				>
+					<Plus className="h-4 w-4" aria-hidden="true" />
+				</button>
+			</fieldset>
+			<button
+				type="button"
+				className="btn-gold"
+				disabled={pending || !view.legalBids.includes(draft)}
+				onClick={() => onBid(draft)}
+			>
+				{fmt(t.bidButton, { count: draft })}
+			</button>
+		</div>
+	);
+}
 
 /**
  * The cards on the table: the trick being played, or the last one with its
@@ -127,7 +208,11 @@ export function TricksTable({
 	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "playing";
+	const bidding = view.phase === "bidding";
+	// Someone has the turn: to bid, or to play a card.
+	const live = playing || bidding;
 	const mine = playing && view.turn === you;
+	const myBid = bidding && view.turn === you;
 	const choosing = view.phase === "passing" && you !== null && !view.passed;
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";
@@ -191,16 +276,18 @@ export function TricksTable({
 		controls.act({ type: "passCards", cards: selected });
 	}
 
-	const roundLabel = tricksRoundLabel(view, words);
-	const howToWin =
-		view.matchEnd === "lastStanding"
-			? fmt(t.lastStanding, { target: view.target })
-			: t.lowestWins;
-	const best = Math.min(...view.totals);
+	const roundLabel =
+		view.deals === null
+			? tricksRoundLabel(view, words)
+			: `${fmt(t.dealLabel, { round: view.round, deals: view.deals })} · ${plural(locale, view.handSize, t.cardsEach)}`;
+	const highWins = rules.highWins === true;
+	const best = highWins ? Math.max(...view.totals) : Math.min(...view.totals);
 	const standings = view.totals
 		.map((total, seat) => ({ total, seat }))
-		.sort((a, b) => a.total - b.total);
+		.sort((a, b) => (highWins ? b.total - a.total : a.total - b.total));
 	const lastRound = view.scores.at(-1);
+	const bids = bidTotal(view);
+	const winsLine = tricksWinsLine(view, rules, words);
 
 	return (
 		<TableFrame
@@ -228,7 +315,7 @@ export function TricksTable({
 				<SeatRow
 					table={table}
 					handCounts={view.handCounts}
-					turn={playing ? view.turn : null}
+					turn={live ? view.turn : null}
 					flash={flights.flash}
 					controls={controls}
 					note={(seat) => tricksSeatNote(view, seat, words)}
@@ -241,6 +328,14 @@ export function TricksTable({
 						{view.stake !== null ? (
 							<span className="flag" data-tone="gold">
 								{fmt(t.stakePill, { stake: view.stake })}
+							</span>
+						) : null}
+						{rules.trumpChoice !== "none" && live ? (
+							<TrumpFlag view={view} />
+						) : null}
+						{bids !== null && live ? (
+							<span className="flag">
+								{fmt(t.bidsPill, { bids, tricks: view.handSize })}
 							</span>
 						) : null}
 						{view.phase === "passing" ? (
@@ -274,10 +369,18 @@ export function TricksTable({
 					controls={controls}
 					events={view.events}
 					turn={view.turn}
-					live={playing}
-					mine={mine}
+					live={live}
+					mine={mine || myBid}
 					hint={tricksHint(view, you, words, rules)}
 				>
+					{myBid ? (
+						<BidPicker
+							key={`${view.round}-${view.blockedBid}`}
+							view={view}
+							pending={controls.pending}
+							onBid={(count) => controls.act({ type: "bid", count })}
+						/>
+					) : null}
 					{choosing ? (
 						<button
 							type="button"
@@ -379,7 +482,7 @@ export function TricksTable({
 							empty={t.noScores}
 							totalLabel={t.scoreTotal}
 						/>
-						<p className="mt-3 text-sm text-[var(--ivory-muted)]">{howToWin}</p>
+						<p className="mt-3 text-sm text-[var(--ivory-muted)]">{winsLine}</p>
 					</Sheet>
 					<Sheet
 						open={view.phase === "roundOver" || (finished && !resultShown)}
@@ -418,8 +521,17 @@ export function TricksTable({
 										key={seat}
 										className="flex justify-between gap-3"
 									>
-										<span className="truncate">
+										<span className="min-w-0 truncate">
 											{seatName(cards, table, seat)}
+											{view.bids ? (
+												<span className="text-[var(--ivory-muted)]">
+													{" · "}
+													{fmt(t.roundBid, {
+														bid: view.bids[seat] ?? 0,
+														taken: view.tricksTaken[seat],
+													})}
+												</span>
+											) : null}
 										</span>
 										<span className="font-bold">
 											{plural(locale, points, t.totalPoints)}
