@@ -9,6 +9,7 @@ import type { Rng } from "../random";
 import type { BotMove } from "../table-engine";
 import {
 	type DiceEvent,
+	diceOutcomes,
 	faceCounts,
 	nextSeat,
 	pushDiceEvent,
@@ -561,36 +562,6 @@ function bestOption(rules: ScoresheetRules, options: readonly ScoreOption[]) {
 	return { option: best, value: bestValue };
 }
 
-const outcomeCache = new Map<number, Array<{ values: number[]; p: number }>>();
-
-/** Every result of throwing `count` dice as a sorted multiset, with its chance. */
-function outcomes(count: number) {
-	const cached = outcomeCache.get(count);
-	if (cached) {
-		return cached;
-	}
-	const factorial = (n: number): number => (n <= 1 ? 1 : n * factorial(n - 1));
-	const result: Array<{ values: number[]; p: number }> = [];
-	const walk = (values: number[], from: number) => {
-		if (values.length === count) {
-			const counts = faceCounts(values);
-			const ways =
-				factorial(count) /
-				counts.reduce((product, n) => product * factorial(n), 1);
-			result.push({ values: [...values], p: ways / 6 ** count });
-			return;
-		}
-		for (let face = from; face <= 6; face += 1) {
-			values.push(face);
-			walk(values, face);
-			values.pop();
-		}
-	};
-	walk([], 1);
-	outcomeCache.set(count, result);
-	return result;
-}
-
 /** Which dice to keep for the reroll, or null when scoring now is better. */
 function planKeep(
 	rules: ScoresheetRules,
@@ -624,7 +595,7 @@ function planKeep(
 		}
 		tried.add(key);
 		let expected = lookaheadBonus;
-		for (const outcome of outcomes(dice.length - keep.length)) {
+		for (const outcome of diceOutcomes(dice.length - keep.length)) {
 			expected += outcome.p * ratingOf([...kept, ...outcome.values]);
 		}
 		if (!best || expected > best.value) {

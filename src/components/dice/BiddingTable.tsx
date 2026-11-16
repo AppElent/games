@@ -15,14 +15,21 @@ import {
 	diceSeatName,
 	revealSentences,
 } from "@arcadeclub/core/dice/table-view";
-import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { Bot, Minus, MoreHorizontal, Plus } from "lucide-react";
 import { useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
+import { DicePage } from "./Chrome";
 import { DieFace } from "./Die";
 import { DiceEnd } from "./End";
-import { AutopilotNotice, DiceTableFrame, useSeatMenu } from "./TableParts";
+import { DiceRulesSheet } from "./RulesSheet";
+import {
+	AutopilotNote,
+	DiceTableTop,
+	SeatMenu,
+	SpectatorNote,
+	seatManagement,
+} from "./TableParts";
 import type { DiceTableBundle, DiceTableControls } from "./useDiceTable";
 
 type Props = {
@@ -38,37 +45,60 @@ const FACES = [1, 2, 3, 4, 5, 6] as const;
 export function BiddingTable({ game, table, view, controls }: Props) {
 	const { locale } = useI18n();
 	const dice = useMessages().games.dice;
-	const words = { dice, locale };
+	const text = dice.games[game.id];
+	const [rulesOpen, setRulesOpen] = useState(false);
+	const news = biddingNews({ dice, locale }, table, view);
+
 	return (
-		<DiceTableFrame
-			game={game}
-			table={table}
-			controls={controls}
-			kicker={fmt(dice.bidding.round, { round: view.round })}
-			news={biddingNews(words, table, view)}
-			end={
-				view.phase === "finished" ? (
-					<DiceEnd
-						table={table}
-						winners={view.winners}
-						heading={dice.bidding.standings}
-						rows={biddingStandings(view).map(({ seat, outIn }) => ({
-							seat,
-							value:
-								view.winners.includes(seat) || outIn === null
-									? dice.bidding.lastStanding
-									: fmt(dice.bidding.outIn, { round: outIn }),
-						}))}
-						controls={controls}
-					/>
-				) : null
-			}
+		<DicePage
+			title={text.name}
+			felt={game.felt}
+			crumbs={[
+				{ label: dice.hub.kicker, to: "/dice" },
+				{ label: text.name, to: "/dice/$gameId", params: { gameId: game.id } },
+				{ label: dice.table.crumb },
+			]}
 		>
+			<DiceTableTop
+				kicker={fmt(dice.bidding.round, { round: view.round })}
+				name={text.name}
+				onRules={() => setRulesOpen(true)}
+			/>
+			<SpectatorNote table={table} />
 			<div className="dice-layout">
 				<YourCup table={table} view={view} controls={controls} />
 				<BidBoard table={table} view={view} controls={controls} />
 			</div>
-		</DiceTableFrame>
+			<p className="sr-only" aria-live="polite">
+				{news ? <span key={news.seq}>{news.text}</span> : null}
+			</p>
+			{controls.error ? (
+				<p className="dice-error" role="alert">
+					{controls.error}
+				</p>
+			) : null}
+			{view.phase === "finished" ? (
+				<DiceEnd
+					table={table}
+					winners={view.winners}
+					heading={dice.bidding.standings}
+					rows={biddingStandings(view).map(({ seat, outIn }) => ({
+						seat,
+						value:
+							view.winners.includes(seat) || outIn === null
+								? dice.bidding.lastStanding
+								: fmt(dice.bidding.outIn, { round: outIn }),
+					}))}
+					controls={controls}
+				/>
+			) : null}
+			<DiceRulesSheet
+				game={game}
+				options={table.options}
+				open={rulesOpen}
+				onClose={() => setRulesOpen(false)}
+			/>
+		</DicePage>
 	);
 }
 
@@ -133,7 +163,7 @@ function YourCup({ table, view, controls }: PanelProps) {
 					controls={controls}
 				/>
 			) : null}
-			<AutopilotNotice table={table} controls={controls} />
+			<AutopilotNote table={table} controls={controls} />
 		</section>
 	);
 }
@@ -251,7 +281,7 @@ function BidBoard({ table, view, controls }: PanelProps) {
 	const dice = useMessages().games.dice;
 	const bidding = dice.bidding;
 	const now = useNow(15_000);
-	const menu = useSeatMenu(table, controls, now);
+	const [menuSeat, setMenuSeat] = useState<number | null>(null);
 	const words = { dice, locale };
 	const name = (seat: number) => diceSeatName(dice, table, seat);
 	const current = view.bids.at(-1);
@@ -284,7 +314,7 @@ function BidBoard({ table, view, controls }: PanelProps) {
 			<ul className="bid-seats">
 				{view.diceCounts.map((count, seat) => {
 					const entry = table.seats[seat];
-					const human = entry.botIndex === null;
+					const { human, silent, canManage } = seatManagement(table, seat, now);
 					const active = view.phase === "playing" && view.turn === seat;
 					return (
 						<li
@@ -299,7 +329,7 @@ function BidBoard({ table, view, controls }: PanelProps) {
 									<Bot className="h-3.5 w-3.5" aria-hidden="true" />
 								) : null}
 								<span className="truncate">{name(seat)}</span>
-								{seatIsSilent(entry, now) ? (
+								{silent ? (
 									<span className="score-note">{dice.table.offline}</span>
 								) : null}
 							</span>
@@ -308,12 +338,12 @@ function BidBoard({ table, view, controls }: PanelProps) {
 									? bidding.out
 									: plural(locale, count, bidding.diceLeft)}
 							</span>
-							{menu.canManage(seat) ? (
+							{canManage ? (
 								<button
 									type="button"
 									className="score-manage"
 									aria-label={fmt(dice.table.seatMenu, { name: name(seat) })}
-									onClick={() => menu.open(seat)}
+									onClick={() => setMenuSeat(seat)}
 								>
 									<MoreHorizontal className="h-4 w-4" />
 								</button>
@@ -343,7 +373,12 @@ function BidBoard({ table, view, controls }: PanelProps) {
 			{view.reveal ? (
 				<RevealPanel table={table} view={view} reveal={view.reveal} />
 			) : null}
-			{menu.sheet}
+			<SeatMenu
+				table={table}
+				seat={menuSeat}
+				controls={controls}
+				onClose={() => setMenuSeat(null)}
+			/>
 		</section>
 	);
 }

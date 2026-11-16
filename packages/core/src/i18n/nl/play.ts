@@ -25,6 +25,6 @@ export const play = {
 		"card-games":
 			"Pesten, Klaverjassen, Jokeren, Hartenjagen, Boerenbridge en meer, tegen de computer of vrienden.",
 		"dice-games":
-			"Yatzy, Mexen en Blufpoker, alleen, tegen de computer of met vrienden.",
+			"Yatzy, 10.000, Mexen en Blufpoker, alleen, tegen de computer of met vrienden.",
 	},
 } satisfies typeof en;

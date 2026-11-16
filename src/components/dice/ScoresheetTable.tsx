@@ -6,14 +6,21 @@ import {
 	standings,
 	turnStep,
 } from "@arcadeclub/core/dice/table-view";
-import { seatIsSilent } from "@arcadeclub/core/table-engine";
 import { Bot, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { useNow } from "#/lib/use-now";
+import { DicePage } from "./Chrome";
 import { DieFace } from "./Die";
 import { DiceEnd } from "./End";
-import { AutopilotNotice, DiceTableFrame, useSeatMenu } from "./TableParts";
+import { DiceRulesSheet } from "./RulesSheet";
+import {
+	AutopilotNote,
+	DiceTableTop,
+	SeatMenu,
+	SpectatorNote,
+	seatManagement,
+} from "./TableParts";
 import type { DiceTableBundle, DiceTableControls } from "./useDiceTable";
 
 type Props = {
@@ -26,35 +33,59 @@ type Props = {
 /** A score-sheet game in play: the dice, the sheet, and the end of the game. */
 export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const dice = useMessages().games.dice;
+	const text = dice.games[game.id];
+	const [rulesOpen, setRulesOpen] = useState(false);
+	const news = latestNews({ dice, fmt }, table, view.events);
+
 	return (
-		<DiceTableFrame
-			game={game}
-			table={table}
-			controls={controls}
-			kicker={fmt(dice.table.round, {
-				round: Math.min(view.round, view.rounds),
-				rounds: view.rounds,
-			})}
-			news={latestNews({ dice, fmt }, table, view.events)}
-			end={
-				view.phase === "finished" ? (
-					<DiceEnd
-						table={table}
-						winners={view.winners}
-						rows={standings(view).map(({ seat, total }) => ({
-							seat,
-							value: total,
-						}))}
-						controls={controls}
-					/>
-				) : null
-			}
+		<DicePage
+			title={text.name}
+			felt={game.felt}
+			crumbs={[
+				{ label: dice.hub.kicker, to: "/dice" },
+				{ label: text.name, to: "/dice/$gameId", params: { gameId: game.id } },
+				{ label: dice.table.crumb },
+			]}
 		>
+			<DiceTableTop
+				kicker={fmt(dice.table.round, {
+					round: Math.min(view.round, view.rounds),
+					rounds: view.rounds,
+				})}
+				name={text.name}
+				onRules={() => setRulesOpen(true)}
+			/>
+			<SpectatorNote table={table} />
 			<div className="dice-layout">
 				<DiceTray table={table} view={view} controls={controls} />
 				<ScoreSheet game={game} table={table} view={view} controls={controls} />
 			</div>
-		</DiceTableFrame>
+			<p className="sr-only" aria-live="polite">
+				{news ? <span key={news.seq}>{news.text}</span> : null}
+			</p>
+			{controls.error ? (
+				<p className="dice-error" role="alert">
+					{controls.error}
+				</p>
+			) : null}
+			{view.phase === "finished" ? (
+				<DiceEnd
+					table={table}
+					winners={view.winners}
+					rows={standings(view).map(({ seat, total }) => ({
+						seat,
+						value: total,
+					}))}
+					controls={controls}
+				/>
+			) : null}
+			<DiceRulesSheet
+				game={game}
+				options={table.options}
+				open={rulesOpen}
+				onClose={() => setRulesOpen(false)}
+			/>
+		</DicePage>
 	);
 }
 
@@ -88,7 +119,6 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 				: step === "score"
 					? dice.table.scoreHint
 					: null;
-
 	return (
 		<section
 			className="cards-panel dice-tray"
@@ -176,7 +206,7 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 					</p>
 				</div>
 			) : null}
-			<AutopilotNotice table={table} controls={controls} />
+			<AutopilotNote table={table} controls={controls} />
 		</section>
 	);
 }
@@ -185,7 +215,7 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 function ScoreSheet({ game, table, view, controls }: Props) {
 	const dice = useMessages().games.dice;
 	const now = useNow(15_000);
-	const menu = useSeatMenu(table, controls, now);
+	const [menuSeat, setMenuSeat] = useState<number | null>(null);
 	const rules = diceRules(game, table.options);
 	const you = table.you;
 	const step = turnStep(view, you);
@@ -261,8 +291,11 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 							<th scope="col">{dice.table.category}</th>
 							{seats.map((seat) => {
 								const entry = table.seats[seat];
-								const human = entry.botIndex === null;
-								const silent = seatIsSilent(entry, now);
+								const { human, silent, canManage } = seatManagement(
+									table,
+									seat,
+									now,
+								);
 								return (
 									<th
 										key={seat}
@@ -279,14 +312,14 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 										{silent ? (
 											<span className="score-note">{dice.table.offline}</span>
 										) : null}
-										{menu.canManage(seat) ? (
+										{canManage ? (
 											<button
 												type="button"
 												className="score-manage"
 												aria-label={fmt(dice.table.seatMenu, {
 													name: name(seat),
 												})}
-												onClick={() => menu.open(seat)}
+												onClick={() => setMenuSeat(seat)}
 											>
 												<MoreHorizontal className="h-4 w-4" />
 											</button>
@@ -320,7 +353,12 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 					</tfoot>
 				</table>
 			</div>
-			{menu.sheet}
+			<SeatMenu
+				table={table}
+				seat={menuSeat}
+				controls={controls}
+				onClose={() => setMenuSeat(null)}
+			/>
 		</section>
 	);
 }

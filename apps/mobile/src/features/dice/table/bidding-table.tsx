@@ -19,8 +19,7 @@ import {
 	diceSeatName,
 	revealSentences,
 } from "@arcadeclub/core/dice/table-view";
-import { seatIsSilent } from "@arcadeclub/core/table-engine";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, plural, useI18n } from "../../../i18n";
@@ -34,11 +33,21 @@ import {
 } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
+import { Notice } from "../../../ui/notice";
+import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { CountStepper } from "../../table/setup-fields";
+import { DiceRulesSheet } from "../rules/dice-rules-sheet";
 import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
-import { AutopilotNotice, DiceTableFrame, useSeatMenu } from "./table-parts";
+import {
+	AutopilotNote,
+	DiceTableHeader,
+	SeatMenu,
+	SpectatorNote,
+	seatManagement,
+	useAnnounce,
+} from "./table-parts";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
 import { useNow } from "./use-now";
 
@@ -59,14 +68,17 @@ const SMALL_DIE = 22;
 export function BiddingTable({ game, table, view, controls }: Props) {
 	const { t, locale } = useI18n();
 	const dice = t.games.dice;
+	const text = dice.games[game.id];
+	const [rulesOpen, setRulesOpen] = useState(false);
+	const openRules = useCallback(() => setRulesOpen(true), []);
+	const news = biddingNews({ dice, locale }, table, view);
+	useAnnounce(news);
+
 	return (
-		<DiceTableFrame
-			game={game}
-			table={table}
-			controls={controls}
-			news={biddingNews({ dice, locale }, table, view)}
-			end={
-				view.phase === "finished" ? (
+		<>
+			<DiceTableHeader name={text.name} onRules={openRules} />
+			<Screen>
+				{view.phase === "finished" ? (
 					<DiceEndPanel
 						table={table}
 						winners={view.winners}
@@ -80,12 +92,24 @@ export function BiddingTable({ game, table, view, controls }: Props) {
 						}))}
 						controls={controls}
 					/>
-				) : null
-			}
-			tray={<YourCup table={table} view={view} controls={controls} />}
-		>
-			<BidBoard table={table} view={view} controls={controls} />
-		</DiceTableFrame>
+				) : null}
+				<YourCup table={table} view={view} controls={controls} />
+				<SpectatorNote table={table} />
+				<Notice message={controls.error} />
+				{news ? (
+					<AppText variant="caption" testID="dice-last-score">
+						{news.text}
+					</AppText>
+				) : null}
+				<BidBoard table={table} view={view} controls={controls} />
+			</Screen>
+			<DiceRulesSheet
+				game={game}
+				options={table.options}
+				open={rulesOpen}
+				onClose={() => setRulesOpen(false)}
+			/>
+		</>
 	);
 }
 
@@ -177,7 +201,7 @@ function YourCup({ table, view, controls }: PanelProps) {
 						controls={controls}
 					/>
 				) : null}
-				<AutopilotNotice table={table} controls={controls} />
+				<AutopilotNote table={table} controls={controls} />
 			</View>
 		</Card>
 	);
@@ -299,7 +323,7 @@ function BidBoard({ table, view, controls }: PanelProps) {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const now = useNow();
-	const menu = useSeatMenu(table, controls, now);
+	const [menuSeat, setMenuSeat] = useState<number | null>(null);
 	const words = { dice, locale };
 	const name = (seat: number) => diceSeatName(dice, table, seat);
 	const current = view.bids.at(-1);
@@ -333,7 +357,7 @@ function BidBoard({ table, view, controls }: PanelProps) {
 			{seats.map((seat) => {
 				const count = view.diceCounts[seat];
 				const active = view.phase === "playing" && view.turn === seat;
-				const silent = seatIsSilent(table.seats[seat], now);
+				const { silent, canManage } = seatManagement(table, seat, now);
 				const label = `${name(seat)}, ${
 					count === 0 ? bidding.out : plural(locale, count, bidding.diceLeft)
 				}`;
@@ -361,14 +385,14 @@ function BidBoard({ table, view, controls }: PanelProps) {
 						</AppText>
 					</>
 				);
-				return menu.canManage(seat) ? (
+				return canManage ? (
 					<Pressable
 						key={seat}
 						accessibilityRole="button"
 						accessibilityLabel={`${label}. ${fmt(dice.table.seatMenu, {
 							name: name(seat),
 						})}`}
-						onPress={() => menu.open(seat)}
+						onPress={() => setMenuSeat(seat)}
 						testID={`dice-seat-${seat}`}
 						style={[styles.seat, active && styles.active]}
 					>
@@ -410,7 +434,12 @@ function BidBoard({ table, view, controls }: PanelProps) {
 			{view.reveal ? (
 				<RevealPanel table={table} view={view} reveal={view.reveal} />
 			) : null}
-			{menu.sheet}
+			<SeatMenu
+				table={table}
+				seat={menuSeat}
+				controls={controls}
+				onClose={() => setMenuSeat(null)}
+			/>
 		</Card>
 	);
 }

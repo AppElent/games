@@ -7,6 +7,7 @@ import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame
 import { BiddingTable } from "./bidding-table";
 import { DiceLobby } from "./dice-lobby";
 import { MexenTable } from "./mexen-table";
+import { PushluckTable } from "./pushluck-table";
 import { ScoresheetTable } from "./scoresheet-table";
 import { useDiceTable } from "./use-dice-table";
 
@@ -57,6 +58,15 @@ export function DiceTableScreen({ sessionId }: { sessionId: string }) {
 		case "scoresheet":
 			return view.family === "scoresheet" ? (
 				<ScoresheetTable
+					game={game}
+					table={table}
+					view={view}
+					controls={controls}
+				/>
+			) : null;
+		case "pushluck":
+			return view.family === "pushluck" ? (
+				<PushluckTable
 					game={game}
 					table={table}
 					view={view}

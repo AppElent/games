@@ -10,8 +10,13 @@ import {
 	standings,
 	turnStep,
 } from "@arcadeclub/core/dice/table-view";
-import { seatIsSilent } from "@arcadeclub/core/table-engine";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import {
 	Pressable,
 	ScrollView,
@@ -31,10 +36,20 @@ import {
 } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
+import { Notice } from "../../../ui/notice";
+import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
+import { DiceRulesSheet } from "../rules/dice-rules-sheet";
 import { DiceEndPanel } from "./dice-end-panel";
 import { DieFace } from "./die-face";
-import { AutopilotNotice, DiceTableFrame, useSeatMenu } from "./table-parts";
+import {
+	AutopilotNote,
+	DiceTableHeader,
+	SeatMenu,
+	SpectatorNote,
+	seatManagement,
+	useAnnounce,
+} from "./table-parts";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
 import { useNow } from "./use-now";
 
@@ -53,14 +68,17 @@ const SEAT_COLUMN = 64;
 export function ScoresheetTable({ game, table, view, controls }: Props) {
 	const { t } = useI18n();
 	const dice = t.games.dice;
+	const text = dice.games[game.id];
+	const [rulesOpen, setRulesOpen] = useState(false);
+	const openRules = useCallback(() => setRulesOpen(true), []);
+	const news = latestNews({ dice, fmt }, table, view.events);
+	useAnnounce(news);
+
 	return (
-		<DiceTableFrame
-			game={game}
-			table={table}
-			controls={controls}
-			news={latestNews({ dice, fmt }, table, view.events)}
-			end={
-				view.phase === "finished" ? (
+		<>
+			<DiceTableHeader name={text.name} onRules={openRules} />
+			<Screen>
+				{view.phase === "finished" ? (
 					<DiceEndPanel
 						table={table}
 						winners={view.winners}
@@ -70,12 +88,24 @@ export function ScoresheetTable({ game, table, view, controls }: Props) {
 						}))}
 						controls={controls}
 					/>
-				) : null
-			}
-			tray={<DiceTray table={table} view={view} controls={controls} />}
-		>
-			<ScoreSheet game={game} table={table} view={view} controls={controls} />
-		</DiceTableFrame>
+				) : null}
+				<DiceTray table={table} view={view} controls={controls} />
+				<SpectatorNote table={table} />
+				<Notice message={controls.error} />
+				{news ? (
+					<AppText variant="caption" testID="dice-last-score">
+						{news.text}
+					</AppText>
+				) : null}
+				<ScoreSheet game={game} table={table} view={view} controls={controls} />
+			</Screen>
+			<DiceRulesSheet
+				game={game}
+				options={table.options}
+				open={rulesOpen}
+				onClose={() => setRulesOpen(false)}
+			/>
+		</>
 	);
 }
 
@@ -127,7 +157,6 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 				: step === "score"
 					? dice.table.scoreHint
 					: null;
-
 	return (
 		<Card>
 			<View style={styles.tray}>
@@ -249,7 +278,7 @@ function DiceTray({ table, view, controls }: Omit<Props, "game">) {
 						</AppText>
 					</>
 				) : null}
-				<AutopilotNotice table={table} controls={controls} />
+				<AutopilotNote table={table} controls={controls} />
 			</View>
 		</Card>
 	);
@@ -262,7 +291,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const now = useNow();
-	const menu = useSeatMenu(table, controls, now);
+	const [menuSeat, setMenuSeat] = useState<number | null>(null);
 	const rules = diceRules(game, table.options);
 	const you = table.you;
 	const step = turnStep(view, you);
@@ -394,8 +423,7 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 							{dice.table.category}
 						</AppText>
 						{seats.map((seat) => {
-							const entry = table.seats[seat];
-							const silent = seatIsSilent(entry, now);
+							const { silent, canManage } = seatManagement(table, seat, now);
 							const label = (
 								<>
 									<AppText
@@ -413,14 +441,14 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 									) : null}
 								</>
 							);
-							return menu.canManage(seat) ? (
+							return canManage ? (
 								<Pressable
 									key={seat}
 									accessibilityRole="button"
 									accessibilityLabel={fmt(dice.table.seatMenu, {
 										name: name(seat),
 									})}
-									onPress={() => menu.open(seat)}
+									onPress={() => setMenuSeat(seat)}
 									testID={`dice-seat-${seat}`}
 									style={[styles.cell, view.turn === seat && styles.active]}
 								>
@@ -454,7 +482,12 @@ function ScoreSheet({ game, table, view, controls }: Props) {
 					)}
 				</View>
 			</ScrollView>
-			{menu.sheet}
+			<SeatMenu
+				table={table}
+				seat={menuSeat}
+				controls={controls}
+				onClose={() => setMenuSeat(null)}
+			/>
 		</Card>
 	);
 }

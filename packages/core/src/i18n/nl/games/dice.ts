@@ -204,6 +204,67 @@ export const dice = {
 			allSame: "Alle {count} stenen gelijk: {points} punten.",
 		},
 	},
+	pushluck: {
+		table: {
+			round: "Ronde {round}",
+			target: "Wie haalt eerst {target}",
+			turnTotal: "Deze beurt",
+			selected: "+{points} apart gelegd",
+			setAsideLabel: "Apart gelegd deze beurt",
+			nothingSetAside: "Nog niets apart gelegd",
+			startHint: "Gooi alle {count} stenen om je beurt te beginnen.",
+			pickHint:
+				"Tik op stenen die scoren om ze apart te leggen, gooi dan de rest of zet je punten vast.",
+			roll: "Gooien",
+			rollRest: {
+				one: "Gooi {count} steen",
+				other: "Gooi {count} stenen",
+			},
+			hotDice: "Alles raak! Gooi alle {count}",
+			bank: "{points} vastzetten",
+			notScoring: "Niet al die stenen scoren.",
+			pickFirst: "Leg minstens één scorende steen apart.",
+			needOpening:
+				"Je hebt {needed} in één beurt nodig om op het bord te komen.",
+			pickTag: "Apart",
+			bust: "Mis!",
+			scoreboard: "Stand",
+			scoreLabel: "{name}: {score} van {target}",
+			notOnBoard: "Nog niet op het bord",
+			finalRound:
+				"Laatste ronde: de rest krijgt nog één beurt om {name} in te halen.",
+			lastBust: "{name} gooide mis en verloor {points}",
+			lastBustEmpty: "{name} gooide mis",
+			lastBank: "{name} zette {points} vast, nu {total}",
+			lastFinalRound: "{name} haalde het doel: laatste ronde",
+			lastHotDice:
+				"{name} gooide hete stenen bij {points}, alle zes gaan weer mee",
+		},
+		rules: {
+			goal: "Zet als eerste {target} punten vast.",
+			finalRound:
+				"Haalt iemand {target}, dan krijgt de rest nog één beurt. De hoogste score wint.",
+			noFinalRound: "Wie als eerste {target} haalt, wint meteen.",
+			turnRoll:
+				"Gooi alle {dice} stenen en leg minstens één steen apart die scoort.",
+			turnChoice:
+				"Gooi dan de rest voor meer punten, of zet de punten van deze beurt vast.",
+			bust: "Scoort een worp niets, dan gooi je mis: je verliest de punten van deze beurt.",
+			hotDice:
+				"Leg je alle {dice} stenen apart, dan gooi je ze allemaal opnieuw en houd je je punten.",
+			opening:
+				"Je hebt {points} in één beurt nodig voordat je eerste punten tellen.",
+			scoringHeading: "Wat scoort",
+			single: "Eén losse {face}: {points}",
+			threeKind: "Drie gelijke: de ogen maal {perFace}; drie enen: {ones}",
+			manyDouble:
+				"Vier, vijf of zes gelijke: drie gelijke, verdubbeld per extra steen.",
+			manyFixed: "Vier gelijke {four}, vijf gelijke {five}, zes gelijke {six}.",
+			threePairs: "Drie paren: {points}",
+			straight: "1-2-3-4-5-6: {points}",
+			sameRoll: "Stenen tellen alleen samen met stenen uit dezelfde worp.",
+		},
+	},
 	categories: {
 		ones: "Enen",
 		twos: "Tweeën",
@@ -301,6 +362,38 @@ export const dice = {
 				yahtzeeSheet: {
 					label: "Yahtzee-scoreblok",
 					hint: "Dertien vakken: full house 25, straten 30 en 40, extra Yahtzees 100 punten.",
+				},
+			},
+		},
+		tienduizend: {
+			name: "10.000",
+			tagline: "Zes stenen, waag je kans",
+			blurb:
+				"Leg enen, vijven en drie gelijke apart, gooi door of zet vast. Eén worp zonder punten en je beurt is weg. Wie haalt eerst 10.000?",
+			options: {
+				opening350: {
+					label: "350 om op het bord te komen",
+					hint: "Je eerste punten tellen pas bij minstens 350 in één beurt.",
+				},
+				opening500: {
+					label: "500 om op het bord te komen",
+					hint: "Je eerste punten tellen pas bij minstens 500 in één beurt.",
+				},
+				fixedKinds: {
+					label: "Vaste punten voor vier of meer gelijke",
+					hint: "Vier gelijke 1.000, vijf gelijke 2.000, zes gelijke 3.000, in plaats van verdubbelen.",
+				},
+				noThreePairs: {
+					label: "Geen drie paren",
+					hint: "Drie paren leveren samen niets op.",
+				},
+				noStraight: {
+					label: "Geen straat",
+					hint: "1-2-3-4-5-6 telt alleen de 1 en de 5.",
+				},
+				noFinalRound: {
+					label: "Geen laatste ronde",
+					hint: "Wie als eerste 10.000 haalt, wint meteen.",
 				},
 			},
 		},
