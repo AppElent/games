@@ -8,7 +8,7 @@ export function JoinGamePanel() {
 
 	return (
 		<form
-			className="club-panel rounded-lg p-4"
+			className="club-join-panel"
 			onSubmit={(event) => {
 				event.preventDefault();
 				const joinCode = normalizeJoinCode(code);
@@ -17,25 +17,28 @@ export function JoinGamePanel() {
 				}
 			}}
 		>
+			<h2 className="club-title text-xl font-bold">
+				{messages.common.joinPanel.title}
+			</h2>
+			<p className="text-sm leading-5 text-[var(--club-muted)]">
+				{messages.common.joinPanel.subtitle}
+			</p>
 			<label
 				className="mb-2 block text-sm font-bold text-[var(--club-text)]"
 				htmlFor="join-code"
 			>
-				{messages.common.joinPanel.title}
+				{messages.common.session.roomCode}
 			</label>
-			<div className="flex gap-2">
+			<div className="flex flex-col gap-3">
 				<input
 					id="join-code"
 					value={code}
 					onChange={(event) => setCode(event.target.value)}
-					placeholder={messages.common.session.roomCode}
-					className="min-w-0 flex-1 rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-sm text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-cyan-300"
+					placeholder={messages.common.joinPanel.codePlaceholder}
+					className="club-join-code"
 				/>
-				<button
-					type="submit"
-					className="rounded-md bg-cyan-300 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-200"
-				>
-					{messages.common.header.join}
+				<button type="submit" className="club-join-submit">
+					{messages.common.joinPanel.submit}
 				</button>
 			</div>
 		</form>

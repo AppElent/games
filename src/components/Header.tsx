@@ -9,13 +9,13 @@ export default function Header() {
 	const messages = useMessages();
 
 	return (
-		<header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/72 px-4 backdrop-blur-xl">
-			<nav className="club-wrap flex flex-wrap items-center gap-x-4 gap-y-3 py-3">
+		<header className="club-header sticky top-0 z-50">
+			<nav className="club-wrap flex flex-wrap items-center gap-x-4 gap-y-0 py-1.5 sm:py-2.5">
 				<Link
 					to="/"
-					className="inline-flex items-center gap-2 rounded-md border border-white/60 bg-white/10 px-3 py-2 text-sm font-extrabold text-white no-underline"
+					className="inline-flex min-h-11 items-center gap-2 text-[17px] font-extrabold no-underline"
 				>
-					<span className="flex h-7 w-7 items-center justify-center rounded-md bg-cyan-300 text-slate-950">
+					<span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--club-cyan)] text-[var(--club-on-accent)]">
 						<Gamepad2 className="h-4 w-4" />
 					</span>
 					Arcade Club

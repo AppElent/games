@@ -231,3 +231,85 @@ code {
     font-size: 16px !important;
   }
 }
+
+:root {
+  --club-surface: #121626;
+  --club-surface-hover: #222a44;
+  --club-surface-pressed: #192034;
+  --club-on-accent: #04121a;
+  --club-amber: #fbbf24;
+  --club-violet: #a78bfa;
+}
+.light {
+  --club-surface: #ffffff;
+  --club-surface-hover: #e2e8f0;
+  --club-surface-pressed: #cbd5e1;
+  --club-on-accent: #ffffff;
+  --club-amber: #92400e;
+  --club-violet: #6d28d9;
+}
+.club-catalog-card, .club-join-panel {
+  background: var(--club-surface);
+  border: 1px solid var(--club-line);
+  border-radius: 18px;
+  color: var(--club-text);
+}
+.club-catalog-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  text-decoration: none;
+}
+.club-catalog-card:hover { background: var(--club-surface-hover); }
+.club-catalog-card:active { background: var(--club-surface-pressed); }
+.club-catalog-card:focus-visible, .club-join-code:focus-visible, .club-header :focus-visible {
+  outline: 2px solid var(--club-cyan);
+  outline-offset: 3px;
+}
+.club-card-heading { display: flex; align-items: flex-start; gap: 12px; }
+.club-game-icon {
+  display: flex;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--game-hue);
+  background: color-mix(in srgb, var(--game-hue) 16%, transparent);
+}
+.club-join-panel { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.club-join-code {
+  width: 100%; min-width: 0; height: 64px;
+  border: 1px solid var(--club-line-strong); border-radius: 12px;
+  background: var(--club-bg); color: var(--club-text);
+  padding: 0 16px; font-size: 30px; font-weight: 800; letter-spacing: 6px;
+  text-transform: uppercase;
+}
+.club-join-code::placeholder { color: var(--club-soft); }
+.club-join-submit {
+  min-height: 52px; border-radius: 999px;
+  background: var(--club-cyan); color: var(--club-on-accent); font-weight: 700;
+}
+.club-header {
+  --club-text: #f8fafc;
+  --club-muted: #aab6cc;
+  --club-line: rgba(148, 163, 184, .18);
+  --club-line-strong: rgba(148, 163, 184, .6);
+  --club-cyan: #22d3ee;
+  --club-on-accent: #04121a;
+  background: #121626; color: var(--club-text); border-bottom: 1px solid var(--club-line);
+}
+.club-header-button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; height: 44px; padding: 0 12px;
+  border: 1px solid var(--club-line-strong); border-radius: 999px;
+  color: var(--club-text); background: transparent; font-size: 13px; font-weight: 700;
+}
+.club-header .club-nav-link { display: inline-flex; align-items: center; min-height: 44px; }
+.club-home, .club-header .club-wrap { width: min(1180px, calc(100% - 40px)); }
+@media (min-width: 640px) {
+  .club-catalog-card { padding: 24px; min-height: 260px; }
+  .club-card-heading { flex-direction: column; gap: 16px; }
+  .club-game-icon { width: 48px; height: 48px; }
+}
