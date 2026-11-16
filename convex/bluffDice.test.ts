@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
+import { hostGame } from "./lib/hostedSession";
 import {
 	advance,
 	afterCommits,
@@ -20,7 +21,6 @@ import {
 	outsider,
 	type ParticipantId,
 	type SessionId,
-	sessionCount,
 	setup,
 	signedInHost,
 	type T,
@@ -33,18 +33,32 @@ freezeClock();
 const ALL_FOURS = 0.5;
 const FOURS = [4, 4, 4, 4, 4];
 
-/** The client flow: one `create`. */
+/**
+ * A legacy room: new Bluff Dice rooms are no longer created (they open as
+ * liar's dice tables), so the tests seed the row a room used to start with.
+ */
 async function newRoom(t: T) {
 	const host = signedInHost(t);
-	const { sessionId, participantId, joinCode } = await host.mutation(
-		api.bluffDice.create,
-		HOSTED,
-	);
+	const { session, participantId } = await host.run(async (ctx) => {
+		const hosted = await hostGame(ctx, "bluff-dice", HOSTED);
+		await ctx.db.insert("bluffDiceStates", {
+			sessionId: hosted.session._id,
+			phase: "lobby",
+			turnOrder: [],
+			hands: [],
+			activeIndex: 0,
+			roundNumber: 0,
+			claimHistory: [],
+			createdAt: T0,
+			updatedAt: T0,
+		});
+		return hosted;
+	});
 	return {
 		host,
-		sessionId,
+		sessionId: session._id,
 		hostId: participantId,
-		joinCode: joinCode as string,
+		joinCode: session.joinCode as string,
 	};
 }
 
@@ -604,29 +618,6 @@ describe("getMyDice", () => {
 			}),
 			"notInGame",
 		);
-	});
-});
-
-describe("create", () => {
-	it("returns a code a guest can type, and no link", async () => {
-		const t = setup();
-		const created = await signedInHost(t).mutation(
-			api.bluffDice.create,
-			HOSTED,
-		);
-		expect(created.shareToken).toBeUndefined();
-		const joined = await joinWithCode(
-			t,
-			created.joinCode as string,
-			"guest_two",
-		);
-		expect(joined.sessionId).toBe(created.sessionId);
-	});
-
-	it("needs an account to host, and leaves nothing behind without one", async () => {
-		const t = setup();
-		await expectCode(t.mutation(api.bluffDice.create, HOSTED), "signInToHost");
-		expect(await sessionCount(t)).toBe(0);
 	});
 });
 

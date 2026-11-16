@@ -15,6 +15,19 @@ import {
 	normalizeHouseRules,
 	type TableEngine,
 } from "../table-engine";
+import {
+	applyBidding,
+	BIDDING_ACTIONS,
+	type BiddingAction,
+	type BiddingRules,
+	type BiddingState,
+	type BiddingView,
+	botBiddingMove,
+	createBidding,
+	nextBiddingStarter,
+	viewBidding,
+} from "./bidding";
+import { liarsDice } from "./games/liars-dice";
 import { mexen } from "./games/mexen";
 import { tienduizend } from "./games/tienduizend";
 import { yatzy } from "./games/yatzy";
@@ -63,7 +76,7 @@ type Definition<Family extends string, Rules> = {
 	showcase: readonly number[];
 	players: { min: number; max: number };
 	rules: Rules;
-	/** House rules: each one is a patch over `rules`, off by default. */
+	/** House rules: each one is a patch over `rules`, off unless marked `on`. */
 	options: ReadonlyArray<HouseRule<Rules>>;
 };
 
@@ -86,6 +99,12 @@ type FamilyTypes = {
 		action: PushluckAction;
 		view: PushluckView;
 	};
+	bidding: {
+		rules: BiddingRules;
+		state: BiddingState;
+		action: BiddingAction;
+		view: BiddingView;
+	};
 };
 
 type Family = keyof FamilyTypes;
@@ -99,6 +118,7 @@ export const DICE_GAMES = {
 	yatzy,
 	tienduizend,
 	mexen,
+	"liars-dice": liarsDice,
 } as const satisfies Record<string, DiceGameDefinition>;
 
 export type DiceGameId = keyof typeof DICE_GAMES;
@@ -108,6 +128,7 @@ export type DiceGameOf<F extends Family> = Extract<DiceGame, { family: F }>;
 export type ScoresheetGame = DiceGameOf<"scoresheet">;
 export type MexenGame = DiceGameOf<"mexen">;
 export type PushluckGame = DiceGameOf<"pushluck">;
+export type BiddingGame = DiceGameOf<"bidding">;
 export const DICE_GAME_IDS = Object.keys(DICE_GAMES) as DiceGameId[];
 
 export function isDiceGameId(value: string): value is DiceGameId {
@@ -128,10 +149,12 @@ export function getDiceGame(id: string): DiceGame {
 /** Everything the engine asks of a dice family. */
 type FamilyModule<F extends Family> = {
 	actions: Record<FamilyTypes[F]["action"]["type"], true>;
+	/** A family that starts with dice on the table rolls them from `random`. */
 	create: (
 		rules: FamilyTypes[F]["rules"],
 		seats: number,
 		starter: number,
+		random: Rng,
 	) => FamilyTypes[F]["state"];
 	nextStarter: (state: FamilyTypes[F]["state"]) => number;
 	/** Every roll draws from `random`, which the server passes fresh on each move. */
@@ -151,6 +174,7 @@ type FamilyModule<F extends Family> = {
 		rules: FamilyTypes[F]["rules"],
 		state: FamilyTypes[F]["state"],
 		bots: readonly number[],
+		random: Rng,
 	) => BotMove<FamilyTypes[F]["action"]> | null;
 };
 
@@ -179,6 +203,14 @@ const FAMILIES: { [F in Family]: FamilyModule<F> } = {
 		view: viewPushluck,
 		bot: botPushluckMove,
 	},
+	bidding: {
+		actions: BIDDING_ACTIONS,
+		create: createBidding,
+		nextStarter: nextBiddingStarter,
+		apply: applyBidding,
+		view: viewBidding,
+		bot: botBiddingMove,
+	},
 };
 
 function familyOf<F extends Family>(family: F): FamilyModule<F> {
@@ -198,6 +230,7 @@ export function createDiceGame<F extends Family>(
 	options: readonly string[],
 	seats: number,
 	starter = 0,
+	random: Rng = Math.random,
 ): FamilyTypes[F]["state"] {
 	if (seats < game.players.min || seats > game.players.max) {
 		throw new GameRuleError("notEnoughPlayers");
@@ -206,6 +239,7 @@ export function createDiceGame<F extends Family>(
 		diceRules(game, options),
 		seats,
 		starter,
+		random,
 	);
 }
 
@@ -246,8 +280,14 @@ export function diceBotMove<F extends Family>(
 	options: readonly string[],
 	state: FamilyTypes[F]["state"],
 	bots: readonly number[],
+	random: Rng = Math.random,
 ): BotMove<FamilyTypes[F]["action"]> | null {
-	return familyOf<F>(game.family).bot(diceRules(game, options), state, bots);
+	return familyOf<F>(game.family).bot(
+		diceRules(game, options),
+		state,
+		bots,
+		random,
+	);
 }
 
 /**
@@ -260,12 +300,12 @@ export const DICE_ENGINE: TableEngine<DiceGameState, DiceAction, DiceView> = {
 	players: (gameId) => getDiceGame(gameId).players,
 	normalizeOptions: (gameId, options) =>
 		normalizeHouseRules(getDiceGame(gameId).options, options),
-	create: (gameId, options, seats, _random, starter) =>
-		createDiceGame(getDiceGame(gameId), options, seats, starter),
+	create: (gameId, options, seats, random, starter) =>
+		createDiceGame(getDiceGame(gameId), options, seats, starter, random),
 	apply: (gameId, options, state, seat, action, random) =>
 		applyDiceAction(getDiceGame(gameId), options, state, seat, action, random),
-	bot: (gameId, options, state, bots) =>
-		diceBotMove(getDiceGame(gameId), options, state, bots),
+	bot: (gameId, options, state, bots, random) =>
+		diceBotMove(getDiceGame(gameId), options, state, bots, random),
 	view: (gameId, options, state, seat) =>
 		viewDiceGame(getDiceGame(gameId), options, state, seat),
 	nextStarter: (state) => familyOf(state.family).nextStarter(state),

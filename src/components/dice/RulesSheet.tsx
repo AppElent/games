@@ -1,4 +1,5 @@
 import {
+	type BiddingGame,
 	type DiceGame,
 	diceRules,
 	type MexenGame,
@@ -87,6 +88,8 @@ function RulesBody({
 			return <PushluckRules game={game} options={options} />;
 		case "mexen":
 			return <MexenRules game={game} options={options} />;
+		case "bidding":
+			return <BiddingRules game={game} options={options} />;
 	}
 }
 
@@ -215,6 +218,37 @@ function PushluckRules({
 			</Section>
 			<Section heading={dice.pushluck.rules.scoringHeading}>
 				<Lines lines={lines.scoring} />
+			</Section>
+		</>
+	);
+}
+
+/** The round, then each house rule that changes it, said in full. */
+function BiddingRules({
+	game,
+	options,
+}: {
+	game: BiddingGame;
+	options: readonly string[];
+}) {
+	const dice = useMessages().games.dice;
+	const rules = diceRules(game, options);
+	const r = dice.rules;
+	const b = r.bidding;
+	return (
+		<>
+			<Section heading={r.goalHeading}>
+				<p className="text-sm leading-snug">{b.goal}</p>
+			</Section>
+			<Section heading={b.roundHeading}>
+				<ul className="flex flex-col gap-1.5 text-sm leading-snug">
+					<li>{fmt(b.roll, { dice: rules.startingDice })}</li>
+					<li>{b.bid}</li>
+					<li>{b.call}</li>
+					{rules.wildOnes ? <li>{b.wildOnes}</li> : null}
+					{rules.spotOn ? <li>{b.spotOn}</li> : null}
+					<li>{b.next}</li>
+				</ul>
 			</Section>
 		</>
 	);

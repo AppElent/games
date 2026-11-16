@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import type { BiddingView } from "@arcadeclub/core/dice/bidding";
 import type { DiceAction, DiceView } from "@arcadeclub/core/dice/engine";
 import type {
 	PushluckState,
@@ -450,5 +451,125 @@ describe("a solo 10.000 table", () => {
 		expect(table.status).toBe("playing");
 		expect(table.view.scores).toEqual([0, 0, 0]);
 		expect(table.view.turn).toBe(1);
+	});
+});
+
+describe("a solo liar's dice table", () => {
+	const liars = (overrides: Record<string, unknown> = {}) =>
+		tableArgs({ title: "Liar's Dice", gameId: "liars-dice", ...overrides });
+
+	async function cups(t: T) {
+		const state = (await rawState(t)).game as { cups: number[][] };
+		return state.cups;
+	}
+
+	it("needs a computer opponent to play alone", async () => {
+		const t = setup();
+		await expectCode(
+			t.mutation(api.diceGames.createTable, liars()),
+			"notEnoughPlayers",
+		);
+	});
+
+	it("shows each player only their own cup until the reveal", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.diceGames.createTable,
+			liars({ bots: 2, options: ["wildOnes"] }),
+		);
+		const me = creds(sessionId, participantId);
+		const table = await read<BiddingView>(t, me);
+		const [mine, ...others] = await cups(t);
+		expect(table.view.yourDice).toEqual(mine);
+		expect(table.view.diceCounts).toEqual([5, 5, 5]);
+		expect(table.view.rules.wildOnes).toBe(true);
+		expect(JSON.stringify(table.view)).not.toContain("cups");
+		expect(others.every((cup) => cup.length === 5)).toBe(true);
+
+		const spectator = await read<BiddingView>(t, { sessionId });
+		expect(spectator.you).toBeNull();
+		expect(spectator.view.yourDice).toEqual([]);
+	});
+
+	it("takes bids and calls through the server, then lets the bots finish", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.diceGames.createTable,
+			liars({ bots: 2, options: ["spotOn", "threeDice"] }),
+		);
+		const me = creds(sessionId, participantId);
+		await expectCode(
+			t.mutation(api.diceGames.act, { ...me, action: { type: "liar" } }),
+			"noClaimToChallenge",
+		);
+		await expectCode(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: { type: "bid", quantity: 10, face: 2 },
+			}),
+			"claimImpossible",
+		);
+		await t.mutation(api.diceGames.act, {
+			...me,
+			action: { type: "bid", quantity: 1, face: 2 },
+		});
+		let table = await read<BiddingView>(t, me);
+		expect(table.view.diceCounts).toEqual([3, 3, 3]);
+		expect(table.view.bids).toEqual([{ seat: 0, quantity: 1, face: 2 }]);
+		await expectCode(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: { type: "bid", quantity: 2, face: 2 },
+			}),
+			"notYourTurn",
+		);
+
+		await t.mutation(api.diceGames.setAutopilot, { ...me, seat: 0, on: true });
+		await runBots(t);
+		table = await read<BiddingView>(t, me);
+		expect(table.status).toBe("finished");
+		expect(table.view.winners).toHaveLength(1);
+		expect(table.view.diceCounts.filter((count) => count > 0)).toHaveLength(1);
+		const session = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(session?.status).toBe("completed");
+	});
+
+	it("refuses another family's moves and a call the house rules leave out", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.diceGames.createTable,
+			liars({ bots: 1 }),
+		);
+		const me = creds(sessionId, participantId);
+		await expectCode(
+			t.mutation(api.diceGames.act, {
+				...me,
+				action: { type: "roll", keep: [] },
+			}),
+			"cardsWrongAction",
+		);
+		await expectCode(
+			t.mutation(api.diceGames.act, { ...me, action: { type: "spotOn" } }),
+			"diceSpotOnOff",
+		);
+	});
+
+	it("rejects a bid that carries its own dice", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.diceGames.createTable,
+			liars({ bots: 1 }),
+		);
+		await expect(
+			t.mutation(api.diceGames.act, {
+				...creds(sessionId, participantId),
+				action: {
+					type: "bid",
+					quantity: 1,
+					face: 2,
+					dice: [2, 2, 2, 2, 2],
+				} as DiceAction,
+			}),
+		).rejects.toThrow(/Validator error/);
 	});
 });

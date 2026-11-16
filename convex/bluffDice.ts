@@ -8,7 +8,6 @@ import {
 } from "@arcadeclub/core/bluff-dice";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { gameError, rules } from "./lib/errors";
 import {
@@ -23,12 +22,6 @@ import {
 	seatArgs,
 	startSession,
 } from "./lib/gameSession";
-import {
-	createdSession,
-	createdSessionValidator,
-	hostedSessionArgs,
-	hostGame,
-} from "./lib/hostedSession";
 
 function requireActive(
 	state: Doc<"bluffDiceStates">,
@@ -41,31 +34,6 @@ function requireActive(
 		throw gameError("notYourTurn");
 	}
 }
-
-async function insertState(ctx: MutationCtx, sessionId: Id<"gameSessions">) {
-	const now = Date.now();
-	return await ctx.db.insert("bluffDiceStates", {
-		sessionId,
-		phase: "lobby",
-		turnOrder: [],
-		hands: [],
-		activeIndex: 0,
-		roundNumber: 0,
-		claimHistory: [],
-		createdAt: now,
-		updatedAt: now,
-	});
-}
-
-export const create = mutation({
-	args: hostedSessionArgs,
-	returns: createdSessionValidator,
-	handler: async (ctx, args) => {
-		const hosted = await hostGame(ctx, "bluff-dice", args);
-		await insertState(ctx, hosted.session._id);
-		return createdSession(hosted);
-	},
-});
 
 export const start = mutation({
 	args: seatArgs,

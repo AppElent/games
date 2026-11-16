@@ -78,6 +78,7 @@ export const serverErrors = {
 	diceNotScoring: "Elke steen die je apart legt moet punten opleveren.",
 	diceBelowOpening:
 		"Je hebt {needed} punten in één beurt nodig om op het bord te komen; dit is {have}.",
+	diceSpotOnOff: "Aan deze tafel speel je niet met precies goed.",
 	cardsKnockTooHigh:
 		"Kloppen mag met {limit} of minder; dit laat {deadwood} over.",
 	cardsAfterKnock: "Er is geklopt: alleen aanleggen kan nog.",

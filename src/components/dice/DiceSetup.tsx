@@ -1,5 +1,8 @@
 import { type DiceGameId, getDiceGame } from "@arcadeclub/core/dice/engine";
-import { toggleHouseRule } from "@arcadeclub/core/table-engine";
+import {
+	initialHouseRules,
+	toggleHouseRule,
+} from "@arcadeclub/core/table-engine";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { HostGate } from "#/components/games/HostGate";
@@ -26,7 +29,9 @@ export function DiceSetup({ gameId }: { gameId: DiceGameId }) {
 	>;
 	const [mode, setMode] = useState<TableMode>("computer");
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 1));
-	const [options, setOptions] = useState<string[]>([]);
+	const [options, setOptions] = useState<string[]>(() =>
+		initialHouseRules(game.options),
+	);
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const navigate = useNavigate();
 	const table = useCreateTable("dice-games", api.diceGames.createTable, (id) =>

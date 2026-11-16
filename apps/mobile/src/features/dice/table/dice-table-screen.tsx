@@ -4,6 +4,7 @@ import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
 import { useI18n } from "../../../i18n";
 import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
+import { BiddingTable } from "./bidding-table";
 import { DiceLobby } from "./dice-lobby";
 import { MexenTable } from "./mexen-table";
 import { PushluckTable } from "./pushluck-table";
@@ -41,6 +42,15 @@ export function DiceTableScreen({ sessionId }: { sessionId: string }) {
 	// The stored state was dealt by this game, so its family always matches.
 	// A family without a branch here fails to compile.
 	switch (game.family) {
+		case "bidding":
+			return view.family === "bidding" ? (
+				<BiddingTable
+					game={game}
+					table={table}
+					view={view}
+					controls={controls}
+				/>
+			) : null;
 		case "mexen":
 			return view.family === "mexen" ? (
 				<MexenTable game={game} table={table} view={view} controls={controls} />

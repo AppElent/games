@@ -97,7 +97,7 @@ const GAME_CATALOG: CatalogEntries = {
 	"bluff-dice": {
 		accent: "orange",
 		icon: Dices,
-		route: "/bluff-dice/new",
+		route: "/dice/liars-dice",
 		sessionPath: (sessionId) => `/bluff-dice/${sessionId}`,
 	},
 	"squad-surge": {
@@ -120,10 +120,15 @@ const GAME_CATALOG: CatalogEntries = {
 	},
 };
 
-const VISIBLE_GAMES: readonly GameCatalogItem[] = GAME_TYPES.map((type) => ({
-	type,
-	...GAME_CATALOG[type],
-}));
+/**
+ * Games that keep their sessions but no longer get a tile. Bluff Dice plays on
+ * as liar's dice among the dice games; its old rooms still open here.
+ */
+const UNLISTED: ReadonlySet<GameType> = new Set(["bluff-dice"]);
+
+const VISIBLE_GAMES: readonly GameCatalogItem[] = GAME_TYPES.filter(
+	(type) => !UNLISTED.has(type),
+).map((type) => ({ type, ...GAME_CATALOG[type] }));
 
 export function getVisibleGames() {
 	return VISIBLE_GAMES;

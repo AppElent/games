@@ -75,6 +75,7 @@ export const serverErrors = {
 	diceNotScoring: "Every die you set aside has to score.",
 	diceBelowOpening:
 		"You need {needed} points in one turn to get on the board; this is {have}.",
+	diceSpotOnOff: "This table doesn't play spot on.",
 	cardsKnockTooHigh:
 		"You can knock with {limit} or less; this leaves {deadwood}.",
 	cardsAfterKnock: "Someone knocked: only laying off is left.",

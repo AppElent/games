@@ -3,6 +3,7 @@
  * every box's line comes from its rule, so a new sheet needs no new text.
  */
 import {
+	type BiddingGame,
 	type DiceGame,
 	diceRules,
 	type MexenGame,
@@ -92,6 +93,8 @@ function RulesBody({
 			return <PushluckRules game={game} options={options} />;
 		case "mexen":
 			return <MexenRules game={game} options={options} />;
+		case "bidding":
+			return <BiddingRules game={game} options={options} />;
 	}
 }
 
@@ -219,6 +222,44 @@ function PushluckRules({
 			</Section>
 			<Section heading={dice.pushluck.rules.scoringHeading}>
 				<Lines lines={lines.scoring} />
+			</Section>
+		</>
+	);
+}
+
+/** The round, then each house rule that changes it, said in full. */
+function BiddingRules({
+	game,
+	options,
+}: {
+	game: BiddingGame;
+	options: readonly string[];
+}) {
+	const { t } = useI18n();
+	const r = t.games.dice.rules;
+	const b = r.bidding;
+	const rules = diceRules(game, options);
+	const lines = [
+		fmt(b.roll, { dice: rules.startingDice }),
+		b.bid,
+		b.call,
+		...(rules.wildOnes ? [b.wildOnes] : []),
+		...(rules.spotOn ? [b.spotOn] : []),
+		b.next,
+	];
+	return (
+		<>
+			<Section heading={r.goalHeading}>
+				<AppText variant="secondary" tone="default">
+					{b.goal}
+				</AppText>
+			</Section>
+			<Section heading={b.roundHeading}>
+				{lines.map((line) => (
+					<AppText key={line} variant="secondary" tone="default">
+						{line}
+					</AppText>
+				))}
 			</Section>
 		</>
 	);

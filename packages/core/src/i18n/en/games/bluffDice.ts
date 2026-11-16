@@ -37,14 +37,6 @@ export const bluffDice = {
 		howToPlayLoseDie:
 			"Whoever is wrong loses a die. Last player with dice wins.",
 	},
-	new: {
-		heading: "Host a table",
-		description:
-			"Hidden dice, rising claims, and one big question: is anyone bluffing? 2-8 players, everyone joins with the room code.",
-		createRoomButton: "Create room",
-		creatingRoomButton: "Creating room...",
-		couldNotCreateRoom: "Could not create room",
-	},
 	session: {
 		loadingTable: "Loading table...",
 		tableNotFound: "Table not found.",

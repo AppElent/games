@@ -1,6 +1,7 @@
 import { getDiceGame } from "@arcadeclub/core/dice/engine";
 import { useMessages } from "#/lib/i18n";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { BiddingTable } from "./BiddingTable";
 import { DiceNotFound, DicePage } from "./Chrome";
 import { DiceLobby } from "./Lobby";
 import { MexenTable } from "./MexenTable";
@@ -47,6 +48,15 @@ export function DiceTableScreen({
 	// The stored state was dealt by this game, so its family always matches.
 	// A family without a branch here fails to compile.
 	switch (game.family) {
+		case "bidding":
+			return view.family === "bidding" ? (
+				<BiddingTable
+					game={game}
+					table={table}
+					view={view}
+					controls={controls}
+				/>
+			) : null;
 		case "mexen":
 			return view.family === "mexen" ? (
 				<MexenTable game={game} table={table} view={view} controls={controls} />

@@ -28,8 +28,9 @@ Session model: every game is a `gameSessions` row (`gameType` discriminator) + a
 | `/hitster/*` | `src/routes/hitster/*`, `convex/hitster.ts` |
 | `/connect-four/*` | `src/routes/connect-four/*`, `convex/connectFour.ts` |
 | `/signal-words/*` | `src/routes/signal-words/*`, `convex/signalWords.ts` |
-| `/bluff-dice/*` | `src/routes/bluff-dice/*`, `convex/bluffDice.ts` |
+| `/bluff-dice/*` | `src/routes/bluff-dice/*`, `convex/bluffDice.ts`: legacy sessions only; new games and migrated sessions go to `/dice` |
 | `/cards`, `/cards/$gameId`, `/cards/table/$sessionId` | `src/routes/cards/*`, `src/components/cards/*`, `convex/cardGames.ts`, `packages/core/src/cards/*` |
+| `/dice`, `/dice/$gameId`, `/dice/table/$sessionId` | `src/routes/dice/*`, `src/components/dice/*`, `convex/diceGames.ts`, `packages/core/src/dice/*` |
 | `/word-links/*` | `src/routes/word-links/*` (local-only, no Convex session) |
 | `/squad-surge/*` | `src/routes/squad-surge/*` (local-only, no Convex session) |
 | `/workbench` | `src/routes/workbench/*`, `convex/workbench.ts` |

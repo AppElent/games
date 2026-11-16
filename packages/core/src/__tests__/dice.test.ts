@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
-	applyDiceAction,
-	createDiceGame,
+	applyDiceAction as applyAnyDiceAction,
+	createDiceGame as createAnyDiceGame,
 	DICE_ENGINE,
 	DICE_GAMES,
 	diceBotMove,
 	diceRules,
-	viewDiceGame,
+	viewDiceGame as viewAnyDiceGame,
 } from "../dice/engine";
 import {
 	type ScoreCategory,
 	type ScoresheetAction,
 	type ScoresheetRules,
 	type ScoresheetState,
+	type ScoresheetView,
 	scoreCategory,
 	scoreOptions,
 	sheetTotals,
@@ -28,6 +29,14 @@ import { GameRuleError } from "../errors";
 import { en } from "../i18n/en";
 import { fmt } from "../i18n/format";
 import { mulberry32 } from "../random";
+
+// Every game in this file plays the score-sheet family.
+const createDiceGame = (...args: Parameters<typeof createAnyDiceGame>) =>
+	createAnyDiceGame(...args) as ScoresheetState;
+const applyDiceAction = (...args: Parameters<typeof applyAnyDiceAction>) =>
+	applyAnyDiceAction(...args) as ScoresheetState;
+const viewDiceGame = (...args: Parameters<typeof viewAnyDiceGame>) =>
+	viewAnyDiceGame(...args) as ScoresheetView;
 
 /** Dice for the tests that do not care which faces come up. */
 const rng = mulberry32(1);

@@ -1,7 +1,7 @@
-import { diceSeatName } from "@arcadeclub/core/dice/table-view";
+import { diceSeatName, winnerTitle } from "@arcadeclub/core/dice/table-view";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { fmt, useMessages } from "#/lib/i18n";
+import { useMessages } from "#/lib/i18n";
 import type { DiceTableBundle, DiceTableControls } from "./useDiceTable";
 
 /** The end of any dice game: who won, everyone's final standing, and what next. */
@@ -9,31 +9,27 @@ export function DiceEnd({
 	table,
 	winners,
 	rows,
+	heading,
 	controls,
 }: {
 	table: DiceTableBundle;
 	winners: readonly number[];
+	/** What the standings rank by; "Standings" unless the game says otherwise. */
+	heading?: string;
 	/** Best first: each seat with what it finished on, in words. */
 	rows: ReadonlyArray<{ seat: number; value: string | number }>;
 	controls: DiceTableControls;
 }) {
 	const dice = useMessages().games.dice;
 	const dialog = useRef<HTMLDialogElement>(null);
-	const heading = useRef<HTMLHeadingElement>(null);
+	const titleRef = useRef<HTMLHeadingElement>(null);
 	const you = table.you;
-	const title =
-		winners.length > 1
-			? dice.table.tie
-			: winners[0] === you
-				? dice.table.youWin
-				: fmt(dice.table.winner, {
-						name: diceSeatName(dice, table, winners[0]),
-					});
+	const title = winnerTitle(dice, table, winners);
 
 	// Modal, so nothing on the table behind it can be reached.
 	useEffect(() => {
 		dialog.current?.showModal();
-		heading.current?.focus();
+		titleRef.current?.focus();
 	}, []);
 
 	return (
@@ -48,13 +44,15 @@ export function DiceEnd({
 			<section className="cards-panel end-panel" aria-labelledby="dice-end">
 				<h2
 					id="dice-end"
-					ref={heading}
+					ref={titleRef}
 					tabIndex={-1}
 					className="cards-title text-3xl outline-none"
 				>
 					{title}
 				</h2>
-				<h3 className="cards-kicker mt-4 mb-2">{dice.table.standings}</h3>
+				<h3 className="cards-kicker mt-4 mb-2">
+					{heading ?? dice.table.standings}
+				</h3>
 				<ol className="dice-standings">
 					{rows.map(({ seat, value }) => (
 						<li key={seat} data-winner={winners.includes(seat)}>

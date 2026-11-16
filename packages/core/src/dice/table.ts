@@ -5,8 +5,8 @@
  *
  * Built for every family: the cup holds any number of dice (10.000 rolls
  * six and sets scorers aside, `pushluck.ts`), `nextSeat` skips eliminated
- * players (Mexen's lives), and a family keeps per-player cups in its own state
- * and hides them in its view (Blufpoker).
+ * players (Mexen's lives, liar's dice), and a family keeps per-player cups in
+ * its own state and hides them in its view (`bidding.ts`).
  */
 import { GameRuleError } from "../errors";
 import type { Rng } from "../random";
@@ -132,6 +132,17 @@ export type DiceEvent = { seq: number } & (
 			category: string;
 			points: number;
 			bonus: number;
+	  }
+	| { type: "bid"; seat: number; quantity: number; face: number }
+	| {
+			type: "call";
+			seat: number;
+			call: "liar" | "spotOn";
+			bidder: number;
+			quantity: number;
+			face: number;
+			count: number;
+			losers: number[];
 	  }
 	| { type: "win"; seats: number[] }
 	/** Push-your-luck: every die scored, so all of them go back in the cup. */
