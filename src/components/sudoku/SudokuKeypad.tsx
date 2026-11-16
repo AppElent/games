@@ -23,7 +23,8 @@ type SudokuKeypadProps = {
 // inside one.
 const labelWrap = "break-normal hyphens-none text-center leading-tight";
 
-const toolButton = `flex min-w-0 items-center justify-center gap-1 rounded-md club-btn-outline bg-slate-800/70 px-1.5 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 ${labelWrap}`;
+// Icon above the label, as on mobile, so a long label gets the full width.
+const toolButton = `flex flex-col items-center justify-start gap-0.5 rounded-md club-btn-outline bg-slate-800/70 px-1.5 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 ${labelWrap}`;
 
 export function SudokuKeypad({
 	mode,
