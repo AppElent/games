@@ -177,6 +177,8 @@ export const dice = {
 			lastBustEmpty: "{name} gooide mis",
 			lastBank: "{name} zette {points} vast, nu {total}",
 			lastFinalRound: "{name} haalde het doel: laatste ronde",
+			lastHotDice:
+				"{name} gooide hete stenen bij {points}, alle zes gaan weer mee",
 		},
 		rules: {
 			goal: "Zet als eerste {target} punten vast.",

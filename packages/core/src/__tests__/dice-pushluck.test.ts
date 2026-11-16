@@ -586,6 +586,24 @@ describe("10.000 table view", () => {
 		});
 	});
 
+	it("announces hot dice together with the roll it brings", () => {
+		let state = rolled([1, 1, 1, 5, 2, 3], { turnTotal: 0 });
+		state = act(state, { type: "roll", keep: [0, 1, 2, 3] }, dice(5, 1));
+		state = act(state, { type: "roll", keep: [0, 1] }, dice(2, 2, 2, 3, 4, 6));
+		expect(latestNews(words, seats, state.events)?.text).toBe(
+			"You got hot dice at 1,200, all six roll again. You rolled 2, 2, 2, 3, 4, 6",
+		);
+		expect(
+			latestNews(
+				{ ...words, dice: nl.games.dice, locale: "nl" },
+				seats,
+				state.events,
+			)?.text,
+		).toBe(
+			"Jij gooide hete stenen bij 1.200, alle zes gaan weer mee. Jij gooide 2, 2, 2, 3, 4, 6",
+		);
+	});
+
 	it("announces busts, banks and the final round", () => {
 		let state = rolled([1, 2, 3, 4, 6, 6], { scores: [9950, 0] });
 		state = act(state, { type: "bank", keep: [0] }, dice());

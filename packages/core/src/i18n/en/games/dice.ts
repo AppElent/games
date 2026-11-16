@@ -176,6 +176,7 @@ export const dice = {
 			lastBustEmpty: "{name} bust",
 			lastBank: "{name} banked {points}, now {total}",
 			lastFinalRound: "{name} reached the target: final round",
+			lastHotDice: "{name} got hot dice at {points}, all six roll again",
 		},
 		rules: {
 			goal: "Bank {target} points before anyone else.",

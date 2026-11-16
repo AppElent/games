@@ -267,12 +267,19 @@ export function latestNews(
 			};
 		}
 		if (event.type === "roll") {
+			const name = diceSeatName(dice, table, event.seat);
+			const rolled = fmt(dice.table.lastRolled, {
+				name,
+				dice: event.dice.join(", "),
+			});
+			// Hot dice and its fresh roll come from one move, so they are read out together.
+			const before = events[index - 1];
 			return {
 				seq: event.seq,
-				text: fmt(dice.table.lastRolled, {
-					name: diceSeatName(dice, table, event.seat),
-					dice: event.dice.join(", "),
-				}),
+				text:
+					before?.type === "hotDice"
+						? `${fmt(words.lastHotDice, { name, points: num(before.points) })}. ${rolled}`
+						: rolled,
 			};
 		}
 		if (event.type === "score") {
