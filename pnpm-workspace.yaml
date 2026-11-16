@@ -59,6 +59,16 @@ overrides:
   # postcss-selector-parser GHSA-rj75-hqrm-r3gf (< 6.1.5), pinned by
   # @tailwindcss/typography 0.5.20 (latest).
   "@tailwindcss/typography>postcss-selector-parser": "^6.1.5"
+  # APP-179 (2026-11-16): security floors for transitive packages Dependabot
+  # flags as high, each inside the major its parent asks for. Sources: eas-cli
+  # (tar, nanoid), Expo/TanStack build tooling (js-yaml, browserslist),
+  # workbox-build's ajv (fast-uri) and TanStack devtools (launch-editor).
+  "tar@<7.5.21": "^7.5.21"
+  "nanoid@<3.3.18": "^3.3.18"
+  "js-yaml@>=4 <4.3.2": "^4.3.2"
+  "browserslist@<4.28.7": "^4.28.7"
+  "fast-uri@<3.1.9": "^3.1.9"
+  "launch-editor@<2.14.2": "^2.14.2"
 
 patchedDependencies:
   expo-symbols@58.0.4: patches/expo-symbols@58.0.4.patch
