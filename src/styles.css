@@ -225,7 +225,8 @@ code {
 
 /* Prevent iOS Safari from auto-zooming on input focus (triggers when font-size < 16px) */
 @supports (-webkit-touch-callout: none) {
-  input,
+  /* The catalog code field is already 30px, safely above the zoom threshold. */
+  input:not(.club-join-code),
   select,
   textarea {
     font-size: 16px !important;
