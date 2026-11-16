@@ -93,7 +93,8 @@ export function Pill({
 	icon,
 	children,
 }: {
-	tone?: "plain" | "alert";
+	/** "gold" calls out good news, such as roem. */
+	tone?: "plain" | "alert" | "gold";
 	icon?: ReactNode;
 	children: string;
 }) {
@@ -101,12 +102,22 @@ export function Pill({
 	return (
 		<Animated.View
 			entering={quiet ? undefined : FadeIn.duration(180)}
-			style={[styles.pill, tone === "alert" && styles.pillAlert]}
+			style={[
+				styles.pill,
+				tone === "alert" && styles.pillAlert,
+				tone === "gold" && styles.pillGold,
+			]}
 		>
 			{icon}
 			<FeltText
 				variant="caption"
-				style={tone === "alert" ? styles.alertText : null}
+				style={
+					tone === "alert"
+						? styles.alertText
+						: tone === "gold"
+							? styles.goldText
+							: null
+				}
 			>
 				{children}
 			</FeltText>
@@ -155,6 +166,8 @@ const styles = StyleSheet.create({
 		borderColor: cardColors.alert,
 	},
 	alertText: { color: cardColors.alert, fontWeight: "800" },
+	pillGold: { backgroundColor: cardColors.gold, borderColor: cardColors.gold },
+	goldText: { color: cardColors.onGold, fontWeight: "800" },
 	pills: {
 		flexDirection: "row",
 		flexWrap: "wrap",

@@ -663,3 +663,41 @@ describe("full games between computer players", () => {
 		}
 	});
 });
+
+describe("tables saved before trump calls and teams", () => {
+	it("still view, play and finish a Hartenjagen deal", () => {
+		const fresh = createCardGame(game, [], 4, mulberry32(5)) as TricksState;
+		// A state stored by the previous release has none of the newer fields.
+		const {
+			offered: _offered,
+			trumpPasses: _passes,
+			maker: _maker,
+			roem: _roem,
+			lastDeal: _lastDeal,
+			...stored
+		} = fresh;
+		let state = stored as CardGameState;
+		const view = viewCardGame(game, [], state, 0) as TricksView;
+		expect(view).toMatchObject({
+			teams: [0, 1, 2, 3],
+			roem: [0, 0, 0, 0],
+			offered: null,
+			maker: null,
+			lastDeal: null,
+		});
+		const everyone = [0, 1, 2, 3];
+		const random = mulberry32(6);
+		while ((state as TricksState).phase !== "roundOver") {
+			const move = botMove(game, [], state, everyone, random);
+			if (!move) {
+				throw new Error(`bot stuck in ${state.phase}`);
+			}
+			state = applyCardAction(game, [], state, move.seat, move.action, random);
+		}
+		const scored = state as TricksState;
+		expect(scored.scores).toHaveLength(1);
+		// 26 points go round, or 78 when someone shoots the moon.
+		const total = scored.scores[0].reduce((sum, points) => sum + points, 0);
+		expect([26, 78]).toContain(total);
+	});
+});
