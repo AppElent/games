@@ -17,9 +17,11 @@ import {
 	parseCard,
 	type Rank,
 	removeCard,
+	SUITS,
 	type Suit,
 } from "./deck";
 import { type CardEvent, pushEvent } from "./events";
+import { type RoemKind, roemOf } from "./roem";
 
 /** Where passed cards go: the next seat in play, the one before, or opposite. */
 export const PASS_DIRECTIONS = ["left", "right", "across", "keep"] as const;
@@ -72,9 +74,60 @@ export type TricksRules = {
 	bidding?: TricksBidding | null;
 	/** The highest total wins instead of the lowest. */
 	highWins?: boolean;
+	/**
+	 * The match also ends after this many deals, for a schedule that never
+	 * runs out (a full deck every deal).
+	 */
+	deals?: number;
+	/** The trump suit's order, low to high, when it differs from `ranks`. */
+	trumpRanks?: readonly Rank[];
+	/**
+	 * Seats call this deal's trump in turn before play: each accepts the suit
+	 * `trumpChoice` put up or passes. When it put up none, or everyone passed,
+	 * the seat left of the dealer must name one. Whoever calls it must win the deal.
+	 */
+	callTrump?: boolean;
+	/**
+	 * A seat that can't follow must trump, above any trump already played, and
+	 * may only play a lower trump when it holds nothing else; when trumps are
+	 * led it must go higher if it can. "unlessPartnerWins" lets a void seat
+	 * skip trumping while its partner takes the trick; going higher on a trump
+	 * lead and the ban on a lower trump still hold. Unset: a void seat plays
+	 * anything.
+	 */
+	mustTrump?: "always" | "unlessPartnerWins";
+	/** Points per rank, below `cardPoints` and above `suitPoints`. */
+	rankPoints?: Readonly<Partial<Record<Rank, number>>>;
+	/** Points per rank of the trump suit, above `rankPoints`. */
+	trumpPoints?: Readonly<Partial<Record<Rank, number>>>;
+	/** Extra points for whoever takes the last trick. */
+	lastTrickBonus?: number;
+	/** Each trick's roem (runs, the trump king and queen, four of a kind) goes to its taker. */
+	roem?: boolean;
+	/** Extra roem for a team that takes every trick of a deal. */
+	pitBonus?: number;
 };
 
 type TrickPlay = { seat: number; card: CardId };
+
+/** A trick's roem, as its kinds and their total. */
+type Roem = { points: number; kinds: RoemKind[] };
+
+/** How a deal went for each team, under `pointsAndRoem`. Indexed by team. */
+export type TeamDeal = {
+	/** Card points taken, the last-trick bonus included. */
+	points: number[];
+	/** Roem taken, with any pit bonus. */
+	roem: number[];
+	/** The team that called trump, if anyone did. */
+	maker: number | null;
+	/** The calling team didn't take more than half, so the other team scores it all. */
+	nat: boolean;
+	/** The team that took every trick, if one did. */
+	pit: number | null;
+	/** What each team scores for the deal. */
+	scores: number[];
+};
 
 export type TricksState = {
 	family: "tricks";
@@ -82,7 +135,7 @@ export type TricksState = {
 	dealer: number;
 	/** Deals played so far, counting this one. */
 	round: number;
-	phase: "passing" | "bidding" | "playing" | "roundOver" | "finished";
+	phase: "trump" | "passing" | "bidding" | "playing" | "roundOver" | "finished";
 	/** This deal's direction; "keep" when nobody passes. */
 	passDirection: PassDirection;
 	/** Cards each seat set aside to pass, until everyone has. Private. */
@@ -91,8 +144,8 @@ export type TricksState = {
 	received: CardId[][];
 	turn: number;
 	trick: TrickPlay[];
-	lastTrick: { plays: TrickPlay[]; winner: number } | null;
-	/** Set per deal by `trumpChoice`; Hearts has none. */
+	lastTrick: { plays: TrickPlay[]; winner: number; roem?: Roem } | null;
+	/** Set per deal by `trumpChoice` or the trump call; Hearts has none. */
 	trump: Suit | null;
 	/** The card turned up to show trump, face up for all; null when none was. */
 	turnedUp?: CardId | null;
@@ -101,6 +154,20 @@ export type TricksState = {
 	 * bidding (and for tables dealt before bidding existed).
 	 */
 	bids?: Array<number | null>;
+	/**
+	 * While seats call trump (`callTrump`): the suit put to them, or null once
+	 * the seat left of the dealer must name one. Absent in tables dealt before
+	 * trump calls existed, as are the other optional fields below.
+	 */
+	offered?: Suit | null;
+	/** How many seats have passed on the trump this deal. */
+	trumpPasses?: number;
+	/** Who called trump; their team must win the deal. */
+	maker?: number | null;
+	/** Roem each seat took with its tricks this deal. */
+	roem?: number[];
+	/** How the last scored deal went, for a team game with roem. */
+	lastDeal?: TeamDeal | null;
 	broken: boolean;
 	/** Cards each seat has won this deal. They were played face up, so not secret. */
 	taken: CardId[][];
@@ -118,7 +185,9 @@ export type TricksAction =
 	| { type: "passCards"; cards: CardId[] }
 	| { type: "bid"; count: number }
 	| { type: "play"; card: CardId }
-	| { type: "nextRound" };
+	| { type: "nextRound" }
+	| { type: "passTrump" }
+	| { type: "chooseTrump"; suit: Suit };
 
 /** Keyed by action type, so a new action cannot be left out. */
 export const TRICKS_ACTIONS: Record<TricksAction["type"], true> = {
@@ -126,6 +195,8 @@ export const TRICKS_ACTIONS: Record<TricksAction["type"], true> = {
 	bid: true,
 	play: true,
 	nextRound: true,
+	passTrump: true,
+	chooseTrump: true,
 };
 
 export type TricksView = {
@@ -138,6 +209,16 @@ export type TricksView = {
 	/** Cards each seat was dealt this deal, so also the tricks in it. */
 	handSize: number;
 	turn: number;
+	/** Each seat's team; partners share a total. A game without teams gives every seat its own. */
+	teams: number[];
+	/** See `TricksState.offered`; null outside the trump call. */
+	offered: Suit | null;
+	/** Which seats have passed on the trump this deal. */
+	trumpPassed: boolean[];
+	maker: number | null;
+	/** Roem each seat has taken this deal. */
+	roem: number[];
+	lastDeal: TeamDeal | null;
 	handCounts: number[];
 	hand: CardId[];
 	/** Cards this seat may play now; empty when it isn't their turn. */
@@ -173,23 +254,56 @@ export type TricksView = {
 
 const suitOf = (card: CardId) => parseCard(card).suit as Suit;
 
-/** A card's position in the game's rank order, low to high. */
-export function rankIndex(rules: Pick<TricksRules, "ranks">, card: CardId) {
-	return rules.ranks.indexOf(parseCard(card).rank as Rank);
+/**
+ * A card's position in the game's rank order, low to high; a trump's in
+ * `trumpRanks` when the game has one.
+ */
+export function rankIndex(
+	rules: Pick<TricksRules, "ranks" | "trumpRanks">,
+	card: CardId,
+	trump: Suit | null = null,
+) {
+	const rank = parseCard(card).rank as Rank;
+	const order =
+		trump !== null && suitOf(card) === trump && rules.trumpRanks
+			? rules.trumpRanks
+			: rules.ranks;
+	return order.indexOf(rank);
 }
 
-/** What one card scores under the penalty rules. */
+type PointRules = Pick<
+	TricksRules,
+	"suitPoints" | "cardPoints" | "rankPoints" | "trumpPoints"
+>;
+
+/** What one card scores: its face, else its rank as trump, its rank, or its suit. */
 export function cardValue(
-	rules: Pick<TricksRules, "suitPoints" | "cardPoints">,
+	rules: PointRules,
 	card: CardId,
+	trump: Suit | null = null,
 ) {
+	const suit = suitOf(card);
+	const rank = parseCard(card).rank as Rank;
 	return (
-		rules.cardPoints[cardFace(card)] ?? rules.suitPoints[suitOf(card)] ?? 0
+		rules.cardPoints[cardFace(card)] ??
+		(suit === trump ? rules.trumpPoints?.[rank] : undefined) ??
+		rules.rankPoints?.[rank] ??
+		rules.suitPoints[suit] ??
+		0
 	);
 }
 
-function pointsOf(rules: TricksRules, cards: readonly CardId[]) {
-	return cards.reduce((sum, card) => sum + cardValue(rules, card), 0);
+function pointsOf(
+	rules: PointRules,
+	cards: readonly CardId[],
+	trump: Suit | null = null,
+) {
+	return cards.reduce((sum, card) => sum + cardValue(rules, card, trump), 0);
+}
+
+/** Each seat's team number. */
+export function teamsOf(rules: Pick<TricksRules, "seating">, seats: number) {
+	return SEATINGS[rules.seating](seats);
 }
 
 /** The deck for this many seats: the game's ranks, minus what keeps the deal even. */
@@ -228,7 +342,7 @@ export function passShift(direction: PassDirection, seats: number) {
 
 /** Who takes the trick: the highest trump, else the highest card of the suit led. */
 export function trickWinner(
-	rules: Pick<TricksRules, "ranks">,
+	rules: Pick<TricksRules, "ranks" | "trumpRanks">,
 	plays: readonly TrickPlay[],
 	trump: Suit | null,
 ) {
@@ -238,7 +352,8 @@ export function trickWinner(
 		// The best card so far is of the suit led or a trump: off-suit cards never beat it.
 		const beats =
 			suit === suitOf(best.card)
-				? rankIndex(rules, play.card) > rankIndex(rules, best.card)
+				? rankIndex(rules, play.card, trump) >
+					rankIndex(rules, best.card, trump)
 				: suit === trump;
 		if (beats) {
 			best = play;
@@ -264,6 +379,55 @@ function tricksPlayed(state: TricksState) {
 	return state.tricksTaken.reduce((sum, count) => sum + count, 0);
 }
 
+/**
+ * The `mustTrump` duties for a card that follows the rules of suit: trump when
+ * void, go above the highest trump in the trick, never play a lower trump
+ * while holding anything else. Under "unlessPartnerWins" a void seat need not
+ * trump while its partner takes the trick; going higher when trumps are led
+ * and the ban on a lower trump still hold.
+ */
+function trumpRefusal(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+	card: CardId,
+	trump: Suit,
+) {
+	const hand = state.hands[seat];
+	const led = suitOf(state.trick[0].card);
+	const following = suitOf(card) === led;
+	if (following && led !== trump) {
+		return null;
+	}
+	const teams = teamsOf(rules, state.hands.length);
+	const winner = trickWinner(rules, state.trick, trump);
+	const partnerWins =
+		rules.mustTrump === "unlessPartnerWins" && teams[winner] === teams[seat];
+	const top = Math.max(
+		-1,
+		...state.trick
+			.filter((play) => suitOf(play.card) === trump)
+			.map((play) => rankIndex(rules, play.card, trump)),
+	);
+	const over = (held: CardId) =>
+		suitOf(held) === trump && rankIndex(rules, held, trump) > top;
+	const canOver = hand.some(over);
+	if (following) {
+		// Trumps were led: go higher if you can, whoever holds the trick.
+		return canOver && !over(card) ? "cardsMustOvertrump" : null;
+	}
+	if (!partnerWins && canOver) {
+		if (over(card)) {
+			return null;
+		}
+		return top < 0 ? "cardsMustTrump" : "cardsMustOvertrump";
+	}
+	const under = suitOf(card) === trump && !over(card);
+	return under && hand.some((held) => suitOf(held) !== trump || over(held))
+		? "cardsNoUndertrump"
+		: null;
+}
+
 /** Why `card` can't be played now, or null when it can. */
 function refusal(
 	rules: TricksRules,
@@ -278,8 +442,11 @@ function refusal(
 	const suit = suitOf(card);
 	if (state.trick.length > 0) {
 		const led = suitOf(state.trick[0].card);
-		return suit !== led && hand.some((held) => suitOf(held) === led)
-			? "cardsMustFollow"
+		if (suit !== led && hand.some((held) => suitOf(held) === led)) {
+			return "cardsMustFollow";
+		}
+		return rules.mustTrump && state.trump
+			? trumpRefusal(rules, state, seat, card, state.trump)
 			: null;
 	}
 	const first = rules.firstLead;
@@ -367,22 +534,27 @@ export function dealsInMatch(rules: TricksRules, seats: number) {
 type TrumpPick = { trump: Suit | null; turnedUp: CardId | null };
 
 /**
- * Trump choosers by name, given the cards left over after the deal. A game
- * may also have a seat choose it in a phase of its own.
+ * Trump choosers by name, given the cards left over after the deal and the
+ * deal's random source. With `callTrump` the suit is only put to the seats.
  */
 const TRUMPS = {
-	none: (_rest: readonly CardId[]): TrumpPick => ({
+	none: (_rest: readonly CardId[], _random: Rng): TrumpPick => ({
 		trump: null,
 		turnedUp: null,
 	}),
 	/** The top undealt card sets trump; when the deck dealt out exactly, there is none. */
-	turnUp: (rest: readonly CardId[]): TrumpPick => {
+	turnUp: (rest: readonly CardId[], _random: Rng): TrumpPick => {
 		const top = rest[0];
 		return top
 			? { trump: suitOf(top), turnedUp: top }
 			: { trump: null, turnedUp: null };
 	},
-} satisfies Record<string, (rest: readonly CardId[]) => TrumpPick>;
+	/** A suit drawn at random, as Klaverjassen puts one to the table. */
+	random: (_rest: readonly CardId[], random: Rng): TrumpPick => ({
+		trump: SUITS[Math.floor(random() * SUITS.length)],
+		turnedUp: null,
+	}),
+} satisfies Record<string, (rest: readonly CardId[], random: Rng) => TrumpPick>;
 
 /**
  * Teams by name: each seat's team number. Partners share a total, so a team
@@ -390,6 +562,9 @@ const TRUMPS = {
  */
 const SEATINGS = {
 	alone: (seats: number) => Array.from({ length: seats }, (_, seat) => seat),
+	/** Two teams, partners sitting opposite: seats 0 and 2 against 1 and 3. */
+	opposite: (seats: number) =>
+		Array.from({ length: seats }, (_, seat) => seat % 2),
 } satisfies Record<string, (seats: number) => number[]>;
 
 function dealTricks(
@@ -416,23 +591,34 @@ function dealTricks(
 	// `deal` took the hands off the stock: what remains was never dealt.
 	const undealt = stock;
 	const direction = passDirectionFor(rules, seats, round);
-	const { trump, turnedUp } = TRUMPS[rules.trumpChoice](undealt);
+	const { trump, turnedUp } = TRUMPS[rules.trumpChoice](undealt, random);
+	const calling = rules.callTrump === true;
 	const state: TricksState = {
 		family: "tricks",
 		hands,
 		dealer,
 		round,
-		phase:
-			direction !== "keep" ? "passing" : rules.bidding ? "bidding" : "playing",
+		phase: calling
+			? "trump"
+			: direction !== "keep"
+				? "passing"
+				: rules.bidding
+					? "bidding"
+					: "playing",
 		passDirection: direction,
 		passing: hands.map(() => null),
 		received: hands.map(() => []),
 		turn: 0,
 		trick: [],
 		lastTrick: null,
-		trump,
+		trump: calling ? null : trump,
 		turnedUp,
 		...(rules.bidding ? { bids: hands.map(() => null) } : {}),
+		offered: calling ? trump : null,
+		trumpPasses: 0,
+		maker: null,
+		roem: hands.map(() => 0),
+		lastDeal: null,
 		broken: false,
 		taken: hands.map(() => []),
 		tricksTaken: hands.map(() => 0),
@@ -443,8 +629,9 @@ function dealTricks(
 		nextSeq: carried?.nextSeq ?? 0,
 	};
 	// While cards are being passed nobody has the turn, and naming the 2 of
-	// clubs' holder early would say who was dealt it: the exchange picks the opener.
-	// Bidding starts left of the dealer, so the dealer bids last.
+	// clubs' holder early would say who was dealt it: the exchange picks the
+	// opener. A trump call and bidding start left of the dealer, so the dealer
+	// goes last.
 	state.turn =
 		state.phase === "playing" ? opener(rules, state) : (dealer + 1) % seats;
 	pushEvent(state, { type: "deal", round });
@@ -466,7 +653,11 @@ export function nextTricksStarter(state: TricksState) {
 	return (state.dealer + 2) % state.hands.length;
 }
 
-type DealScore = { points: number[]; moon: number | null };
+/**
+ * A deal's points per seat. In a team game every seat scores its team's
+ * points, so a team's total is any of its seats' totals.
+ */
+type DealScore = { points: number[]; moon: number | null; teams?: TeamDeal };
 
 /** Penalty cards: each card scores its value, unless someone shot the moon. */
 function scorePenaltyCards(rules: TricksRules, state: TricksState): DealScore {
@@ -510,12 +701,57 @@ function scoreBids(rules: TricksRules, state: TricksState): DealScore {
 }
 
 /**
- * Scorers by name. A new game whose deals score differently (the last trick,
- * team points with roem) adds one here and names it in its rules.
+ * Team points plus roem (Klaverjassen): each team scores the card points and
+ * roem it took, unless the team that called trump took no more than half of
+ * everything. Then it goes "nat" and the other team scores it all. A team
+ * that takes every trick adds `pitBonus`. Made for two teams.
+ */
+function scorePointsAndRoem(rules: TricksRules, state: TricksState): DealScore {
+	const seats = state.hands.length;
+	const teams = teamsOf(rules, seats);
+	const count = Math.max(...teams) + 1;
+	const points = Array.from({ length: count }, () => 0);
+	const roem = Array.from({ length: count }, () => 0);
+	const tricks = Array.from({ length: count }, () => 0);
+	state.taken.forEach((cards, seat) => {
+		points[teams[seat]] += pointsOf(rules, cards, state.trump);
+		roem[teams[seat]] += state.roem?.[seat] ?? 0;
+		tricks[teams[seat]] += state.tricksTaken[seat];
+	});
+	if (state.lastTrick) {
+		points[teams[state.lastTrick.winner]] += rules.lastTrickBonus ?? 0;
+	}
+	const played = tricks.reduce((sum, taken) => sum + taken, 0);
+	const pitTeam = tricks.indexOf(played);
+	const pit = rules.pitBonus && pitTeam >= 0 ? pitTeam : null;
+	if (pit !== null) {
+		roem[pit] += rules.pitBonus ?? 0;
+	}
+	const maker =
+		state.maker === null || state.maker === undefined
+			? null
+			: teams[state.maker];
+	const own = points.map((value, team) => value + roem[team]);
+	const all = own.reduce((sum, value) => sum + value, 0);
+	const nat = maker !== null && own[maker] * 2 <= all;
+	const scores = own.map((value, team) =>
+		maker === null || !nat ? value : team === maker ? 0 : value + own[maker],
+	);
+	return {
+		points: teams.map((team) => scores[team]),
+		moon: null,
+		teams: { points, roem, maker, nat, pit, scores },
+	};
+}
+
+/**
+ * Scorers by name. A new game whose deals score differently (the last trick
+ * only) adds one here and names it in its rules.
  */
 const SCORERS = {
 	penaltyCards: scorePenaltyCards,
 	bids: scoreBids,
+	pointsAndRoem: scorePointsAndRoem,
 } satisfies Record<
 	string,
 	(rules: TricksRules, state: TricksState) => DealScore
@@ -528,34 +764,38 @@ function totalsOf(scores: readonly number[][], seats: number) {
 }
 
 function scoreDeal(rules: TricksRules, state: TricksState) {
-	const { points, moon } = SCORERS[rules.scoring](rules, state);
+	const { points, moon, teams } = SCORERS[rules.scoring](rules, state);
 	state.scores.push(points);
 	state.moon = moon;
+	state.lastDeal = teams ?? null;
 	if (moon !== null) {
 		pushEvent(state, { type: "moon", seat: moon });
 	}
-	// Partners play for one total, so the match ends and is won by team.
+	const seatsOf = (team: number) =>
+		teamsOf(rules, state.hands.length).flatMap((own, seat) =>
+			own === team ? [seat] : [],
+		);
+	if (teams?.nat && teams.maker !== null) {
+		pushEvent(state, { type: "nat", seats: seatsOf(teams.maker) });
+	}
+	if (teams && teams.pit !== null) {
+		pushEvent(state, { type: "pit", seats: seatsOf(teams.pit) });
+	}
+	// Partners score the same points, so a seat's total is its team's: the
+	// match ends and is won by team.
 	const seats = state.hands.length;
-	const team = SEATINGS[rules.seating](seats);
 	const totals = totalsOf(state.scores, seats);
-	const teamTotals = team.map((own) =>
-		totals.reduce(
-			(sum, total, seat) => (team[seat] === own ? sum + total : sum),
-			0,
-		),
-	);
-	const reached =
-		rules.target !== null && Math.max(...teamTotals) >= rules.target;
-	const lastDeal = handSizeFor(rules, seats, state.round + 1) === null;
+	const reached = rules.target !== null && Math.max(...totals) >= rules.target;
+	const lastDeal =
+		(rules.deals !== undefined && state.round >= rules.deals) ||
+		handSizeFor(rules, seats, state.round + 1) === null;
 	if (!reached && !lastDeal) {
 		state.phase = "roundOver";
 		return;
 	}
-	const best = rules.highWins
-		? Math.max(...teamTotals)
-		: Math.min(...teamTotals);
+	const best = rules.highWins ? Math.max(...totals) : Math.min(...totals);
 	state.phase = "finished";
-	state.winners = teamTotals.flatMap((total, seat) =>
+	state.winners = totals.flatMap((total, seat) =>
 		total === best ? [seat] : [],
 	);
 	pushEvent(state, { type: "win", seats: state.winners });
@@ -600,6 +840,57 @@ function passCards(
 		? (state.dealer + 1) % seats
 		: opener(rules, state);
 	pushEvent(state, { type: "exchange", shift, count });
+}
+
+/** The seat whose turn it is to call trump, checked before any trump action. */
+function requireTrumpTurn(state: TricksState, seat: number) {
+	if (state.phase !== "trump") {
+		throw new GameRuleError("cardsNotCallingTrump");
+	}
+	if (state.turn !== seat) {
+		throw new GameRuleError("notYourTurn");
+	}
+}
+
+function passTrump(state: TricksState, seat: number) {
+	requireTrumpTurn(state, seat);
+	if (!state.offered) {
+		throw new GameRuleError("cardsMustChooseTrump");
+	}
+	const seats = state.hands.length;
+	state.trumpPasses = (state.trumpPasses ?? 0) + 1;
+	pushEvent(state, { type: "trumpPass", seat });
+	// The dealer passes last, so the turn comes back to the seat on their left,
+	// which must now name a trump.
+	state.turn = (seat + 1) % seats;
+	if (state.trumpPasses >= seats) {
+		state.offered = null;
+	}
+}
+
+function chooseTrump(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+	suit: Suit,
+) {
+	requireTrumpTurn(state, seat);
+	if (!SUITS.includes(suit) || (state.offered && suit !== state.offered)) {
+		throw new GameRuleError("cardsTrumpNotOffered");
+	}
+	state.trump = suit;
+	state.offered = null;
+	state.maker = seat;
+	pushEvent(state, { type: "trump", seat, suit });
+	if (state.passDirection !== "keep") {
+		state.phase = "passing";
+	} else if (rules.bidding) {
+		state.phase = "bidding";
+		state.turn = (state.dealer + 1) % state.hands.length;
+	} else {
+		state.phase = "playing";
+		state.turn = opener(rules, state);
+	}
 }
 
 /**
@@ -677,6 +968,9 @@ function playCard(
 	if (state.phase === "passing") {
 		throw new GameRuleError("cardsPassFirst");
 	}
+	if (state.phase === "trump") {
+		throw new GameRuleError("cardsCallTrumpFirst");
+	}
 	if (state.phase === "bidding") {
 		throw new GameRuleError("cardsBidFirst");
 	}
@@ -718,8 +1012,15 @@ function playCard(
 	pushEvent(state, {
 		type: "trickWon",
 		seat: winner,
-		points: pointsOf(rules, cards),
+		points: pointsOf(rules, cards, state.trump),
 	});
+	const roem = rules.roem ? roemOf(cards, state.trump) : null;
+	if (roem && roem.points > 0) {
+		state.roem ??= state.hands.map(() => 0);
+		state.roem[winner] += roem.points;
+		state.lastTrick.roem = roem;
+		pushEvent(state, { type: "roem", seat: winner, ...roem });
+	}
 	if (state.hands.every((hand) => hand.length === 0)) {
 		scoreDeal(rules, state);
 	}
@@ -742,6 +1043,12 @@ export function applyTricks(
 			return state;
 		case "play":
 			playCard(rules, state, seat, action.card);
+			return state;
+		case "passTrump":
+			passTrump(state, seat);
+			return state;
+		case "chooseTrump":
+			chooseTrump(rules, state, seat, action.suit);
 			return state;
 		case "nextRound":
 			if (state.phase !== "roundOver") {
@@ -769,14 +1076,25 @@ export function viewTricks(
 	seat: number | null,
 ): TricksView {
 	const seats = state.hands.length;
+	const passes = state.trumpPasses ?? 0;
 	return {
 		family: "tricks",
 		phase: state.phase,
 		round: state.round,
 		target: rules.target,
-		deals: dealsInMatch(rules, seats),
+		deals: rules.deals ?? dealsInMatch(rules, seats),
 		handSize: handSizeFor(rules, seats, state.round) ?? 0,
 		turn: state.turn,
+		teams: teamsOf(rules, seats),
+		offered: state.phase === "trump" ? (state.offered ?? null) : null,
+		trumpPassed: state.hands.map(
+			(_, index) =>
+				state.phase === "trump" &&
+				(index - state.dealer - 1 + seats) % seats < passes,
+		),
+		maker: state.maker ?? null,
+		roem: state.roem ?? state.hands.map(() => 0),
+		lastDeal: state.lastDeal ?? null,
 		handCounts: state.hands.map(
 			(hand, index) => hand.length + (state.passing[index]?.length ?? 0),
 		),
@@ -795,7 +1113,9 @@ export function viewTricks(
 		legalBids: seat === null ? [] : legalBids(rules, state, seat),
 		blockedBid: blockedBid(rules, state),
 		broken: state.broken,
-		roundPoints: state.taken.map((cards) => pointsOf(rules, cards)),
+		roundPoints: state.taken.map((cards) =>
+			pointsOf(rules, cards, state.trump),
+		),
 		tricksTaken: state.tricksTaken,
 		scores: state.scores,
 		totals: totalsOf(state.scores, seats),
@@ -945,11 +1265,160 @@ export function chooseBidCard(
 	) as CardId;
 }
 
+/** Worth calling trump on: well over an average hand's strength. */
+const CALL_STRENGTH = 55;
+
+/** How well a hand plays with `suit` as trump: its trumps' points and length, and side aces. */
+export function trumpStrength(
+	rules: TricksRules,
+	hand: readonly CardId[],
+	suit: Suit,
+) {
+	return hand.reduce((sum, card) => {
+		const { rank } = parseCard(card);
+		if (suitOf(card) === suit) {
+			return sum + cardValue(rules, card, suit) + 8;
+		}
+		if (rank === "A") {
+			return sum + 10;
+		}
+		const ace = hand.some(
+			(held) => suitOf(held) === suitOf(card) && parseCard(held).rank === "A",
+		);
+		return rank === "10" && ace ? sum + 5 : sum;
+	}, 0);
+}
+
+/** The trump to call, or null to pass on the suit offered. */
+export function chooseTrumpCall(
+	rules: TricksRules,
+	hand: readonly CardId[],
+	offered: Suit | null,
+): Suit | null {
+	if (offered) {
+		return trumpStrength(rules, hand, offered) >= CALL_STRENGTH
+			? offered
+			: null;
+	}
+	return [...SUITS].sort(
+		(a, b) => trumpStrength(rules, hand, b) - trumpStrength(rules, hand, a),
+	)[0];
+}
+
+/**
+ * A sensible card in a points game with trump and partners: draw trumps with
+ * the best one, cash winners, feed points to a partner who has the trick,
+ * win cheaply, and throw the least when the trick is lost.
+ */
+export function choosePointsCard(
+	rules: TricksRules,
+	state: TricksState,
+	seat: number,
+) {
+	const legal = legalTricksCards(rules, state, seat);
+	const trump = state.trump;
+	const seats = state.hands.length;
+	const teams = teamsOf(rules, seats);
+	const value = (card: CardId) => cardValue(rules, card, trump);
+	const power = (card: CardId) => rankIndex(rules, card, trump);
+	const isTrump = (card: CardId) => suitOf(card) === trump;
+	// What this seat has seen: its own hand and every card played face up.
+	const seen = new Set([
+		...state.taken.flat(),
+		...state.trick.map((play) => play.card),
+		...state.hands[seat],
+	]);
+	const unseen = (suit: Suit) =>
+		tricksDeck(rules, seats).filter(
+			(card) => suitOf(card) === suit && !seen.has(card),
+		);
+	const isBoss = (card: CardId) =>
+		unseen(suitOf(card)).every((other) => power(other) < power(card));
+	const cheapest = (cards: CardId[]) =>
+		[...cards].sort((a, b) => value(a) - value(b) || power(a) - power(b))[0];
+	const richest = (cards: CardId[]) =>
+		[...cards].sort((a, b) => value(b) - value(a) || power(a) - power(b))[0];
+	const side = legal.filter((card) => !isTrump(card));
+	if (state.trick.length === 0) {
+		const calling =
+			state.maker !== null &&
+			state.maker !== undefined &&
+			teams[state.maker] === teams[seat];
+		const trumps = legal.filter(isTrump);
+		if (calling && trumps.length > 0 && trump && unseen(trump).length > 0) {
+			const top = [...trumps].sort((a, b) => power(b) - power(a))[0];
+			if (isBoss(top)) {
+				return top;
+			}
+		}
+		const winners = side.filter(isBoss);
+		if (winners.length > 0) {
+			return richest(winners);
+		}
+		return cheapest(side.length > 0 ? side : legal);
+	}
+	const winning = trickWinner(rules, state.trick, trump);
+	const last = state.trick.length === seats - 1;
+	if (teams[winning] === teams[seat]) {
+		const partnerCard = state.trick.find((play) => play.seat === winning);
+		const safe =
+			last || (partnerCard !== undefined && isBoss(partnerCard.card));
+		if (safe && side.length > 0) {
+			return richest(side);
+		}
+		return cheapest(legal);
+	}
+	const beats = legal.filter(
+		(card) =>
+			trickWinner(rules, [...state.trick, { seat, card }], trump) === seat,
+	);
+	if (beats.length === 0) {
+		return cheapest(legal);
+	}
+	if (last) {
+		const sideBeats = beats.filter((card) => !isTrump(card));
+		return sideBeats.length > 0 ? richest(sideBeats) : cheapest(beats);
+	}
+	const safeBeats = beats.filter(isBoss);
+	if (safeBeats.length > 0) {
+		return cheapest(safeBeats);
+	}
+	const atStake = state.trick.reduce((sum, play) => sum + value(play.card), 0);
+	return atStake >= 10
+		? [...beats].sort((a, b) => power(a) - power(b))[0]
+		: cheapest(legal);
+}
+
+/** The card each scorer's bot plays, so a new scorer brings its own judgement. */
+const CARD_CHOOSERS = {
+	penaltyCards: chooseTricksCard,
+	bids: chooseBidCard,
+	pointsAndRoem: choosePointsCard,
+} satisfies Record<
+	keyof typeof SCORERS,
+	(rules: TricksRules, state: TricksState, seat: number) => CardId
+>;
+
 export function botTricksMove(
 	rules: TricksRules,
 	state: TricksState,
 	bots: readonly number[],
 ): BotMove<TricksAction> | null {
+	if (state.phase === "trump") {
+		if (!bots.includes(state.turn)) {
+			return null;
+		}
+		const suit = chooseTrumpCall(
+			rules,
+			state.hands[state.turn],
+			state.offered ?? null,
+		);
+		return {
+			seat: state.turn,
+			action: suit ? { type: "chooseTrump", suit } : { type: "passTrump" },
+			pace: "turn",
+		};
+	}
 	if (state.phase === "roundOver") {
 		// Humans deal the next round, unless all of them are on autopilot.
 		return bots.length === state.hands.length
@@ -981,8 +1450,12 @@ export function botTricksMove(
 	if (state.phase !== "playing" || !bots.includes(state.turn)) {
 		return null;
 	}
-	const card = rules.bidding
-		? chooseBidCard(rules, state, state.turn)
-		: chooseTricksCard(rules, state, state.turn);
-	return { seat: state.turn, action: { type: "play", card }, pace: "turn" };
+	return {
+		seat: state.turn,
+		action: {
+			type: "play",
+			card: CARD_CHOOSERS[rules.scoring](rules, state, state.turn),
+		},
+		pace: "turn",
+	};
 }

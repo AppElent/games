@@ -13,7 +13,7 @@ Every online game reuses the shared session platform (`gameSessions` + `sessionP
 
 A card game that fits a rule family in `packages/core/src/cards/` (`shedding`, `rummy`, `bank`, `tricks`, `gin`) needs none of the steps below:
 
-1. Add a definition to `packages/core/src/cards/games/`, copying `pesten.ts`, `jokeren.ts`, `hartenjagen.ts` or `gin-rummy.ts`.
+1. Add a definition to `packages/core/src/cards/games/`, copying `pesten.ts`, `jokeren.ts`, `hartenjagen.ts`, `klaverjassen.ts` or `gin-rummy.ts`. A trick-taking game that needs a rule the family lacks extends it as the extension points in [the contract](../../../docs/contracts/card-games.md) describe.
 2. List it in `CARD_GAMES` in `packages/core/src/cards/engine.ts`.
 3. Add its text under `games.cards.games` in `packages/core/src/i18n/{en,nl}/games/cards.ts`.
 4. Add rule tests to `packages/core/src/__tests__/cards.test.ts`.

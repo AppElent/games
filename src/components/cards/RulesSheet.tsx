@@ -4,6 +4,7 @@ import type { CardPower } from "@arcadeclub/core/cards/shedding";
 import {
 	powerEffect,
 	tricksRuleLines,
+	tricksRuleSections,
 } from "@arcadeclub/core/cards/table-view";
 import { fmt, useI18n, useMessages } from "#/lib/i18n";
 import { Sheet } from "./Chrome";
@@ -36,28 +37,18 @@ function Lines({ lines }: { lines: string[] }) {
 }
 
 function TricksRules({ lines }: { lines: ReturnType<typeof tricksRuleLines> }) {
-	const r = useMessages().games.cards.rules;
+	const cards = useMessages().games.cards;
+	const r = cards.rules;
 	return (
 		<>
 			<Section heading={r.goalHeading}>
 				<p className="text-sm leading-snug">{lines.goal}</p>
 			</Section>
-			{lines.bidding ? (
-				<Section heading={r.bidHeading}>
-					<Lines lines={lines.bidding} />
+			{tricksRuleSections(lines, cards).map((section) => (
+				<Section key={section.heading} heading={section.heading}>
+					<Lines lines={section.lines} />
 				</Section>
-			) : null}
-			{lines.passing ? (
-				<Section heading={r.passHeading}>
-					<Lines lines={lines.passing} />
-				</Section>
-			) : null}
-			<Section heading={r.turnHeading}>
-				<Lines lines={lines.turn} />
-			</Section>
-			<Section heading={r.pointsHeading}>
-				<Lines lines={lines.points} />
-			</Section>
+			))}
 		</>
 	);
 }

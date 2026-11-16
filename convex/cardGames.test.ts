@@ -723,6 +723,131 @@ describe("hartenjagen", () => {
 		await expect(soloTable(t, "hartenjagen", 1)).rejects.toThrow();
 	});
 });
+describe("klaverjassen", () => {
+	type KlaverView = {
+		hand: string[];
+		phase: string;
+		turn: number;
+		offered: string | null;
+		trump: string | null;
+		maker: number | null;
+		teams: number[];
+		legal: string[];
+	};
+
+	it("calls trump, refuses illegal cards and finishes a solo table against three computers", async () => {
+		const t = setup();
+		const { sessionId, participantId } = await soloTable(t, "klaverjassen", 3);
+		const me = creds(sessionId, participantId);
+		const start = (await read(t, me)).view as unknown as KlaverView;
+		// The host sits left of the dealer, so it calls first.
+		expect(start).toMatchObject({ phase: "trump", turn: 0, trump: null });
+		expect(start.teams).toEqual([0, 1, 0, 1]);
+		expect(start.hand).toHaveLength(8);
+		expect(start.offered).toMatch(/^[SHDC]$/);
+
+		const stored = await t.run((ctx) =>
+			ctx.db.query("cardGameStates").unique(),
+		);
+		if (!stored) throw new Error("the table has no state");
+		const others = (stored.game as { hands: string[][] }).hands.slice(1).flat();
+		const mine = JSON.stringify(await read(t, me));
+		for (const card of others) {
+			expect(mine).not.toContain(`"${card}"`);
+		}
+
+		await expectCode(
+			t.mutation(api.cardGames.act, {
+				...me,
+				action: { type: "play", card: start.hand[0] },
+			}),
+			"cardsCallTrumpFirst",
+		);
+		const other = (["S", "H", "D", "C"] as const).find(
+			(suit) => suit !== start.offered,
+		);
+		await expectCode(
+			t.mutation(api.cardGames.act, {
+				...me,
+				action: { type: "chooseTrump", suit: other ?? "S" },
+			}),
+			"cardsTrumpNotOffered",
+		);
+		await t.mutation(api.cardGames.act, {
+			...me,
+			action: {
+				type: "chooseTrump",
+				suit: start.offered as "S" | "H" | "D" | "C",
+			},
+		});
+		const playing = (await read(t, me)).view as unknown as KlaverView;
+		expect(playing).toMatchObject({
+			phase: "playing",
+			trump: start.offered,
+			maker: 0,
+			turn: 0,
+		});
+
+		// A void seat holding a trump must play it.
+		await t.run(async (ctx) => {
+			const row = await ctx.db.query("cardGameStates").unique();
+			if (!row) throw new Error("the table has no state");
+			const game = row.game as {
+				hands: string[][];
+				trick: { seat: number; card: string }[];
+				trump: string;
+				turn: number;
+			};
+			await ctx.db.patch(row._id, {
+				game: {
+					...game,
+					trump: "H",
+					hands: [["H7#0", "DA#0"], ["C7#0"], ["C8#0"], ["C9#0"]],
+					trick: [{ seat: 3, card: "SA#0" }],
+					turn: 0,
+				},
+			});
+		});
+		await expectCode(
+			t.mutation(api.cardGames.act, {
+				...me,
+				action: { type: "play", card: "DA#0" },
+			}),
+			"cardsMustTrump",
+		);
+		await t.run(async (ctx) => {
+			const row = await ctx.db.query("cardGameStates").unique();
+			if (!row) throw new Error("the table has no state");
+			await ctx.db.patch(row._id, { game: stored.game });
+		});
+
+		await t.mutation(api.cardGames.setAutopilot, { ...me, seat: 0, on: true });
+		await (
+			t.finishAllScheduledFunctions as (
+				advance: () => void,
+				maxIterations: number,
+			) => Promise<void>
+		)(vi.runAllTimers, 20_000);
+		const done = await read(t, me);
+		expect(done.status).toBe("finished");
+		const final = done.view as unknown as {
+			winners: number[];
+			scores: number[][];
+		};
+		expect(final.scores).toHaveLength(16);
+		expect(new Set(final.winners.map((seat) => seat % 2)).size).toBe(
+			final.winners.length === 4 ? 2 : 1,
+		);
+		const session = await t.run((ctx) => ctx.db.get(sessionId));
+		expect(session?.status).toBe("completed");
+	});
+
+	it("needs exactly four players", async () => {
+		const t = setup();
+		await expect(soloTable(t, "klaverjassen", 2)).rejects.toThrow();
+		await expect(soloTable(t, "klaverjassen", 4)).rejects.toThrow();
+	});
+});
 
 describe("boerenbridge", () => {
 	type BridgeView = {
