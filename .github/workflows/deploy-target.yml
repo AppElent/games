@@ -58,6 +58,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
+      # Re-running an old Deploy run would put that run's older commit back on
+      # production. A first attempt may trail main by a queued merge, which
+      # deploys next anyway.
+      - name: Guard stale re-run
+        if: github.run_attempt != '1'
+        run: |
+          git fetch -q origin main
+          head=$(git rev-parse FETCH_HEAD)
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::error::This run deploys $GITHUB_SHA but main is at $head. Re-running it would roll production back; run Deploy on main instead."
+            exit 1
+          fi
+
+      - name: Stamp build
+        run: echo "BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" >> "$GITHUB_ENV"
+
       # An Environment without its own CONVEX_DEPLOY_KEY silently inherits a
       # repo-level one of the same name, so insist on a prod: key first. Staging
       # has its own prod: key, for its own Convex deployment.
@@ -92,24 +108,32 @@ jobs:
       - name: Deploy Worker
         run: pnpm exec wrangler deploy
 
-      # The new Worker answers within seconds, but give the edge two minutes.
-      # Then the home page must render, which needs the bundle, Clerk config
-      # and SSR to work.
+      # /version must report this build (commit and build stamp, so a redeploy
+      # of an unchanged main is told apart from the old Worker) within about
+      # three minutes. Then the home page must render, which needs the
+      # bundle, Clerk config and SSR to work. A failure here leaves the new
+      # Convex functions and Worker live: roll back by hand (docs/runbooks/deploy.md).
       - name: Smoke check
         run: |
-          for attempt in $(seq 1 24); do
+          ok=
+          for attempt in $(seq 1 12); do
             body=$(curl -fsS --max-time 10 "$ORIGIN/version" || true)
-            commit=$(printf '%s' "$body" | jq -r '.commit // empty' 2>/dev/null || true)
-            [ "$commit" = "$GITHUB_SHA" ] && break
+            seen=$(printf '%s' "$body" | jq -r '"\(.commit) \(.deployedAt)"' 2>/dev/null || true)
+            if [ "$seen" = "$GITHUB_SHA $BUILT_AT" ]; then ok=1; break; fi
             sleep 5
           done
-          if [ "$commit" != "$GITHUB_SHA" ]; then
-            echo "::error::$ORIGIN/version reports '${commit:-nothing}', expected $GITHUB_SHA."
+          if [ -z "$ok" ]; then
+            echo "::error::$ORIGIN/version reports '${seen:-nothing}', expected '$GITHUB_SHA $BUILT_AT'. Roll back: docs/runbooks/deploy.md#versions-and-releases"
             exit 1
           fi
-          status=$(curl -sSL -o /dev/null -w '%{http_code}' --max-time 20 "$ORIGIN/")
+          status=
+          for attempt in 1 2 3 4 5; do
+            status=$(curl -sSL -o /dev/null -w '%{http_code}' --max-time 20 "$ORIGIN/" || true)
+            [ "$status" = "200" ] && break
+            sleep 5
+          done
           if [ "$status" != "200" ]; then
-            echo "::error::$ORIGIN/ answered $status after the deploy."
+            echo "::error::$ORIGIN/ answered ${status:-nothing} after the deploy. Roll back: docs/runbooks/deploy.md#versions-and-releases"
             exit 1
           fi
           {

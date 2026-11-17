@@ -55,16 +55,23 @@ Project facts for the [deployments](../standards/deployments.md),
   app alike. Bump `MINOR` for each store build, `PATCH` for a hotfix store build; web
   deploys and OTA updates don't bump it.
 - `GET /version` on each Worker returns `app`, `version`, `commit`, `release`,
-  `environment` and `deployedAt` (build time). `src/server.ts` answers it before the
+  `environment` and `deployedAt` (the deploy run's build stamp, which the smoke check
+  compares). `src/server.ts` answers it before the
   app and Sentry; `vite.config.ts` sets the values.
 - Sentry release: `arcadeclub@<version>+<short sha>` for the browser bundle, the
   Worker, and OTA updates (`publish-update.mjs` inlines the commit as
   `EXPO_PUBLIC_GIT_COMMIT`). A build's embedded bundle keeps the SDK's native release.
 - Tags: `ota-preview` (moved by `deploy.yml`), `ota-production` (moved by the daily
   job), and `v<version>` on the commit of each store build. Web deploys need no tags.
-- Roll back web by reverting on `main` (the revert ships like any merge), or
-  redeploy an earlier Worker version with `wrangler rollback`. Roll back an app update
-  with `eas update:rollback` on the channel, then fix forward.
+- A red smoke check leaves the new Convex functions and Worker live; nothing rolls
+  back on its own. Roll back the Worker with `pnpm exec wrangler rollback` (production
+  is the top-level `games` Worker; add `--env staging` for staging), then revert on
+  `main` so the fix ships like any merge. Convex has no rollback: fix forward, which
+  the backward-compatibility rule keeps safe for installed apps. Roll back an app
+  update with `eas update:rollback` on the channel, then fix forward.
+- Don't re-run an old Deploy run: a re-run whose commit is no longer the head of
+  `main` fails on purpose, because it would put older code on production. Use "Run
+  workflow" on `main`.
 
 ## Verify
 

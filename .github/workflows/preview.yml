@@ -43,6 +43,8 @@ jobs:
       # clears the production routes, so a preview never claims the domain,
       # and sets environment_name for the Worker's Sentry reports.
       CLOUDFLARE_ENV: pr
+      # /version and the Sentry release name the PR head, not the merge commit.
+      GIT_COMMIT: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup

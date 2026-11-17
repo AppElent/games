@@ -41,9 +41,14 @@ export function fingerprint(variant, platform, root = appRoot) {
  * Parsed JSON output of an EAS CLI query, run as the variant `channel`
  * builds. Prints EAS's error and exits when the query fails. Commands that
  * never prompt (`update:view`) reject `--non-interactive`: pass
- * `{ interactiveFlag: false }`.
+ * `{ interactiveFlag: false }`. With `{ optional: true }` a failed query
+ * returns `null` instead of exiting.
  */
-export function easQuery(channel, args, { interactiveFlag = true } = {}) {
+export function easQuery(
+	channel,
+	args,
+	{ interactiveFlag = true, optional = false } = {},
+) {
 	const flags = interactiveFlag ? ["--json", "--non-interactive"] : ["--json"];
 	const result = spawnSync("pnpm", ["exec", "eas", ...args, ...flags], {
 		cwd: appRoot,
@@ -52,6 +57,7 @@ export function easQuery(channel, args, { interactiveFlag = true } = {}) {
 	});
 	if (result.status !== 0) {
 		console.error(result.stderr);
+		if (optional) return null;
 		process.exit(result.status || 1);
 	}
 	return JSON.parse(result.stdout);

@@ -13,8 +13,9 @@ import { defineConfig } from "vite";
 const { version } = JSON.parse(
 	readFileSync(new URL("./apps/mobile/app.json", import.meta.url), "utf8"),
 ).expo;
+// GIT_COMMIT lets PR previews name the PR head, not GitHub's merge commit.
 const commit =
-	process.env.GITHUB_SHA ||
+	process.env.GIT_COMMIT ||
 	execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 // One release, `arcadeclub@<version>+<short sha>`, ties the browser bundle,
 // the Worker and their source maps; /version reports the same values.
@@ -26,7 +27,10 @@ const config = defineConfig({
 		"import.meta.env.VITE_SENTRY_RELEASE": JSON.stringify(release),
 		"import.meta.env.VITE_APP_VERSION": JSON.stringify(version),
 		"import.meta.env.VITE_GIT_COMMIT": JSON.stringify(commit),
-		"import.meta.env.VITE_BUILT_AT": JSON.stringify(new Date().toISOString()),
+		// BUILT_AT lets the deploy smoke check tell this build from the last one.
+		"import.meta.env.VITE_BUILT_AT": JSON.stringify(
+			process.env.BUILT_AT || new Date().toISOString(),
+		),
 	},
 	// Maps are uploaded, then generate-sw.mjs deletes the public client copies.
 	build: { sourcemap: "hidden" },

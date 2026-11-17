@@ -147,14 +147,24 @@ CI follows the [releases](https://github.com/AppElent/developer-home/blob/main/s
 - **Production, once a day.** `mobile-update-production.yml` (05:30 UTC, or "Run
   workflow") publishes the newest commit that has been on `preview` for 24 hours,
   checked out in a worktree so the bundle is exactly what preview ran. It publishes
-  only when the bundle changed since the `ota-production` tag, the production
-  backend's `/version` reports that commit or a later one, and a production build or
-  update has its runtime. Each skip is a line in the run summary. **Store build due**
+  only when the bundle changed since the `ota-production` tag, no newer preview
+  update is a rollback, the latest `production` update and the newest `v*` tag are
+  older than that commit (a hand hotfix or a store build is never downgraded), the
+  production backend's `/version` reports that commit or a later one, and a
+  production build or update has its runtime. Each skip is a line in the run summary.
+- **Hold.** To stop the daily publish (a bad commit soaked on preview and its fix
+  hasn't yet), set the repository variable `OTA_PRODUCTION_HOLD` to the reason; delete
+  it to resume. Rolling back preview (`eas update:rollback --branch preview`) also
+  holds production until a newer preview update replaces the rollback.
+- GitHub turns off a scheduled workflow after 60 days without repository activity;
+  re-enable `Mobile production update` in the Actions tab if that happens. **Store build due**
   means a native change: propose a store release on Eric's decision card (changelog:
   merged PR titles since the last `v` tag), tag `v<version>` on the build's commit,
   and never submit without his yes.
 - After a production publish, check Sentry for release
-  `arcadeclub@<version>+<short sha>`. Roll back with `eas update:rollback` on the
+  `arcadeclub@<version>+<short sha>` (JS errors from an update carry it; native
+  crashes keep the build's native release). Commits published before this naming
+  reached `main` report the SDK's default release. Roll back with `eas update:rollback` on the
   `production` branch and fix forward.
 
 `pnpm mobile:update:production` stays for a hand publish (a hotfix that can't wait a
