@@ -568,3 +568,37 @@ describe("a short last team", () => {
 		expect(upcomingTurn(state)?.team).toBe(0);
 	});
 });
+
+describe("a guesser leaving on the ready screen", () => {
+	it("skips the team when it drops below two, whoever leaves", () => {
+		let state = createClockState({ ...SETTINGS, teamCount: 3 });
+		const roster = [
+			["a", 0],
+			["b", 0],
+			["c", 1],
+			["d", 1],
+			["e", 2],
+			["f", 2],
+		] as const;
+		for (const [id, team] of roster) state = pickTeam(state, id, team);
+		state = startGame(
+			state,
+			roster.map(([id]) => id),
+			PACK,
+			mulberry32(3),
+			0,
+		);
+		const turn = state.turn as NonNullable<ClockState["turn"]>;
+		const guesser = teamMembers(state, turn.team)
+			.map((m) => m.participantId)
+			.find((id) => id !== turn.describerId) as string;
+		const after = leave(state, guesser, 500);
+		expect(after.phase).toBe("ready");
+		expect(after.turn?.team).not.toBe(turn.team);
+		expect(after.notice).toEqual({
+			kind: "skippedShort",
+			team: turn.team,
+			at: 500,
+		});
+	});
+});

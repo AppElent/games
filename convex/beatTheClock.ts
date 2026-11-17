@@ -23,6 +23,7 @@ import {
 	resume as resumeRule,
 	seeWinner as seeWinnerRule,
 	send as sendRule,
+	settleRoom,
 	shuffleTeams as shuffleRule,
 	skipTurn,
 	startExtraRound,
@@ -109,7 +110,7 @@ async function load(ctx: MutationCtx, sessionId: SeatArgs["sessionId"]) {
 		session,
 		doc,
 		players,
-		state: syncRoster(toRules(doc), players),
+		state: settleRoom(syncRoster(toRules(doc), players), Date.now()),
 	};
 }
 

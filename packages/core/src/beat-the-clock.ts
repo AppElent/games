@@ -812,37 +812,50 @@ export function leave(
 		members: state.members.filter((m) => m.participantId !== participantId),
 		pending: state.pending.filter((p) => p.participantId !== participantId),
 	};
-	if (state.phase === "lobby" || state.phase === "finished" || !wasDescriber) {
-		return settleScore(without);
-	}
-	const turn = state.turn as ClockTurn;
-	if (state.phase === "describing" || state.phase === "timeUp") {
+	if (
+		wasDescriber &&
+		(state.phase === "describing" || state.phase === "timeUp")
+	) {
 		return startCheck(without, now);
 	}
-	if (state.phase === "ready") {
-		if (teamMembers(without, turn.team).length >= CLOCK_MIN_TEAM) {
-			return {
-				...without,
-				turn: {
-					...turn,
-					describerId: nextDescriber(without, turn.team) as Pid,
-				},
-			};
-		}
-		// Put the dealt words back on top: nobody saw them.
-		return beginTurn(
-			{
-				...without,
-				deck: [...turn.words, ...without.deck],
-				used: without.used.filter((word) => !turn.words.includes(word)),
-				turnNumber: without.turnNumber - 1,
-				notice: { kind: "skippedShort", team: turn.team, at: now },
-				slot: turn.team + 1,
-			},
-			now,
+	return settleRoom(without, now);
+}
+
+/**
+ * After someone left or was kicked: a ready turn whose describer is gone
+ * passes to the next teammate, and one whose team dropped below two is
+ * skipped with its words put back; a score screen with nobody left to play
+ * this round closes the round.
+ */
+export function settleRoom(state: ClockState, now: number): ClockState {
+	const turn = state.turn;
+	if (state.phase !== "ready" || !turn) return settleScore(state);
+	if (teamMembers(state, turn.team).length >= CLOCK_MIN_TEAM) {
+		const present = teamMembers(state, turn.team).some(
+			(m) => m.participantId === turn.describerId,
 		);
+		return present
+			? state
+			: {
+					...state,
+					turn: {
+						...turn,
+						describerId: nextDescriber(state, turn.team) as Pid,
+					},
+				};
 	}
-	return without;
+	// Put the dealt words back on top: nobody saw them.
+	return beginTurn(
+		{
+			...state,
+			deck: [...turn.words, ...state.deck],
+			used: state.used.filter((word) => !turn.words.includes(word)),
+			turnNumber: state.turnNumber - 1,
+			notice: { kind: "skippedShort", team: turn.team, at: now },
+			slot: turn.team + 1,
+		},
+		now,
+	);
 }
 
 /**
