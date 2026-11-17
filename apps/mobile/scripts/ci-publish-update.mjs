@@ -146,7 +146,7 @@ function latestProductionCommit() {
 	const list = easQuery(
 		"production",
 		["update:list", "--branch", "production", "--limit", "10"],
-		{ optional: (stderr) => /could not find|not found/i.test(stderr) },
+		{ optional: (stderr) => /Could not find (a )?branch/.test(stderr) },
 	);
 	for (const { group, isRollBackToEmbedded } of list?.currentPage ?? []) {
 		if (isRollBackToEmbedded) continue;
