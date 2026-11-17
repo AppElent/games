@@ -75,7 +75,7 @@ free-form strings ([validators](https://docs.convex.dev/database/types)).
 | Biome fragment ([baseline](docs/standards/baseline.md)) | `apps/mobile` | The query-hook import ban covers all of `apps/mobile`, tests included, except `query-cache.tsx`. | Stricter than the fragment, which leaves tests and files outside `src` and `app` unchecked. |
 | CI template ([baseline](docs/standards/baseline.md)) | `.github/workflows/ci.yml` | Job `check`, triggered by `pull_request` and `workflow_call` instead of `push`; one `pnpm verify` step (lint, typecheck and tests) plus the build, Node `22`. | The `main` ruleset requires `check`; `deploy.yml` reruns CI on main before shipping; root scripts already filter into core and mobile. |
 | Cooldown exemption ([baseline](docs/standards/baseline.md)) | `pnpm-workspace.yaml` | `@appelent/*` is permanently exempt from `minimumReleaseAge`, without a date. | Our own registry packages. |
-| CI update publish ([mobile distribution](docs/standards/mobile-distribution.md)) | `preview` channel | `deploy.yml` publishes after a production deploy (a manual run), not after a merge's staging deploy. Production updates stay manual (`pnpm mobile:update:production`). | Preview is the daily driver and calls the production backend. |
+| CI update publish ([mobile distribution](docs/standards/mobile-distribution.md)) | `preview` and `production` channels | `deploy.yml` publishes `preview` after each merge's production deploy, not after its staging deploy. `production` follows the developer-home releases standard: a daily, gated publish (`mobile-update-production.yml`). | Preview is the daily driver and calls the production backend. The releases standard is not in the installed `docs/standards` copy yet. |
 
 ### Deferred
 

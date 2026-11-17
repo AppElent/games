@@ -135,13 +135,29 @@ function sanitizeBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb | null {
  * automatic screenshots are off because nothing here needs them and they
  * would cost quota.
  */
+/**
+ * `arcadeclub@<version>+<short sha>`, the release web and the Worker use too
+ * (developer-home standards/releases.md). Only an over-the-air update knows
+ * its commit (`publish-update.mjs` inlines it); a build's own bundle keeps the
+ * SDK's native release, so this returns `undefined` for it.
+ */
+export function releaseName(
+	version: string | undefined,
+	commit: string | undefined,
+): string | undefined {
+	if (!version || !commit) return undefined;
+	return `arcadeclub@${version}+${commit.slice(0, 7)}`;
+}
+
 export function buildSentryOptions(config: {
 	dsn: string;
 	environment: SentryEnvironment;
+	release?: string;
 }) {
 	return {
 		dsn: config.dsn,
 		environment: config.environment,
+		...(config.release ? { release: config.release } : {}),
 		sendDefaultPii: false,
 		attachStacktrace: true,
 		maxBreadcrumbs: 30,

@@ -49,7 +49,7 @@ pnpm run build
 
 ## Deployment
 
-Deploys to Cloudflare Workers via Wrangler: a merge to `main` ships staging (`games-staging`, `arcade-club-stg.appelent.nl`); production (`games`) ships from a manual "Run workflow" of `deploy.yml` on `main`. `games-dev` is the dev environment.
+Deploys to Cloudflare Workers via Wrangler: every merge to `main` ships staging (`games-staging`, `arcade-club-stg.appelent.nl`), then production (`games`, `arcade-club.appelent.nl`), each with a smoke check on `/version`. `games-dev` is the dev environment. See [Deploy](docs/runbooks/deploy.md).
 
 ```bash
 pnpm run deploy:dev          # builds and deploys the games-dev Worker, values from Infisical

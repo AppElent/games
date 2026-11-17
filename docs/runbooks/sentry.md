@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when changing error reporting or investigating an Arcade Club error in Sentry.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Sentry
@@ -38,7 +38,7 @@ builds that don't report.
 ## Source maps
 
 `pnpm build` writes hidden maps, uploads them when `SENTRY_AUTH_TOKEN` is set (release
-is the git SHA, or `SENTRY_RELEASE`), and `scripts/generate-sw.mjs` deletes the public
+is `arcadeclub@<version>+<short sha>`, or `SENTRY_RELEASE`), and `scripts/generate-sw.mjs` deletes the public
 client copies. Without a token the upload is skipped. EAS builds upload native and JS
 maps through the Expo plugin with the EAS secret.
 

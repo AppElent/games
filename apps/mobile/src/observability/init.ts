@@ -6,6 +6,7 @@
  */
 import { type Locale, messages } from "@arcadeclub/core/messages";
 import * as Sentry from "@sentry/react-native";
+import Constants from "expo-constants";
 import * as Updates from "expo-updates";
 import { env } from "../env";
 // tokens.ts, not the theme index: the index loads the appearance store, which
@@ -17,6 +18,7 @@ import {
 	FEEDBACK_OPTIONS,
 	feedbackLabels,
 	feedbackTheme,
+	releaseName,
 	sanitizeFeedbackEvent,
 	shouldInitSentry,
 } from "./options";
@@ -61,6 +63,7 @@ if (dsn) {
 		...buildSentryOptions({
 			dsn,
 			environment: environmentFromChannel(Updates.channel, __DEV__),
+			release: releaseName(Constants.expoConfig?.version, env.gitCommit),
 		}),
 		integrations: [feedback],
 	});
