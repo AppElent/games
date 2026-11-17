@@ -207,11 +207,11 @@ export function upcomingTurn(state: ClockState) {
  */
 export function syncRoster(state: ClockState, present: readonly Pid[]) {
 	const keep = new Set(present);
-	return {
+	return settleScore({
 		...state,
 		members: state.members.filter((m) => keep.has(m.participantId)),
 		pending: state.pending.filter((p) => keep.has(p.participantId)),
-	};
+	});
 }
 
 /**
@@ -653,8 +653,23 @@ function closeTurn(state: ClockState, team: number): ClockState {
 		pausedRemaining: undefined,
 		notice: undefined,
 	};
-	if (next.slot >= next.teamCount) return endOfRound(next);
-	return { ...next, roundOutcome: "none" };
+	return settleScore({ ...next, roundOutcome: "none" });
+}
+
+/**
+ * On the score screen with no team left in this round that can still play
+ * (the last team dropped below two): close the round now, so the room never
+ * waits on a Next nobody is offered.
+ */
+export function settleScore(state: ClockState): ClockState {
+	if (state.phase !== "score" || state.roundOutcome !== "none") return state;
+	if (playableTeams(state).length < 2) return finish(state, "tooFewTeams");
+	if (upcomingTurn(state)) return state;
+	const closed = endOfRound(state);
+	if (closed.roundOutcome === "none" && !upcomingTurn(closed)) {
+		return finish(closed, "tooFewTeams");
+	}
+	return closed;
 }
 
 /** The server's clock: the running phase's deadline passed. */
@@ -798,7 +813,7 @@ export function leave(
 		pending: state.pending.filter((p) => p.participantId !== participantId),
 	};
 	if (state.phase === "lobby" || state.phase === "finished" || !wasDescriber) {
-		return without;
+		return settleScore(without);
 	}
 	const turn = state.turn as ClockTurn;
 	if (state.phase === "describing" || state.phase === "timeUp") {

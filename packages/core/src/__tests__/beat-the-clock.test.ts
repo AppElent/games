@@ -358,7 +358,8 @@ describe("players coming and going", () => {
 		expect(state.deck).toHaveLength(deckBefore);
 		state = leave(state, "e", 600);
 		const scored = playTurn(state, 1);
-		expect(nextTurn(scored, "b", 0).endReason).toBe("tooFewTeams");
+		// No team that can still play: the game ends as the turn scores.
+		expect(scored.endReason).toBe("tooFewTeams");
 	});
 
 	it("blocks a switch that would leave a team short, and applies others after the next turn", () => {
@@ -535,5 +536,35 @@ describe("changing a pending switch", () => {
 		expect(
 			toC.members.find((m) => m.participantId === mover)?.pendingTeam,
 		).toBe(2);
+	});
+});
+
+describe("a short last team", () => {
+	it("closes the round instead of waiting on a Next nobody gets", () => {
+		let state = createClockState({ ...SETTINGS, teamCount: 3 });
+		const roster = [
+			["sam", 0],
+			["noor", 0],
+			["daan", 1],
+			["mila", 1],
+			["ivo", 2],
+			["bo", 2],
+		] as const;
+		for (const [id, team] of roster) state = pickTeam(state, id, team);
+		state = startGame(
+			state,
+			roster.map(([id]) => id),
+			PACK,
+			mulberry32(1),
+			0,
+		);
+		// Comets play, then Rockets; Meteors lose a player before Rockets score.
+		state = playTurn(state, 1);
+		state = nextTurn(state, upcomingTurn(state)?.describerId as string, 2000);
+		state = leave(state, "bo", 2500);
+		state = playTurn(state, 2, 3000);
+		expect(state.phase).toBe("score");
+		expect(state.round).toBe(2);
+		expect(upcomingTurn(state)?.team).toBe(0);
 	});
 });
