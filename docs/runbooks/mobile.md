@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running, verifying or building the Arcade Club mobile app (apps/mobile).
-version: 2.0.0
+version: 2.1.0
 ---
 
 # Mobile app
@@ -43,6 +43,11 @@ cd apps/mobile
 APP_VARIANT=development pnpm exec expo run:android     # or run:ios; builds + installs the dev client
 APP_VARIANT=development pnpm exec expo start --dev-client
 ```
+
+Before `expo run:ios` or `expo prebuild -p ios`, set a UTF-8 locale
+(`export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, or in your shell profile): they
+run `pod install`, which crashes with a Ruby `Encoding::CompatibilityError`
+otherwise.
 
 With a local Convex backend (`EXPO_PUBLIC_CONVEX_URL=http://127.0.0.1:3210`), an
 Android emulator needs `adb reverse tcp:3210 tcp:3210` (and the Metro port) after
