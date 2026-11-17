@@ -64,6 +64,21 @@ describe("seat", () => {
 		expect(result.current).toBe(bob);
 	});
 
+	it("holds no remembered seat when link-only, but still asks for the account's", () => {
+		rememberSeat("session_a", bob);
+		ownSeat.answer = null;
+		const guest = renderHook(() =>
+			useSeat("session_a", "", { linkOnly: true }),
+		);
+		expect(guest.result.current).toBeUndefined();
+		expect(ownSeat.args.at(-1)).toMatchObject({ participantId: undefined });
+		ownSeat.answer = alice;
+		const account = renderHook(() =>
+			useSeat("session_a", "", { linkOnly: true }),
+		);
+		expect(account.result.current).toBe(alice);
+	});
+
 	it("moves from the held seat to the account's once the answer arrives", () => {
 		rememberSeat("session_a", bob);
 		const { result, rerender } = renderHook(() => useSeat("session_a"));

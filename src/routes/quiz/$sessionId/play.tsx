@@ -18,15 +18,17 @@ export const Route = createFileRoute("/quiz/$sessionId/play")({
 });
 
 /**
- * The seat comes from the join link, else this tab's or the account's
- * (`useSeat`): without one the page asks to join.
+ * The seat comes from the join link, else the signed-in account's own
+ * (`useSeat`), never a seat this tab remembers: without one the page asks to
+ * join.
  */
 function QuizPlayerPage() {
 	const messages = useMessages();
 	const title = messages.catalog["live-quiz"].title;
 	const { sessionId } = Route.useParams();
 	const participantId =
-		useSeat(sessionId, Route.useSearch().participantId) ?? "";
+		useSeat(sessionId, Route.useSearch().participantId, { linkOnly: true }) ??
+		"";
 	const bundle = useQuery(api.quiz.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 	});
