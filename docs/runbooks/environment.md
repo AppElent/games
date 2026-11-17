@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when adding, changing or debugging an environment variable, or deploying to an Arcade Club environment.
-version: 4.0.0
+version: 4.2.0
 ---
 
 # Environment contract

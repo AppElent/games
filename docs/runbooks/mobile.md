@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running, verifying or building the Arcade Club mobile app (apps/mobile).
-version: 1.0.0
+version: 1.2.0
 ---
 
 # Mobile app

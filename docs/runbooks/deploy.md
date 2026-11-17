@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when deploying Arcade Club, or changing the CI, deploy, preview or mobile build workflows.
-version: 2.1.0
+version: 2.3.0
 ---
 
 # Deploy
