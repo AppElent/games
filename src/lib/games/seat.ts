@@ -1,9 +1,12 @@
+import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import {
 	readTabValue,
 	removeTabValue,
 	writeTabValue,
 } from "#/lib/games/local-store";
+import { useGuestId } from "#/lib/games/sessions";
+import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 type ParticipantId = Id<"sessionParticipants">;
@@ -11,8 +14,9 @@ type ParticipantId = Id<"sessionParticipants">;
 /**
  * Which participant this tab is, per session. sessionStorage, so a second tab
  * can join the same game as someone else; blocked storage leaves the tab
- * unseated instead of failing the create or join that remembered it. Table
- * games also keep a longer-lived seat secret: see `table-seat.ts`.
+ * unseated instead of failing the create or join that remembered it. A
+ * signed-in player's account also finds their seat (`useSeat`). Table games
+ * also keep a longer-lived seat secret: see `table-seat.ts`.
  */
 const keyOf = (sessionId: string) => `arcade-club.seat.${sessionId}`;
 
@@ -47,14 +51,31 @@ export function forgetSeat(sessionId: string) {
 	removeTabValue(keyOf(sessionId));
 }
 
-/** Unset on the first render, so server and client render the same markup. */
+/**
+ * This tab's seat in a session: the one it holds while it is the caller's,
+ * else the signed-in account's own (`sessions.ownSeat`), so a player who signs
+ * out and back in, or opens a new tab, keeps their seat. Without an answer
+ * the held seat stands, as it always did for guests. Unset on the first
+ * render, so server and client render the same markup.
+ */
 export function useSeat(sessionId: string): ParticipantId | undefined {
-	const [seat, setSeat] = useState<ParticipantId>();
+	const [held, setHeld] = useState<{ sessionId: string; seat?: string }>();
+	const guestId = useGuestId();
 	useEffect(() => {
-		const stored = readSeat(sessionId);
-		setSeat(stored ? (stored as ParticipantId) : undefined);
+		setHeld({ sessionId, seat: readSeat(sessionId) ?? undefined });
 	}, [sessionId]);
-	return seat;
+	const current = held?.sessionId === sessionId ? held : undefined;
+	const own = useQuery(
+		api.sessions.ownSeat,
+		current && guestId
+			? {
+					sessionId: sessionId as Id<"gameSessions">,
+					participantId: current.seat,
+					guestId,
+				}
+			: "skip",
+	);
+	return own ?? (current?.seat as ParticipantId | undefined);
 }
 
 /** The `?participantId=` a join link carries, "" when absent. */
