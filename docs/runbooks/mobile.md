@@ -148,8 +148,9 @@ CI follows the [releases](https://github.com/AppElent/developer-home/blob/main/s
   workflow") publishes the newest commit that has been on `preview` for 24 hours,
   checked out in a worktree so the bundle is exactly what preview ran. It publishes
   only when the bundle changed since the `ota-production` tag, no newer preview
-  update is a rollback, the latest `production` update and the newest `v*` tag are
-  older than that commit (a hand hotfix or a store build is never downgraded), the
+  update is a rollback, the latest `production` update of each platform and the newest
+  `v*` tag are older than that commit (checked per platform, so a platform already on
+  something newer is left out) (a hand hotfix or a store build is never downgraded), the
   production backend's `/version` reports that commit or a later one, and a
   production build or update has its runtime. Each skip is a line in the run summary.
 - **Hold.** When a bad commit is on preview and its fix hasn't soaked yet, set the repository variable `OTA_PRODUCTION_HOLD` to the reason; delete

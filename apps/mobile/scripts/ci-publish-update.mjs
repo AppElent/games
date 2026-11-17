@@ -138,26 +138,33 @@ function viewGroup(channelName, group) {
 }
 
 /**
- * The commit of the newest non-rollback update on the `production` branch,
- * or `null` when the branch has none. Fails closed: any EAS error other than
- * a missing branch stops the run, so a flaky query never hides a hotfix.
+ * Per platform, the commit of the newest non-rollback update on the
+ * `production` branch (`{ ios?, android? }`; a platform without one is
+ * missing). Platforms can differ: a hotfix may have gone to one only. Fails
+ * closed: any EAS error other than a missing branch stops the run, so a
+ * flaky query never hides a hotfix.
  */
-function latestProductionCommit() {
+function latestProductionCommits() {
 	const list = easQuery(
 		"production",
-		["update:list", "--branch", "production", "--limit", "10"],
+		["update:list", "--branch", "production", "--limit", "25"],
 		{ optional: (stderr) => /Could not find (a )?branch/.test(stderr) },
 	);
+	const shipped = {};
 	for (const { group, isRollBackToEmbedded } of list?.currentPage ?? []) {
+		if (PLATFORMS.every((platform) => platform in shipped)) break;
 		if (isRollBackToEmbedded) continue;
-		const update = easQuery("production", ["update:view", group], {
+		const updates = easQuery("production", ["update:view", group], {
 			interactiveFlag: false,
-		})[0];
-		if (update?.gitCommitHash && !update.isRollBackToEmbedded) {
-			return update.gitCommitHash;
+		});
+		for (const update of updates) {
+			if (!update.gitCommitHash || update.isRollBackToEmbedded) continue;
+			if (!(update.platform in shipped)) {
+				shipped[update.platform] = update.gitCommitHash;
+			}
 		}
 	}
-	return null;
+	return shipped;
 }
 
 /** The commit of the newest `v<version>` store-build tag, or `null`. */
@@ -315,31 +322,44 @@ if (channel === "preview") {
 	);
 	skipIfUnchanged(commit);
 
-	// Never move production backwards: past a hand-published hotfix, or past
-	// the JS a newer store build embeds.
-	for (const [what, shipped] of [
-		["the latest production update", latestProductionCommit()],
-		["the newest store build tag", latestStoreBuildCommit()],
-	]) {
-		if (shipped && git("cat-file", "-e", `${shipped}^{commit}`).status !== 0) {
-			summary(
-				`Mobile production update: ${what} is commit \`${shipped.slice(0, 7)}\`, which is not on this repository's history (published from an unpushed branch?). The owner must decide; failing.`,
-			);
-			process.exit(1);
+	// Never move a platform backwards: past a hand-published hotfix, or past
+	// the JS a newer store build embeds. Each platform is checked on its own.
+	const productionCommits = latestProductionCommits();
+	const storeBuild = latestStoreBuildCommit();
+	const eligible = PLATFORMS.filter((platform) => {
+		const checks = [
+			[`the latest ${platform} production update`, productionCommits[platform]],
+			["the newest store build tag", storeBuild],
+		];
+		for (const [what, shipped] of checks) {
+			if (!shipped) continue;
+			if (git("cat-file", "-e", `${shipped}^{commit}`).status !== 0) {
+				summary(
+					`Mobile production update: ${what} is commit \`${shipped.slice(0, 7)}\`, which is not on this repository's history (published from an unpushed branch?). The owner must decide; failing.`,
+				);
+				process.exit(1);
+			}
+			if (shipped === commit && what.includes("update")) {
+				summary(`- ${platform}: already runs \`${commit.slice(0, 7)}\``);
+				return false;
+			}
+			if (!isAncestor(shipped, commit)) {
+				summary(
+					`- ${platform}: ${what} (\`${shipped.slice(0, 7)}\`) is not older than \`${commit.slice(0, 7)}\`; skipped`,
+				);
+				return false;
+			}
 		}
-		if (shipped && !isAncestor(shipped, commit)) {
-			summary(
-				`Mobile production update: ${what} (\`${shipped.slice(0, 7)}\`) is not older than \`${commit.slice(0, 7)}\`; skipped.`,
-			);
-			process.exit(0);
-		}
-		if (shipped === commit) {
+		return true;
+	});
+	if (eligible.length === 0) {
+		if (PLATFORMS.every((platform) => productionCommits[platform] === commit)) {
 			moveTag(commit);
-			summary(
-				`Mobile production update: \`${commit.slice(0, 7)}\` is already ${what}; moved \`${tag}\` and skipped.`,
-			);
-			process.exit(0);
 		}
+		summary(
+			`Mobile production update: no platform needs \`${commit.slice(0, 7)}\`; skipped.`,
+		);
+		process.exit(0);
 	}
 
 	const running = await productionCommit();
@@ -359,7 +379,9 @@ if (channel === "preview") {
 	});
 	if (install.status !== 0) process.exit(install.status || 1);
 
-	const loadable = loadablePlatforms(join(worktree, "apps/mobile"));
+	const loadable = loadablePlatforms(join(worktree, "apps/mobile")).filter(
+		(platform) => eligible.includes(platform),
+	);
 	if (loadable.length === 0) {
 		summary(
 			"Mobile production update: **store build due.** No production build has this runtime, so no installed app would load an update. Propose a store release on a decision card.",
@@ -370,7 +392,8 @@ if (channel === "preview") {
 	if (status !== 0) {
 		// The update may be live with only the maps upload failed: then keep
 		// the tag in step, and retry the maps with --upload-only by hand.
-		if (latestProductionCommit() === commit) {
+		const after = latestProductionCommits();
+		if (loadable.some((platform) => after[platform] === commit)) {
 			moveTag(commit);
 			summary(
 				`Mobile production update: published \`${commit.slice(0, 7)}\`, but the publish step failed after it (source maps?). Retry with \`pnpm mobile:update:production --upload-only\` from that commit.`,
