@@ -5,6 +5,7 @@ import {
 	isLocalSentryUrl,
 	SHARED_SENTRY_OPTIONS,
 } from "./lib/observability/config";
+import { versionResponse } from "./lib/version";
 
 // environment_name is a Wrangler var: set for staging and PR previews (wrangler.jsonc).
 type SentryEnv = {
@@ -37,6 +38,15 @@ const instrumentedHandler = Sentry.withSentry(
 
 export default {
 	fetch(request: Request, env: SentryEnv, ctx: ExecutionContext) {
+		// Answered before Start and Sentry: cheap, and the deploy smoke check
+		// polls it.
+		const version = versionResponse(
+			request,
+			env.environment_name ||
+				import.meta.env.VITE_SENTRY_ENVIRONMENT ||
+				import.meta.env.MODE,
+		);
+		if (version) return version;
 		// Wrangler inherits production bindings even when serving localhost.
 		// Bypass instrumentation before it creates any spans or captures errors.
 		if (isLocalSentryUrl(request.url)) return handler.fetch(request);

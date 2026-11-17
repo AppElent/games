@@ -5,6 +5,7 @@ import {
 	environmentFromChannel,
 	FEEDBACK_OPTIONS,
 	feedbackLabels,
+	releaseName,
 	routeName,
 	sanitizeFeedbackEvent,
 	shouldInitSentry,
@@ -120,5 +121,31 @@ describe("feedback", () => {
 	it("leaves error events to beforeSend", () => {
 		const event = { message: "x", user: { id: "1" } } as Event;
 		expect(sanitizeFeedbackEvent(event)).toBe(event);
+	});
+});
+
+describe("releaseName", () => {
+	it("names an update's release after the version and short commit", () => {
+		expect(
+			releaseName("1.4.0", "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"),
+		).toBe("arcadeclub@1.4.0+a1b2c3d");
+	});
+
+	it("leaves a build's own bundle to the SDK's native release", () => {
+		expect(releaseName("1.4.0", undefined)).toBeUndefined();
+		expect(releaseName(undefined, "a1b2c3d")).toBeUndefined();
+	});
+
+	it("is passed on only when set", () => {
+		expect(
+			buildSentryOptions({ dsn: "x", environment: "production" }),
+		).not.toHaveProperty("release");
+		expect(
+			buildSentryOptions({
+				dsn: "x",
+				environment: "production",
+				release: "arcadeclub@1.4.0+a1b2c3d",
+			}).release,
+		).toBe("arcadeclub@1.4.0+a1b2c3d");
 	});
 });
