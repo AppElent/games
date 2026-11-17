@@ -39,18 +39,17 @@ export function fingerprint(variant, platform, root = appRoot) {
 
 /**
  * Parsed JSON output of an EAS CLI query, run as the variant `channel`
- * builds. Prints EAS's error and exits when the query fails.
+ * builds. Prints EAS's error and exits when the query fails. Commands that
+ * never prompt (`update:view`) reject `--non-interactive`: pass
+ * `{ interactiveFlag: false }`.
  */
-export function easQuery(channel, args) {
-	const result = spawnSync(
-		"pnpm",
-		["exec", "eas", ...args, "--json", "--non-interactive"],
-		{
-			cwd: appRoot,
-			env: { ...process.env, APP_VARIANT: channel },
-			encoding: "utf8",
-		},
-	);
+export function easQuery(channel, args, { interactiveFlag = true } = {}) {
+	const flags = interactiveFlag ? ["--json", "--non-interactive"] : ["--json"];
+	const result = spawnSync("pnpm", ["exec", "eas", ...args, ...flags], {
+		cwd: appRoot,
+		env: { ...process.env, APP_VARIANT: channel },
+		encoding: "utf8",
+	});
 	if (result.status !== 0) {
 		console.error(result.stderr);
 		process.exit(result.status || 1);

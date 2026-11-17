@@ -63,8 +63,17 @@ const [, sentry] = expo.plugins.find(
 		Array.isArray(plugin) && plugin[0] === "@sentry/react-native/expo",
 );
 
+// Inlined into the bundle (process env reaches the export next to the EAS
+// environment's values) so Sentry names the release
+// arcadeclub@<version>+<short sha>, like web; see src/observability/options.ts.
+const commit = spawnSync("git", ["rev-parse", "HEAD"], {
+	cwd: appRoot,
+	encoding: "utf8",
+}).stdout.trim();
+
 const env = {
 	...process.env,
+	EXPO_PUBLIC_GIT_COMMIT: commit,
 	APP_VARIANT: channel,
 	SENTRY_ORG: sentry.organization,
 	SENTRY_PROJECT: sentry.project,

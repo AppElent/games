@@ -13,6 +13,11 @@ export const env = {
 	sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
 	/** `"1"` reports from a development bundle too. */
 	sentryDebug: process.env.EXPO_PUBLIC_SENTRY_DEBUG,
+	/**
+	 * The commit an over-the-air update was published from, inlined by
+	 * `scripts/publish-update.mjs`; unset in a build's own bundle.
+	 */
+	gitCommit: process.env.EXPO_PUBLIC_GIT_COMMIT,
 	/** The web app invites link to; without it invites carry the code alone. */
 	webOrigin: process.env.EXPO_PUBLIC_WEB_ORIGIN,
 	/** Sign-in prefill, offered only with a `pk_test_` key. */

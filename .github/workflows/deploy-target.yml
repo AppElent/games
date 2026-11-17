@@ -1,0 +1,121 @@
+name: Deploy target
+
+# One environment's deploy, called by deploy.yml for staging and then for
+# production: the Convex deployment, the Worker built against it, and a smoke
+# check that waits for /version to report this commit. Every value is scoped
+# to the `staging` or `production` GitHub Environment, written there by
+# `pnpm env:apply <environment> --only github`. Neither Environment has
+# required reviewers: the merge is the gate (developer-home
+# standards/releases.md).
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "`staging` or `production`: the GitHub Environment, Sentry environment and Convex deployment."
+        required: true
+        type: string
+      cloudflare-env:
+        description: Wrangler env picked at build time; empty for production (top level of wrangler.jsonc).
+        required: false
+        type: string
+        default: ""
+      worker:
+        description: The Worker name the build must produce.
+        required: true
+        type: string
+      origin:
+        description: Public origin the smoke check reads /version from.
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.origin }}
+    permissions: { contents: read }
+    env:
+      ENVIRONMENT_NAME: ${{ inputs.environment }}
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
+      VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+      # The Cloudflare Vite plugin picks the Wrangler env at build time and
+      # `wrangler deploy` follows dist/server/wrangler.json; --env is ignored.
+      CLOUDFLARE_ENV: ${{ inputs.cloudflare-env }}
+      EXPECTED_WORKER: ${{ inputs.worker }}
+      ORIGIN: ${{ inputs.origin }}
+    steps:
+      - name: Guard ref
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Deploys run from main only (got ${GITHUB_REF})."
+          exit 1
+
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      # An Environment without its own CONVEX_DEPLOY_KEY silently inherits a
+      # repo-level one of the same name, so insist on a prod: key first. Staging
+      # has its own prod: key, for its own Convex deployment.
+      - name: Check environment
+        run: |
+          case "$CONVEX_DEPLOY_KEY" in
+            prod:*) ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY in the $ENVIRONMENT_NAME Environment is missing or not a prod: key."; exit 1 ;;
+          esac
+          node scripts/env.mjs check "$ENVIRONMENT_NAME" --ci
+
+      # The deploy key alone picks the Convex deployment, which exposes its URL
+      # to --cmd as $CONVEX_URL; the build reads VITE_CONVEX_URL. Both targets
+      # run `pnpm build`, so staging exercises the bundle production ships;
+      # VITE_SENTRY_ENVIRONMENT tags its browser reports. vite.config.ts names
+      # the release arcadeclub@<version>+<short sha> from GITHUB_SHA.
+      - name: Convex deploy + build
+        run: |
+          pnpm exec convex deploy \
+            --cmd-url-env-var-name CONVEX_URL \
+            --cmd "VITE_CONVEX_URL=\$CONVEX_URL VITE_SENTRY_ENVIRONMENT=\$ENVIRONMENT_NAME pnpm build"
+
+      # A build for the wrong env would replace another environment's Worker.
+      - name: Guard Worker name
+        run: |
+          built=$(jq -r .name dist/server/wrangler.json)
+          if [ "$built" != "$EXPECTED_WORKER" ]; then
+            echo "::error::Built Worker is $built, expected $EXPECTED_WORKER. Check CLOUDFLARE_ENV."
+            exit 1
+          fi
+
+      - name: Deploy Worker
+        run: pnpm exec wrangler deploy
+
+      # The new Worker answers within seconds, but give the edge two minutes.
+      # Then the home page must render, which needs the bundle, Clerk config
+      # and SSR to work.
+      - name: Smoke check
+        run: |
+          for attempt in $(seq 1 24); do
+            body=$(curl -fsS --max-time 10 "$ORIGIN/version" || true)
+            commit=$(printf '%s' "$body" | jq -r '.commit // empty' 2>/dev/null || true)
+            [ "$commit" = "$GITHUB_SHA" ] && break
+            sleep 5
+          done
+          if [ "$commit" != "$GITHUB_SHA" ]; then
+            echo "::error::$ORIGIN/version reports '${commit:-nothing}', expected $GITHUB_SHA."
+            exit 1
+          fi
+          status=$(curl -sSL -o /dev/null -w '%{http_code}' --max-time 20 "$ORIGIN/")
+          if [ "$status" != "200" ]; then
+            echo "::error::$ORIGIN/ answered $status after the deploy."
+            exit 1
+          fi
+          {
+            echo "### $ENVIRONMENT_NAME"
+            echo
+            echo '```json'
+            printf '%s\n' "$body" | jq .
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

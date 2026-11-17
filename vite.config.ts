@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
@@ -7,14 +8,25 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// One release ties the browser bundle, the Worker and their source maps.
-const release =
-	process.env.SENTRY_RELEASE ||
+// The app version lives in one place, the phone app's app.json; web ships
+// the same number (developer-home standards/releases.md).
+const { version } = JSON.parse(
+	readFileSync(new URL("./apps/mobile/app.json", import.meta.url), "utf8"),
+).expo;
+const commit =
+	process.env.GITHUB_SHA ||
 	execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+// One release, `arcadeclub@<version>+<short sha>`, ties the browser bundle,
+// the Worker and their source maps; /version reports the same values.
+const release =
+	process.env.SENTRY_RELEASE || `arcadeclub@${version}+${commit.slice(0, 7)}`;
 
 const config = defineConfig({
 	define: {
 		"import.meta.env.VITE_SENTRY_RELEASE": JSON.stringify(release),
+		"import.meta.env.VITE_APP_VERSION": JSON.stringify(version),
+		"import.meta.env.VITE_GIT_COMMIT": JSON.stringify(commit),
+		"import.meta.env.VITE_BUILT_AT": JSON.stringify(new Date().toISOString()),
 	},
 	// Maps are uploaded, then generate-sw.mjs deletes the public client copies.
 	build: { sourcemap: "hidden" },

@@ -1,101 +1,64 @@
 name: Deploy
 
-# A merge to main ships staging: the CI checks again (admins can bypass the
-# ruleset), then the staging Convex deployment, then the games-staging Worker
-# built against it. Production ships only from a manual "Run workflow" on main:
-# production Convex, the games Worker, then the preview app's over-the-air
-# update, whose builds call the production backend. Builds stay separate
-# (mobile-build.yml).
+# Every merge to main ships, one change at a time (developer-home
+# standards/releases.md): the CI checks again (admins can bypass the ruleset),
+# then staging (Convex, the games-staging Worker, smoke check), then production
+# (Convex, the games Worker, smoke check), then the preview app's
+# over-the-air update, whose builds call the production backend. No job waits
+# for a person: the merge is the gate, so a change that could break installed
+# app builds waits for the owner before merging. "Run workflow" on main
+# redeploys main through the same chain. The production app's update is the
+# daily mobile-update-production.yml; builds stay separate (mobile-build.yml).
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# Never cancel a deploy mid-flight; queue behind the previous one instead.
+# Never cancel a deploy mid-flight; queue behind the previous one instead. A
+# newer queued run replaces an older queued one, so production always moves
+# forward to the newest main.
 concurrency:
-  group: deploy-${{ github.event_name == 'workflow_dispatch' && 'production' || 'staging' }}
+  group: deploy
   cancel-in-progress: false
 
 jobs:
   checks:
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/ci.yml
     permissions: { contents: read }
 
-  deploy:
+  staging:
     needs: checks
-    runs-on: ubuntu-latest
-    # Every value is scoped to the `staging` or `production` GitHub Environment,
-    # written there by `pnpm env:apply <environment> --only github`.
-    environment: ${{ github.event_name == 'workflow_dispatch' && 'production' || 'staging' }}
+    uses: ./.github/workflows/deploy-target.yml
     permissions: { contents: read }
-    env:
-      ENVIRONMENT_NAME: ${{ github.event_name == 'workflow_dispatch' && 'production' || 'staging' }}
-      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
-      VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
-      # The Cloudflare Vite plugin picks the Wrangler env at build time and
-      # `wrangler deploy` follows dist/server/wrangler.json; --env is ignored.
-      # wrangler.jsonc: top-level = games (production), env.staging = games-staging.
-      # Written `!= … && 'staging' || ''` because the other polarity would make
-      # production's empty string fall through to 'staging'.
-      CLOUDFLARE_ENV: ${{ github.event_name != 'workflow_dispatch' && 'staging' || '' }}
-      EXPECTED_WORKER: ${{ github.event_name == 'workflow_dispatch' && 'games' || 'games-staging' }}
-    steps:
-      - name: Guard production ref
-        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
-        run: |
-          echo "::error::Production deploys run from main only (got ${GITHUB_REF})."
-          exit 1
+    secrets: inherit
+    with:
+      environment: staging
+      # wrangler.jsonc: top level = games (production), env.staging = games-staging.
+      cloudflare-env: staging
+      worker: games-staging
+      origin: https://arcade-club-stg.appelent.nl
 
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-
-      # An Environment without its own CONVEX_DEPLOY_KEY silently inherits a
-      # repo-level one of the same name, so insist on a prod: key first. Staging
-      # has its own prod: key, for its own Convex deployment.
-      - name: Check environment
-        run: |
-          case "$CONVEX_DEPLOY_KEY" in
-            prod:*) ;;
-            *) echo "::error::CONVEX_DEPLOY_KEY in the $ENVIRONMENT_NAME Environment is missing or not a prod: key."; exit 1 ;;
-          esac
-          node scripts/env.mjs check "$ENVIRONMENT_NAME" --ci
-
-      # The deploy key alone picks the Convex deployment, which exposes its URL
-      # to --cmd as $CONVEX_URL; the build reads VITE_CONVEX_URL. Both targets
-      # run `pnpm build`, so staging exercises the bundle production ships;
-      # VITE_SENTRY_ENVIRONMENT tags its browser reports.
-      - name: Convex deploy + build
-        run: |
-          pnpm exec convex deploy \
-            --cmd-url-env-var-name CONVEX_URL \
-            --cmd "VITE_CONVEX_URL=\$CONVEX_URL VITE_SENTRY_ENVIRONMENT=\$ENVIRONMENT_NAME pnpm build"
-
-      # A build for the wrong env would replace another environment's Worker.
-      - name: Guard Worker name
-        run: |
-          built=$(jq -r .name dist/server/wrangler.json)
-          if [ "$built" != "$EXPECTED_WORKER" ]; then
-            echo "::error::Built Worker is $built, expected $EXPECTED_WORKER. Check CLOUDFLARE_ENV."
-            exit 1
-          fi
-
-      - name: Deploy Worker
-        run: pnpm exec wrangler deploy
+  production:
+    needs: staging
+    uses: ./.github/workflows/deploy-target.yml
+    permissions: { contents: read }
+    secrets: inherit
+    with:
+      environment: production
+      cloudflare-env: ""
+      worker: games
+      origin: https://arcade-club.appelent.nl
 
   # Publishes main's JavaScript to the preview channel once the production
-  # backend it calls is live (so only after a production deploy), and only when
-  # an installed build can load it; otherwise the run summary
-  # says a rebuild is due. See apps/mobile/scripts/ci-publish-update.mjs.
-  # Preview values live in repository scope as PREVIEW_<name>.
+  # backend it calls is live, and only when an installed build can load it;
+  # otherwise the run summary says a rebuild is due. See
+  # apps/mobile/scripts/ci-publish-update.mjs. Preview values live in
+  # repository scope as PREVIEW_<name>.
   mobile-update:
-    needs: deploy
-    if: github.event_name == 'workflow_dispatch'
+    needs: production
     runs-on: ubuntu-latest
-    # Moves the mobile-update/preview tag after publishing.
+    # Moves the ota-preview tag after publishing.
     permissions: { contents: write }
     env:
       EXPO_TOKEN: ${{ secrets.PREVIEW_EXPO_TOKEN }}

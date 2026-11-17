@@ -1,0 +1,42 @@
+name: Mobile production update
+
+# Once a day, the production app gets everything that soaked on preview
+# (developer-home standards/releases.md): the newest commit published to the
+# preview channel at least 24 hours ago, when the app bundle changed since the
+# ota-production tag, the production backend runs that commit or later, and a
+# production build or update has its runtime fingerprint. Otherwise it
+# publishes nothing and the run summary says why; "store build due" means a
+# native change needs a store release, which waits for the owner's decision
+# card. See apps/mobile/scripts/ci-publish-update.mjs.
+on:
+  schedule:
+    # 05:30 UTC: 06:30 in Amsterdam in winter, 07:30 in summer, before the
+    # manager's morning Sentry check.
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-update-production
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # The production Environment holds the Sentry token the publish needs for
+    # source maps; it has no required reviewers.
+    environment: production
+    # Moves the ota-production tag after publishing.
+    permissions: { contents: write }
+    env:
+      # One Expo account token serves both channels (Infisical expo-token).
+      EXPO_TOKEN: ${{ secrets.PREVIEW_EXPO_TOKEN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      PRODUCTION_ORIGIN: https://arcade-club.appelent.nl
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/require-expo-token
+      - name: Publish production update
+        run: node apps/mobile/scripts/ci-publish-update.mjs production

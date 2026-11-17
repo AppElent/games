@@ -19,7 +19,7 @@ const { count, size, warnings } = await generateSW({
 	globDirectory: clientDir,
 	globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
 	swDest: path.join(clientDir, "sw.js"),
-	navigateFallbackDenylist: [/^\/api\//, /^\/convex\//],
+	navigateFallbackDenylist: [/^\/api\//, /^\/convex\//, /^\/version$/],
 	skipWaiting: true,
 	clientsClaim: true,
 	sourcemap: false,

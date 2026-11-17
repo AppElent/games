@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running, verifying or building the Arcade Club mobile app (apps/mobile).
-version: 1.2.0
+version: 2.0.0
 ---
 
 # Mobile app
@@ -135,14 +135,31 @@ runtime, since nothing would load the update; `--without-build` overrides that. 
 retry with `--upload-only`; don't publish again. A bare `eas update` resolves to the
 development variant, so no preview or production build would ever load it.
 
-A production deploy (a manual `deploy.yml` run on `main`) publishes the preview update
-from CI once the production backend is live
-(`apps/mobile/scripts/ci-publish-update.mjs`); a merge only ships staging web. It publishes only
-when a finished EAS build or an earlier update on `preview` has the runtime, and skips
-when nothing the app bundles changed since the `mobile-update/preview` tag. Otherwise
-the run summary says a rebuild is due. Local builds are not on EAS: after installing
-one with a new runtime, publish once by hand to seed the channel. Production updates
-stay manual.
+CI follows the [releases](https://github.com/AppElent/developer-home/blob/main/standards/releases.md) standard; both channels use
+`apps/mobile/scripts/ci-publish-update.mjs`:
+
+- **Preview, every merge.** `deploy.yml` publishes `main` to `preview` once the
+  production backend it calls is live. It publishes only for the platforms where a
+  finished EAS build or an earlier update on `preview` has the runtime, skips when
+  nothing the app bundles changed since the `ota-preview` tag, and otherwise says in
+  the run summary that a rebuild is due. Local builds are not on EAS: after installing
+  one with a new runtime, publish once by hand to seed the channel.
+- **Production, once a day.** `mobile-update-production.yml` (05:30 UTC, or "Run
+  workflow") publishes the newest commit that has been on `preview` for 24 hours,
+  checked out in a worktree so the bundle is exactly what preview ran. It publishes
+  only when the bundle changed since the `ota-production` tag, the production
+  backend's `/version` reports that commit or a later one, and a production build or
+  update has its runtime. Each skip is a line in the run summary. **Store build due**
+  means a native change: propose a store release on Eric's decision card (changelog:
+  merged PR titles since the last `v` tag), tag `v<version>` on the build's commit,
+  and never submit without his yes.
+- After a production publish, check Sentry for release
+  `arcadeclub@<version>+<short sha>`. Roll back with `eas update:rollback` on the
+  `production` branch and fix forward.
+
+`pnpm mobile:update:production` stays for a hand publish (a hotfix that can't wait a
+day); move the `ota-production` tag to its commit afterwards so the daily job
+doesn't publish it again.
 
 Builds pick up an update on their next cold start, when the runtime fingerprint
 matches, or when the user taps **Restart** on the Play tab once one has downloaded. The
