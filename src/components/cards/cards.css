@@ -409,14 +409,6 @@
 	text-align: left;
 }
 
-.rule-switch:disabled {
-	cursor: default;
-}
-
-.rule-switch:disabled .rule-switch-track {
-	opacity: 0.5;
-}
-
 .rule-switch-track {
 	flex: none;
 	width: 2.75rem;
@@ -446,6 +438,14 @@
 
 .rule-switch[aria-checked="true"] .rule-switch-track::before {
 	transform: translateX(1.15rem);
+}
+
+.rule-switch:disabled {
+	cursor: default;
+}
+
+.rule-switch:disabled .rule-switch-track {
+	opacity: 0.5;
 }
 
 /* The table */
