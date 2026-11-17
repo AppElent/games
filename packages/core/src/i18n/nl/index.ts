@@ -3,6 +3,7 @@ import { auth } from "./auth";
 import { catalog } from "./catalog";
 import { common } from "./common";
 import { backgammon } from "./games/backgammon";
+import { beatTheClock } from "./games/beatTheClock";
 import { bluffDice } from "./games/bluffDice";
 import { cards } from "./games/cards";
 import { chess } from "./games/chess";
@@ -30,6 +31,7 @@ export const nl = {
 	games: {
 		quiz,
 		backgammon,
+		beatTheClock,
 		sudoku,
 		chess,
 		connectFour,

@@ -109,6 +109,12 @@ const DELETION: { [T in TableNames]: Treatment<T> } = {
 				.query("connectFourStates")
 				.withIndex("by_session", (q) => q.eq("sessionId", sessionId)),
 	},
+	beatTheClockStates: {
+		inSession: (db, sessionId) =>
+			db
+				.query("beatTheClockStates")
+				.withIndex("by_session", (q) => q.eq("sessionId", sessionId)),
+	},
 	signalWordsStates: {
 		inSession: (db, sessionId) =>
 			db

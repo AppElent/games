@@ -9,6 +9,12 @@ import {
 	BACKGAMMON_MOVE_TYPES,
 	BACKGAMMON_PHASES,
 } from "@arcadeclub/core/backgammon";
+import {
+	CLOCK_END_REASONS,
+	CLOCK_NOTICES,
+	CLOCK_PHASES,
+	CLOCK_ROUND_OUTCOMES,
+} from "@arcadeclub/core/beat-the-clock";
 import { BLUFF_PHASES } from "@arcadeclub/core/bluff-dice";
 import {
 	CONNECT_FOUR_CELLS,
@@ -46,6 +52,76 @@ import { v } from "convex/values";
 import { literals } from "./lib/validators";
 
 export const gameTypeValidator = literals(GAME_TYPES);
+
+/**
+ * Beat the Clock's state, field for field `ClockState` from core. Participant
+ * ids are plain strings there, so they are here too.
+ */
+export const clockStateFields = {
+	packId: v.string(),
+	locale: v.string(),
+	turnSeconds: v.number(),
+	target: v.number(),
+	teamCount: v.number(),
+	phase: literals(CLOCK_PHASES),
+	members: v.array(
+		v.object({
+			participantId: v.string(),
+			team: v.number(),
+			order: v.number(),
+			pendingTeam: v.optional(v.number()),
+		}),
+	),
+	pending: v.array(
+		v.object({
+			participantId: v.string(),
+			team: v.number(),
+			order: v.number(),
+		}),
+	),
+	nextOrder: v.number(),
+	left: v.array(v.string()),
+	scores: v.array(v.number()),
+	cursors: v.array(v.number()),
+	round: v.number(),
+	slot: v.number(),
+	turnNumber: v.number(),
+	// Never returned by a query: the deal order.
+	deck: v.array(v.number()),
+	used: v.array(v.number()),
+	turn: v.optional(
+		v.object({
+			team: v.number(),
+			describerId: v.string(),
+			// Hidden from the guessing team until the turn ends.
+			words: v.array(v.number()),
+			ticks: v.array(v.boolean()),
+			flags: v.array(v.string()),
+			skipped: v.optional(v.boolean()),
+			gain: v.optional(v.number()),
+			confirmedBy: v.optional(v.string()),
+			autoConfirmed: v.optional(v.boolean()),
+			confirmedAt: v.optional(v.number()),
+		}),
+	),
+	roundOutcome: literals(CLOCK_ROUND_OUTCOMES),
+	deadline: v.optional(v.number()),
+	paused: v.boolean(),
+	pausedRemaining: v.optional(v.number()),
+	notice: v.optional(
+		v.object({
+			kind: literals(CLOCK_NOTICES),
+			team: v.number(),
+			at: v.number(),
+		}),
+	),
+	endReason: v.optional(literals(CLOCK_END_REASONS)),
+	winners: v.array(v.number()),
+	described: v.array(
+		v.object({ participantId: v.string(), words: v.number() }),
+	),
+	packWillRepeat: v.boolean(),
+};
 
 export const contentDraftKindValidator = literals(CONTENT_DRAFT_KINDS);
 
@@ -378,6 +454,13 @@ export default defineSchema({
 		resultOutcome: v.optional(connectFourOutcomeValidator),
 		resultWinner: v.optional(connectFourColorValidator),
 		winnerParticipantId: v.optional(v.id("sessionParticipants")),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	}).index("by_session", ["sessionId"]),
+
+	beatTheClockStates: defineTable({
+		sessionId: v.id("gameSessions"),
+		...clockStateFields,
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	}).index("by_session", ["sessionId"]),

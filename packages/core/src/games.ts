@@ -12,6 +12,7 @@ export const GAME_TYPES = [
 	"squad-surge",
 	"card-games",
 	"dice-games",
+	"beat-the-clock",
 ] as const;
 export type GameType = (typeof GAME_TYPES)[number];
 
@@ -59,6 +60,7 @@ export const GAME_SESSION_POLICY = {
 		authPolicy: "guestAllowed",
 		seatSecret: true,
 	},
+	"beat-the-clock": { joinMode: "room", authPolicy: "guestAllowed" },
 } as const satisfies Record<SessionGameType, SessionPolicy>;
 
 /** Whether this game's seats carry a secret the player's device must keep. */

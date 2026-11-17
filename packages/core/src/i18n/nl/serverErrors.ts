@@ -186,4 +186,18 @@ export const serverErrors = {
 	claimMustOutrank: "Je bod moet hoger zijn dan het vorige bod.",
 	claimImpossible: "Dat bod is niet mogelijk.",
 	bluffDiceMaxPlayers: "Bluff Dice ondersteunt maximaal 8 spelers.",
+	clockBadSettings:
+		"Kies een van de aangeboden tijden, doelen en aantallen teams.",
+	clockBadPack: "Dat woordenpakket bestaat niet.",
+	clockBadTeam: "Dat team bestaat niet.",
+	clockWrongPhase: "Dat kan nu niet.",
+	clockSwitchBlocked: "Je team heeft minstens 2 spelers nodig.",
+	clockTeamsNeedTwo: "Elk team heeft minstens 2 spelers nodig.",
+	clockPaused: "Het spel is gepauzeerd.",
+	clockNotDescriber: "Alleen de omschrijver kan dat doen.",
+	clockBadWord: "Dat woord staat niet op de kaart.",
+	clockTimeUp: "De tijd is op: je kunt alleen nog een vinkje weghalen.",
+	clockNotReferee: "Alleen de andere teams controleren de woorden.",
+	clockNotNextDescriber: "De volgende omschrijver start de beurt.",
+	clockHostCannotLeave: "Als host beëindig je het spel.",
 } satisfies typeof en;

@@ -16,6 +16,7 @@ type ParticipantId = Id<"sessionParticipants">;
  */
 const STATE_TABLES = {
 	backgammon: "backgammonGameStates",
+	"beat-the-clock": "beatTheClockStates",
 	"bluff-dice": "bluffDiceStates",
 	"card-games": "cardGameStates",
 	// Dice tables share the card tables' storage (ADR 0003).

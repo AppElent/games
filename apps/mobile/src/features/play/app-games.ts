@@ -67,6 +67,21 @@ export const APP_GAMES = {
 			}),
 		},
 	},
+	"beat-the-clock": {
+		id: "beat-the-clock",
+		href: "/beat-the-clock",
+		icon: "timer",
+		androidIcon: "timer",
+		tint: "amber",
+		tintDim: "amberDim",
+		online: {
+			create: api.beatTheClock.create,
+			sessionHref: (sessionId: string) => ({
+				pathname: "/beat-the-clock/[sessionId]",
+				params: { sessionId },
+			}),
+		},
+	},
 	"card-games": {
 		id: "card-games",
 		href: "/cards",

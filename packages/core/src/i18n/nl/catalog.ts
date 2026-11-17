@@ -58,6 +58,14 @@ export const catalog = {
 		primaryAction: "Spel starten",
 		stats: "2 spelers",
 	},
+	"beat-the-clock": {
+		title: "Tegen de Klok",
+		tagline: "Omschrijf vijf woorden voordat de tijd op is",
+		description:
+			"Teams zijn om de beurt: één speler omschrijft vijf woorden tegen de klok, het team raadt hardop en de anderen zijn scheidsrechter.",
+		primaryAction: "Kamer openen",
+		stats: "Kamercode",
+	},
 	"signal-words": {
 		title: "Signal Words",
 		tagline: "Teamduels met hints",

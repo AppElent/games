@@ -19,6 +19,11 @@ type FullscreenGameShellProps = {
 	onRestart?: () => void;
 	/** Fired when the menu overlay opens/closes so the game loop can pause. */
 	onPauseChange?: (paused: boolean) => void;
+	/**
+	 * The game's own header control. When set, the shell draws no floating
+	 * menu button and no pause overlay: the game owns its menu.
+	 */
+	menu?: ReactNode;
 };
 
 /**
@@ -32,9 +37,18 @@ export function FullscreenGameShell({
 	hud,
 	onRestart,
 	onPauseChange,
+	menu,
 }: FullscreenGameShellProps) {
 	const messages = useMessages();
 	const [menuOpen, setMenuOpen] = useState(false);
+
+	if (menu !== undefined) {
+		return (
+			<div className="game-fullscreen bg-slate-950 text-white">
+				<div className="relative h-full w-full">{children}</div>
+			</div>
+		);
+	}
 
 	const setMenu = (open: boolean) => {
 		setMenuOpen(open);

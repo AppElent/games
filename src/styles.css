@@ -240,6 +240,13 @@ code {
   --club-on-accent: #04121a;
   --club-amber: #fbbf24;
   --club-violet: #a78bfa;
+  --club-amber-dim: rgba(251, 191, 36, 0.14);
+  --club-on-amber: #1c1404;
+  --club-violet-dim: rgba(167, 139, 250, 0.14);
+  --club-danger: #fb7185;
+  --club-danger-dim: rgba(251, 113, 133, 0.14);
+  --club-on-danger: #1a0509;
+  --club-accent-dim: rgba(34, 211, 238, 0.14);
 }
 .light {
   --club-surface: #ffffff;
@@ -248,6 +255,28 @@ code {
   --club-on-accent: #ffffff;
   --club-amber: #92400e;
   --club-violet: #6d28d9;
+  --club-amber-dim: rgba(146, 64, 14, 0.09);
+  --club-on-amber: #ffffff;
+  --club-violet-dim: rgba(109, 40, 217, 0.09);
+  --club-danger: #be123c;
+  --club-danger-dim: rgba(190, 18, 60, 0.09);
+  --club-on-danger: #ffffff;
+  --club-accent-dim: rgba(14, 116, 144, 0.09);
+}
+
+/* Game screens are always dark: pin the tokens added for the party games too. */
+.game-fullscreen {
+  --club-surface: #121626;
+  --club-on-accent: #04121a;
+  --club-amber: #fbbf24;
+  --club-amber-dim: rgba(251, 191, 36, 0.14);
+  --club-on-amber: #1c1404;
+  --club-violet: #a78bfa;
+  --club-violet-dim: rgba(167, 139, 250, 0.14);
+  --club-danger: #fb7185;
+  --club-danger-dim: rgba(251, 113, 133, 0.14);
+  --club-on-danger: #1a0509;
+  --club-accent-dim: rgba(34, 211, 238, 0.14);
 }
 .club-catalog-card, .club-join-panel {
   background: var(--club-surface);

@@ -218,6 +218,13 @@ export const FEATURES = defineFeatures([
 		routes: { web: ["hitster/**"], mobile: ["hitster/**"] },
 	},
 	{
+		id: "beat-the-clock",
+		kind: "product",
+		status: "parity",
+		platforms: ["web", "mobile"],
+		routes: { web: ["beat-the-clock/**"], mobile: ["beat-the-clock/**"] },
+	},
+	{
 		id: "card-games",
 		kind: "product",
 		status: "parity",
