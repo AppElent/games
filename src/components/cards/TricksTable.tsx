@@ -208,7 +208,7 @@ export function TricksTable({
 		NO_MELD,
 	);
 
-	const rules = familyRules(game, table.options, "tricks");
+	const rules = familyRules(game, table.options, table.seats.length, "tricks");
 	if (!rules) {
 		throw new Error("TricksTable needs a trick-taking game");
 	}

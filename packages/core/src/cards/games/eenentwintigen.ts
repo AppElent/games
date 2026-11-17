@@ -23,6 +23,7 @@ export const eenentwintigen = {
 	options: [
 		{ id: "doubleDown", patch: { doubleDown: true } },
 		{ id: "bankHitsSoft17", patch: { bankHitsSoft: true } },
+		{ id: "naturalPaysDouble", patch: { naturalPays: 2 } },
 		{ id: "shortMatch", patch: { rounds: 5 }, group: "rounds" },
 		{ id: "longMatch", patch: { rounds: 20 }, group: "rounds" },
 	],

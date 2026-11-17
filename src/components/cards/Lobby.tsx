@@ -1,11 +1,12 @@
 import type { CardGame } from "@arcadeclub/core/cards/engine";
-import { seatName } from "@arcadeclub/core/cards/table-view";
+import { houseRuleLabel, seatName } from "@arcadeclub/core/cards/table-view";
 import { useState } from "react";
 import { TableLobby } from "#/components/table/Lobby";
 import { useMessages } from "#/lib/i18n";
 import { CardsPage } from "./Chrome";
 import { RulesSheet } from "./RulesSheet";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
+import { useCardWords } from "./useCardWords";
 
 /** The table before the deal: invite people, fill seats, and the host deals. */
 export function Lobby({
@@ -20,7 +21,7 @@ export function Lobby({
 	const cards = useMessages().games.cards;
 	const text = cards.games[game.id];
 	const [rulesOpen, setRulesOpen] = useState(false);
-	const optionText = text.options as Record<string, { label: string }>;
+	const words = useCardWords();
 
 	return (
 		<CardsPage
@@ -39,13 +40,16 @@ export function Lobby({
 				controls={controls}
 				words={cards.lobby}
 				seatName={(seat) => seatName(cards, table, seat)}
-				optionLabel={(id) => optionText[id]?.label}
+				optionLabel={(id) =>
+					houseRuleLabel(words, game, id, table.seats.length)
+				}
 				rulesButton={cards.setup.rulesButton}
 				onRules={() => setRulesOpen(true)}
 			/>
 			<RulesSheet
 				game={game}
 				options={table.options}
+				seats={table.seats.length}
 				open={rulesOpen}
 				onClose={() => setRulesOpen(false)}
 			/>

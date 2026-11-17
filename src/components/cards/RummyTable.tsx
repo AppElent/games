@@ -72,7 +72,12 @@ export function RummyTable({
 		meldCard,
 	);
 
-	const rummyRules = familyRules(game, table.options, "rummy");
+	const rummyRules = familyRules(
+		game,
+		table.options,
+		table.seats.length,
+		"rummy",
+	);
 	if (!rummyRules) {
 		throw new Error("RummyTable needs a rummy game");
 	}

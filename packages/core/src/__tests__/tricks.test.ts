@@ -31,7 +31,7 @@ const game = getCardGame("hartenjagen");
 const rules = CARD_GAMES.hartenjagen.rules as unknown as TricksRules;
 
 function rulesWith(options: string[]) {
-	const resolved = resolvedRules(game, options);
+	const resolved = resolvedRules(game, options, null);
 	if (resolved.family !== "tricks") {
 		throw new Error("hartenjagen plays tricks");
 	}

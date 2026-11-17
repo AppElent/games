@@ -22,6 +22,7 @@ export const cards = {
 		houseRules: "Huisregels",
 		specialCards: "Pestkaarten",
 		specialCardsHint: "Zet er een uit om hem als gewone kaart te spelen.",
+		fromPlayers: "Telt vanaf {count} spelers.",
 		playNow: "Delen maar",
 		openRoom: "Kamer openen",
 		creating: "Schudden...",
@@ -49,6 +50,7 @@ export const cards = {
 		joinPrompt: "Wil je meespelen? Doe mee met de code.",
 		joinButton: "Aanschuiven",
 		houseRulesOn: "Huisregels aan",
+		fromPlayers: "{rule} (vanaf {count} spelers)",
 		couldNotStart: "Het spel kon niet starten",
 		couldNotChange: "De tafel kon niet worden aangepast",
 		seatError: "Je plaats kon niet worden ingenomen",
@@ -764,6 +766,14 @@ export const cards = {
 					label: "Aas als gewone kaart",
 					hint: "Aas keert doet niet mee.",
 				},
+				mustPlay: {
+					label: "Opgooien als het kan",
+					hint: "Je mag alleen pakken als er geen kaart past.",
+				},
+				noPlayDrawn: {
+					label: "Gepakte kaart wacht",
+					hint: "Een gepakte kaart mag je niet meteen opgooien.",
+				},
 			},
 		},
 		maumau: {
@@ -775,6 +785,7 @@ export const cards = {
 				"7": "Zeven pakt twee",
 				"8": "Acht slaat over",
 				J: "Boer wenst",
+				"9": "Negen keert om",
 			},
 			options: {
 				noStacking: {
@@ -797,6 +808,18 @@ export const cards = {
 					label: "Boer als gewone kaart",
 					hint: "Boer wenst doet niet mee.",
 				},
+				mustPlay: {
+					label: "Opgooien als het kan",
+					hint: "Je mag alleen pakken als er geen kaart past.",
+				},
+				noPlayDrawn: {
+					label: "Gepakte kaart wacht",
+					hint: "Een gepakte kaart mag je niet meteen opgooien.",
+				},
+				nineReverses: {
+					label: "9 keert om",
+					hint: "Een negen draait de speelrichting om.",
+				},
 			},
 		},
 		jokeren: {
@@ -817,6 +840,10 @@ export const cards = {
 				openAt40: {
 					label: "Uitkomen met 40",
 					hint: "De eerste keer neerleggen moet 40 punten zijn in plaats van 30.",
+				},
+				openAnyMeld: {
+					label: "Uitkomen zonder minimum",
+					hint: "De eerste keer uitleggen hoeft geen minimum aan punten te halen.",
 				},
 			},
 		},
@@ -843,6 +870,10 @@ export const cards = {
 					label: "Lange partij",
 					hint: "Speel 20 rondes in plaats van 10.",
 				},
+				naturalPaysDouble: {
+					label: "21 in twee telt dubbel",
+					hint: "Eenentwintig met je eerste twee kaarten wint dubbele punten.",
+				},
 			},
 		},
 		hartenjagen: {
@@ -867,6 +898,14 @@ export const cards = {
 				to50: {
 					label: "Kort spel",
 					hint: "Speel tot 50 punten in plaats van 100.",
+				},
+				heartsAnyTime: {
+					label: "Altijd harten",
+					hint: "Je mag harten uitkomen voordat ze gebroken zijn.",
+				},
+				noMoon: {
+					label: "Geen maan schieten",
+					hint: "Wie alle strafkaarten pakt, krijgt gewoon alle punten.",
 				},
 			},
 		},
@@ -914,6 +953,10 @@ export const cards = {
 					label: "Korte partij",
 					hint: "Speel 8 spellen in plaats van 16.",
 				},
+				noRoem: {
+					label: "Zonder roem",
+					hint: "Alleen kaartpunten en de laatste slag tellen, zonder pitbonus.",
+				},
 			},
 		},
 		boerenbridge: {
@@ -935,6 +978,10 @@ export const cards = {
 					label: "Gever biedt vrij",
 					hint: "De gever mag de biedingen laten optellen tot het aantal slagen.",
 				},
+				noTrump: {
+					label: "Zonder troef",
+					hint: "Er wordt geen kaart omgedraaid: de hoogste kaart van de gevraagde kleur wint.",
+				},
 			},
 		},
 		"gin-rummy": {
@@ -947,6 +994,10 @@ export const cards = {
 				shortMatch: {
 					label: "Korte partij",
 					hint: "Speel tot 50 punten in plaats van 100.",
+				},
+				straightGin: {
+					label: "Alleen gin",
+					hint: "Kloppen mag niet: alleen gin beëindigt een hand.",
 				},
 			},
 		},

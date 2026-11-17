@@ -22,6 +22,7 @@ export const cards = {
 		houseRules: "House rules",
 		specialCards: "Special cards",
 		specialCardsHint: "Switch one off to play it as a plain card.",
+		fromPlayers: "Counts from {count} players.",
 		playNow: "Deal the cards",
 		openRoom: "Open a room",
 		creating: "Shuffling...",
@@ -49,6 +50,7 @@ export const cards = {
 		joinPrompt: "Want to play? Join with the code.",
 		joinButton: "Join this table",
 		houseRulesOn: "House rules on",
+		fromPlayers: "{rule} (from {count} players)",
 		couldNotStart: "Could not start the game",
 		couldNotChange: "Could not change the table",
 		seatError: "Could not take your seat",
@@ -758,6 +760,14 @@ export const cards = {
 					label: "Ace as a plain card",
 					hint: "Ace turns is off.",
 				},
+				mustPlay: {
+					label: "Play if you can",
+					hint: "You may only draw when no card fits.",
+				},
+				noPlayDrawn: {
+					label: "Drawn card waits",
+					hint: "A card you draw can't be played in the same turn.",
+				},
 			},
 		},
 		maumau: {
@@ -769,6 +779,7 @@ export const cards = {
 				"7": "Seven draws two",
 				"8": "Eight skips",
 				J: "Jack wishes",
+				"9": "Nine reverses",
 			},
 			options: {
 				noStacking: {
@@ -791,6 +802,18 @@ export const cards = {
 					label: "Jack as a plain card",
 					hint: "Jack wishes is off.",
 				},
+				mustPlay: {
+					label: "Play if you can",
+					hint: "You may only draw when no card fits.",
+				},
+				noPlayDrawn: {
+					label: "Drawn card waits",
+					hint: "A card you draw can't be played in the same turn.",
+				},
+				nineReverses: {
+					label: "9 reverses",
+					hint: "Nine turns the direction of play.",
+				},
 			},
 		},
 		jokeren: {
@@ -811,6 +834,10 @@ export const cards = {
 				openAt40: {
 					label: "Open at 40",
 					hint: "The first lay-down needs 40 points instead of 30.",
+				},
+				openAnyMeld: {
+					label: "Open with any meld",
+					hint: "The first lay-down needs no minimum points.",
 				},
 			},
 		},
@@ -837,6 +864,10 @@ export const cards = {
 					label: "Long match",
 					hint: "Play 20 rounds instead of 10.",
 				},
+				naturalPaysDouble: {
+					label: "21 in two pays double",
+					hint: "Twenty-one in your first two cards wins twice the points.",
+				},
 			},
 		},
 		hartenjagen: {
@@ -861,6 +892,14 @@ export const cards = {
 				to50: {
 					label: "Short game",
 					hint: "Play to 50 points instead of 100.",
+				},
+				heartsAnyTime: {
+					label: "Hearts any time",
+					hint: "Hearts may be led before they are broken.",
+				},
+				noMoon: {
+					label: "No shooting the moon",
+					hint: "Taking every point card still counts against you.",
 				},
 			},
 		},
@@ -908,6 +947,10 @@ export const cards = {
 					label: "Short match",
 					hint: "Play 8 deals instead of 16.",
 				},
+				noRoem: {
+					label: "No roem",
+					hint: "Only card points and the last trick count, with no pit bonus.",
+				},
 			},
 		},
 		boerenbridge: {
@@ -929,6 +972,10 @@ export const cards = {
 					label: "Dealer bids freely",
 					hint: "The dealer may make the bids add up to the tricks in the round.",
 				},
+				noTrump: {
+					label: "No trump",
+					hint: "No card is turned up: the highest card of the suit led wins.",
+				},
 			},
 		},
 		"gin-rummy": {
@@ -941,6 +988,10 @@ export const cards = {
 				shortMatch: {
 					label: "Short match",
 					hint: "Play to 50 points instead of 100.",
+				},
+				straightGin: {
+					label: "Straight gin",
+					hint: "Nobody may knock: only gin ends a hand.",
 				},
 			},
 		},

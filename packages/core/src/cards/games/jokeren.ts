@@ -42,6 +42,7 @@ export const jokeren = {
 	options: [
 		{ id: "fullMatch", patch: { rounds: 10 } },
 		{ id: "stockOnly", patch: { takeFromDiscard: false } },
-		{ id: "openAt40", patch: { openingPoints: 40 } },
+		{ id: "openAt40", patch: { openingPoints: 40 }, group: "opening" },
+		{ id: "openAnyMeld", patch: { openingPoints: 0 }, group: "opening" },
 	],
 } as const satisfies CardGameDefinition;

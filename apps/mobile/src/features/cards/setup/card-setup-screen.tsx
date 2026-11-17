@@ -5,13 +5,16 @@
 import {
 	type CardGameDefinition,
 	type CardGameId,
-	generalOptions,
 	getCardGame,
 	isCardGameId,
 } from "@arcadeclub/core/cards/engine";
-import { specialCards } from "@arcadeclub/core/cards/table-view";
+import {
+	houseRuleSwitches,
+	specialCardSwitch,
+	specialCards,
+} from "@arcadeclub/core/cards/table-view";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
-import { setHouseRule } from "@arcadeclub/core/table-engine";
+import { initialHouseRules, setHouseRule } from "@arcadeclub/core/table-engine";
 import { Stack, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
@@ -65,21 +68,19 @@ function Setup({
 	const { t, locale } = useI18n();
 	const cards = t.games.cards;
 	const text = cards.games[gameId];
-	const optionText = text.options as Record<
-		string,
-		{ label: string; hint: string }
-	>;
 	const hosting = useHostSession("card-games");
 	const [mode, setMode] = useState<"computer" | "friends">("computer");
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 3));
-	const [options, setOptions] = useState<string[]>([]);
+	const [options, setOptions] = useState(() => initialHouseRules(game.options));
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const words = useCardWords();
-	const houseRules = generalOptions(game);
+	const solo = mode === "computer";
+	// Against the computer the table size is known; friends are still to come.
+	const seats = solo ? opponents + 1 : null;
+	const houseRules = houseRuleSwitches(words, game, seats);
 	const special = useMemo(() => specialCards(words, game), [words, game]);
 	const toggle = (id: string, on: boolean) =>
 		setOptions((current) => setHouseRule(game.options, current, id, on));
-	const solo = mode === "computer";
 	const headerOptions = useMemo(() => ({ title: text.name }), [text.name]);
 
 	const create = async () => {
@@ -140,17 +141,23 @@ function Setup({
 						<AppText variant="caption">{cards.setup.specialCardsHint}</AppText>
 						<Card>
 							{special.map((card) => {
-								const plain = card.plainOption;
-								const on = plain === null || !options.includes(plain);
+								const { on, disabled } = specialCardSwitch(
+									card,
+									options,
+									seats,
+								);
+								const option = card.option;
 								return (
 									<RuleSwitch
 										key={card.key}
 										label={card.name}
 										hint={card.effect}
 										value={on}
-										disabled={plain === null}
+										disabled={disabled}
 										onChange={(next) => {
-											if (plain !== null) toggle(plain, !next);
+											if (option !== null) {
+												toggle(option, card.adds ? next : !next);
+											}
 										}}
 										leading={<PlayingCard card={card.sample} width={36} />}
 										testID={`cards-power-${card.key}`}
@@ -162,10 +169,7 @@ function Setup({
 				) : null}
 				<HouseRuleSwitches
 					heading={cards.setup.houseRules}
-					rules={houseRules.map((option) => ({
-						id: option.id,
-						...optionText[option.id],
-					}))}
+					rules={houseRules}
 					chosen={options}
 					onChange={toggle}
 					testPrefix="cards"
@@ -198,6 +202,7 @@ function Setup({
 			<RulesSheet
 				game={game}
 				options={options}
+				seats={seats}
 				open={rulesOpen}
 				onClose={() => setRulesOpen(false)}
 			/>

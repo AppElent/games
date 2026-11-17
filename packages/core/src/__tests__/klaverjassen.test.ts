@@ -35,7 +35,7 @@ function viewOf(
 const game = getCardGame("klaverjassen");
 
 function rulesWith(options: string[] = []): TricksRules {
-	const resolved = resolvedRules(game, options);
+	const resolved = resolvedRules(game, options, null);
 	if (resolved.family !== "tricks") {
 		throw new Error("klaverjassen plays tricks");
 	}

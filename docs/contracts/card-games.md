@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing card games (Pesten, Mau-Mau, Jokeren, Eenentwintigen, Hartenjagen, Klaverjassen, Gin Rummy, Boerenbridge, Toepen), the card engine, its stored state, seat claims or card art.
-version: 1.5.0
+version: 1.6.0
 status: current
 ---
 
@@ -22,10 +22,20 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
 - A view never holds another seat's hand. In gin the opponent's cards stay hidden until
   a knock lays the knocker's melds and deadwood face up, and the hand result shows both
   hands once it is scored.
-- House rules are options over a game's `rules`, off by default. An option with
-  `withoutPowers` turns those special cards into plain cards, so a shedding game offers
-  one such option per special card and the setup screens list them under "Special
-  cards" (`specialCards` in `table-view.ts`). An option with `append` adds items to a
+- House rules are options over a game's `rules`, off by default unless marked `on`.
+  An option with `withoutPowers` turns those special cards into plain cards, so a
+  shedding game offers one such option per special card; one with `withPowers` gives a
+  plain card a power (Mau-Mau's nine). The setup screens list both under "Special
+  cards" (`specialCards` and `specialCardSwitch` in `table-view.ts`) and the rest under
+  "House rules" (`houseRuleSwitches`).
+- An option with `minPlayers` counts only at a table of at least that many players
+  (`houseRuleApplies`). The engine reads the table size from the state (one hand per
+  seat), so Convex, web and mobile enforce it alike: below the count a chosen rule is
+  kept on the table but ignored, and `resolvedRules`, `familyRules` and the rules sheet
+  take the seat count (null while friends are joining). Against the computer the setup
+  screen knows the count and disables the switch below it; in a room it stays open
+  with "Counts from N players", and the lobby names the count it waits for
+  (`houseRuleLabel`). With `on`, such a rule is on by default from that many players. An option with `append` adds items to a
   list field instead of replacing it, so two such options combine (Toepen's vuile
   was and armoede each add a kind of hand that may be swapped). Options that share a
   `group` exclude each other, such as match lengths or Boerenbridge's only up and
@@ -183,5 +193,5 @@ that keeps the existing games unchanged, not a new family.
 
 ## Acceptance
 
-- `packages/core/src/__tests__/{cards,cards-bank,card-table-view,tricks,toepen,boerenbridge,klaverjassen}.test.ts` and
+- `packages/core/src/__tests__/{cards,cards-bank,card-table-view,card-house-rules,tricks,toepen,boerenbridge,klaverjassen}.test.ts` and
   `convex/cardGames.test.ts` pass.

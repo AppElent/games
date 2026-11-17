@@ -1151,3 +1151,54 @@ describe("autopilot permissions", () => {
 		expect(table.seats[0].autopilot).toBe(false);
 	});
 });
+
+describe("house rules that need a number of players", () => {
+	/** A solo Mau-Mau table with the nine house rule, seat 0 about to play a nine on a nine. */
+	async function nineTable(bots: number) {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.cardGames.createTable,
+			tableArgs({ gameId: "maumau", bots, options: ["nineReverses"] }),
+		);
+		const stored = await t.run((ctx) =>
+			ctx.db.query("cardGameStates").unique(),
+		);
+		if (!stored) throw new Error("no table");
+		expect(stored.options).toEqual(["nineReverses"]);
+		const hands = [
+			["S9#0", "DK#0", "HQ#0"],
+			["C8#0", "DA#0"],
+			["H10#0", "CQ#0"],
+		].slice(0, bots + 1);
+		await t.run((ctx) =>
+			ctx.db.patch(stored._id, {
+				game: {
+					...stored.game,
+					hands,
+					stock: ["D8#0", "C10#0", "H8#0"],
+					discard: ["H9#0"],
+					turn: 0,
+					direction: 1,
+					pendingDraw: 0,
+					activeSuit: null,
+					drawnCard: null,
+				} as typeof stored.game,
+			}),
+		);
+		const me = creds(sessionId, participantId);
+		await t.mutation(api.cardGames.act, {
+			...me,
+			action: { type: "play", card: "S9#0" },
+		});
+		const after = await t.run((ctx) => ctx.db.query("cardGameStates").unique());
+		return after?.game as { direction: number; turn: number };
+	}
+
+	it("keeps the rule on a table too small for it, and plays the card plain", async () => {
+		expect(await nineTable(1)).toMatchObject({ direction: 1, turn: 1 });
+	});
+
+	it("enforces the rule once the table has enough players", async () => {
+		expect(await nineTable(2)).toMatchObject({ direction: -1, turn: 2 });
+	});
+});

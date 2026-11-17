@@ -45,5 +45,7 @@ export const klaverjassen = {
 		{ id: "forcedTrump", patch: { trumpChoice: "none" } },
 		{ id: "amsterdams", patch: { mustTrump: "unlessPartnerWins" } },
 		{ id: "shortMatch", patch: { deals: 8 } },
+		// Only card points and the last trick count; pit is roem too.
+		{ id: "noRoem", patch: { roem: false, pitBonus: 0 } },
 	],
 } as const satisfies CardGameDefinition;
