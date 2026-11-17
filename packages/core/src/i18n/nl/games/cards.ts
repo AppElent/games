@@ -57,6 +57,9 @@ export const cards = {
 		loading: "Je tafel wordt gezocht...",
 		notFound: "Deze tafel bestaat niet meer.",
 		unknownGame: "Dat kaartspel hebben we niet.",
+		updateToPlay: "Werk de app bij om dit spel te spelen",
+		updateToPlayHint:
+			"Dit kaartspel is nieuwer dan jouw versie van de app. Werk de app bij en open de tafel daarna opnieuw.",
 		backToGames: "Terug naar de kaartspellen",
 	},
 	table: {

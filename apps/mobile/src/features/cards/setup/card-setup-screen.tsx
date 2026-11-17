@@ -43,7 +43,8 @@ export function CardSetupScreen({ gameId }: { gameId: string }) {
 	if (!isCardGameId(gameId)) {
 		return (
 			<CenteredState
-				title={cards.session.unknownGame}
+				title={cards.session.updateToPlay}
+				message={cards.session.updateToPlayHint}
 				action={{
 					label: cards.session.backToGames,
 					onPress: () => router.replace("/cards"),

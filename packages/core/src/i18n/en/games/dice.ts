@@ -60,6 +60,9 @@ export const dice = {
 		loading: "Finding your table...",
 		notFound: "This table no longer exists.",
 		unknownGame: "We don't have that dice game.",
+		updateToPlay: "Update the app to play this game",
+		updateToPlayHint:
+			"This dice game is newer than your version of the app. Update the app, then open the table again.",
 		backToGames: "Back to dice games",
 	},
 	table: {

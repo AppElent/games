@@ -36,7 +36,8 @@ export function DiceSetupScreen({ gameId }: { gameId: string }) {
 	if (!isDiceGameId(gameId)) {
 		return (
 			<CenteredState
-				title={dice.session.unknownGame}
+				title={dice.session.updateToPlay}
+				message={dice.session.updateToPlayHint}
 				action={{
 					label: dice.session.backToGames,
 					onPress: () => router.replace("/dice"),
