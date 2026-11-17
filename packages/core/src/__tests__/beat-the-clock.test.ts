@@ -505,3 +505,35 @@ describe("review fixes", () => {
 		expectCode(() => pickTeam(first, b as string, 0), "clockSwitchBlocked");
 	});
 });
+
+describe("changing a pending switch", () => {
+	it("lets a player retarget a switch they already asked for", () => {
+		let state = createClockState({ ...SETTINGS, teamCount: 3 });
+		const roster = [
+			["sam", 0],
+			["noor", 0],
+			["lotte", 0],
+			["daan", 1],
+			["mila", 1],
+			["ivo", 2],
+			["bo", 2],
+		] as const;
+		for (const [id, team] of roster) state = pickTeam(state, id, team);
+		state = startGame(
+			state,
+			roster.map(([id]) => id),
+			PACK,
+			mulberry32(1),
+			0,
+		);
+		const describer = state.turn?.describerId;
+		const mover = teamMembers(state, 0)
+			.map((m) => m.participantId)
+			.find((id) => id !== describer) as string;
+		const toB = pickTeam(state, mover, 1);
+		const toC = pickTeam(toB, mover, 2);
+		expect(
+			toC.members.find((m) => m.participantId === mover)?.pendingTeam,
+		).toBe(2);
+	});
+});

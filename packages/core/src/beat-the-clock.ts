@@ -263,7 +263,11 @@ export function pickTeam(
 		if (state.turn?.describerId === participantId && isTurnLive(state)) {
 			throw fail("clockSwitchBlocked");
 		}
-		if (staysOnTeam(state, member.team).length <= CLOCK_MIN_TEAM) {
+		// A player who already asked to switch was counted as leaving.
+		if (
+			member.pendingTeam === undefined &&
+			staysOnTeam(state, member.team).length <= CLOCK_MIN_TEAM
+		) {
 			throw fail("clockSwitchBlocked");
 		}
 		return {

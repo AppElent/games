@@ -1,9 +1,9 @@
-import { clockTime } from "@arcadeclub/core/beat-the-clock-view";
 /**
  * Beat the Clock's building blocks on the web: the header, buttons, timer,
  * scoreboard strip and notices, all from the club tokens (game hue amber,
  * actions cyan, danger rose).
  */
+import { clockTime } from "@arcadeclub/core/beat-the-clock-view";
 import { fmt, joinNames } from "@arcadeclub/core/i18n/format";
 import { formatJoinCode } from "@arcadeclub/core/sessions";
 import { AlertCircle, Loader2, Menu, Pause } from "lucide-react";
