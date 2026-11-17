@@ -69,3 +69,13 @@ export function plural<L extends string>(
 	const template = category === "one" ? forms.one : forms.other;
 	return fmt(template, { count });
 }
+
+/**
+ * Join names as a sentence list: "Noor", "Noor and Lotte", "Noor, Lotte and
+ * Sam". `and` is the language's word. Hermes has no `Intl.ListFormat`, so
+ * both apps use this.
+ */
+export function joinNames(names: readonly string[], and: string): string {
+	if (names.length <= 1) return names[0] ?? "";
+	return `${names.slice(0, -1).join(", ")} ${and} ${names[names.length - 1]}`;
+}

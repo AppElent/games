@@ -22,6 +22,7 @@ export const play = {
 		sudoku: "Klassiek, Killer en Binair. Werkt offline.",
 		backgammon: "Samen op deze telefoon, of daag een vriend uit.",
 		hitster: "Zet nummers op je tijdlijn. Host een feestkamer.",
+		"beat-the-clock": "Omschrijf vijf woorden tegen de klok, in teams.",
 		"card-games":
 			"Pesten, Klaverjassen, Jokeren, Hartenjagen, Boerenbridge en meer, tegen de computer of vrienden.",
 		"dice-games":

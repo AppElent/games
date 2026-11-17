@@ -10,6 +10,7 @@
 
 import type * as account from "../account.js";
 import type * as backgammon from "../backgammon.js";
+import type * as beatTheClock from "../beatTheClock.js";
 import type * as bluffDice from "../bluffDice.js";
 import type * as cardGames from "../cardGames.js";
 import type * as chess from "../chess.js";
@@ -42,6 +43,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   account: typeof account;
   backgammon: typeof backgammon;
+  beatTheClock: typeof beatTheClock;
   bluffDice: typeof bluffDice;
   cardGames: typeof cardGames;
   chess: typeof chess;

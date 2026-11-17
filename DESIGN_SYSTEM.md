@@ -30,6 +30,8 @@ Conform, improve, or differ as described in [working with standards](CODING_STAN
 
 ## Project bindings
 
+Claude Design system: [Arcade Club](https://claude.ai/artifact/HuGmGETj8chqaDtXGGqwsw)
+
 The web app's palette lives in `src/styles.css` (`--club-*`). Native UI follows
 [the mobile design system](apps/mobile/DESIGN_SYSTEM.md), which transcribes the same palette.
 

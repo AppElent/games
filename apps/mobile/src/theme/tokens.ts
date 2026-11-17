@@ -36,6 +36,10 @@ export const darkColors = {
 	orangeDim: "rgba(251, 146, 60, 0.16)",
 	danger: "#fb7185",
 	dangerDim: "rgba(251, 113, 133, 0.14)",
+	onDanger: "#1a0509",
+	amber: "#fbbf24",
+	amberDim: "rgba(251, 191, 36, 0.14)",
+	onAmber: "#1c1404",
 } as const;
 
 export type Tokens = { readonly [K in keyof typeof darkColors]: string };
@@ -63,6 +67,10 @@ export const lightColors: Tokens = {
 	orangeDim: "rgba(186, 62, 12, 0.10)",
 	danger: "#be123c",
 	dangerDim: "rgba(190, 18, 60, 0.09)",
+	onDanger: "#ffffff",
+	amber: "#92400e",
+	amberDim: "rgba(146, 64, 14, 0.09)",
+	onAmber: "#ffffff",
 };
 
 /**
@@ -195,6 +203,19 @@ export const type = {
 	caption: { fontSize: 12, fontWeight: "500" },
 	control: { fontSize: 16, fontWeight: "700" },
 	code: { fontSize: 30, fontWeight: "800", letterSpacing: 6 },
+	/** Beat the Clock's countdown and a turn's points. */
+	timer: {
+		fontSize: 96,
+		lineHeight: 104,
+		fontWeight: "800",
+		fontVariant: ["tabular-nums"],
+	},
+	timerSmall: {
+		fontSize: 56,
+		lineHeight: 62,
+		fontWeight: "800",
+		fontVariant: ["tabular-nums"],
+	},
 	cellLarge: { fontSize: 24, fontWeight: "600" },
 	cellMedium: { fontSize: 18, fontWeight: "600" },
 	cellNote: { fontSize: 9, fontWeight: "600" },

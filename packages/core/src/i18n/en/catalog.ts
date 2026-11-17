@@ -64,6 +64,14 @@ export const catalog = {
 		primaryAction: "Start game",
 		stats: "2 players",
 	},
+	"beat-the-clock": {
+		title: "Beat the Clock",
+		tagline: "Describe five words before time runs out",
+		description:
+			"Teams take turns: one player describes five words against the clock, the team guesses out loud and the others referee.",
+		primaryAction: "Host room",
+		stats: "Room code",
+	},
 	"signal-words": {
 		title: "Signal Words",
 		tagline: "Team clue battles",

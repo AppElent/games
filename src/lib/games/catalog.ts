@@ -13,6 +13,7 @@ import {
 	Music,
 	Spade,
 	Swords,
+	Timer,
 	Trophy,
 	Users,
 } from "lucide-react";
@@ -117,6 +118,12 @@ const GAME_CATALOG: CatalogEntries = {
 		icon: Dice5,
 		route: "/dice",
 		sessionPath: (sessionId) => `/dice/table/${sessionId}`,
+	},
+	"beat-the-clock": {
+		accent: "amber",
+		icon: Timer,
+		route: "/beat-the-clock/new",
+		sessionPath: (sessionId) => `/beat-the-clock/${sessionId}`,
 	},
 };
 

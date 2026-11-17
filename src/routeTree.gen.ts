@@ -21,6 +21,9 @@ import { Route as BackgammonIndexRouteImport } from './routes/backgammon/index'
 import { Route as BackgammonSessionIdRouteImport } from './routes/backgammon/$sessionId'
 import { Route as BackgammonLocalRouteImport } from './routes/backgammon/local'
 import { Route as BackgammonNewRouteImport } from './routes/backgammon/new'
+import { Route as BeatTheClockIndexRouteImport } from './routes/beat-the-clock/index'
+import { Route as BeatTheClockSessionIdRouteImport } from './routes/beat-the-clock/$sessionId'
+import { Route as BeatTheClockNewRouteImport } from './routes/beat-the-clock/new'
 import { Route as BluffDiceIndexRouteImport } from './routes/bluff-dice/index'
 import { Route as BluffDiceSessionIdRouteImport } from './routes/bluff-dice/$sessionId'
 import { Route as BluffDiceNewRouteImport } from './routes/bluff-dice/new'
@@ -120,6 +123,21 @@ const BackgammonLocalRoute = BackgammonLocalRouteImport.update({
 const BackgammonNewRoute = BackgammonNewRouteImport.update({
   id: '/backgammon/new',
   path: '/backgammon/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeatTheClockIndexRoute = BeatTheClockIndexRouteImport.update({
+  id: '/beat-the-clock/',
+  path: '/beat-the-clock/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeatTheClockSessionIdRoute = BeatTheClockSessionIdRouteImport.update({
+  id: '/beat-the-clock/$sessionId',
+  path: '/beat-the-clock/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeatTheClockNewRoute = BeatTheClockNewRouteImport.update({
+  id: '/beat-the-clock/new',
+  path: '/beat-the-clock/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BluffDiceIndexRoute = BluffDiceIndexRouteImport.update({
@@ -336,6 +354,8 @@ export interface FileRoutesByFullPath {
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
   '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
+  '/beat-the-clock/$sessionId': typeof BeatTheClockSessionIdRoute
+  '/beat-the-clock/new': typeof BeatTheClockNewRoute
   '/bluff-dice/$sessionId': typeof BluffDiceSessionIdRoute
   '/bluff-dice/new': typeof BluffDiceNewRoute
   '/cards/$gameId': typeof CardsGameIdRoute
@@ -354,6 +374,7 @@ export interface FileRoutesByFullPath {
   '/sudoku/scan': typeof SudokuScanRoute
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/backgammon/': typeof BackgammonIndexRoute
+  '/beat-the-clock/': typeof BeatTheClockIndexRoute
   '/bluff-dice/': typeof BluffDiceIndexRoute
   '/cards/': typeof CardsIndexRoute
   '/chess/': typeof ChessIndexRoute
@@ -390,6 +411,8 @@ export interface FileRoutesByTo {
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
   '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
+  '/beat-the-clock/$sessionId': typeof BeatTheClockSessionIdRoute
+  '/beat-the-clock/new': typeof BeatTheClockNewRoute
   '/bluff-dice/$sessionId': typeof BluffDiceSessionIdRoute
   '/bluff-dice/new': typeof BluffDiceNewRoute
   '/cards/$gameId': typeof CardsGameIdRoute
@@ -408,6 +431,7 @@ export interface FileRoutesByTo {
   '/sudoku/scan': typeof SudokuScanRoute
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/backgammon': typeof BackgammonIndexRoute
+  '/beat-the-clock': typeof BeatTheClockIndexRoute
   '/bluff-dice': typeof BluffDiceIndexRoute
   '/cards': typeof CardsIndexRoute
   '/chess': typeof ChessIndexRoute
@@ -445,6 +469,8 @@ export interface FileRoutesById {
   '/backgammon/$sessionId': typeof BackgammonSessionIdRoute
   '/backgammon/local': typeof BackgammonLocalRoute
   '/backgammon/new': typeof BackgammonNewRoute
+  '/beat-the-clock/$sessionId': typeof BeatTheClockSessionIdRoute
+  '/beat-the-clock/new': typeof BeatTheClockNewRoute
   '/bluff-dice/$sessionId': typeof BluffDiceSessionIdRoute
   '/bluff-dice/new': typeof BluffDiceNewRoute
   '/cards/$gameId': typeof CardsGameIdRoute
@@ -463,6 +489,7 @@ export interface FileRoutesById {
   '/sudoku/scan': typeof SudokuScanRoute
   '/word-links/$puzzleId': typeof WordLinksPuzzleIdRoute
   '/backgammon/': typeof BackgammonIndexRoute
+  '/beat-the-clock/': typeof BeatTheClockIndexRoute
   '/bluff-dice/': typeof BluffDiceIndexRoute
   '/cards/': typeof CardsIndexRoute
   '/chess/': typeof ChessIndexRoute
@@ -501,6 +528,8 @@ export interface FileRouteTypes {
     | '/backgammon/$sessionId'
     | '/backgammon/local'
     | '/backgammon/new'
+    | '/beat-the-clock/$sessionId'
+    | '/beat-the-clock/new'
     | '/bluff-dice/$sessionId'
     | '/bluff-dice/new'
     | '/cards/$gameId'
@@ -519,6 +548,7 @@ export interface FileRouteTypes {
     | '/sudoku/scan'
     | '/word-links/$puzzleId'
     | '/backgammon/'
+    | '/beat-the-clock/'
     | '/bluff-dice/'
     | '/cards/'
     | '/chess/'
@@ -555,6 +585,8 @@ export interface FileRouteTypes {
     | '/backgammon/$sessionId'
     | '/backgammon/local'
     | '/backgammon/new'
+    | '/beat-the-clock/$sessionId'
+    | '/beat-the-clock/new'
     | '/bluff-dice/$sessionId'
     | '/bluff-dice/new'
     | '/cards/$gameId'
@@ -573,6 +605,7 @@ export interface FileRouteTypes {
     | '/sudoku/scan'
     | '/word-links/$puzzleId'
     | '/backgammon'
+    | '/beat-the-clock'
     | '/bluff-dice'
     | '/cards'
     | '/chess'
@@ -609,6 +642,8 @@ export interface FileRouteTypes {
     | '/backgammon/$sessionId'
     | '/backgammon/local'
     | '/backgammon/new'
+    | '/beat-the-clock/$sessionId'
+    | '/beat-the-clock/new'
     | '/bluff-dice/$sessionId'
     | '/bluff-dice/new'
     | '/cards/$gameId'
@@ -627,6 +662,7 @@ export interface FileRouteTypes {
     | '/sudoku/scan'
     | '/word-links/$puzzleId'
     | '/backgammon/'
+    | '/beat-the-clock/'
     | '/bluff-dice/'
     | '/cards/'
     | '/chess/'
@@ -664,6 +700,8 @@ export interface RootRouteChildren {
   BackgammonSessionIdRoute: typeof BackgammonSessionIdRoute
   BackgammonLocalRoute: typeof BackgammonLocalRoute
   BackgammonNewRoute: typeof BackgammonNewRoute
+  BeatTheClockSessionIdRoute: typeof BeatTheClockSessionIdRoute
+  BeatTheClockNewRoute: typeof BeatTheClockNewRoute
   BluffDiceSessionIdRoute: typeof BluffDiceSessionIdRoute
   BluffDiceNewRoute: typeof BluffDiceNewRoute
   CardsGameIdRoute: typeof CardsGameIdRoute
@@ -682,6 +720,7 @@ export interface RootRouteChildren {
   SudokuScanRoute: typeof SudokuScanRoute
   WordLinksPuzzleIdRoute: typeof WordLinksPuzzleIdRoute
   BackgammonIndexRoute: typeof BackgammonIndexRoute
+  BeatTheClockIndexRoute: typeof BeatTheClockIndexRoute
   BluffDiceIndexRoute: typeof BluffDiceIndexRoute
   CardsIndexRoute: typeof CardsIndexRoute
   ChessIndexRoute: typeof ChessIndexRoute
@@ -791,6 +830,27 @@ declare module '@tanstack/react-router' {
       path: '/backgammon/new'
       fullPath: '/backgammon/new'
       preLoaderRoute: typeof BackgammonNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beat-the-clock/': {
+      id: '/beat-the-clock/'
+      path: '/beat-the-clock'
+      fullPath: '/beat-the-clock/'
+      preLoaderRoute: typeof BeatTheClockIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beat-the-clock/$sessionId': {
+      id: '/beat-the-clock/$sessionId'
+      path: '/beat-the-clock/$sessionId'
+      fullPath: '/beat-the-clock/$sessionId'
+      preLoaderRoute: typeof BeatTheClockSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beat-the-clock/new': {
+      id: '/beat-the-clock/new'
+      path: '/beat-the-clock/new'
+      fullPath: '/beat-the-clock/new'
+      preLoaderRoute: typeof BeatTheClockNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bluff-dice/': {
@@ -1088,6 +1148,8 @@ const rootRouteChildren: RootRouteChildren = {
   BackgammonSessionIdRoute: BackgammonSessionIdRoute,
   BackgammonLocalRoute: BackgammonLocalRoute,
   BackgammonNewRoute: BackgammonNewRoute,
+  BeatTheClockSessionIdRoute: BeatTheClockSessionIdRoute,
+  BeatTheClockNewRoute: BeatTheClockNewRoute,
   BluffDiceSessionIdRoute: BluffDiceSessionIdRoute,
   BluffDiceNewRoute: BluffDiceNewRoute,
   CardsGameIdRoute: CardsGameIdRoute,
@@ -1106,6 +1168,7 @@ const rootRouteChildren: RootRouteChildren = {
   SudokuScanRoute: SudokuScanRoute,
   WordLinksPuzzleIdRoute: WordLinksPuzzleIdRoute,
   BackgammonIndexRoute: BackgammonIndexRoute,
+  BeatTheClockIndexRoute: BeatTheClockIndexRoute,
   BluffDiceIndexRoute: BluffDiceIndexRoute,
   CardsIndexRoute: CardsIndexRoute,
   ChessIndexRoute: ChessIndexRoute,
@@ -1133,12 +1196,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

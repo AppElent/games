@@ -19,6 +19,7 @@ export const play = {
 		sudoku: "Classic, Killer and Binary puzzles. Works offline.",
 		backgammon: "Pass-and-play on this phone, or challenge a friend.",
 		hitster: "Place songs on your timeline. Host a party room.",
+		"beat-the-clock": "Describe five words against the clock, in teams.",
 		"card-games":
 			"Pesten, Klaverjassen, Jokeren, Hearts, Boerenbridge and more, against the computer or friends.",
 		"dice-games":

@@ -42,6 +42,11 @@ export function rememberSeat(sessionId: string, participantId: ParticipantId) {
 	writeTabValue(keyOf(sessionId), participantId);
 }
 
+/** This tab no longer holds a seat in the session (it left the room). */
+export function forgetSeat(sessionId: string) {
+	removeTabValue(keyOf(sessionId));
+}
+
 /** Unset on the first render, so server and client render the same markup. */
 export function useSeat(sessionId: string): ParticipantId | undefined {
 	const [seat, setSeat] = useState<ParticipantId>();

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-type Tree = { [key: string]: string | Tree };
+/** A message tree; a list (team names, steps) is checked item by item. */
+type Tree = { [key: string]: string | readonly string[] | Tree };
 
 function collectLeaves(tree: Tree, prefix: string, out: Map<string, string>) {
 	for (const [key, value] of Object.entries(tree)) {
@@ -8,7 +9,7 @@ function collectLeaves(tree: Tree, prefix: string, out: Map<string, string>) {
 		if (typeof value === "string") {
 			out.set(path, value);
 		} else {
-			collectLeaves(value, path, out);
+			collectLeaves(value as Tree, path, out);
 		}
 	}
 }

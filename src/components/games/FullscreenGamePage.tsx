@@ -15,6 +15,8 @@ type FullscreenGamePageProps = {
 	maxWidthClassName?: string;
 	/** Extra classes for the content column. */
 	className?: string;
+	/** The game's own header control; see `FullscreenGameShell`. */
+	menu?: ReactNode;
 };
 
 /**
@@ -30,12 +32,13 @@ export function FullscreenGamePage({
 	children,
 	maxWidthClassName = "max-w-3xl",
 	className,
+	menu,
 }: FullscreenGamePageProps) {
 	return (
-		<FullscreenGameShell title={title}>
+		<FullscreenGameShell title={title} menu={menu}>
 			<div className="h-full touch-pan-y overflow-y-auto overscroll-contain">
 				<div
-					className={`mx-auto w-full px-4 ${SHELL_PAGE_INSET} pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
+					className={`mx-auto w-full px-4 ${menu === undefined ? SHELL_PAGE_INSET : "pt-4"} pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
 				>
 					{kicker !== undefined ? (
 						<p className="club-kicker mb-2">{kicker}</p>
