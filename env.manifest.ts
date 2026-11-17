@@ -21,9 +21,8 @@ export const ENV_CONFIG = {
 };
 
 // "staging" is the staging web (Worker games-staging, its own Convex deployment) and
-// the installed preview app (EAS preview), which calls that same staging backend.
-// Both read Infisical prod; the staging deploy key, Convex URL and web origin have
-// their own Infisical keys. Production Clerk is shared (staging trusts its issuer).
+// the installed preview app (EAS preview), which calls the production backend. Both
+// read Infisical prod; only the staging deploy key differs.
 export const ENVIRONMENTS = [
 	"local",
 	"dev",
@@ -36,8 +35,7 @@ const ALL = ["local", "dev", "preview", "staging", "production"];
 const SHIPPED = ["preview", "staging", "production"];
 // Mobile builds: development, the preview app (staging) and the store app.
 const APP = ["local", "dev", "staging", "production"];
-// The preview app (staging) reads the staging backend's own URL and web origin.
-const APP_NOT_STAGING = ["local", "dev", "production"];
+const APP_DEPLOYED = ["dev", "staging", "production"];
 
 export const ENTRIES = [
 	{
@@ -57,29 +55,13 @@ export const ENTRIES = [
 					production: "convex deploy --cmd-url-env-var-name CONVEX_URL",
 				},
 			},
-			"expo-build": {
-				name: "EXPO_PUBLIC_CONVEX_URL",
-				environments: APP_NOT_STAGING,
-			},
+			"expo-build": { name: "EXPO_PUBLIC_CONVEX_URL", environments: APP },
 			"expo-local": {
 				name: "EXPO_PUBLIC_CONVEX_URL",
 				environments: ["local"],
 				suppliedIn: {
 					local: "workspace prepare writes the selected backend URL",
 				},
-			},
-		},
-	},
-	{
-		key: "convexStagingUrl",
-		infisicalKey: "convex-staging-url",
-		description:
-			"Public URL of the staging Convex deployment the preview app calls, in Infisical prod.",
-		secret: false,
-		lands: {
-			"expo-build": {
-				name: "EXPO_PUBLIC_CONVEX_URL",
-				environments: ["staging"],
 			},
 		},
 	},
@@ -201,20 +183,7 @@ export const ENTRIES = [
 		lands: {
 			"expo-build": {
 				name: "EXPO_PUBLIC_WEB_ORIGIN",
-				environments: ["dev", "production"],
-			},
-		},
-	},
-	{
-		key: "webStagingOrigin",
-		infisicalKey: "web-staging-origin",
-		description:
-			"Staging web origin the preview app uses for share links, in Infisical prod.",
-		secret: false,
-		lands: {
-			"expo-build": {
-				name: "EXPO_PUBLIC_WEB_ORIGIN",
-				environments: ["staging"],
+				environments: APP_DEPLOYED,
 			},
 		},
 	},
