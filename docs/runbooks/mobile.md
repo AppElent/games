@@ -152,8 +152,7 @@ CI follows the [releases](https://github.com/AppElent/developer-home/blob/main/s
   older than that commit (a hand hotfix or a store build is never downgraded), the
   production backend's `/version` reports that commit or a later one, and a
   production build or update has its runtime. Each skip is a line in the run summary.
-- **Hold.** To stop the daily publish (a bad commit soaked on preview and its fix
-  hasn't yet), set the repository variable `OTA_PRODUCTION_HOLD` to the reason; delete
+- **Hold.** When a bad commit is on preview and its fix hasn't soaked yet, set the repository variable `OTA_PRODUCTION_HOLD` to the reason; delete
   it to resume. Rolling back preview (`eas update:rollback --branch preview`) also
   holds production until a newer preview update replaces the rollback.
 - GitHub turns off a scheduled workflow after 60 days without repository activity;

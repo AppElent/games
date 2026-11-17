@@ -137,20 +137,37 @@ function viewGroup(channelName, group) {
 	return updates?.[0] ?? null;
 }
 
-/** The commit of the newest update on the `production` branch, or `null`. */
+/**
+ * The commit of the newest non-rollback update on the `production` branch,
+ * or `null` when the branch has none. Fails closed: any EAS error other than
+ * a missing branch stops the run, so a flaky query never hides a hotfix.
+ */
 function latestProductionCommit() {
 	const list = easQuery(
 		"production",
-		["update:list", "--branch", "production", "--limit", "1"],
-		{ optional: true },
+		["update:list", "--branch", "production", "--limit", "10"],
+		{ optional: (stderr) => /could not find|not found/i.test(stderr) },
 	);
-	const group = list?.currentPage?.[0]?.group;
-	return group ? (viewGroup("production", group)?.gitCommitHash ?? null) : null;
+	for (const { group, isRollBackToEmbedded } of list?.currentPage ?? []) {
+		if (isRollBackToEmbedded) continue;
+		const update = easQuery("production", ["update:view", group], {
+			interactiveFlag: false,
+		})[0];
+		if (update?.gitCommitHash && !update.isRollBackToEmbedded) {
+			return update.gitCommitHash;
+		}
+	}
+	return null;
 }
 
 /** The commit of the newest `v<version>` store-build tag, or `null`. */
 function latestStoreBuildCommit() {
-	const tags = git("tag", "--list", "v*", "--sort=-v:refname").stdout.trim();
+	const tags = git(
+		"tag",
+		"--list",
+		"v[0-9]*",
+		"--sort=-v:refname",
+	).stdout.trim();
 	const [newest] = tags ? tags.split("\n") : [];
 	return newest ? gitOrExit("rev-parse", `${newest}^{commit}`) : null;
 }
@@ -304,6 +321,12 @@ if (channel === "preview") {
 		["the latest production update", latestProductionCommit()],
 		["the newest store build tag", latestStoreBuildCommit()],
 	]) {
+		if (shipped && git("cat-file", "-e", `${shipped}^{commit}`).status !== 0) {
+			summary(
+				`Mobile production update: ${what} is commit \`${shipped.slice(0, 7)}\`, which is not on this repository's history (published from an unpushed branch?). The owner must decide; failing.`,
+			);
+			process.exit(1);
+		}
 		if (shipped && !isAncestor(shipped, commit)) {
 			summary(
 				`Mobile production update: ${what} (\`${shipped.slice(0, 7)}\`) is not older than \`${commit.slice(0, 7)}\`; skipped.`,

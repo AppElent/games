@@ -89,7 +89,7 @@ jobs:
       # to --cmd as $CONVEX_URL; the build reads VITE_CONVEX_URL. Both targets
       # run `pnpm build`, so staging exercises the bundle production ships;
       # VITE_SENTRY_ENVIRONMENT tags its browser reports. vite.config.ts names
-      # the release arcadeclub@<version>+<short sha> from GITHUB_SHA.
+      # the release arcadeclub@<version>+<short sha> from the checkout HEAD.
       - name: Convex deploy + build
         run: |
           pnpm exec convex deploy \
