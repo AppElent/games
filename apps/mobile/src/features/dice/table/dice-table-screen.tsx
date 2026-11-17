@@ -1,5 +1,5 @@
 /** Picks the screen for a table's state; the rule family picks the table itself. */
-import { getDiceGame } from "@arcadeclub/core/dice/engine";
+import { getDiceGame, isDiceGameId } from "@arcadeclub/core/dice/engine";
 import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
 import { useI18n } from "../../../i18n";
@@ -26,6 +26,21 @@ export function DiceTableScreen({ sessionId }: { sessionId: string }) {
 				loading={loading}
 				loadingMessage={dice.session.loading}
 				blocked={dice.session.notFound}
+				blockedAction={{
+					label: dice.session.backToGames,
+					onPress: () => router.dismissTo("/dice"),
+				}}
+			/>
+		);
+	}
+
+	// A table for a game this build doesn't know yet, until the update lands.
+	if (!isDiceGameId(table.gameId)) {
+		return (
+			<OnlineScreenFrame
+				title={t.catalog["dice-games"].title}
+				blocked={dice.session.updateToPlay}
+				blockedMessage={dice.session.updateToPlayHint}
 				blockedAction={{
 					label: dice.session.backToGames,
 					onPress: () => router.dismissTo("/dice"),

@@ -18,12 +18,12 @@ import { haptics } from "../../../feedback/haptics";
 import { plural, useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
-import { CenteredState } from "../../../ui/centered-state";
 import { ChoiceList } from "../../../ui/choice-list";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { onlineSessionHref } from "../../play/app-games";
+import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
 import { HostGate } from "../../sessions/host/host-gate";
 import { useHostSession } from "../../sessions/host/use-host-session";
 import {
@@ -42,9 +42,11 @@ export function CardSetupScreen({ gameId }: { gameId: string }) {
 	const cards = t.games.cards;
 	if (!isCardGameId(gameId)) {
 		return (
-			<CenteredState
-				title={cards.session.unknownGame}
-				action={{
+			<OnlineScreenFrame
+				title={t.catalog["card-games"].title}
+				blocked={cards.session.updateToPlay}
+				blockedMessage={cards.session.updateToPlayHint}
+				blockedAction={{
 					label: cards.session.backToGames,
 					onPress: () => router.replace("/cards"),
 				}}
