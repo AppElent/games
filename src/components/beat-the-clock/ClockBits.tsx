@@ -1,3 +1,4 @@
+import { clockTime } from "@arcadeclub/core/beat-the-clock-view";
 /**
  * Beat the Clock's building blocks on the web: the header, buttons, timer,
  * scoreboard strip and notices, all from the club tokens (game hue amber,
@@ -252,7 +253,7 @@ export function ClockTimer({
 }) {
 	const copy = useClockCopy();
 	const last = timeUp || seconds <= 5;
-	const text = `0:${String(Math.max(0, seconds)).padStart(2, "0")}`;
+	const text = clockTime(seconds);
 	return (
 		<div className="text-center">
 			<p

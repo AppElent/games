@@ -121,7 +121,12 @@ export function ClockRoom({
 				</p>
 			) : null}
 			<div className="relative flex flex-1 flex-col gap-4">
-				<Screen {...props} />
+				<div
+					className="flex flex-1 flex-col gap-4"
+					inert={state.paused || undefined}
+				>
+					<Screen {...props} />
+				</div>
 				{state.paused ? (
 					<div className="absolute inset-0 z-10 flex items-start justify-center rounded-2xl bg-[rgba(2,6,23,0.7)] p-2 pt-10 backdrop-blur-sm">
 						<Card className="w-full max-w-sm p-5" role="status">

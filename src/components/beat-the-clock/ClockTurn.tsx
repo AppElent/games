@@ -3,6 +3,7 @@
  * big timer and dots, the referees' read-only card, and the watchers' view.
  */
 import { secondsLeft } from "@arcadeclub/core/beat-the-clock";
+import { clockTime } from "@arcadeclub/core/beat-the-clock-view";
 import { fmt, plural } from "@arcadeclub/core/i18n/format";
 import { Check } from "lucide-react";
 import { useI18n } from "#/lib/i18n";
@@ -262,7 +263,7 @@ function OpponentTurn(props: ClockScreenProps) {
 						aria-live="off"
 						className={`club-title text-[64px] font-bold leading-none tabular-nums ${timeUp || last ? "text-[var(--club-danger)]" : "text-[var(--club-amber)]"}`}
 					>
-						{`0:${String(seconds).padStart(2, "0")}`}
+						{clockTime(seconds)}
 					</p>
 				</div>
 				<div className="min-w-0 flex-1">

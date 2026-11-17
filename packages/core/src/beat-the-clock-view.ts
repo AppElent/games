@@ -12,6 +12,7 @@ import {
 	type ClockTurn,
 	clockRole,
 	nextDescriber,
+	staysOnTeam,
 	teamMembers,
 	upcomingTurn,
 } from "./beat-the-clock";
@@ -129,7 +130,8 @@ export function clockView(
 		switchBlocked:
 			myMember !== undefined &&
 			state.phase !== "lobby" &&
-			teamMembers(rules, myMember.team).length <= CLOCK_MIN_TEAM,
+			myMember.pendingTeam === undefined &&
+			staysOnTeam(rules, myMember.team).length <= CLOCK_MIN_TEAM,
 		teamMembers: (team: number) =>
 			teamMembers(rules, team).map((m) => m.participantId),
 		nextDescriberOf: (team: number) => nextDescriber(rules, team),

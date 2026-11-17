@@ -459,3 +459,49 @@ describe("joinNames", () => {
 		expect(joinNames(["A", "B", "C"], "and")).toBe("A, B and C");
 	});
 });
+
+describe("review fixes", () => {
+	it("gives a check started while paused its full time on resume", () => {
+		const running = go(started(), "sam", 0);
+		const paused = pause(running, 10_000);
+		const left = leave(paused, "sam", 11_000);
+		expect(left.phase).toBe("checking");
+		expect(left.pausedRemaining).toBe(CLOCK_CHECK_MS);
+		expect(resume(left, 50_000).deadline).toBe(50_000 + CLOCK_CHECK_MS);
+	});
+
+	it("clears the paused clock when the host skips a paused turn", () => {
+		const paused = pause(go(started(), "sam", 0), 10_000);
+		const skipped = skipTurn(paused, 11_000);
+		expect(skipped.phase).toBe("ready");
+		expect(skipped.pausedRemaining).toBeUndefined();
+		expect(resume(skipped, 20_000).deadline).toBeUndefined();
+	});
+
+	it("counts switches already asked for, so a team can't drop below two", () => {
+		let state = createClockState(SETTINGS);
+		for (const [id, team] of [
+			["sam", 0],
+			["noor", 0],
+			["lotte", 0],
+			["daan", 1],
+			["mila", 1],
+			["ivo", 1],
+		] as const) {
+			state = pickTeam(state, id, team);
+		}
+		state = startGame(
+			state,
+			["sam", "noor", "lotte", "daan", "mila", "ivo"],
+			PACK,
+			mulberry32(1),
+			0,
+		);
+		const describer = state.turn?.describerId;
+		const [a, b] = teamMembers(state, 1)
+			.map((m) => m.participantId)
+			.filter((id) => id !== describer);
+		const first = pickTeam(state, a as string, 0);
+		expectCode(() => pickTeam(first, b as string, 0), "clockSwitchBlocked");
+	});
+});

@@ -263,7 +263,7 @@ export function pickTeam(
 		if (state.turn?.describerId === participantId && isTurnLive(state)) {
 			throw fail("clockSwitchBlocked");
 		}
-		if (teamMembers(state, member.team).length <= CLOCK_MIN_TEAM) {
+		if (staysOnTeam(state, member.team).length <= CLOCK_MIN_TEAM) {
 			throw fail("clockSwitchBlocked");
 		}
 		return {
@@ -282,6 +282,13 @@ export function pickTeam(
 		],
 		nextOrder: waiting ? state.nextOrder : state.nextOrder + 1,
 	};
+}
+
+/** A team's members who stay after the switches already asked for. */
+export function staysOnTeam(state: ClockState, team: number) {
+	return teamMembers(state, team).filter(
+		(m) => m.pendingTeam === undefined || m.pendingTeam === team,
+	);
 }
 
 /** Host: spread everyone evenly over the teams at random. */
@@ -408,7 +415,13 @@ function beginTurn(state: ClockState, now: number): ClockState {
 	if (next.slot >= next.teamCount) {
 		const evaluated = endOfRound(next);
 		if (evaluated.roundOutcome !== "none") {
-			return { ...evaluated, phase: "score", turn: undefined };
+			return {
+				...evaluated,
+				phase: "score",
+				turn: undefined,
+				deadline: undefined,
+				pausedRemaining: undefined,
+			};
 		}
 		return beginTurn(evaluated, now);
 	}
@@ -431,6 +444,7 @@ function beginTurn(state: ClockState, now: number): ClockState {
 			flags: words.map(() => ""),
 		},
 		deadline: undefined,
+		pausedRemaining: undefined,
 		roundOutcome: "none",
 	};
 }
@@ -525,7 +539,14 @@ export function send(state: ClockState, participantId: Pid, now: number) {
 }
 
 function startCheck(state: ClockState, now: number): ClockState {
-	return { ...state, phase: "checking", deadline: now + CLOCK_CHECK_MS };
+	// A check that starts while paused (the describer left) gets its full
+	// time once the host resumes.
+	return {
+		...state,
+		phase: "checking",
+		deadline: now + CLOCK_CHECK_MS,
+		pausedRemaining: state.paused ? CLOCK_CHECK_MS : undefined,
+	};
 }
 
 /** A referee (any player of another team) flags or unflags a ticked word. */
@@ -625,6 +646,7 @@ function closeTurn(state: ClockState, team: number): ClockState {
 		slot: team + 1,
 		phase: "score",
 		deadline: undefined,
+		pausedRemaining: undefined,
 		notice: undefined,
 	};
 	if (next.slot >= next.teamCount) return endOfRound(next);

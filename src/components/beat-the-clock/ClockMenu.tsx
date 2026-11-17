@@ -39,14 +39,36 @@ export function ClockMenu(props: ClockScreenProps & { onClose: () => void }) {
 	const sheet = useRef<HTMLDivElement>(null);
 	const code = session.joinCode ? formatJoinCode(session.joinCode) : "";
 
+	// The room re-renders every 250 ms while the clock runs, so the latest
+	// onClose sits in a ref and focus moves only when the panel changes.
+	const closeRef = useRef(onClose);
+	closeRef.current = onClose;
+	// biome-ignore lint/correctness/useExhaustiveDependencies: refocus when the panel changes
 	useEffect(() => {
 		sheet.current?.querySelector<HTMLElement>("button, a")?.focus();
+	}, [panel]);
+	useEffect(() => {
 		const onKey = (event: KeyboardEvent) => {
-			if (event.key === "Escape") onClose();
+			if (event.key === "Escape") closeRef.current();
+			if (event.key !== "Tab" || !sheet.current) return;
+			// Keep Tab inside the sheet.
+			const items = sheet.current.querySelectorAll<HTMLElement>(
+				"button:not([disabled]), a[href]",
+			);
+			const first = items[0];
+			const last = items[items.length - 1];
+			if (!first || !last) return;
+			if (event.shiftKey && document.activeElement === first) {
+				event.preventDefault();
+				last.focus();
+			} else if (!event.shiftKey && document.activeElement === last) {
+				event.preventDefault();
+				first.focus();
+			}
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [onClose]);
+	}, []);
 
 	const lobby = state.phase === "lobby";
 	const finished = state.phase === "finished";
