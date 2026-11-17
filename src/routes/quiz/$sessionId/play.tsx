@@ -6,7 +6,7 @@ import {
 	SessionBundleRoute,
 } from "#/components/games/SessionBundleRoute";
 import { QuizPlayerView } from "#/components/quiz/QuizPlayerView";
-import { parseSeatSearch } from "#/lib/games/seat";
+import { parseSeatSearch, useSeat } from "#/lib/games/seat";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -17,12 +17,16 @@ export const Route = createFileRoute("/quiz/$sessionId/play")({
 	staticData: { fullscreen: true },
 });
 
-/** The seat comes from the join link only: without one the page asks to join. */
+/**
+ * The seat comes from the join link, else this tab's or the account's
+ * (`useSeat`): without one the page asks to join.
+ */
 function QuizPlayerPage() {
 	const messages = useMessages();
 	const title = messages.catalog["live-quiz"].title;
 	const { sessionId } = Route.useParams();
-	const { participantId } = Route.useSearch();
+	const participantId =
+		useSeat(sessionId, Route.useSearch().participantId) ?? "";
 	const bundle = useQuery(api.quiz.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
 	});

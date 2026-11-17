@@ -51,6 +51,28 @@ describe("seat", () => {
 		expect(result.current).toBe(alice);
 	});
 
+	it("holds a join link's seat from the first render and asks about it", () => {
+		rememberSeat("session_a", bob);
+		const { result } = renderHook(() => useSeat("session_a", alice));
+		expect(ownSeat.args.at(-1)).toMatchObject({ participantId: alice });
+		expect(result.current).toBe(alice);
+	});
+
+	it("takes the account's seat over another account's join link", () => {
+		ownSeat.answer = bob;
+		const { result } = renderHook(() => useSeat("session_a", alice));
+		expect(result.current).toBe(bob);
+	});
+
+	it("moves from the held seat to the account's once the answer arrives", () => {
+		rememberSeat("session_a", bob);
+		const { result, rerender } = renderHook(() => useSeat("session_a"));
+		expect(result.current).toBe(bob);
+		ownSeat.answer = alice;
+		rerender();
+		expect(result.current).toBe(alice);
+	});
+
 	it("keeps the held seat when the server finds none for the caller", () => {
 		rememberSeat("session_a", bob);
 		ownSeat.answer = null;

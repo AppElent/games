@@ -54,28 +54,33 @@ export function forgetSeat(sessionId: string) {
 /**
  * This tab's seat in a session: the one it holds while it is the caller's,
  * else the signed-in account's own (`sessions.ownSeat`), so a player who signs
- * out and back in, or opens a new tab, keeps their seat. Without an answer
- * the held seat stands, as it always did for guests. Unset on the first
- * render, so server and client render the same markup.
+ * out and back in, or opens a new tab, keeps their seat. A join link's seat
+ * (`linked`) is held ahead of the remembered one. Without an answer the held
+ * seat stands, as it always did for guests. Unset on the first render unless
+ * linked, so server and client render the same markup.
  */
-export function useSeat(sessionId: string): ParticipantId | undefined {
-	const [held, setHeld] = useState<{ sessionId: string; seat?: string }>();
+export function useSeat(
+	sessionId: string,
+	linked?: ParticipantId | "",
+): ParticipantId | undefined {
+	const [stored, setStored] = useState<{ sessionId: string; seat?: string }>();
 	const guestId = useGuestId();
 	useEffect(() => {
-		setHeld({ sessionId, seat: readSeat(sessionId) ?? undefined });
+		setStored({ sessionId, seat: readSeat(sessionId) ?? undefined });
 	}, [sessionId]);
-	const current = held?.sessionId === sessionId ? held : undefined;
+	const remembered = stored?.sessionId === sessionId ? stored : undefined;
+	const held = linked || remembered?.seat;
 	const own = useQuery(
 		api.sessions.ownSeat,
-		current && guestId
+		(linked || remembered) && guestId
 			? {
 					sessionId: sessionId as Id<"gameSessions">,
-					participantId: current.seat,
+					participantId: held,
 					guestId,
 				}
 			: "skip",
 	);
-	return own ?? (current?.seat as ParticipantId | undefined);
+	return own ?? (held as ParticipantId | undefined);
 }
 
 /** The `?participantId=` a join link carries, "" when absent. */
