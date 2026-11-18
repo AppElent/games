@@ -123,7 +123,7 @@ async function requirePuzzleHost(
 	// LEGACY(APP-352): web tabs and cached PWA bundles from before APP-352 send
 	// no guest id with these writes, so a guest's puzzle still takes a call
 	// without one. A wrong guest id is refused, and so is anyone but the
-	// account on an account's puzzle. Remove once those bundles are gone.
+	// account on an account's puzzle. Remove once those bundles are gone (APP-354).
 	if (!host.userId && guestId === undefined) {
 		return;
 	}

@@ -527,7 +527,7 @@ describe("only the host writes", () => {
 	});
 
 	it("still takes a guest's puzzle write with no guest id, as clients before APP-352 send it", async () => {
-		// LEGACY(APP-352): delete with the no-guest-id branch in `requirePuzzleHost`.
+		// LEGACY(APP-352): delete with the no-guest-id branch in `requirePuzzleHost` (APP-354).
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
 		const legacy = writes(t, sessionId);
