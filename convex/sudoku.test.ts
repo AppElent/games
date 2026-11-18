@@ -132,8 +132,12 @@ async function storedState(t: T, sessionId: SessionId) {
 	)) as Doc<"sudokuStates">;
 }
 
+/** The bundle as the guest who started the puzzle reads it. */
 async function bundle(t: T, sessionId: SessionId) {
-	const result = await t.query(api.sudoku.getBundle, { sessionId });
+	const result = await t.query(api.sudoku.getBundle, {
+		sessionId,
+		guestId: "guest_solver",
+	});
 	if (!result) {
 		throw new Error("Expected a sudoku bundle");
 	}
@@ -162,7 +166,7 @@ describe("new puzzle", () => {
 			createdAt: T0,
 			updatedAt: T0,
 		});
-		const { session } = await bundle(t, sessionId);
+		const session = (await getDoc(t, sessionId)) as Doc<"gameSessions">;
 		expect(fields(session)).toEqual({
 			gameType: "sudoku",
 			status: "active",
@@ -314,7 +318,7 @@ describe("getBundle", () => {
 		const t = setup();
 		const { sessionId } = await soloSession(t);
 		await expect(
-			t.query(api.sudoku.getBundle, { sessionId }),
+			t.query(api.sudoku.getBundle, { sessionId, guestId: "guest_solver" }),
 		).resolves.toBeNull();
 		await expect(
 			t.query(api.sudoku.getBundle, { sessionId: await deletedSessionId(t) }),
@@ -527,7 +531,7 @@ describe("only the host writes", () => {
 	});
 
 	it("still takes a guest's puzzle write with no guest id, as clients before APP-352 send it", async () => {
-		// LEGACY(APP-352): delete with the no-guest-id branch in `requirePuzzleHost` (APP-354).
+		// LEGACY(APP-354): delete with the no-guest-id branch in `isPuzzleHost`.
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
 		const legacy = writes(t, sessionId);
@@ -543,6 +547,103 @@ describe("only the host writes", () => {
 		for (const write of Object.values(writes(t, sessionId))) {
 			await expectCode(write(), "hostOnly");
 		}
+	});
+});
+
+describe("only the host reads", () => {
+	const OWNER = "user_owner";
+	const GUEST = "guest_solver";
+
+	function accountPuzzle(t: T) {
+		return t.withIdentity({ subject: OWNER }).mutation(api.sudoku.create, {
+			title: "Puzzle",
+			displayName: "Solver",
+			source: "generated",
+			difficulty: "easy",
+			givens: GIVENS,
+			solution: SOLVED,
+		});
+	}
+
+	function read(
+		caller: Pick<T, "query">,
+		sessionId: SessionId,
+		guestId?: string,
+	) {
+		return caller.query(api.sudoku.getBundle, { sessionId, guestId });
+	}
+
+	it("gives the account that started a puzzle its board, without the solution", async () => {
+		const t = setup();
+		const { sessionId } = await accountPuzzle(t);
+		const result = await read(t.withIdentity({ subject: OWNER }), sessionId);
+		expect(result?.state.givens).toBe(GIVENS);
+		expect(result?.state).not.toHaveProperty("solution");
+		expect(result?.session).toEqual({
+			_id: sessionId,
+			title: "Puzzle",
+			hostUserId: OWNER,
+		});
+	});
+
+	it("is null for another account, even holding the guest id", async () => {
+		const t = setup();
+		const { sessionId } = await accountPuzzle(t);
+		const stranger = t.withIdentity({ subject: "user_stranger" });
+		for (const guestId of [undefined, GUEST]) {
+			await expect(read(stranger, sessionId, guestId)).resolves.toBeNull();
+		}
+	});
+
+	it("is null for a signed-out caller on an account's puzzle", async () => {
+		const t = setup();
+		const { sessionId } = await accountPuzzle(t);
+		for (const guestId of [undefined, GUEST]) {
+			await expect(read(t, sessionId, guestId)).resolves.toBeNull();
+		}
+	});
+
+	it("gives the guest who started a puzzle its board with their guest id, signed in or not", async () => {
+		const t = setup();
+		const { sessionId } = await createPuzzle(t);
+		for (const caller of [t, t.withIdentity({ subject: "user_later" })]) {
+			const result = await read(caller, sessionId, GUEST);
+			expect(result?.state.givens).toBe(GIVENS);
+			expect(result?.session).toEqual({ _id: sessionId, title: "Puzzle" });
+			expect(result?.session.hostUserId).toBeUndefined();
+		}
+	});
+
+	it("is null for a wrong guest id on a guest's puzzle, signed in or not", async () => {
+		const t = setup();
+		const { sessionId } = await createPuzzle(t);
+		for (const caller of [t, t.withIdentity({ subject: "user_stranger" })]) {
+			await expect(read(caller, sessionId, "guest_other")).resolves.toBeNull();
+		}
+	});
+
+	it("still answers a guest's puzzle read with no guest id, as clients before APP-355 send it", async () => {
+		// LEGACY(APP-354): delete with the no-guest-id branch in `isPuzzleHost`.
+		const t = setup();
+		const { sessionId } = await createPuzzle(t);
+		expect((await read(t, sessionId))?.state.givens).toBe(GIVENS);
+	});
+
+	it("never sends the host's account id to anyone else", async () => {
+		const t = setup();
+		const { sessionId } = await accountPuzzle(t);
+		const results = [
+			await read(t, sessionId),
+			await read(t, sessionId, GUEST),
+			await read(t.withIdentity({ subject: "user_stranger" }), sessionId),
+		];
+		expect(JSON.stringify(results)).not.toContain(OWNER);
+	});
+
+	it("is null for a session of another game", async () => {
+		const t = setup();
+		const sessionId = await otherGameSession(t, "live-quiz");
+		await expect(read(t, sessionId)).resolves.toBeNull();
 	});
 });
 
@@ -595,7 +696,7 @@ describe("complete", () => {
 		expect(stored.elapsedSeconds).toBe(99);
 		expect(stored.lastResumedAt).toBeUndefined();
 		expect(stored.updatedAt).toBe(T0 + 1000);
-		const { session } = await bundle(t, sessionId);
+		const session = (await getDoc(t, sessionId)) as Doc<"gameSessions">;
 		expect(session.status).toBe("completed");
 		expect(session.completedReason).toBe("finished");
 		expect(session.endedAt).toBe(T0 + 1000);
@@ -623,7 +724,7 @@ describe("complete", () => {
 		const stored = await storedState(t, sessionId);
 		expect(stored.digits).toBe(SOLVED);
 		expect(stored.elapsedSeconds).toBe(99);
-		expect((await bundle(t, sessionId)).session.endedAt).toBe(T0);
+		expect((await getDoc(t, sessionId))?.endedAt).toBe(T0);
 	});
 
 	it("answers gridNotSolved for a blank or conflicting grid", async () => {
