@@ -29,7 +29,7 @@ import { toggleHouseRule } from "../table-engine";
 const game = getCardGame("boerenbridge");
 
 function rulesWith(options: string[] = []): TricksRules {
-	const resolved = resolvedRules(game, options);
+	const resolved = resolvedRules(game, options, null);
 	if (resolved.family !== "tricks") {
 		throw new Error("boerenbridge plays tricks");
 	}

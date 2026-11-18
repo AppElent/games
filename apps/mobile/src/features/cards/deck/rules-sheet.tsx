@@ -4,6 +4,7 @@
  */
 import type { CardId } from "@arcadeclub/core/cards/deck";
 import {
+	activeOptions,
 	type CardGameDefinition,
 	type CardGameId,
 	resolvedRules,
@@ -68,11 +69,14 @@ function TricksRules({ lines }: { lines: ReturnType<typeof tricksRuleLines> }) {
 export function RulesSheet({
 	game,
 	options,
+	seats,
 	open,
 	onClose,
 }: {
 	game: CardGameDefinition;
 	options: readonly string[];
+	/** The table's size, or null while friends are still joining. */
+	seats: number | null;
 	open: boolean;
 	onClose: () => void;
 }) {
@@ -84,9 +88,11 @@ export function RulesSheet({
 		string,
 		{ label: string; hint: string }
 	>;
-	const resolved = resolvedRules(game, options);
+	const resolved = resolvedRules(game, options, seats);
 	const r = cards.rules;
-	const active = options.map((id) => optionText[id]).filter(Boolean);
+	const active = activeOptions(game, options, seats)
+		.map((id) => optionText[id])
+		.filter(Boolean);
 
 	const effect = (power: CardPower) =>
 		powerEffect(

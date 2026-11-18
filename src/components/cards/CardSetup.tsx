@@ -1,10 +1,13 @@
+import { type CardGameId, getCardGame } from "@arcadeclub/core/cards/engine";
 import {
-	type CardGameId,
-	generalOptions,
-	getCardGame,
-} from "@arcadeclub/core/cards/engine";
-import { specialCards } from "@arcadeclub/core/cards/table-view";
-import { toggleHouseRule } from "@arcadeclub/core/table-engine";
+	houseRuleSwitches,
+	specialCardSwitch,
+	specialCards,
+} from "@arcadeclub/core/cards/table-view";
+import {
+	initialHouseRules,
+	toggleHouseRule,
+} from "@arcadeclub/core/table-engine";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { HostGate } from "#/components/games/HostGate";
@@ -27,16 +30,14 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 	const cards = useMessages().games.cards;
 	const game = getCardGame(gameId);
 	const text = cards.games[gameId];
-	const optionText = text.options as Record<
-		string,
-		{ label: string; hint: string }
-	>;
 	const [mode, setMode] = useState<TableMode>("computer");
 	const [opponents, setOpponents] = useState(Math.min(game.players.max - 1, 3));
-	const [options, setOptions] = useState<string[]>([]);
+	const [options, setOptions] = useState(() => initialHouseRules(game.options));
 	const [rulesOpen, setRulesOpen] = useState(false);
 	const words = useCardWords();
-	const houseRules = generalOptions(game);
+	// Against the computer the table size is known; friends are still to come.
+	const seats = mode === "computer" ? opponents + 1 : null;
+	const houseRules = houseRuleSwitches(words, game, seats);
 	const special = specialCards(words, game);
 	const toggle = (id: string) =>
 		setOptions((current) => toggleHouseRule(game.options, current, id));
@@ -99,8 +100,12 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 								style={{ "--card-w": "2.25rem" } as React.CSSProperties}
 							>
 								{special.map((card) => {
-									const plain = card.plainOption;
-									const on = plain === null || !options.includes(plain);
+									const { on, disabled } = specialCardSwitch(
+										card,
+										options,
+										seats,
+									);
+									const option = card.option;
 									return (
 										<button
 											key={card.key}
@@ -109,10 +114,10 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 											aria-checked={on}
 											aria-labelledby={`power-${card.key}`}
 											aria-describedby={`power-${card.key}-effect`}
-											disabled={plain === null}
+											disabled={disabled}
 											className="rule-switch"
 											onClick={() => {
-												if (plain !== null) toggle(plain);
+												if (option !== null) toggle(option);
 											}}
 										>
 											<PlayingCard card={card.sample} />
@@ -139,10 +144,7 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 					) : null}
 					<HouseRuleSwitches
 						heading={cards.setup.houseRules}
-						rules={houseRules.map((option) => ({
-							id: option.id,
-							...optionText[option.id],
-						}))}
+						rules={houseRules}
 						chosen={options}
 						onToggle={toggle}
 					/>
@@ -163,6 +165,7 @@ export function CardSetup({ gameId }: { gameId: CardGameId }) {
 				<RulesSheet
 					game={game}
 					options={options}
+					seats={seats}
 					open={rulesOpen}
 					onClose={() => setRulesOpen(false)}
 				/>

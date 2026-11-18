@@ -440,6 +440,14 @@
 	transform: translateX(1.15rem);
 }
 
+.rule-switch:disabled {
+	cursor: default;
+}
+
+.rule-switch:disabled .rule-switch-track {
+	opacity: 0.5;
+}
+
 /* The table */
 .table-grid {
 	--seat-size: clamp(2.25rem, 7.5vh, 3.75rem);

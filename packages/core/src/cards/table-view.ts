@@ -13,7 +13,13 @@ import {
 	SUITS,
 	type Suit,
 } from "./deck";
-import { type CardGameDefinition, plainCardOption } from "./engine";
+import {
+	addedCardOptions,
+	type CardGameDefinition,
+	generalOptions,
+	houseRuleApplies,
+	plainCardOption,
+} from "./engine";
 import type { CardEvent } from "./events";
 import {
 	arrangeHand,
@@ -95,14 +101,35 @@ export type SpecialCard = {
 	/** A card to draw as its picture. */
 	sample: CardId;
 	name: string;
+	/** What it does, and from how many players when that matters. */
 	effect: string;
-	/** The house rule that turns it into a plain card, if the game offers one. */
-	plainOption: string | null;
+	/** The house rule its switch sets, or null when the game offers none. */
+	option: string | null;
+	/** Choosing `option` gives the card its power; otherwise it makes the card plain. */
+	adds: boolean;
+	/** The switch counts only from this many players. */
+	minPlayers: number | null;
 };
 
+/** A rule's hint, with the player count it needs when it has one. */
+export function playerCountHint(
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	hint: string,
+	minPlayers: number | undefined,
+) {
+	return minPlayers === undefined
+		? hint
+		: `${hint.replace(/\.$/, "")}. ${fmt(cards.setup.fromPlayers, { count: minPlayers })}`;
+}
+
+function gameText(cards: CardMessages, game: CardGameDefinition) {
+	return cards.games[game.id as keyof CardMessages["games"]];
+}
+
 /**
- * Every special card a game deals, before house rules, so a setup screen can
- * list them all and offer to switch each one off.
+ * Every special card a game can deal, before house rules: the ones it plays
+ * with and the ones a house rule adds, so a setup screen can list them all and
+ * switch each one.
  */
 export function specialCards(
 	words: Pick<CardWords, "cards" | "fmt">,
@@ -112,15 +139,101 @@ export function specialCards(
 		return [];
 	}
 	const rules = game.rules as SheddingRules;
-	const names = words.cards.games[game.id as keyof CardMessages["games"]]
-		.powers as Record<string, string>;
-	return Object.entries(rules.powers).map(([key, power]) => ({
+	const names = gameText(words.cards, game).powers as Record<string, string>;
+	const card = (
+		key: string,
+		power: CardPower,
+		option: { id: string; minPlayers?: number } | undefined,
+		adds: boolean,
+	): SpecialCard => ({
 		key,
 		sample: key === "joker" ? "JK#0" : `S${key}#0`,
 		name: names[key] ?? key,
-		effect: powerEffect(words, rules, power as CardPower),
-		plainOption: plainCardOption(game, key)?.id ?? null,
+		effect: playerCountHint(
+			words,
+			powerEffect(words, rules, power),
+			option?.minPlayers,
+		),
+		option: option?.id ?? null,
+		adds,
+		minPlayers: option?.minPlayers ?? null,
+	});
+	return [
+		...Object.entries(rules.powers).map(([key, power]) =>
+			card(key, power as CardPower, plainCardOption(game, key), false),
+		),
+		...addedCardOptions(game).flatMap((option) =>
+			Object.entries(option.withPowers).map(([key, power]) =>
+				card(key, power as CardPower, option, true),
+			),
+		),
+	];
+}
+
+/**
+ * How a special card's switch reads: on while the card has its power, and
+ * disabled when the game offers no rule for it or the table is too small.
+ * `seats` is null while friends are still joining.
+ */
+export function specialCardSwitch(
+	card: SpecialCard,
+	chosen: readonly string[],
+	seats: number | null,
+) {
+	const available = houseRuleApplies(
+		{ minPlayers: card.minPlayers ?? undefined },
+		seats,
+	);
+	const picked =
+		available && card.option !== null && chosen.includes(card.option);
+	return {
+		on: card.adds ? picked : !picked,
+		disabled: card.option === null || !available,
+	};
+}
+
+/**
+ * A game's other house rules as switches. One that needs more players than
+ * the table has is disabled and reads off; `seats` is null while friends are
+ * still joining, which leaves every switch open.
+ */
+export function houseRuleSwitches(
+	words: Pick<CardWords, "cards" | "fmt">,
+	game: CardGameDefinition,
+	seats: number | null,
+) {
+	const text = gameText(words.cards, game).options as Record<
+		string,
+		{ label: string; hint: string }
+	>;
+	return generalOptions(game).map((option) => ({
+		id: option.id,
+		label: text[option.id].label,
+		hint: playerCountHint(words, text[option.id].hint, option.minPlayers),
+		disabled: !houseRuleApplies(option, seats),
 	}));
+}
+
+/** A chosen house rule's name, with the player count it waits for when the table is still too small. */
+export function houseRuleLabel(
+	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	game: CardGameDefinition,
+	id: string,
+	seats: number,
+) {
+	const label = (
+		gameText(cards, game).options as Record<string, { label: string }>
+	)[id]?.label;
+	const option = (
+		game.options as ReadonlyArray<{ id: string; minPlayers?: number }>
+	).find((rule) => rule.id === id);
+	if (!label || !option || houseRuleApplies(option, seats)) {
+		return label;
+	}
+	return fmt(cards.lobby.fromPlayers, {
+		rule: label,
+		count: option.minPlayers ?? 0,
+	});
 }
 
 /** The other seats in the order play reaches them, so the table reads clockwise. */

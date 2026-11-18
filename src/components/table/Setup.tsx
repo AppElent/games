@@ -102,7 +102,7 @@ export function OpponentStepper({
 	);
 }
 
-/** A game's house rules as switches, each off until chosen. */
+/** A game's house rules as switches; a disabled one reads off whatever was chosen. */
 export function HouseRuleSwitches({
 	heading,
 	rules,
@@ -110,7 +110,12 @@ export function HouseRuleSwitches({
 	onToggle,
 }: {
 	heading: string;
-	rules: ReadonlyArray<{ id: string; label: string; hint: string }>;
+	rules: ReadonlyArray<{
+		id: string;
+		label: string;
+		hint: string;
+		disabled?: boolean;
+	}>;
 	chosen: readonly string[];
 	onToggle: (id: string) => void;
 }) {
@@ -126,7 +131,8 @@ export function HouseRuleSwitches({
 						key={rule.id}
 						type="button"
 						role="switch"
-						aria-checked={chosen.includes(rule.id)}
+						aria-checked={!rule.disabled && chosen.includes(rule.id)}
+						disabled={rule.disabled}
 						className="rule-switch"
 						onClick={() => onToggle(rule.id)}
 					>

@@ -60,7 +60,12 @@ export function SheddingTable({
 		NO_MELD,
 	);
 
-	const rules = familyRules(game, table.options, "shedding");
+	const rules = familyRules(
+		game,
+		table.options,
+		table.seats.length,
+		"shedding",
+	);
 	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "playing";

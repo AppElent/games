@@ -116,7 +116,7 @@ export function GinTable({
 		meldCard,
 	);
 
-	const ginRules = familyRules(game, table.options, "gin");
+	const ginRules = familyRules(game, table.options, table.seats.length, "gin");
 	if (!ginRules) {
 		throw new Error("GinTable needs a gin game");
 	}

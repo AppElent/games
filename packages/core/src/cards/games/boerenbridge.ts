@@ -42,6 +42,7 @@ export const boerenbridge = {
 	options: [
 		{ id: "upOnly", patch: { schedule: "up" }, group: "schedule" },
 		{ id: "downOnly", patch: { schedule: "down" }, group: "schedule" },
+		{ id: "noTrump", patch: { trumpChoice: "none" } },
 		{
 			id: "dealerFree",
 			patch: { bidding: { ...BIDDING, dealerMayMatch: true } },

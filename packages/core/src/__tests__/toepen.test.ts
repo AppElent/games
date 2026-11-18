@@ -26,7 +26,7 @@ import { mulberry32 } from "../random";
 const game = getCardGame("toepen");
 
 function rulesWith(options: string[] = []): TricksRules {
-	const resolved = resolvedRules(game, options);
+	const resolved = resolvedRules(game, options, null);
 	if (resolved.family !== "tricks") {
 		throw new Error("toepen plays tricks");
 	}

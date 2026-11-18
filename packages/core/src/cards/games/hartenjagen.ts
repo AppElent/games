@@ -39,11 +39,14 @@ export const hartenjagen = {
 		{
 			id: "queenBreaksHearts",
 			patch: { breaking: { suit: "H", alsoBrokenBy: ["SQ"] } },
+			group: "breaking",
 		},
 		{
 			id: "jackOfDiamonds",
 			patch: { cardPoints: { ...QUEEN_OF_SPADES, DJ: -10 } },
 		},
 		{ id: "to50", patch: { target: 50 } },
+		{ id: "heartsAnyTime", patch: { breaking: null }, group: "breaking" },
+		{ id: "noMoon", patch: { shootTheMoon: false } },
 	],
 } as const satisfies CardGameDefinition;

@@ -211,6 +211,7 @@ export function TableFrame({
 			<RulesSheet
 				game={game}
 				options={table.options}
+				seats={table.seats.length}
 				open={rulesOpen}
 				onClose={() => setRulesOpen(false)}
 			/>
