@@ -1,35 +1,42 @@
 /** The emailed one-time code: digits only, filled from the message on iOS. */
+import type { ComponentProps } from "react";
 import { useI18n } from "../../../i18n";
 import { TextField } from "../../../ui/text-field";
 
 /** Digits in every code Clerk emails (sign-in, sign-up, password reset). */
 export const AUTH_CODE_LENGTH = 6;
 
+/** What a code field accepts: digits only. */
+export const codeDigits = (text: string) => text.replace(/\D/g, "");
+
+/**
+ * Without `onEndEditing`, the code also syncs from the native text when
+ * editing ends, for a code AutoFill set without `onChangeText`. Without
+ * `onSubmitEditing`, the return key moves on.
+ */
 export function CodeField({
-	value,
-	onChange,
-	onSubmit,
-}: {
-	value: string;
-	onChange: (code: string) => void;
-	/** Submits from the keyboard; without it the return key moves on. */
-	onSubmit?: () => void;
-}) {
+	onChangeText,
+	onEndEditing,
+	onSubmitEditing,
+	...props
+}: Omit<ComponentProps<typeof TextField>, "label">) {
 	const { t } = useI18n();
-	const digits = (text: string) => text.replace(/\D/g, "");
 	return (
 		<TextField
 			label={t.auth.signInCode.code}
-			value={value}
-			onChangeText={(next) => onChange(digits(next))}
-			onEndEditing={(event) => onChange(digits(event.nativeEvent.text))}
 			keyboardType="number-pad"
 			autoComplete="one-time-code"
 			textContentType="oneTimeCode"
 			maxLength={AUTH_CODE_LENGTH}
 			autoFocus
-			returnKeyType={onSubmit ? "go" : undefined}
-			onSubmitEditing={onSubmit}
+			returnKeyType={onSubmitEditing ? "go" : undefined}
+			{...props}
+			onChangeText={(text) => onChangeText?.(codeDigits(text))}
+			onEndEditing={
+				onEndEditing ??
+				((event) => onChangeText?.(codeDigits(event.nativeEvent.text)))
+			}
+			onSubmitEditing={onSubmitEditing}
 		/>
 	);
 }

@@ -12,13 +12,17 @@ import { fmt, useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { TextField } from "../../../ui/text-field";
 import { AuthForm } from "../components/auth-form";
-import { AUTH_CODE_LENGTH, CodeField } from "../components/code-field";
+import {
+	AUTH_CODE_LENGTH,
+	CodeField,
+	codeDigits,
+} from "../components/code-field";
 import { EmailField } from "../components/email-field";
 import { useAuthError } from "../components/use-auth-error";
 import {
 	NEW_PASSWORD_RULES,
-	useCredentialText,
-} from "../components/use-credential-text";
+	useCredentialForm,
+} from "../components/use-credential-form";
 import { usePasswordReset } from "./use-password-reset";
 
 export function PasswordResetScreen({
@@ -29,35 +33,41 @@ export function PasswordResetScreen({
 	const { t } = useI18n();
 	const copy = t.auth.reset;
 	const flow = usePasswordReset();
-	const email = useCredentialText(initialEmail);
+	const request = useCredentialForm({ email: initialEmail });
 	const [sentTo, setSentTo] = useState<string | null>(null);
-	const [code, setCode] = useState("");
-	const password = useCredentialText();
+	const reset = useCredentialForm({ code: "", password: "" });
 	const error = useAuthError(flow.errorKey);
 
 	if (!sentTo) {
-		const ready = email.text.trim().length > 0;
-		const send = async () => {
-			const address = email.read().trim();
+		const ready = request.values.email.trim().length > 0;
+		const send = async ({ email }: typeof request.values) => {
+			const address = email.trim();
 			if (address && (await flow.sendCode(address))) setSentTo(address);
 		};
 		return (
 			<AuthForm title={copy.title} subtitle={copy.body} error={error}>
-				<EmailField {...email.field(send)} returnKeyType="send" />
+				<EmailField
+					{...request.field("email")}
+					onSubmitEditing={request.submitFrom("email", send)}
+					returnKeyType="send"
+				/>
 				<Button
 					label={copy.sendCode}
 					busy={flow.busy}
-					disabled={!ready}
-					onPress={send}
+					disabled={!ready && !request.editing}
+					onPress={() => request.press(send)}
 				/>
 			</AuthForm>
 		);
 	}
 
-	const ready = code.length === AUTH_CODE_LENGTH && password.text.length > 0;
-	const submit = () => {
-		const typed = password.read();
-		if (code.length === AUTH_CODE_LENGTH && typed) flow.submit(code, typed);
+	const ready =
+		reset.values.code.length === AUTH_CODE_LENGTH &&
+		reset.values.password.length > 0;
+	const submit = ({ code, password }: typeof reset.values) => {
+		if (code.length === AUTH_CODE_LENGTH && password) {
+			flow.submit(code, password);
+		}
 	};
 	return (
 		<AuthForm
@@ -65,11 +75,12 @@ export function PasswordResetScreen({
 			subtitle={fmt(copy.codeBody, { email: sentTo })}
 			error={error}
 		>
-			<CodeField value={code} onChange={setCode} />
+			<CodeField {...reset.field("code", codeDigits)} />
 			<EmailField value={sentTo} editable={false} testID="reset-email" />
 			<TextField
 				label={copy.newPassword}
-				{...password.field(submit)}
+				{...reset.field("password")}
+				onSubmitEditing={reset.submitFrom("password", submit)}
 				secureTextEntry
 				autoCapitalize="none"
 				autoComplete="new-password"
@@ -81,8 +92,8 @@ export function PasswordResetScreen({
 			<Button
 				label={copy.submit}
 				busy={flow.busy}
-				disabled={!ready}
-				onPress={submit}
+				disabled={!ready && !reset.editing}
+				onPress={() => reset.press(submit)}
 			/>
 		</AuthForm>
 	);
