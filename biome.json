@@ -24,6 +24,7 @@
 			"!scripts/env.mjs",
 			"!scripts/workspace.mjs",
 			"!scripts/sync-devtools.mjs",
+			"!scripts/run-mobile.mjs",
 			"!scripts/lib",
 			"apps/mobile/scripts/**/*",
 			".github/scripts/**/*",
