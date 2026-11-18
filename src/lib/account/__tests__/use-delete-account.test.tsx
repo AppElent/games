@@ -9,12 +9,53 @@ const deleteMyData = vi.fn();
 const deleteUser = vi.fn();
 const signOut = vi.fn();
 let deleteSelfEnabled = true;
+/** Whether the session's sign-in is recent enough for Clerk. */
+let recentSignIn = true;
+/** How the person answers Clerk's verify dialog. */
+let verifies = true;
+let verifyPrompts = 0;
+/** The live Clerk user; another tab can switch it. */
+let clerkUserId = "user_1";
+const checkAuthorization = vi.fn();
+const cancelled = { code: "reverification_cancelled" };
 
+type Fetcher = (...args: unknown[]) => Promise<unknown>;
 vi.mock("@clerk/react", () => ({
 	useUser: () => ({
-		user: { id: "user_1", deleteSelfEnabled, delete: deleteUser },
+		user: { id: "user_1", deleteSelfEnabled },
 	}),
-	useClerk: () => ({ signOut }),
+	useClerk: () => ({
+		signOut,
+		get session() {
+			return { id: "sess_1", checkAuthorization, reload: async () => {} };
+		},
+		get user() {
+			return { id: clerkUserId, delete: deleteUser };
+		},
+	}),
+	// Mirrors Clerk: a reverification hint, or the
+	// session_reverification_required API error, opens the verify dialog, then
+	// the call runs once more and that result is returned as is; closing the
+	// dialog rejects.
+	useReverification:
+		(fetcher: Fetcher) =>
+		async (...args: unknown[]) => {
+			const attempt = () =>
+				fetcher(...args).catch((error: { errors?: { code: string }[] }) => {
+					if (error?.errors?.[0]?.code === "session_reverification_required")
+						return { clerk_error: { reason: "reverification-error" } };
+					throw error;
+				});
+			const result = (await attempt()) as { clerk_error?: unknown } | undefined;
+			if (!result?.clerk_error) return result;
+			verifyPrompts++;
+			if (!verifies) throw cancelled;
+			recentSignIn = true;
+			return attempt();
+		},
+}));
+vi.mock("@clerk/react/errors", () => ({
+	isReverificationCancelledError: (error: unknown) => error === cancelled,
 }));
 const navigate = vi.fn();
 vi.mock("@tanstack/react-router", () => ({ useNavigate: () => navigate }));
@@ -44,6 +85,11 @@ function refusal(code: string, params?: Record<string, number>) {
 describe("useDeleteAccount", () => {
 	beforeEach(() => {
 		deleteSelfEnabled = true;
+		recentSignIn = true;
+		verifies = true;
+		verifyPrompts = 0;
+		clerkUserId = "user_1";
+		checkAuthorization.mockImplementation(() => recentSignIn);
 		deleteUser.mockResolvedValue(undefined);
 		signOut.mockResolvedValue(undefined);
 	});
@@ -125,5 +171,86 @@ describe("useDeleteAccount", () => {
 			"Deleting your account isn't available right now.",
 		);
 		expect(deleteMyData).not.toHaveBeenCalled();
+	});
+
+	it("asks Clerk to confirm an old sign-in before deleting anything", async () => {
+		recentSignIn = false;
+		checkAuthorization.mockImplementation(() => {
+			// Nothing is deleted while Clerk's dialog is open.
+			if (!recentSignIn) expect(deleteMyData).not.toHaveBeenCalled();
+			return recentSignIn;
+		});
+		deleteMyData.mockResolvedValueOnce({ done: true });
+		const { ok, result } = await runDeletion();
+		expect(ok).toBe(true);
+		expect(verifyPrompts).toBe(1);
+		expect(checkAuthorization).toHaveBeenCalledWith({
+			reverification: { level: "second_factor", afterMinutes: 5 },
+		});
+		expect(deleteUser).toHaveBeenCalledOnce();
+		expect(result.current.error).toBe("");
+	});
+
+	it("deletes nothing and stays quiet when the person closes Clerk's dialog", async () => {
+		recentSignIn = false;
+		verifies = false;
+		const { ok, result } = await runDeletion();
+		expect(ok).toBe(false);
+		expect(verifyPrompts).toBe(1);
+		expect(deleteMyData).not.toHaveBeenCalled();
+		expect(deleteUser).not.toHaveBeenCalled();
+		expect(result.current.error).toBe("");
+	});
+
+	it("deletes nothing when Clerk still finds the sign-in too old after its dialog", async () => {
+		checkAuthorization.mockReturnValue(false);
+		const { ok, result } = await runDeletion();
+		expect(ok).toBe(false);
+		expect(deleteMyData).not.toHaveBeenCalled();
+		expect(result.current.error).toMatch(
+			/^To delete your account, sign in again first/,
+		);
+	});
+
+	it("refuses when another account signs in before the check", async () => {
+		clerkUserId = "user_2";
+		const { ok, result } = await runDeletion();
+		expect(ok).toBe(false);
+		expect(deleteMyData).not.toHaveBeenCalled();
+		expect(result.current.error).toBe(
+			"You switched accounts. Sign in to the account you want to delete and try again.",
+		);
+	});
+
+	it("says to sign in again to finish when Clerk refuses the account after the data", async () => {
+		deleteMyData.mockResolvedValueOnce({ done: true });
+		const refusal = {
+			status: 403,
+			errors: [{ code: "session_reverification_required" }],
+		};
+		// The window lapsed during the deletion, and the person closes the
+		// dialog Clerk opens for the account.
+		deleteUser.mockRejectedValue(refusal);
+		verifies = false;
+		const { ok, result } = await runDeletion();
+		expect(ok).toBe(false);
+		expect(verifyPrompts).toBe(1);
+		expect(signOut).not.toHaveBeenCalled();
+		expect(navigate).not.toHaveBeenCalled();
+		expect(result.current.error).toBe(
+			"Your Arcade Club data is deleted, but your account isn't yet: it needs a recent sign-in. Sign in again, then delete your account again to finish.",
+		);
+	});
+
+	it("says to sign in again to finish when Clerk still refuses after its dialog", async () => {
+		deleteMyData.mockResolvedValueOnce({ done: true });
+		deleteUser.mockRejectedValue({
+			status: 403,
+			errors: [{ code: "session_reverification_required" }],
+		});
+		const { ok, result } = await runDeletion();
+		expect(ok).toBe(false);
+		expect(deleteUser).toHaveBeenCalledTimes(2);
+		expect(result.current.error).toMatch(/^Your Arcade Club data is deleted/);
 	});
 });

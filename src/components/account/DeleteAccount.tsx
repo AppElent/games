@@ -1,7 +1,9 @@
 /**
  * "Delete account" on the Account page: a confirmation dialog, then the
- * shared deletion steps (`useDeleteAccount`). A refusal or failure shows in
- * the dialog, which stays open so the player can try again.
+ * shared deletion steps (`useDeleteAccount`). Confirming closes the dialog
+ * first: it is modal, so Clerk's verify dialog, which an old sign-in opens,
+ * would sit behind it and be unclickable. Progress and any refusal show in
+ * the panel, where the button runs it again.
  */
 import { useRef } from "react";
 import { useDeleteAccount } from "#/lib/account/use-delete-account";
@@ -18,9 +20,9 @@ export function DeleteAccount() {
 		dialog.current?.showModal();
 	}
 
-	function close() {
-		if (deletion.busy) return;
+	function confirm() {
 		dialog.current?.close();
+		void deletion.deleteAccount();
 	}
 
 	return (
@@ -28,18 +30,21 @@ export function DeleteAccount() {
 			<button
 				type="button"
 				onClick={open}
-				disabled={!deletion.ready}
+				disabled={!deletion.ready || deletion.busy}
+				aria-busy={deletion.busy}
 				className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-orange)] disabled:opacity-50"
 			>
-				{copy.action}
+				{deletion.busy ? copy.deleting : copy.action}
 			</button>
+			{deletion.error ? (
+				<p role="alert" className="mt-3 text-sm text-[var(--club-orange)]">
+					{deletion.error}
+				</p>
+			) : null}
 			<dialog
 				ref={dialog}
 				aria-labelledby="delete-account-title"
 				aria-describedby="delete-account-body"
-				onCancel={(event) => {
-					if (deletion.busy) event.preventDefault();
-				}}
 				className="club-panel m-auto w-[calc(100%-2rem)] max-w-md rounded-lg p-6 text-[var(--club-text)] backdrop:bg-black/60"
 			>
 				<h2 id="delete-account-title" className="mb-2 text-lg font-bold">
@@ -51,28 +56,20 @@ export function DeleteAccount() {
 				>
 					{copy.confirmBody}
 				</p>
-				{deletion.error ? (
-					<p role="alert" className="mb-4 text-sm text-[var(--club-orange)]">
-						{deletion.error}
-					</p>
-				) : null}
 				<div className="flex justify-end gap-2">
 					<button
 						type="button"
-						disabled={deletion.busy}
-						onClick={close}
+						onClick={() => dialog.current?.close()}
 						className="rounded-md px-4 py-2 font-bold text-[var(--club-muted)]"
 					>
 						{messages.common.actions.cancel}
 					</button>
 					<button
 						type="button"
-						disabled={deletion.busy}
-						aria-busy={deletion.busy}
-						onClick={() => void deletion.deleteAccount()}
-						className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-orange)] disabled:opacity-50"
+						onClick={confirm}
+						className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-orange)]"
 					>
-						{deletion.busy ? copy.deleting : copy.confirm}
+						{copy.confirm}
 					</button>
 				</div>
 			</dialog>

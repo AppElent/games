@@ -23,6 +23,7 @@ export const profile = {
 		deleting: "Bezig met verwijderen…",
 		failed: "Je account kon niet worden verwijderd. Probeer het opnieuw.",
 		unavailable: "Je account verwijderen is nu niet beschikbaar.",
+		signInAgain: "Opnieuw inloggen",
 	},
 	displayName: "Weergavenaam",
 	displayNameHint: "Andere spelers zien deze naam als je meedoet.",

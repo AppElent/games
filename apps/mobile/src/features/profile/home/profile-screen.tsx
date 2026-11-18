@@ -138,6 +138,23 @@ export function ProfileScreen() {
 											: null
 								}
 							/>
+							{deletion.needsSignIn ? (
+								<Button
+									variant="secondary"
+									label={copy.deleteAccount.signInAgain}
+									busy={signingOut}
+									onPress={async () => {
+										setSigningOut(true);
+										try {
+											await deletion.signInAgain();
+											router.push("/sign-in");
+										} finally {
+											setSigningOut(false);
+										}
+									}}
+									testID="profile-delete-sign-in-again"
+								/>
+							) : null}
 						</>
 					) : (
 						<>

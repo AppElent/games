@@ -27,9 +27,14 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   `#/lib/auth`'s `AuthCard` and form components; `src/components/Header.tsx` uses its
   `HeaderUser`.
 - "Delete account" on `/account` (`src/components/account/DeleteAccount.tsx`) and the
-  app's Profile run the same steps, `@arcadeclub/core/account-deletion`: `account.deleteMyData`
-  with `expectedSubject` until `done`, then the Clerk user, then sign-out. Refusals
-  (`accountInActiveGame`, `accountChanged`) show localized; a rerun resumes.
+  app's Profile run the same steps, `@arcadeclub/core/account-deletion`: a recent
+  sign-in (Clerk's "strict" reverification, checked with 5 of its 10 minutes), then
+  `account.deleteMyData` with `expectedSubject` until `done`, then the Clerk user, then
+  sign-out. An old sign-in stops before any data is deleted: the web opens Clerk's verify
+  dialog (via `useReverification`); the app, which has no such dialog, refuses with
+  `accountSignInFirst` and offers "Sign in again". If Clerk still refuses the user after
+  the data is gone, both show `accountSignInToFinish`. Refusals (`accountInActiveGame`,
+  `accountChanged`) show localized; a rerun resumes.
 - "Download my data" on `/account` (`src/components/account/ExportData.tsx`) and the
   app's Profile run the same steps, `@arcadeclub/core/account-export`: every page of
   `account.exportMyData` (what each table exports: `convex/lib/accountExport.ts`),

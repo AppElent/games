@@ -85,6 +85,10 @@ export const serverErrors = {
 		"You switched accounts. Sign in to the account you want to delete and try again.",
 	accountInActiveGame:
 		"You're in a game with other players right now. Finish it first, or try again in {minutes} minutes.",
+	accountSignInFirst:
+		"To delete your account, sign in again first. This keeps anyone else using this device from deleting it.",
+	accountSignInToFinish:
+		"Your Arcade Club data is deleted, but your account isn't yet: it needs a recent sign-in. Sign in again, then delete your account again to finish.",
 	signInToHost: "Sign in to host a game.",
 	signInToJoin: "Sign in to join this game.",
 	sessionNotFound: "This game no longer exists.",

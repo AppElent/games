@@ -21,6 +21,7 @@ export const profile = {
 		deleting: "Deleting…",
 		failed: "Your account could not be deleted. Try again.",
 		unavailable: "Deleting your account isn't available right now.",
+		signInAgain: "Sign in again",
 	},
 	displayName: "Display name",
 	displayNameHint: "Shown to other players when you join a game.",
