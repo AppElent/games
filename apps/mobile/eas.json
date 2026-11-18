@@ -9,6 +9,7 @@
 			"distribution": "internal",
 			"autoIncrement": true,
 			"channel": "development",
+			"node": "22.18.0",
 			"environment": "development",
 			"android": {
 				"buildType": "apk"
@@ -27,6 +28,7 @@
 		"preview": {
 			"autoIncrement": true,
 			"channel": "preview",
+			"node": "22.18.0",
 			"environment": "preview",
 			"env": {
 				"APP_VARIANT": "preview",
@@ -43,6 +45,7 @@
 		"production": {
 			"autoIncrement": true,
 			"channel": "production",
+			"node": "22.18.0",
 			"environment": "production",
 			"env": {
 				"APP_VARIANT": "production",
