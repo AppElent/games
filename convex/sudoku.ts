@@ -99,7 +99,7 @@ const puzzleArgs = {
  * What every read of and write to a puzzle takes: the session, and the guest
  * id that proves a guest's puzzle. A signed-in host's account is their proof.
  */
-const puzzleWriteArgs = {
+const puzzleCallArgs = {
 	sessionId: v.id("gameSessions"),
 	guestId: v.optional(v.string()),
 };
@@ -211,7 +211,7 @@ export const create = mutation({
  * does not exist. The solution and the participants never leave the server.
  */
 export const getBundle = query({
-	args: puzzleWriteArgs,
+	args: puzzleCallArgs,
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (
@@ -229,9 +229,10 @@ export const getBundle = query({
 			session: {
 				_id: session._id,
 				title: session.title,
-				// Only the host reads this, so it is their own id. The phone
-				// app checks it against the signed-in account to drop an answer
-				// that arrives after an account switch (`use-opened-save.ts`).
+				// Only the host reads this, so it is their own id; a guest's
+				// puzzle has none. The phone app checks it against the signed-in
+				// account to drop an answer that arrives after an account switch
+				// (`use-opened-save.ts`).
 				hostUserId: session.hostUserId,
 			},
 			state: safeState,
@@ -241,7 +242,7 @@ export const getBundle = query({
 
 export const saveProgress = mutation({
 	args: {
-		...puzzleWriteArgs,
+		...puzzleCallArgs,
 		digits: v.string(),
 		cornerNotes: v.array(v.number()),
 		centerNotes: v.array(v.number()),
@@ -275,7 +276,7 @@ export const saveProgress = mutation({
 
 export const setPaused = mutation({
 	args: {
-		...puzzleWriteArgs,
+		...puzzleCallArgs,
 		paused: v.boolean(),
 	},
 	handler: async (ctx, args) => {
@@ -303,7 +304,7 @@ export const setPaused = mutation({
 
 export const complete = mutation({
 	args: {
-		...puzzleWriteArgs,
+		...puzzleCallArgs,
 		digits: v.string(),
 		elapsedSeconds: v.number(),
 	},
@@ -342,7 +343,7 @@ export const complete = mutation({
 
 export const rename = mutation({
 	args: {
-		...puzzleWriteArgs,
+		...puzzleCallArgs,
 		title: v.string(),
 	},
 	handler: async (ctx, args) => {
