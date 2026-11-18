@@ -14,7 +14,7 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 import {
 	APP_LINK_HOST,
 	APPLE_TEAM_ID,
-	associatedDomains,
+	iosAssociatedDomains,
 } from "./src/lib/app-links.ts";
 
 /** Every build this app has; also its EAS Update channel and Sentry environment. */
@@ -63,7 +63,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 			...config.ios,
 			bundleIdentifier: id,
 			appleTeamId: APPLE_TEAM_ID,
-			associatedDomains: associatedDomains(APP_LINK_HOST, claims),
+			...iosAssociatedDomains(APP_LINK_HOST, claims),
 		},
 		android: {
 			...config.android,

@@ -30,8 +30,8 @@ describe("app config links", () => {
 		);
 	});
 
-	it("development claims nothing", () => {
-		expect(resolve("development").ios?.associatedDomains).toEqual([]);
+	it("development claims nothing, not even an empty entitlement", () => {
+		expect(resolve("development").ios).not.toHaveProperty("associatedDomains");
 	});
 
 	it("lists Preview first, as iOS follows the AASA in order", () => {

@@ -12,6 +12,7 @@ import {
 	APP_LINK_HOST,
 	APP_LINKS,
 	buildAasa,
+	iosAssociatedDomains,
 	appLinks as links,
 } from "../apps/mobile/src/lib/app-links.ts";
 import { makeJoinCode, makeShareToken } from "../convex/lib/codes.ts";
@@ -45,6 +46,8 @@ describe("link routing", () => {
 		`arcadeclub-preview:///join?token=${TOKEN}`,
 		`arcadeclub-dev://join?token=${TOKEN}`,
 		`/join?token=${TOKEN}`,
+		`https://Arcade-Club.Appelent.NL/join?token=${TOKEN}`,
+		`ArcadeClub://join?token=${TOKEN}`,
 	])("opens %s", (url) => {
 		expect(links.routeFromUrl(url)).toBe(`/join?token=${TOKEN}`);
 		expect(links.systemPath(url)).toBe(`/join?token=${TOKEN}`);
@@ -88,6 +91,15 @@ describe("link routing", () => {
 		["arcadeclub://join", "/join"],
 	])("keeps only valid query keys of %s", (url, route) => {
 		expect(links.systemPath(url)).toBe(route);
+	});
+
+	it("adds associated domains only to variants that claim links", () => {
+		expect(iosAssociatedDomains(HOST, true)).toEqual({
+			associatedDomains: [`applinks:${HOST}`, `webcredentials:${HOST}`],
+		});
+		expect(iosAssociatedDomains(HOST, false)).not.toHaveProperty(
+			"associatedDomains",
+		);
 	});
 
 	it("rebuilds the join route from the router's search params", () => {

@@ -107,7 +107,12 @@ export function createAppLinks(config: AppLinksConfig) {
 
 	/** The app route an incoming link opens, or `null` when it is not a claimed link. */
 	function routeFromUrl(url: string): string | null {
-		const trimmed = url.trim();
+		// Scheme and host are case-insensitive; the path is not.
+		const trimmed = url
+			.trim()
+			.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/?#]*/i, (origin) =>
+				origin.toLowerCase(),
+			);
 		for (const { link, url: re } of matchers) {
 			const match = re.exec(trimmed);
 			if (!match) continue;
@@ -165,9 +170,18 @@ export function createAppLinks(config: AppLinksConfig) {
 	return { routeFromUrl, routeFromPathname, systemPath };
 }
 
-/** `ios.associatedDomains` for a variant that claims links; `[]` otherwise. */
-export function associatedDomains(host: string, claims: boolean): string[] {
-	return claims ? [`applinks:${host}`, `webcredentials:${host}`] : [];
+/**
+ * Spread into `ios` in `app.config.ts`. A variant that claims links gets
+ * `applinks:<host>` and `webcredentials:<host>`; any other variant gets no
+ * `associatedDomains` key at all, so its build carries no empty entitlement.
+ */
+export function iosAssociatedDomains(
+	host: string,
+	claims: boolean,
+): { associatedDomains?: string[] } {
+	return claims
+		? { associatedDomains: [`applinks:${host}`, `webcredentials:${host}`] }
+		: {};
 }
 
 /**
@@ -193,8 +207,8 @@ export function buildAasa(
 }
 
 // ---------------------------------------------------------------------------
-// Arcade Club's links. Everything above is the shared standard, copied with
-// `escape` renamed to `escapeRegExp` (Biome forbids shadowing the global).
+// Arcade Club's links. Everything above is the shared standard (app-links
+// 2.0.0), copied as is apart from Biome formatting.
 
 /** The production web host; `EXPO_PUBLIC_WEB_ORIGIN` of production and preview builds. */
 export const APP_LINK_HOST = "arcade-club.appelent.nl";
