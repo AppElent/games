@@ -32,6 +32,7 @@ import {
 	usePlayerIdentity,
 } from "../../players/identity/use-player-identity";
 import { useDeleteAccount } from "./use-delete-account";
+import { useExportData } from "./use-export-data";
 
 /** The web app's policy page; EAS sets the origin for every build it ships. */
 const PRIVACY_URL = env.webOrigin
@@ -55,6 +56,7 @@ export function ProfileScreen() {
 	const [name, setName] = useState(identity.savedName);
 	const [signingOut, setSigningOut] = useState(false);
 	const deletion = useDeleteAccount();
+	const exporter = useExportData(copy.exportData.action);
 
 	const email = user?.primaryEmailAddress?.emailAddress ?? "";
 	const version = Constants.expoConfig?.version ?? "";
@@ -82,6 +84,25 @@ export function ProfileScreen() {
 									}
 								}}
 								testID="profile-sign-out"
+							/>
+							<Button
+								variant="secondary"
+								label={copy.exportData.action}
+								busy={exporter.busy}
+								disabled={!exporter.ready || deletion.busy || signingOut}
+								onPress={() => void exporter.exportData()}
+								testID="profile-export-data"
+							/>
+							<Notice
+								message={
+									exporter.error
+										? gameErrorMessage(
+												t,
+												exporter.error,
+												copy.exportData.failed,
+											)
+										: null
+								}
 							/>
 							<Button
 								variant="plain"

@@ -18,6 +18,7 @@ import type * as connectFour from "../connectFour.js";
 import type * as diceGames from "../diceGames.js";
 import type * as hitster from "../hitster.js";
 import type * as lib_accountDeletion from "../lib/accountDeletion.js";
+import type * as lib_accountExport from "../lib/accountExport.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_codes from "../lib/codes.js";
 import type * as lib_duel from "../lib/duel.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   diceGames: typeof diceGames;
   hitster: typeof hitster;
   "lib/accountDeletion": typeof lib_accountDeletion;
+  "lib/accountExport": typeof lib_accountExport;
   "lib/auth": typeof lib_auth;
   "lib/codes": typeof lib_codes;
   "lib/duel": typeof lib_duel;
