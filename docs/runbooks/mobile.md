@@ -186,8 +186,11 @@ changes (a new native module, `app.json` plugins, icons) still need a new build.
 
 ## Verify on a device
 
-Claim a simulator/emulator through `~/.agents/bin/sim`, then drive it with
-`agent-device` (`open`, `press 'id="…"'`, `fill`, `snapshot -i`, `screenshot`).
+On an iOS simulator, run the dev client with `node scripts/run-mobile.mjs up`
+([mobile run](../standards/mobile-run.md); Metro on port 8093) and drive it with
+`node scripts/run-mobile.mjs ad …` (`open`, `press 'id="…"'`, `fill`, `snapshot -i`);
+`down` releases the simulator. Android emulators: claim one through
+`~/.agents/bin/sim claim android` and drive it with `agent-device`.
 Useful entry points:
 
 - `arcadeclub-dev://join?code=ABCDEF` / `arcadeclub-dev://join?token=…`: join flows.

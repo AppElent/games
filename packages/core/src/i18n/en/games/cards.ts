@@ -59,6 +59,9 @@ export const cards = {
 		loading: "Finding your table...",
 		notFound: "This table no longer exists.",
 		unknownGame: "We don't have that card game.",
+		updateToPlay: "Update the app to play this game",
+		updateToPlayHint:
+			"This card game is newer than your version of the app. Update the app, then open the table again.",
 		backToGames: "Back to card games",
 	},
 	table: {

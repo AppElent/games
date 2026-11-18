@@ -12,6 +12,7 @@ export function OnlineScreenFrame({
 	loading = false,
 	loadingMessage,
 	blocked = null,
+	blockedMessage,
 	blockedAction,
 	children = null,
 }: {
@@ -21,6 +22,8 @@ export function OnlineScreenFrame({
 	loadingMessage?: string;
 	/** Why the game isn't shown, such as an unavailable session. */
 	blocked?: string | null;
+	/** What the player can do about the blocked state. */
+	blockedMessage?: string;
 	/** A way out of the blocked state. */
 	blockedAction?: { label: string; onPress: () => void };
 	children?: ReactNode;
@@ -35,7 +38,11 @@ export function OnlineScreenFrame({
 					message={loadingMessage ?? t.common.errors.loading}
 				/>
 			) : blocked ? (
-				<CenteredState title={blocked} action={blockedAction} />
+				<CenteredState
+					title={blocked}
+					message={blockedMessage}
+					action={blockedAction}
+				/>
 			) : (
 				children
 			)}

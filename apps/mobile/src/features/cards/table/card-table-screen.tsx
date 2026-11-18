@@ -1,5 +1,5 @@
 /** Picks the screen for a table's state; the rule family picks the table itself. */
-import { getCardGame } from "@arcadeclub/core/cards/engine";
+import { getCardGame, isCardGameId } from "@arcadeclub/core/cards/engine";
 import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
 import { useI18n } from "../../../i18n";
@@ -27,6 +27,21 @@ export function CardTableScreen({ sessionId }: { sessionId: string }) {
 				loading={loading}
 				loadingMessage={cards.session.loading}
 				blocked={cards.session.notFound}
+				blockedAction={{
+					label: cards.session.backToGames,
+					onPress: () => router.dismissTo("/cards"),
+				}}
+			/>
+		);
+	}
+
+	// A table for a game this build doesn't know yet, until the update lands.
+	if (!isCardGameId(table.gameId)) {
+		return (
+			<OnlineScreenFrame
+				title={t.catalog["card-games"].title}
+				blocked={cards.session.updateToPlay}
+				blockedMessage={cards.session.updateToPlayHint}
 				blockedAction={{
 					label: cards.session.backToGames,
 					onPress: () => router.dismissTo("/cards"),

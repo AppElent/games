@@ -14,12 +14,12 @@ import { useMemo, useState } from "react";
 import { haptics } from "../../../feedback/haptics";
 import { plural, useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
-import { CenteredState } from "../../../ui/centered-state";
 import { ChoiceList } from "../../../ui/choice-list";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { onlineSessionHref } from "../../play/app-games";
+import { OnlineScreenFrame } from "../../sessions/components/online-screen-frame";
 import { HostGate } from "../../sessions/host/host-gate";
 import { useHostSession } from "../../sessions/host/use-host-session";
 import {
@@ -35,9 +35,11 @@ export function DiceSetupScreen({ gameId }: { gameId: string }) {
 	const dice = t.games.dice;
 	if (!isDiceGameId(gameId)) {
 		return (
-			<CenteredState
-				title={dice.session.unknownGame}
-				action={{
+			<OnlineScreenFrame
+				title={t.catalog["dice-games"].title}
+				blocked={dice.session.updateToPlay}
+				blockedMessage={dice.session.updateToPlayHint}
+				blockedAction={{
 					label: dice.session.backToGames,
 					onPress: () => router.replace("/dice"),
 				}}

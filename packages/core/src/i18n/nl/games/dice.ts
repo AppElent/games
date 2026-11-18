@@ -59,6 +59,9 @@ export const dice = {
 		loading: "Je tafel zoeken...",
 		notFound: "Deze tafel bestaat niet meer.",
 		unknownGame: "Dat dobbelspel hebben we niet.",
+		updateToPlay: "Werk de app bij om dit spel te spelen",
+		updateToPlayHint:
+			"Dit dobbelspel is nieuwer dan jouw versie van de app. Werk de app bij en open de tafel daarna opnieuw.",
 		backToGames: "Terug naar de dobbelspellen",
 	},
 	table: {
