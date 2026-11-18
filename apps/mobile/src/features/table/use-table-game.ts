@@ -180,6 +180,7 @@ export function useTableGame<M extends TableModule>(
 			.then((found) => {
 				if (!active || !found) return;
 				rememberSeat({ sessionId: id, gameType, ...found });
+				setReclaimed(true);
 				setSeat({ sessionId: id, ...found });
 			})
 			// Failing to reclaim leaves the player watching, as before.

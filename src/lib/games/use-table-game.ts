@@ -195,6 +195,7 @@ export function useTableGame<M extends TableModule>(
 		reclaimSeat({ sessionId })
 			.then((found) => {
 				if (active && found) {
+					setReclaimed(true);
 					setSeat(storeTableSeat(sessionId, found));
 				}
 			})
