@@ -193,7 +193,8 @@ export function buildAasa(
 }
 
 // ---------------------------------------------------------------------------
-// Arcade Club's links. Everything above is the shared standard, copied as is.
+// Arcade Club's links. Everything above is the shared standard, copied with
+// `escape` renamed to `escapeRegExp` (Biome forbids shadowing the global).
 
 /** The production web host; `EXPO_PUBLIC_WEB_ORIGIN` of production and preview builds. */
 export const APP_LINK_HOST = "arcade-club.appelent.nl";

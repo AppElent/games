@@ -1,6 +1,7 @@
 /**
  * Join an online game: by room code typed from the host's screen, a scanned
- * invite QR code, or the token in an invite link (`arcadeclub://join?token=…`).
+ * invite QR code, or an invite link (`https://arcade-club.appelent.nl/join?token=…`
+ * or its `arcadeclub://` form, routed here by `app/+native-intent.tsx`).
  * A game the app cannot play yet points to the web instead.
  */
 import { gameErrorMessage } from "@arcadeclub/core/errors";

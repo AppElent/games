@@ -4,7 +4,8 @@
 		"strict": true,
 		// `app.config.ts` imports `src/lib/app-links.ts` by its full name: Expo
 		// transpiles only the config file, and Node strips the types of a `.ts`
-		// file it is asked for by extension.
+		// file it is asked for by extension (Node 22.18+, hence `engines` in the
+		// root package.json).
 		"allowImportingTsExtensions": true,
 		"verbatimModuleSyntax": true,
 		"noUnusedLocals": true,

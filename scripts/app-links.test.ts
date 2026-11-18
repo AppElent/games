@@ -21,7 +21,7 @@ const AASA = "public/.well-known/apple-app-site-association";
 const TOKEN = `share_${"0123456789abcdef".repeat(2)}`;
 const CODE = "ABC234";
 
-describe.skipIf(!fs.existsSync(AASA))("site files", () => {
+describe("site files", () => {
 	it("serves the config's apple-app-site-association", () => {
 		expect(JSON.parse(fs.readFileSync(AASA, "utf8"))).toEqual(
 			buildAasa(APP_LINK_APP_IDS, APP_LINKS),
@@ -96,11 +96,16 @@ describe("link routing", () => {
 		).toBe(`/join?token=${TOKEN}`);
 	});
 
-	it("passes other app-scheme links through", () => {
+	it("passes other app-scheme links and plain launches through", () => {
 		for (const url of [
 			"arcadeclub://sso-callback?code=1",
 			"arcadeclub-dev://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081",
+			"exp+arcadeclub://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081",
 			"arcadeclub://scan",
+			// What Expo Router hands over on a launch without a link.
+			"arcadeclub:///",
+			"arcadeclub://",
+			"/",
 		]) {
 			expect(links.systemPath(url)).toBe(url);
 		}
