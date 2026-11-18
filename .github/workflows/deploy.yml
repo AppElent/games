@@ -63,6 +63,9 @@ jobs:
     env:
       EXPO_TOKEN: ${{ secrets.PREVIEW_EXPO_TOKEN }}
       SENTRY_AUTH_TOKEN: ${{ secrets.PREVIEW_SENTRY_AUTH_TOKEN }}
+      # Android is paused until this repository variable is `true`
+      # (developer-home standards/releases.md, "Android pause").
+      ANDROID_ENABLED: ${{ vars.ANDROID_ENABLED }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }

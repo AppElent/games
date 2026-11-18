@@ -39,12 +39,19 @@ import { spawnSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+	PLATFORMS as ALL_PLATFORMS,
 	appRoot,
 	easQuery,
 	fingerprint,
 	hasFinishedBuild,
-	PLATFORMS,
 } from "./fingerprint.mjs";
+
+// Android is paused until the repository variable ANDROID_ENABLED is `true`;
+// the workflows pass it in (developer-home standards/releases.md, "Android pause").
+const PLATFORMS = ALL_PLATFORMS.filter(
+	(platform) =>
+		platform !== "android" || process.env.ANDROID_ENABLED === "true",
+);
 
 // Everything the mobile bundle is built from, relative to the repo root.
 const BUNDLED = [
