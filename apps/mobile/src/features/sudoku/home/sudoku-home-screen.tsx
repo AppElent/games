@@ -18,6 +18,7 @@ import {
 	StyleSheet,
 	View,
 } from "react-native";
+import { sudokuScanner } from "../../../../modules/sudoku-scanner";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
 import { relativeTime } from "../../../i18n/relative-time";
@@ -143,6 +144,26 @@ export function SudokuHomeScreen() {
 							</View>
 						</Card>
 					))}
+					{sudokuScanner ? (
+						<Card
+							onPress={() => router.push("/sudoku/scan")}
+							accessibilityLabel={`${copy.scan.pageHeading}, ${copy.scan.entryBlurb}`}
+							testID="sudoku-scan"
+						>
+							<View style={styles.row}>
+								<View style={styles.grow}>
+									<AppText variant="heading">{copy.scan.pageHeading}</AppText>
+									<AppText variant="secondary">{copy.scan.entryBlurb}</AppText>
+								</View>
+								<Icon
+									ios="camera.viewfinder"
+									android="document_scanner"
+									size={20}
+									color={tokens.accent}
+								/>
+							</View>
+						</Card>
+					) : null}
 					<Notice message={failed ? copy.newGame.couldNotStart : null} />
 					<AppText variant="caption">
 						{signedIn ? copy.newGame.syncNote : copy.newGame.offlineNote}

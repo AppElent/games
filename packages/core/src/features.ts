@@ -196,10 +196,9 @@ export const FEATURES = defineFeatures([
 	{
 		id: "sudoku-scan",
 		kind: "product",
-		status: "pending-port",
-		platforms: ["web"],
-		reason: "Only the web reads a puzzle from a photo (APP-288).",
-		routes: { web: ["sudoku/scan"] },
+		status: "parity",
+		platforms: ["web", "mobile"],
+		routes: { web: ["sudoku/scan"], mobile: ["sudoku/scan"] },
 	},
 	{
 		id: "sudoku-cloud-saves",

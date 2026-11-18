@@ -1,10 +1,6 @@
 import { digitsToString } from "@arcadeclub/core/puzzle";
 import { digitsInMask } from "@arcadeclub/core/sudoku";
-import { useMutation } from "convex/react";
-import { Camera, Check, Loader2, Upload } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { autoSessionTitle } from "#/lib/games/sudoku-local";
-import type { ScanCell, ScanCellType } from "#/lib/games/sudoku-scan";
+import type { ScanCell, ScanCellType } from "@arcadeclub/core/sudoku-scan";
 import {
 	clearScanCell,
 	isLowConfidence,
@@ -13,10 +9,15 @@ import {
 	setScanCellType,
 	toggleScanCellNote,
 	validateScanResult,
-} from "#/lib/games/sudoku-scan";
-import type { Point, ScanProgress } from "#/lib/games/sudoku-scan-image";
+} from "@arcadeclub/core/sudoku-scan";
+import type { Point } from "@arcadeclub/core/sudoku-scan-ink";
+import { defaultCorners } from "@arcadeclub/core/sudoku-scan-ink";
+import { useMutation } from "convex/react";
+import { Camera, Check, Loader2, Upload } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { autoSessionTitle } from "#/lib/games/sudoku-local";
+import type { ScanProgress } from "#/lib/games/sudoku-scan-image";
 import {
-	defaultCorners,
 	fileToCanvas,
 	recognizeGrid,
 	warpToSquare,

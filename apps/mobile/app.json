@@ -59,9 +59,17 @@
 			[
 				"expo-camera",
 				{
-					"cameraPermission": "Arcade Club uses the camera to scan game invite QR codes.",
+					"cameraPermission": "Arcade Club uses the camera to scan game invite QR codes and to photograph a paper sudoku so you can play it in the app.",
 					"microphonePermission": false,
 					"recordAudioAndroid": false
+				}
+			],
+			[
+				"expo-image-picker",
+				{
+					"cameraPermission": "Arcade Club uses the camera to scan game invite QR codes and to photograph a paper sudoku so you can play it in the app.",
+					"photosPermission": "Arcade Club opens the photo you choose to read a sudoku from it.",
+					"microphonePermission": false
 				}
 			],
 			[

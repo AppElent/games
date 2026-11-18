@@ -54,8 +54,10 @@ export type CloudLink = {
 
 type SaveBase = {
 	id: string;
-	/** Absent only for a puzzle from the account that has none (a scan). */
+	/** Absent for a scanned puzzle, which has none. */
 	difficulty?: PuzzleDifficulty;
+	/** Set when the puzzle was read from a photo; absent for a generated one. */
+	source?: "scan";
 	updatedAt: number;
 	elapsedSeconds: number;
 	status: SudokuStatus;
@@ -65,7 +67,10 @@ type SaveBase = {
 export type GridSave = SaveBase & {
 	variant: "classic" | "killer";
 	board: SerializedSudokuBoard;
-	/** Absent only for a puzzle from the account: the server never sends it. */
+	/**
+	 * Absent for a scanned puzzle, and for one from the account: the server
+	 * never sends it.
+	 */
 	solution?: string;
 	cages?: KillerCage[];
 	autoCleanup: boolean;
@@ -85,6 +90,7 @@ export type SudokuSaveSummary = Pick<
 	| "id"
 	| "variant"
 	| "difficulty"
+	| "source"
 	| "status"
 	| "elapsedSeconds"
 	| "updatedAt"
@@ -113,14 +119,19 @@ function isCloudLink(value: unknown): value is CloudLink {
 const fromAccount = (item: { cloud?: CloudLink }) =>
 	item.cloud?.sessionId !== undefined;
 
+/** A puzzle that may lack a difficulty and a solution. */
+const scannedOrFromAccount = (item: { source?: "scan"; cloud?: CloudLink }) =>
+	item.source === "scan" || fromAccount(item);
+
 function isSummary(value: unknown): value is SudokuSaveSummary {
 	const item = value as SudokuSaveSummary | null;
 	if (typeof item?.id !== "string") return false;
 	if (item.cloud !== undefined && !isCloudLink(item.cloud)) return false;
+	if (item.source !== undefined && item.source !== "scan") return false;
 	return (
 		includes(SUDOKU_VARIANTS, item.variant) &&
 		(includes(PUZZLE_DIFFICULTIES, item.difficulty) ||
-			(item.difficulty === undefined && fromAccount(item))) &&
+			(item.difficulty === undefined && scannedOrFromAccount(item))) &&
 		includes(SUDOKU_STATUSES, item.status) &&
 		typeof item.elapsedSeconds === "number" &&
 		typeof item.updatedAt === "number"
@@ -138,7 +149,7 @@ const isDigitString = (value: unknown) =>
 
 function isGridSave(save: GridSave) {
 	const { board, cages } = save;
-	if (save.solution !== undefined || !fromAccount(save)) {
+	if (save.solution !== undefined || !scannedOrFromAccount(save)) {
 		// Throws on a malformed solution, which `readJson` reads as no save.
 		parseGrid(save.solution ?? "");
 	}
@@ -185,9 +196,18 @@ function readIndex(): SudokuSaveSummary[] {
 }
 
 function summarize(save: SudokuSave): SudokuSaveSummary {
-	const { id, variant, difficulty, status, elapsedSeconds, updatedAt, cloud } =
+	const { id, variant, difficulty, source, status, elapsedSeconds, updatedAt } =
 		save;
-	return { id, variant, difficulty, status, elapsedSeconds, updatedAt, cloud };
+	return {
+		id,
+		variant,
+		difficulty,
+		...(source && { source }),
+		status,
+		elapsedSeconds,
+		updatedAt,
+		cloud: save.cloud,
+	};
 }
 
 /** The account a save belongs to; null for a guest's. */

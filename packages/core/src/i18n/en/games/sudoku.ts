@@ -190,9 +190,16 @@ export const sudoku = {
 		uploadInstructions:
 			"Photograph or upload a printed sudoku — including one you already started solving on paper. You will verify the recognized grid before playing.",
 		takePhoto: "Take a photo",
+		choosePhoto: "Choose a photo",
+		photoInstructions:
+			"Photograph a printed sudoku or choose a photo of one — including one you already started on paper. You check the recognized grid before playing.",
+		entryBlurb: "Photograph a puzzle from a newspaper or book.",
+		cameraDenied: "Allow camera access in Settings to take a photo.",
+		scannedTitle: "Scanned puzzle",
 		uploadImage: "Upload an image",
 		dragCorners: "Drag the four handles onto the corners of the sudoku grid.",
 		uploadedImageAlt: "Uploaded sudoku",
+		cornerHandle: "Corner {number}",
 		readGrid: "Read this grid",
 		scannedImageLabel: "Scanned image",
 		recognizedGridLabel: "Recognized grid — tap a cell to correct it",

@@ -121,6 +121,20 @@ describe("sudoku cloud sync", () => {
 		expect(names()).toHaveLength(3);
 	});
 
+	it("uploads a scanned puzzle as a scan, without solution or difficulty", async () => {
+		const {
+			solution: _solution,
+			difficulty: _difficulty,
+			...rest
+		} = gridSave("scan", 1);
+		writeSudokuSave({ ...rest, source: "scan" });
+		const { cloud, calls } = fakeCloud();
+		await syncSudokuSaves(account(), cloud, { now: () => 100 });
+		expect(calls[0].args).toMatchObject({ source: "scan" });
+		expect(calls[0].args).toHaveProperty("solution", undefined);
+		expect(calls[0].args).toHaveProperty("difficulty", undefined);
+	});
+
 	it("leaves a guest's saves alone until someone signs in", () => {
 		writeSudokuSave(gridSave("a", 1));
 		expect(readSudokuSave("a")?.cloud).toBeUndefined();
