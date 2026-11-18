@@ -52,6 +52,9 @@ describe("ForgotPasswordForm", () => {
 		const onSuccess = vi.fn();
 		renderForm(onSuccess);
 
+		expect(screen.getByLabelText("Email").getAttribute("autocomplete")).toBe(
+			"username",
+		);
 		fireEvent.change(screen.getByLabelText("Email"), {
 			target: { value: "a@b.com" },
 		});
@@ -61,7 +64,14 @@ describe("ForgotPasswordForm", () => {
 		);
 		expect(signIn.create).toHaveBeenCalledWith({ identifier: "a@b.com" });
 
-		fireEvent.change(await screen.findByLabelText(/code/i), {
+		const form = (await screen.findByLabelText(/code/i)).closest("form");
+		const hint = form?.querySelector<HTMLInputElement>(
+			'input[autocomplete="username"]',
+		);
+		expect(hint?.value).toBe("a@b.com");
+		expect(hint?.hidden).toBe(true);
+
+		fireEvent.change(screen.getByLabelText(/code/i), {
 			target: { value: "123456" },
 		});
 		fireEvent.change(screen.getByLabelText(/new password/i), {

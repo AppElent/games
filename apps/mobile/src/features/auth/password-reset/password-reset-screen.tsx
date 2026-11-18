@@ -2,15 +2,27 @@
  * Forgotten password in two steps on one screen: the email that receives the
  * code, then the code plus a new password. Success signs the person in, and
  * the `(auth)` layout dismisses the modal.
+ *
+ * The second step keeps the email as a read-only `username` field above the
+ * new password, so password managers update the saved login for this account
+ * instead of saving a second one.
  */
 import { useState } from "react";
 import { fmt, useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { TextField } from "../../../ui/text-field";
 import { AuthForm } from "../components/auth-form";
-import { AUTH_CODE_LENGTH, CodeField } from "../components/code-field";
+import {
+	AUTH_CODE_LENGTH,
+	CodeField,
+	codeDigits,
+} from "../components/code-field";
 import { EmailField } from "../components/email-field";
 import { useAuthError } from "../components/use-auth-error";
+import {
+	NEW_PASSWORD_RULES,
+	useCredentialForm,
+} from "../components/use-credential-form";
 import { usePasswordReset } from "./use-password-reset";
 
 export function PasswordResetScreen({
@@ -21,60 +33,67 @@ export function PasswordResetScreen({
 	const { t } = useI18n();
 	const copy = t.auth.reset;
 	const flow = usePasswordReset();
-	const [email, setEmail] = useState(initialEmail);
+	const request = useCredentialForm({ email: initialEmail });
 	const [sentTo, setSentTo] = useState<string | null>(null);
-	const [code, setCode] = useState("");
-	const [password, setPassword] = useState("");
+	const reset = useCredentialForm({ code: "", password: "" });
 	const error = useAuthError(flow.errorKey);
 
 	if (!sentTo) {
-		const ready = email.trim().length > 0;
-		const send = async () => {
-			if (ready && (await flow.sendCode(email))) setSentTo(email.trim());
+		const ready = request.values.email.trim().length > 0;
+		const send = async ({ email }: typeof request.values) => {
+			const address = email.trim();
+			if (address && (await flow.sendCode(address))) setSentTo(address);
 		};
 		return (
 			<AuthForm title={copy.title} subtitle={copy.body} error={error}>
 				<EmailField
-					value={email}
-					onChangeText={setEmail}
+					{...request.field("email")}
+					onSubmitEditing={request.submitFrom("email", send)}
 					returnKeyType="send"
-					onSubmitEditing={send}
 				/>
 				<Button
 					label={copy.sendCode}
 					busy={flow.busy}
-					disabled={!ready}
-					onPress={send}
+					disabled={!ready && !request.editing}
+					onPress={() => request.press(send)}
 				/>
 			</AuthForm>
 		);
 	}
 
-	const ready = code.length === AUTH_CODE_LENGTH && password.length > 0;
-	const submit = () => ready && flow.submit(code, password);
+	const ready =
+		reset.values.code.length === AUTH_CODE_LENGTH &&
+		reset.values.password.length > 0;
+	const submit = ({ code, password }: typeof reset.values) => {
+		if (code.length === AUTH_CODE_LENGTH && password) {
+			flow.submit(code, password);
+		}
+	};
 	return (
 		<AuthForm
 			title={copy.title}
 			subtitle={fmt(copy.codeBody, { email: sentTo })}
 			error={error}
 		>
-			<CodeField value={code} onChange={setCode} />
+			<CodeField {...reset.field("code", codeDigits)} />
+			<EmailField value={sentTo} editable={false} testID="reset-email" />
 			<TextField
 				label={copy.newPassword}
-				value={password}
-				onChangeText={setPassword}
+				{...reset.field("password")}
+				onSubmitEditing={reset.submitFrom("password", submit)}
 				secureTextEntry
 				autoCapitalize="none"
 				autoComplete="new-password"
 				textContentType="newPassword"
+				passwordRules={NEW_PASSWORD_RULES}
 				returnKeyType="go"
-				onSubmitEditing={submit}
+				testID="reset-new-password"
 			/>
 			<Button
 				label={copy.submit}
 				busy={flow.busy}
-				disabled={!ready}
-				onPress={submit}
+				disabled={!ready && !reset.editing}
+				onPress={() => reset.press(submit)}
 			/>
 		</AuthForm>
 	);

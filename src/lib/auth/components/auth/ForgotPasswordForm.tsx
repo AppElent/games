@@ -5,6 +5,7 @@ import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
 import { orThrow } from "./clerkResult";
 import { clerkErrorMessage } from "./types";
+import { UsernameHint } from "./UsernameHint";
 
 export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 	const { signIn } = useSignIn();
@@ -54,6 +55,7 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 		return (
 			<form onSubmit={resetPassword} noValidate className="flex flex-col gap-3">
 				<AuthError message={error} />
+				<UsernameHint username={email} />
 				<AuthField
 					label="Code"
 					type="text"
@@ -81,7 +83,7 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 			<AuthField
 				label="Email"
 				type="email"
-				autoComplete="email"
+				autoComplete="username"
 				value={email}
 				onChange={setEmail}
 				required

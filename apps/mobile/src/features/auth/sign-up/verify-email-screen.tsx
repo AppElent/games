@@ -35,8 +35,8 @@ export function VerifyEmailScreen({ email }: { email: string }) {
 		>
 			<CodeField
 				value={code}
-				onChange={setCode}
-				onSubmit={() => ready && !flow.busy && flow.verify(code)}
+				onChangeText={setCode}
+				onSubmitEditing={() => ready && !flow.busy && flow.verify(code)}
 			/>
 			<Button
 				label={copy.submit}

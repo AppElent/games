@@ -13,7 +13,7 @@ export function EmailField(
 			autoCapitalize="none"
 			autoCorrect={false}
 			keyboardType="email-address"
-			autoComplete="email"
+			autoComplete="username"
 			textContentType="username"
 			{...props}
 		/>

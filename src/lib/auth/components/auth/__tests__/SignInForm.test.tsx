@@ -52,6 +52,16 @@ describe("SignInForm", () => {
 		expect(onSuccess).toHaveBeenCalled();
 	});
 
+	it("marks the credential fields for password managers", () => {
+		renderForm();
+		expect(screen.getByLabelText("Email").getAttribute("autocomplete")).toBe(
+			"username",
+		);
+		expect(screen.getByLabelText("Password").getAttribute("autocomplete")).toBe(
+			"current-password",
+		);
+	});
+
 	it("shows a readable error on failure", async () => {
 		signIn.password.mockResolvedValue({
 			error: { errors: [{ message: "Invalid." }] },
