@@ -11,7 +11,7 @@ export type DiceTableBundle = TableBundle<typeof api.diceGames>;
 
 export function useDiceTable(sessionId: string) {
 	const dice = useI18n().t.games.dice;
-	return useTableGame(api.diceGames, sessionId, {
+	return useTableGame(api.diceGames, "dice-games", sessionId, {
 		seatError: dice.lobby.seatError,
 		couldNotChange: dice.lobby.couldNotChange,
 		couldNotStart: dice.lobby.couldNotStart,

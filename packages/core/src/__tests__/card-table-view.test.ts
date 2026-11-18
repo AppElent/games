@@ -93,7 +93,7 @@ const table = {
 	seats: [seat(), seat({ name: "Me" }), seat({ botIndex: 0, name: null })],
 };
 
-const jokeren = resolvedRules(getCardGame("jokeren"), []);
+const jokeren = resolvedRules(getCardGame("jokeren"), [], null);
 if (jokeren.family !== "rummy") throw new Error("Jokeren is rummy");
 const rummyRules: RummyRules = jokeren.rules;
 
@@ -624,7 +624,7 @@ describe("rummyHint", () => {
 });
 
 describe("gin turns", () => {
-	const gin = resolvedRules(getCardGame("gin-rummy"), []);
+	const gin = resolvedRules(getCardGame("gin-rummy"), [], null);
 	if (gin.family !== "gin") throw new Error("Gin Rummy is gin");
 	const ginRules: GinRules = gin.rules;
 	const ids = (faces: string) => faces.split(" ").map((face) => `${face}#0`);
@@ -922,7 +922,9 @@ describe("specialCards", () => {
 			sample: "S2#0",
 			name: "Two pulls two",
 			effect: "Next player takes 2",
-			plainOption: "plain2",
+			option: "plain2",
+			adds: false,
+			minPlayers: null,
 		});
 		expect(list.find((card) => card.key === "joker")?.sample).toBe("JK#0");
 	});
@@ -946,7 +948,7 @@ describe("specialCards", () => {
 });
 
 const hartenjagen = (options: string[] = []) => {
-	const resolved = resolvedRules(getCardGame("hartenjagen"), options);
+	const resolved = resolvedRules(getCardGame("hartenjagen"), options, null);
 	if (resolved.family !== "tricks") throw new Error("Hartenjagen takes tricks");
 	return resolved.rules;
 };
@@ -1124,7 +1126,7 @@ describe("tricksRuleLines", () => {
 });
 
 const toepen = (options: string[] = []) => {
-	const resolved = resolvedRules(getCardGame("toepen"), options);
+	const resolved = resolvedRules(getCardGame("toepen"), options, null);
 	if (resolved.family !== "tricks") throw new Error("Toepen takes tricks");
 	return resolved.rules;
 };
@@ -1262,7 +1264,7 @@ describe("toepen at the table", () => {
 });
 
 const klaverjassen = (options: string[] = []) => {
-	const resolved = resolvedRules(getCardGame("klaverjassen"), options);
+	const resolved = resolvedRules(getCardGame("klaverjassen"), options, null);
 	if (resolved.family !== "tricks")
 		throw new Error("Klaverjassen takes tricks");
 	return resolved.rules;
@@ -1579,7 +1581,7 @@ describe("trick flights", () => {
 });
 
 const boerenbridge = (options: string[] = []) => {
-	const resolved = resolvedRules(getCardGame("boerenbridge"), options);
+	const resolved = resolvedRules(getCardGame("boerenbridge"), options, null);
 	if (resolved.family !== "tricks")
 		throw new Error("Boerenbridge takes tricks");
 	return resolved.rules;

@@ -440,7 +440,7 @@ describe("pesten", () => {
 describe("pesten house rules", () => {
 	const game = CARD_GAMES.pesten as CardGameDefinition;
 	const rulesWith = (options: string[]) =>
-		resolvedRules(game, options).rules as SheddingRules;
+		resolvedRules(game, options, null).rules as SheddingRules;
 
 	it("offers a switch for every special card", () => {
 		for (const key of Object.keys(pestenRules.powers)) {
@@ -450,6 +450,8 @@ describe("pesten house rules", () => {
 			"noFinishOnPower",
 			"noStacking",
 			"noLastCard",
+			"mustPlay",
+			"noPlayDrawn",
 		]);
 	});
 
@@ -1196,7 +1198,7 @@ describe("mau-mau", () => {
 	});
 
 	it("7 makes the next player draw two, 2 is a plain card", () => {
-		const rules = resolvedRules(game, []).rules as SheddingRules;
+		const rules = resolvedRules(game, [], null).rules as SheddingRules;
 		expect(rules.powers).toEqual({
 			"7": { kind: "draw", amount: 2 },
 			"8": { kind: "skip" },
@@ -1275,8 +1277,11 @@ describe("fitting cards onto a meld", () => {
 
 describe("gin rummy", () => {
 	const rules = CARD_GAMES["gin-rummy"].rules as GinRules;
-	const shortRules = resolvedRules(getCardGame("gin-rummy"), ["shortMatch"])
-		.rules as GinRules;
+	const shortRules = resolvedRules(
+		getCardGame("gin-rummy"),
+		["shortMatch"],
+		null,
+	).rules as GinRules;
 	const ids = (faces: string) => faces.split(" ").map((face) => `${face}#0`);
 
 	/** Seat 0 on turn with a full hand to play; the stock is whatever is left. */

@@ -1,9 +1,12 @@
+import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import {
 	readTabValue,
 	removeTabValue,
 	writeTabValue,
 } from "#/lib/games/local-store";
+import { useGuestId } from "#/lib/games/sessions";
+import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 type ParticipantId = Id<"sessionParticipants">;
@@ -11,8 +14,9 @@ type ParticipantId = Id<"sessionParticipants">;
 /**
  * Which participant this tab is, per session. sessionStorage, so a second tab
  * can join the same game as someone else; blocked storage leaves the tab
- * unseated instead of failing the create or join that remembered it. Table
- * games also keep a longer-lived seat secret: see `table-seat.ts`.
+ * unseated instead of failing the create or join that remembered it. A
+ * signed-in player's account also finds their seat (`useSeat`). Table games
+ * also keep a longer-lived seat secret: see `table-seat.ts`.
  */
 const keyOf = (sessionId: string) => `arcade-club.seat.${sessionId}`;
 
@@ -47,14 +51,41 @@ export function forgetSeat(sessionId: string) {
 	removeTabValue(keyOf(sessionId));
 }
 
-/** Unset on the first render, so server and client render the same markup. */
-export function useSeat(sessionId: string): ParticipantId | undefined {
-	const [seat, setSeat] = useState<ParticipantId>();
+/**
+ * This tab's seat in a session: the one it holds while it is the caller's,
+ * else the signed-in account's own (`sessions.ownSeat`), so a player who signs
+ * out and back in, or opens a new tab, keeps their seat. A join link's seat
+ * (`linked`) is held ahead of the remembered one; `linkOnly` holds no
+ * remembered seat at all, for a page a guest only reaches by link. Without an
+ * answer the held seat stands, as it always did for guests. Unset on the first
+ * render unless linked, so server and client render the same markup.
+ */
+export function useSeat(
+	sessionId: string,
+	linked?: ParticipantId | "",
+	{ linkOnly = false }: { linkOnly?: boolean } = {},
+): ParticipantId | undefined {
+	const [stored, setStored] = useState<{ sessionId: string; seat?: string }>();
+	const guestId = useGuestId();
 	useEffect(() => {
-		const stored = readSeat(sessionId);
-		setSeat(stored ? (stored as ParticipantId) : undefined);
-	}, [sessionId]);
-	return seat;
+		setStored({
+			sessionId,
+			seat: linkOnly ? undefined : (readSeat(sessionId) ?? undefined),
+		});
+	}, [sessionId, linkOnly]);
+	const remembered = stored?.sessionId === sessionId ? stored : undefined;
+	const held = linked || remembered?.seat;
+	const own = useQuery(
+		api.sessions.ownSeat,
+		(linked || remembered) && guestId
+			? {
+					sessionId: sessionId as Id<"gameSessions">,
+					participantId: held,
+					guestId,
+				}
+			: "skip",
+	);
+	return own ?? (held as ParticipantId | undefined);
 }
 
 /** The `?participantId=` a join link carries, "" when absent. */

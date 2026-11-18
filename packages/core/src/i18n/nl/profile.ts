@@ -7,6 +7,13 @@ export const profile = {
 		"Solospellen worden op deze telefoon bewaard. Log in om online spellen te hosten.",
 	signedInAs: "Ingelogd als {email}",
 	signOut: "Uitloggen",
+	exportData: {
+		title: "Je gegevens",
+		body: "Download alles wat Arcade Club over je account bewaart als JSON-bestand: je spellen, plaatsen, antwoorden en inhoud. Namen van andere spelers staan er niet in.",
+		action: "Mijn gegevens downloaden",
+		exporting: "Bezig met voorbereiden…",
+		failed: "Je gegevens konden niet worden gedownload. Probeer het opnieuw.",
+	},
 	deleteAccount: {
 		action: "Account verwijderen",
 		confirmTitle: "Je account verwijderen?",

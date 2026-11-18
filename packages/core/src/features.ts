@@ -102,11 +102,11 @@ export const FEATURES = defineFeatures([
 		routes: {},
 	},
 	{
+		// "Download my data" on web /account and the app's Profile.
 		id: "data-export",
 		kind: "floor",
-		status: "pending-port",
-		platforms: [],
-		reason: "Neither platform exports a user's data yet (APP-45).",
+		status: "parity",
+		platforms: ["web", "mobile"],
 		routes: {},
 	},
 	{

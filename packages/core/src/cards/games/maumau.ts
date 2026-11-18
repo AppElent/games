@@ -35,8 +35,16 @@ export const maumau = {
 	options: [
 		{ id: "noStacking", patch: { stackDraws: false } },
 		{ id: "noLastCard", patch: { lastCardPenalty: null } },
+		{ id: "mustPlay", patch: { voluntaryDraw: false } },
+		{ id: "noPlayDrawn", patch: { playDrawnCard: false } },
 		{ id: "plain7", withoutPowers: ["7"] },
 		{ id: "plain8", withoutPowers: ["8"] },
 		{ id: "plainJ", withoutPowers: ["J"] },
+		// With two players a reverse changes nothing, so the nine only counts from three.
+		{
+			id: "nineReverses",
+			withPowers: { "9": { kind: "reverse" } },
+			minPlayers: 3,
+		},
 	],
 } as const satisfies CardGameDefinition;

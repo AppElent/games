@@ -6,6 +6,8 @@ import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
 import { gameError } from "./lib/errors";
 import {
+	findAccountParticipant,
+	findOwnParticipant,
 	isCaller,
 	kickParticipant as kick,
 	listParticipants,
@@ -93,6 +95,37 @@ export const getBundle = query({
 		}
 		const participants = await listParticipants(ctx, args.sessionId);
 		return { session, participants: publicParticipants(participants) };
+	},
+});
+
+/**
+ * Which participant the caller is in this session. The seat a client holds
+ * wins while it is provably the caller's; otherwise a signed-in caller gets
+ * their account's own row back, so signing out and in, a new tab or another
+ * account joining on this device does not cost them their seat. Null when
+ * neither: a guest's seat is only ever the one their client holds.
+ */
+export const ownSeat = query({
+	args: {
+		sessionId: v.id("gameSessions"),
+		// A string, not an id: a client's stored value may be anything.
+		participantId: v.optional(v.string()),
+		guestId: v.optional(v.string()),
+	},
+	handler: async (ctx, { sessionId, participantId, guestId }) => {
+		const held =
+			participantId && ctx.db.normalizeId("sessionParticipants", participantId);
+		if (
+			held &&
+			(await findOwnParticipant(ctx, {
+				sessionId,
+				participantId: held,
+				guestId,
+			}))
+		) {
+			return held;
+		}
+		return (await findAccountParticipant(ctx, sessionId))?._id ?? null;
 	},
 });
 

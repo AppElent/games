@@ -11,7 +11,7 @@ export type CardTableBundle = TableBundle<typeof api.cardGames>;
 
 export function useCardTable(sessionId: string) {
 	const cards = useI18n().t.games.cards;
-	return useTableGame(api.cardGames, sessionId, {
+	return useTableGame(api.cardGames, "card-games", sessionId, {
 		seatError: cards.lobby.seatError,
 		couldNotChange: cards.lobby.couldNotChange,
 		couldNotStart: cards.lobby.couldNotStart,

@@ -30,6 +30,12 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   app's Profile run the same steps, `@arcadeclub/core/account-deletion`: `account.deleteMyData`
   with `expectedSubject` until `done`, then the Clerk user, then sign-out. Refusals
   (`accountInActiveGame`, `accountChanged`) show localized; a rerun resumes.
+- "Download my data" on `/account` (`src/components/account/ExportData.tsx`) and the
+  app's Profile run the same steps, `@arcadeclub/core/account-export`: every page of
+  `account.exportMyData` (what each table exports: `convex/lib/accountExport.ts`),
+  merged into `arcade-club-export-YYYY-MM-DD.json`. The web downloads it; the app adds
+  its phone-only sudoku saves under `localOnly.sudoku`, writes the file to its cache and
+  opens the share sheet.
 - Theme (light, dark, auto) is driven by `#/lib/auth`'s
   `getInitialMode`/`applyThemeMode`/`setThemeMode`, `ThemeSync` (reconciles with Clerk
   `unsafeMetadata` on sign-in) and the `THEME_INIT_SCRIPT` inline pre-paint script in
@@ -40,5 +46,6 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 
 ## Acceptance
 
-- `src/lib/auth/__tests__`, `src/lib/auth/components/auth/__tests__` and
-  `src/lib/account/__tests__` pass.
+- `src/lib/auth/__tests__`, `src/lib/auth/components/auth/__tests__`,
+  `src/lib/account/__tests__`, `convex/account.test.ts` and
+  `convex/accountExport.test.ts` pass.

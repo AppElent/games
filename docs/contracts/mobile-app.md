@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing which games the Arcade Club mobile app offers, or how it talks to Convex and stores seats and saves.
-version: 1.1.0
+version: 1.1.1
 status: current
 ---
 
@@ -32,7 +32,9 @@ the [mobile runbook](../runbooks/mobile.md).
 - The app calls the same Convex functions as web, only via
   `apps/mobile/src/convex/api.ts`. It stores its seats (with a card or dice table's
   seat secret) and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=`
-  links.
+  links. A signed-in player's seat also comes back from their account
+  (`sessions.ownSeat`, see [game sessions](game-sessions.md); at a card or dice table,
+  with its secret, through `reclaimSeat`, see [card games](card-games.md)).
 
 ## Acceptance
 

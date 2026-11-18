@@ -557,6 +557,107 @@ describe("heartbeat", () => {
 	});
 });
 
+describe("ownSeat", () => {
+	/**
+	 * What a client asks: signed in as `subject` (or not), sending the seat this
+	 * tab or phone holds and its guest id.
+	 */
+	function ownSeat(
+		t: T,
+		subject: string | undefined,
+		sessionId: SessionId,
+		participantId?: string,
+		guestId = "guest_device",
+	) {
+		const caller = subject
+			? impostor(t).withIdentity({ subject })
+			: impostor(t);
+		return caller.query(api.sessions.ownSeat, {
+			sessionId,
+			participantId,
+			guestId,
+		});
+	}
+
+	function joinSignedIn(t: T, joinCode: string) {
+		return asUser(t).mutation(api.sessions.joinByCode, {
+			joinCode,
+			displayName: "Joiner",
+			guestId: "guest_device",
+		});
+	}
+
+	it("keeps the seat a client holds while it is the caller's", async () => {
+		const t = setup();
+		const { sessionId, hostId, joinCode } = await room(t);
+		const { participantId: guest } = await joinWithCode(
+			t,
+			joinCode,
+			"guest_one",
+		);
+		expect(await ownSeat(t, HOST_USER, sessionId, hostId)).toBe(hostId);
+		expect(await ownSeat(t, undefined, sessionId, guest, "guest_one")).toBe(
+			guest,
+		);
+	});
+
+	it("gives a host who signed out and back in their seat, with none held", async () => {
+		const t = setup();
+		const { sessionId, hostId } = await room(t);
+		expect(await ownSeat(t, HOST_USER, sessionId)).toBe(hostId);
+	});
+
+	it("gives the account its own seat over another account's left in the tab", async () => {
+		const t = setup();
+		const { sessionId, hostId, joinCode } = await room(t);
+		const { participantId: joiner } = await joinSignedIn(t, joinCode);
+		expect(await ownSeat(t, HOST_USER, sessionId, joiner)).toBe(hostId);
+		expect(await ownSeat(t, "user_joiner", sessionId, hostId)).toBe(joiner);
+	});
+
+	it("is null for a guest or a stranger, whatever seat they hold", async () => {
+		const t = setup();
+		const { sessionId, hostId, joinCode } = await room(t);
+		const { participantId: guest } = await joinWithCode(
+			t,
+			joinCode,
+			"guest_one",
+		);
+		for (const held of [undefined, hostId, guest]) {
+			expect(await ownSeat(t, undefined, sessionId, held)).toBeNull();
+			expect(await ownSeat(t, "user_stranger", sessionId, held)).toBeNull();
+		}
+	});
+
+	it("is null while signed out, even holding the account's seat", async () => {
+		const t = setup();
+		const { sessionId, hostId } = await room(t);
+		expect(await ownSeat(t, undefined, sessionId, hostId)).toBeNull();
+	});
+
+	it("gives a kicked account nothing back", async () => {
+		const t = setup();
+		const { host, sessionId, hostId, joinCode } = await room(t);
+		const { participantId: joiner } = await joinSignedIn(t, joinCode);
+		await host.mutation(api.sessions.kickParticipant, {
+			sessionId,
+			hostParticipantId: hostId,
+			targetParticipantId: joiner,
+		});
+		expect(await ownSeat(t, "user_joiner", sessionId, joiner)).toBeNull();
+		expect(await ownSeat(t, "user_joiner", sessionId)).toBeNull();
+	});
+
+	it("ignores a held seat from another session or one that is not an id", async () => {
+		const t = setup();
+		const { sessionId, hostId } = await room(t);
+		const other = await room(t);
+		expect(await ownSeat(t, HOST_USER, sessionId, other.hostId)).toBe(hostId);
+		expect(await ownSeat(t, HOST_USER, sessionId, "not-an-id")).toBe(hostId);
+		expect(await ownSeat(t, undefined, sessionId, "not-an-id")).toBeNull();
+	});
+});
+
 describe("host controls", () => {
 	async function roomWithGuest(t: T) {
 		const created = await room(t);

@@ -289,6 +289,36 @@ describe("a Yatzy room", () => {
 		expect(spectator.seats).toHaveLength(2);
 	});
 
+	it("gives a signed-in player their seat back on a fresh client, and nobody else", async () => {
+		const t = setup();
+		const host = t.withIdentity({ subject: "user_host" });
+		const { sessionId, participantId } = await host.mutation(
+			api.diceGames.createTable,
+			tableArgs({ joinMode: "room", displayName: "Host", guestId: undefined }),
+		);
+		await expect(
+			t.mutation(api.diceGames.reclaimSeat, { sessionId }),
+		).resolves.toBeNull();
+		await expect(
+			t
+				.withIdentity({ subject: "user_stranger" })
+				.mutation(api.diceGames.reclaimSeat, { sessionId }),
+		).resolves.toBeNull();
+		const found = await host.mutation(api.diceGames.reclaimSeat, {
+			sessionId,
+		});
+		expect(found).toEqual({ participantId, seatSecret: SECRET_A });
+		if (!found) {
+			throw new Error("no seat");
+		}
+		await host.mutation(api.diceGames.act, {
+			sessionId,
+			...found,
+			action: { type: "roll", keep: [] },
+		});
+		expect((await read(t, { sessionId, ...found })).you).toBe(0);
+	});
+
 	it("is only created through its own mutation", async () => {
 		const t = setup();
 		await expectCode(

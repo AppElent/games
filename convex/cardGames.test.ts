@@ -326,6 +326,66 @@ describe("privacy", () => {
 	});
 });
 
+describe("reclaiming a seat", () => {
+	it("gives a signed-in player their seat back on a fresh client, keeping its secret", async () => {
+		const t = setup();
+		const { host, sessionId, participantId } = await roomTable(t);
+		const found = await host.mutation(api.cardGames.reclaimSeat, {
+			sessionId,
+		});
+		expect(found).toEqual({ participantId, seatSecret: SECRET_A });
+		if (!found) {
+			throw new Error("no seat");
+		}
+		await host.mutation(api.cardGames.start, { sessionId, ...found });
+		const table = await read(t, { sessionId, ...found });
+		expect(table.you).toBe(0);
+		expect(table.status).toBe("playing");
+		// The first device still holds the seat: nothing was re-keyed.
+		expect((await read(t, creds(sessionId, participantId))).you).toBe(0);
+	});
+
+	it("gives nothing to a guest, another account or a joiner without a seat", async () => {
+		const t = setup();
+		const { sessionId, joinCode } = await roomTable(t);
+		const reclaim = (caller: Pick<T, "mutation">) =>
+			caller.mutation(api.cardGames.reclaimSeat, { sessionId });
+		await expect(reclaim(t)).resolves.toBeNull();
+		await expect(
+			reclaim(t.withIdentity({ subject: "user_stranger" })),
+		).resolves.toBeNull();
+		const watcher = t.withIdentity({ subject: "user_watcher" });
+		await watcher.mutation(api.sessions.joinByCode, {
+			joinCode,
+			displayName: "Watcher",
+		});
+		await expect(reclaim(watcher)).resolves.toBeNull();
+	});
+
+	it("gives nothing to a player the host removed", async () => {
+		const t = setup();
+		const { host, sessionId, participantId, joinCode } = await roomTable(t);
+		const member = t.withIdentity({ subject: "user_member" });
+		const joined = await member.mutation(api.sessions.joinByCode, {
+			joinCode,
+			displayName: "Member",
+			seatSecret: "secret-m-0123456789",
+		});
+		expect(joined.seatClaimed).toBe(true);
+		await expect(
+			member.mutation(api.cardGames.reclaimSeat, { sessionId }),
+		).resolves.toMatchObject({ participantId: joined.participantId });
+		await host.mutation(api.sessions.kickParticipant, {
+			sessionId,
+			hostParticipantId: participantId,
+			targetParticipantId: joined.participantId,
+		});
+		await expect(
+			member.mutation(api.cardGames.reclaimSeat, { sessionId }),
+		).resolves.toBeNull();
+	});
+});
+
 describe("host controls", () => {
 	it("takes more than the host's public id to kick a player", async () => {
 		const t = setup();
@@ -1149,5 +1209,56 @@ describe("autopilot permissions", () => {
 		});
 		const table = await read(t, { sessionId });
 		expect(table.seats[0].autopilot).toBe(false);
+	});
+});
+
+describe("house rules that need a number of players", () => {
+	/** A solo Mau-Mau table with the nine house rule, seat 0 about to play a nine on a nine. */
+	async function nineTable(bots: number) {
+		const t = setup();
+		const { sessionId, participantId } = await t.mutation(
+			api.cardGames.createTable,
+			tableArgs({ gameId: "maumau", bots, options: ["nineReverses"] }),
+		);
+		const stored = await t.run((ctx) =>
+			ctx.db.query("cardGameStates").unique(),
+		);
+		if (!stored) throw new Error("no table");
+		expect(stored.options).toEqual(["nineReverses"]);
+		const hands = [
+			["S9#0", "DK#0", "HQ#0"],
+			["C8#0", "DA#0"],
+			["H10#0", "CQ#0"],
+		].slice(0, bots + 1);
+		await t.run((ctx) =>
+			ctx.db.patch(stored._id, {
+				game: {
+					...stored.game,
+					hands,
+					stock: ["D8#0", "C10#0", "H8#0"],
+					discard: ["H9#0"],
+					turn: 0,
+					direction: 1,
+					pendingDraw: 0,
+					activeSuit: null,
+					drawnCard: null,
+				} as typeof stored.game,
+			}),
+		);
+		const me = creds(sessionId, participantId);
+		await t.mutation(api.cardGames.act, {
+			...me,
+			action: { type: "play", card: "S9#0" },
+		});
+		const after = await t.run((ctx) => ctx.db.query("cardGameStates").unique());
+		return after?.game as { direction: number; turn: number };
+	}
+
+	it("keeps the rule on a table too small for it, and plays the card plain", async () => {
+		expect(await nineTable(1)).toMatchObject({ direction: 1, turn: 1 });
+	});
+
+	it("enforces the rule once the table has enough players", async () => {
+		expect(await nineTable(2)).toMatchObject({ direction: -1, turn: 2 });
 	});
 });

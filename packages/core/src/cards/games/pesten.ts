@@ -37,6 +37,8 @@ export const pesten = {
 		{ id: "noFinishOnPower", patch: { finishOnPowerPenalty: 5 } },
 		{ id: "noStacking", patch: { stackDraws: false } },
 		{ id: "noLastCard", patch: { lastCardPenalty: null } },
+		{ id: "mustPlay", patch: { voluntaryDraw: false } },
+		{ id: "noPlayDrawn", patch: { playDrawnCard: false } },
 		// One per special card, so a table can switch any of them off. A joker
 		// without its power could never be played, so it leaves the deck too.
 		{ id: "plain2", withoutPowers: ["2"] },

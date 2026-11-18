@@ -26,7 +26,7 @@ import { mulberry32 } from "../random";
 import { toggleHouseRule } from "../table-engine";
 
 const game = getCardGame("eenentwintigen");
-const resolved = resolvedRules(game, []);
+const resolved = resolvedRules(game, [], null);
 if (resolved.family !== "bank") throw new Error("Eenentwintigen is bank");
 const rules: BankRules = resolved.rules;
 const random = mulberry32(7);
@@ -442,10 +442,10 @@ describe("refused moves at a bank table", () => {
 
 describe("house rules", () => {
 	it("plays 5 or 20 rounds, never both", () => {
-		expect(resolvedRules(game, ["shortMatch"]).rules).toMatchObject({
+		expect(resolvedRules(game, ["shortMatch"], null).rules).toMatchObject({
 			rounds: 5,
 		});
-		expect(resolvedRules(game, ["longMatch"]).rules).toMatchObject({
+		expect(resolvedRules(game, ["longMatch"], null).rules).toMatchObject({
 			rounds: 20,
 		});
 		expect(

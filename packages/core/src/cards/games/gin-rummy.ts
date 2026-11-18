@@ -38,5 +38,9 @@ export const ginRummy = {
 		targetScore: 100,
 		stockFloor: 2,
 	},
-	options: [{ id: "shortMatch", patch: { targetScore: 50 } }],
+	options: [
+		{ id: "shortMatch", patch: { targetScore: 50 } },
+		// Only gin ends a hand: nobody may knock with deadwood.
+		{ id: "straightGin", patch: { knockLimit: 0 } },
+	],
 } as const satisfies CardGameDefinition;

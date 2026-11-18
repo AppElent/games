@@ -12,6 +12,7 @@ import {
 	HOST_USER,
 	HOSTED,
 	hostSession,
+	impostor,
 	impostors,
 	joinWithCode,
 	joinWithToken,
@@ -546,6 +547,44 @@ describe("create", () => {
 });
 
 describe("ownership", () => {
+	it("seats a host who signed out and back in, from a tab holding another account's seat", async () => {
+		const t = setup();
+		const { sessionId, red } = await newMatch(t);
+		// Another account signed in on the host's tab and joined: the tab now
+		// holds their seat, which the host cannot act for.
+		const { participantId: yellow } = await t
+			.withIdentity({ subject: "user_yellow" })
+			.mutation(api.sessions.joinByToken, {
+				shareToken: await shareTokenOf(t, sessionId),
+				displayName: "Yellow",
+				guestId: "guest_device",
+			});
+		const host = impostor(t).withIdentity({ subject: HOST_USER });
+		await expectCode(
+			host.mutation(api.connectFour.drop, {
+				sessionId,
+				participantId: yellow,
+				column: 0,
+			}),
+			"notInGame",
+		);
+		for (const held of [yellow, undefined]) {
+			expect(
+				await host.query(api.sessions.ownSeat, {
+					sessionId,
+					participantId: held,
+					guestId: "guest_device",
+				}),
+			).toBe(red);
+		}
+		await host.mutation(api.connectFour.drop, {
+			sessionId,
+			participantId: red,
+			column: 0,
+		});
+		expect((await bundle(t, sessionId)).state.activeColor).toBe("yellow");
+	});
+
 	it("answers notInGame to anyone acting for another player's seat", async () => {
 		const t = setup();
 		const { sessionId, red, yellow } = await fullMatch(t);

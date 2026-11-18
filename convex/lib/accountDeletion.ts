@@ -14,9 +14,9 @@ import type { DataModel, Doc, Id, TableNames } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { findGameState, listParticipants } from "./gameSession";
 
-type Db = QueryCtx["db"];
+export type Db = QueryCtx["db"];
 type SessionId = Id<"gameSessions">;
-type Rows<T extends TableNames> = Query<NamedTableInfo<DataModel, T>>;
+export type Rows<T extends TableNames> = Query<NamedTableInfo<DataModel, T>>;
 
 type Treatment<T extends TableNames> =
 	/** Rows only this account owns and nobody else reads: deleted. */
@@ -32,7 +32,8 @@ type Treatment<T extends TableNames> =
 	/** Not read through an owner; the reason says how it is still covered. */
 	| { excluded: string };
 
-function seatsOf(db: Db, userId: string) {
+/** The account's seats, every session it took part in. */
+export function seatsOf(db: Db, userId: string) {
 	return db
 		.query("sessionParticipants")
 		.withIndex("by_user", (q) => q.eq("userId", userId));

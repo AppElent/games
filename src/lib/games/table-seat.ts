@@ -26,14 +26,17 @@ export function rememberTableSeat(
 	seatSecret: string,
 	seatClaimed: boolean,
 ): TableSeat {
-	const seat = {
+	return storeTableSeat(sessionId, {
 		participantId,
 		seatSecret: seatSecretAfterJoin(
 			readTableSeat(sessionId),
 			{ participantId, seatClaimed },
 			seatSecret,
 		),
-	};
+	});
+}
+
+export function storeTableSeat(sessionId: string, seat: TableSeat): TableSeat {
 	writeJson(keyOf(sessionId), seat);
 	return seat;
 }

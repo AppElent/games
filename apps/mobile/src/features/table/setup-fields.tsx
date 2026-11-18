@@ -151,7 +151,7 @@ export function RuleSwitch({
 	);
 }
 
-/** A game's house rules as switches, each off until chosen. */
+/** A game's house rules as switches; a disabled one reads off whatever was chosen. */
 export function HouseRuleSwitches({
 	heading,
 	rules,
@@ -160,7 +160,12 @@ export function HouseRuleSwitches({
 	testPrefix,
 }: {
 	heading: string;
-	rules: ReadonlyArray<{ id: string; label: string; hint: string }>;
+	rules: ReadonlyArray<{
+		id: string;
+		label: string;
+		hint: string;
+		disabled?: boolean;
+	}>;
 	chosen: readonly string[];
 	onChange: (id: string, on: boolean) => void;
 	testPrefix: string;
@@ -174,7 +179,8 @@ export function HouseRuleSwitches({
 						key={rule.id}
 						label={rule.label}
 						hint={rule.hint}
-						value={chosen.includes(rule.id)}
+						value={!rule.disabled && chosen.includes(rule.id)}
+						disabled={rule.disabled}
 						onChange={(on) => onChange(rule.id, on)}
 						testID={`${testPrefix}-option-${rule.id}`}
 					/>

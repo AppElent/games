@@ -104,10 +104,21 @@ export type HouseRule<Rules> = BaseHouseRule<Rules> & {
 	 */
 	withoutPowers?: readonly string[];
 	/**
+	 * Special cards this rule adds (entries of `rules.powers`), for a card that
+	 * is plain unless chosen. Several such rules combine.
+	 */
+	withPowers?: Rules extends { powers: infer Powers } ? Powers : never;
+	/**
 	 * Items added to list fields of `rules`. Several such rules combine (two
 	 * kinds of hand that may be swapped), which a `patch` would overwrite.
 	 */
 	append?: { readonly [K in keyof Rules]?: ListField<Rules[K]> };
+	/**
+	 * The rule counts only at a table of at least this many players; with
+	 * fewer it stays off, whatever was chosen. With `on` it is on by default
+	 * from that many players.
+	 */
+	minPlayers?: number;
 };
 
 type ListField<Field> =
@@ -170,13 +181,41 @@ export function normalizeOptions(
 	return normalizeHouseRules(game.options, options);
 }
 
+/**
+ * Whether a house rule counts at a table of `seats` players; `null` while the
+ * count is not known yet, as when a room waits for friends.
+ */
+export function houseRuleApplies(
+	option: { minPlayers?: number },
+	seats: number | null,
+) {
+	return (
+		seats === null ||
+		option.minPlayers === undefined ||
+		seats >= option.minPlayers
+	);
+}
+
+/** The chosen house rules that count at a table of `seats` players. */
+export function activeOptions(
+	game: CardGameDefinition,
+	options: readonly string[],
+	seats: number | null,
+) {
+	return options.filter((id) => {
+		const option = houseRules(game).find((rule) => rule.id === id);
+		return option !== undefined && houseRuleApplies(option, seats);
+	});
+}
+
 function rulesOf<R>(
 	game: { rules: R; options: ReadonlyArray<HouseRule<R>> },
 	options: readonly string[],
+	seats: number | null,
 ): R {
 	let rules = game.rules;
 	for (const option of game.options) {
-		if (!options.includes(option.id)) {
+		if (!options.includes(option.id) || !houseRuleApplies(option, seats)) {
 			continue;
 		}
 		rules = { ...rules, ...option.patch };
@@ -186,6 +225,10 @@ function rulesOf<R>(
 				...rules,
 				[key]: [...((field as readonly unknown[]) ?? []), ...(items as [])],
 			};
+		}
+		if (option.withPowers) {
+			const powers = (rules as { powers?: Record<string, unknown> }).powers;
+			rules = { ...rules, powers: { ...powers, ...option.withPowers } };
 		}
 		const powers = (rules as { powers?: Record<string, unknown> }).powers;
 		if (option.withoutPowers && powers) {
@@ -210,15 +253,40 @@ export function plainCardOption(game: CardGameDefinition, power: string) {
 	);
 }
 
-/** House rules that are not about a single special card. */
-export function generalOptions(game: CardGameDefinition) {
-	return houseRules(game).filter((option) => !option.withoutPowers);
+/** House rules that add a special card the game otherwise plays as a plain one. */
+export function addedCardOptions(game: CardGameDefinition) {
+	return houseRules(game).flatMap((option) =>
+		option.withPowers
+			? [
+					{
+						...option,
+						withPowers: option.withPowers as Record<string, unknown>,
+					},
+				]
+			: [],
+	);
 }
 
-function rulesFor(game: CardGameDefinition, options: readonly string[]) {
+/** House rules that are not about a single special card. */
+export function generalOptions(game: CardGameDefinition) {
+	return houseRules(game).filter(
+		(option) => !option.withoutPowers && !option.withPowers,
+	);
+}
+
+function rulesFor(
+	game: CardGameDefinition,
+	options: readonly string[],
+	seats: number | null,
+) {
 	return rulesOf<
 		SheddingRules | RummyRules | BankRules | TricksRules | GinRules
-	>(game, options);
+	>(game, options, seats);
+}
+
+/** Every family keeps one hand per seat, dealt or not, so the state knows its table size. */
+function seatsOf(state: CardGameState) {
+	return state.hands.length;
 }
 
 type FamilyTypes = {
@@ -345,7 +413,7 @@ export function createCardGame(
 		throw new GameRuleError("notEnoughPlayers");
 	}
 	return familyOf(game.family).create(
-		rulesFor(game, options),
+		rulesFor(game, options, seats),
 		seats,
 		random,
 		starter,
@@ -369,7 +437,13 @@ export function applyCardAction(
 	if (!Object.keys(family.actions).includes(action.type)) {
 		throw new GameRuleError("cardsWrongAction");
 	}
-	return family.apply(rulesFor(game, options), state, seat, action, random);
+	return family.apply(
+		rulesFor(game, options, seatsOf(state)),
+		state,
+		seat,
+		action,
+		random,
+	);
 }
 
 /** What one seat may see; `null` is a spectator. Never includes a hand the rules keep hidden. */
@@ -379,7 +453,11 @@ export function viewCardGame(
 	state: CardGameState,
 	seat: number | null,
 ): CardView {
-	return familyOf(game.family).view(rulesFor(game, options), state, seat);
+	return familyOf(game.family).view(
+		rulesFor(game, options, seatsOf(state)),
+		state,
+		seat,
+	);
 }
 
 export function botMove(
@@ -390,7 +468,7 @@ export function botMove(
 	random: Rng = Math.random,
 ): BotMove<CardAction> | null {
 	return familyOf(game.family).bot(
-		rulesFor(game, options),
+		rulesFor(game, options, seatsOf(state)),
 		state,
 		bots,
 		random,
@@ -401,14 +479,18 @@ type ResolvedRules = {
 	[F in Family]: { family: F; rules: FamilyTypes[F]["rules"] };
 }[Family];
 
-/** Rules a client needs to render hints, without shipping any game logic twice. */
+/**
+ * Rules a client needs to render hints, without shipping any game logic twice.
+ * `seats` is the table's size, or null while friends are still joining.
+ */
 export function resolvedRules(
 	game: CardGameDefinition,
 	options: readonly string[],
+	seats: number | null,
 ) {
 	return {
 		family: game.family,
-		rules: rulesFor(game, options),
+		rules: rulesFor(game, options, seats),
 	} as ResolvedRules;
 }
 
@@ -418,9 +500,10 @@ type RulesOf = { [R in ResolvedRules as R["family"]]: R["rules"] };
 export function familyRules<F extends Family>(
 	game: CardGameDefinition,
 	options: readonly string[],
+	seats: number,
 	family: F,
 ): RulesOf[F] | null {
-	const resolved = resolvedRules(game, options);
+	const resolved = resolvedRules(game, options, seats);
 	return resolved.family === family ? (resolved.rules as RulesOf[F]) : null;
 }
 
