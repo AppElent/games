@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing dice games (Yatzy, 10.000, Mexen, Liar's Dice), the dice engine, its rolls, stored state, score sheets, push-your-luck turns, rounds with lives or hidden cups.
-version: 1.4.0
+version: 1.5.0
 status: current
 ---
 
@@ -57,7 +57,7 @@ engine, its rolls or stored state, read [the decision](../adr/0003-dice-games-sh
   `/bluff-dice` and `/bluff-dice/new` open the Liar's Dice setup; its existing rooms
   still play at `/bluff-dice/$sessionId` until they move to dice tables.
 - A table is created by `diceGames.createTable` and seats work exactly as card seats
-  (`convex/lib/tableSeats.ts`): up to `players.max` seats, computer players, autopilot
+  (`convex/lib/tableSeats.ts`), `diceGames.reclaimSeat` included: up to `players.max` seats, computer players, autopilot
   for silent players, rematch. A game with `players.min` above 1 (10.000 needs two)
   starts only once that many seats are filled.
 - Web (`src/components/dice`) and mobile (`apps/mobile/src/features/dice`) derive turn

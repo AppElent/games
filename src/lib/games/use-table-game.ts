@@ -12,6 +12,7 @@ import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import {
 	forgetTableSeat,
 	readTableSeat,
+	storeTableSeat,
 	type TableSeat,
 } from "#/lib/games/table-seat";
 import { api } from "../../../convex/_generated/api";
@@ -40,6 +41,12 @@ export type TableModule = {
 		}
 	>;
 	takeSeat: Mutation<Creds>;
+	reclaimSeat: FunctionReference<
+		"mutation",
+		"public",
+		{ sessionId: Id<"gameSessions"> },
+		TableSeat | null
+	>;
 	act: Mutation<Creds & { action: unknown }>;
 	addBot: Mutation<Creds>;
 	removeSeat: Mutation<Creds & { seat: number }>;
@@ -76,6 +83,8 @@ export function useTableGame<M extends TableModule>(
 	const [seat, setSeat] = useState<TableSeat | null>(null);
 	const [hydrated, setHydrated] = useState(false);
 	const [seatSettled, setSeatSettled] = useState(false);
+	// Whether this account has asked for its seat back on this device yet.
+	const [reclaimed, setReclaimed] = useState(false);
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState("");
 	const errorTimer = useRef<number | undefined>(undefined);
@@ -85,6 +94,7 @@ export function useTableGame<M extends TableModule>(
 		const stored = readTableSeat(sessionId);
 		setSeat(stored);
 		setSeatSettled(!stored);
+		setReclaimed(false);
 		setHydrated(true);
 	}, [sessionId]);
 
@@ -101,9 +111,14 @@ export function useTableGame<M extends TableModule>(
 	const tableExists = Boolean(table);
 	// The secret settles a guest's seat straight away. An account-held seat waits
 	// for this, so failing before it's known costs nothing and is tried again.
-	const { isLoading: authLoading } = useConvexAuth();
+	const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
+	// A signed-in player with no seat here (a new browser or device, or a
+	// stored one turned away) asks once whether their account sits at the table.
+	const needsReclaim =
+		hydrated && !seat && !reclaimed && (authLoading || isAuthenticated);
 
 	const takeSeat = useMutation(module.takeSeat);
+	const reclaimSeat = useMutation(module.reclaimSeat);
 	const heartbeat = useMutation(api.sessions.heartbeat);
 	const actMutation = useMutation(module.act as TableModule["act"]);
 	const addBotMutation = useMutation(module.addBot);
@@ -173,6 +188,29 @@ export function useTableGame<M extends TableModule>(
 	]);
 
 	useEffect(() => {
+		if (!needsReclaim || !tableExists || authLoading) {
+			return;
+		}
+		let active = true;
+		reclaimSeat({ sessionId })
+			.then((found) => {
+				if (active && found) {
+					setSeat(storeTableSeat(sessionId, found));
+				}
+			})
+			// Failing to reclaim leaves the player watching, as before.
+			.catch(() => {})
+			.finally(() => {
+				if (active) {
+					setReclaimed(true);
+				}
+			});
+		return () => {
+			active = false;
+		};
+	}, [needsReclaim, tableExists, authLoading, sessionId, reclaimSeat]);
+
+	useEffect(() => {
 		if (!participantId) {
 			return;
 		}
@@ -219,7 +257,8 @@ export function useTableGame<M extends TableModule>(
 
 	return {
 		table,
-		loading: table === undefined || (tableExists && !seatSettled),
+		loading:
+			table === undefined || (tableExists && (!seatSettled || needsReclaim)),
 		pending,
 		error,
 		act: (action: FunctionArgs<M["act"]>["action"]) =>

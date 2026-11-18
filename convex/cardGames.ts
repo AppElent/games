@@ -67,6 +67,7 @@ true satisfies [Infer<typeof cardActionValidator>] extends [CardAction]
 export const {
 	createTable,
 	takeSeat,
+	reclaimSeat,
 	addBot,
 	removeSeat,
 	start,

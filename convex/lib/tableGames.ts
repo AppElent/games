@@ -11,6 +11,7 @@ import { internalMutation, mutation, query } from "../_generated/server";
 import { joinModeValidator } from "../schema";
 import { gameError, rules } from "./errors";
 import {
+	findAccountParticipant,
 	findGameState,
 	finishSession,
 	isCaller,
@@ -322,6 +323,35 @@ export function tableGameFunctions<State, Action, View>(config: {
 		},
 	});
 
+	/**
+	 * A signed-in player's seat, for a client that holds no secret for it (a new
+	 * browser or device). Hands back the seat's own secret rather than a new one,
+	 * so the player's other devices stay seated. Null for guests, whose secret is
+	 * their only proof, and for accounts without a seat here.
+	 */
+	const reclaimSeat = mutation({
+		args: { sessionId: v.id("gameSessions") },
+		returns: v.union(
+			v.null(),
+			v.object({
+				participantId: v.id("sessionParticipants"),
+				seatSecret: v.string(),
+			}),
+		),
+		handler: async (ctx, args) => {
+			const own = await findAccountParticipant(ctx, args.sessionId);
+			if (!own) {
+				return null;
+			}
+			const { state: table } = await loadGame(ctx, gameType, args.sessionId);
+			const seat = table.seats[occupiedSeatIndex(table, own._id)];
+			if (!seat?.secret) {
+				return null;
+			}
+			return { participantId: own._id, seatSecret: seat.secret };
+		},
+	});
+
 	const addBot = mutation({
 		args: credential,
 		returns: v.null(),
@@ -569,6 +599,7 @@ export function tableGameFunctions<State, Action, View>(config: {
 	return {
 		createTable,
 		takeSeat,
+		reclaimSeat,
 		addBot,
 		removeSeat,
 		start,

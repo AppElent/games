@@ -3,9 +3,10 @@ import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { getOptionalUserId, requireUserId } from "./lib/auth";
+import { requireUserId } from "./lib/auth";
 import { gameError } from "./lib/errors";
 import {
+	findAccountParticipant,
 	findOwnParticipant,
 	isCaller,
 	kickParticipant as kick,
@@ -124,15 +125,7 @@ export const ownSeat = query({
 		) {
 			return held;
 		}
-		const userId = await getOptionalUserId(ctx);
-		if (!userId) {
-			return null;
-		}
-		const participants = await listParticipants(ctx, sessionId);
-		const own = participants.find(
-			(participant) => participant.userId === userId && !participant.kickedAt,
-		);
-		return own?._id ?? null;
+		return (await findAccountParticipant(ctx, sessionId))?._id ?? null;
 	},
 });
 

@@ -112,6 +112,23 @@ export async function listParticipants(ctx: ReadCtx, sessionId: SessionId) {
 		.collect();
 }
 
+/** The signed-in caller's own row in this session, not kicked; null for a guest or a stranger. */
+export async function findAccountParticipant(
+	ctx: ReadCtx,
+	sessionId: SessionId,
+) {
+	const userId = await getOptionalUserId(ctx);
+	if (!userId) {
+		return null;
+	}
+	const participants = await listParticipants(ctx, sessionId);
+	return (
+		participants.find(
+			(participant) => participant.userId === userId && !participant.kickedAt,
+		) ?? null
+	);
+}
+
 /** Everyone not kicked, watchers included. */
 async function listActivePlayers(ctx: ReadCtx, sessionId: SessionId) {
 	const participants = await listParticipants(ctx, sessionId);

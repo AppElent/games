@@ -326,6 +326,66 @@ describe("privacy", () => {
 	});
 });
 
+describe("reclaiming a seat", () => {
+	it("gives a signed-in player their seat back on a fresh client, keeping its secret", async () => {
+		const t = setup();
+		const { host, sessionId, participantId } = await roomTable(t);
+		const found = await host.mutation(api.cardGames.reclaimSeat, {
+			sessionId,
+		});
+		expect(found).toEqual({ participantId, seatSecret: SECRET_A });
+		if (!found) {
+			throw new Error("no seat");
+		}
+		await host.mutation(api.cardGames.start, { sessionId, ...found });
+		const table = await read(t, { sessionId, ...found });
+		expect(table.you).toBe(0);
+		expect(table.status).toBe("playing");
+		// The first device still holds the seat: nothing was re-keyed.
+		expect((await read(t, creds(sessionId, participantId))).you).toBe(0);
+	});
+
+	it("gives nothing to a guest, another account or a joiner without a seat", async () => {
+		const t = setup();
+		const { sessionId, joinCode } = await roomTable(t);
+		const reclaim = (caller: Pick<T, "mutation">) =>
+			caller.mutation(api.cardGames.reclaimSeat, { sessionId });
+		await expect(reclaim(t)).resolves.toBeNull();
+		await expect(
+			reclaim(t.withIdentity({ subject: "user_stranger" })),
+		).resolves.toBeNull();
+		const watcher = t.withIdentity({ subject: "user_watcher" });
+		await watcher.mutation(api.sessions.joinByCode, {
+			joinCode,
+			displayName: "Watcher",
+		});
+		await expect(reclaim(watcher)).resolves.toBeNull();
+	});
+
+	it("gives nothing to a player the host removed", async () => {
+		const t = setup();
+		const { host, sessionId, participantId, joinCode } = await roomTable(t);
+		const member = t.withIdentity({ subject: "user_member" });
+		const joined = await member.mutation(api.sessions.joinByCode, {
+			joinCode,
+			displayName: "Member",
+			seatSecret: "secret-m-0123456789",
+		});
+		expect(joined.seatClaimed).toBe(true);
+		await expect(
+			member.mutation(api.cardGames.reclaimSeat, { sessionId }),
+		).resolves.toMatchObject({ participantId: joined.participantId });
+		await host.mutation(api.sessions.kickParticipant, {
+			sessionId,
+			hostParticipantId: participantId,
+			targetParticipantId: joined.participantId,
+		});
+		await expect(
+			member.mutation(api.cardGames.reclaimSeat, { sessionId }),
+		).resolves.toBeNull();
+	});
+});
+
 describe("host controls", () => {
 	it("takes more than the host's public id to kick a player", async () => {
 		const t = setup();
