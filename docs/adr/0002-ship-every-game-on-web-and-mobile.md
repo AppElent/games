@@ -46,14 +46,20 @@ Open gaps are the `pending-port` entries in `packages/core/src/features.ts`.
 
 ## Universal links
 
-Not shipped yet ([APP-48](https://linear.app/appelent/issue/APP-48)). The app could open a claimed `https://arcade-club.appelent.nl/join?token=…`
-link: Expo Router matches `/join` to `app/(tabs)/join/index.tsx`, which reads `token`
-and `code`, so no `+native-intent` is needed. But the Apple Team ID for
-`apple-app-site-association` is not in the repo, and Android app links need the Play
-App Signing SHA-256, so neither is configured. Only `/join` will be claimed. When the
-app meets a game it cannot play, it opens the web join page in an in-app browser
-(`openWebPage`), never through `Linking.openURL`, which would hand a claimed link
-straight back to the app.
+Shipped on iOS ([APP-48](https://linear.app/appelent/issue/APP-48)), under the
+shared app-links standard. Production and Preview builds claim
+`https://arcade-club.appelent.nl/join` (`?token=` or `?code=`); Development builds
+claim nothing. `apps/mobile/src/lib/app-links.ts` is the one list of claimed links:
+`app.config.ts` takes `ios.associatedDomains` from it, `app/+native-intent.tsx` routes
+through it (only a valid share token or room code reaches the join tab; any other web
+link opens home), and `scripts/app-links.test.ts` keeps
+`public/.well-known/apple-app-site-association` in step with it. Joining works signed
+out, so no link has to wait for sign-in. When the app meets a game it cannot play, it
+opens the web join page in an in-app browser (`openWebPage`), never through
+`Linking.openURL`, which would hand the claimed link straight back to the app.
+
+Android app links wait until the app ships Android builds
+([APP-273](https://linear.app/appelent/issue/APP-273)).
 
 ## Consequences
 
@@ -74,5 +80,4 @@ straight back to the app.
 
 - Eric decides which web-only games to keep ([APP-49](https://linear.app/appelent/issue/APP-49)): drop the rest, port the kept ones.
 - A game or screen cannot reasonably work on a phone.
-- The Apple Team ID and Play signing SHA-256 are available, to ship universal links
-  and app links ([APP-48](https://linear.app/appelent/issue/APP-48)).
+- The app ships Android builds, to add Android app links ([APP-273](https://linear.app/appelent/issue/APP-273)).

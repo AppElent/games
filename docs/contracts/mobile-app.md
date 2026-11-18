@@ -27,17 +27,21 @@ the [mobile runbook](../runbooks/mobile.md).
   opens, and each online game's `create` mutation (`backgammon.create`,
   `hitster.create`, `cardGames.createTable`, `diceGames.createTable`) for `useHostSession`.
 - A join for a game the app cannot play opens the web join page in an in-app browser
-  (`openWebPage`), never `Linking.openURL`, so a future universal link cannot loop
+  (`openWebPage`), never `Linking.openURL`, so the universal link cannot loop
   back into the app.
 - The app calls the same Convex functions as web, only via
   `apps/mobile/src/convex/api.ts`. It stores its seats (with a card or dice table's
   seat secret) and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=`
   links. A signed-in player's seat also comes back from their account
   (`sessions.ownSeat`, see [game sessions](game-sessions.md); at a card or dice table,
-  with its secret, through `reclaimSeat`, see [card games](card-games.md)).
+  with its secret, through `reclaimSeat`, see [card games](card-games.md)). On iOS the
+  Production and Preview builds open those links themselves (universal links,
+  `apps/mobile/src/lib/app-links.ts`, [ADR 0002](../adr/0002-ship-every-game-on-web-and-mobile.md#universal-links)).
 
 ## Acceptance
 
+- `scripts/app-links.test.ts` and `apps/mobile/src/lib/app-links-config.test.ts`
+  (claimed links, the AASA file, and each variant's associated domains),
 - `apps/mobile/src/features/play/app-games.test.ts` (including that `APP_GAMES`
   matches the games `features.ts` lists on mobile),
   `apps/mobile/src/features/sessions/session-links.test.ts` and
