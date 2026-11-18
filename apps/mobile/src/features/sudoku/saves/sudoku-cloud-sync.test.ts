@@ -325,9 +325,30 @@ describe("sudoku cloud sync", () => {
 				return { sessionId: SESSION };
 			},
 		});
-		await syncSudokuSaves(account({ isCurrent: () => signedIn }), cloud);
+		await syncSudokuSaves(account({ isCurrent: () => signedIn }), cloud, {
+			now: () => 1_000_000,
+		});
 		expect(names()).toEqual([]);
-		// The answer still links the save, so no later run creates it again.
+		// The answer may belong to whoever signs in next, so it is not linked;
+		// the start time stays for the owner's next run to look it up.
+		expect(readSudokuSave("a")?.cloud?.sessionId).toBeUndefined();
+		expect(readSudokuSave("a")?.cloud?.createStartedAt).toBe(1_000_000);
+
+		deleteSudokuSave("b");
+		const back = fakeCloud({
+			listSessions: async () => [
+				{
+					sessionId: SESSION,
+					title: "Classic · Easy",
+					status: "active",
+					createdAt: 1_000_100,
+				},
+			],
+			getBundle: async () =>
+				({ state: { givens: gridSave("a", 1).board.givens } }) as CloudBundle,
+		});
+		await syncSudokuSaves(account(), back.cloud);
+		expect(back.names()).not.toContain("create");
 		expect(readSudokuSave("a")?.cloud?.sessionId).toBe(SESSION);
 	});
 

@@ -290,6 +290,11 @@ export async function syncSudokuSaves(
 			);
 			sessionId = created.sessionId;
 		}
+		// The Convex client resends a held create under whoever is signed in
+		// when it reconnects, so after an account change the answer may not be
+		// this account's session. The save stays unlinked with its start time;
+		// the owner's next run finds the session in their account or makes one.
+		guard();
 		const linked = updateCloudLink(save.id, (current) => ({
 			...current,
 			sessionId,

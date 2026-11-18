@@ -75,9 +75,14 @@ export function useOpenedSave(id: string): OpenedSave {
 			local ? { state: "ready", save: local } : { state: "offline" };
 		if (!canAsk || !userId) {
 			// Convex is still taking the token; once it settles without one,
-			// the phone's copy is all there is.
-			if (!stillAuthenticating) setOpened(fallback());
-			return;
+			// the phone's copy is all there is. Offline it may never settle,
+			// so the phone's copy also opens after the same wait as a fetch.
+			if (!stillAuthenticating) {
+				setOpened(fallback());
+				return;
+			}
+			const timer = setTimeout(() => setOpened(fallback()), FETCH_TIMEOUT_MS);
+			return () => clearTimeout(timer);
 		}
 		let active = true;
 		const sessionId = (local?.cloud?.sessionId ?? id) as Id<"gameSessions">;
