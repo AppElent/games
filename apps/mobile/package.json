@@ -63,5 +63,9 @@
     "typecheck": "tsc --noEmit",
     "test": "jest"
   },
-  "private": true
+  "private": true,
+  "runMobile": {
+    "bundleId": "com.appelent.arcadeclub.dev",
+    "port": 8093
+  }
 }
