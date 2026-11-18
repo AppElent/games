@@ -123,7 +123,7 @@ export function createArgs(
 	const common = {
 		title,
 		displayName,
-		source: "generated" as const,
+		source: save.source ?? ("generated" as const),
 		difficulty: save.difficulty,
 	};
 	if (save.variant === "binary") {

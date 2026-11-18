@@ -187,10 +187,18 @@ export const sudoku = {
 		uploadInstructions:
 			"Fotografeer of upload een gedrukte sudoku — ook eentje waar je al op papier aan begonnen bent. Je controleert het herkende raster voordat je gaat spelen.",
 		takePhoto: "Maak een foto",
+		choosePhoto: "Kies een foto",
+		photoInstructions:
+			"Fotografeer een gedrukte sudoku of kies een foto ervan — ook eentje waar je al op papier aan begonnen bent. Je controleert het herkende raster voordat je gaat spelen.",
+		entryBlurb: "Fotografeer een puzzel uit de krant of een boek.",
+		cameraDenied:
+			"Geef in Instellingen toegang tot de camera om een foto te maken.",
+		scannedTitle: "Gescande puzzel",
 		uploadImage: "Upload een afbeelding",
 		dragCorners:
 			"Sleep de vier handvatten naar de hoeken van het sudokuraster.",
 		uploadedImageAlt: "Geüploade sudoku",
+		cornerHandle: "Hoek {number}",
 		readGrid: "Lees dit raster",
 		scannedImageLabel: "Gescande afbeelding",
 		recognizedGridLabel:

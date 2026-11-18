@@ -1,16 +1,17 @@
 /**
  * Browser-only image pipeline for the Sudoku scan flow: perspective
- * correction, cell segmentation, ink analysis, and OCR via tesseract.js.
- * Pure recognition-result handling lives in sudoku-scan.ts.
+ * correction and OCR via tesseract.js. Which ink to read and what it makes of
+ * a cell is shared with the app in `@arcadeclub/core/sudoku-scan-ink`.
  */
-import { digitMask } from "@arcadeclub/core/sudoku";
-import type { ScanCell } from "./sudoku-scan";
-import { emptyScanCell, emptyScanResult } from "./sudoku-scan";
-
-export type Point = { x: number; y: number };
+import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
+import type { DigitRead, Point } from "@arcadeclub/core/sudoku-scan-ink";
+import {
+	planGridReads,
+	readBoxes,
+	scanCellFromReads,
+} from "@arcadeclub/core/sudoku-scan-ink";
 
 const WARP_SIZE = 900; // 9 cells x 100px
-const CELL = WARP_SIZE / 9;
 
 export async function fileToCanvas(file: Blob, maxDim = 1400) {
 	const bitmap = await createImageBitmap(file);
@@ -25,19 +26,6 @@ export async function fileToCanvas(file: Blob, maxDim = 1400) {
 	ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
 	bitmap.close();
 	return canvas;
-}
-
-export function defaultCorners(width: number, height: number): Point[] {
-	const inset = 0.06;
-	const side = Math.min(width, height) * (1 - inset * 2);
-	const cx = width / 2;
-	const cy = height / 2;
-	return [
-		{ x: cx - side / 2, y: cy - side / 2 },
-		{ x: cx + side / 2, y: cy - side / 2 },
-		{ x: cx + side / 2, y: cy + side / 2 },
-		{ x: cx - side / 2, y: cy + side / 2 },
-	];
 }
 
 /** Solve H so that dest (unit square scaled) maps onto the source quad. */
@@ -141,107 +129,6 @@ export function warpToSquare(
 	return out;
 }
 
-type Component = {
-	minX: number;
-	maxX: number;
-	minY: number;
-	maxY: number;
-	pixels: number;
-	meanGray: number;
-};
-
-function analyzeCellInk(
-	gray: Float32Array,
-	width: number,
-	cellRow: number,
-	cellCol: number,
-) {
-	const margin = Math.round(CELL * 0.1);
-	const x0 = Math.round(cellCol * CELL) + margin;
-	const y0 = Math.round(cellRow * CELL) + margin;
-	const size = Math.round(CELL) - margin * 2;
-
-	// Local threshold from the cell's own brightness distribution.
-	let sum = 0;
-	for (let y = 0; y < size; y += 1) {
-		for (let x = 0; x < size; x += 1) {
-			sum += gray[(y0 + y) * width + (x0 + x)];
-		}
-	}
-	const mean = sum / (size * size);
-	const threshold = Math.min(mean * 0.72, mean - 18);
-
-	const binary = new Uint8Array(size * size);
-	for (let y = 0; y < size; y += 1) {
-		for (let x = 0; x < size; x += 1) {
-			binary[y * size + x] =
-				gray[(y0 + y) * width + (x0 + x)] < threshold ? 1 : 0;
-		}
-	}
-
-	// Connected components via BFS.
-	const visited = new Uint8Array(size * size);
-	const components: Component[] = [];
-	const queue: number[] = [];
-	for (let start = 0; start < size * size; start += 1) {
-		if (!binary[start] || visited[start]) {
-			continue;
-		}
-		visited[start] = 1;
-		queue.length = 0;
-		queue.push(start);
-		const comp: Component = {
-			minX: size,
-			maxX: 0,
-			minY: size,
-			maxY: 0,
-			pixels: 0,
-			meanGray: 0,
-		};
-		while (queue.length > 0) {
-			const index = queue.pop();
-			if (index === undefined) {
-				break;
-			}
-			const px = index % size;
-			const py = Math.floor(index / size);
-			comp.pixels += 1;
-			comp.meanGray += gray[(y0 + py) * width + (x0 + px)];
-			comp.minX = Math.min(comp.minX, px);
-			comp.maxX = Math.max(comp.maxX, px);
-			comp.minY = Math.min(comp.minY, py);
-			comp.maxY = Math.max(comp.maxY, py);
-			const neighbors = [index - 1, index + 1, index - size, index + size];
-			for (const next of neighbors) {
-				if (
-					next >= 0 &&
-					next < size * size &&
-					binary[next] &&
-					!visited[next] &&
-					Math.abs((next % size) - px) <= 1
-				) {
-					visited[next] = 1;
-					queue.push(next);
-				}
-			}
-		}
-		comp.meanGray /= comp.pixels;
-		// Discard specks and grid-line slivers hugging the border.
-		const w = comp.maxX - comp.minX + 1;
-		const hgt = comp.maxY - comp.minY + 1;
-		const touchesBorder =
-			comp.minX <= 1 ||
-			comp.minY <= 1 ||
-			comp.maxX >= size - 2 ||
-			comp.maxY >= size - 2;
-		const sliver = w <= 3 || hgt <= 3;
-		if (comp.pixels >= 12 && !(touchesBorder && sliver)) {
-			components.push(comp);
-		}
-	}
-	return { components, size, x0, y0 };
-}
-
 function cropToCanvas(
 	source: HTMLCanvasElement,
 	x: number,
@@ -305,8 +192,9 @@ export type ScanProgress = {
 };
 
 /**
- * Segment the warped grid image into 81 cells and classify each one as
- * given / userDigit / cornerNotes / centerNotes / empty with confidence.
+ * Read the 81 cells of the warped grid: the shared planner picks the ink to
+ * read in each cell, tesseract reads it, and the planner's rules turn the
+ * reads into given / userDigit / cornerNotes / centerNotes / empty cells.
  *
  * Printed vs handwritten discrimination uses ink darkness as a rough
  * heuristic — the verifier screen exists precisely so the user can fix
@@ -331,98 +219,28 @@ export async function recognizeGrid(
 			0.114 * image.data[o + 2];
 	}
 
-	const cells = emptyScanResult();
+	const plans = planGridReads(gray, WARP_SIZE);
+	const cells: ScanCell[] = [];
 	const worker = await createOcrWorker();
 	try {
 		for (let cell = 0; cell < 81; cell += 1) {
-			const row = Math.floor(cell / 9);
-			const col = cell % 9;
-			const { components, size, x0, y0 } = analyzeCellInk(
-				gray,
-				WARP_SIZE,
-				row,
-				col,
-			);
 			onProgress?.({ step: "recognizing", cellsDone: cell, cellsTotal: 81 });
-			if (components.length === 0) {
-				cells[cell] = emptyScanCell();
-				continue;
-			}
-			const biggest = components.reduce((best, comp) =>
-				comp.pixels > best.pixels ? comp : best,
-			);
-			const bigW = biggest.maxX - biggest.minX + 1;
-			const bigH = biggest.maxY - biggest.minY + 1;
-
-			if (bigH >= size * 0.38 && bigW >= size * 0.12) {
-				// Full-size digit.
+			const plan = plans[cell];
+			// Notes are small: scale them up more before tesseract reads them.
+			const scale = plan.kind === "notes" ? 5 : 3;
+			const reads: DigitRead[] = [];
+			for (const box of readBoxes(plan)) {
 				const crop = cropToCanvas(
 					warped,
-					x0 + biggest.minX - 2,
-					y0 + biggest.minY - 2,
-					bigW + 4,
-					bigH + 4,
+					box.x,
+					box.y,
+					box.width,
+					box.height,
+					scale,
 				);
-				const { digit, confidence } = await recognizeDigit(worker, crop);
-				if (digit === 0) {
-					cells[cell] = { ...emptyScanCell(0.2) };
-					continue;
-				}
-				// Heuristic: printed clues are usually darker and denser.
-				const isPrinted = biggest.meanGray < 110;
-				cells[cell] = {
-					type: isPrinted ? "given" : "userDigit",
-					digit,
-					cornerMask: 0,
-					centerMask: 0,
-					confidence: Math.min(confidence, isPrinted ? 1 : 0.85),
-				};
-				continue;
+				reads.push(await recognizeDigit(worker, crop));
 			}
-
-			// Small marks: pencil notes. Position decides corner vs center.
-			let cornerMask = 0;
-			let centerMask = 0;
-			let worst = 1;
-			const marks = components.sort((a, b) => b.pixels - a.pixels).slice(0, 6);
-			for (const mark of marks) {
-				const cx = (mark.minX + mark.maxX) / 2 / size;
-				const cy = (mark.minY + mark.maxY) / 2 / size;
-				const central = cx > 0.3 && cx < 0.7 && cy > 0.3 && cy < 0.7;
-				const crop = cropToCanvas(
-					warped,
-					x0 + mark.minX - 1,
-					y0 + mark.minY - 1,
-					mark.maxX - mark.minX + 3,
-					mark.maxY - mark.minY + 3,
-					5,
-				);
-				const { digit, confidence } = await recognizeDigit(worker, crop);
-				if (digit === 0) {
-					worst = Math.min(worst, 0.3);
-					continue;
-				}
-				if (central) {
-					centerMask |= digitMask(digit);
-				} else {
-					cornerMask |= digitMask(digit);
-				}
-				worst = Math.min(worst, confidence, 0.8);
-			}
-			if (cornerMask === 0 && centerMask === 0) {
-				cells[cell] = emptyScanCell(0.3);
-			} else {
-				cells[cell] = {
-					type:
-						centerMask !== 0 && cornerMask === 0
-							? "centerNotes"
-							: "cornerNotes",
-					digit: 0,
-					cornerMask,
-					centerMask,
-					confidence: worst,
-				};
-			}
+			cells.push(scanCellFromReads(plan, reads));
 		}
 	} finally {
 		await worker.terminate();

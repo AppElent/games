@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing which games the Arcade Club mobile app offers, or how it talks to Convex and stores seats and saves.
-version: 1.2.0
+version: 1.3.0
 status: current
 ---
 
@@ -48,6 +48,14 @@ the [mobile runbook](../runbooks/mobile.md).
   sessions (web ones too) beside the phone's pending puzzles; removing an account
   puzzle only hides it on that device. The web's list shows the account's sessions
   the same way.
+- On iOS, Sudoku scans a paper puzzle from the camera or the photo library
+  (`/sudoku/scan`). Apple Vision finds the grid and reads digits on the device
+  (local module `apps/mobile/modules/sudoku-scanner`); which cells hold ink, and
+  what it means, is `@arcadeclub/core/sudoku-scan-ink`, shared with the web. The
+  player checks the grid in the web's verify step before it becomes a classic
+  save with `source: "scan"` and no difficulty or solution. A build without the
+  module (Android, or an older iOS build on a newer update) hides the entry and
+  sends `/sudoku/scan` back to Sudoku.
 
 ## Acceptance
 

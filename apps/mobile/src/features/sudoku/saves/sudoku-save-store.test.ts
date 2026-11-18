@@ -160,6 +160,7 @@ describe("sudoku save store", () => {
 			["a short solution", { ...valid, solution: "12" }],
 			["no solution", { ...valid, solution: undefined }],
 			["malformed cages", { ...valid, cages: [{ sum: "ten" }] }],
+			["an unknown source", { ...valid, source: "camera" }],
 			["a binary grid of the wrong size", { ...binary, size: 8 }],
 			["binary entries out of range", { ...binary, entries: "9".repeat(36) }],
 			["a binary size that is no number", { ...binary, size: "6" }],
@@ -321,5 +322,18 @@ describe("sudoku save store", () => {
 			writeJson(STORAGE_KEYS.sudokuSave("bare"), { ...guest, id: "bare" });
 			expect(readSudokuSave("bare")).toBeNull();
 		});
+	});
+
+	it("opens a scanned puzzle, which has no solution or difficulty", () => {
+		const {
+			solution: _solution,
+			difficulty: _difficulty,
+			...rest
+		} = gridSave("scan", 1);
+		writeSudokuSave({ ...rest, source: "scan" });
+		expect(readSudokuSave("scan")).toMatchObject({ source: "scan" });
+		expect(listSudokuSaves()).toEqual([
+			expect.objectContaining({ id: "scan", source: "scan" }),
+		]);
 	});
 });
