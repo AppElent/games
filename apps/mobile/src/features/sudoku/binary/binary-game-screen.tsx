@@ -6,7 +6,7 @@ import { Button } from "../../../ui/button";
 import { AppText } from "../../../ui/text";
 import { PuzzleFrame } from "../components/puzzle-frame";
 import { PuzzleRestartButton } from "../components/puzzle-restart-button";
-import { puzzleTitle } from "../components/puzzle-title";
+import { saveTitle } from "../components/puzzle-title";
 import { useBoardSize } from "../components/use-board-size";
 import type { BinarySave } from "../saves/sudoku-save-store";
 import { BinaryBoard } from "./binary-board";
@@ -26,7 +26,7 @@ export function BinaryGameScreen({ save }: { save: BinarySave }) {
 
 	return (
 		<PuzzleFrame
-			title={puzzleTitle(copy, save)}
+			title={saveTitle(copy, save)}
 			session={game.session}
 			detail={detail}
 			size={size}

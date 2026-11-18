@@ -1,6 +1,6 @@
 /**
  * Sudoku hub: pick a game type and a difficulty to start, or pick up a
- * puzzle saved on this phone.
+ * puzzle: one saved on this phone, or, signed in, one from the account.
  */
 import {
 	SUDOKU_DIFFICULTIES,
@@ -8,8 +8,9 @@ import {
 	type SudokuDifficulty,
 	type SudokuVariant,
 } from "@arcadeclub/core/sudoku";
-import { Stack, useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useAuth } from "@clerk/expo";
+import { Stack, useRouter } from "expo-router";
+import { useState } from "react";
 import {
 	ActivityIndicator,
 	Alert,
@@ -29,15 +30,10 @@ import { Screen } from "../../../ui/screen";
 import { Segmented } from "../../../ui/segmented";
 import { AppText } from "../../../ui/text";
 import { formatElapsed } from "../components/game-clock";
-import { puzzleTitle } from "../components/puzzle-title";
-import {
-	deleteSudokuSave,
-	listSudokuSaves,
-	type SudokuSaveSummary,
-	sudokuSaveHref,
-	writeSudokuSave,
-} from "../saves/sudoku-save-store";
+import { sudokuSaveHref, writeSudokuSave } from "../saves/sudoku-save-store";
 import { createSudokuSaveAfterPaint } from "./create-sudoku-save";
+import { removeSudokuRow, type SudokuListRow } from "./sudoku-list";
+import { useSudokuList } from "./use-sudoku-list";
 
 export function SudokuHomeScreen() {
 	const router = useRouter();
@@ -47,13 +43,8 @@ export function SudokuHomeScreen() {
 	const [variant, setVariant] = useState<SudokuVariant>("classic");
 	const [busy, setBusy] = useState<SudokuDifficulty | null>(null);
 	const [failed, setFailed] = useState(false);
-	const [saves, setSaves] = useState<SudokuSaveSummary[]>([]);
-
-	useFocusEffect(
-		useCallback(() => {
-			setSaves(listSudokuSaves());
-		}, []),
-	);
+	const { userId } = useAuth();
+	const { rows, signedIn, refresh } = useSudokuList(copy);
 
 	async function start(difficulty: SudokuDifficulty) {
 		if (busy) return;
@@ -61,7 +52,12 @@ export function SudokuHomeScreen() {
 		setFailed(false);
 		try {
 			const save = await createSudokuSaveAfterPaint(variant, difficulty);
-			writeSudokuSave(save);
+			// Signed in, it is the account's from the first move.
+			writeSudokuSave(
+				signedIn && userId
+					? { ...save, cloud: { userId, synced: false } }
+					: save,
+			);
 			router.push(sudokuSaveHref(save.id));
 		} catch (error) {
 			reportError(error);
@@ -72,15 +68,21 @@ export function SudokuHomeScreen() {
 		}
 	}
 
-	function confirmDelete(save: SudokuSaveSummary) {
-		Alert.alert(copy.saved.deleteTitle, copy.saved.deleteBody, [
+	function confirmDelete(row: SudokuListRow) {
+		const title = row.inAccount
+			? copy.saved.removeTitle
+			: copy.saved.deleteTitle;
+		const body = row.inAccount
+			? copy.saved.removeAccountBody
+			: copy.saved.deleteBody;
+		Alert.alert(title, body, [
 			{ text: t.common.actions.cancel, style: "cancel" },
 			{
-				text: t.common.actions.delete,
+				text: row.inAccount ? t.play.remove : t.common.actions.delete,
 				style: "destructive",
 				onPress: () => {
-					deleteSudokuSave(save.id);
-					setSaves(listSudokuSaves());
+					removeSudokuRow(row);
+					refresh();
 				},
 			},
 		]);
@@ -142,23 +144,35 @@ export function SudokuHomeScreen() {
 						</Card>
 					))}
 					<Notice message={failed ? copy.newGame.couldNotStart : null} />
-					<AppText variant="caption">{copy.newGame.offlineNote}</AppText>
+					<AppText variant="caption">
+						{signedIn ? copy.newGame.syncNote : copy.newGame.offlineNote}
+					</AppText>
 				</View>
 				<View style={styles.group}>
 					<AppText variant="label" accessibilityRole="header">
 						{copy.newGame.yourPuzzles.toUpperCase()}
 					</AppText>
-					{saves.length === 0 ? (
+					{rows.length === 0 ? (
 						<AppText variant="secondary">{copy.saved.empty}</AppText>
 					) : (
-						saves.map((save) => {
-							const time = formatElapsed(save.elapsedSeconds);
+						rows.map((save) => {
+							const solved = save.status === "completed";
 							const progress =
-								save.status === "completed"
-									? fmt(copy.saved.solved, { time })
-									: fmt(copy.saved.inProgress, { time });
-							const title = puzzleTitle(copy, save);
-							const detail = `${progress} · ${relativeTime(t, locale, save.updatedAt)}`;
+								save.elapsedSeconds === undefined
+									? solved
+										? copy.saved.solvedOnAccount
+										: copy.saved.inProgressOnAccount
+									: fmt(solved ? copy.saved.solved : copy.saved.inProgress, {
+											time: formatElapsed(save.elapsedSeconds),
+										});
+							const title = save.title;
+							const detail = [
+								progress,
+								relativeTime(t, locale, save.updatedAt),
+								save.waitingToSync ? copy.saved.waitingToSync : null,
+							]
+								.filter(Boolean)
+								.join(" · ");
 							return (
 								<Card key={save.id} style={styles.savedCard}>
 									<View style={styles.row}>
@@ -186,7 +200,7 @@ export function SudokuHomeScreen() {
 										</Pressable>
 										<Pressable
 											accessibilityRole="button"
-											accessibilityLabel={`${t.common.actions.delete}: ${title}`}
+											accessibilityLabel={`${save.inAccount ? t.play.remove : t.common.actions.delete}: ${title}`}
 											onPress={() => confirmDelete(save)}
 											hitSlop={8}
 											style={({ pressed }) => [

@@ -9,13 +9,21 @@ import {
 	writeText,
 } from "../../../storage/local-store";
 import {
+	adoptGuestSaves,
 	type BinarySave,
 	deleteSudokuSave,
+	findSudokuSaveBySession,
+	forgetAccountSaves,
 	type GridSave,
+	hiddenSudokuSessions,
 	listSudokuSaves,
-	readAllSudokuSaves,
+	markSynced,
+	readLocalOnlySudokuSaves,
 	readSudokuSave,
+	removeSudokuSave,
 	resumableItems,
+	storeSyncedSave,
+	updateCloudLink,
 	writeSudokuSave,
 } from "./sudoku-save-store";
 
@@ -47,10 +55,16 @@ function gridSave(
 	};
 }
 
+const ME = "user_me";
+
+function clearAll() {
+	for (const owner of [null, ME, "user_other"]) {
+		for (const item of listSudokuSaves(owner)) deleteSudokuSave(item.id);
+	}
+}
+
 describe("sudoku save store", () => {
-	beforeEach(() => {
-		for (const item of listSudokuSaves()) deleteSudokuSave(item.id);
-	});
+	beforeEach(clearAll);
 
 	it("round-trips a save and lists it newest first", () => {
 		writeSudokuSave(gridSave("a", 1));
@@ -64,7 +78,9 @@ describe("sudoku save store", () => {
 		writeSudokuSave(gridSave("a", 1));
 		writeSudokuSave(gridSave("b", 2));
 		writeText(STORAGE_KEYS.sudokuSave("a"), "not json");
-		expect(readAllSudokuSaves().map((save) => save.id)).toEqual(["b"]);
+		expect(readLocalOnlySudokuSaves(null).map((save) => save.id)).toEqual([
+			"b",
+		]);
 	});
 
 	it("updates in place rather than duplicating", () => {
@@ -180,5 +196,130 @@ describe("sudoku save store", () => {
 		items[0].remove();
 		expect(readSudokuSave("open")).toBeNull();
 		expect(readSudokuSave("done")).not.toBeNull();
+	});
+
+	describe("account puzzles", () => {
+		const mine = (id: string, updatedAt: number, sessionId?: string) => ({
+			...gridSave(id, updatedAt),
+			cloud: { userId: ME, sessionId, synced: true },
+		});
+
+		it("shows each viewer only their own puzzles", () => {
+			writeSudokuSave(gridSave("guest", 1));
+			writeSudokuSave(mine("mine", 2, "s1"));
+			writeSudokuSave({
+				...gridSave("theirs", 3),
+				cloud: { userId: "user_other", synced: true },
+			});
+			expect(listSudokuSaves(null).map((item) => item.id)).toEqual(["guest"]);
+			// Signed in, the guest saves about to become the account's show too.
+			expect(listSudokuSaves(ME).map((item) => item.id)).toEqual([
+				"mine",
+				"guest",
+			]);
+			expect(resumableItems(null).map((item) => item.id)).toEqual([
+				"sudoku:guest",
+			]);
+		});
+
+		it("keeps the stored link on a game write and marks it unsent", () => {
+			writeSudokuSave({
+				...gridSave("a", 1),
+				cloud: { userId: ME, synced: false },
+			});
+			// The sync links the session while the screen holds the old copy.
+			updateCloudLink("a", (link) => ({ ...link, sessionId: "s1" }));
+			markSynced("a", readSudokuSave("a")?.updatedAt ?? 0);
+			writeSudokuSave({ ...gridSave("a", 2), elapsedSeconds: 5 });
+			expect(readSudokuSave("a")?.cloud).toEqual({
+				userId: ME,
+				sessionId: "s1",
+				synced: false,
+			});
+			expect(findSudokuSaveBySession("s1")?.elapsedSeconds).toBe(5);
+		});
+
+		it("marks a save synced only when nothing was written after the sent one", () => {
+			writeSudokuSave({
+				...gridSave("a", 10),
+				cloud: { userId: ME, synced: false },
+			});
+			const sent = readSudokuSave("a")?.updatedAt ?? 0;
+			// Same clock reading: the write still moves `updatedAt` on.
+			writeSudokuSave(gridSave("a", 10));
+			markSynced("a", sent);
+			expect(readSudokuSave("a")?.cloud?.synced).toBe(false);
+			markSynced("a", readSudokuSave("a")?.updatedAt ?? 0);
+			expect(readSudokuSave("a")?.cloud?.synced).toBe(true);
+		});
+
+		it("never drops a puzzle with unsent changes to make room", () => {
+			writeSudokuSave({
+				...gridSave("unsent", 0, "completed"),
+				cloud: { userId: ME, synced: false },
+			});
+			storeSyncedSave(mine("synced", 0, "s0"));
+			for (let index = 1; index <= 30; index += 1) {
+				writeSudokuSave(gridSave(`p${index}`, index));
+			}
+			expect(readSudokuSave("unsent")).not.toBeNull();
+			expect(readSudokuSave("synced")).toBeNull();
+		});
+
+		it("hands the guest saves to the account that signs in, removing none", () => {
+			writeSudokuSave(gridSave("guest", 1));
+			adoptGuestSaves(ME);
+			expect(readSudokuSave("guest")?.cloud).toEqual({
+				userId: ME,
+				synced: false,
+			});
+			expect(listSudokuSaves(null)).toEqual([]);
+		});
+
+		it("removes an account puzzle from this phone's list only", () => {
+			writeSudokuSave(mine("a", 1, "s1"));
+			removeSudokuSave("a");
+			expect(readSudokuSave("a")).toBeNull();
+			expect(hiddenSudokuSessions().has("s1")).toBe(true);
+		});
+
+		it("exports what the account does not hold yet", () => {
+			writeSudokuSave(gridSave("guest", 1));
+			writeSudokuSave(mine("synced", 2, "s1"));
+			writeSudokuSave({
+				...gridSave("pending", 3),
+				cloud: { userId: ME, synced: false },
+			});
+			writeSudokuSave({
+				...gridSave("theirs", 4),
+				cloud: { userId: "user_other", synced: false },
+			});
+			expect(readLocalOnlySudokuSaves(ME).map((save) => save.id)).toEqual([
+				"pending",
+				"guest",
+			]);
+		});
+
+		it("forgets a deleted account's puzzles and keeps the rest", () => {
+			writeSudokuSave(gridSave("guest", 1));
+			writeSudokuSave(mine("mine", 2, "s1"));
+			forgetAccountSaves(ME);
+			expect(readSudokuSave("mine")).toBeNull();
+			expect(readSudokuSave("guest")).not.toBeNull();
+		});
+
+		it("opens a puzzle from the account, which has no solution or difficulty", () => {
+			const {
+				solution: _solution,
+				difficulty: _difficulty,
+				...rest
+			} = mine("web", 1, "s1");
+			writeSudokuSave(rest);
+			expect(readSudokuSave("web")).not.toBeNull();
+			// Only a save from the account may lack them.
+			const { cloud: _cloud, ...guest } = rest;
+			writeJson(STORAGE_KEYS.sudokuSave("bare"), { ...guest, id: "bare" });
+			expect(readSudokuSave("bare")).toBeNull();
+		});
 	});
 });

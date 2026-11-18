@@ -16,7 +16,7 @@ import { Button } from "../../../ui/button";
 import { AppText } from "../../../ui/text";
 import { PuzzleFrame } from "../components/puzzle-frame";
 import { PuzzleRestartButton } from "../components/puzzle-restart-button";
-import { puzzleTitle } from "../components/puzzle-title";
+import { saveTitle } from "../components/puzzle-title";
 import { useBoardSize } from "../components/use-board-size";
 import type { GridSave } from "../saves/sudoku-save-store";
 import { SudokuBoard } from "./sudoku-board";
@@ -117,7 +117,7 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 
 	return (
 		<PuzzleFrame
-			title={puzzleTitle(copy, save)}
+			title={saveTitle(copy, save)}
 			session={game.session}
 			size={size}
 			wide={wide}

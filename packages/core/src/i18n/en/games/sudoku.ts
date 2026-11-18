@@ -88,6 +88,11 @@ export const sudoku = {
 		inProgress: "{time} played",
 		deleteTitle: "Delete this puzzle?",
 		deleteBody: "Its progress is removed from this device.",
+		solvedOnAccount: "Solved",
+		inProgressOnAccount: "In progress",
+		waitingToSync: "Waiting to sync",
+		removeTitle: "Remove this puzzle from the list?",
+		removeAccountBody: "It stays in your account, and on the web.",
 	},
 	difficulty: {
 		easy: "Easy",
@@ -227,6 +232,8 @@ export const sudoku = {
 			binary: "Fill the grid with 0s and 1s",
 		},
 		offlineNote: "Puzzles are saved on this device and work offline.",
+		syncNote:
+			"Puzzles work offline and sync to your account, so they are on the web too.",
 		difficultyBlurbs: {
 			easy: {
 				classic: "Plenty of clues, gentle start",
@@ -258,5 +265,6 @@ export const sudoku = {
 	session: {
 		loadingPuzzle: "Loading puzzle...",
 		puzzleNotFound: "Puzzle not found.",
+		offline: "Connect to the internet to open this puzzle.",
 	},
 };

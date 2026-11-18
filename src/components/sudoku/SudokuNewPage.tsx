@@ -1,7 +1,7 @@
 import { MAX_TITLE_LENGTH } from "@arcadeclub/core/sessions";
 import type { SudokuDifficulty, SudokuVariant } from "@arcadeclub/core/sudoku";
 import { Link } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Camera, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
@@ -10,6 +10,7 @@ import {
 	autoSessionTitle,
 	forgetLocalSudokuSession,
 	listLocalSudokuSessions,
+	withAccountSudokuSessions,
 } from "#/lib/games/sudoku-local";
 import {
 	createSudokuSession,
@@ -19,7 +20,10 @@ import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 
-/** Pick a variant and difficulty for a new puzzle, or resume one from this device. */
+/**
+ * Pick a variant and difficulty for a new puzzle, or resume one: from this
+ * device, or, signed in, from the account (the app's puzzles too).
+ */
 export function SudokuNewPage() {
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
@@ -72,10 +76,16 @@ export function SudokuNewPage() {
 	const [pending, setPending] = useState<SudokuDifficulty | null>(null);
 	const busy = hosting ? pending : null;
 	const [name, setName] = useState("");
-	const [recent, setRecent] = useState<LocalSudokuSession[]>([]);
+	const [local, setLocal] = useState<LocalSudokuSession[]>([]);
+	const { isAuthenticated } = useConvexAuth();
+	const participation = useQuery(
+		api.sessions.listParticipation,
+		isAuthenticated ? {} : "skip",
+	);
+	const recent = withAccountSudokuSessions(local, participation ?? []);
 
 	useEffect(() => {
-		setRecent(listLocalSudokuSessions());
+		setLocal(listLocalSudokuSessions());
 	}, []);
 
 	const start = (difficulty: SudokuDifficulty) => {
@@ -199,7 +209,7 @@ export function SudokuNewPage() {
 									})}
 									onClick={() => {
 										forgetLocalSudokuSession(entry.sessionId);
-										setRecent(listLocalSudokuSessions());
+										setLocal(listLocalSudokuSessions());
 									}}
 									className="text-slate-500 hover:text-orange-300"
 								>
