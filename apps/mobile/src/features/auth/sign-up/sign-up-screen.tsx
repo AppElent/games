@@ -3,7 +3,7 @@
  * successful create mails a code and moves on to `verify-email`.
  */
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import type { TextInputInstance } from "react-native";
 import { useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
@@ -11,6 +11,10 @@ import { TextField } from "../../../ui/text-field";
 import { AuthForm } from "../components/auth-form";
 import { EmailField } from "../components/email-field";
 import { useAuthError } from "../components/use-auth-error";
+import {
+	NEW_PASSWORD_RULES,
+	useCredentialForm,
+} from "../components/use-credential-form";
 import { useSignUp } from "./use-sign-up";
 
 export function SignUpScreen() {
@@ -18,20 +22,19 @@ export function SignUpScreen() {
 	const { t } = useI18n();
 	const copy = t.auth.signUp;
 	const flow = useSignUp();
-	const [firstName, setFirstName] = useState("");
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
+	const form = useCredentialForm({ firstName: "", email: "", password: "" });
 	const emailRef = useRef<TextInputInstance>(null);
 	const passwordRef = useRef<TextInputInstance>(null);
 	const error = useAuthError(flow.errorKey);
-	const ready = email.trim().length > 0 && password.length > 0;
+	const ready =
+		form.values.email.trim().length > 0 && form.values.password.length > 0;
 
-	async function submit() {
-		if (!ready) return;
-		if (await flow.create({ email, password, firstName })) {
+	async function submit(values: typeof form.values) {
+		if (!values.email.trim() || !values.password) return;
+		if (await flow.create(values)) {
 			router.push({
 				pathname: "/verify-email",
-				params: { email: email.trim() },
+				params: { email: values.email.trim() },
 			});
 		}
 	}
@@ -51,8 +54,7 @@ export function SignUpScreen() {
 		>
 			<TextField
 				label={copy.firstName}
-				value={firstName}
-				onChangeText={setFirstName}
+				{...form.field("firstName")}
 				autoComplete="given-name"
 				textContentType="givenName"
 				returnKeyType="next"
@@ -61,29 +63,28 @@ export function SignUpScreen() {
 			/>
 			<EmailField
 				ref={emailRef}
-				value={email}
-				onChangeText={setEmail}
+				{...form.field("email")}
+				onSubmitEditing={() => passwordRef.current?.focus()}
 				returnKeyType="next"
 				submitBehavior="submit"
-				onSubmitEditing={() => passwordRef.current?.focus()}
 			/>
 			<TextField
 				ref={passwordRef}
 				label={t.auth.signIn.password}
-				value={password}
-				onChangeText={setPassword}
+				{...form.field("password")}
+				onSubmitEditing={form.submitFrom("password", submit)}
 				secureTextEntry
 				autoCapitalize="none"
 				autoComplete="new-password"
 				textContentType="newPassword"
+				passwordRules={NEW_PASSWORD_RULES}
 				returnKeyType="go"
-				onSubmitEditing={submit}
 			/>
 			<Button
 				label={copy.submit}
 				busy={flow.busy}
-				disabled={!ready}
-				onPress={submit}
+				disabled={!ready && !form.editing}
+				onPress={() => form.press(submit)}
 			/>
 		</AuthForm>
 	);

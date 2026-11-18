@@ -64,6 +64,16 @@ describe("ProfilePanel", () => {
 		);
 	});
 
+	it("names the account in the change-password form", () => {
+		render(<ProfilePanel />);
+		const form = screen.getByLabelText("New password").closest("form");
+		const hint = form?.querySelector<HTMLInputElement>(
+			'input[autocomplete="username"]',
+		);
+		expect(hint?.value).toBe("e@x.com");
+		expect(hint?.hidden).toBe(true);
+	});
+
 	it("signs out", () => {
 		render(<ProfilePanel />);
 		fireEvent.click(screen.getByRole("button", { name: /sign out/i }));

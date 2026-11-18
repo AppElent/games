@@ -44,6 +44,16 @@ describe("SignUpForm", () => {
 			m.mockReset();
 	});
 
+	it("marks the credential fields for password managers", () => {
+		renderForm();
+		expect(screen.getByLabelText("Email").getAttribute("autocomplete")).toBe(
+			"username",
+		);
+		expect(screen.getByLabelText("Password").getAttribute("autocomplete")).toBe(
+			"new-password",
+		);
+	});
+
 	it("moves to the verification step after creating the account", async () => {
 		signUp.password.mockResolvedValue(ok);
 		signUp.verifications.sendEmailCode.mockResolvedValue(ok);

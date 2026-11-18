@@ -5,8 +5,17 @@
  *
  * `APP_VARIANT` is set per profile in `eas.json`. Unset means a local
  * development build, so a local run never replaces the store install.
+ *
+ * Production and preview claim the web's `/join` links (iOS universal links,
+ * `src/lib/app-links.ts`); development claims nothing, so a local build never
+ * takes over real links.
  */
 import type { ConfigContext, ExpoConfig } from "expo/config";
+import {
+	APP_LINK_HOST,
+	APPLE_TEAM_ID,
+	iosAssociatedDomains,
+} from "./src/lib/app-links.ts";
 
 /** Every build this app has; also its EAS Update channel and Sentry environment. */
 const APP_VARIANTS = {
@@ -42,6 +51,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 	const variant = appVariant();
 	const { suffix, name, scheme, icon } = APP_VARIANTS[variant];
 	const id = `com.appelent.arcadeclub${suffix}`;
+	const claims = variant === "production" || variant === "preview";
 	return {
 		...config,
 		name,
@@ -49,7 +59,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		slug: "arcadeclub",
 		scheme,
 		icon: `./assets/icon${icon}.png`,
-		ios: { ...config.ios, bundleIdentifier: id },
+		ios: {
+			...config.ios,
+			bundleIdentifier: id,
+			appleTeamId: APPLE_TEAM_ID,
+			...iosAssociatedDomains(APP_LINK_HOST, claims),
+		},
 		android: {
 			...config.android,
 			package: id,

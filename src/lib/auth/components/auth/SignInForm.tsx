@@ -41,7 +41,7 @@ export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 			<AuthField
 				label="Email"
 				type="email"
-				autoComplete="email"
+				autoComplete="username"
 				value={email}
 				onChange={setEmail}
 				required
