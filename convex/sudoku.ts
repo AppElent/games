@@ -215,8 +215,7 @@ export const getBundle = query({
 	handler: async (ctx, args) => {
 		const session = await ctx.db.get(args.sessionId);
 		if (
-			!session ||
-			session.gameType !== "sudoku" ||
+			session?.gameType !== "sudoku" ||
 			!(await isPuzzleHost(ctx, session, args.guestId))
 		) {
 			return null;
