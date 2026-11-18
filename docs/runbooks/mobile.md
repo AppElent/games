@@ -114,6 +114,12 @@ trademarked name Hitster in visible copy or store metadata.
 
 ### CI builds
 
+> **Android is paused (Eric, 18 Nov 2026).** Until the repository variable
+> `ANDROID_ENABLED` is `true`, Mobile Build ignores `build:android`, and the preview and
+> production OTA publishes are iOS only. Re-enable with
+> `gh variable set ANDROID_ENABLED --body true` (developer-home `standards/releases.md`,
+> "Android pause").
+
 The **Mobile Build** workflow runs `eas build --local` on a GitHub runner, so it spends
 no EAS Build credits. Add the `build:ios` or `build:android` label to a PR to build the
 `development` profile on every push while the label stays, or start it from the Actions

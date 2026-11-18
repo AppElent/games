@@ -43,8 +43,14 @@ import {
 	easQuery,
 	fingerprint,
 	hasFinishedBuild,
-	PLATFORMS,
+	PLATFORMS as ALL_PLATFORMS,
 } from "./fingerprint.mjs";
+
+// Android is paused until the repository variable ANDROID_ENABLED is `true`;
+// the workflows pass it in (developer-home standards/releases.md, "Android pause").
+const PLATFORMS = ALL_PLATFORMS.filter(
+	(platform) => platform !== "android" || process.env.ANDROID_ENABLED === "true",
+);
 
 // Everything the mobile bundle is built from, relative to the repo root.
 const BUNDLED = [

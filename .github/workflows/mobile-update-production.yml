@@ -36,6 +36,9 @@ jobs:
       # Stop switch: set the repository variable OTA_PRODUCTION_HOLD (any text,
       # for example the reason) to skip the daily publish; delete it to resume.
       OTA_PRODUCTION_HOLD: ${{ vars.OTA_PRODUCTION_HOLD }}
+      # Android is paused until this repository variable is `true`
+      # (developer-home standards/releases.md, "Android pause").
+      ANDROID_ENABLED: ${{ vars.ANDROID_ENABLED }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
