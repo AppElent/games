@@ -144,6 +144,11 @@ export function readSudokuSave(id: string): SudokuSave | null {
 	return readJson(STORAGE_KEYS.sudokuSave(id), (value) => parseSave(id, value));
 }
 
+/** Every puzzle saved on this phone, newest first, for the data export. */
+export function readAllSudokuSaves(): SudokuSave[] {
+	return listSudokuSaves().flatMap((item) => readSudokuSave(item.id) ?? []);
+}
+
 export function writeSudokuSave(save: SudokuSave) {
 	writeJson(STORAGE_KEYS.sudokuSave(save.id), save);
 	const others = readIndex().filter((item) => item.id !== save.id);

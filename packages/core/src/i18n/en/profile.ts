@@ -5,6 +5,13 @@ export const profile = {
 		"Solo games are saved on this phone. Sign in to host online games.",
 	signedInAs: "Signed in as {email}",
 	signOut: "Sign out",
+	exportData: {
+		title: "Your data",
+		body: "Download everything Arcade Club keeps about your account as a JSON file: your games, seats, answers and content. Other players' names are left out.",
+		action: "Download my data",
+		exporting: "Preparing…",
+		failed: "Your data could not be downloaded. Try again.",
+	},
 	deleteAccount: {
 		action: "Delete account",
 		confirmTitle: "Delete your account?",

@@ -13,6 +13,7 @@ import {
 	deleteSudokuSave,
 	type GridSave,
 	listSudokuSaves,
+	readAllSudokuSaves,
 	readSudokuSave,
 	resumableItems,
 	writeSudokuSave,
@@ -57,6 +58,13 @@ describe("sudoku save store", () => {
 		expect(listSudokuSaves().map((item) => item.id)).toEqual(["b", "a"]);
 		const save = readSudokuSave("a");
 		expect(save?.variant === "classic" && save.board.givens).toHaveLength(81);
+	});
+
+	it("reads every playable save, newest first, for the export", () => {
+		writeSudokuSave(gridSave("a", 1));
+		writeSudokuSave(gridSave("b", 2));
+		writeText(STORAGE_KEYS.sudokuSave("a"), "not json");
+		expect(readAllSudokuSaves().map((save) => save.id)).toEqual(["b"]);
 	});
 
 	it("updates in place rather than duplicating", () => {
