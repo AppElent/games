@@ -43,6 +43,7 @@ import { SudokuKeypad } from "./SudokuKeypad";
 import {
 	bestEffort,
 	type PuzzleStateDoc,
+	puzzleWrite,
 	sudokuProgress,
 	useSoloPuzzleSession,
 } from "./useSoloPuzzleSession";
@@ -334,7 +335,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 			setTitleDraft(title);
 			return;
 		}
-		bestEffort(rename({ sessionId, title: next }));
+		bestEffort(rename({ ...puzzleWrite(sessionId), title: next }));
 		renameLocalSudokuSession(sessionId, next);
 	}, [titleDraft, title, rename, sessionId]);
 
