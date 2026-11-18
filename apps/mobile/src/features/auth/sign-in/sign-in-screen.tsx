@@ -14,6 +14,7 @@ import { TextField } from "../../../ui/text-field";
 import { AuthForm } from "../components/auth-form";
 import { EmailField } from "../components/email-field";
 import { useAuthError } from "../components/use-auth-error";
+import { useCredentialText } from "../components/use-credential-text";
 import { useEmailCodeSignIn } from "./use-email-code-sign-in";
 import { usePasswordSignIn } from "./use-password-sign-in";
 
@@ -24,28 +25,30 @@ export function SignInScreen() {
 	const password = usePasswordSignIn();
 	const emailCode = useEmailCodeSignIn();
 	const [hint, setHint] = useState<string | null>(null);
-	const [email, setEmail] = useState(devLogin?.email ?? "");
-	const [secret, setSecret] = useState(devLogin?.password ?? "");
+	const email = useCredentialText(devLogin?.email ?? "");
+	const secret = useCredentialText(devLogin?.password ?? "");
 	const passwordRef = useRef<TextInputInstance>(null);
 	const passwordError = useAuthError(password.errorKey);
 	const codeError = useAuthError(emailCode.errorKey);
 
-	const ready = email.trim().length > 0 && secret.length > 0;
+	const ready = email.text.trim().length > 0 && secret.text.length > 0;
 	const submit = () => {
 		setHint(null);
-		if (ready) password.submit(email, secret);
+		const [address, typed] = [email.read(), secret.read()];
+		if (address.trim() && typed) password.submit(address, typed);
 	};
 
 	async function sendCode() {
 		setHint(null);
-		if (!email.trim()) {
+		const address = email.read().trim();
+		if (!address) {
 			setHint(copy.emailFirst);
 			return;
 		}
-		if (await emailCode.send(email)) {
+		if (await emailCode.send(address)) {
 			router.push({
 				pathname: "/sign-in-code",
-				params: { email: email.trim() },
+				params: { email: address },
 			});
 		}
 	}
@@ -69,7 +72,9 @@ export function SignInScreen() {
 						onPress={() =>
 							router.push({
 								pathname: "/reset",
-								params: email.trim() ? { email: email.trim() } : {},
+								params: email.read().trim()
+									? { email: email.read().trim() }
+									: {},
 							})
 						}
 					/>
@@ -85,24 +90,20 @@ export function SignInScreen() {
 			}
 		>
 			<EmailField
-				value={email}
-				onChangeText={setEmail}
+				{...email.field(() => passwordRef.current?.focus())}
 				returnKeyType="next"
 				submitBehavior="submit"
-				onSubmitEditing={() => passwordRef.current?.focus()}
 				testID="sign-in-email"
 			/>
 			<TextField
 				ref={passwordRef}
 				label={copy.password}
-				value={secret}
-				onChangeText={setSecret}
+				{...secret.field(submit)}
 				secureTextEntry
 				autoCapitalize="none"
 				autoComplete="current-password"
 				textContentType="password"
 				returnKeyType="go"
-				onSubmitEditing={submit}
 				testID="sign-in-password"
 			/>
 			<Button

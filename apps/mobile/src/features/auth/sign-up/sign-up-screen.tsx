@@ -11,6 +11,10 @@ import { TextField } from "../../../ui/text-field";
 import { AuthForm } from "../components/auth-form";
 import { EmailField } from "../components/email-field";
 import { useAuthError } from "../components/use-auth-error";
+import {
+	NEW_PASSWORD_RULES,
+	useCredentialText,
+} from "../components/use-credential-text";
 import { useSignUp } from "./use-sign-up";
 
 export function SignUpScreen() {
@@ -19,19 +23,20 @@ export function SignUpScreen() {
 	const copy = t.auth.signUp;
 	const flow = useSignUp();
 	const [firstName, setFirstName] = useState("");
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
+	const email = useCredentialText();
+	const password = useCredentialText();
 	const emailRef = useRef<TextInputInstance>(null);
 	const passwordRef = useRef<TextInputInstance>(null);
 	const error = useAuthError(flow.errorKey);
-	const ready = email.trim().length > 0 && password.length > 0;
+	const ready = email.text.trim().length > 0 && password.text.length > 0;
 
 	async function submit() {
-		if (!ready) return;
-		if (await flow.create({ email, password, firstName })) {
+		const [address, typed] = [email.read(), password.read()];
+		if (!address.trim() || !typed) return;
+		if (await flow.create({ email: address, password: typed, firstName })) {
 			router.push({
 				pathname: "/verify-email",
-				params: { email: email.trim() },
+				params: { email: address.trim() },
 			});
 		}
 	}
@@ -61,23 +66,20 @@ export function SignUpScreen() {
 			/>
 			<EmailField
 				ref={emailRef}
-				value={email}
-				onChangeText={setEmail}
+				{...email.field(() => passwordRef.current?.focus())}
 				returnKeyType="next"
 				submitBehavior="submit"
-				onSubmitEditing={() => passwordRef.current?.focus()}
 			/>
 			<TextField
 				ref={passwordRef}
 				label={t.auth.signIn.password}
-				value={password}
-				onChangeText={setPassword}
+				{...password.field(submit)}
 				secureTextEntry
 				autoCapitalize="none"
 				autoComplete="new-password"
 				textContentType="newPassword"
+				passwordRules={NEW_PASSWORD_RULES}
 				returnKeyType="go"
-				onSubmitEditing={submit}
 			/>
 			<Button
 				label={copy.submit}

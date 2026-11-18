@@ -16,11 +16,13 @@ export function CodeField({
 	onSubmit?: () => void;
 }) {
 	const { t } = useI18n();
+	const digits = (text: string) => text.replace(/\D/g, "");
 	return (
 		<TextField
 			label={t.auth.signInCode.code}
 			value={value}
-			onChangeText={(next) => onChange(next.replace(/\D/g, ""))}
+			onChangeText={(next) => onChange(digits(next))}
+			onEndEditing={(event) => onChange(digits(event.nativeEvent.text))}
 			keyboardType="number-pad"
 			autoComplete="one-time-code"
 			textContentType="oneTimeCode"
