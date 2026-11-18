@@ -32,5 +32,8 @@ export function useSessionAction() {
 		[],
 	);
 
-	return { run, busy, error };
+	/** Clears the last failure, as when the screen moves on from it. */
+	const reset = useCallback(() => setError(null), []);
+
+	return { run, busy, error, reset };
 }
