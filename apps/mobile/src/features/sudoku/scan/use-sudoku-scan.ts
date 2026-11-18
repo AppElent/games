@@ -14,7 +14,7 @@ import {
 	planGridReads,
 	scanCellsFromGridReads,
 } from "@arcadeclub/core/sudoku-scan-ink";
-import * as ImagePicker from "expo-image-picker";
+import type { ImagePickerOptions } from "expo-image-picker";
 import { useRef, useState } from "react";
 import {
 	type PreparedPhoto,
@@ -46,6 +46,9 @@ export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 		if (!scanner) return;
 		setError(null);
 		setCameraBlocked(false);
+		// Loaded here, not at the top: its native module is missing from builds
+		// made before the scanner, and the router loads this file at start-up.
+		const ImagePicker = await import("expo-image-picker");
 		if (source === "camera") {
 			const permission = await ImagePicker.requestCameraPermissionsAsync();
 			if (!permission.granted) {
@@ -54,7 +57,7 @@ export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 				return;
 			}
 		}
-		const options: ImagePicker.ImagePickerOptions = {
+		const options: ImagePickerOptions = {
 			mediaTypes: ["images"],
 			quality: 1,
 		};
