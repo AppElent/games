@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing card games (Pesten, Mau-Mau, Jokeren, Eenentwintigen, Hartenjagen, Klaverjassen, Gin Rummy, Boerenbridge, Toepen), the card engine, its stored state, seat claims or card art.
-version: 1.6.0
+version: 1.7.0
 status: current
 ---
 
@@ -47,7 +47,11 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
   speaks of points only, never money or betting.
 - A table is created in one step by `cardGames.createTable`, and joiners claim a seat
   through `ON_JOIN` (`convex/lib/tableSeats.ts`). A seat is proven by a secret the
-  device keeps, since participant ids are public.
+  device keeps, since participant ids are public. A signed-in player whose browser or
+  device holds no secret for their seat, or holds one the table turns away, gets it
+  back once auth settles: `reclaimSeat` hands their account the seat's existing secret,
+  so their other devices stay seated. Guests, other accounts and removed players get
+  nothing and watch.
 - Web (`src/components/cards`) and mobile (`apps/mobile/src/features/cards`) draw the
   same card art from `packages/core/src/cards/art.ts` and derive the same table logic
   (names, hints, fresh cards, flights) from `packages/core/src/cards/table-view.ts`.

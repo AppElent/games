@@ -32,6 +32,7 @@ true satisfies [Infer<typeof diceActionValidator>] extends [DiceAction]
 export const {
 	createTable,
 	takeSeat,
+	reclaimSeat,
 	addBot,
 	removeSeat,
 	start,
