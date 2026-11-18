@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { FullscreenGamePage } from "#/components/games/FullscreenGamePage";
 import {
 	pageShell,
@@ -7,6 +7,7 @@ import {
 } from "#/components/games/SessionBundleRoute";
 import { BinaryGame } from "#/components/sudoku/BinaryGame";
 import { SudokuGame } from "#/components/sudoku/SudokuGame";
+import { useGuestId } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -19,9 +20,17 @@ export const Route = createFileRoute("/sudoku/$sessionId")({
 function SudokuSessionPage() {
 	const messages = useMessages();
 	const { sessionId } = Route.useParams();
-	const bundle = useQuery(api.sudoku.getBundle, {
-		sessionId: sessionId as Id<"gameSessions">,
-	});
+	const guestId = useGuestId();
+	const { isLoading: authLoading } = useConvexAuth();
+	// Only the puzzle's host may read it: the guest id proves a guest's
+	// puzzle, the account an account's. Asking before either is known would
+	// show "not found" for a moment.
+	const bundle = useQuery(
+		api.sudoku.getBundle,
+		guestId && !authLoading
+			? { sessionId: sessionId as Id<"gameSessions">, guestId }
+			: "skip",
+	);
 	return (
 		<SessionBundleRoute
 			bundle={bundle}
