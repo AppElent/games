@@ -14,6 +14,7 @@ import { mutation, query } from "./_generated/server";
 import { gameError, rules } from "./lib/errors";
 import {
 	finishSession,
+	isCaller,
 	loadBundle,
 	loadGame,
 	loadSession,
@@ -93,6 +94,43 @@ const puzzleArgs = {
 	centerNotes: v.optional(v.array(v.number())),
 	autoCleanup: v.optional(v.boolean()),
 };
+
+/**
+ * What every write to a puzzle takes: the session, and the guest id that
+ * proves a guest's puzzle. A signed-in host's account is their proof.
+ */
+const puzzleWriteArgs = {
+	sessionId: v.id("gameSessions"),
+	guestId: v.optional(v.string()),
+};
+
+/**
+ * Only a puzzle's host may change it: signed in as the host's account, or,
+ * for a puzzle a guest started, holding that guest's id. Anyone else gets
+ * `hostOnly`, whatever the puzzle's status.
+ */
+async function requirePuzzleHost(
+	ctx: MutationCtx,
+	session: Doc<"gameSessions">,
+	guestId: string | undefined,
+) {
+	const host = session.hostParticipantId
+		? await ctx.db.get(session.hostParticipantId)
+		: null;
+	if (!host) {
+		throw gameError("hostOnly");
+	}
+	// LEGACY(APP-352): web tabs and cached PWA bundles from before APP-352 send
+	// no guest id with these writes, so a guest's puzzle still takes a call
+	// without one. A wrong guest id is refused, and so is anyone but the
+	// account on an account's puzzle. Remove once those bundles are gone.
+	if (!host.userId && guestId === undefined) {
+		return;
+	}
+	if (!(await isCaller(ctx, host, guestId))) {
+		throw gameError("hostOnly");
+	}
+}
 
 /** A puzzle has no lobby, so storing it starts its session. */
 async function insertPuzzle(
@@ -174,7 +212,7 @@ export const getBundle = query({
 
 export const saveProgress = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
+		...puzzleWriteArgs,
 		digits: v.string(),
 		cornerNotes: v.array(v.number()),
 		centerNotes: v.array(v.number()),
@@ -183,7 +221,8 @@ export const saveProgress = mutation({
 		autoCleanup: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await loadGame(ctx, "sudoku", args.sessionId);
+		const { session, state } = await loadGame(ctx, "sudoku", args.sessionId);
+		await requirePuzzleHost(ctx, session, args.guestId);
 		if (state.status === "completed") {
 			return;
 		}
@@ -207,11 +246,12 @@ export const saveProgress = mutation({
 
 export const setPaused = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
+		...puzzleWriteArgs,
 		paused: v.boolean(),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await loadGame(ctx, "sudoku", args.sessionId);
+		const { session, state } = await loadGame(ctx, "sudoku", args.sessionId);
+		await requirePuzzleHost(ctx, session, args.guestId);
 		if (state.status === "completed") {
 			return;
 		}
@@ -234,12 +274,13 @@ export const setPaused = mutation({
 
 export const complete = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
+		...puzzleWriteArgs,
 		digits: v.string(),
 		elapsedSeconds: v.number(),
 	},
 	handler: async (ctx, args) => {
-		const { state } = await loadGame(ctx, "sudoku", args.sessionId);
+		const { session, state } = await loadGame(ctx, "sudoku", args.sessionId);
+		await requirePuzzleHost(ctx, session, args.guestId);
 		if (state.status === "completed") {
 			return { completed: true };
 		}
@@ -272,11 +313,17 @@ export const complete = mutation({
 
 export const rename = mutation({
 	args: {
-		sessionId: v.id("gameSessions"),
+		...puzzleWriteArgs,
 		title: v.string(),
 	},
 	handler: async (ctx, args) => {
-		await loadSession(ctx, "sudoku", args.sessionId, "sessionNotFound");
+		const session = await loadSession(
+			ctx,
+			"sudoku",
+			args.sessionId,
+			"sessionNotFound",
+		);
+		await requirePuzzleHost(ctx, session, args.guestId);
 		const title = args.title.trim().slice(0, MAX_TITLE_LENGTH);
 		if (!title) {
 			throw gameError("titleEmpty");

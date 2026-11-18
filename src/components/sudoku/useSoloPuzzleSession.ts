@@ -3,6 +3,7 @@ import type { SudokuBoardState } from "@arcadeclub/core/sudoku-board";
 import { useMutation } from "convex/react";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -14,7 +15,7 @@ export type PuzzleStateDoc = NonNullable<
 /** What a debounced save writes, besides the session and the clock. */
 export type PuzzleProgress = Omit<
 	FunctionArgs<typeof api.sudoku.saveProgress>,
-	"sessionId" | "elapsedSeconds"
+	"sessionId" | "guestId" | "elapsedSeconds"
 >;
 
 const SAVE_DEBOUNCE_MS = 1200;
@@ -26,6 +27,14 @@ const SAVE_DEBOUNCE_MS = 1200;
  */
 export function bestEffort(write: Promise<unknown>) {
 	write.catch(() => undefined);
+}
+
+/**
+ * The session and this browser's guest id, which proves a guest's puzzle is
+ * theirs on every write. A signed-in host's account proves it instead.
+ */
+export function puzzleWrite(sessionId: Id<"gameSessions">) {
+	return { sessionId, guestId: getOrCreateGuestIdentity().id };
 }
 
 /** A Sudoku board as `sudoku.saveProgress` stores it. */
@@ -115,7 +124,7 @@ export function useSoloPuzzleSession(
 				}
 				bestEffort(
 					saveProgress({
-						sessionId,
+						...puzzleWrite(sessionId),
 						...progress,
 						elapsedSeconds: elapsedRef.current,
 					}),
@@ -132,7 +141,7 @@ export function useSoloPuzzleSession(
 			setStatus("completed");
 			bestEffort(
 				complete({
-					sessionId,
+					...puzzleWrite(sessionId),
 					digits: digitsToString(digits),
 					elapsedSeconds: elapsedRef.current,
 				}),
@@ -147,7 +156,7 @@ export function useSoloPuzzleSession(
 		}
 		const pausing = statusRef.current === "active";
 		setStatus(pausing ? "paused" : "active");
-		bestEffort(setPaused({ sessionId, paused: pausing }));
+		bestEffort(setPaused({ ...puzzleWrite(sessionId), paused: pausing }));
 	}, [setPaused, sessionId]);
 
 	/** Read at event time, so a handler never acts on a stale status. */
