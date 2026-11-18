@@ -1,0 +1,34 @@
+{
+	"applinks": {
+		"details": [
+			{
+				"appIDs": [
+					"D8AMB5N29A.com.appelent.arcadeclub.preview"
+				],
+				"components": [
+					{
+						"/": "/join",
+						"comment": "Game invites: a share token or a room code"
+					}
+				]
+			},
+			{
+				"appIDs": [
+					"D8AMB5N29A.com.appelent.arcadeclub"
+				],
+				"components": [
+					{
+						"/": "/join",
+						"comment": "Game invites: a share token or a room code"
+					}
+				]
+			}
+		]
+	},
+	"webcredentials": {
+		"apps": [
+			"D8AMB5N29A.com.appelent.arcadeclub.preview",
+			"D8AMB5N29A.com.appelent.arcadeclub"
+		]
+	}
+}

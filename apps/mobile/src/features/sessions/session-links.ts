@@ -2,7 +2,8 @@
  * The web links invites point at.
  *
  * Share links target the web app's `/join` page so a friend without the app
- * can still play; the app accepts the same token through its own scheme.
+ * can still play; the installed iOS app claims the same link
+ * (`src/lib/app-links.ts`) and also accepts it through its own scheme.
  * The web origin is configuration (`EXPO_PUBLIC_WEB_ORIGIN`); without it,
  * invites fall back to the room code alone.
  */

@@ -1,6 +1,7 @@
 /**
- * Room-code entry, and the target of `arcadeclub://join?token=…` /
- * `?code=…` invite links.
+ * Room-code entry, and the target of invite links:
+ * `https://arcade-club.appelent.nl/join?token=…` / `?code=…` and their
+ * `arcadeclub://` form, routed here by `app/+native-intent.tsx`.
  */
 import { useLocalSearchParams } from "expo-router";
 import { JoinScreen } from "../../../src/features/sessions/join/join-screen";
