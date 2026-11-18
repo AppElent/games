@@ -19,6 +19,8 @@ export default defineConfig({
 						"**/.claude/**",
 						"apps/**",
 						"convex/**/*.test.ts",
+						// Toolkit examples synced from developer-home: templates to copy, not this repo's tests.
+						"docs/standards/**",
 					],
 				},
 			},
