@@ -21,10 +21,17 @@ export type ContinueItem = {
 	seat?: Seat;
 };
 
-/** Newest first. Online items may still turn out finished; see `online-status`. */
-export function listContinueItems(now = Date.now()): ContinueItem[] {
+/**
+ * Newest first. Online items may still turn out finished; see
+ * `online-status`. `owner` is the signed-in player (null for a guest), whose
+ * puzzles the phone offers.
+ */
+export function listContinueItems(
+	now = Date.now(),
+	owner: string | null = null,
+): ContinueItem[] {
 	return [
-		...resumablePuzzles(),
+		...resumablePuzzles(owner),
 		...resumableMatch(),
 		...resumableSeats(now),
 	].sort((a, b) => b.updatedAt - a.updatedAt);

@@ -36,6 +36,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { publishableKey } from "../src/auth/config";
 import { AppConvexProvider } from "../src/convex/provider";
 import { AppQueryCacheProvider } from "../src/convex/query-cache";
+import { useSudokuCloudSync } from "../src/features/sudoku/saves/use-sudoku-cloud-sync";
 import { LocaleProvider } from "../src/i18n";
 import { sentryEnabled } from "../src/observability/init";
 import { useNavigationBreadcrumbs } from "../src/observability/navigation";
@@ -140,6 +141,7 @@ function RootNavigator({ windowReady }: { windowReady: boolean }) {
 	const { isLoaded } = useAuth();
 	const ready = isLoaded && windowReady;
 	useNavigationBreadcrumbs();
+	useSudokuCloudSync();
 
 	useEffect(() => {
 		if (ready) SplashScreen.hideAsync();

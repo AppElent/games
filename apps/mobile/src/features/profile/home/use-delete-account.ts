@@ -9,6 +9,7 @@ import { useState } from "react";
 import { api } from "../../../convex/api";
 import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
 import { useSessionAction } from "../../sessions/use-session-action";
+import { forgetAccountSaves } from "../../sudoku/saves/sudoku-save-store";
 
 export function useDeleteAccount() {
 	const { user } = useUser();
@@ -31,7 +32,12 @@ export function useDeleteAccount() {
 			runDeletion({
 				deleteBatch: () => deleteMyData({ expectedSubject }),
 				deleteUser: () => user.delete(),
-				signOut: () => signOut(),
+				signOut: async () => {
+					// The account's puzzles are gone from the server; its copies
+					// on this phone go with them.
+					forgetAccountSaves(expectedSubject);
+					await signOut();
+				},
 			}),
 		);
 	}

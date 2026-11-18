@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing which games the Arcade Club mobile app offers, or how it talks to Convex and stores seats and saves.
-version: 1.1.1
+version: 1.2.0
 status: current
 ---
 
@@ -15,7 +15,7 @@ the [mobile runbook](../runbooks/mobile.md).
 
 ## Behavior
 
-- The app offers Sudoku (local), Backgammon (local pass-and-play and online
+- The app offers Sudoku (solo, saved to the account when signed in), Backgammon (local pass-and-play and online
   challenge), Music Timeline (id `hitster`, online room) and card games (Pesten, Mau-Mau,
   Jokeren, Eenentwintigen, Hartenjagen, Klaverjassen and Gin Rummy, against bots or in an online room). The other games are web-only for now
   (`pending-port`, [ADR 0002](../adr/0002-ship-every-game-on-web-and-mobile.md)) and
@@ -35,9 +35,23 @@ the [mobile runbook](../runbooks/mobile.md).
   links. A signed-in player's seat also comes back from their account
   (`sessions.ownSeat`, see [game sessions](game-sessions.md); at a card or dice table,
   with its secret, through `reclaimSeat`, see [card games](card-games.md)).
+- Sudoku saves on the phone first, so play works offline. A guest's puzzles stay on
+  the phone. A signed-in player's puzzles also go to their account through the web's
+  `api.sudoku` functions (`saves/sudoku-cloud-sync.ts`, mounted at the root): each
+  save carries a cloud link (account, session id once `create` answered, synced or
+  not). Guest saves become the account's on sign-in and upload once; nothing is
+  removed until the server confirmed. `create` is made idempotent on the phone: a
+  create with no answer is first looked up in the account (`listParticipation`, same
+  title and givens) before another is sent. The Sudoku list shows the account's
+  sessions (web ones too) beside the phone's pending puzzles; removing an account
+  puzzle only hides it on that device. The web's list shows the account's sessions
+  the same way.
 
 ## Acceptance
 
+- `apps/mobile/src/features/sudoku/saves/sudoku-cloud-sync.test.ts` and
+  `sudoku-save-store.test.ts` pass (offline, retry, idempotent create, guest saves,
+  upload before removal).
 - `apps/mobile/src/features/play/app-games.test.ts` (including that `APP_GAMES`
   matches the games `features.ts` lists on mobile),
   `apps/mobile/src/features/sessions/session-links.test.ts` and

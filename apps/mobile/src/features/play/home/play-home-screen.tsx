@@ -2,6 +2,7 @@
  * The Play tab: the games the app carries, then anything this phone can
  * pick back up (saved solo games and online seats).
  */
+import { useAuth } from "@clerk/expo";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
@@ -37,6 +38,8 @@ export function PlayHomeScreen() {
 	const styles = useThemedStyles(createStyles);
 	const stacked = useAccessibilityTextSize();
 	const [items, setItems] = useState<ContinueItem[]>([]);
+	const { isSignedIn, userId } = useAuth();
+	const owner = isSignedIn && userId ? userId : null;
 	const statuses = useOnlineStatuses(items);
 	const update = useAppUpdate();
 	const visible = items
@@ -45,8 +48,8 @@ export function PlayHomeScreen() {
 
 	useFocusEffect(
 		useCallback(() => {
-			setItems(listContinueItems());
-		}, []),
+			setItems(listContinueItems(Date.now(), owner));
+		}, [owner]),
 	);
 
 	const remove = (item: ContinueItem) => {
@@ -62,7 +65,7 @@ export function PlayHomeScreen() {
 					style: "destructive",
 					onPress: () => {
 						item.remove();
-						setItems(listContinueItems());
+						setItems(listContinueItems(Date.now(), owner));
 					},
 				},
 			],

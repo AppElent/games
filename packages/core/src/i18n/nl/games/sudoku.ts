@@ -84,6 +84,11 @@ export const sudoku = {
 		inProgress: "{time} gespeeld",
 		deleteTitle: "Deze puzzel verwijderen?",
 		deleteBody: "De voortgang wordt van dit apparaat verwijderd.",
+		solvedOnAccount: "Opgelost",
+		inProgressOnAccount: "Bezig",
+		waitingToSync: "Wacht op synchronisatie",
+		removeTitle: "Deze puzzel uit de lijst halen?",
+		removeAccountBody: "Hij blijft in je account, en op het web.",
 	},
 	difficulty: {
 		easy: "Makkelijk",
@@ -227,6 +232,8 @@ export const sudoku = {
 			binary: "Vul het raster met 0'en en 1'en",
 		},
 		offlineNote: "Puzzels worden op dit apparaat bewaard en werken offline.",
+		syncNote:
+			"Puzzels werken offline en worden met je account gesynchroniseerd, dus je vindt ze ook op het web.",
 		difficultyBlurbs: {
 			easy: {
 				classic: "Veel aanwijzingen, rustige start",
@@ -258,5 +265,6 @@ export const sudoku = {
 	session: {
 		loadingPuzzle: "Puzzel laden...",
 		puzzleNotFound: "Puzzel niet gevonden.",
+		offline: "Maak verbinding met internet om deze puzzel te openen.",
 	},
 } satisfies typeof enSudoku;

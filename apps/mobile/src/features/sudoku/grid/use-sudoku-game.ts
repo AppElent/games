@@ -71,7 +71,11 @@ export function useSudokuGame(
 
 	const board = history.current;
 	const cages = save.cages;
-	const solution = useMemo(() => parseGrid(save.solution), [save.solution]);
+	// A puzzle from the account has none: hints then find mistakes by rule.
+	const solution = useMemo(
+		() => (save.solution ? parseGrid(save.solution) : undefined),
+		[save.solution],
+	);
 
 	const conflicts = useMemo(
 		() => boardConflictsWithCages(board, cages),

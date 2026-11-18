@@ -198,16 +198,14 @@ export const FEATURES = defineFeatures([
 		kind: "product",
 		status: "pending-port",
 		platforms: ["web"],
-		reason: "Only the web reads a puzzle from a photo (APP-47).",
+		reason: "Only the web reads a puzzle from a photo (APP-288).",
 		routes: { web: ["sudoku/scan"] },
 	},
 	{
 		id: "sudoku-cloud-saves",
 		kind: "product",
-		status: "pending-port",
-		platforms: ["web"],
-		reason:
-			"The web keeps puzzles in Convex; the app keeps them on the phone only, so neither sees the other's (APP-47).",
+		status: "parity",
+		platforms: ["web", "mobile"],
 		routes: {},
 	},
 	{
