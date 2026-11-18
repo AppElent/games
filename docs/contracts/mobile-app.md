@@ -32,7 +32,8 @@ the [mobile runbook](../runbooks/mobile.md).
 - The app calls the same Convex functions as web, only via
   `apps/mobile/src/convex/api.ts`. It stores its seats (with a card or dice table's
   seat secret) and local saves in `expo-sqlite/kv-store`, and shares web `/join?token=`
-  links.
+  links. A signed-in player's seat also comes back from their account
+  (`sessions.ownSeat`, see [game sessions](game-sessions.md)).
 
 ## Acceptance
 

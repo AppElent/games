@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing how online games create, join, seat, start, finish or reopen a session, or how a game route renders.
-version: 1.0.0
+version: 1.1.0
 status: current
 ---
 
@@ -42,6 +42,12 @@ skill.
 - Participant ids are public, so every call acting for a seat takes `seatArgs` and
   proves the seat is the caller's with `requireOwnParticipant` (or `requireHost`) from
   `convex/lib/gameSession.ts`: the same account, or for a guest, the same guest id.
+- A client finds its seat with `sessions.ownSeat`: the seat it holds while that seat
+  is the caller's, else the signed-in account's own row in the session. So an
+  account keeps its seat across sign-out and sign-in, a new tab or another device,
+  and another account's seat left in the tab never stands in for it. A guest's seat
+  is only ever the one its client holds. Web (`useSeat`) and mobile
+  (`useSeatedSession`) both use it.
 
 ### Web client
 

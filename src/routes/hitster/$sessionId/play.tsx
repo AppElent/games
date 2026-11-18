@@ -22,10 +22,8 @@ function HitsterPlayerPage() {
 	const messages = useMessages();
 	const hitster = messages.games.hitster;
 	const { sessionId } = Route.useParams();
-	const linked = Route.useSearch().participantId;
-	const stored = useSeat(sessionId);
 	// A join link names the seat; otherwise this tab's remembered one.
-	const participantId = linked || stored;
+	const participantId = useSeat(sessionId, Route.useSearch().participantId);
 	const guestId = useGuestId();
 	const bundle = useQuery(api.hitster.getBundle, {
 		sessionId: sessionId as Id<"gameSessions">,
