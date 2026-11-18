@@ -25,7 +25,7 @@ async function runExport() {
 }
 
 describe("useExportData", () => {
-	const saved: { name: string; blob: Blob }[] = [];
+	const saved: { name: string; blob: Blob; inDocument?: boolean }[] = [];
 
 	beforeEach(() => {
 		vi.useFakeTimers({ now: new Date(2026, 10, 18, 9), toFake: ["Date"] });
@@ -38,7 +38,9 @@ describe("useExportData", () => {
 			this: HTMLAnchorElement,
 		) {
 			const last = saved.at(-1);
-			if (last) last.name = this.download;
+			if (!last) return;
+			last.name = this.download;
+			last.inDocument = this.isConnected;
 		});
 	});
 	afterEach(() => {
@@ -67,6 +69,9 @@ describe("useExportData", () => {
 		]);
 		expect(saved).toHaveLength(1);
 		expect(saved[0].name).toBe("arcade-club-export-2026-11-18.json");
+		// In the document while clicked (older Safari), and gone after.
+		expect(saved[0].inDocument).toBe(true);
+		expect(document.querySelector("a[download]")).toBeNull();
 		expect(saved[0].blob.type).toBe("application/json");
 		const data = JSON.parse(await saved[0].blob.text());
 		expect(data.tables).toEqual({

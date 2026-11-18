@@ -2,8 +2,7 @@
  * What "Download my data" exports from every table: everything the account
  * owns or took part in, and nothing of anyone else. Rows the account owns
  * leave out only the owner's auth subject. In a session it played, it gets
- * its own seats, the session's non-personal context (game, status, settings,
- * dates, whether it hosted or won) and, from each game table, what belongs to
+ * its own seats, the session's non-personal context (game, status, dates, whether it hosted or won) and, from each game table, what belongs to
  * its seats: its own answers, moves, claims, colour, team, timeline. Other
  * players appear as a count, never by name or id. Game secrets stay out too
  * (join codes, share tokens, seat secrets, decks, hands, solutions), so an
@@ -42,6 +41,8 @@ type ExportTreatment<T extends TableNames> =
 	| { session: true; view: View<T> }
 	/** Rows of a session the account took part in. */
 	| { inSession(db: Db, sessionId: SessionId): Rows<T>; view: View<T> }
+	/** Rows of one of the account's seats, read by seat. */
+	| { ofSeat(db: Db, participantId: ParticipantId): Rows<T>; view: View<T> }
 	/** Not exported; the reason says why. */
 	| { excluded: string };
 
@@ -93,7 +94,9 @@ export const EXPORT: { [T in TableNames]: ExportTreatment<T> } = {
 				// The host names the game, so only the account's own titles.
 				title: hosted ? session.title : undefined,
 				hosted,
-				settings: session.settings,
+				// `settings` is an open record and no game writes it yet, so none
+				// of its keys are exported. Name a key here once a game writes one
+				// that holds nothing personal.
 				startedAt: session.startedAt,
 				endedAt: session.endedAt,
 				completedReason: session.completedReason,
@@ -145,10 +148,13 @@ export const EXPORT: { [T in TableNames]: ExportTreatment<T> } = {
 		}),
 	},
 	liveQuizAnswers: {
-		inSession: (db, sessionId) =>
+		// By seat, so a big room's other answers are never read.
+		ofSeat: (db, participantId) =>
 			db
 				.query("liveQuizAnswers")
-				.withIndex("by_session", (q) => q.eq("sessionId", sessionId)),
+				.withIndex("by_participant", (q) =>
+					q.eq("participantId", participantId),
+				),
 		view: (answer, mine) =>
 			isMine(mine, answer.participantId) ? { ...answer } : null,
 	},
@@ -223,6 +229,7 @@ export const EXPORT: { [T in TableNames]: ExportTreatment<T> } = {
 				black: state.blackParticipantId,
 			}),
 			timeControl: state.timeControl,
+			// Both sides' moves: the game record, not the opponent's personal data.
 			moves: state.sanHistory,
 			resultOutcome: state.resultOutcome,
 			resultWinner: state.resultWinner,
@@ -332,6 +339,7 @@ const OWNED = pick("owned");
 const [SEATS] = pick("seats");
 const [SESSION] = pick("session");
 const IN_SESSION = pick("inSession");
+const OF_SEAT = pick("ofSeat");
 
 /**
  * What a page reads: each owned table in turn, then the seats. A query may
@@ -341,8 +349,12 @@ const SOURCES = [...OWNED.map(([table]) => table), SEATS[0]];
 
 /** Owned rows per page; quiz sets with their questions are the largest. */
 const OWNED_PAGE = 50;
-/** Seats per page; each brings its session and that session's game rows. */
-const SEATS_PAGE = 20;
+/**
+ * Seats per page. Each brings its session, that session's seats and game
+ * rows, and its own answers, so a page of a busy host's rooms stays far
+ * inside Convex's read limits (`accountExport.test.ts` measures it).
+ */
+const SEATS_PAGE = 10;
 
 export type ExportPage = {
 	tables: Partial<Record<TableNames, Exported[]>>;
@@ -422,6 +434,13 @@ async function addSession(
 	for (const [table, treatment] of IN_SESSION) {
 		for (const row of await treatment.inSession(db, session._id).collect()) {
 			add(table, treatment.view(row, mine));
+		}
+	}
+	for (const [table, treatment] of OF_SEAT) {
+		for (const { _id } of own) {
+			for (const row of await treatment.ofSeat(db, _id).collect()) {
+				add(table, treatment.view(row, mine));
+			}
 		}
 	}
 }

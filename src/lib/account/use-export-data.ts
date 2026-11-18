@@ -17,7 +17,10 @@ function saveFile(name: string, text: string) {
 	const link = document.createElement("a");
 	link.href = url;
 	link.download = name;
+	// Older Safari follows only a link that is in the document.
+	document.body.appendChild(link);
 	link.click();
+	link.remove();
 	// Some browsers read the blob after `click` returns.
 	setTimeout(() => URL.revokeObjectURL(url), 0);
 }
