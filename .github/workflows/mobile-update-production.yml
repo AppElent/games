@@ -40,7 +40,7 @@ jobs:
       # (developer-home standards/releases.md, "Android pause").
       ANDROID_ENABLED: ${{ vars.ANDROID_ENABLED }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup
       - uses: ./.github/actions/require-expo-token
