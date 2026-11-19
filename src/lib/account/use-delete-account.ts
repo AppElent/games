@@ -1,6 +1,7 @@
 import {
 	assertSameAccount,
 	type DeletingAccount,
+	type DeletionScope,
 	hasRecentSignIn,
 	NEEDS_RECENT_SIGN_IN,
 	deleteAccount as runDeletion,
@@ -17,14 +18,15 @@ import { api } from "../../../convex/_generated/api";
 
 /**
  * "Delete account" on the Account page, the same steps as the app's Profile
- * (`@arcadeclub/core/account-deletion`). Clerk deletes an account only after
- * a recent sign-in, so an old one opens Clerk's verify dialog (password or
- * code) before anything is deleted. A refusal (an active game, an account
- * switch, a sign-in Clerk still finds too old) or an interrupted run lands in
- * `error`, localized; running it again resumes. Closing Clerk's dialog stops
- * quietly. `deleteAccount` resolves true once the account is gone, and the
- * player lands on the home page rather than the sign-in redirect that
- * `RequireSignedIn` starts when the session ends.
+ * (`@arcadeclub/core/account-deletion`): Arcade Club's data only, or the
+ * whole AppElent account. Both need a recent sign-in, so an old one opens
+ * Clerk's verify dialog (password or code) before anything is deleted. A
+ * refusal (an active game, an account switch, a sign-in Clerk still finds too
+ * old) or an interrupted run lands in `error`, localized; running it again
+ * resumes. Closing Clerk's dialog stops quietly. `deleteAccount` resolves
+ * true once it is done, and the player lands on the home page rather than the
+ * sign-in redirect that `RequireSignedIn` starts when the session ends; after
+ * deleting only the data, the home page says the login still works elsewhere.
  */
 export function useDeleteAccount() {
 	const { user } = useUser();
@@ -57,9 +59,9 @@ export function useDeleteAccount() {
 		throw new GameRuleError("accountSignInFirst");
 	}
 
-	async function deleteAccount() {
+	async function deleteAccount(scope: DeletionScope) {
 		if (!user || busy) return false;
-		if (!user.deleteSelfEnabled) {
+		if (scope === "account" && !user.deleteSelfEnabled) {
 			setError(copy.unavailable);
 			return false;
 		}
@@ -69,15 +71,26 @@ export function useDeleteAccount() {
 		setBusy(true);
 		try {
 			let deleted = false;
+			const landing = scope === "app" ? "/?deleted=app" : "/";
+			const common = {
+				confirmRecentSignIn: () => confirmRecentSignIn(account),
+				deleteBatch: () => deleteMyData({ expectedSubject: account.userId }),
+				signOut: () => clerk.signOut({ redirectUrl: landing }),
+			};
 			await run(async () => {
-				deleted = await runDeletion({
-					confirmRecentSignIn: () => confirmRecentSignIn(account),
-					deleteBatch: () => deleteMyData({ expectedSubject: account.userId }),
-					deleteUser: () => deleteUser(account),
-					signOut: () => clerk.signOut({ redirectUrl: "/" }),
-				});
+				deleted = await runDeletion(
+					scope === "app"
+						? { ...common, scope }
+						: { ...common, scope, deleteUser: () => deleteUser(account) },
+				);
 			}, copy.failed);
-			if (deleted) await navigate({ to: "/", replace: true });
+			if (deleted) {
+				await navigate({
+					to: "/",
+					search: scope === "app" ? { deleted: "app" } : {},
+					replace: true,
+				});
+			}
 			return deleted;
 		} finally {
 			setBusy(false);

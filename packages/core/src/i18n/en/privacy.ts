@@ -4,7 +4,7 @@
  */
 export const privacy = {
 	title: "Privacy policy",
-	updated: "Last updated: 10 November 2026",
+	updated: "Last updated: 19 November 2026",
 	intro:
 		"Arcade Club is a collection of party, card and board games for the web and iOS, run by Appelent. This policy explains what we collect when you play, why, and what you can do about it.",
 	sections: {
@@ -53,7 +53,7 @@ export const privacy = {
 			heading: "Your choices and rights",
 			paragraphs: {
 				delete:
-					"You can delete your account and its data at any time on the Account page of the website, in the iOS app under Profile → Delete account, or by emailing us. This deletes your Appelent account for every Appelent app.",
+					"You can delete your data at any time on the Account page of the website, in the iOS app under Profile → Delete account, or by emailing us. You choose: only your Arcade Club data, keeping your Appelent login for the other Appelent apps, or your whole Appelent account, which deletes the login and your data in every Appelent app.",
 				gdpr: "You may ask for a copy of your data, its correction or deletion, or object to its use, by emailing privacy@appelent.nl. You can also complain to your local data protection authority; in the Netherlands, the Autoriteit Persoonsgegevens.",
 				children:
 					"Arcade Club is not directed at children under 13 and we do not knowingly collect their personal data.",

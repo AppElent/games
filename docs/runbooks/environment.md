@@ -116,6 +116,12 @@ which puts the file back exactly as it was.
 it Convex never validates the Clerk JWT and `ctx.auth.getUserIdentity()` silently
 returns `undefined`.
 
+`CLERK_WEBHOOK_SECRET` (Infisical `clerk-webhook-secret`, optional) is the Svix signing
+secret of the Clerk `user.deleted` endpoint at `<deployment>.convex.site/clerk/webhook`:
+the development instance's endpoint for `dev`, the production instance's for
+`production`. Without it the route answers 500 and purges nothing. Production waits
+for Eric's go.
+
 ## Supplied values
 
 Some placements are produced by tools, not copied from Infisical:

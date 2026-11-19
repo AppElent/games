@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, sign-up, account, theme sync, or how the Clerk session reaches Convex.
-version: 1.0.0
+version: 1.1.0
 status: current
 ---
 
@@ -44,15 +44,34 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   (`sessionParticipants.displayName`), so renaming the account changes no existing room,
   and installed builds keep working unchanged. A new first name becomes the phone's
   default only where no display name is set.
-- "Delete account" on `/account` (`src/components/account/DeleteAccount.tsx`) and the
-  app's Profile run the same steps, `@arcadeclub/core/account-deletion`: a recent
-  sign-in (Clerk's "strict" reverification, checked with 5 of its 10 minutes), then
-  `account.deleteMyData` with `expectedSubject` until `done`, then the Clerk user, then
-  sign-out. An old sign-in stops before any data is deleted: the web opens Clerk's verify
-  dialog (via `useReverification`); the app, which has no such dialog, refuses with
+- The Clerk login is the shared AppElent account (Gather, Foundry, Fairway, Arcade Club).
+  "Delete account" on `/account` (a dialog in `src/components/account/DeleteAccount.tsx`)
+  and the app's Profile (pushed `(tabs)/profile/delete-account`) first ask what to
+  delete, then confirm it, and run the same steps, `@arcadeclub/core/account-deletion`,
+  with a `DeletionScope`:
+  - `app`, "Delete Arcade Club data only" (listed first): a recent sign-in (Clerk's
+    "strict" reverification, checked with 5 of its 10 minutes), then
+    `account.deleteMyData` with `expectedSubject` until `done`, then sign-out on this
+    device. The Clerk user stays and nothing marks it, so a later sign-in starts an
+    empty profile. The web lands on `/?deleted=app`, the app shows an alert; both say
+    the login still works in the other apps.
+  - `account`, "Delete my whole AppElent account": the same, then the Clerk user before
+    the sign-out. It needs `user.deleteSelfEnabled`. Arcade Club has no Sign in with
+    Apple, so there is nothing to revoke.
+
+  An old sign-in stops before any data is deleted: the web opens Clerk's verify dialog
+  (via `useReverification`); the app, which has no such dialog, refuses with
   `accountSignInFirst` and offers "Sign in again". If Clerk still refuses the user after
   the data is gone, both show `accountSignInToFinish`. Refusals (`accountInActiveGame`,
   `accountChanged`) show localized; a rerun resumes.
+- `POST /clerk/webhook` (`convex/http.ts`) purges the data of a Clerk user deleted
+  anywhere (another AppElent app, the Clerk dashboard) with the same
+  `deleteAccountData` as `deleteMyData`, through `account.purgeDeletedUser`, which
+  schedules itself until `done`. It checks the Svix signature against
+  `CLERK_WEBHOOK_SECRET` within five minutes of the delivery's timestamp
+  (`convex/lib/clerkWebhook.ts`): missing headers get 400, a bad or stale signature
+  401, an unset secret 500, all with no side effects. Other event types and repeat
+  deliveries return 200 and do nothing. An open game does not hold back this purge.
 - "Download my data" on `/account` (`src/components/account/ExportData.tsx`) and the
   app's Profile run the same steps, `@arcadeclub/core/account-export`: every page of
   `account.exportMyData` (what each table exports: `convex/lib/accountExport.ts`),
@@ -70,5 +89,5 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 ## Acceptance
 
 - `src/lib/auth/__tests__`, `src/lib/auth/components/auth/__tests__`,
-  `src/lib/account/__tests__`, `convex/account.test.ts` and
+  `src/lib/account/__tests__`, `convex/account.test.ts`, `convex/http.test.ts` and
   `convex/accountExport.test.ts` pass.

@@ -11,7 +11,7 @@ import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { env } from "../../../env";
 import { fmt, type Locale, useI18n } from "../../../i18n";
 import { openFeedbackForm, sentryEnabled } from "../../../observability/init";
@@ -32,7 +32,6 @@ import {
 	usePlayerIdentity,
 } from "../../players/identity/use-player-identity";
 import { AccountNameCard } from "../account/account-name-card";
-import { useDeleteAccount } from "./use-delete-account";
 import { useExportData } from "./use-export-data";
 
 /** The web app's policy page; EAS sets the origin for every build it ships. */
@@ -56,7 +55,6 @@ export function ProfileScreen() {
 	const appearance = useAppearance();
 	const [name, setName] = useState(identity.savedName);
 	const [signingOut, setSigningOut] = useState(false);
-	const deletion = useDeleteAccount();
 	const exporter = useExportData(copy.exportData.action);
 
 	const email = user?.primaryEmailAddress?.emailAddress ?? "";
@@ -76,7 +74,7 @@ export function ProfileScreen() {
 								<Button
 									variant="secondary"
 									label={copy.password.action}
-									disabled={deletion.busy || signingOut}
+									disabled={signingOut}
 									onPress={() => router.push("/profile/change-password")}
 									testID="profile-change-password"
 								/>
@@ -87,7 +85,6 @@ export function ProfileScreen() {
 								variant="secondary"
 								label={copy.signOut}
 								busy={signingOut}
-								disabled={deletion.busy}
 								onPress={async () => {
 									setSigningOut(true);
 									try {
@@ -102,7 +99,7 @@ export function ProfileScreen() {
 								variant="secondary"
 								label={copy.exportData.action}
 								busy={exporter.busy}
-								disabled={!exporter.ready || deletion.busy || signingOut}
+								disabled={!exporter.ready || signingOut}
 								onPress={() => void exporter.exportData()}
 								testID="profile-export-data"
 							/>
@@ -120,54 +117,10 @@ export function ProfileScreen() {
 							<Button
 								variant="plain"
 								label={copy.deleteAccount.action}
-								busy={deletion.busy}
-								disabled={!deletion.ready || signingOut}
-								onPress={() =>
-									Alert.alert(
-										copy.deleteAccount.confirmTitle,
-										copy.deleteAccount.confirmBody,
-										[
-											{ text: t.common.actions.cancel, style: "cancel" },
-											{
-												text: copy.deleteAccount.confirm,
-												style: "destructive",
-												onPress: () => void deletion.deleteAccount(),
-											},
-										],
-									)
-								}
+								disabled={signingOut}
+								onPress={() => router.push("/profile/delete-account")}
 								testID="profile-delete-account"
 							/>
-							<Notice
-								message={
-									deletion.error
-										? gameErrorMessage(
-												t,
-												deletion.error,
-												copy.deleteAccount.failed,
-											)
-										: deletion.unavailable
-											? copy.deleteAccount.unavailable
-											: null
-								}
-							/>
-							{deletion.needsSignIn ? (
-								<Button
-									variant="secondary"
-									label={copy.deleteAccount.signInAgain}
-									busy={signingOut}
-									onPress={async () => {
-										setSigningOut(true);
-										try {
-											await deletion.signInAgain();
-											router.push("/sign-in");
-										} finally {
-											setSigningOut(false);
-										}
-									}}
-									testID="profile-delete-sign-in-again"
-								/>
-							) : null}
 						</>
 					) : (
 						<>

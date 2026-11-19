@@ -34,13 +34,35 @@ export const profile = {
 	},
 	deleteAccount: {
 		action: "Delete account",
-		confirmTitle: "Delete your account?",
-		confirmBody:
-			"This permanently deletes your Appelent account, which you also use to sign in to other Appelent apps, along with your Arcade Club data. Games only you played are deleted; in games you played with others, your name is removed. This can't be undone.",
-		confirm: "Delete permanently",
+		chooseTitle: "What do you want to delete?",
+		chooseBody:
+			"Your AppElent login signs you in to Gather, Foundry, Fairway and Arcade Club.",
+		continue: "Continue",
+		app: {
+			label: "Delete Arcade Club data only",
+			detail:
+				"Your games, seats, answers and content in Arcade Club. Your AppElent login stays, so Gather, Foundry and Fairway keep working.",
+			confirmTitle: "Delete your Arcade Club data?",
+			confirmBody:
+				"Games only you played are deleted; in games you played with others, your name is removed. You'll be signed out on this device. Your AppElent login keeps working in Gather, Foundry and Fairway, and signing in here again starts an empty profile. This can't be undone.",
+			confirm: "Delete Arcade Club data",
+			doneTitle: "Your Arcade Club data is deleted",
+			doneBody:
+				"Your AppElent login still works in Gather, Foundry and Fairway. Sign in here again any time to start over.",
+		},
+		account: {
+			label: "Delete my whole AppElent account",
+			detail:
+				"Also deletes your AppElent login and your data in Gather, Foundry, Fairway and Arcade Club.",
+			confirmTitle: "Delete your whole AppElent account?",
+			confirmBody:
+				"This permanently deletes your AppElent login, which you use to sign in to Gather, Foundry, Fairway and Arcade Club, and your data in all four apps. In Arcade Club, games only you played are deleted; in games you played with others, your name is removed. This can't be undone.",
+			confirm: "Delete permanently",
+		},
 		deleting: "Deleting…",
-		failed: "Your account could not be deleted. Try again.",
-		unavailable: "Deleting your account isn't available right now.",
+		failed: "Your data could not be deleted. Try again.",
+		unavailable:
+			"Deleting your whole AppElent account isn't available right now. You can still delete your Arcade Club data.",
 		signInAgain: "Sign in again",
 	},
 	displayName: "Display name",

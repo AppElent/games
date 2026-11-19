@@ -1,5 +1,6 @@
 /**
- * Deleting the signed-in account; the steps and their order live in
+ * Deleting from the signed-in account, Arcade Club's data only or the whole
+ * AppElent account; the steps and their order live in
  * `@arcadeclub/core/account-deletion`, shared with the web Account page.
  *
  * Clerk deletes an account only after a recent sign-in. Clerk's verify
@@ -7,7 +8,10 @@
  * stops before anything is deleted and offers `signInAgain`: the app's own
  * sign-in, with password autofill or an emailed code, gives a fresh one.
  */
-import { deleteAccount as runDeletion } from "@arcadeclub/core/account-deletion";
+import {
+	type DeletionScope,
+	deleteAccount as runDeletion,
+} from "@arcadeclub/core/account-deletion";
 import { useAuth, useClerk, useUser } from "@clerk/expo";
 import { useMutation } from "convex/react";
 import { useState } from "react";
@@ -26,25 +30,30 @@ export function useDeleteAccount() {
 	/** The Clerk instance does not let users delete themselves. */
 	const [unavailable, setUnavailable] = useState(false);
 
-	async function deleteAccount() {
-		if (!user || busy) return;
-		if (!user.deleteSelfEnabled) {
+	/** Resolves true once the deletion is done and this phone signed out. */
+	async function deleteAccount(scope: DeletionScope) {
+		if (!user || busy) return false;
+		if (scope === "account" && !user.deleteSelfEnabled) {
 			setUnavailable(true);
-			return;
+			return false;
 		}
 		setUnavailable(false);
 		const sessionId = clerk.session?.id;
-		if (!sessionId) return;
+		if (!sessionId) return false;
 		const account = { userId: user.id, sessionId };
-		await run(() =>
-			runDeletion(
-				deletionSteps({
-					clerk,
-					account,
-					deleteBatch: () => deleteMyData({ expectedSubject: account.userId }),
-					signOut: () => signOut(),
-				}),
-			),
+		return (
+			(await run(() =>
+				runDeletion(
+					deletionSteps({
+						clerk,
+						account,
+						scope,
+						deleteBatch: () =>
+							deleteMyData({ expectedSubject: account.userId }),
+						signOut: () => signOut(),
+					}),
+				),
+			)) === true
 		);
 	}
 

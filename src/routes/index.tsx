@@ -1,15 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { DataDeletedNotice } from "#/components/account/DataDeletedNotice";
 import { GameCatalog } from "#/components/games/GameCatalog";
 import { JoinGamePanel } from "#/components/games/JoinGamePanel";
 import { useMessages } from "#/lib/i18n";
 
-export const Route = createFileRoute("/")({ component: HomePage });
+type HomeSearch = {
+	/** Set after "Delete Arcade Club data only", to confirm it. */
+	deleted?: "app";
+};
+
+export const Route = createFileRoute("/")({
+	component: HomePage,
+	validateSearch: (search: Record<string, unknown>): HomeSearch =>
+		search.deleted === "app" ? { deleted: "app" } : {},
+});
 
 function HomePage() {
 	const messages = useMessages();
+	const { deleted } = Route.useSearch();
 
 	return (
 		<main className="club-wrap club-home pb-12 pt-5 lg:pt-12">
+			{deleted === "app" ? <DataDeletedNotice /> : null}
 			<section className="flex flex-col gap-7 pb-8 lg:grid lg:grid-cols-[1fr_400px] lg:items-end lg:gap-10 lg:pb-12">
 				<div className="order-2 lg:order-none">
 					<p className="club-kicker mb-3">{messages.common.home.kicker}</p>

@@ -107,9 +107,9 @@ Games" because "Arcade Club" is taken. The review needs these App Store Connect 
 | App Privacy | Email (account), name (display name), user ID, crash and diagnostic data; none used for tracking |
 
 The policy page is `src/routes/privacy.tsx` with copy in the `privacy` messages; Profile
-links to it. Profile → Delete account deletes the Arcade Club data and then the shared
-Appelent Clerk user. If review deletes the reviewer account, recreate it before the
-next submission. The song-timeline game ships as Music Timeline: never use the
+links to it. Profile → Delete account offers deleting only the Arcade Club data (the
+shared Appelent Clerk user stays) or the whole account, which also deletes the Clerk
+user. If review deletes the reviewer account, recreate it before the next submission. The song-timeline game ships as Music Timeline: never use the
 trademarked name Hitster in visible copy or store metadata.
 
 ### CI builds

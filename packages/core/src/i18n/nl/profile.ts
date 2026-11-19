@@ -36,13 +36,35 @@ export const profile = {
 	},
 	deleteAccount: {
 		action: "Account verwijderen",
-		confirmTitle: "Je account verwijderen?",
-		confirmBody:
-			"Hiermee verwijder je definitief je Appelent-account, waarmee je ook inlogt bij andere Appelent-apps, samen met je Arcade Club-gegevens. Spellen die alleen jij speelde worden verwijderd; in spellen met anderen wordt je naam weggehaald. Dit kan niet ongedaan worden gemaakt.",
-		confirm: "Definitief verwijderen",
+		chooseTitle: "Wat wil je verwijderen?",
+		chooseBody:
+			"Met je AppElent-login log je in bij Gather, Foundry, Fairway en Arcade Club.",
+		continue: "Doorgaan",
+		app: {
+			label: "Alleen Arcade Club-gegevens verwijderen",
+			detail:
+				"Je spellen, plaatsen, antwoorden en inhoud in Arcade Club. Je AppElent-login blijft, dus Gather, Foundry en Fairway blijven werken.",
+			confirmTitle: "Je Arcade Club-gegevens verwijderen?",
+			confirmBody:
+				"Spellen die alleen jij speelde worden verwijderd; in spellen met anderen wordt je naam weggehaald. Je wordt op dit apparaat uitgelogd. Je AppElent-login blijft werken in Gather, Foundry en Fairway, en als je hier opnieuw inlogt, begin je met een leeg profiel. Dit kan niet ongedaan worden gemaakt.",
+			confirm: "Arcade Club-gegevens verwijderen",
+			doneTitle: "Je Arcade Club-gegevens zijn verwijderd",
+			doneBody:
+				"Je AppElent-login werkt nog in Gather, Foundry en Fairway. Log hier op elk moment opnieuw in om opnieuw te beginnen.",
+		},
+		account: {
+			label: "Mijn hele AppElent-account verwijderen",
+			detail:
+				"Verwijdert ook je AppElent-login en je gegevens in Gather, Foundry, Fairway en Arcade Club.",
+			confirmTitle: "Je hele AppElent-account verwijderen?",
+			confirmBody:
+				"Hiermee verwijder je definitief je AppElent-login, waarmee je inlogt bij Gather, Foundry, Fairway en Arcade Club, en je gegevens in alle vier de apps. In Arcade Club worden spellen die alleen jij speelde verwijderd; in spellen met anderen wordt je naam weggehaald. Dit kan niet ongedaan worden gemaakt.",
+			confirm: "Definitief verwijderen",
+		},
 		deleting: "Bezig met verwijderen…",
-		failed: "Je account kon niet worden verwijderd. Probeer het opnieuw.",
-		unavailable: "Je account verwijderen is nu niet beschikbaar.",
+		failed: "Je gegevens konden niet worden verwijderd. Probeer het opnieuw.",
+		unavailable:
+			"Je hele AppElent-account verwijderen is nu niet beschikbaar. Je kunt je Arcade Club-gegevens wel verwijderen.",
 		signInAgain: "Opnieuw inloggen",
 	},
 	displayName: "Weergavenaam",

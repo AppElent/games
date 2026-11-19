@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { DeletionScope } from "@arcadeclub/core/account-deletion";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -68,11 +69,11 @@ function wrapper({ children }: { children: ReactNode }) {
 	return <LocaleProvider initialLocale="en">{children}</LocaleProvider>;
 }
 
-async function runDeletion() {
+async function runDeletion(scope: DeletionScope = "account") {
 	const hook = renderHook(() => useDeleteAccount(), { wrapper });
 	let ok: boolean | undefined;
 	await act(async () => {
-		ok = await hook.result.current.deleteAccount();
+		ok = await hook.result.current.deleteAccount(scope);
 	});
 	return { ok, result: hook.result };
 }
@@ -111,12 +112,51 @@ describe("useDeleteAccount", () => {
 		}
 		expect(deleteUser).toHaveBeenCalledOnce();
 		expect(signOut).toHaveBeenCalledWith({ redirectUrl: "/" });
-		expect(navigate).toHaveBeenCalledWith({ to: "/", replace: true });
+		expect(navigate).toHaveBeenCalledWith({
+			to: "/",
+			search: {},
+			replace: true,
+		});
 		expect(deleteUser.mock.invocationCallOrder[0]).toBeGreaterThan(
 			deleteMyData.mock.invocationCallOrder[2],
 		);
 		expect(result.current.error).toBe("");
 		expect(result.current.busy).toBe(false);
+	});
+
+	it("deletes only Arcade Club's data, keeps the Clerk user and signs out to the confirmation", async () => {
+		deleteMyData
+			.mockResolvedValueOnce({ done: false })
+			.mockResolvedValueOnce({ done: true });
+		const { ok, result } = await runDeletion("app");
+		expect(ok).toBe(true);
+		expect(checkAuthorization).toHaveBeenCalled();
+		expect(deleteMyData).toHaveBeenCalledTimes(2);
+		expect(deleteUser).not.toHaveBeenCalled();
+		expect(signOut).toHaveBeenCalledWith({ redirectUrl: "/?deleted=app" });
+		expect(navigate).toHaveBeenCalledWith({
+			to: "/",
+			search: { deleted: "app" },
+			replace: true,
+		});
+		expect(result.current.error).toBe("");
+	});
+
+	it("deletes only the data even where the Clerk instance does not allow self-deletion", async () => {
+		deleteSelfEnabled = false;
+		deleteMyData.mockResolvedValueOnce({ done: true });
+		const { ok } = await runDeletion("app");
+		expect(ok).toBe(true);
+		expect(deleteUser).not.toHaveBeenCalled();
+	});
+
+	it("asks for a recent sign-in before deleting only the data", async () => {
+		recentSignIn = false;
+		verifies = false;
+		const { ok } = await runDeletion("app");
+		expect(ok).toBe(false);
+		expect(verifyPrompts).toBe(1);
+		expect(deleteMyData).not.toHaveBeenCalled();
 	});
 
 	it("shows the active-game refusal, keeps the account, and resumes on a rerun", async () => {
@@ -127,14 +167,14 @@ describe("useDeleteAccount", () => {
 		expect(first.ok).toBe(false);
 		expect(first.result.current.error).toContain("30");
 		expect(first.result.current.error).not.toBe(
-			"Your account could not be deleted. Try again.",
+			"Your data could not be deleted. Try again.",
 		);
 		expect(deleteUser).not.toHaveBeenCalled();
 		expect(signOut).not.toHaveBeenCalled();
 
 		deleteMyData.mockResolvedValueOnce({ done: true });
 		await act(async () => {
-			await first.result.current.deleteAccount();
+			await first.result.current.deleteAccount("account");
 		});
 		expect(deleteUser).toHaveBeenCalledOnce();
 		expect(signOut).toHaveBeenCalledOnce();
@@ -158,7 +198,7 @@ describe("useDeleteAccount", () => {
 		const { ok, result } = await runDeletion();
 		expect(ok).toBe(false);
 		expect(result.current.error).toBe(
-			"Your account could not be deleted. Try again.",
+			"Your data could not be deleted. Try again.",
 		);
 		expect(deleteUser).not.toHaveBeenCalled();
 	});
@@ -168,7 +208,7 @@ describe("useDeleteAccount", () => {
 		const { ok, result } = await runDeletion();
 		expect(ok).toBe(false);
 		expect(result.current.error).toBe(
-			"Deleting your account isn't available right now.",
+			"Deleting your whole AppElent account isn't available right now. You can still delete your Arcade Club data.",
 		);
 		expect(deleteMyData).not.toHaveBeenCalled();
 	});
@@ -207,9 +247,7 @@ describe("useDeleteAccount", () => {
 		const { ok, result } = await runDeletion();
 		expect(ok).toBe(false);
 		expect(deleteMyData).not.toHaveBeenCalled();
-		expect(result.current.error).toMatch(
-			/^To delete your account, sign in again first/,
-		);
+		expect(result.current.error).toMatch(/^To delete, sign in again first/);
 	});
 
 	it("refuses when another account signs in before the check", async () => {
@@ -238,7 +276,7 @@ describe("useDeleteAccount", () => {
 		expect(signOut).not.toHaveBeenCalled();
 		expect(navigate).not.toHaveBeenCalled();
 		expect(result.current.error).toBe(
-			"Your Arcade Club data is deleted, but your account isn't yet: it needs a recent sign-in. Sign in again, then delete your account again to finish.",
+			"Your Arcade Club data is deleted, but your AppElent account isn't yet: it needs a recent sign-in. Sign in again, then delete your whole account again to finish.",
 		);
 	});
 
