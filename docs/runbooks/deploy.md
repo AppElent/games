@@ -44,10 +44,11 @@ Project facts for the [deployments](../standards/deployments.md),
 - `mobile-runtime.yml` comments on each mobile PR whether it changes the runtime
   fingerprint; `mobile-build.yml` and `eas-local-build.yml` build the app on a runner
   (`eas build --local`) for PRs labelled `build:ios`/`build:android` or a manual run.
-- `dependabot-blast-radius.yml` labels each Dependabot PR from
-  `dependabot/fetch-metadata`'s update type: patch `blast-radius:low`, minor or major
-  `blast-radius:med`. It swaps only those two labels and skips a PR marked
-  `blast-radius:high`.
+- `dependabot-blast-radius.yml` is the toolkit labeler template, copied unchanged
+  (rules in [dependency updates](../standards/dependency-updates.md)): a PR whose
+  every update is a patch gets `blast-radius:low`; anything else, or a change under
+  `.github/`, gets `blast-radius:med`. It swaps only those two labels and skips a PR
+  marked `blast-radius:high`.
 
 ## Versions and releases
 
