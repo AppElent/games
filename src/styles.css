@@ -183,11 +183,11 @@ body {
 }
 
 @utility club-field-label {
-  @apply block text-xs font-bold uppercase tracking-wide text-slate-400;
+  @apply block text-xs font-bold uppercase tracking-wide text-[var(--club-muted)];
 }
 
 @utility club-panel-heading {
-  @apply text-sm font-bold uppercase tracking-wide text-slate-300;
+  @apply text-sm font-bold uppercase tracking-wide text-[var(--club-muted)];
 }
 
 @utility club-btn-primary {

@@ -314,20 +314,20 @@ describe("web field and error utilities (club-field, club-error)", () => {
 	// which is how the dark-only `club-input-dark` and `club-error` slipped onto
 	// light pages. Colours come from --club-* variables, so each theme (and the
 	// pinned-dark game screens) resolves its own.
-	it.each(["club-field", "club-error"])(
-		"%s only uses --club-* colours",
-		(name) => {
-			const apply = /@apply ([^;]+);/.exec(utility(name))?.[1] ?? "";
-			const colours = apply
-				.split(/\s+/)
-				.filter((c) =>
-					/(^|:)(bg|text|border|placeholder|outline|ring)-/.test(c),
-				)
-				.filter((c) => !/-(none|px|sm|xs|md|lg|xl|\d+)$/.test(c));
-			expect(colours.length).toBeGreaterThan(0);
-			for (const c of colours) expect(c).toContain("var(--club-");
-		},
-	);
+	it.each([
+		"club-field",
+		"club-error",
+		"club-panel-heading",
+		"club-field-label",
+	])("%s only uses --club-* colours", (name) => {
+		const apply = /@apply ([^;]+);/.exec(utility(name))?.[1] ?? "";
+		const colours = apply
+			.split(/\s+/)
+			.filter((c) => /(^|:)(bg|text|border|placeholder|outline|ring)-/.test(c))
+			.filter((c) => !/-(none|px|sm|xs|md|lg|xl|\d+)$/.test(c));
+		expect(colours.length).toBeGreaterThan(0);
+		for (const c of colours) expect(c).toContain("var(--club-");
+	});
 
 	it("no component brings back the dark-only field, or hand-writes a field or button border", () => {
 		const files: string[] = execFileSync("git", ["ls-files", "src/**/*.tsx"], {
