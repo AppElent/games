@@ -38,15 +38,16 @@ export function ChangePasswordScreen() {
 	const newField = useRef<TextInputInstance>(null);
 	const [busy, setBusy] = useState(false);
 	const [errorKey, setErrorKey] = useState<ErrorKey | null>(null);
+	const [leaving, setLeaving] = useState(false);
 	// Swiping back while Clerk works unmounts this screen; a late success
 	// must not then pop the Profile screen underneath.
 	const mounted = useRef(true);
-	useEffect(
-		() => () => {
+	useEffect(() => {
+		mounted.current = true;
+		return () => {
 			mounted.current = false;
-		},
-		[],
-	);
+		};
+	}, []);
 
 	const header = (
 		<Stack.Screen options={{ title: copy.title, headerLargeTitle: false }} />
@@ -139,10 +140,17 @@ export function ChangePasswordScreen() {
 				<Button
 					variant="secondary"
 					label={copy.signInAgain}
+					busy={leaving}
 					onPress={async () => {
+						if (leaving) return;
+						setLeaving(true);
 						router.dismissTo("/profile");
-						await signOut();
-						router.push("/sign-in");
+						try {
+							await signOut();
+							router.push("/sign-in");
+						} catch {
+							// Still signed in on Profile, whose Sign out stays at hand.
+						}
 					}}
 					testID="change-password-sign-in-again"
 				/>

@@ -80,9 +80,9 @@ export function ProfileScreen() {
 									onPress={() => router.push("/profile/change-password")}
 									testID="profile-change-password"
 								/>
-							) : (
+							) : user ? (
 								<AppText variant="secondary">{copy.password.none}</AppText>
-							)}
+							) : null}
 							<Button
 								variant="secondary"
 								label={copy.signOut}
