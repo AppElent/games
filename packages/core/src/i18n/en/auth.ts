@@ -59,5 +59,7 @@ export const auth = {
 		codeExpired: "That code has expired. Send a new one.",
 		tooManyRequests: "Too many attempts. Try again in a moment.",
 		network: "Network error. Check your connection and try again.",
+		tooLong: "That is too long.",
+		signInAgain: "For your security, sign in again first, then try once more.",
 	},
 };

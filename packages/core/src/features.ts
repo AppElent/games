@@ -88,11 +88,9 @@ export const FEATURES = defineFeatures([
 	{
 		id: "account-editing",
 		kind: "floor",
-		status: "pending-port",
-		platforms: ["web"],
-		reason:
-			"The web edits the account name and changes the password on /account; the app shows the email and a display name kept on the phone (APP-46).",
-		routes: {},
+		status: "parity",
+		platforms: ["web", "mobile"],
+		routes: { mobile: ["(tabs)/profile/change-password"] },
 	},
 	{
 		id: "account-deletion",

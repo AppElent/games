@@ -31,6 +31,7 @@ import {
 	PLAYER_NAME_MAX,
 	usePlayerIdentity,
 } from "../../players/identity/use-player-identity";
+import { AccountNameCard } from "../account/account-name-card";
 import { useDeleteAccount } from "./use-delete-account";
 import { useExportData } from "./use-export-data";
 
@@ -64,12 +65,24 @@ export function ProfileScreen() {
 	return (
 		<Screen inTabs>
 			<Section title={copy.account}>
+				{isSignedIn ? <AccountNameCard /> : null}
 				<Card>
 					{isSignedIn ? (
 						<>
 							<AppText variant="body">
 								{fmt(copy.signedInAs, { email })}
 							</AppText>
+							{user?.passwordEnabled ? (
+								<Button
+									variant="secondary"
+									label={copy.password.action}
+									disabled={deletion.busy || signingOut}
+									onPress={() => router.push("/profile/change-password")}
+									testID="profile-change-password"
+								/>
+							) : user ? (
+								<AppText variant="secondary">{copy.password.none}</AppText>
+							) : null}
 							<Button
 								variant="secondary"
 								label={copy.signOut}
