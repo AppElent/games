@@ -23,6 +23,8 @@ const CODE_MAP: Readonly<Record<string, ErrorKey>> = {
 	too_many_requests: "tooManyRequests",
 	rate_limit_exceeded: "tooManyRequests",
 	network_error: "network",
+	form_param_max_length_exceeded: "tooLong",
+	session_reverification_required: "signInAgain",
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -43,7 +45,7 @@ function clerkErrorCode(error: unknown, depth = 0): string | null {
 }
 
 /** The translation key for an error, or `null` for no error. */
-function clerkErrorKey(error: unknown): ErrorKey | null {
+export function clerkErrorKey(error: unknown): ErrorKey | null {
 	if (!error) return null;
 	const code = clerkErrorCode(error);
 	const key = code ? CODE_MAP[code] : undefined;

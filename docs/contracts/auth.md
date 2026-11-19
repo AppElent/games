@@ -26,6 +26,24 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 - `src/routes/{sign-in,sign-up,forgot-password,account}.tsx` are thin wrappers around
   `#/lib/auth`'s `AuthCard` and form components; `src/components/Header.tsx` uses its
   `HeaderUser`.
+- `/account` (`ProfilePanel`) and the app's Profile edit the Clerk account's first and
+  last name (`user.update`) and change the password (`user.updatePassword`, current and
+  new). On the phone the name sits on Profile (`account-name-card.tsx`); a failed save
+  keeps the typed name and shows the localized Clerk reason. Change password is its own
+  pushed screen, `(tabs)/profile/change-password`, with the read-only email as
+  `username` above the current and new fields (the auth standard's password-manager
+  rules). Clerk reports a wrong current password as `form_password_validation_failed`
+  on `current_password`, the weak-password code too, so the field name decides the
+  message. If Clerk asks for reverification the screen offers "Sign in again". An
+  account without a password (social or emailed-code sign-in only) gets no link and
+  an explanation instead. Changing the email is on neither platform.
+- On the phone, the display name other players see is not the account name. It stays
+  the phone-local name (`use-player-identity.ts`), defaulting to the Clerk first name and
+  otherwise "Player 123"; the web hosts as the Clerk first name
+  (`use-host-session.ts`). Each seat stores the name it joined with
+  (`sessionParticipants.displayName`), so renaming the account changes no existing room,
+  and installed builds keep working unchanged. A new first name becomes the phone's
+  default only where no display name is set.
 - "Delete account" on `/account` (`src/components/account/DeleteAccount.tsx`) and the
   app's Profile run the same steps, `@arcadeclub/core/account-deletion`: a recent
   sign-in (Clerk's "strict" reverification, checked with 5 of its 10 minutes), then

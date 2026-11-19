@@ -61,5 +61,8 @@ export const auth = {
 		codeExpired: "Die code is verlopen. Vraag een nieuwe aan.",
 		tooManyRequests: "Te veel pogingen. Probeer het zo opnieuw.",
 		network: "Netwerkfout. Controleer je verbinding en probeer opnieuw.",
+		tooLong: "Dat is te lang.",
+		signInAgain:
+			"Log voor je veiligheid eerst opnieuw in en probeer het dan nog eens.",
 	},
 } satisfies typeof en;
