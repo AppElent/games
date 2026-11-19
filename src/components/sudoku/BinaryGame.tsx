@@ -154,6 +154,10 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 										isGiven
 											? "bg-slate-100 dark:bg-slate-800/70"
 											: "hover:bg-sky-100 dark:hover:bg-slate-700/50"
+									} ${
+										isConflict
+											? "inset-ring-2 inset-ring-red-600 dark:inset-ring-red-400"
+											: ""
 									} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
 								>
 									{status === "paused" ? null : (

@@ -41,7 +41,7 @@ export function ClockSetup() {
 		<Link
 			to="/"
 			aria-label={messages.common.gameShell.returnToGames}
-			className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--club-line-strong)] bg-[var(--club-surface)] text-[var(--club-text)]"
+			className="flex h-11 w-11 items-center justify-center rounded-full club-btn-outline bg-[var(--club-surface)] text-[var(--club-text)]"
 		>
 			<ArrowLeft aria-hidden="true" className="h-5 w-5" />
 		</Link>

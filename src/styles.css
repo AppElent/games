@@ -175,16 +175,19 @@ body {
 
 /* Repeated Tailwind blocks, named so they change together. Each holds exactly
    the classes it replaced; near-variants keep their own class lists. */
-@utility club-input-dark {
-  @apply rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 text-white outline-none focus:border-cyan-300;
+/* A text field's edge, fill, text, placeholder and focus edge, all from --club-*
+   so it reads on a light page and on the pinned-dark game screens alike. Shape and
+   padding stay on the site: fields differ in both. */
+@utility club-field {
+  @apply border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] text-[var(--club-text)] outline-none placeholder:text-[var(--club-soft)] focus:border-[var(--club-cyan)];
 }
 
 @utility club-field-label {
-  @apply block text-xs font-bold uppercase tracking-wide text-slate-400;
+  @apply block text-xs font-bold uppercase tracking-wide text-[var(--club-muted)];
 }
 
 @utility club-panel-heading {
-  @apply text-sm font-bold uppercase tracking-wide text-slate-300;
+  @apply text-sm font-bold uppercase tracking-wide text-[var(--club-muted)];
 }
 
 @utility club-btn-primary {
@@ -206,8 +209,10 @@ body {
   @apply absolute inset-0 z-10 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm;
 }
 
+/* Error text: --club-orange is 4.5:1 on both grounds (light #ba3e0c, dark and
+   game screens #fb923c). */
 @utility club-error {
-  @apply text-sm text-orange-200;
+  @apply text-sm text-[var(--club-orange)];
 }
 
 code {

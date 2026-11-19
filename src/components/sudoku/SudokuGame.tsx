@@ -361,7 +361,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 										setEditingTitle(false);
 									}
 								}}
-								className="w-full rounded-md border border-[var(--club-line-strong)] bg-slate-800 px-2 py-1 text-sm text-white"
+								className="club-field w-full rounded-md px-2 py-1 text-sm"
 								maxLength={MAX_TITLE_LENGTH}
 							/>
 						) : (

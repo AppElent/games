@@ -55,7 +55,12 @@ Change a value in `src/styles.css` and `apps/mobile/src/theme/tokens.ts` togethe
 | `--club-line-strong` | `borderStrong` | Field and button borders | slate-400 at 60% | slate-900 at 50% |
 
 Every field and button border uses `--club-line-strong`; outline buttons and toggles get it
-through the `club-btn-outline` utility in `src/styles.css`, not a hand-written border. Inside `.game-fullscreen` the
+through the `club-btn-outline` utility in `src/styles.css`, and text fields through
+`club-field` (edge, fill, text, placeholder and focus edge from `--club-*`), not a
+hand-written border. Both read on light pages and on the pinned-dark game screens;
+`club-error` is `--club-orange` for the same reason, and a test fails on a hand-written
+field border or the old dark-only `club-input-dark`. The card table's seat menu button
+and the backgammon turn badge use the same 3:1 edges as their neighbouring controls. Inside `.game-fullscreen` the
 variable is pinned to its dark value. The site header is opaque `#121626` in both themes.
 Its scoped text (`#f8fafc`), muted text (`#aab6cc`), cyan and border tokens stay at dark
 values. Header outline pills are 44px tall with `--club-line-strong` borders.
@@ -86,4 +91,6 @@ always-dark scan board reads `--club-line-strong`. Box lines and the outer edge 
 rather than the phone's exact colour. Killer cage outlines use the same colours as box lines,
 dashed. The 3:1 holds on empty cells and on peer highlights. A selected, hinted, same-digit or
 colour-marked cell shows by its own fill, and the line beside it drops to about 3:1 in light
-mode and about 2:1 in dark, the same as on the phone.
+mode and about 2:1 in dark, so those cells also draw a 1px inner ring: the box-line colour on
+the web (`slate-600`, `slate-300/70` in dark), `text` on the phone. A binary cell that
+breaks a rule gets a 2px red inner ring on the web, as the phone's danger border does.

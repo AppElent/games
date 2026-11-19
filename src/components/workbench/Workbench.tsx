@@ -90,14 +90,14 @@ export function Workbench() {
 					value={title}
 					onChange={(event) => setTitle(event.target.value)}
 					placeholder="Draft title"
-					className="mb-3 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-[var(--club-cyan)]"
+					className="club-field mb-3 w-full rounded-md px-3 py-2"
 				/>
 				<textarea
 					value={payload}
 					onChange={(event) => setPayload(event.target.value)}
 					rows={8}
 					placeholder={KIND_PLACEHOLDERS[kind]}
-					className="mb-3 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-[var(--club-cyan)] font-mono text-xs"
+					className="club-field mb-3 w-full rounded-md px-3 py-2 font-mono text-xs"
 				/>
 				{error ? (
 					<p className="mb-3 text-sm text-[var(--club-orange)]">{error}</p>
@@ -248,7 +248,7 @@ function PayloadEditor({
 				value={value}
 				onChange={(event) => setValue(event.target.value)}
 				rows={8}
-				className="mb-2 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)] outline-none focus:border-[var(--club-cyan)] font-mono text-xs"
+				className="club-field mb-2 w-full rounded-md px-3 py-2 font-mono text-xs"
 			/>
 			<button
 				type="button"

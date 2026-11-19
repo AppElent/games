@@ -114,7 +114,7 @@ export function ReportProblem() {
 							disabled={pending}
 							onChange={(event) => setMessage(event.target.value)}
 							placeholder={text.placeholder}
-							className="min-h-28 rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] p-3 font-normal text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
+							className="club-field min-h-28 rounded-md p-3 font-normal"
 						/>
 					</label>
 					{screenshot ? (

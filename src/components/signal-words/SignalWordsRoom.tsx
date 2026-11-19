@@ -264,7 +264,7 @@ export function SignalWordsRoom({
 						<input
 							value={clue}
 							onChange={(event) => setClue(event.target.value)}
-							className="w-full rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 text-white"
+							className="club-field w-full rounded-md px-3 py-2"
 							placeholder={signalWords.clueForm.placeholder}
 						/>
 					</label>
@@ -275,7 +275,7 @@ export function SignalWordsRoom({
 						<select
 							value={count}
 							onChange={(event) => setCount(Number(event.target.value))}
-							className="rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2.5 text-white"
+							className="club-field rounded-md px-3 py-2.5"
 						>
 							{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
 								<option key={value} value={value}>

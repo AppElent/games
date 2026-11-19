@@ -100,7 +100,7 @@ function RefereeCheck(props: ClockScreenProps) {
 										)}
 										disabled={busy || state.paused}
 										onClick={() => void actions.flag(index, !flagged)}
-										className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-[var(--club-line-strong)] px-4 text-sm font-bold text-[var(--club-text)] disabled:opacity-45"
+										className="inline-flex min-h-11 items-center gap-1.5 rounded-full club-btn-outline px-4 text-sm font-bold text-[var(--club-text)] disabled:opacity-45"
 									>
 										{flagged ? null : (
 											<Flag aria-hidden="true" className="h-4 w-4" />

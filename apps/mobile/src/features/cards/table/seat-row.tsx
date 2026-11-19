@@ -362,5 +362,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		backgroundColor: cardColors.chip,
+		borderWidth: 1,
+		borderColor: cardColors.ivoryLine,
 	},
 });

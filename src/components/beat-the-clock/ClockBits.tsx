@@ -98,7 +98,7 @@ export function SecondaryButton({
 		<button
 			type="button"
 			disabled={disabled || busy}
-			className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[var(--club-line-strong)] px-6 font-bold text-[var(--club-text)] disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+			className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full club-btn-outline px-6 font-bold text-[var(--club-text)] disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
 			{...rest}
 		>
 			<ButtonBody busy={busy} busyLabel={busyLabel}>
@@ -216,7 +216,7 @@ export function ClockHeader({
 				aria-haspopup="dialog"
 				aria-expanded={menuOpen}
 				onClick={onMenu}
-				className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--club-line-strong)] bg-[var(--club-surface)] text-[var(--club-text)]"
+				className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full club-btn-outline bg-[var(--club-surface)] text-[var(--club-text)]"
 			>
 				{isHost ? (
 					<Pause aria-hidden="true" className="h-5 w-5" />

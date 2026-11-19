@@ -82,7 +82,7 @@ export function SessionHostControls({
 						value={draftTitle}
 						onChange={(event) => setDraftTitle(event.target.value)}
 						maxLength={MAX_TITLE_LENGTH}
-						className="min-w-0 flex-1 rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300"
+						className="club-field min-w-0 flex-1 rounded-md px-3 py-2 text-sm"
 					/>
 					<button
 						type="submit"

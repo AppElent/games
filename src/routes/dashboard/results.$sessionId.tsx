@@ -19,14 +19,14 @@ function SessionResultsPage() {
 
 	if (bundle === undefined) {
 		return (
-			<main className="club-wrap py-10 text-slate-300">
+			<main className="club-wrap py-10 text-[var(--club-muted)]">
 				{messages.common.results.loadingResults}
 			</main>
 		);
 	}
 	if (bundle === null) {
 		return (
-			<main className="club-wrap py-10 text-orange-200">
+			<main className="club-wrap py-10 club-error">
 				{messages.common.results.sessionNotFound}
 			</main>
 		);
@@ -46,7 +46,7 @@ function SessionResultsPage() {
 			<div>
 				<Link
 					to="/dashboard"
-					className="mb-4 inline-flex items-center gap-2 text-sm text-slate-300 no-underline hover:text-white"
+					className="mb-4 inline-flex items-center gap-2 text-sm text-[var(--club-muted)] no-underline hover:text-[var(--club-text)]"
 				>
 					<ArrowLeft className="h-4 w-4" />
 					{messages.common.results.backToDashboard}
@@ -65,7 +65,7 @@ function SessionResultsPage() {
 						: ""}
 				</p>
 				{winners.length > 0 ? (
-					<p className="mt-2 inline-flex items-center gap-2 rounded-md border border-amber-300/30 bg-amber-300/10 px-3 py-1.5 text-amber-100">
+					<p className="mt-2 inline-flex items-center gap-2 rounded-md border border-[var(--club-amber)] bg-[var(--club-amber-dim)] px-3 py-1.5 text-[var(--club-amber)]">
 						<Trophy className="h-4 w-4" />
 						{fmt(messages.common.results.winnersAnnouncement, {
 							names: winners.map((winner) => winner.displayName).join(", "),

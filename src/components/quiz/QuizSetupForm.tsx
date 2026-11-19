@@ -43,7 +43,7 @@ export function QuizSetupForm() {
 				id="quiz-set"
 				value={selectedSetId}
 				onChange={(event) => setSelectedSetId(event.target.value)}
-				className="mb-2 w-full club-input-dark"
+				className="club-field mb-2 w-full"
 			>
 				{mySets?.length ? (
 					<optgroup label={messages.games.quiz.sets.mySets}>
