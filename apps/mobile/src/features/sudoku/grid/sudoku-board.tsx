@@ -345,6 +345,11 @@ const BoardCell = memo(function BoardCell({
 					{cageSum}
 				</AppText>
 			) : null}
+			{!selected && (hinted || sameDigit || marker > 0) ? (
+				// The grid line beside a filled cell drops to about 2:1 in dark mode,
+				// so a hinted, same-digit or colour-marked cell carries its own 3:1 edge.
+				<View pointerEvents="none" style={styles.filledRing} />
+			) : null}
 			{selected ? (
 				// An overlay, not the cell's own border, so the space inside the
 				// cell (and the notes fitted to it) stays the same when selected.
@@ -424,6 +429,15 @@ const createStyles = (colors: Tokens) =>
 			bottom: 0,
 			borderWidth: 2,
 			borderColor: colors.accent,
+		},
+		filledRing: {
+			position: "absolute",
+			top: 0,
+			left: 0,
+			right: 0,
+			bottom: 0,
+			borderWidth: 1,
+			borderColor: colors.text,
 		},
 		cageSum: {
 			position: "absolute",

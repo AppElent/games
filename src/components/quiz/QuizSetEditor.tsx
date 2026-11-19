@@ -136,7 +136,7 @@ export function QuizSetEditor({
 					value={title}
 					onChange={(event) => setTitle(event.target.value)}
 					placeholder={messages.games.quiz.setEditor.titlePlaceholder}
-					className="mb-4 w-full club-input-dark"
+					className="club-field mb-4 w-full"
 				/>
 				<label
 					className="mb-2 block text-sm font-bold text-slate-200"
@@ -149,7 +149,7 @@ export function QuizSetEditor({
 					value={description}
 					onChange={(event) => setDescription(event.target.value)}
 					placeholder={messages.games.quiz.setEditor.descriptionPlaceholder}
-					className="w-full club-input-dark"
+					className="club-field w-full"
 				/>
 			</div>
 
@@ -183,7 +183,7 @@ export function QuizSetEditor({
 							onChange={(event) => setImportText(event.target.value)}
 							rows={5}
 							placeholder={messages.games.quiz.setEditor.importPlaceholder}
-							className="mb-3 w-full rounded-md border border-[var(--club-line-strong)] bg-black/30 px-3 py-2 font-mono text-sm text-white outline-none focus:border-cyan-300"
+							className="club-field mb-3 w-full rounded-md px-3 py-2 font-mono text-sm"
 						/>
 						{importErrors.length > 0 ? (
 							<ul className="mb-3 space-y-1 club-error">
@@ -258,7 +258,7 @@ export function QuizSetEditor({
 								patchQuestion(index, { prompt: event.target.value })
 							}
 							placeholder={messages.games.quiz.setEditor.promptPlaceholder}
-							className="mb-4 w-full club-input-dark"
+							className="club-field mb-4 w-full"
 						/>
 						<div className="mb-4 grid gap-2 sm:grid-cols-2">
 							{question.choices.map((choice, choiceIndex) => {
@@ -309,7 +309,7 @@ export function QuizSetEditor({
 												messages.games.quiz.setEditor.choicePlaceholder,
 												{ number: choiceIndex + 1 },
 											)}
-											className="min-w-0 flex-1 club-input-dark"
+											className="club-field min-w-0 flex-1"
 										/>
 									</div>
 								);
@@ -349,7 +349,7 @@ export function QuizSetEditor({
 												DEFAULT_QUESTION_SECONDS,
 										})
 									}
-									className="w-20 rounded-md border border-[var(--club-line-strong)] bg-black/30 px-2 py-1.5 text-white outline-none focus:border-cyan-300"
+									className="club-field w-20 rounded-md px-2 py-1.5"
 								/>
 							</label>
 							<label className="flex items-center gap-2 text-slate-300">
@@ -367,7 +367,7 @@ export function QuizSetEditor({
 												DEFAULT_QUESTION_POINTS,
 										})
 									}
-									className="w-24 rounded-md border border-[var(--club-line-strong)] bg-black/30 px-2 py-1.5 text-white outline-none focus:border-cyan-300"
+									className="club-field w-24 rounded-md px-2 py-1.5"
 								/>
 							</label>
 						</div>

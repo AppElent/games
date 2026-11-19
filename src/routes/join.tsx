@@ -77,7 +77,7 @@ function JoinPage() {
 					id="join-name"
 					value={name}
 					onChange={(event) => setName(event.target.value)}
-					className="mb-4 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
+					className="club-field mb-4 w-full rounded-md px-3 py-2"
 					placeholder={messages.common.joinPanel.playerNamePlaceholder}
 				/>
 				{joiningByLink ? (
@@ -96,7 +96,7 @@ function JoinPage() {
 							id="join-code"
 							value={code}
 							onChange={(event) => setCode(event.target.value)}
-							className="mb-4 w-full rounded-md border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2 text-[var(--club-text)] placeholder:text-[var(--club-soft)]"
+							className="club-field mb-4 w-full rounded-md px-3 py-2"
 							placeholder="ABC123"
 						/>
 					</>

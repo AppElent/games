@@ -125,6 +125,14 @@ export function SudokuBoard({
 						? "inset-ring-2 inset-ring-sky-700 dark:inset-ring-sky-300"
 						: "";
 
+				// The line beside a filled cell drops to about 2:1 in dark mode, so a
+				// selected (in digit mode), hinted, same-digit or colour-marked cell
+				// carries its own 3:1 edge: the box-line colour, one pixel inside.
+				const filledRing =
+					!modeRing && (isSelected || isHint || sameDigit || colorClass)
+						? "inset-ring-1 inset-ring-slate-600 dark:inset-ring-slate-300/70"
+						: "";
+
 				const background = isSelected
 					? "bg-sky-300/60 dark:bg-sky-400/30"
 					: isHint
@@ -148,7 +156,7 @@ export function SudokuBoard({
 							col: col + 1,
 						})}
 						onClick={() => onSelectCell?.(cell)}
-						className={`@container relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} ${modeRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
+						className={`@container relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} ${modeRing} ${filledRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
 					>
 						{cageEdges && !hidden ? (
 							<span

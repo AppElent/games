@@ -32,7 +32,7 @@ export function DeleteAccount() {
 				onClick={open}
 				disabled={!deletion.ready || deletion.busy}
 				aria-busy={deletion.busy}
-				className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-orange)] disabled:opacity-50"
+				className="rounded-md club-btn-outline px-4 py-2 font-bold text-[var(--club-orange)] disabled:opacity-50"
 			>
 				{deletion.busy ? copy.deleting : copy.action}
 			</button>
@@ -67,7 +67,7 @@ export function DeleteAccount() {
 					<button
 						type="button"
 						onClick={confirm}
-						className="rounded-md border border-[var(--club-line-strong)] px-4 py-2 font-bold text-[var(--club-orange)]"
+						className="rounded-md club-btn-outline px-4 py-2 font-bold text-[var(--club-orange)]"
 					>
 						{copy.confirm}
 					</button>

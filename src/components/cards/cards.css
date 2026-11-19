@@ -644,14 +644,23 @@
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
+/* A 28px chip with the 3:1 control edge; the ::after keeps the 44px tap target. */
 .seat-manage {
+	position: relative;
 	display: grid;
 	place-items: center;
-	width: 2.75rem;
-	height: 2.75rem;
-	margin-block: -0.5rem;
-	border-radius: 0.5rem;
-	color: var(--ivory-muted);
+	width: 1.75rem;
+	height: 1.75rem;
+	border: 1px solid var(--ivory-line);
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.28);
+	color: var(--ivory);
+}
+
+.seat-manage::after {
+	content: "";
+	position: absolute;
+	inset: -0.5rem;
 }
 
 .seat-spectating {

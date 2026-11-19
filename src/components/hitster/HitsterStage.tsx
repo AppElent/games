@@ -64,8 +64,7 @@ function AnswerInputs({
 	if (!showArtistTitle && !config.needsYear) {
 		return null;
 	}
-	const inputClass =
-		"w-full rounded-xl border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2.5 text-[var(--club-text)] placeholder:text-[var(--club-soft)] focus-visible:outline-2 focus-visible:outline-blue-400";
+	const inputClass = "w-full rounded-xl club-field px-3 py-2.5";
 	return (
 		<div className="grid gap-2 sm:grid-cols-2">
 			{showArtistTitle ? (

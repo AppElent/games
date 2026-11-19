@@ -71,13 +71,13 @@ function QuizReport({
 						{questionStats.map((stat) => (
 							<li
 								key={stat.questionId}
-								className="rounded-md bg-white/5 px-4 py-2.5"
+								className="rounded-md bg-[var(--club-line)] px-4 py-2.5"
 							>
 								<div className="flex items-center justify-between gap-3">
-									<span className="min-w-0 truncate text-white">
+									<span className="min-w-0 truncate text-[var(--club-text)]">
 										Q{stat.index + 1}. {stat.prompt}
 									</span>
-									<span className="shrink-0 tabular-nums text-slate-300">
+									<span className="shrink-0 tabular-nums text-[var(--club-muted)]">
 										{fmt(messages.common.results.correctOf, {
 											correct: stat.correct,
 											answered: stat.answered,
@@ -85,9 +85,9 @@ function QuizReport({
 										})}
 									</span>
 								</div>
-								<div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+								<div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--club-panel-strong)]">
 									<div
-										className="h-full rounded-full bg-emerald-400"
+										className="h-full rounded-full bg-[var(--club-green)]"
 										style={{ width: `${stat.accuracy}%` }}
 									/>
 								</div>
@@ -116,7 +116,7 @@ function ScoreboardSection({
 	const messages = useMessages();
 	if (scoreboard.length === 0) {
 		return (
-			<section className="club-panel rounded-lg p-5 text-slate-400">
+			<section className="club-panel rounded-lg p-5 text-[var(--club-muted)]">
 				{messages.common.results.noScores}
 			</section>
 		);
@@ -129,7 +129,7 @@ function ScoreboardSection({
 				</h2>
 				<button
 					type="button"
-					className="inline-flex items-center gap-2 rounded-md club-btn-outline bg-white/5 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/10"
+					className="inline-flex items-center gap-2 rounded-md club-btn-outline px-3 py-1.5 text-sm font-bold text-[var(--club-text)] hover:bg-[var(--club-line)]"
 					onClick={() => {
 						if (quizCsv) {
 							downloadCsv(`quiz-results-${sessionId.slice(-6)}.csv`, quizCsv());
@@ -160,12 +160,12 @@ function ScoreboardSection({
 				{scoreboard.map((entry, index) => (
 					<li
 						key={entry.participantId}
-						className="flex items-center justify-between rounded-md bg-white/5 px-4 py-2.5"
+						className="flex items-center justify-between rounded-md bg-[var(--club-line)] px-4 py-2.5"
 					>
-						<span className="font-bold text-white">
+						<span className="font-bold text-[var(--club-text)]">
 							{index + 1}. {entry.displayName}
 						</span>
-						<span className="tabular-nums text-slate-300">
+						<span className="tabular-nums text-[var(--club-muted)]">
 							{fmt(messages.common.results.points, { count: entry.score })}
 						</span>
 					</li>
