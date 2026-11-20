@@ -136,10 +136,14 @@ House rules are shallow patches on these fields, as in the other families.
   and passes its most dangerous cards. Under `lastTrick` it spends its weakest legal
   card and keeps the best for the last trick. For points and roem it calls trump on a
   strong hand, draws trumps with the top trump, feeds points to a partner holding the
-  trick and wins cheaply. It never plays an illegal card.
+  trick and wins cheaply. A top side card counts as a sure winner only while no
+  opponent known to be out of its suit (`voids`, filled from cards played face up) can
+  still trump it. It never plays an illegal card.
 - In a bidding game the bot bids from its high trumps, aces and guarded kings (the
   nearest allowed number), then wins as cheaply as it can while short of its bid and
   loses with its highest losing card once it has it.
+- The seat note "Passed" (`trumpPassed`) marks the seats that passed on the suit on offer;
+  once everyone has and the first seat must name a suit, no seat is marked.
 - A trump call is two actions, `passTrump` and `chooseTrump`; refusals are
   `cardsNotCallingTrump`, `cardsCallTrumpFirst`, `cardsMustChooseTrump` and
   `cardsTrumpNotOffered`. Follow refusals add `cardsMustTrump`, `cardsMustOvertrump` and
