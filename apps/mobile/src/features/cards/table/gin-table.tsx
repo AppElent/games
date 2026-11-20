@@ -11,6 +11,7 @@ import {
 	ginTurn,
 	groupGinHand,
 	meldCardNames,
+	onAutopilot,
 	seatName,
 	sortCards,
 } from "@arcadeclub/core/cards/table-view";
@@ -360,49 +361,53 @@ export function GinTable({
 					) : null}
 					<EventTicker events={view.events} table={table} />
 					<View style={styles.actions}>
-						{turn.canKnock ? (
-							<TableButton
-								label={
-									turn.gin
-										? cards.gin.goGin
-										: fmt(cards.gin.knock, {
-												deadwood: turn.knockDeadwood ?? 0,
-											})
-								}
-								disabled={controls.pending}
-								onPress={() => finishTurn("knock")}
-								testID="cards-knock"
-							/>
-						) : null}
-						{turn.canDiscard ? (
-							<TableButton
-								ghost={turn.canKnock}
-								label={cards.gin.discardCard}
-								disabled={controls.pending}
-								onPress={() => finishTurn("discard")}
-								testID="cards-discard-action"
-							/>
-						) : null}
-						{layingOff ? (
-							<TableButton
-								label={cards.gin.finishLayoff}
-								disabled={controls.pending}
-								onPress={() => {
-									haptics.moveMade();
-									controls.act({ type: "finishLayoff" });
-								}}
-								testID="cards-finish-layoff"
-							/>
-						) : null}
-						{selection.length > 1 ? (
-							<TableButton
-								ghost
-								label={cards.rummy.clearSelection}
-								onPress={() => setSelected([])}
-								testID="cards-clear"
-							/>
-						) : null}
-						{you !== null && table.seats[you]?.autopilot ? (
+						{onAutopilot(table) ? null : (
+							<>
+								{turn.canKnock ? (
+									<TableButton
+										label={
+											turn.gin
+												? cards.gin.goGin
+												: fmt(cards.gin.knock, {
+														deadwood: turn.knockDeadwood ?? 0,
+													})
+										}
+										disabled={controls.pending}
+										onPress={() => finishTurn("knock")}
+										testID="cards-knock"
+									/>
+								) : null}
+								{turn.canDiscard ? (
+									<TableButton
+										ghost={turn.canKnock}
+										label={cards.gin.discardCard}
+										disabled={controls.pending}
+										onPress={() => finishTurn("discard")}
+										testID="cards-discard-action"
+									/>
+								) : null}
+								{layingOff ? (
+									<TableButton
+										label={cards.gin.finishLayoff}
+										disabled={controls.pending}
+										onPress={() => {
+											haptics.moveMade();
+											controls.act({ type: "finishLayoff" });
+										}}
+										testID="cards-finish-layoff"
+									/>
+								) : null}
+								{selection.length > 1 ? (
+									<TableButton
+										ghost
+										label={cards.rummy.clearSelection}
+										onPress={() => setSelected([])}
+										testID="cards-clear"
+									/>
+								) : null}
+							</>
+						)}
+						{onAutopilot(table) && you !== null ? (
 							<TableButton
 								label={cards.table.autopilotBack}
 								onPress={() => controls.setAutopilot(you, false)}

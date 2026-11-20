@@ -23,6 +23,7 @@ import {
 	cardTilt,
 	describeEvent,
 	eventsSince,
+	faceUpCards,
 	ginHint,
 	ginLayoffOrder,
 	ginTurn,
@@ -30,6 +31,7 @@ import {
 	latestEventText,
 	meldCardNames,
 	nextFreshCards,
+	onAutopilot,
 	openTrickSlots,
 	opponentOrder,
 	planFlights,
@@ -419,6 +421,43 @@ describe("bank table", () => {
 			cards.bank.stakeWaiting,
 		);
 		expect(bankHint(staking, null, words)).toBeNull();
+	});
+
+	it("holds the next stakes back while the last round's result is on show", () => {
+		const staking = bankView({ phase: "stake", canStake: true, round: 3 });
+		expect(bankHint(staking, 1, words, true)).toBe(
+			words.fmt(cards.bank.roundSettled, { round: 2 }),
+		);
+		expect(bankHint(staking, 1, words, false)).toBe(cards.bank.stakeHint);
+	});
+
+	it("shows face-up cards as marks and as spoken names", () => {
+		const shown = faceUpCards(cards, ["SK#0", "H7#0", "D10#0"]);
+		expect(shown.text).toBe("K♠ 7♥ 10♦");
+		expect(shown.label).toBe(
+			[
+				cardName(cards, "SK#0"),
+				cardName(cards, "H7#0"),
+				cardName(cards, "D10#0"),
+			].join(", "),
+		);
+		expect(faceUpCards(cards, []).text).toBe("");
+	});
+
+	it("knows when the computer plays this device's seat", () => {
+		const seat = (autopilot: boolean) => ({
+			botIndex: null,
+			name: null,
+			autopilot,
+			lastSeen: null,
+		});
+		expect(onAutopilot({ seats: [seat(false), seat(true)], you: 1 })).toBe(
+			true,
+		);
+		expect(onAutopilot({ seats: [seat(false), seat(true)], you: 0 })).toBe(
+			false,
+		);
+		expect(onAutopilot({ seats: [seat(true)], you: null })).toBe(false);
 	});
 
 	it("gives the total on your turn only", () => {

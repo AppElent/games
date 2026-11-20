@@ -5,6 +5,7 @@ import {
 	cardTilt,
 	latestEventText,
 	nextFreshCards,
+	onAutopilot,
 	opponentOrder,
 	seatName,
 	startFreshCards,
@@ -55,6 +56,7 @@ export function SeatRow({
 	turn,
 	flash,
 	note,
+	shown,
 	onCatch,
 	controls,
 }: {
@@ -64,6 +66,8 @@ export function SeatRow({
 	flash: number | null;
 	/** Family-specific line under a name, such as a running score. */
 	note?: (seat: number) => ReactNode;
+	/** An opponent's cards when they are played face up, as marks and a spoken form. */
+	shown?: (seat: number) => { text: string; label: string } | null;
 	onCatch?: { seat: number; run: () => void };
 	controls: CardTableControls;
 }) {
@@ -147,6 +151,15 @@ export function SeatRow({
 								<p className="seat-note">{cards.table.offline}</p>
 							) : note?.(seat) ? (
 								<p className="seat-note">{note(seat)}</p>
+							) : null}
+							{shown?.(seat)?.text ? (
+								<p
+									className="seat-note seat-cards"
+									role="img"
+									aria-label={shown(seat)?.label}
+								>
+									{shown(seat)?.text}
+								</p>
 							) : null}
 							{onCatch?.seat === seat ? (
 								<button
@@ -511,8 +524,8 @@ export function TurnStatus({
 			{hint ? <p className="status-hint">{hint}</p> : null}
 			<EventTicker events={events} table={table} />
 			<div className="table-actions">
-				{children}
-				{you !== null && table.seats[you]?.autopilot ? (
+				{onAutopilot(table) ? null : children}
+				{you !== null && onAutopilot(table) ? (
 					<AutopilotBack controls={controls} seat={you} />
 				) : null}
 			</div>
