@@ -5,6 +5,7 @@ import {
 	bidTotal,
 	cardTilt,
 	isTeamGame,
+	onAutopilot,
 	openTrickSlots,
 	seatName,
 	sortTricksHand,
@@ -220,10 +221,10 @@ export function TricksTable({
 	const bidding = view.phase === "bidding";
 	// Someone has the turn: to bid, or to play a card.
 	const live = playing || bidding;
-	const mine = playing && view.turn === you;
+	const mine = playing && view.turn === you && !onAutopilot(table);
 	const calling = view.phase === "trump";
-	const callingMine = calling && view.turn === you;
-	const myBid = bidding && view.turn === you;
+	const callingMine = calling && view.turn === you && !onAutopilot(table);
+	const myBid = bidding && view.turn === you && !onAutopilot(table);
 	const choosing = view.phase === "passing" && you !== null && !view.passed;
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";

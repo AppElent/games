@@ -705,6 +705,14 @@
 	color: var(--ivory-muted);
 }
 
+/* An opponent's face-up cards: wraps rather than clipping a long hand. */
+.seat-cards {
+	white-space: normal;
+	text-align: center;
+	font-weight: 600;
+	color: var(--ivory);
+}
+
 /* Floats over the felt so a chance to catch someone doesn't move the table. */
 .catch-btn {
 	position: absolute;

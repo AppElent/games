@@ -45,6 +45,11 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
   part of the game state, not a seat. Players pick a stake from a fixed set of points
   each round, and the bank's face-down card stays hidden until the bank plays. Text
   speaks of points only, never money or betting.
+  Everyone's cards are face up, so opponents' seats list theirs as marks (`faceUpCards`).
+  A settled round stays on show for `ROUND_PAUSE_MS` before stakes are offered again;
+  that pause is the client's (`useRoundPause`), the state moves straight to `stake`.
+- A seat on autopilot offers no moves of its own: the tables hide their buttons and
+  hand taps while `onAutopilot(table)` holds, leaving only "take my seat back".
 - A table is created in one step by `cardGames.createTable`, and joiners claim a seat
   through `ON_JOIN` (`convex/lib/tableSeats.ts`). A seat is proven by a secret the
   device keeps, since participant ids are public. Clients make it with
