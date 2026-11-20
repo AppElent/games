@@ -13,6 +13,7 @@
 			"**/vite.config.ts",
 			"vitest.config.ts",
 			"!**/src/routeTree.gen.ts",
+			"!apps/mobile/src/updates/ota-label.mjs",
 			"apps/mobile/app/**/*",
 			"apps/mobile/*.ts",
 			"apps/mobile/*.js",
