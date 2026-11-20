@@ -190,6 +190,12 @@ export type TricksState = {
 	offered?: Suit | null;
 	/** How many seats have passed on the trump this deal. */
 	trumpPasses?: number;
+	/**
+	 * Per seat, the suits it failed to follow this deal. Public, since it comes
+	 * from cards played face up; the bot reads it to know who can trump a suit.
+	 * Absent in tables dealt before it existed: nobody is known to be void.
+	 */
+	voids?: Suit[][];
 	/** Who called trump; their team must win the deal. */
 	maker?: number | null;
 	/** Roem each seat took with its tricks this deal. */
@@ -745,6 +751,7 @@ function dealTricks(
 		...(rules.bidding ? { bids: hands.map(() => null) } : {}),
 		offered: calling ? trump : null,
 		trumpPasses: 0,
+		voids: hands.map(() => []),
 		maker: null,
 		roem: hands.map(() => 0),
 		lastDeal: null,
@@ -1221,6 +1228,7 @@ function playCard(
 		throw new GameRuleError(why);
 	}
 	removeCard(state.hands[seat], card);
+	noteVoid(state, seat, card);
 	state.trick.push({ seat, card });
 	pushEvent(state, { type: "play", seat, card });
 	const breaking = rules.breaking;
@@ -1238,6 +1246,21 @@ function playCard(
 		return;
 	}
 	takeTrick(rules, state);
+}
+
+/** A seat that plays off the suit led has none left of it: remember that. */
+function noteVoid(state: TricksState, seat: number, card: CardId) {
+	if (state.trick.length === 0) {
+		return;
+	}
+	const led = suitOf(state.trick[0].card);
+	if (suitOf(card) === led) {
+		return;
+	}
+	state.voids ??= state.hands.map(() => []);
+	if (!state.voids[seat].includes(led)) {
+		state.voids[seat].push(led);
+	}
 }
 
 /** Every seat still in the deal has played to the trick; folded seats' cards stay in it. */
@@ -1509,9 +1532,12 @@ export function viewTricks(
 		turn: state.turn,
 		teams: teamsOf(rules, seats),
 		offered: state.phase === "trump" ? (state.offered ?? null) : null,
+		// Once everyone has passed the suit on offer, the first seat must name one
+		// (`offered` is null): nobody has passed that question, so none is marked.
 		trumpPassed: state.hands.map(
 			(_, index) =>
 				state.phase === "trump" &&
+				state.offered !== null &&
 				(index - state.dealer - 1 + seats) % seats < passes,
 		),
 		maker: state.maker ?? null,
@@ -1877,6 +1903,21 @@ export function choosePointsCard(
 		);
 	const isBoss = (card: CardId) =>
 		unseen(suitOf(card)).every((other) => power(other) < power(card));
+	// An opponent known to be out of the suit, with cards left, can trump a
+	// plain winner while any trump is unseen. Trump itself cannot be trumped.
+	const trumpable = (card: CardId) =>
+		trump !== null &&
+		suitOf(card) !== trump &&
+		unseen(trump).length > 0 &&
+		state.hands.some(
+			(hand, other) =>
+				teams[other] !== teams[seat] &&
+				hand.length > 0 &&
+				!state.trick.some((play) => play.seat === other) &&
+				(state.voids?.[other] ?? []).includes(suitOf(card)),
+		);
+	// A card nobody can beat: the top of its suit, and not open to a trump.
+	const isSure = (card: CardId) => isBoss(card) && !trumpable(card);
 	const cheapest = (cards: CardId[]) =>
 		[...cards].sort((a, b) => value(a) - value(b) || power(a) - power(b))[0];
 	const richest = (cards: CardId[]) =>
@@ -1890,11 +1931,11 @@ export function choosePointsCard(
 		const trumps = legal.filter(isTrump);
 		if (calling && trumps.length > 0 && trump && unseen(trump).length > 0) {
 			const top = [...trumps].sort((a, b) => power(b) - power(a))[0];
-			if (isBoss(top)) {
+			if (isSure(top)) {
 				return top;
 			}
 		}
-		const winners = side.filter(isBoss);
+		const winners = side.filter(isSure);
 		if (winners.length > 0) {
 			return richest(winners);
 		}
@@ -1905,7 +1946,7 @@ export function choosePointsCard(
 	if (teams[winning] === teams[seat]) {
 		const partnerCard = state.trick.find((play) => play.seat === winning);
 		const safe =
-			last || (partnerCard !== undefined && isBoss(partnerCard.card));
+			last || (partnerCard !== undefined && isSure(partnerCard.card));
 		if (safe && side.length > 0) {
 			return richest(side);
 		}
@@ -1922,7 +1963,7 @@ export function choosePointsCard(
 		const sideBeats = beats.filter((card) => !isTrump(card));
 		return sideBeats.length > 0 ? richest(sideBeats) : cheapest(beats);
 	}
-	const safeBeats = beats.filter(isBoss);
+	const safeBeats = beats.filter(isSure);
 	if (safeBeats.length > 0) {
 		return cheapest(safeBeats);
 	}
