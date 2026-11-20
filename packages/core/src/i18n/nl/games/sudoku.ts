@@ -108,7 +108,10 @@ export const sudoku = {
 		notes: "notities {digits}",
 		cage: "kooisom {sum}",
 		conflict: "conflict",
-		retapHint: "Tik nog eens om van invoermodus te wisselen",
+		retapHint:
+			"Tik nog eens om van invoermodus te wisselen. Houd ingedrukt om te deselecteren",
+		deselectHint: "Houd ingedrukt om te deselecteren",
+		deselectAction: "Deselecteren",
 	},
 	keypad: {
 		modeLabel: "Invoermodus",

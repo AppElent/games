@@ -196,31 +196,20 @@ export function SudokuBoard({
 							</span>
 						) : (
 							<>
-								{cornerNoteGroups(board.corner[cell], cornerLayout).map(
-									(group) =>
-										cornerLayout === "topRight" ? (
-											// One line that shrinks with the cell (cqw) rather than
-											// wrapping into the center notes; the class is the
-											// fallback where container units are unsupported.
-											<span
-												key={group.slot}
-												className="absolute inset-x-0.5 top-0 whitespace-nowrap text-right text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300"
-												style={{
-													fontSize: `min(clamp(0.5rem, 1.7vw, 0.72rem), calc((100cqw - 0.25rem) / ${(group.digits.length * 0.62).toFixed(2)}))`,
-												}}
-											>
-												{group.digits.join("")}
-											</span>
-										) : (
-											<span
-												key={group.slot}
-												className={`absolute whitespace-nowrap text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300 ${
-													CORNER_SLOTS[group.slot]
-												}`}
-											>
-												{group.digits.join("")}
-											</span>
-										),
+								{cageEdges ? (
+									// In a Killer cage the notes sit inside a box a little in from
+									// the cell edge, clear of the dashed cage lines (inset 2px, 1px wide).
+									<span className="pointer-events-none absolute inset-[3px]">
+										<CornerNotes
+											mask={board.corner[cell]}
+											layout={cornerLayout}
+										/>
+									</span>
+								) : (
+									<CornerNotes
+										mask={board.corner[cell]}
+										layout={cornerLayout}
+									/>
 								)}
 								{board.center[cell] !== 0 ? (
 									<span className="text-[clamp(0.5rem,1.9vw,0.82rem)] font-semibold tracking-tight text-slate-600 dark:text-slate-300">
@@ -233,5 +222,39 @@ export function SudokuBoard({
 				);
 			})}
 		</div>
+	);
+}
+
+function CornerNotes({
+	mask,
+	layout,
+}: {
+	mask: number;
+	layout: CornerNoteLayout;
+}) {
+	return cornerNoteGroups(mask, layout).map((group) =>
+		layout === "topRight" ? (
+			// One line that shrinks with the cell (cqw) rather than wrapping
+			// into the center notes; the class is the fallback where container
+			// units are unsupported.
+			<span
+				key={group.slot}
+				className="absolute inset-x-0.5 top-0 whitespace-nowrap text-right text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300"
+				style={{
+					fontSize: `min(clamp(0.5rem, 1.7vw, 0.72rem), calc((100cqw - 0.25rem) / ${(group.digits.length * 0.62).toFixed(2)}))`,
+				}}
+			>
+				{group.digits.join("")}
+			</span>
+		) : (
+			<span
+				key={group.slot}
+				className={`absolute whitespace-nowrap text-[clamp(0.5rem,1.7vw,0.72rem)] font-semibold leading-tight text-slate-600 dark:text-slate-300 ${
+					CORNER_SLOTS[group.slot]
+				}`}
+			>
+				{group.digits.join("")}
+			</span>
+		),
 	);
 }

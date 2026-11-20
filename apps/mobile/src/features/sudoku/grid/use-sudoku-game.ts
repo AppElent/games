@@ -21,9 +21,9 @@ import {
 } from "@arcadeclub/core/sudoku-board";
 import { findHint, type SudokuHint } from "@arcadeclub/core/sudoku-hints";
 import {
-	isModeCycleTap,
 	nextTapMode,
 	type SudokuInputSettings,
+	tapCell,
 } from "@arcadeclub/core/sudoku-input";
 import {
 	boardConflictsWithCages,
@@ -202,29 +202,29 @@ export function useSudokuGame(
 	// stays the same function and the memoized cells don't all re-render.
 	const latest = useRef({ selectedCell, mode, inputSettings, keypadCopy });
 	latest.current = { selectedCell, mode, inputSettings, keypadCopy };
-	// When the selected cell was picked, so a quick double tap only selects.
+	// When the selected cell was last picked or switched mode, so a quick
+	// double tap only does one of them.
 	const selectedAt = useRef(0);
 
 	/** A press on the selected cell steps to the next mode in the tap cycle. */
 	const selectCell = useCallback(
 		(cell: number) => {
 			const current = latest.current;
-			const now = Date.now();
-			const selection = {
-				cell: current.selectedCell,
-				selectedAt: selectedAt.current,
-			};
-			// Updated in place too, so a second tap that lands before the
-			// re-render still counts as a tap on the selected cell.
-			if (cell !== current.selectedCell) {
+			const { action, selection } = tapCell(
+				{ cell: current.selectedCell, selectedAt: selectedAt.current },
+				cell,
+				Date.now(),
+			);
+			selectedAt.current = selection.selectedAt;
+			if (action === "select") {
+				// Updated in place too, so a second tap that lands before the
+				// re-render still counts as a tap on the selected cell.
 				current.selectedCell = cell;
-				selectedAt.current = now;
 				setSelectedCell(cell);
 				haptics.selectionChanged();
 				return;
 			}
-			if (!isModeCycleTap(cell, selection, now)) return;
-			if (statusRef.current !== "active") return;
+			if (action === "none" || statusRef.current !== "active") return;
 			const next = nextTapMode(current.mode, current.inputSettings);
 			if (next === current.mode) return;
 			current.mode = next;
@@ -239,6 +239,14 @@ export function useSudokuGame(
 		[statusRef],
 	);
 
+	/** A press and hold on the selected cell lets go of it: a tap now switches mode. */
+	const deselect = useCallback(() => {
+		if (latest.current.selectedCell === null) return;
+		latest.current.selectedCell = null;
+		setSelectedCell(null);
+		haptics.selectionChanged();
+	}, []);
+
 	return {
 		board,
 		cages,
@@ -247,6 +255,7 @@ export function useSudokuGame(
 		setMode,
 		selectedCell,
 		selectCell,
+		deselect,
 		conflicts,
 		digitCounts,
 		hint,

@@ -5,11 +5,16 @@ import { useMessages } from "#/lib/i18n";
 
 /**
  * Top padding that clears the floating menu button below (`h-11` inside `p-3`).
- * `SHELL_INSET` sits content just under the button row; `SHELL_PAGE_INSET`
- * leaves a little air for scrolling pages and overlays. Change with the button.
+ * `SHELL_INSET` sits content just under the button row. Change with the button.
+ *
+ * A scrolling page or overlay does not pad past the button, which would let its
+ * content scroll up underneath it: it starts below the button row instead
+ * (`SHELL_SCROLL_TOP`, the same height as `SHELL_INSET`) and keeps
+ * `SHELL_SCROLL_AIR` of its own above the content.
  */
 export const SHELL_INSET = "pt-14";
-export const SHELL_PAGE_INSET = "pt-16";
+export const SHELL_SCROLL_TOP = "top-14";
+export const SHELL_SCROLL_AIR = "pt-2";
 
 type FullscreenGameShellProps = {
 	title: string;
