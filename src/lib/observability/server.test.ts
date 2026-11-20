@@ -50,6 +50,10 @@ it("answers /version itself, uncached, with the Worker's environment", async () 
 	vi.stubEnv("VITE_GIT_COMMIT", "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678");
 	vi.stubEnv("VITE_SENTRY_RELEASE", "arcadeclub@1.4.0+a1b2c3d");
 	vi.stubEnv("VITE_BUILT_AT", "2026-11-17T08:00:00.000Z");
+	vi.stubEnv(
+		"VITE_CONVEX_URL",
+		"https://blessed-blackbird-8.eu-west-1.convex.cloud",
+	);
 	const request = new Request("https://arcade-club-stg.appelent.nl/version");
 	const ctx = {} as ExecutionContext;
 
@@ -67,6 +71,7 @@ it("answers /version itself, uncached, with the Worker's environment", async () 
 		release: "arcadeclub@1.4.0+a1b2c3d",
 		environment: "staging",
 		deployedAt: "2026-11-17T08:00:00.000Z",
+		convex: "blessed-blackbird-8",
 	});
 	expect(mocks.startFetch).not.toHaveBeenCalled();
 	expect(mocks.sentryFetch).not.toHaveBeenCalled();
