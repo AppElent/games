@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
 	buildInviteUrl,
 	createGuestIdentity,
+	createSeatSecret,
 	FORMATTED_JOIN_CODE_MAX_LENGTH,
 	formatJoinCode,
 	getGuestDisplayName,
 	isJoinCodeLike,
+	isSeatSecret,
 	isUnguessableGuestId,
 	normalizeJoinCode,
 	parseInvite,
@@ -66,6 +68,28 @@ describe("session helpers", () => {
 		expect(isUnguessableGuestId(guest.id)).toBe(true);
 		expect(isUnguessableGuestId("guest_1a2b3c4d")).toBe(false);
 		expect(isUnguessableGuestId("guest_123456")).toBe(false);
+	});
+
+	it("makes a seat secret of two UUIDs, the shape every client has sent", () => {
+		const secret = createSeatSecret(UUID);
+		expect(secret).toBe(`${UUID()}${UUID()}`);
+		expect(isSeatSecret(secret)).toBe(true);
+		expect(isSeatSecret(`${UUID()}${OTHER_UUID()}`.toUpperCase())).toBe(true);
+	});
+
+	it("refuses a seat secret of any other shape, whatever its length", () => {
+		for (const secret of [
+			"",
+			"secret-a-0123456789",
+			UUID(),
+			`${UUID()}${UUID()}${UUID()}`,
+			`${UUID()} ${UUID()}`,
+			`${UUID()}${UUID()}\n`,
+			"x".repeat(72),
+			`${UUID()}${UUID()}`.replaceAll("-", ""),
+		]) {
+			expect(isSeatSecret(secret)).toBe(false);
+		}
 	});
 
 	it("keeps a stored guest whose id cannot be guessed", () => {

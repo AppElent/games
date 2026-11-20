@@ -273,11 +273,43 @@ export async function hostSession(
 	};
 }
 
+/** A UUID made from a short label, so a test's ids stay readable and distinct. */
+function uuidOf(label: string) {
+	const hex = Array.from(new TextEncoder().encode(label), (byte) =>
+		byte.toString(16).padStart(2, "0"),
+	).join("");
+	if (hex.length > 32) {
+		throw new Error(`Label "${label}" is longer than 16 bytes`);
+	}
+	const digits = hex.padEnd(32, "0");
+	return [
+		digits.slice(0, 8),
+		digits.slice(8, 12),
+		digits.slice(12, 16),
+		digits.slice(16, 20),
+		digits.slice(20),
+	].join("-");
+}
+
+/**
+ * A guest id shaped as clients make it (`guest_` and a UUID). Short ids such
+ * as `guest_one` are shorter than a seat secret and once hid a bug that a
+ * real one shows.
+ */
+export function guestIdOf(label: string) {
+	return `guest_${uuidOf(label)}`;
+}
+
+/** A seat secret shaped as clients make it: two UUIDs. */
+export function seatSecretOf(label: string) {
+	return `${uuidOf(label)}${uuidOf("seat")}`;
+}
+
 /** The hosting arguments `hostSession` uses, so both creation flows can be compared. */
 export const HOSTED = {
 	title: "Game",
 	displayName: "Host",
-	guestId: "guest_host",
+	guestId: guestIdOf("host"),
 };
 
 export function signedInHost(t: T) {

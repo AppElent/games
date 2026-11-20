@@ -42,6 +42,8 @@ skill.
 - Participant ids are public, so every call acting for a seat takes `seatArgs` and
   proves the seat is the caller's with `requireOwnParticipant` (or `requireHost`) from
   `convex/lib/gameSession.ts`: the same account, or for a guest, the same guest id.
+  Match a guest id only through `isGuestRowOf`, which never matches a row with a
+  `userId`: on a shared browser a guest and an account send the same guest id.
 - A client finds its seat with `sessions.ownSeat`: the seat it holds while that seat
   is the caller's, else the signed-in account's own row in the session. So an
   account keeps its seat across sign-out and sign-in, a new tab or another device,

@@ -4,6 +4,7 @@ import {
 	advance,
 	expectCode,
 	freezeClock,
+	guestIdOf,
 	HOSTED,
 	impostor,
 	joinWithCode,
@@ -46,9 +47,9 @@ async function startedRoom(t: T) {
 	const room = await newRoom(t);
 	const join = async (name: string) =>
 		(await joinWithCode(t, room.joinCode, name)).participantId;
-	const noor = await join("guest_noor");
-	const daan = await join("guest_daan");
-	const mila = await join("guest_mila");
+	const noor = await join(guestIdOf("noor"));
+	const daan = await join(guestIdOf("daan"));
+	const mila = await join(guestIdOf("mila"));
 	const s = (id: ParticipantId) => seat(room.sessionId, id);
 	await t.mutation(api.beatTheClock.pickTeam, { ...s(room.hostId), team: 0 });
 	await t.mutation(api.beatTheClock.pickTeam, { ...s(noor), team: 0 });
@@ -118,7 +119,7 @@ describe("a game", () => {
 	it("starts only with two players per team, and only by the host", async () => {
 		const t = setup();
 		const room = await newRoom(t);
-		const noor = (await joinWithCode(t, room.joinCode, "guest_noor"))
+		const noor = (await joinWithCode(t, room.joinCode, guestIdOf("noor")))
 			.participantId;
 		await expectCode(
 			t.mutation(api.beatTheClock.start, seat(room.sessionId, noor)),

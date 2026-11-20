@@ -11,10 +11,12 @@ import schema from "./schema";
 import {
 	expectCode,
 	freezeClock,
+	guestIdOf,
 	HOST_USER,
 	hostSession,
 	type ParticipantId,
 	type SessionId,
+	seatSecretOf,
 	setup,
 	type T,
 } from "./test.helpers";
@@ -25,7 +27,7 @@ const OTHER_USER = "user_other";
 const SOLVED =
 	"534678912672195348198342567859761423426853791713924856961537284287419635345286179";
 const GIVENS = "0".repeat(9) + SOLVED.slice(9);
-const SEAT_SECRET = "seat-secret-0123456789abcdef";
+const SEAT_SECRET = seatSecretOf("export");
 
 /**
  * `db` that counts the documents its reads return (`get`, `collect`,
@@ -206,7 +208,7 @@ describe("account.exportMyData", () => {
 			OTHER_USER,
 			"rival-q",
 			room.joinCode as string,
-			"guest_host",
+			guestIdOf("host"),
 			HOST_USER,
 		]) {
 			expect(text).not.toContain(secret);
@@ -252,7 +254,7 @@ describe("account.exportMyData", () => {
 			.mutation(api.sudoku.create, {
 				title: "Puzzle",
 				displayName: "Solver",
-				guestId: "guest_solver",
+				guestId: guestIdOf("solver"),
 				source: "generated",
 				difficulty: "easy",
 				givens: GIVENS,
@@ -340,7 +342,7 @@ describe("account.exportMyData", () => {
 				for (let rival = 0; rival < RIVALS; rival += 1) {
 					const participantId = await ctx.db.insert("sessionParticipants", {
 						sessionId,
-						guestId: `guest_${room}_${rival}`,
+						guestId: guestIdOf(`${room}_${rival}`),
 						displayName: `Rival ${rival}`,
 						role: "player",
 						connected: true,

@@ -7,6 +7,7 @@ import {
 	expectCode,
 	freezeClock,
 	getDoc,
+	guestIdOf,
 	HOST_USER,
 	hostSession,
 	joinWithCode,
@@ -80,7 +81,7 @@ function createQuizSet(t: T, subject: string) {
 /** A room the host played with a guest, then left alone for an hour. */
 async function finishedRoomWithGuest(t: T) {
 	const room = await hostSession(t, "live-quiz", "room");
-	const joined = await joinWithCode(t, room.joinCode as string, "guest_a");
+	const joined = await joinWithCode(t, room.joinCode as string, guestIdOf("a"));
 	await addQuizState(t, room.sessionId);
 	const hostAnswer = await answer(t, room.sessionId, room.hostId);
 	await answer(t, room.sessionId, joined.participantId);
@@ -190,7 +191,7 @@ describe("account.deleteMyData", () => {
 	it("waits while other players are in an open game, then goes ahead", async () => {
 		const t = setup();
 		const room = await hostSession(t, "live-quiz", "room");
-		await joinWithCode(t, room.joinCode as string, "guest_a");
+		await joinWithCode(t, room.joinCode as string, guestIdOf("a"));
 		await createDraft(t, HOST_USER);
 
 		await expectCode(

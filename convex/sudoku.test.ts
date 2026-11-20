@@ -11,6 +11,7 @@ import {
 	fields,
 	freezeClock,
 	getDoc,
+	guestIdOf,
 	otherGameSession,
 	type SessionId,
 	sessionCount,
@@ -53,7 +54,7 @@ async function soloSession(t: T) {
 		authPolicy: "guestAllowed",
 		title: "Puzzle",
 		displayName: "Solver",
-		guestId: "guest_solver",
+		guestId: guestIdOf("solver"),
 	});
 }
 
@@ -75,7 +76,7 @@ function createPuzzle(
 	return t.mutation(api.sudoku.create, {
 		title: "Puzzle",
 		displayName: "Solver",
-		guestId: "guest_solver",
+		guestId: guestIdOf("solver"),
 		source: "generated",
 		difficulty: "easy",
 		givens: GIVENS,
@@ -136,7 +137,7 @@ async function storedState(t: T, sessionId: SessionId) {
 async function bundle(t: T, sessionId: SessionId) {
 	const result = await t.query(api.sudoku.getBundle, {
 		sessionId,
-		guestId: "guest_solver",
+		guestId: guestIdOf("solver"),
 	});
 	if (!result) {
 		throw new Error("Expected a sudoku bundle");
@@ -318,7 +319,10 @@ describe("getBundle", () => {
 		const t = setup();
 		const { sessionId } = await soloSession(t);
 		await expect(
-			t.query(api.sudoku.getBundle, { sessionId, guestId: "guest_solver" }),
+			t.query(api.sudoku.getBundle, {
+				sessionId,
+				guestId: guestIdOf("solver"),
+			}),
 		).resolves.toBeNull();
 		await expect(
 			t.query(api.sudoku.getBundle, { sessionId: await deletedSessionId(t) }),
@@ -410,7 +414,7 @@ describe("saveProgress", () => {
 
 describe("only the host writes", () => {
 	const OWNER = "user_owner";
-	const GUEST = "guest_solver";
+	const GUEST = guestIdOf("solver");
 
 	/** Every write a puzzle takes, as `caller` with `guestId`. */
 	function writes(
@@ -522,7 +526,7 @@ describe("only the host writes", () => {
 		const { sessionId } = await createPuzzle(t);
 		for (const caller of [t, t.withIdentity({ subject: "user_stranger" })]) {
 			for (const write of Object.values(
-				writes(caller, sessionId, "guest_other"),
+				writes(caller, sessionId, guestIdOf("other")),
 			)) {
 				await expectCode(write(), "hostOnly");
 			}
@@ -552,7 +556,7 @@ describe("only the host writes", () => {
 
 describe("only the host reads", () => {
 	const OWNER = "user_owner";
-	const GUEST = "guest_solver";
+	const GUEST = guestIdOf("solver");
 
 	function accountPuzzle(t: T) {
 		return t.withIdentity({ subject: OWNER }).mutation(api.sudoku.create, {
@@ -618,7 +622,9 @@ describe("only the host reads", () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
 		for (const caller of [t, t.withIdentity({ subject: "user_stranger" })]) {
-			await expect(read(caller, sessionId, "guest_other")).resolves.toBeNull();
+			await expect(
+				read(caller, sessionId, guestIdOf("other")),
+			).resolves.toBeNull();
 		}
 	});
 
@@ -830,7 +836,7 @@ describe("create", () => {
 			const { sessionId } = await t.mutation(api.sudoku.create, {
 				title: "Puzzle",
 				displayName: "Solver",
-				guestId: "guest_solver",
+				guestId: guestIdOf("solver"),
 				source: "generated",
 				difficulty: "easy",
 				variant: puzzle.variant,

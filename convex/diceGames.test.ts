@@ -9,10 +9,16 @@ import type { ScoresheetView } from "@arcadeclub/core/dice/scoresheet";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { expectCode, setup, type T } from "./test.helpers";
+import {
+	expectCode,
+	guestIdOf,
+	seatSecretOf,
+	setup,
+	type T,
+} from "./test.helpers";
 
-const SECRET_A = "secret-a-0123456789";
-const SECRET_B = "secret-b-0123456789";
+const SECRET_A = seatSecretOf("a");
+const SECRET_B = seatSecretOf("b");
 
 type SessionId = Id<"gameSessions">;
 type ParticipantId = Id<"sessionParticipants">;
@@ -23,7 +29,7 @@ function tableArgs(overrides: Record<string, unknown> = {}) {
 		joinMode: "solo" as const,
 		title: "Yatzy",
 		displayName: "Me",
-		guestId: "guest_me",
+		guestId: guestIdOf("me"),
 		gameId: "yatzy",
 		options: [] as string[],
 		bots: 0,
@@ -268,7 +274,7 @@ describe("a Yatzy room", () => {
 		const guest = await t.mutation(api.sessions.joinByCode, {
 			joinCode: joinCode as string,
 			displayName: "Guest",
-			guestId: "guest_two",
+			guestId: guestIdOf("two"),
 			seatSecret: SECRET_B,
 		});
 		expect(guest.gameType).toBe("dice-games");

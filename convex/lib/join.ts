@@ -7,6 +7,7 @@ import { DUELS, type Duel, type DuelGame, seatChallenger } from "./duel";
 import { gameError } from "./errors";
 import {
 	insertParticipant,
+	isGuestRowOf,
 	listParticipants,
 	markConnected,
 } from "./gameSession";
@@ -60,7 +61,7 @@ async function admitParticipant(
 	const existing = participants.find(
 		(participant) =>
 			(userId && participant.userId === userId) ||
-			(!userId && args.guestId && participant.guestId === args.guestId),
+			(!userId && isGuestRowOf(participant, args.guestId)),
 	);
 	if (existing?.kickedAt) {
 		throw gameError("removedByHost");
