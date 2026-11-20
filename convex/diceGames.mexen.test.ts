@@ -3,12 +3,18 @@ import type { MexenView } from "@arcadeclub/core/dice/mexen";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { expectCode, setup, type T } from "./test.helpers";
+import {
+	expectCode,
+	guestIdOf,
+	seatSecretOf,
+	setup,
+	type T,
+} from "./test.helpers";
 
 // Mexen plays through the shared dice table module (`diceGames`); these
 // tests cover what the family adds to it: a stand action and many bots.
 
-const SECRET = "secret-a-0123456789";
+const SECRET = seatSecretOf("a");
 
 type SessionId = Id<"gameSessions">;
 type ParticipantId = Id<"sessionParticipants">;
@@ -19,7 +25,7 @@ function tableArgs(overrides: Record<string, unknown> = {}) {
 		joinMode: "solo" as const,
 		title: "Mexico",
 		displayName: "Me",
-		guestId: "guest_me",
+		guestId: guestIdOf("me"),
 		gameId: "mexen",
 		options: [] as string[],
 		bots: 2,

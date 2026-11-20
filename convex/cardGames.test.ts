@@ -4,11 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { expectCode } from "./test.helpers";
+import { expectCode, guestIdOf, seatSecretOf } from "./test.helpers";
 
 const modules = import.meta.glob("./**/*.ts");
-const SECRET_A = "secret-a-0123456789";
-const SECRET_B = "secret-b-0123456789";
+const SECRET_A = seatSecretOf("a");
+const SECRET_B = seatSecretOf("b");
 
 function setup() {
 	return convexTest(schema, modules);
@@ -22,7 +22,7 @@ function tableArgs(overrides: Record<string, unknown> = {}) {
 		joinMode: "solo" as const,
 		title: "Table",
 		displayName: "Me",
-		guestId: "guest_me",
+		guestId: guestIdOf("me"),
 		gameId: "pesten",
 		options: [] as string[],
 		bots: 2,
@@ -58,7 +58,7 @@ async function roomTable(
 	const guest = await t.mutation(api.sessions.joinByCode, {
 		joinCode: joinCode as string,
 		displayName: "Guest",
-		guestId: "guest_two",
+		guestId: guestIdOf("two"),
 		seatSecret: guestSecret ?? undefined,
 	});
 	return {
@@ -129,6 +129,9 @@ describe("creating a table", () => {
 			{ options: ["nope"] },
 			{ bots: 99 },
 			{ seatSecret: "short" },
+			// Long enough for the old length check, but not the shape clients make.
+			{ seatSecret: "secret-a-0123456789" },
+			{ seatSecret: "x".repeat(72) },
 		]) {
 			await expect(
 				t.mutation(api.cardGames.createTable, tableArgs(overrides)),
@@ -156,7 +159,7 @@ describe("creating a table", () => {
 				authPolicy: "guestAllowed",
 				title: "Table",
 				displayName: "Me",
-				guestId: "guest_me",
+				guestId: guestIdOf("me"),
 			}),
 		).rejects.toThrow();
 	});
@@ -175,7 +178,7 @@ describe("privacy", () => {
 			expect(mine).not.toContain(`"${card}"`);
 		}
 		expect(mine).not.toContain(SECRET_A);
-		expect(mine).not.toContain("guest_me");
+		expect(mine).not.toContain(guestIdOf("me"));
 	});
 
 	it("treats a public participant id without the secret as a spectator", async () => {
@@ -183,7 +186,7 @@ describe("privacy", () => {
 		const { sessionId, participantId } = await soloTable(t);
 		const spoof = await read(
 			t,
-			creds(sessionId, participantId, "wrong-secret-123456"),
+			creds(sessionId, participantId, seatSecretOf("wrong")),
 		);
 		expect(spoof.you).toBeNull();
 		expect(spoof.view.hand).toEqual([]);
@@ -197,7 +200,7 @@ describe("privacy", () => {
 		const { sessionId, participantId } = await soloTable(t);
 		await expect(
 			t.mutation(api.cardGames.act, {
-				...creds(sessionId, participantId, "wrong-secret-123456"),
+				...creds(sessionId, participantId, seatSecretOf("wrong")),
 				action: { type: "draw" },
 			}),
 		).rejects.toThrow();
@@ -209,7 +212,7 @@ describe("privacy", () => {
 		await expect(
 			t.mutation(
 				api.cardGames.takeSeat,
-				creds(sessionId, participantId, "another-secret-1234"),
+				creds(sessionId, participantId, seatSecretOf("another")),
 			),
 		).rejects.toThrow();
 	});
@@ -222,12 +225,12 @@ describe("privacy", () => {
 		await expect(
 			t.mutation(
 				api.cardGames.takeSeat,
-				creds(sessionId, guestId, "attacker-secret-0123"),
+				creds(sessionId, guestId, seatSecretOf("attacker")),
 			),
 		).rejects.toThrow();
 		const peek = await read(
 			t,
-			creds(sessionId, guestId, "attacker-secret-0123"),
+			creds(sessionId, guestId, seatSecretOf("attacker")),
 		);
 		expect(peek.you).toBeNull();
 		expect(
@@ -241,7 +244,7 @@ describe("privacy", () => {
 		expect(
 			await t.mutation(
 				api.cardGames.takeSeat,
-				creds(sessionId, guestId, "attacker-secret-0123"),
+				creds(sessionId, guestId, seatSecretOf("attacker")),
 			),
 		).toBeNull();
 		const table = await read(t, { sessionId });
@@ -254,7 +257,7 @@ describe("privacy", () => {
 		await t.mutation(api.sessions.joinByCode, {
 			joinCode,
 			displayName: "Watcher",
-			guestId: "guest_watch",
+			guestId: guestIdOf("watch"),
 			asSpectator: true,
 			seatSecret: SECRET_B,
 		});
@@ -263,7 +266,7 @@ describe("privacy", () => {
 			t.mutation(api.sessions.joinByCode, {
 				joinCode,
 				displayName: "Short",
-				guestId: "guest_short",
+				guestId: guestIdOf("short"),
 				seatSecret: "short",
 			}),
 		).rejects.toThrow();
@@ -276,7 +279,7 @@ describe("privacy", () => {
 			t.mutation(api.sessions.joinByCode, {
 				joinCode,
 				displayName: "Watcher",
-				guestId: "guest_watch",
+				guestId: guestIdOf("watch"),
 				asSpectator,
 				seatSecret: SECRET_B,
 			});
@@ -302,7 +305,7 @@ describe("privacy", () => {
 		await expect(
 			t.mutation(
 				api.cardGames.takeSeat,
-				creds(sessionId, joined.participantId, "attacker-secret-0123"),
+				creds(sessionId, joined.participantId, seatSecretOf("attacker")),
 			),
 		).resolves.toBeNull();
 		await expect(
@@ -369,7 +372,7 @@ describe("reclaiming a seat", () => {
 		const joined = await member.mutation(api.sessions.joinByCode, {
 			joinCode,
 			displayName: "Member",
-			seatSecret: "secret-m-0123456789",
+			seatSecret: seatSecretOf("m"),
 		});
 		expect(joined.seatClaimed).toBe(true);
 		await expect(
@@ -467,7 +470,7 @@ describe("lobby", () => {
 		await t.mutation(api.sessions.joinByCode, {
 			joinCode,
 			displayName: "Second",
-			guestId: "guest_three",
+			guestId: guestIdOf("three"),
 			seatSecret: SECRET_B,
 		});
 		await t.mutation(api.cardGames.start, creds(sessionId, participantId));
@@ -483,7 +486,7 @@ describe("lobby", () => {
 		expect(
 			await t.mutation(
 				api.cardGames.takeSeat,
-				creds(sessionId, late, "late-secret-0123456"),
+				creds(sessionId, late, seatSecretOf("late")),
 			),
 		).toBeNull();
 	});

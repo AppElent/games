@@ -1,9 +1,7 @@
-/**
- * A new secret for a card-game seat. The table checks it on every move, so it
- * must be unguessable: participant ids are public.
- */
+import { createSeatSecret } from "@arcadeclub/core/sessions";
 import { randomUUID } from "expo-crypto";
 
+/** A new secret for a table seat; see `createSeatSecret`. */
 export function newSeatSecret() {
-	return `${randomUUID()}${randomUUID()}`;
+	return createSeatSecret(randomUUID);
 }

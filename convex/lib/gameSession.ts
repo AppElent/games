@@ -182,6 +182,23 @@ export const seatArgs = {
 export type SeatArgs = ObjectType<typeof seatArgs>;
 
 /**
+ * Whether this is a guest's row held by this guest id. The one place a guest id
+ * is matched: an account's row never matches, even one that still carries the
+ * guest id of the browser it joined from, so a guest sharing that browser can
+ * never pass for the account.
+ */
+export function isGuestRowOf(
+	participant: Pick<Doc<"sessionParticipants">, "userId" | "guestId">,
+	guestId: string | undefined,
+) {
+	return (
+		!participant.userId &&
+		participant.guestId !== undefined &&
+		participant.guestId === guestId
+	);
+}
+
+/**
  * Whether the caller is this participant: signed in as its account, or for a
  * guest's row, holding its guest id. A row with neither belongs to nobody.
  */
@@ -193,7 +210,7 @@ export async function isCaller(
 	if (participant.userId) {
 		return participant.userId === (await getOptionalUserId(ctx));
 	}
-	return participant.guestId !== undefined && participant.guestId === guestId;
+	return isGuestRowOf(participant, guestId);
 }
 
 /** The caller's own participant row in this session, not kicked; null otherwise. */

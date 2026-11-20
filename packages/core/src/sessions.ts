@@ -56,8 +56,9 @@ export function getGuestDisplayName(guestId: string, template: string) {
 	return fmt(template, { number: digits });
 }
 
-const GUEST_ID =
-	/^guest_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+const GUEST_ID = new RegExp(`^guest_${UUID}$`, "i");
+const SEAT_SECRET = new RegExp(`^(?:${UUID}){2}$`, "i");
 
 /**
  * Whether a guest id is a whole random UUID. Participant ids are public, so
@@ -160,4 +161,21 @@ export function seatSecretAfterJoin<
 	return held?.participantId === joined.participantId && !joined.seatClaimed
 		? held.seatSecret
 		: newSecret;
+}
+
+/**
+ * A new secret for a table seat (cards, dice): two random UUIDs. The table
+ * checks it on every move, so it must be unguessable: participant ids are
+ * public. Every web and phone build has made this shape since tables shipped.
+ */
+export function createSeatSecret(randomUUID: () => string) {
+	return `${randomUUID()}${randomUUID()}`;
+}
+
+/**
+ * Whether a seat secret has the shape `createSeatSecret` makes. Either case
+ * passes, since a UUID's hex digits may come upper case from a native API.
+ */
+export function isSeatSecret(secret: string) {
+	return SEAT_SECRET.test(secret);
 }

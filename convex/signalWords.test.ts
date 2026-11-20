@@ -9,6 +9,7 @@ import {
 	fields,
 	freezeClock,
 	getDoc,
+	guestIdOf,
 	HOST_USER,
 	HOSTED,
 	hostSession,
@@ -67,9 +68,9 @@ async function seatedRoom(t: T) {
 		(await joinWithCode(t, room.joinCode, name)).participantId;
 	const seats = {
 		"red-clue": room.hostId,
-		red: await join("guest_red"),
-		"blue-clue": await join("guest_blue_clue"),
-		blue: await join("guest_blue"),
+		red: await join(guestIdOf("red")),
+		"blue-clue": await join(guestIdOf("blue_clue")),
+		blue: await join(guestIdOf("blue")),
 	};
 	await joinTeam(t, room.sessionId, seats["red-clue"], "red", true);
 	await joinTeam(t, room.sessionId, seats.red, "red", false);
@@ -182,7 +183,7 @@ describe("joining", () => {
 	it("adds a code joiner with no seat until they pick a team", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await newRoom(t);
-		const joined = await joinWithCode(t, joinCode, "guest_two");
+		const joined = await joinWithCode(t, joinCode, guestIdOf("two"));
 		expect(joined.gameType).toBe("signal-words");
 		expect(joined.seatClaimed).toBe(false);
 		const { participants } = await bundle(t, sessionId);
@@ -207,7 +208,7 @@ describe("joinTeam", () => {
 	it("allows many guessers per team and lets a player change seat", async () => {
 		const t = setup();
 		const { sessionId, joinCode, seats } = await seatedRoom(t);
-		const second = await joinWithCode(t, joinCode, "guest_second");
+		const second = await joinWithCode(t, joinCode, guestIdOf("second"));
 		await joinTeam(t, sessionId, second.participantId, "red", false);
 		await joinTeam(t, sessionId, seats["red-clue"], "red", true);
 		await joinTeam(t, sessionId, seats.red, "blue", false);
@@ -317,10 +318,10 @@ describe("start", () => {
 		await expectCode(start(), "redTeamNotReady");
 		await joinTeam(t, sessionId, hostId, "red", true);
 		await expectCode(start(), "redTeamNotReady");
-		const red = await joinWithCode(t, joinCode, "guest_red");
+		const red = await joinWithCode(t, joinCode, guestIdOf("red"));
 		await joinTeam(t, sessionId, red.participantId, "red", false);
 		await expectCode(start(), "blueTeamNotReady");
-		const blueClue = await joinWithCode(t, joinCode, "guest_blue_clue");
+		const blueClue = await joinWithCode(t, joinCode, guestIdOf("blue_clue"));
 		await joinTeam(t, sessionId, blueClue.participantId, "blue", true);
 		await expectCode(start(), "blueTeamNotReady");
 	});
@@ -695,7 +696,7 @@ describe("create", () => {
 		const joined = await joinWithCode(
 			t,
 			created.joinCode as string,
-			"guest_two",
+			guestIdOf("two"),
 		);
 		expect(joined.sessionId).toBe(created.sessionId);
 	});
@@ -727,7 +728,7 @@ describe("ownership", () => {
 		const stored = await storedState(t, sessionId);
 		const clueGiver = seats[`${stored.currentTeam}-clue`];
 		for (const caller of impostors(t, {
-			guestIds: ["guest_red", "guest_blue"],
+			guestIds: [guestIdOf("red"), guestIdOf("blue")],
 		})) {
 			await expectCode(
 				caller.mutation(api.signalWords.submitClue, {
