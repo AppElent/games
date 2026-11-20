@@ -1,0 +1,70 @@
+# App Store screenshots (APP-62). Run by developer-home scripts/store-screenshots.mjs,
+# which sets the language, status bar and appearance, launches the dev client
+# against Metro, and passes the L_* labels for the language with -e.
+# Screenshots land in --test-output-dir.
+# Guests play everything here; no sign-in. Avoid third-party names on screen
+# (Music Timeline is fine; never a Hitster label) and anything that needs the backend
+# (dice tables against the computer create a Convex table).
+appId: com.appelent.arcadeclub.dev
+---
+- extendedWaitUntil:
+    visible: ${L_SUDOKU}
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: 01-home
+
+- tapOn: ${L_SUDOKU}
+- tapOn: ${L_KILLER}
+- tapOn:
+    text: "${L_MEDIUM}.*"
+    index: 0
+- extendedWaitUntil:
+    visible: ".*${L_KILLER} · ${L_MEDIUM}.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 02-sudoku
+- tapOn: ${L_BACK}
+- tapOn: ${L_BACK}
+
+- tapOn: ${L_CARDS}
+- extendedWaitUntil:
+    visible: ${L_PESTEN}
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 03-card-club
+- tapOn: ${L_PESTEN}
+- scrollUntilVisible:
+    element: ${L_DEAL}
+- tapOn: ${L_DEAL}
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 04-pesten
+- tapOn: ${L_BACK}
+- tapOn: ${L_BACK}
+
+- tapOn: ${L_DICE}
+- extendedWaitUntil:
+    visible: Yatzy
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 05-dice-club
+- tapOn: ${L_BACK}
+
+- tapOn: ${L_BACKGAMMON}
+# A saved local game survives a reinstall and turns "New game" into a confirm; continue it instead.
+- runFlow:
+    when:
+      notVisible: ${L_CONTINUE}
+    commands:
+      - tapOn: ${L_NEW_GAME}
+- runFlow:
+    when:
+      visible: ${L_CONTINUE}
+    commands:
+      - tapOn: ${L_CONTINUE}
+- tapOn:
+    text: ${L_ROLL}
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: 06-backgammon
+- tapOn: ${L_BACK}
