@@ -327,6 +327,10 @@ export const cards = {
 		layOffOn: "Aanleggen bij deze {kind}",
 		knockerMelds: "Combinaties van {name}",
 		knockerDeadwood: "Losse kaarten van {name}",
+		inMeld: "combinatie {n}",
+		laidOffCard: "aangelegd",
+		laidOffLegend:
+			"Omlijnde kaarten zijn aangelegd bij de combinaties van {name}.",
 		sortByMelds: "Groepeer combinaties",
 		handLabel: "Ronde {round} · tot {target}",
 		handOver: "Ronde {round}",

@@ -1605,6 +1605,20 @@ export function groupGinHand(hand: readonly CardId[], rules: GinRules) {
 	];
 }
 
+/**
+ * Which meld each card of a hand sits in, numbered from 1 in the order
+ * `groupGinHand` lays them out. Deadwood has no entry.
+ */
+export function ginMeldMarks(hand: readonly CardId[], rules: GinRules) {
+	const marks = new Map<CardId, number>();
+	arrangeHand(hand, rules).melds.forEach((meld, index) => {
+		for (const card of meld.cards) {
+			marks.set(card, index + 1);
+		}
+	});
+	return marks;
+}
+
 /** The newest event number, or null for an empty log. */
 export function newestSeq(events: readonly CardEvent[]): number | null {
 	return events.at(-1)?.seq ?? null;

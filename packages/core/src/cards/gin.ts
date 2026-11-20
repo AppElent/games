@@ -55,6 +55,12 @@ export type GinHandResult = {
 	deadwood: number[];
 	/** Each seat's hand as it was scored: its melds and its deadwood. */
 	shown: Array<{ melds: CardId[][]; deadwood: CardId[] }>;
+	/**
+	 * The cards the defender laid off on the knocker's melds, in the order they
+	 * went down. They are inside `shown[knocker].melds`. Absent on a void hand and
+	 * on a hand scored before this was recorded.
+	 */
+	laidOff?: CardId[];
 };
 
 export type GinState = {
@@ -408,6 +414,16 @@ function voidHand(rules: GinRules, state: GinState) {
 	);
 }
 
+/** Every card laid off since the knock, in order. */
+function laidOffSince(state: GinState) {
+	const knocked = state.events.map((event) => event.type).lastIndexOf("knock");
+	return knocked < 0
+		? []
+		: state.events
+				.slice(knocked)
+				.flatMap((event) => (event.type === "layoff" ? event.cards : []));
+}
+
 /** Scores a knock once the defender has laid off, or a gin straight away. */
 function scoreKnock(rules: GinRules, state: GinState) {
 	const knock = state.knock as NonNullable<GinState["knock"]>;
@@ -423,7 +439,7 @@ function scoreKnock(rules: GinRules, state: GinState) {
 			? show(state.melds, hand)
 			: show(defence.melds, defence.deadwood),
 	);
-	const base = { knocker, deadwood };
+	const base = { knocker, deadwood, laidOff: laidOffSince(state) };
 	if (knock.gin) {
 		endHand(
 			rules,
