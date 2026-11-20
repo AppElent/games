@@ -120,7 +120,9 @@ function BidPicker({
 
 /**
  * The cards on the table: the trick being played, or the last one with its
- * taker until the next card goes down. Played cards fly to it as "discard".
+ * taker until the next card goes down. Played cards fly to it as "discard",
+ * landing on the card just played (the last one), at its own lean, so they
+ * settle without a jump.
  */
 function TrickArea({
 	table,
@@ -140,12 +142,11 @@ function TrickArea({
 	return (
 		<section
 			className="trick"
-			{...zoneAttr("discard")}
 			data-landing={landing}
 			data-done={winner !== null}
 			aria-label={cards.tricks.trickLabel}
 		>
-			{plays.map((play) => (
+			{plays.map((play, index) => (
 				<figure
 					key={play.card}
 					className="trick-play"
@@ -153,7 +154,8 @@ function TrickArea({
 				>
 					<span
 						className="trick-card"
-						style={{ transform: `rotate(${cardTilt(play.card) / 2}deg)` }}
+						{...(index === plays.length - 1 ? zoneAttr("discard") : {})}
+						style={{ transform: `rotate(${cardTilt(play.card)}deg)` }}
 					>
 						<PlayingCard card={play.card} label={cardName(play.card)} />
 					</span>

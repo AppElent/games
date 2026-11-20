@@ -55,7 +55,9 @@ const BLANK = " ";
 
 /**
  * The cards on the table: the trick being played, or the last one with its
- * taker until the next card goes down. Played cards fly to it as "discard".
+ * taker until the next card goes down. Played cards fly to it as "discard",
+ * landing on the card just played (the last one), at its own lean, so they
+ * settle without a jump.
  */
 function TrickArea({
 	table,
@@ -80,7 +82,6 @@ function TrickArea({
 	return (
 		<View style={styles.trickWrap}>
 			<View
-				ref={zones.ref("discard", width)}
 				collapsable={false}
 				accessible
 				accessibilityLabel={[
@@ -102,10 +103,16 @@ function TrickArea({
 							style={[styles.play, winner !== null && !won && styles.faded]}
 						>
 							<View
+								ref={
+									index === plays.length - 1
+										? zones.ref("discard", width)
+										: undefined
+								}
+								collapsable={false}
 								style={[
 									{ width, height },
 									won && styles.winner,
-									{ transform: [{ rotate: `${cardTilt(play.card) / 2}deg` }] },
+									{ transform: [{ rotate: `${cardTilt(play.card)}deg` }] },
 								]}
 							>
 								{hidden ? null : <PlayingCard card={play.card} width={width} />}
