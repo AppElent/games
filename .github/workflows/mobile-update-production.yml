@@ -44,5 +44,11 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup
       - uses: ./.github/actions/require-expo-token
+      # Decide and publish are separate steps, so a skipped update shows as a
+      # skipped "Publish production update" (the developer-home changelog reads it).
+      - name: Gate production update
+        id: gate
+        run: node apps/mobile/scripts/ci-publish-update.mjs gate production
       - name: Publish production update
-        run: node apps/mobile/scripts/ci-publish-update.mjs production
+        if: steps.gate.outputs.publish == 'true'
+        run: node apps/mobile/scripts/ci-publish-update.mjs publish production

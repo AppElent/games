@@ -21,8 +21,13 @@ const mustTransform = [
 	"standard-navigation",
 ].join("|");
 
+const preset = require("jest-expo/jest-preset");
+
 module.exports = {
 	preset: "jest-expo",
+	// `src/updates/ota-label.mjs` is a copy of a shared ES module; compile it
+	// like the app's own sources.
+	transform: { "\\.mjs$": preset.transform["\\.[jt]sx?$"] },
 	setupFiles: ["<rootDir>/jest.setup.ts"],
 	testMatch: ["<rootDir>/src/**/*.test.{ts,tsx}"],
 	transformIgnorePatterns: [

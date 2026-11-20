@@ -2,9 +2,12 @@
 // maps. Run it through the root scripts, which add the Sentry token from
 // Infisical without writing it to a file:
 //
-//   pnpm mobile:update:preview --message "…"
-//   pnpm mobile:update:production --message "…"
+//   pnpm mobile:update:preview
+//   pnpm mobile:update:production
 //   pnpm mobile:update:production --upload-only   (retry the maps upload only)
+//
+// The update message is the OTA label (`<version> · <d mmm> · <short sha>`);
+// `--message "…"` overrides it.
 //
 // It first checks that a finished build on the channel has this checkout's
 // runtime fingerprint, since no other build would ever load the update.
@@ -30,6 +33,7 @@ import {
 	hasFinishedBuild,
 	PLATFORMS,
 } from "./fingerprint.mjs";
+import { otaMessage } from "./ota-message.mjs";
 
 const CHANNELS = ["preview", "production"];
 
@@ -114,12 +118,17 @@ if (!uploadOnly && !withoutBuild) {
 }
 
 if (!uploadOnly) {
+	// The update message is the OTA label unless the caller gave one.
+	const message = easArgs.includes("--message")
+		? []
+		: ["--message", otaMessage(appRoot, commit)];
 	run("eas", [
 		"update",
 		"--channel",
 		channel,
 		"--environment",
 		channel,
+		...message,
 		...easArgs,
 	]);
 }

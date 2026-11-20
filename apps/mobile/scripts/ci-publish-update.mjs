@@ -2,10 +2,19 @@
 // publish main's JavaScript to an update channel, but only where an
 // installed app can load it.
 //
-//   node apps/mobile/scripts/ci-publish-update.mjs preview     # deploy.yml, every merge
-//   node apps/mobile/scripts/ci-publish-update.mjs production  # daily, mobile-update-production.yml
+//   node apps/mobile/scripts/ci-publish-update.mjs gate preview         # deploy.yml, every merge
+//   node apps/mobile/scripts/ci-publish-update.mjs publish preview
+//   node apps/mobile/scripts/ci-publish-update.mjs gate production      # daily, mobile-update-production.yml
+//   node apps/mobile/scripts/ci-publish-update.mjs publish production
 //
-// Both modes:
+// The decision and the publish are two steps, so a skipped update shows as a
+// skipped "Publish … update" step in the Actions run (the developer-home
+// changelog reads that): `gate` decides and sets the step output
+// `publish=true|false`, with what to publish in `$RUNNER_TEMP`; `publish`
+// (run only when the gate said so) publishes, then moves the tag. A gate
+// that fails (an EAS error, an unknown commit) fails the run.
+//
+// Both channels:
 // - Skip when nothing the app bundles changed since the last CI publish,
 //   which the `ota-<channel>` tag marks. The job moves the tag after
 //   publishing, so it needs `contents: write` and a full-history checkout.
@@ -36,7 +45,8 @@
 // Needs EXPO_TOKEN. SENTRY_AUTH_TOKEN is optional for preview and required
 // for production, as in publish-update.mjs, which does the actual publish.
 import { spawnSync } from "node:child_process";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	PLATFORMS as ALL_PLATFORMS,
@@ -45,6 +55,7 @@ import {
 	fingerprint,
 	hasFinishedBuild,
 } from "./fingerprint.mjs";
+import { otaMessage } from "./ota-message.mjs";
 
 // Android is paused until the repository variable ANDROID_ENABLED is `true`;
 // the workflows pass it in (developer-home standards/releases.md, "Android pause").
@@ -65,9 +76,14 @@ const SOAK_MS = 24 * 60 * 60 * 1000;
 /** Preview update groups looked at for a soaked commit, newest first (EAS max). */
 const SOAK_LOOKBACK = 50;
 
-const channel = process.argv[2];
-if (channel !== "preview" && channel !== "production") {
-	console.error("Usage: ci-publish-update.mjs <preview|production>");
+const [mode, channel] = process.argv.slice(2);
+if (
+	(mode !== "gate" && mode !== "publish") ||
+	(channel !== "preview" && channel !== "production")
+) {
+	console.error(
+		"Usage: ci-publish-update.mjs <gate|publish> <preview|production>",
+	);
 	process.exit(1);
 }
 const repoRoot = join(appRoot, "../..");
@@ -75,11 +91,37 @@ const tag = `ota-${channel}`;
 // Before the release standard the preview tag was mobile-update/preview.
 const legacyTags = channel === "preview" ? ["mobile-update/preview"] : [];
 
+/** What the gate hands the publish step: `{ commit, platforms, root }`. */
+const stateFile = join(
+	process.env.RUNNER_TEMP ?? tmpdir(),
+	`ota-gate-${channel}.json`,
+);
+
 function summary(line) {
 	console.log(line);
 	if (process.env.GITHUB_STEP_SUMMARY) {
 		appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${line}\n`);
 	}
+}
+
+function setOutput(name, value) {
+	if (process.env.GITHUB_OUTPUT) {
+		appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
+	}
+}
+
+/** Ends the gate with nothing to publish: the Publish step is skipped. */
+function skip(line) {
+	summary(line);
+	setOutput("publish", "false");
+	process.exit(0);
+}
+
+/** Ends the gate with an update to publish: `root` is a checkout of `commit`. */
+function proceed(state) {
+	writeFileSync(stateFile, JSON.stringify(state));
+	setOutput("publish", "true");
+	process.exit(0);
 }
 
 function git(...args) {
@@ -244,24 +286,19 @@ async function productionCommit() {
 	return typeof commit === "string" ? commit : null;
 }
 
-/**
- * Skips (exit 0, with a summary line) when `commit` bundles nothing new
- * since the channel's last CI publish.
- */
+/** Skips when `commit` bundles nothing new since the channel's last CI publish. */
 function skipIfUnchanged(commit) {
 	const last = lastPublished();
 	if (!last) return;
 	if (commit !== last && isAncestor(commit, last)) {
-		summary(
+		skip(
 			`Mobile ${channel} update: \`${commit.slice(0, 7)}\` is older than \`${tag}\` (\`${last.slice(0, 7)}\`); skipped.`,
 		);
-		process.exit(0);
 	}
 	if (git("diff", "--quiet", last, commit, "--", ...BUNDLED).status === 0) {
-		summary(
+		skip(
 			`Mobile ${channel} update: nothing the app bundles changed since \`${tag}\`; skipped.`,
 		);
-		process.exit(0);
 	}
 }
 
@@ -284,44 +321,43 @@ function moveTag(commit) {
 
 /** Runs `publish-update.mjs` from `root` (a checkout of the commit). */
 function publish(root, commit, platforms) {
-	const subject = git("log", "-1", "--format=%s", commit).stdout.trim();
+	// The message is passed in, not left to the checkout's own publish-update.mjs:
+	// a production commit older than the OTA label has no such default.
 	const args = [
 		join(root, "apps/mobile/scripts/publish-update.mjs"),
 		channel,
 		"--without-build",
 		"--message",
-		`${subject} (${commit.slice(0, 7)})`,
+		otaMessage(join(root, "apps/mobile"), commit),
 	];
 	if (platforms.length === 1) args.push("--platform", platforms[0]);
 	const result = spawnSync("node", args, { cwd: root, stdio: "inherit" });
 	return result.status ?? 1;
 }
 
-if (channel === "preview") {
+/** Preview: this checkout (HEAD), once its bundle changed and a build can load it. */
+function gatePreview() {
 	const head = gitOrExit("rev-parse", "HEAD");
 	skipIfUnchanged(head);
 	const loadable = loadablePlatforms(appRoot);
 	if (loadable.length === 0) {
-		summary(
+		skip(
 			"Mobile preview update: **rebuild due.** No preview build has this runtime, so no installed app would load an update. Build `preview-internal`, install it, then publish once by hand.",
 		);
-		process.exit(0);
 	}
-	const status = publish(repoRoot, head, loadable);
-	if (status !== 0) process.exit(status);
-	moveTag(head);
-	summary(`Mobile preview update: published for ${loadable.join(" and ")}.`);
-} else {
+	proceed({ commit: head, platforms: loadable, root: repoRoot });
+}
+
+/** Production: the newest commit that soaked on preview, checked out in a worktree. */
+async function gateProduction() {
 	if (process.env.OTA_PRODUCTION_HOLD) {
-		summary(
+		skip(
 			`Mobile production update: on hold (\`OTA_PRODUCTION_HOLD\`: ${process.env.OTA_PRODUCTION_HOLD}); skipped.`,
 		);
-		process.exit(0);
 	}
 	const soaked = soakedPreviewCommit(Date.now());
 	if (soaked.skip) {
-		summary(`Mobile production update: ${soaked.skip}; skipped.`);
-		process.exit(0);
+		skip(`Mobile production update: ${soaked.skip}; skipped.`);
 	}
 	const { commit, publishedAt } = soaked;
 	summary(
@@ -363,18 +399,16 @@ if (channel === "preview") {
 		if (PLATFORMS.every((platform) => productionCommits[platform] === commit)) {
 			moveTag(commit);
 		}
-		summary(
+		skip(
 			`Mobile production update: no platform needs \`${commit.slice(0, 7)}\`; skipped.`,
 		);
-		process.exit(0);
 	}
 
 	const running = await productionCommit();
 	if (!running || !isAncestor(commit, running)) {
-		summary(
+		skip(
 			`Mobile production update: the production backend runs \`${(running ?? "unknown").slice(0, 7)}\`, not \`${commit.slice(0, 7)}\` or later; skipped.`,
 		);
-		process.exit(0);
 	}
 
 	const worktree = join(process.env.RUNNER_TEMP ?? "/tmp", "ota-production");
@@ -390,26 +424,41 @@ if (channel === "preview") {
 		(platform) => eligible.includes(platform),
 	);
 	if (loadable.length === 0) {
-		summary(
+		skip(
 			"Mobile production update: **store build due.** No production build has this runtime, so no installed app would load an update. Propose a store release on a decision card.",
 		);
-		process.exit(0);
 	}
-	const status = publish(worktree, commit, loadable);
+	proceed({ commit, platforms: loadable, root: worktree });
+}
+
+/** Publishes what the gate decided, then moves the tag. */
+function publishFromGate() {
+	const { commit, platforms, root } = JSON.parse(
+		readFileSync(stateFile, "utf8"),
+	);
+	const status = publish(root, commit, platforms);
 	if (status !== 0) {
-		// The update may be live with only the maps upload failed: then keep
-		// the tag in step, and retry the maps with --upload-only by hand.
-		const after = latestProductionCommits();
-		if (loadable.some((platform) => after[platform] === commit)) {
-			moveTag(commit);
-			summary(
-				`Mobile production update: published \`${commit.slice(0, 7)}\`, but the publish step failed after it (source maps?). Retry with \`pnpm mobile:update:production --upload-only\` from that commit.`,
-			);
+		if (channel === "production") {
+			// The update may be live with only the maps upload failed: then keep
+			// the tag in step, and retry the maps with --upload-only by hand.
+			const after = latestProductionCommits();
+			if (platforms.some((platform) => after[platform] === commit)) {
+				moveTag(commit);
+				summary(
+					`Mobile production update: published \`${commit.slice(0, 7)}\`, but the publish step failed after it (source maps?). Retry with \`pnpm mobile:update:production --upload-only\` from that commit.`,
+				);
+			}
 		}
 		process.exit(status);
 	}
 	moveTag(commit);
 	summary(
-		`Mobile production update: published \`${commit.slice(0, 7)}\` for ${loadable.join(" and ")}.`,
+		channel === "preview"
+			? `Mobile preview update: published for ${platforms.join(" and ")}.`
+			: `Mobile production update: published \`${commit.slice(0, 7)}\` for ${platforms.join(" and ")}.`,
 	);
 }
+
+if (mode === "publish") publishFromGate();
+else if (channel === "preview") gatePreview();
+else await gateProduction();
