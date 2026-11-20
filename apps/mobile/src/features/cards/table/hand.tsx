@@ -12,7 +12,6 @@ import {
 	ScrollView,
 	type ScrollViewInstance,
 	StyleSheet,
-	Text,
 	useWindowDimensions,
 	View,
 } from "react-native";
@@ -27,6 +26,7 @@ import Animated, {
 import { haptics } from "../../../feedback/haptics";
 import { useI18n } from "../../../i18n";
 import { cardColors } from "../../../theme";
+import { AppText } from "../../../ui/text";
 import { PlayingCard } from "../deck/playing-card";
 import type { CardZones } from "./flights";
 
@@ -111,9 +111,13 @@ function HandCard({
 			<PlayingCard card={card} width={width} />
 			{state.mark ? (
 				<View pointerEvents="none" style={styles.mark}>
-					<Text style={styles.markText} importantForAccessibility="no">
+					<AppText
+						variant="caption"
+						style={styles.markText}
+						importantForAccessibility="no"
+					>
 						{state.mark.value}
-					</Text>
+					</AppText>
 				</View>
 			) : null}
 			{state.dim ? (
@@ -324,7 +328,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		backgroundColor: cardColors.gold,
 	},
-	markText: { fontSize: 12, fontWeight: "800", color: cardColors.onGold },
+	markText: { color: cardColors.onGold },
 	fade: { position: "absolute", top: TOP_ROOM, bottom: 0, width: 32 },
 	fadeStart: {
 		left: 0,
