@@ -63,6 +63,21 @@ export function findSeat(sessionId: string): SessionSeat | undefined {
 	return readAll().find((seat) => seat.sessionId === sessionId);
 }
 
+/**
+ * The stored seats for "Download my data". The seat secret is left out: it
+ * proves a card-game seat is this phone's, so a shared file must not hold it.
+ */
+export function exportableSeats() {
+	return listSeats().map(
+		({ sessionId, participantId, gameType, joinedAt }) => ({
+			sessionId,
+			participantId,
+			gameType,
+			joinedAt,
+		}),
+	);
+}
+
 export function rememberSeat(seat: Omit<SessionSeat, "joinedAt">) {
 	const rest = readAll().filter((item) => item.sessionId !== seat.sessionId);
 	writeAll([{ ...seat, joinedAt: Date.now() }, ...rest]);
