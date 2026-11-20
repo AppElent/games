@@ -36,6 +36,7 @@ function Seat({
 	silent,
 	autopilot,
 	note,
+	shown,
 	arc,
 	size,
 	zones,
@@ -49,6 +50,7 @@ function Seat({
 	silent: boolean;
 	autopilot: boolean;
 	note?: string;
+	shown?: { text: string; label: string } | null;
 	arc: number;
 	size: number;
 	zones: CardZones;
@@ -97,6 +99,7 @@ function Seat({
 		active ? fmt(cards.table.theirTurn, { name }) : null,
 		silent ? cards.table.offline : null,
 		note,
+		shown?.label,
 	]
 		.filter(Boolean)
 		.join(", ");
@@ -178,6 +181,16 @@ function Seat({
 					{silent ? cards.table.offline : note || " "}
 				</FeltText>
 			) : null}
+			{shown?.text ? (
+				<FeltText
+					variant="boardLabel"
+					numberOfLines={2}
+					style={styles.shown}
+					testID={`seat-cards-${seat}`}
+				>
+					{shown.text}
+				</FeltText>
+			) : null}
 			{onManage ? (
 				<Pressable
 					accessibilityRole="button"
@@ -205,6 +218,7 @@ export function SeatRow({
 	turn,
 	flash,
 	note,
+	shown,
 	zones,
 	controls,
 }: {
@@ -214,6 +228,8 @@ export function SeatRow({
 	flash: number | null;
 	/** Family-specific line under a name, such as a running score. */
 	note?: (seat: number) => string | undefined;
+	/** An opponent's cards when they are played face up, as marks and a spoken form. */
+	shown?: (seat: number) => { text: string; label: string } | null;
 	zones: CardZones;
 	controls: CardTableControls;
 }) {
@@ -253,6 +269,7 @@ export function SeatRow({
 						silent={silent}
 						autopilot={entry.autopilot && human}
 						note={note?.(seat)}
+						shown={shown?.(seat)}
 						arc={order.length > 2 ? (2 * centred - 1) ** 2 : 0}
 						size={size}
 						zones={zones}
@@ -295,6 +312,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: spacing.xxs,
 	},
+	shown: { textAlign: "center" },
 	discWrap: { alignItems: "center", justifyContent: "center" },
 	fan: {
 		position: "absolute",

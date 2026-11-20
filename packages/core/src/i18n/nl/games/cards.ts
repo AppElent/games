@@ -169,6 +169,7 @@ export const cards = {
 		bankName: "Bank",
 		stakeHint: "Hoeveel punten is deze hand waard?",
 		stakeButton: { one: "{count} punt", other: "{count} punten" },
+		roundSettled: "Ronde {round} is afgerekend.",
 		stakeWaiting: "Wachten tot de anderen hun punten kiezen.",
 		playingFor: { one: "voor {count} punt", other: "voor {count} punten" },
 		hit: "Nog een kaart",
