@@ -9,17 +9,17 @@ export default function Footer() {
 		<footer className="mt-16 border-t border-[var(--club-line)] px-4 py-8 text-sm text-[var(--club-muted)]">
 			<div className="club-wrap flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
 				<p className="m-0">{fmt(messages.common.footer.copyright, { year })}</p>
-				<div className="flex items-center gap-4">
+				<div className="flex flex-wrap items-center gap-x-4 gap-y-1">
 					<Link
 						to="/about"
-						className="text-[var(--club-muted)] no-underline hover:text-[var(--club-text)] hover:underline"
+						className="whitespace-nowrap text-[var(--club-muted)] no-underline hover:text-[var(--club-text)] hover:underline"
 						activeProps={{ className: "text-[var(--club-text)] underline" }}
 					>
 						{messages.common.footer.about}
 					</Link>
 					<Link
 						to="/privacy"
-						className="text-[var(--club-muted)] no-underline hover:text-[var(--club-text)] hover:underline"
+						className="whitespace-nowrap text-[var(--club-muted)] no-underline hover:text-[var(--club-text)] hover:underline"
 						activeProps={{ className: "text-[var(--club-text)] underline" }}
 					>
 						{messages.common.footer.privacy}
