@@ -237,7 +237,7 @@ importers:
         version: 58.0.5(expo@58.0.20)(react@19.3.0)
       expo-router:
         specifier: ~58.0.0
-        version: 58.0.27(c87d64c08828cacd8cac1ed9c6ea55ed)
+        version: 58.0.27(7dcec384e5659b5ecfe2678d1fd8a98c)
       expo-screen-orientation:
         specifier: ~58.0.3
         version: 58.0.3(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
@@ -296,6 +296,9 @@ importers:
         specifier: 0.13.0
         version: 0.13.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
     devDependencies:
+      '@testing-library/react-native':
+        specifier: 14.1.0
+        version: 14.1.0(jest@30.5.2(@types/node@22.20.5)(ts-node@10.9.2(@types/node@22.20.5)(typescript@6.0.3)))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(test-renderer@1.3.1(@types/react@19.3.0)(react@19.3.0))
       '@types/jest':
         specifier: ^30.0.0
         version: 30.0.0
@@ -317,6 +320,9 @@ importers:
       jest-expo:
         specifier: ~58.0.13
         version: 58.0.13(@babel/core@7.29.13)(@react-native/jest-preset@0.88.1(@babel/core@7.29.13)(react@19.3.0))(@types/react@19.3.0)(expo@58.0.20)(jest@30.5.2(@types/node@22.20.5)(ts-node@10.9.2(@types/node@22.20.5)(typescript@6.0.3)))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
+      test-renderer:
+        specifier: 1.3.1
+        version: 1.3.1(@types/react@19.3.0)(react@19.3.0)
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
@@ -4493,6 +4499,11 @@ packages:
 
   '@types/react-reconciler@0.33.1':
     resolution: {integrity: sha512-0kF59ji2mKuHUd5wytHSpmORybMYVerJvq0K10pz9ZFoOlJ3e+w1LBjLshWpCrokeyQOioRodNbO4PH4ddvRfg==}
+    peerDependencies:
+      '@types/react': '*'
+
+  '@types/react-reconciler@0.34.1':
+    resolution: {integrity: sha512-XAzeH3rARrfApMETpkcFmfJQRS3rPpXsSR/XA8H3sV8WgA0bp6UE7sLNM92l1ZbCclUKmrH28Ik2fSejh9UxRg==}
     peerDependencies:
       '@types/react': '*'
 
@@ -8795,6 +8806,11 @@ packages:
     peerDependencies:
       react: ^19.0.0
 
+  test-renderer@1.3.1:
+    resolution: {integrity: sha512-jL/PxpZJhKuryZkvsWdRRX8Fez229amt6CnoxC+Fs4lbuIbWqMtZBPfBM/FMjg1ovv7ZyGef2ltQD64f/RxkbA==}
+    peerDependencies:
+      react: ^19.0.0
+
   text-decoder@1.2.7:
     resolution: {integrity: sha512-vlLytXkeP4xvEq2otHeJfSQIRyWxo/oZGEbXrtEEF9Hnmrdly59sUbzZ/QgyWuLYHctCHxFF4tRQZNQ9k60ExQ==}
 
@@ -11514,7 +11530,7 @@ snapshots:
       ws: 8.22.1
       zod: 3.25.76
     optionalDependencies:
-      expo-router: 58.0.27(c87d64c08828cacd8cac1ed9c6ea55ed)
+      expo-router: 58.0.27(7dcec384e5659b5ecfe2678d1fd8a98c)
       react-native: 0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
     transitivePeerDependencies:
       - '@expo/dom-webview'
@@ -12077,7 +12093,7 @@ snapshots:
       react: 19.3.0
     optionalDependencies:
       '@expo/metro-runtime': 58.0.15(@expo/log-box@58.0.13)(expo@58.0.20)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
-      expo-router: 58.0.27(c87d64c08828cacd8cac1ed9c6ea55ed)
+      expo-router: 58.0.27(7dcec384e5659b5ecfe2678d1fd8a98c)
       react-dom: 19.3.0(react@19.3.0)
     transitivePeerDependencies:
       - supports-color
@@ -13747,7 +13763,7 @@ snapshots:
       '@expo/env': 2.5.3
       dotenv: 17.4.2
       expo: 58.0.20(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(@expo/metro-runtime@58.0.15)(expo-router@58.0.27)(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
-      expo-router: 58.0.27(c87d64c08828cacd8cac1ed9c6ea55ed)
+      expo-router: 58.0.27(7dcec384e5659b5ecfe2678d1fd8a98c)
       expo-updates: 58.0.19(expo-dev-client@58.0.17(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)))(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       metro: 0.87.3
       metro-config: 0.87.2
@@ -14291,7 +14307,7 @@ snapshots:
       picocolors: 1.1.1
       pretty-format: 27.5.1
 
-  '@testing-library/react-native@14.1.0(jest@30.5.2(@types/node@22.20.5)(ts-node@10.9.2(@types/node@22.20.5)(typescript@6.0.3)))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(test-renderer@1.3.0(@types/react@19.3.0)(react@19.3.0))':
+  '@testing-library/react-native@14.1.0(jest@30.5.2(@types/node@22.20.5)(ts-node@10.9.2(@types/node@22.20.5)(typescript@6.0.3)))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(test-renderer@1.3.1(@types/react@19.3.0)(react@19.3.0))':
     dependencies:
       jest-matcher-utils: 30.5.2
       picocolors: 1.1.1
@@ -14299,10 +14315,9 @@ snapshots:
       react: 19.3.0
       react-native: 0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
       redent: 3.0.0
-      test-renderer: 1.3.0(@types/react@19.3.0)(react@19.3.0)
+      test-renderer: 1.3.1(@types/react@19.3.0)(react@19.3.0)
     optionalDependencies:
       jest: 30.5.2(@types/node@22.20.5)(ts-node@10.9.2(@types/node@22.20.5)(typescript@6.0.3))
-    optional: true
 
   '@testing-library/react@16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
@@ -14427,6 +14442,10 @@ snapshots:
       '@types/react': 19.3.0
 
   '@types/react-reconciler@0.33.1(@types/react@19.3.0)':
+    dependencies:
+      '@types/react': 19.3.0
+
+  '@types/react-reconciler@0.34.1(@types/react@19.3.0)':
     dependencies:
       '@types/react': 19.3.0
 
@@ -16181,7 +16200,7 @@ snapshots:
       '@expo/modules-macros-win32-arm64': 0.24.0
       '@expo/modules-macros-win32-x64': 0.24.0
 
-  expo-router@58.0.27(c87d64c08828cacd8cac1ed9c6ea55ed):
+  expo-router@58.0.27(7dcec384e5659b5ecfe2678d1fd8a98c):
     dependencies:
       '@expo/log-box': 58.0.13(@expo/dom-webview@58.0.2)(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@expo/metro-runtime': 58.0.15(@expo/log-box@58.0.13)(expo@58.0.20)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -16210,7 +16229,7 @@ snapshots:
       standard-navigation: 0.0.5
     optionalDependencies:
       '@expo/ui': 58.0.24(@babel/core@7.29.13)(expo@58.0.20)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
-      '@testing-library/react-native': 14.1.0(jest@30.5.2(@types/node@22.20.5)(ts-node@10.9.2(@types/node@22.20.5)(typescript@6.0.3)))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(test-renderer@1.3.0(@types/react@19.3.0)(react@19.3.0))
+      '@testing-library/react-native': 14.1.0(jest@30.5.2(@types/node@22.20.5)(ts-node@10.9.2(@types/node@22.20.5)(typescript@6.0.3)))(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(test-renderer@1.3.1(@types/react@19.3.0)(react@19.3.0))
       expo-symbols: 58.0.4(patch_hash=c8359f42a2c6d48d5aa33eedd0bab94e0af341846ddf4982bf43b5d5ee04defe)(expo-font@58.0.10)(expo@58.0.20)(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-dom: 19.3.0(react@19.3.0)
       react-native-gesture-handler: 3.3.0(react-native@0.88.1(@babel/core@7.29.13)(@react-native/metro-config@0.88.1(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -18330,8 +18349,7 @@ snapshots:
 
   mimic-fn@2.1.0: {}
 
-  min-indent@1.0.1:
-    optional: true
+  min-indent@1.0.1: {}
 
   miniflare@5.20261103.0-beta(@types/node@22.20.5):
     dependencies:
@@ -19072,7 +19090,6 @@ snapshots:
     dependencies:
       indent-string: 4.0.0
       strip-indent: 3.0.0
-    optional: true
 
   redeyed@2.1.1:
     dependencies:
@@ -19634,7 +19651,6 @@ snapshots:
   strip-indent@3.0.0:
     dependencies:
       min-indent: 1.0.1
-    optional: true
 
   strip-json-comments@3.1.1: {}
 
@@ -19764,6 +19780,14 @@ snapshots:
   test-renderer@1.3.0(@types/react@19.3.0)(react@19.3.0):
     dependencies:
       '@types/react-reconciler': 0.33.1(@types/react@19.3.0)
+      react: 19.3.0
+      react-reconciler: 0.34.0(react@19.3.0)
+    transitivePeerDependencies:
+      - '@types/react'
+
+  test-renderer@1.3.1(@types/react@19.3.0)(react@19.3.0):
+    dependencies:
+      '@types/react-reconciler': 0.34.1(@types/react@19.3.0)
       react: 19.3.0
       react-reconciler: 0.34.0(react@19.3.0)
     transitivePeerDependencies:
