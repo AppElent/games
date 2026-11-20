@@ -39,6 +39,8 @@ type Props = {
 	size: number;
 	selectedCell: number | null;
 	onSelectCell: (cell: number) => void;
+	/** A press and hold on the selected cell. */
+	onDeselect: () => void;
 	conflicts: ReadonlySet<number>;
 	/** Cells a hint points at, once the player asks for more than its name. */
 	hintCells: ReadonlySet<number> | undefined;
@@ -52,6 +54,10 @@ type Props = {
 };
 
 const BOARD_BORDER = 2;
+/** How far cage lines sit inside a cell edge, as a share of the cell. */
+const CAGE_INSET = 0.08;
+/** The inset plus the line's width, so notes start just past a cage line. */
+const CAGE_NOTE_CLEARANCE = CAGE_INSET + 0.04;
 const CELLS = Array.from({ length: 81 }, (_, index) => index);
 
 /** Cage outline segments, inset from the cell edge so sums and lines don't collide. */
@@ -79,6 +85,7 @@ export function SudokuBoard({
 	size,
 	selectedCell,
 	onSelectCell,
+	onDeselect,
 	conflicts,
 	hintCells,
 	cages,
@@ -118,7 +125,7 @@ export function SudokuBoard({
 
 	const cageLines = useMemo(() => {
 		if (!cageInfo) return [];
-		const inset = 0.08;
+		const inset = CAGE_INSET;
 		return Array.from({ length: 81 }, (_, index) =>
 			cageSegments(cageInfo.edges[index], index, inset),
 		).flat();
@@ -165,7 +172,9 @@ export function SudokuBoard({
 						}
 						conflict={!hidden && conflicts.has(index)}
 						hinted={!hidden && (hintCells?.has(index) ?? false)}
+						caged={cageInfo !== null}
 						onPress={onSelectCell}
+						onDeselect={onDeselect}
 					/>
 				);
 			})}
@@ -225,7 +234,10 @@ type CellProps = {
 	sameDigit: boolean;
 	conflict: boolean;
 	hinted: boolean;
+	/** A Killer cell: its notes keep clear of the dashed cage lines. */
+	caged: boolean;
 	onPress: (cell: number) => void;
+	onDeselect: () => void;
 };
 
 /** Where each corner-note group sits in its cell. */
@@ -257,7 +269,9 @@ const BoardCell = memo(function BoardCell({
 	sameDigit,
 	conflict,
 	hinted,
+	caged,
 	onPress,
+	onDeselect,
 }: CellProps) {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
@@ -280,6 +294,8 @@ const BoardCell = memo(function BoardCell({
 		: given
 			? tokens.text
 			: tokens.accent;
+	// Notes keep clear of the dashed cage lines, which sit inside the cell edge.
+	const notePad = caged ? size * CAGE_NOTE_CLEARANCE : 0;
 	const cornerDigits = digitsInMask(corner);
 	const cornerGroups = cornerNoteGroups(corner, cornerLayout);
 	const centerDigits = digitsInMask(center);
@@ -306,8 +322,17 @@ const BoardCell = memo(function BoardCell({
 			accessibilityRole="button"
 			accessibilityLabel={label}
 			accessibilityState={{ selected }}
-			accessibilityHint={canCycle ? copy.retapHint : undefined}
+			accessibilityHint={
+				selected ? (canCycle ? copy.retapHint : copy.deselectHint) : undefined
+			}
+			accessibilityActions={
+				selected
+					? [{ name: "deselect", label: copy.deselectAction }]
+					: undefined
+			}
+			onAccessibilityAction={selected ? onDeselect : undefined}
 			onPress={() => onPress(cell)}
+			onLongPress={selected ? onDeselect : undefined}
 			style={[
 				styles.cell,
 				{
@@ -364,7 +389,13 @@ const BoardCell = memo(function BoardCell({
 					{value}
 				</AppText>
 			) : (
-				<>
+				<View
+					pointerEvents="none"
+					style={[
+						styles.notes,
+						{ top: notePad, left: notePad, right: notePad, bottom: notePad },
+					]}
+				>
 					{cornerGroups.map((group) =>
 						cornerLayout === "topRight" ? (
 							// One line that shrinks to fit rather than wrapping into
@@ -401,7 +432,7 @@ const BoardCell = memo(function BoardCell({
 							{centerDigits.join("")}
 						</AppText>
 					) : null}
-				</>
+				</View>
 			)}
 		</Pressable>
 	);
@@ -454,6 +485,12 @@ const createStyles = (colors: Tokens) =>
 			right: 0,
 			bottom: 0,
 			backgroundColor: colors.accentTint,
+		},
+		// The box the notes are placed in; its inset holds them off the cage lines.
+		notes: {
+			position: "absolute",
+			alignItems: "center",
+			justifyContent: "center",
 		},
 		corner: {
 			position: "absolute",

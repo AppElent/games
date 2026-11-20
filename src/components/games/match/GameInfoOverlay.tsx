@@ -1,14 +1,17 @@
 import type { ComponentProps, ReactNode } from "react";
-import { SHELL_PAGE_INSET } from "#/components/games/FullscreenGameShell";
+import {
+	SHELL_SCROLL_AIR,
+	SHELL_SCROLL_TOP,
+} from "#/components/games/FullscreenGameShell";
 import { MatchDetails } from "#/components/games/match/MatchDetails";
 import { useMessages } from "#/lib/i18n";
 
-/** A dimmed, scrollable layer over the board, clear of the menu button. */
+/** A dimmed layer over the board whose scrolling content starts below the menu button. */
 export function MatchOverlay({ children }: { children: ReactNode }) {
 	return (
 		<div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm">
 			<div
-				className={`h-full touch-pan-y overflow-y-auto overscroll-contain p-4 ${SHELL_PAGE_INSET}`}
+				className={`absolute inset-x-0 bottom-0 ${SHELL_SCROLL_TOP} touch-pan-y overflow-y-auto overscroll-contain p-4 ${SHELL_SCROLL_AIR}`}
 			>
 				{children}
 			</div>

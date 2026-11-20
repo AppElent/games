@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import {
 	FullscreenGameShell,
-	SHELL_PAGE_INSET,
+	SHELL_SCROLL_AIR,
+	SHELL_SCROLL_TOP,
 } from "#/components/games/FullscreenGameShell";
 
 type FullscreenGamePageProps = {
@@ -22,8 +23,8 @@ type FullscreenGamePageProps = {
 /**
  * Fullscreen surface for page-style game screens (lobbies, setup forms,
  * waiting rooms). The shell disables touch gestures globally, so this wrapper
- * restores vertical touch scrolling for its content and pads past the
- * floating menu button.
+ * restores vertical touch scrolling for its content, which scrolls below the
+ * floating menu button rather than under it.
  */
 export function FullscreenGamePage({
 	title,
@@ -36,9 +37,15 @@ export function FullscreenGamePage({
 }: FullscreenGamePageProps) {
 	return (
 		<FullscreenGameShell title={title} menu={menu}>
-			<div className="h-full touch-pan-y overflow-y-auto overscroll-contain">
+			<div
+				className={`touch-pan-y overflow-y-auto overscroll-contain ${
+					menu === undefined
+						? `absolute inset-x-0 bottom-0 ${SHELL_SCROLL_TOP}`
+						: "h-full"
+				}`}
+			>
 				<div
-					className={`mx-auto w-full px-4 ${menu === undefined ? SHELL_PAGE_INSET : "pt-4"} pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
+					className={`mx-auto w-full px-4 ${menu === undefined ? SHELL_SCROLL_AIR : "pt-4"} pb-8 sm:px-6 ${maxWidthClassName} ${className ?? ""}`}
 				>
 					{kicker !== undefined ? (
 						<p className="club-kicker mb-2">{kicker}</p>

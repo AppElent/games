@@ -128,6 +128,7 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 					size={size}
 					selectedCell={game.selectedCell}
 					onSelectCell={game.selectCell}
+					onDeselect={game.deselect}
 					conflicts={game.conflicts}
 					hintCells={game.hintCells}
 					cages={game.cages}

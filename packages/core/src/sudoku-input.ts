@@ -157,9 +157,11 @@ export function cornerNoteGroups(
 }
 
 /**
- * A second tap this soon after a cell became selected is one double tap that
- * selected it, not a request to switch mode, so a quick double tap on a new
- * cell never leaves the next digit entered as a note.
+ * A second tap this soon after a cell became selected, or after a tap on it
+ * switched mode, is the second half of one double tap, not another request to
+ * switch mode: a quick double tap on a new cell never leaves the next digit
+ * entered as a note, and a double-click never switches mode twice. The caller
+ * stamps `selectedAt` on both.
  */
 export const RETAP_GRACE_MS = 300;
 
@@ -172,4 +174,28 @@ export function isModeCycleTap(
 	return (
 		cell === selection.cell && now - selection.selectedAt >= RETAP_GRACE_MS
 	);
+}
+
+/** The selected cell and when it was last picked or switched mode. */
+export type CellSelection = { cell: number | null; selectedAt: number };
+
+/**
+ * What a tap on `cell` does and the selection after it: `select` moves the
+ * selection to the cell, `cycle` steps to the next entry mode, `none` is the
+ * second half of a double tap or a tap on a cell that is already selected.
+ * Both clients keep the returned selection (the phone updates it in place, as
+ * a second tap can land before a re-render), so a double tap does one thing.
+ */
+export function tapCell(
+	selection: CellSelection,
+	cell: number,
+	now: number,
+): { action: "select" | "cycle" | "none"; selection: CellSelection } {
+	if (cell !== selection.cell) {
+		return { action: "select", selection: { cell, selectedAt: now } };
+	}
+	if (isModeCycleTap(cell, selection, now)) {
+		return { action: "cycle", selection: { cell, selectedAt: now } };
+	}
+	return { action: "none", selection };
 }
