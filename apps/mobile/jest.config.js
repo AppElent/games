@@ -24,7 +24,7 @@ const mustTransform = [
 module.exports = {
 	preset: "jest-expo",
 	setupFiles: ["<rootDir>/jest.setup.ts"],
-	testMatch: ["<rootDir>/src/**/*.test.ts"],
+	testMatch: ["<rootDir>/src/**/*.test.{ts,tsx}"],
 	transformIgnorePatterns: [
 		`node_modules[\\\\/](?!([^\\\\/]+[\\\\/])*(${mustTransform})[\\\\/])`,
 	],

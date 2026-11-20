@@ -18,3 +18,6 @@ jest.mock("expo-sqlite/kv-store", () => {
 		},
 	};
 });
+
+// Native and network modules for component render tests (`*.test.tsx`).
+import "./test/native-mocks";
