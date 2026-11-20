@@ -83,6 +83,7 @@ A game sets these `TricksRules` fields:
 | `firstLead` | The face that opens each deal; null means left of the dealer leads | C2 | null | null |
 | `breaking` | A suit nobody leads until it has been played, and faces that also break it | hearts | null | null |
 | `schedule` | Which function in `SCHEDULES` sets each seat's hand size per deal; cards left over stay undealt, and a schedule with no next deal ends the match | `fullDeck` | `fourEach` | `upDown` (`up`, `down`) |
+| `maxHand` | Optional. No hand bigger than this for `up`, `down` and `upDown` (house rule `shortHands`: 7); nothing changes where the deck already deals fewer | absent | absent | absent (7 with `shortHands`) |
 | `trumpChoice` | Which function in `TRUMPS` picks a deal's trump suit from the undealt cards | `none` | `none` | `turnUp` |
 | `seating` | Which function in `SEATINGS` puts seats into teams; partners share a total | `alone` | `alone` | `alone` |
 | `scoring` | Which function in `SCORERS` turns tricks taken into points | `penaltyCards` | `lastTrick` | `bids` |

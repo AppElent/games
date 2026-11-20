@@ -59,6 +59,7 @@ import {
 } from "../cards/table-view";
 import type { TricksRules, TricksView } from "../cards/tricks";
 import { en } from "../i18n/en";
+import { fmt } from "../i18n/format";
 import { nl } from "../i18n/nl";
 import { seatIsSilent } from "../table-engine";
 
@@ -1675,7 +1676,12 @@ describe("bidding at the table", () => {
 		["en", en.games.cards],
 		["nl", nl.games.cards],
 	] as const)("writes the bidding rules in %s", (_, messages) => {
-		for (const options of [[], ["upOnly", "dealerFree"], ["downOnly"]]) {
+		for (const options of [
+			[],
+			["upOnly", "dealerFree"],
+			["downOnly"],
+			["shortHands"],
+		]) {
 			const lines = tricksRuleLines(wordsFor(messages), boerenbridge(options));
 			expect(lines.passing).toBeNull();
 			const all = [
@@ -1707,5 +1713,12 @@ describe("bidding at the table", () => {
 			boerenbridge(["upOnly", "dealerFree"]),
 		);
 		expect(house.bidding).toEqual([r.schedules.up, r.bid]);
+		const short = tricksRuleLines(words, boerenbridge(["shortHands"]));
+		expect(short.bidding).toEqual([
+			r.schedules.upDown,
+			fmt(r.maxHand, { max: 7 }),
+			r.bid,
+			r.dealerRule,
+		]);
 	});
 });

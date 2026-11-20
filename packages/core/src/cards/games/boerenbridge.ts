@@ -42,6 +42,8 @@ export const boerenbridge = {
 	options: [
 		{ id: "upOnly", patch: { schedule: "up" }, group: "schedule" },
 		{ id: "downOnly", patch: { schedule: "down" }, group: "schedule" },
+		// A full game at three players is 33 deals; seven cards at most makes it 13.
+		{ id: "shortHands", patch: { maxHand: 7 } },
 		{ id: "noTrump", patch: { trumpChoice: "none" } },
 		{
 			id: "dealerFree",

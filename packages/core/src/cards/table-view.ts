@@ -1094,6 +1094,9 @@ export function tricksRuleLines(
 					...(rules.schedule === "fullDeck" || rules.schedule === "fourEach"
 						? []
 						: [r.schedules[rules.schedule]]),
+					...(rules.maxHand === undefined
+						? []
+						: [fmt(r.maxHand, { max: rules.maxHand })]),
 					r.bid,
 					...(bidding.dealerMayMatch ? [] : [r.dealerRule]),
 				]
