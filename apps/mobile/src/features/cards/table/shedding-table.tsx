@@ -5,6 +5,7 @@ import { type CardId, SUITS, type Suit } from "@arcadeclub/core/cards/deck";
 import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import { powerOf, type SheddingView } from "@arcadeclub/core/cards/shedding";
 import {
+	onAutopilot,
 	seatName,
 	sheddingHint,
 	sortCards,
@@ -69,7 +70,7 @@ export function SheddingTable({
 	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "playing";
-	const mine = playing && view.turn === you;
+	const mine = playing && view.turn === you && !onAutopilot(table);
 	const legal = new Set(view.legal);
 	const callable =
 		mine &&
@@ -286,64 +287,68 @@ export function SheddingTable({
 							</FeltText>
 							<EventTicker events={view.events} table={table} />
 							<View style={styles.actions}>
-								{view.canCallLast ? (
-									<TableButton
-										label={cards.shedding.callLast}
-										onPress={() => {
-											haptics.valueEntered();
-											controls.act({ type: "callLast" });
-										}}
-										testID="cards-call-last"
-									/>
-								) : null}
-								{catchable !== null ? (
-									<TableButton
-										label={fmt(cards.shedding.catch, {
-											name: seatName(cards, table, catchable),
-										})}
-										onPress={() => {
-											haptics.moveMade();
-											controls.act({ type: "catch", target: catchable });
-										}}
-										testID="cards-catch"
-									/>
-								) : null}
-								{callable ? (
-									<TableButton
-										ghost
-										selected={armed}
-										label={
-											armed
-												? cards.shedding.callLastArmed
-												: cards.shedding.callLast
-										}
-										accessibilityHint={cards.shedding.callLastHint}
-										onPress={() => {
-											haptics.selectionChanged();
-											setArmed((current) => !current);
-										}}
-										testID="cards-arm-last"
-									/>
-								) : null}
-								{canDraw ? (
-									<TableButton
-										ghost={!mustDraw}
-										label={drawLabel}
-										disabled={controls.pending}
-										onPress={draw}
-										testID="cards-draw"
-									/>
-								) : null}
-								{mine && view.canPass ? (
-									<TableButton
-										ghost
-										label={cards.shedding.pass}
-										disabled={controls.pending}
-										onPress={() => controls.act({ type: "pass" })}
-										testID="cards-pass"
-									/>
-								) : null}
-								{you !== null && table.seats[you]?.autopilot ? (
+								{onAutopilot(table) ? null : (
+									<>
+										{view.canCallLast ? (
+											<TableButton
+												label={cards.shedding.callLast}
+												onPress={() => {
+													haptics.valueEntered();
+													controls.act({ type: "callLast" });
+												}}
+												testID="cards-call-last"
+											/>
+										) : null}
+										{catchable !== null ? (
+											<TableButton
+												label={fmt(cards.shedding.catch, {
+													name: seatName(cards, table, catchable),
+												})}
+												onPress={() => {
+													haptics.moveMade();
+													controls.act({ type: "catch", target: catchable });
+												}}
+												testID="cards-catch"
+											/>
+										) : null}
+										{callable ? (
+											<TableButton
+												ghost
+												selected={armed}
+												label={
+													armed
+														? cards.shedding.callLastArmed
+														: cards.shedding.callLast
+												}
+												accessibilityHint={cards.shedding.callLastHint}
+												onPress={() => {
+													haptics.selectionChanged();
+													setArmed((current) => !current);
+												}}
+												testID="cards-arm-last"
+											/>
+										) : null}
+										{canDraw ? (
+											<TableButton
+												ghost={!mustDraw}
+												label={drawLabel}
+												disabled={controls.pending}
+												onPress={draw}
+												testID="cards-draw"
+											/>
+										) : null}
+										{mine && view.canPass ? (
+											<TableButton
+												ghost
+												label={cards.shedding.pass}
+												disabled={controls.pending}
+												onPress={() => controls.act({ type: "pass" })}
+												testID="cards-pass"
+											/>
+										) : null}
+									</>
+								)}
+								{onAutopilot(table) && you !== null ? (
 									<TableButton
 										label={cards.table.autopilotBack}
 										onPress={() => controls.setAutopilot(you, false)}

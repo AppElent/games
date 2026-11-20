@@ -112,7 +112,9 @@ export const sudoku = {
 		notes: "notes {digits}",
 		cage: "cage sum {sum}",
 		conflict: "conflict",
-		retapHint: "Tap again to switch entry mode",
+		retapHint: "Tap again to switch entry mode. Press and hold to deselect",
+		deselectHint: "Press and hold to deselect",
+		deselectAction: "Deselect",
 	},
 	keypad: {
 		modeLabel: "Entry mode",

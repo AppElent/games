@@ -9,6 +9,7 @@ import {
 	normalizeSudokuInputSettings,
 	RETAP_GRACE_MS,
 	type SudokuInputSettings,
+	tapCell,
 	tapCycleModes,
 } from "../sudoku-input";
 
@@ -178,5 +179,42 @@ describe("isModeCycleTap", () => {
 		expect(isModeCycleTap(10, { cell: null, selectedAt: 0 }, 10_000)).toBe(
 			false,
 		);
+	});
+});
+
+describe("tapCell", () => {
+	const none = { cell: null, selectedAt: 0 };
+
+	it("selects a cell that is not selected", () => {
+		const { action, selection } = tapCell(none, 10, 1_000);
+		expect(action).toBe("select");
+		expect(selection).toEqual({ cell: 10, selectedAt: 1_000 });
+	});
+
+	it("cycles on a later tap on the selected cell", () => {
+		const { selection } = tapCell(none, 10, 1_000);
+		const second = tapCell(selection, 10, 1_000 + RETAP_GRACE_MS);
+		expect(second.action).toBe("cycle");
+		expect(second.selection.selectedAt).toBe(1_000 + RETAP_GRACE_MS);
+	});
+
+	it("does nothing on the second half of the double tap that selected", () => {
+		const { selection } = tapCell(none, 10, 1_000);
+		expect(tapCell(selection, 10, 1_050).action).toBe("none");
+	});
+
+	it("does nothing on the second click of a double-click that switched mode", () => {
+		let selection = tapCell(none, 10, 1_000).selection;
+		const cycle = tapCell(selection, 10, 2_000);
+		expect(cycle.action).toBe("cycle");
+		selection = cycle.selection;
+		expect(tapCell(selection, 10, 2_050).action).toBe("none");
+		// A later, separate tap switches again.
+		expect(tapCell(selection, 10, 2_000 + RETAP_GRACE_MS).action).toBe("cycle");
+	});
+
+	it("selects another cell at once, however soon", () => {
+		const { selection } = tapCell(none, 10, 1_000);
+		expect(tapCell(selection, 11, 1_010).action).toBe("select");
 	});
 });

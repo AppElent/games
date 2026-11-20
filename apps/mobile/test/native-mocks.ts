@@ -29,6 +29,8 @@ jest.mock("expo-router", () => ({
 		dismissTo: jest.fn(),
 	}),
 	useLocalSearchParams: () => ({}),
+	// Focus effects run only on a screen the user is looking at; none under test.
+	useFocusEffect: jest.fn(),
 }));
 
 // Clerk: signed out. The real package boots clerk-js, which leaves handles open.
@@ -44,9 +46,10 @@ jest.mock("expo-keep-awake", () => ({
 }));
 
 jest.mock("expo-haptics", () => ({
-	impactAsync: jest.fn(),
-	notificationAsync: jest.fn(),
-	selectionAsync: jest.fn(),
+	// Promises, as the real calls return: `haptics` chains on them.
+	impactAsync: jest.fn(() => Promise.resolve()),
+	notificationAsync: jest.fn(() => Promise.resolve()),
+	selectionAsync: jest.fn(() => Promise.resolve()),
 	ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 	NotificationFeedbackType: {
 		Success: "success",

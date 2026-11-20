@@ -7,6 +7,7 @@ import {
 	cardName,
 	cardTilt,
 	isTeamGame,
+	onAutopilot,
 	openTrickSlots,
 	seatName,
 	sortTricksHand,
@@ -192,10 +193,10 @@ export function TricksTable({
 	const bidding = view.phase === "bidding";
 	// Someone has the turn: to bid, or to play a card.
 	const live = playing || bidding;
-	const mine = playing && view.turn === you;
+	const mine = playing && view.turn === you && !onAutopilot(table);
 	const calling = view.phase === "trump";
-	const callingMine = calling && view.turn === you;
-	const myBid = bidding && view.turn === you;
+	const callingMine = calling && view.turn === you && !onAutopilot(table);
+	const myBid = bidding && view.turn === you && !onAutopilot(table);
 	const choosing = view.phase === "passing" && you !== null && !view.passed;
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";
@@ -465,92 +466,96 @@ export function TricksTable({
 					</FeltText>
 					<EventTicker events={view.events} table={table} />
 					<View style={styles.actions}>
-						{callingMine && view.offered ? (
+						{onAutopilot(table) ? null : (
 							<>
-								<TableButton
-									label={fmt(tt.playTrump, {
-										suit: cards.suits[view.offered],
-									})}
-									disabled={controls.pending}
-									onPress={() => view.offered && callTrump(view.offered)}
-									testID="cards-play-trump"
-								/>
-								<TableButton
-									label={tt.passTrump}
-									ghost
-									disabled={controls.pending}
-									onPress={() => {
-										haptics.moveMade();
-										controls.act({ type: "passTrump" });
-									}}
-									testID="cards-pass-trump"
-								/>
-							</>
-						) : null}
-						{callingMine && !view.offered
-							? SUITS.map((suit) => (
-									<TableButton
-										key={suit}
-										label={fmt(tt.playTrump, { suit: cards.suits[suit] })}
-										disabled={controls.pending}
-										onPress={() => callTrump(suit)}
-										testID={`cards-trump-${suit}`}
+								{callingMine && view.offered ? (
+									<>
+										<TableButton
+											label={fmt(tt.playTrump, {
+												suit: cards.suits[view.offered],
+											})}
+											disabled={controls.pending}
+											onPress={() => view.offered && callTrump(view.offered)}
+											testID="cards-play-trump"
+										/>
+										<TableButton
+											label={tt.passTrump}
+											ghost
+											disabled={controls.pending}
+											onPress={() => {
+												haptics.moveMade();
+												controls.act({ type: "passTrump" });
+											}}
+											testID="cards-pass-trump"
+										/>
+									</>
+								) : null}
+								{callingMine && !view.offered
+									? SUITS.map((suit) => (
+											<TableButton
+												key={suit}
+												label={fmt(tt.playTrump, { suit: cards.suits[suit] })}
+												disabled={controls.pending}
+												onPress={() => callTrump(suit)}
+												testID={`cards-trump-${suit}`}
+											/>
+										))
+									: null}
+								{myBid ? (
+									<BidPicker
+										key={`${view.round}-${view.blockedBid}`}
+										view={view}
+										pending={controls.pending}
+										onBid={(count) => controls.act({ type: "bid", count })}
 									/>
-								))
-							: null}
-						{myBid ? (
-							<BidPicker
-								key={`${view.round}-${view.blockedBid}`}
-								view={view}
-								pending={controls.pending}
-								onBid={(count) => controls.act({ type: "bid", count })}
-							/>
-						) : null}
-						{choosing ? (
-							<TableButton
-								label={tt.passButton}
-								disabled={
-									controls.pending || selected.length !== view.passCount
-								}
-								onPress={pass}
-								testID="cards-pass-cards"
-							/>
-						) : null}
-						{choices.answer ? (
-							<>
-								<TableButton
-									label={tt.stayButton}
-									disabled={controls.pending}
-									onPress={() => choose({ type: "stay" })}
-									testID="cards-stay"
-								/>
-								<TableButton
-									label={tt.foldButton}
-									ghost
-									disabled={controls.pending}
-									onPress={() => choose({ type: "fold" })}
-									testID="cards-fold"
-								/>
+								) : null}
+								{choosing ? (
+									<TableButton
+										label={tt.passButton}
+										disabled={
+											controls.pending || selected.length !== view.passCount
+										}
+										onPress={pass}
+										testID="cards-pass-cards"
+									/>
+								) : null}
+								{choices.answer ? (
+									<>
+										<TableButton
+											label={tt.stayButton}
+											disabled={controls.pending}
+											onPress={() => choose({ type: "stay" })}
+											testID="cards-stay"
+										/>
+										<TableButton
+											label={tt.foldButton}
+											ghost
+											disabled={controls.pending}
+											onPress={() => choose({ type: "fold" })}
+											testID="cards-fold"
+										/>
+									</>
+								) : null}
+								{choices.knock ? (
+									<TableButton
+										label={tt.knockButton}
+										disabled={controls.pending}
+										onPress={() => choose({ type: "knock" })}
+										testID="cards-knock"
+									/>
+								) : null}
+								{choices.swap ? (
+									<TableButton
+										label={tt.swapButton}
+										ghost
+										disabled={controls.pending}
+										onPress={() => choose({ type: "swapHand" })}
+										testID="cards-swap-hand"
+									/>
+								) : null}
 							</>
-						) : null}
-						{choices.knock ? (
-							<TableButton
-								label={tt.knockButton}
-								disabled={controls.pending}
-								onPress={() => choose({ type: "knock" })}
-								testID="cards-knock"
-							/>
-						) : null}
-						{choices.swap ? (
-							<TableButton
-								label={tt.swapButton}
-								ghost
-								disabled={controls.pending}
-								onPress={() => choose({ type: "swapHand" })}
-								testID="cards-swap-hand"
-							/>
-						) : null}
-						{you !== null && table.seats[you]?.autopilot ? (
+						)}
+						{onAutopilot(table) && you !== null ? (
 							<TableButton
 								label={cards.table.autopilotBack}
 								onPress={() => controls.setAutopilot(you, false)}
