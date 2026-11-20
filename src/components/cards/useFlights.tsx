@@ -48,11 +48,9 @@ function spotOf(root: HTMLElement, zone: Zone): Spot | null {
 		return null;
 	}
 	const card = isSeatZone(zone) ? null : findCardFace(element);
-	return spotIn(
-		root,
-		element,
-		card?.getBoundingClientRect().width ?? FALLBACK_WIDTH,
-	);
+	// The layout width, not the bounding box: a tilted card's box is wider than
+	// the card, and the flight would land a little too big.
+	return spotIn(root, element, card?.offsetWidth ?? FALLBACK_WIDTH);
 }
 
 function FlightCard({

@@ -35,7 +35,7 @@ export const serverErrors = {
 	cardsWaitForStakes: "Wait until everyone has picked their points.",
 	cardsCannotDouble: "You can only double on your first two cards.",
 	cardsMustFollow: "Follow suit: you hold a card of the suit that was led.",
-	cardsMustOpenWith: "Lead the two of clubs to open the round.",
+	cardsMustOpenWith: "The round has to open with its starting card.",
 	cardsLeadNotBroken: "That suit can't be led until it's been broken.",
 	cardsNotPassing: "There are no cards to pass right now.",
 	cardsAlreadyPassed: "You've already passed your cards.",
