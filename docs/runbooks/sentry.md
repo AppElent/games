@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when changing error reporting or investigating an Arcade Club error in Sentry.
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Sentry
@@ -52,51 +52,40 @@ last 100 entries on restart, skips failures Convex will retry, and deduplicates 
 stable event id; it has no durable queue, so failures while it is down are lost. Run
 one reader per deployment, and stop it if you adopt managed reporting.
 
-### Production service
+### Production
 
-Production runs on Eric's always-on Mac Studio as the launchd user agent
-`com.appelent.convex-sentry.arcade`
-(`~/Library/LaunchAgents/com.appelent.convex-sentry.arcade.plist`): RunAtLoad,
-KeepAlive, ThrottleInterval 30, so it survives a reboot while that user is logged in.
-It logs to `~/Library/Logs/convex-sentry-arcade.log`.
+Production failures are forwarded by the shared
+[incident inbox](https://github.com/AppElent/developer-home/blob/main/services/incident-inbox/README.md) in `AppElent/developer-home`, not by this repo's
+script (since 17 Nov 2026). One launchd agent on Eric's always-on Mac,
+`com.appelent.incident-inbox` (run from `~/Developer/.services/developer-home`),
+reads `eric-jansen:games:prod` with the logged-in Convex CLI and sends failed executions to this
+app's Sentry project with the same `app=arcadeclub-convex` tag and
+`environment=production`. Its incident poll then files each new Sentry issue in
+Linear (team `APP`, labels `app:arcade` and Source `convex`). Events are grouped
+by throwing function and message, so one helper failing under several queries
+is one Sentry issue; the `func` tag still names the query.
 
-The agent runs `~/Developer/.services/bin/convex-sentry-run arcade` against a dedicated
-clone at `~/Developer/.services/games`, which it updates from `origin/main` on start
-when the tree is clean. Do not run the production forwarder from a T3 worktree or
-from `~/Developer/games`. The wrapper and its README live outside this repo.
+- Log: `~/Library/Logs/incident-inbox.log`. A healthy start logs
+  `convex arcade: reading eric-jansen:games:prod`.
+- Restart: `launchctl kickstart -k "gui/$(id -u)/com.appelent.incident-inbox"`.
+- Deployment, tag and DSN (`SENTRY_DSN_ARCADE`) are set in the inbox's `config.mjs` and
+  its env file; change them there, not here.
 
-On start the wrapper runs `pnpm env:exec production --only github`, which loads
-Infisical `sentry-dsn` as `VITE_SENTRY_DSN`, and exports it as `SENTRY_DSN` and
-`SENTRY_CONVEX_DSN` with `SENTRY_ENVIRONMENT=production`. It unsets
-`CONVEX_DEPLOY_KEY` and `CONVEX_DEPLOYMENT_TOKEN`: the production deploy key can
-deploy but lacks `deployment:logs:view`. Logs are read with the logged-in Convex CLI
-and `--deployment eric-jansen:games:prod`, the public selector from `env.manifest.ts`;
-`--prod` alone fails in a fresh clone, which has no `.env.local` `CONVEX_DEPLOYMENT`.
-
-Restart it, then watch the log:
-
-```sh
-launchctl kickstart -k "gui/$(id -u)/com.appelent.convex-sentry.arcade"
-tail -f ~/Library/Logs/convex-sentry-arcade.log
-```
-
-A healthy start logs `[Production] eric-jansen:games:production (prod)` and a
-`Watching logs` line. Stop it:
-
-```sh
-launchctl bootout "gui/$(id -u)/com.appelent.convex-sentry.arcade"
-```
+Do not run `pnpm sentry:convex` against production while the inbox runs:
+Sentry would get each failure twice. The old per-app agent
+`com.appelent.convex-sentry.arcade`, its clone `~/Developer/.services/games`
+and the `convex-sentry-run` wrapper are retired
+([APP-98](https://linear.app/appelent/issue/APP-98), [APP-222](https://linear.app/appelent/issue/APP-222)).
 
 ### Manual runs
 
 For a one-off or a dev deployment, run the reader in a checkout:
 
 ```sh
-pnpm env:exec local -- pnpm sentry:convex --prod
 pnpm env:exec local -- pnpm sentry:convex --deployment zany-parakeet-507
 ```
 
 `env:exec local` sets `SENTRY_CONVEX_DSN` (`local-tooling`) to the public project DSN
 (Infisical `sentry-dsn`, the same value as `VITE_SENTRY_DSN`). It needs Convex CLI
-auth, and `--prod` needs `CONVEX_DEPLOYMENT` in `.env.local`. Stop the Mac service
-before reading production by hand, so only one reader runs.
+auth. Do not read production by hand: the incident inbox already does, and two
+readers send each failure twice.
