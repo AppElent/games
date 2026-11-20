@@ -61,6 +61,12 @@ export type TricksRules = {
 	breaking: { suit: Suit; alsoBrokenBy: readonly string[] } | null;
 	/** Which entry in `SCHEDULES` sets how many cards each seat is dealt. */
 	schedule: keyof typeof SCHEDULES;
+	/**
+	 * No hand is dealt bigger than this, for a schedule that grows with the
+	 * deck (up, down, upDown). Absent: as many as the deck allows. It changes
+	 * nothing where the deck already deals fewer.
+	 */
+	maxHand?: number;
 	/** Which entry in `TRUMPS` picks a deal's trump suit. */
 	trumpChoice: keyof typeof TRUMPS;
 	/** Which entry in `SEATINGS` puts seats into teams. */
@@ -607,30 +613,32 @@ export function legalTricksCards(
 	);
 }
 
-/** The most cards each seat can be dealt from this deck. */
-const mostCards = (deck: number, seats: number) => Math.floor(deck / seats);
+/** The most cards each seat can be dealt from this deck, within `cap` when there is one. */
+const mostCards = (deck: number, seats: number, cap?: number) =>
+	Math.min(Math.floor(deck / seats), cap ?? Number.POSITIVE_INFINITY);
 
 /**
  * Hand sizes by name: the whole deck shared out, or a size that changes with
  * the round. Null means the schedule has no such round, so the match is over.
  */
 const SCHEDULES = {
-	fullDeck: (deck: number, seats: number, _round: number) => deck / seats,
-	fourEach: (_deck: number, _seats: number, _round: number) => 4,
+	fullDeck: (deck: number, seats: number, _round: number, _cap?: number) =>
+		deck / seats,
+	fourEach: (_deck: number, _seats: number, _round: number, _cap?: number) => 4,
 	/** One card, up to as many as the deck allows, and back down to one. */
-	upDown: (deck: number, seats: number, round: number) => {
-		const most = mostCards(deck, seats);
+	upDown: (deck: number, seats: number, round: number, cap?: number) => {
+		const most = mostCards(deck, seats, cap);
 		return round <= most ? round : round < most * 2 ? most * 2 - round : null;
 	},
-	up: (deck: number, seats: number, round: number) =>
-		round <= mostCards(deck, seats) ? round : null,
-	down: (deck: number, seats: number, round: number) => {
-		const most = mostCards(deck, seats);
+	up: (deck: number, seats: number, round: number, cap?: number) =>
+		round <= mostCards(deck, seats, cap) ? round : null,
+	down: (deck: number, seats: number, round: number, cap?: number) => {
+		const most = mostCards(deck, seats, cap);
 		return round <= most ? most + 1 - round : null;
 	},
 } satisfies Record<
 	string,
-	(deck: number, seats: number, round: number) => number | null
+	(deck: number, seats: number, round: number, cap?: number) => number | null
 >;
 
 /** A schedule that still deals after this many rounds is treated as endless. */
@@ -642,6 +650,7 @@ export function handSizeFor(rules: TricksRules, seats: number, round: number) {
 		tricksDeck(rules, seats).length,
 		seats,
 		round,
+		rules.maxHand,
 	);
 }
 
@@ -650,7 +659,10 @@ export function dealsInMatch(rules: TricksRules, seats: number) {
 	const deck = tricksDeck(rules, seats).length;
 	const sizeOf = SCHEDULES[rules.schedule];
 	let round = 0;
-	while (round < ENDLESS && sizeOf(deck, seats, round + 1) !== null) {
+	while (
+		round < ENDLESS &&
+		sizeOf(deck, seats, round + 1, rules.maxHand) !== null
+	) {
 		round += 1;
 	}
 	return round === ENDLESS ? null : round;
@@ -706,7 +718,12 @@ function dealTricks(
 	const round = carried?.round ?? 1;
 	const out = carried?.out ?? Array.from({ length: seats }, () => false);
 	const live = out.flatMap((gone, seat) => (gone ? [] : [seat]));
-	const handSize = SCHEDULES[rules.schedule](stock.length, live.length, round);
+	const handSize = SCHEDULES[rules.schedule](
+		stock.length,
+		live.length,
+		round,
+		rules.maxHand,
+	);
 	if (
 		handSize === null ||
 		!Number.isInteger(handSize) ||

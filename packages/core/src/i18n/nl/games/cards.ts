@@ -692,6 +692,7 @@ export const cards = {
 				up: "In ronde 1 krijgt iedereen één kaart, en elke ronde één meer, tot zoveel als de stapel voor de tafel toelaat.",
 				down: "In de eerste ronde krijgt iedereen zoveel kaarten als de stapel voor de tafel toelaat, en elke ronde één minder, tot één.",
 			},
+			maxHand: "Geen hand is groter dan {max} kaarten.",
 			bid: "Voor het spelen zegt iedereen hoeveel slagen die haalt, te beginnen links van de gever. De gever biedt als laatste.",
 			dealerRule:
 				"De gever mag niet zo bieden dat de biedingen optellen tot het aantal slagen: iemand moet ernaast zitten.",
@@ -985,6 +986,10 @@ export const cards = {
 				dealerFree: {
 					label: "Gever biedt vrij",
 					hint: "De gever mag de biedingen laten optellen tot het aantal slagen.",
+				},
+				shortHands: {
+					label: "Hoogstens zeven kaarten",
+					hint: "Geen hand is groter dan zeven kaarten, dus een spel met drie spelers duurt 13 ronden in plaats van 33.",
 				},
 				noTrump: {
 					label: "Zonder troef",
