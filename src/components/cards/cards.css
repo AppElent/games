@@ -1433,6 +1433,40 @@ button.pile:disabled {
 	}
 }
 
+/* Gin: a card the defender laid off on the knocker's melds, in the end-of-hand panel. */
+.meld .pc.laid-off {
+	position: relative;
+	transform: translateY(-6px);
+}
+
+.meld .pc.laid-off::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border: 2px solid var(--gold);
+	border-radius: inherit;
+	pointer-events: none;
+}
+
+/* Gin: which meld a hand card belongs to. The number sits in the visible edge of the fan. */
+.hand-card .meld-mark {
+	position: absolute;
+	left: 3px;
+	bottom: 3px;
+	display: grid;
+	place-items: center;
+	min-width: 1.1rem;
+	height: 1.1rem;
+	padding: 0 0.2rem;
+	border-radius: 999px;
+	background: var(--gold);
+	color: #1b1405;
+	font-size: 0.68rem;
+	font-weight: 800;
+	line-height: 1;
+	pointer-events: none;
+}
+
 /* Gin: unmatched cards shown after a knock or at the end of a hand. */
 .meld[data-deadwood="true"] {
 	border-style: dashed;

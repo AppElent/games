@@ -1607,6 +1607,12 @@ describe("gin rummy", () => {
 			});
 			expect(state.scores).toEqual([[14, 0]]);
 			expect(state.phase).toBe("handOver");
+			// The result names the cards laid off, and they sit inside the knocker's melds.
+			expect(state.result?.laidOff).toEqual(["S5#0", "H8#0", "DQ#0"]);
+			const knockerMelds = state.result?.shown[0].melds.flat() ?? [];
+			for (const card of ["S5#0", "H8#0", "DQ#0"]) {
+				expect(knockerMelds).toContain(card);
+			}
 		});
 
 		it("scores what the defender holds when they lay nothing off", () => {
@@ -1812,6 +1818,7 @@ describe("gin rummy", () => {
 			expect(viewGin(rules, scored, 0).result?.shown[1].deadwood).toContain(
 				"C3#0",
 			);
+			expect(scored.result?.laidOff).toEqual([]);
 		});
 	});
 

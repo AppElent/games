@@ -12,21 +12,37 @@ export function Fan({
 	cards,
 	width,
 	step,
+	laidOff,
 }: {
 	cards: readonly CardId[];
 	width: number;
 	step: number;
+	/** Cards to lift and outline, such as those laid off on a meld. */
+	laidOff?: readonly CardId[];
 }) {
 	return (
 		<View style={styles.fan}>
-			{cards.map((card, index) => (
-				<View
-					key={card}
-					style={index > 0 ? { marginLeft: step - width } : null}
-				>
-					<PlayingCard card={card} width={width} />
-				</View>
-			))}
+			{cards.map((card, index) => {
+				const raised = laidOff?.includes(card) ?? false;
+				return (
+					<View
+						key={card}
+						style={[
+							index > 0 ? { marginLeft: step - width } : null,
+							raised && styles.raised,
+						]}
+						testID={raised ? `laid-off-${card}` : undefined}
+					>
+						<PlayingCard card={card} width={width} />
+						{raised ? (
+							<View
+								pointerEvents="none"
+								style={[styles.laidOff, { borderRadius: width * 0.075 }]}
+							/>
+						) : null}
+					</View>
+				);
+			})}
 		</View>
 	);
 }
@@ -114,6 +130,12 @@ const styles = StyleSheet.create({
 	meldTarget: {
 		borderColor: cardColors.gold,
 		backgroundColor: cardColors.goldSoft,
+	},
+	raised: { transform: [{ translateY: -5 }] },
+	laidOff: {
+		...StyleSheet.absoluteFill,
+		borderWidth: 2,
+		borderColor: cardColors.gold,
 	},
 	deadwood: { borderStyle: "dashed", borderColor: cardColors.ivoryLine },
 });

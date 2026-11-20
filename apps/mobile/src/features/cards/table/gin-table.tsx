@@ -7,6 +7,7 @@ import {
 	cardName,
 	ginHint,
 	ginLayoffOrder,
+	ginMeldMarks,
 	ginResultText,
 	ginTurn,
 	groupGinHand,
@@ -106,6 +107,7 @@ export function GinTable({
 	}, [step]);
 
 	const fresh = useFreshCards(view.hand, mine, view.events);
+	const meldMarks = ginMeldMarks(view.hand, rules);
 	const handShown =
 		sortBy === "melds"
 			? groupGinHand(view.hand, rules)
@@ -423,10 +425,16 @@ export function GinTable({
 					handSize={view.hand.length}
 					fresh={fresh}
 					zones={flights.zones}
-					stateOf={(card) => ({
-						selected: selection.includes(card),
-						disabled: !playing && !layingOff,
-					})}
+					stateOf={(card) => {
+						const meld = meldMarks.get(card);
+						return {
+							selected: selection.includes(card),
+							disabled: !playing && !layingOff,
+							mark: meld
+								? { value: meld, label: fmt(cards.gin.inMeld, { n: meld }) }
+								: undefined,
+						};
+					}}
 					onTap={tap}
 				/>
 			}
@@ -484,6 +492,7 @@ export function GinTable({
 												cards={meld}
 												width={REVEAL_CARD}
 												step={REVEAL_STEP}
+												laidOff={result.laidOff}
 											/>
 										))}
 										{shown.deadwood.length > 0 ? (
@@ -500,6 +509,15 @@ export function GinTable({
 									</ScrollView>
 								</View>
 							))}
+							{result.laidOff &&
+							result.laidOff.length > 0 &&
+							result.knocker !== null ? (
+								<FeltText variant="caption" muted style={styles.center}>
+									{fmt(cards.gin.laidOffLegend, {
+										name: seatName(cards, table, result.knocker),
+									})}
+								</FeltText>
+							) : null}
 							<ScoreBoard
 								table={table}
 								scores={view.scores}

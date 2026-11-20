@@ -12,6 +12,7 @@ import {
 	ScrollView,
 	type ScrollViewInstance,
 	StyleSheet,
+	Text,
 	useWindowDimensions,
 	View,
 } from "react-native";
@@ -48,6 +49,8 @@ export type HandCardState = {
 	selected?: boolean;
 	playable?: boolean;
 	disabled?: boolean;
+	/** A number badge on the card, e.g. the meld it belongs to. `label` is what a screen reader adds. */
+	mark?: { value: number; label: string };
 };
 
 function HandCard({
@@ -102,9 +105,17 @@ function HandCard({
 		],
 	}));
 	const borderRadius = width * 0.075;
+	const spoken = state.mark ? `${label}, ${state.mark.label}` : label;
 	const face = (
 		<>
 			<PlayingCard card={card} width={width} />
+			{state.mark ? (
+				<View pointerEvents="none" style={styles.mark}>
+					<Text style={styles.markText} importantForAccessibility="no">
+						{state.mark.value}
+					</Text>
+				</View>
+			) : null}
 			{state.dim ? (
 				<View pointerEvents="none" style={[styles.dim, { borderRadius }]} />
 			) : null}
@@ -127,7 +138,7 @@ function HandCard({
 				<View
 					accessible
 					accessibilityRole="image"
-					accessibilityLabel={label}
+					accessibilityLabel={spoken}
 					testID={`hand-${card}`}
 				>
 					{face}
@@ -141,7 +152,7 @@ function HandCard({
 			<Pressable
 				ref={view}
 				accessibilityRole="button"
-				accessibilityLabel={label}
+				accessibilityLabel={spoken}
 				accessibilityState={{
 					selected: state.selected,
 					disabled: state.disabled,
@@ -301,6 +312,19 @@ const styles = StyleSheet.create({
 			{ offsetX: 0, offsetY: 0, blurRadius: 6, color: cardColors.gold },
 		],
 	},
+	mark: {
+		position: "absolute",
+		left: 4,
+		bottom: 4,
+		minWidth: 20,
+		height: 20,
+		paddingHorizontal: 4,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
+		backgroundColor: cardColors.gold,
+	},
+	markText: { fontSize: 12, fontWeight: "800", color: cardColors.onGold },
 	fade: { position: "absolute", top: TOP_ROOM, bottom: 0, width: 32 },
 	fadeStart: {
 		left: 0,

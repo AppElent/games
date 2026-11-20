@@ -26,6 +26,7 @@ import {
 	faceUpCards,
 	ginHint,
 	ginLayoffOrder,
+	ginMeldMarks,
 	ginTurn,
 	groupGinHand,
 	latestEventText,
@@ -791,6 +792,24 @@ describe("gin turns", () => {
 			...ids("SA S2 S3"),
 			...sortCards(ids("C9 HK"), "suit"),
 		]);
+	});
+
+	it("numbers each meld from 1 and leaves deadwood unmarked", () => {
+		const hand = ids("HK S3 SA C9 S2 H5 D5 C5");
+		const marks = ginMeldMarks(hand, ginRules);
+		const run = marks.get("SA#0");
+		const set = marks.get("H5#0");
+		expect([run, set].sort()).toEqual([1, 2]);
+		expect(marks.get("S2#0")).toBe(run);
+		expect(marks.get("S3#0")).toBe(run);
+		expect(marks.get("D5#0")).toBe(set);
+		expect(marks.get("C5#0")).toBe(set);
+		expect(marks.has("HK#0")).toBe(false);
+		expect(marks.has("C9#0")).toBe(false);
+		// The numbers follow the order groupGinHand lays the melds out in.
+		const grouped = groupGinHand(hand, ginRules);
+		expect(marks.get(grouped[0])).toBe(1);
+		expect(marks.get(grouped[3])).toBe(2);
 	});
 });
 
