@@ -19,6 +19,23 @@ function reportConvexFailure(error: unknown, operation: string) {
 	Sentry.captureException(value, { tags: { operation, handled: true } });
 }
 
+let hostOnlyReported = false;
+
+/**
+ * Reports that a sudoku write was refused with `hostOnly`, once per page
+ * load: the caller does not own the puzzle, so every later save fails the
+ * same way. The keyed error is expected for the client instrument above and
+ * is skipped there; this is the one place it becomes a signal.
+ */
+export function reportHostOnlyRejection(operation: string) {
+	if (hostOnlyReported) return;
+	hostOnlyReported = true;
+	Sentry.captureMessage("Sudoku write refused: hostOnly", {
+		level: "warning",
+		tags: { operation, handled: true },
+	});
+}
+
 /** Instruments the shared client, including writes made through useMutation. */
 export function instrumentConvexClient(client: ConvexReactClient) {
 	const mutation = client.mutation.bind(client);

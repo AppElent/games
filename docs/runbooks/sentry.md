@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when changing error reporting or investigating an Arcade Club error in Sentry.
-version: 1.3.0
+version: 1.4.0
 ---
 
 # Sentry
@@ -20,7 +20,10 @@ rules; [environment.md](environment.md) covers where the DSN and token come from
 | Convex | `scripts/convex-sentry.mjs` | Failed executions, from `convex logs`. |
 
 Errors only: no tracing, replay, profiling or console logs. A keyed `ConvexError`
-(`roomNotFound`) is an expected outcome the UI shows and is not reported. Reports carry
+(`roomNotFound`) is an expected outcome the UI shows and is not reported. The one
+exception is a `hostOnly` refusal of a Sudoku write: the player's puzzle has stopped
+saving (a guest id the browser could not keep), so the web sends one warning
+(`Sudoku write refused: hostOnly`, tag `operation`) per page load. Reports carry
 only the opaque Clerk user id; emails, tokens and query strings are filtered.
 
 Local runs never report: the browser and Worker skip localhost, and development
