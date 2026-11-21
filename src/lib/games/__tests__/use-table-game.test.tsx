@@ -104,12 +104,12 @@ describe("useTableGame", () => {
 		expect(calls("start").at(-1)?.args).toEqual({ sessionId, ...aliceSeat });
 	});
 
-	it("waits for sign-in to settle before asking", async () => {
+	it("shows the table at once and asks only once sign-in settles", async () => {
 		convex.auth = { isLoading: true, isAuthenticated: false };
 		const { result, rerender } = renderHook(() =>
 			useTableGame(module, sessionId, words),
 		);
-		expect(result.current.loading).toBe(true);
+		await waitFor(() => expect(result.current.loading).toBe(false));
 		expect(calls("reclaimSeat")).toHaveLength(0);
 		convex.auth = { isLoading: false, isAuthenticated: true };
 		rerender();
@@ -131,6 +131,70 @@ describe("useTableGame", () => {
 		await waitFor(() => expect(readTableSeat(sessionId)).toEqual(aliceSeat));
 		await waitFor(() => expect(result.current.loading).toBe(false));
 		expect(calls("reclaimSeat")).toHaveLength(1);
+	});
+
+	it("shows no seat error while the account's seat is taken back", async () => {
+		convex.auth = { isLoading: false, isAuthenticated: true };
+		storeTableSeat(sessionId, {
+			participantId: "participant_old" as Id<"sessionParticipants">,
+			seatSecret: "secret-old-0123456789",
+		});
+		convex.answers.takeSeat = (args) =>
+			(args as { participantId: string }).participantId === alice
+				? Promise.resolve(0)
+				: Promise.reject({ data: { code: "cardsSeatCredential" } });
+		let giveSeat: (seat: typeof aliceSeat) => void = () => {};
+		convex.answers.reclaimSeat = () =>
+			new Promise((resolve) => {
+				giveSeat = resolve;
+			});
+		const { result } = renderHook(() => useTableGame(module, sessionId, words));
+		await waitFor(() => expect(calls("reclaimSeat")).toHaveLength(1));
+		expect(result.current.error).toBe("");
+		giveSeat(aliceSeat);
+		await waitFor(() => expect(readTableSeat(sessionId)).toEqual(aliceSeat));
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(result.current.error).toBe("");
+	});
+
+	it("says the seat was turned away when the account has none either", async () => {
+		convex.auth = { isLoading: false, isAuthenticated: true };
+		storeTableSeat(sessionId, {
+			participantId: "participant_old" as Id<"sessionParticipants">,
+			seatSecret: "secret-old-0123456789",
+		});
+		convex.answers.takeSeat = () =>
+			Promise.reject({ data: { code: "cardsSeatCredential" } });
+		const { result } = renderHook(() => useTableGame(module, sessionId, words));
+		await waitFor(() => expect(result.current.error).toBe(words.seatError));
+		expect(readTableSeat(sessionId)).toBeNull();
+	});
+
+	it("asks the new account for its seat when another account signs in", async () => {
+		convex.auth = { isLoading: false, isAuthenticated: true };
+		convex.answers.reclaimSeat = () => Promise.resolve(aliceSeat);
+		const { result, rerender } = renderHook(() =>
+			useTableGame(module, sessionId, words),
+		);
+		await waitFor(() => expect(readTableSeat(sessionId)).toEqual(aliceSeat));
+		expect(calls("reclaimSeat")).toHaveLength(1);
+
+		// Another account signs in on the same open page: Convex drops the old
+		// sign-in before it confirms the new one.
+		const bob = {
+			participantId: "participant_bob" as Id<"sessionParticipants">,
+			seatSecret: "secret-bob-0123456789",
+		};
+		convex.answers.reclaimSeat = () => Promise.resolve(bob);
+		convex.auth = { isLoading: false, isAuthenticated: false };
+		rerender();
+		convex.auth = { isLoading: false, isAuthenticated: true };
+		rerender();
+		await waitFor(() => expect(readTableSeat(sessionId)).toEqual(bob));
+		expect(calls("reclaimSeat")).toHaveLength(2);
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		result.current.start();
+		expect(calls("start").at(-1)?.args).toEqual({ sessionId, ...bob });
 	});
 
 	it("never asks for a guest, who keeps only the seat this browser holds", async () => {

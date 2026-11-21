@@ -85,6 +85,9 @@ export function useTableGame<M extends TableModule>(
 	const [seatSettled, setSeatSettled] = useState(false);
 	// Whether this account has asked for its seat back on this device yet.
 	const [reclaimed, setReclaimed] = useState(false);
+	// A stored seat was turned away and its error waits to see if the reclaim
+	// finds the account's seat instead.
+	const seatRefused = useRef(false);
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState("");
 	const errorTimer = useRef<number | undefined>(undefined);
@@ -95,6 +98,7 @@ export function useTableGame<M extends TableModule>(
 		setSeat(stored);
 		setSeatSettled(!stored);
 		setReclaimed(false);
+		seatRefused.current = false;
 		setHydrated(true);
 	}, [sessionId]);
 
@@ -114,8 +118,29 @@ export function useTableGame<M extends TableModule>(
 	const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
 	// A signed-in player with no seat here (a new browser or device, or a
 	// stored one turned away) asks once whether their account sits at the table.
-	const needsReclaim =
-		hydrated && !seat && !reclaimed && (authLoading || isAuthenticated);
+	// A guest has nothing to ask for, so only a settled sign-in holds the table.
+	const needsReclaim = hydrated && !seat && !reclaimed && isAuthenticated;
+	const canReclaim = useRef(false);
+	canReclaim.current = !reclaimed && isAuthenticated;
+
+	// Signing out, or into another account, ends the seat the last account held:
+	// the next sign-in asks for its own.
+	const wasSignedIn = useRef(false);
+	const signedOut = useRef(false);
+	useEffect(() => {
+		if (!isAuthenticated) {
+			signedOut.current = wasSignedIn.current;
+			return;
+		}
+		wasSignedIn.current = true;
+		if (signedOut.current) {
+			signedOut.current = false;
+			forgetTableSeat(sessionId);
+			setSeat(null);
+			setSeatSettled(true);
+			setReclaimed(false);
+		}
+	}, [isAuthenticated, sessionId]);
 
 	const takeSeat = useMutation(module.takeSeat);
 	const reclaimSeat = useMutation(module.reclaimSeat);
@@ -165,7 +190,12 @@ export function useTableGame<M extends TableModule>(
 				}
 				if (active) {
 					setSeat(null);
-					showError(seatError);
+					// An account may get its seat back below; only say so if it doesn't.
+					if (canReclaim.current) {
+						seatRefused.current = true;
+					} else {
+						showError(seatError);
+					}
 				}
 			})
 			.finally(() => {
@@ -188,13 +218,14 @@ export function useTableGame<M extends TableModule>(
 	]);
 
 	useEffect(() => {
-		if (!needsReclaim || !tableExists || authLoading) {
+		if (!needsReclaim || !tableExists) {
 			return;
 		}
 		let active = true;
 		reclaimSeat({ sessionId })
 			.then((found) => {
 				if (active && found) {
+					seatRefused.current = false;
 					setReclaimed(true);
 					setSeat(storeTableSeat(sessionId, found));
 				}
@@ -204,12 +235,16 @@ export function useTableGame<M extends TableModule>(
 			.finally(() => {
 				if (active) {
 					setReclaimed(true);
+					if (seatRefused.current) {
+						seatRefused.current = false;
+						showError(seatError);
+					}
 				}
 			});
 		return () => {
 			active = false;
 		};
-	}, [needsReclaim, tableExists, authLoading, sessionId, reclaimSeat]);
+	}, [needsReclaim, tableExists, sessionId, reclaimSeat, showError, seatError]);
 
 	useEffect(() => {
 		if (!participantId) {

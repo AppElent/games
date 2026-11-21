@@ -58,7 +58,10 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
   for their seat, or holds one the table turns away, gets it back once auth
   settles: `reclaimSeat` hands their account the seat's existing secret, so their
   other devices stay seated. Guests, other accounts and removed players get
-  nothing and watch.
+  nothing and watch. A guest sees the table at once; only a settled sign-in
+  holds the loading state, and a turned-away seat shows its error only if the
+  reclaim then finds no seat either. Signing out or into another account drops
+  the seat the last account held, and the next sign-in asks for its own.
 - Web (`src/components/cards`) and mobile (`apps/mobile/src/features/cards`) draw the
   same card art from `packages/core/src/cards/art.ts` and derive the same table logic
   (names, hints, fresh cards, flights) from `packages/core/src/cards/table-view.ts`.
