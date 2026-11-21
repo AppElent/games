@@ -157,4 +157,13 @@ describe("useDeleteAccount", () => {
 		expect(result.current.error).toBeNull();
 		expect(takeReturnTarget("user_1")).toBe("/profile/delete-account");
 	});
+
+	it("forgets the return when signing out fails, and still throws", async () => {
+		mockSignOut.mockRejectedValue(new Error("offline"));
+		const { result } = await run("app");
+		await act(async () => {
+			await expect(result.current.signInAgain()).rejects.toThrow("offline");
+		});
+		expect(takeReturnTarget("user_1")).toBeNull();
+	});
 });

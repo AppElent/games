@@ -17,7 +17,10 @@ import { GameRuleError } from "@arcadeclub/core/errors";
 import { useAuth, useClerk, useUser } from "@clerk/expo";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { returnAfterSignIn } from "../../../auth/return-target";
+import {
+	forgetReturnTarget,
+	returnAfterSignIn,
+} from "../../../auth/return-target";
 import { api } from "../../../convex/api";
 import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
 import { useSessionAction } from "../../sessions/use-session-action";
@@ -80,7 +83,13 @@ export function useDeleteAccount() {
 			reset();
 			// Signing in rebuilds the app on Play; this brings the person back.
 			if (user) returnAfterSignIn("/profile/delete-account", user.id);
-			await signOut();
+			try {
+				await signOut();
+			} catch (caught) {
+				// Still signed in; a later sign-in must not jump to this screen.
+				forgetReturnTarget();
+				throw caught;
+			}
 		},
 	};
 }
