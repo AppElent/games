@@ -336,7 +336,10 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 			setTitleDraft(title);
 			return;
 		}
-		bestEffort(rename({ ...puzzleWrite(sessionId), title: next }));
+		bestEffort(
+			rename({ ...puzzleWrite(sessionId), title: next }),
+			"sudoku:rename",
+		);
 		renameLocalSudokuSession(sessionId, next);
 	}, [titleDraft, title, rename, sessionId]);
 

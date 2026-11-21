@@ -4,11 +4,15 @@ import { ConvexError } from "convex/values";
 import { beforeEach, expect, it, vi } from "vitest";
 
 const captureException = vi.hoisted(() => vi.fn());
-vi.mock("@sentry/react", () => ({ captureException }));
+const captureMessage = vi.hoisted(() => vi.fn());
+vi.mock("@sentry/react", () => ({ captureException, captureMessage }));
 
-import { instrumentConvexClient } from "./convex";
+import { instrumentConvexClient, reportHostOnlyRejection } from "./convex";
 
-beforeEach(() => captureException.mockClear());
+beforeEach(() => {
+	captureException.mockClear();
+	captureMessage.mockClear();
+});
 
 /** A client whose every write fails with `error`. */
 function failingClient(error: unknown) {
@@ -43,4 +47,18 @@ it("leaves keyed ConvexErrors to the UI", async () => {
 		),
 	).rejects.toBe(error);
 	expect(captureException).not.toHaveBeenCalled();
+});
+
+it("reports a hostOnly rejection once, however many saves follow", () => {
+	reportHostOnlyRejection("sudoku:saveProgress");
+	reportHostOnlyRejection("sudoku:saveProgress");
+	reportHostOnlyRejection("sudoku:setPaused");
+	expect(captureMessage).toHaveBeenCalledTimes(1);
+	expect(captureMessage).toHaveBeenCalledWith(
+		"Sudoku write refused: hostOnly",
+		{
+			level: "warning",
+			tags: { operation: "sudoku:saveProgress", handled: true },
+		},
+	);
 });

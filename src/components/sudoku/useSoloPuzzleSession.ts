@@ -1,9 +1,11 @@
+import { gameErrorData } from "@arcadeclub/core/errors";
 import { digitsToString } from "@arcadeclub/core/puzzle";
 import type { SudokuBoardState } from "@arcadeclub/core/sudoku-board";
 import { useMutation } from "convex/react";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getOrCreateGuestIdentity } from "#/lib/games/sessions";
+import { reportHostOnlyRejection } from "#/lib/observability/convex";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -23,10 +25,16 @@ const SAVE_DEBOUNCE_MS = 1200;
 /**
  * A solo puzzle saves, pauses and completes on a best-effort basis: a failed
  * write is dropped and the board keeps going. This is the one place that
- * decides so.
+ * decides so. The one failure worth a signal is `hostOnly`: the caller no
+ * longer owns the puzzle (a guest id the browser could not keep), so every
+ * later save is refused too. It is reported once, not dropped.
  */
-export function bestEffort(write: Promise<unknown>) {
-	write.catch(() => undefined);
+export function bestEffort(write: Promise<unknown>, operation: string) {
+	write.catch((error: unknown) => {
+		if (gameErrorData(error)?.code === "hostOnly") {
+			reportHostOnlyRejection(operation);
+		}
+	});
 }
 
 /**
@@ -128,6 +136,7 @@ export function useSoloPuzzleSession(
 						...progress,
 						elapsedSeconds: elapsedRef.current,
 					}),
+					"sudoku:saveProgress",
 				);
 			}, SAVE_DEBOUNCE_MS);
 		},
@@ -145,6 +154,7 @@ export function useSoloPuzzleSession(
 					digits: digitsToString(digits),
 					elapsedSeconds: elapsedRef.current,
 				}),
+				"sudoku:complete",
 			);
 		},
 		[complete, sessionId],
@@ -156,7 +166,10 @@ export function useSoloPuzzleSession(
 		}
 		const pausing = statusRef.current === "active";
 		setStatus(pausing ? "paused" : "active");
-		bestEffort(setPaused({ ...puzzleWrite(sessionId), paused: pausing }));
+		bestEffort(
+			setPaused({ ...puzzleWrite(sessionId), paused: pausing }),
+			"sudoku:setPaused",
+		);
 	}, [setPaused, sessionId]);
 
 	/** Read at event time, so a handler never acts on a stale status. */
