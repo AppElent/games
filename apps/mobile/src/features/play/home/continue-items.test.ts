@@ -15,7 +15,11 @@ import {
 	readSudokuSave,
 	writeSudokuSave,
 } from "../../sudoku/saves/sudoku-save-store";
-import { listContinueItems } from "./continue-items";
+import {
+	type AccountSession,
+	accountSessionsOf,
+	listContinueItems,
+} from "./continue-items";
 
 const DAY = 24 * 60 * 60_000;
 
@@ -49,6 +53,7 @@ const save: GridSave = {
 describe("continue items", () => {
 	beforeEach(() => {
 		writeText(STORAGE_KEYS.seats, "[]");
+		writeText(STORAGE_KEYS.continueHidden, "[]");
 		clearLocalMatch();
 		for (const item of listSudokuSaves()) deleteSudokuSave(item.id);
 	});
@@ -129,5 +134,87 @@ describe("continue items", () => {
 		byId("sudoku:p1").remove();
 		expect(readSudokuSave("p1")).toBeNull();
 		expect(listContinueItems()).toEqual([]);
+	});
+
+	describe("the account's games from other devices", () => {
+		const remote = (
+			sessionId: string,
+			gameType: GameType,
+			createdAt: number,
+		): AccountSession => ({
+			sessionId: sessionId as Id<"gameSessions">,
+			participantId: `${sessionId}-acct` as Id<"sessionParticipants">,
+			gameType,
+			createdAt,
+		});
+
+		it("lists them beside this phone's, once, for a signed-in player", () => {
+			writeText(
+				STORAGE_KEYS.seats,
+				JSON.stringify([seat("bg", "backgammon", 4_000)]),
+			);
+			const items = listContinueItems(5_000, "user", [
+				remote("bg", "backgammon", 1_000),
+				remote("hit", "hitster", 3_000),
+			]);
+			expect(items.map((item) => item.id)).toEqual(["online:bg", "online:hit"]);
+			// The phone's own seat wins, with its own participant.
+			expect(items[0].seat?.participantId).toBe("bg-me");
+			expect(items[1]).toMatchObject({
+				gameType: "hitster",
+				href: {
+					pathname: "/hitster/[sessionId]",
+					params: { sessionId: "hit" },
+				},
+				seat: { sessionId: "hit", participantId: "hit-acct" },
+			});
+		});
+
+		it("leaves a guest with this phone's list", () => {
+			expect(
+				listContinueItems(5_000, null, [remote("hit", "hitster", 3_000)]),
+			).toEqual([]);
+		});
+
+		it("hides a removed one on this phone without touching others", () => {
+			const account = [
+				remote("hit", "hitster", 3_000),
+				remote("bg", "backgammon", 2_000),
+			];
+			const item = listContinueItems(5_000, "user", account)[0];
+			item.remove();
+			expect(
+				listContinueItems(5_000, "user", account).map((entry) => entry.id),
+			).toEqual(["online:bg"]);
+		});
+
+		it("does not bring back a removed seat of the account", () => {
+			rememberSeat(seat("bg", "backgammon", 0));
+			const account = [remote("bg", "backgammon", 2_000)];
+			listContinueItems(undefined, "user", account)[0].remove();
+			expect(findSeat("bg")).toBeUndefined();
+			expect(listContinueItems(undefined, "user", account)).toEqual([]);
+		});
+
+		it("keeps only open games this app opens", () => {
+			const row = (gameType: GameType, status: string) => ({
+				session: {
+					_id: `${gameType}-${status}` as Id<"gameSessions">,
+					gameType,
+					status,
+					_creationTime: 1,
+				},
+				participant: { _id: "p" as Id<"sessionParticipants"> },
+			});
+			expect(
+				accountSessionsOf([
+					row("hitster", "lobby"),
+					row("hitster", "active"),
+					row("hitster", "completed"),
+					row("hitster", "cancelled"),
+					row("chess", "active"),
+				]).map((item) => item.sessionId),
+			).toEqual(["hitster-lobby", "hitster-active"]);
+		});
 	});
 });

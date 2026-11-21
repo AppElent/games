@@ -23,6 +23,7 @@ export const STORAGE_KEYS = {
 	sudokuSave: (id: string) => `arcade:sudoku:save:${id}`,
 	sudokuInputSettings: "arcade:sudoku:input-settings",
 	sudokuHidden: "arcade:sudoku:hidden",
+	continueHidden: "arcade:continue:hidden",
 } as const;
 
 /** What was stored under this key, or `null` if nothing readable was. */
