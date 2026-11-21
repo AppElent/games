@@ -4,6 +4,7 @@
  * once its givens make a solvable sudoku.
  */
 import {
+	describeScanErrors,
 	isLowConfidence,
 	type ScanCell,
 	validateScanResult,
@@ -91,7 +92,13 @@ export function ScanVerifyStep({
 				<ScanCellEditor cells={cells} index={selected} onChange={onChange} />
 			) : null}
 			<View style={styles.group}>
-				<Notice message={validation.errors.join("\n") || null} />
+				<Notice
+					message={
+						describeScanErrors(validation, copy.validation, locale).join(
+							"\n",
+						) || null
+					}
+				/>
 				<Notice
 					tone="info"
 					message={

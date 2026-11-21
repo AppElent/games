@@ -3,6 +3,7 @@ import { digitsInMask } from "@arcadeclub/core/sudoku";
 import type { ScanCell, ScanCellType } from "@arcadeclub/core/sudoku-scan";
 import {
 	clearScanCell,
+	describeScanErrors,
 	isLowConfidence,
 	scanResultToBoardState,
 	setScanCellDigit,
@@ -317,6 +318,11 @@ function VerifyStep({
 	}, [error, onError]);
 
 	const validation = useMemo(() => validateScanResult(cells), [cells]);
+	const validationErrors = describeScanErrors(
+		validation,
+		sudoku.scan.validation,
+		locale,
+	);
 	const previewBoard = useMemo(() => scanResultToBoardState(cells), [cells]);
 	const conflictSet = useMemo(
 		() => new Set(validation.conflictCells),
@@ -531,9 +537,9 @@ function VerifyStep({
 			</div>
 
 			<div className="max-w-xl">
-				{validation.errors.length > 0 ? (
+				{validationErrors.length > 0 ? (
 					<ul className="mb-3 space-y-1 rounded-md border border-orange-400/40 bg-orange-500/10 px-4 py-3 club-error">
-						{validation.errors.map((message) => (
+						{validationErrors.map((message) => (
 							<li key={message}>{message}</li>
 						))}
 					</ul>

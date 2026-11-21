@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { sudoku as enSudoku } from "../i18n/en/games/sudoku";
+import { sudoku as nlSudoku } from "../i18n/nl/games/sudoku";
 import { mulberry32 } from "../random";
 import { digitsInMask, generatePuzzle } from "../sudoku";
 import type { ScanCell } from "../sudoku-scan";
 import {
 	clearScanCell,
+	describeScanErrors,
 	emptyScanResult,
 	isLowConfidence,
 	scanResultToBoardState,
@@ -110,6 +113,48 @@ describe("scan validation", () => {
 			puzzle.givens[givenCell],
 		);
 		expect(validateScanResult(noted).ok).toBe(true);
+	});
+});
+
+describe("scan validation messages", () => {
+	it("reports too few givens with the count, in English and Dutch", () => {
+		const cells = setScanCellDigit(emptyScanResult(), 0, 5);
+		const result = validateScanResult(cells);
+		expect(result.errors).toEqual(["tooFewGivens"]);
+		expect(result.givenCount).toBe(1);
+		expect(describeScanErrors(result, enSudoku.scan.validation, "en")).toEqual([
+			"Only 1 given recognized — a valid Sudoku needs at least 17.",
+		]);
+		expect(describeScanErrors(result, nlSudoku.scan.validation, "nl")).toEqual([
+			"Maar 1 gegeven cijfer herkend — een geldige sudoku heeft er minstens 17 nodig.",
+		]);
+	});
+
+	it("reports a conflict as a code and translates it", () => {
+		const { puzzle, cells } = scanFromPuzzle();
+		const givenCell = puzzle.givens.findIndex((value) => value !== 0);
+		const row = Math.floor(givenCell / 9);
+		const emptyInRow = puzzle.givens.findIndex(
+			(value, index) => value === 0 && Math.floor(index / 9) === row,
+		);
+		const conflicted = setScanCellDigit(
+			cells,
+			emptyInRow,
+			puzzle.givens[givenCell],
+		);
+		const result = validateScanResult(conflicted);
+		expect(result.errors).toContain("conflict");
+		expect(
+			describeScanErrors(result, nlSudoku.scan.validation, "nl"),
+		).toContain("Sommige cijfers botsen in een rij, kolom of blok.");
+	});
+
+	it("has no messages for a clean scan", () => {
+		const { cells } = scanFromPuzzle();
+		const result = validateScanResult(cells);
+		expect(describeScanErrors(result, enSudoku.scan.validation, "en")).toEqual(
+			[],
+		);
 	});
 });
 
