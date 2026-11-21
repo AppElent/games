@@ -136,15 +136,28 @@ describe("SudokuBoard edges and fills", () => {
 		expect(cell(5, 5).className).toContain("border-l-[var(--puzzle-line)]");
 	});
 
-	it("gives a cell one fill: a colour mark over selected, hint, same-digit and peer", () => {
+	it("keeps a selected marked cell distinguishable from a marked one in digit mode", () => {
 		const board = empty();
 		board.colors[0] = 1;
+		board.colors[1] = 1;
+		inEnglish(<SudokuBoard board={board} selectedCell={0} mode="digit" />);
+		// Same mark, but the selected cell carries the selected fill, not the mark's.
+		expect(fills(cell(1, 1))).toEqual(["bg-sky-300/60", "dark:bg-sky-400/30"]);
+		expect(fills(cell(1, 2))).toEqual(["bg-sky-500/40"]);
+		expect(fills(cell(1, 1))).not.toEqual(fills(cell(1, 2)));
+	});
+
+	it("gives a cell one fill: a mark beats hint, same-digit and peer", () => {
+		const board = empty();
+		board.colors[1] = 2; // hinted and marked
+		board.colors[2] = 3; // a peer of the selected cell, marked
 		inEnglish(
-			<SudokuBoard board={board} selectedCell={0} hintCells={new Set([0])} />,
+			<SudokuBoard board={board} selectedCell={0} hintCells={new Set([1])} />,
 		);
-		expect(fills(cell(1, 1))).toEqual(["bg-sky-500/40"]);
-		// A peer of the selected cell with no mark keeps the peer fill.
-		expect(fills(cell(1, 2))).toEqual(["bg-slate-200", "dark:bg-slate-700/40"]);
+		expect(fills(cell(1, 2))).toEqual(["bg-emerald-500/40"]);
+		expect(fills(cell(1, 3))).toEqual(["bg-amber-500/40"]);
+		// A peer with no mark keeps the peer fill.
+		expect(fills(cell(1, 4))).toEqual(["bg-slate-200", "dark:bg-slate-700/40"]);
 	});
 
 	it("keeps the selected state's fill on an unmarked cell", () => {

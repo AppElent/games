@@ -147,14 +147,13 @@ export function SudokuBoard({
 						: "";
 
 				// One fill per cell, so no two `bg-*` classes compete (Tailwind's
-				// stylesheet order, not the class order, would pick the winner). A
-				// colour mark wins, as the phone's marker overlay does: its own ring
-				// above carries a selected, hinted or same-digit state.
-				const background =
-					colorClass ||
-					(isSelected
-						? "bg-sky-300/60 dark:bg-sky-400/30"
-						: isHint
+				// stylesheet order, not the class order, would pick the winner).
+				// Order: selected, colour mark, hint, same digit, peer. The selected
+				// fill stays on a marked cell so the player can see where they are.
+				const background = isSelected
+					? "bg-sky-300/60 dark:bg-sky-400/30"
+					: colorClass ||
+						(isHint
 							? "bg-amber-300/50 dark:bg-amber-300/25"
 							: sameDigit
 								? "bg-sky-400/25 dark:bg-sky-500/20"
