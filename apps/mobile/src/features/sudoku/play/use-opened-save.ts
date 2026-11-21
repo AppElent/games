@@ -96,8 +96,8 @@ export function useOpenedSave(id: string): OpenedSave {
 		let active = true;
 		const sessionId = (local?.cloud?.sessionId ?? id) as Id<"gameSessions">;
 		const isCurrent = () => active && signedInAs.current === userId;
-		// The install's guest id: the server then refuses someone else's guest
-		// puzzle, which it still answers a call without one for (APP-354).
+		// The install's guest id: the server answers a guest's puzzle only to
+		// the guest id that started it.
 		const { id: guestId } = readGuestIdentity();
 		withTimeout(
 			convex.query(api.sudoku.getBundle, { sessionId, guestId }),

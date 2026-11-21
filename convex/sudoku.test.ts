@@ -46,6 +46,9 @@ const CAGES = [
 	})),
 ];
 
+/** The guest id `createPuzzle` and `soloSession` start their puzzles with. */
+const SOLVER = guestIdOf("solver");
+
 /** A solo session with no puzzle yet, which `create` never leaves behind. */
 async function soloSession(t: T) {
 	return await t.mutation(api.sessions.create, {
@@ -54,7 +57,7 @@ async function soloSession(t: T) {
 		authPolicy: "guestAllowed",
 		title: "Puzzle",
 		displayName: "Solver",
-		guestId: guestIdOf("solver"),
+		guestId: SOLVER,
 	});
 }
 
@@ -76,7 +79,7 @@ function createPuzzle(
 	return t.mutation(api.sudoku.create, {
 		title: "Puzzle",
 		displayName: "Solver",
-		guestId: guestIdOf("solver"),
+		guestId: SOLVER,
 		source: "generated",
 		difficulty: "easy",
 		givens: GIVENS,
@@ -106,6 +109,7 @@ function binaryPuzzle(t: T, size = 6) {
 function progress(sessionId: SessionId, overrides: object = {}) {
 	return {
 		sessionId,
+		guestId: SOLVER,
 		digits: EMPTY,
 		cornerNotes: ZEROES(),
 		centerNotes: ZEROES(),
@@ -121,7 +125,12 @@ function complete(
 	digits = SOLVED,
 	elapsedSeconds = 99,
 ) {
-	return t.mutation(api.sudoku.complete, { sessionId, digits, elapsedSeconds });
+	return t.mutation(api.sudoku.complete, {
+		sessionId,
+		guestId: SOLVER,
+		digits,
+		elapsedSeconds,
+	});
 }
 
 async function storedState(t: T, sessionId: SessionId) {
@@ -137,7 +146,7 @@ async function storedState(t: T, sessionId: SessionId) {
 async function bundle(t: T, sessionId: SessionId) {
 	const result = await t.query(api.sudoku.getBundle, {
 		sessionId,
-		guestId: guestIdOf("solver"),
+		guestId: SOLVER,
 	});
 	if (!result) {
 		throw new Error("Expected a sudoku bundle");
@@ -321,7 +330,7 @@ describe("getBundle", () => {
 		await expect(
 			t.query(api.sudoku.getBundle, {
 				sessionId,
-				guestId: guestIdOf("solver"),
+				guestId: SOLVER,
 			}),
 		).resolves.toBeNull();
 		await expect(
@@ -360,7 +369,11 @@ describe("saveProgress", () => {
 	it("leaves the timer stopped while paused", async () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
-		await t.mutation(api.sudoku.setPaused, { sessionId, paused: true });
+		await t.mutation(api.sudoku.setPaused, {
+			sessionId,
+			guestId: SOLVER,
+			paused: true,
+		});
 		await t.mutation(api.sudoku.saveProgress, progress(sessionId));
 		const stored = await storedState(t, sessionId);
 		expect(stored.status).toBe("paused");
@@ -405,7 +418,11 @@ describe("saveProgress", () => {
 			"gameNotFound",
 		);
 		await expectCode(
-			t.mutation(api.sudoku.setPaused, { sessionId, paused: true }),
+			t.mutation(api.sudoku.setPaused, {
+				sessionId,
+				guestId: SOLVER,
+				paused: true,
+			}),
 			"gameNotFound",
 		);
 		await expectCode(complete(t, sessionId), "gameNotFound");
@@ -414,7 +431,6 @@ describe("saveProgress", () => {
 
 describe("only the host writes", () => {
 	const OWNER = "user_owner";
-	const GUEST = guestIdOf("solver");
 
 	/** Every write a puzzle takes, as `caller` with `guestId`. */
 	function writes(
@@ -454,7 +470,7 @@ describe("only the host writes", () => {
 		return t.withIdentity({ subject: OWNER }).mutation(api.sudoku.create, {
 			title: "Puzzle",
 			displayName: "Solver",
-			guestId: GUEST,
+			guestId: SOLVER,
 			source: "generated",
 			difficulty: "easy",
 			givens: GIVENS,
@@ -485,7 +501,7 @@ describe("only the host writes", () => {
 		const t = setup();
 		const { sessionId } = await accountPuzzle(t);
 		const stranger = t.withIdentity({ subject: "user_stranger" });
-		for (const guestId of [undefined, GUEST]) {
+		for (const guestId of [undefined, SOLVER]) {
 			for (const write of Object.values(writes(stranger, sessionId, guestId))) {
 				await expectCode(write(), "hostOnly");
 			}
@@ -496,7 +512,7 @@ describe("only the host writes", () => {
 	it("answers hostOnly to a signed-out caller on an account's puzzle", async () => {
 		const t = setup();
 		const { sessionId } = await accountPuzzle(t);
-		for (const guestId of [undefined, GUEST]) {
+		for (const guestId of [undefined, SOLVER]) {
 			for (const write of Object.values(writes(t, sessionId, guestId))) {
 				await expectCode(write(), "hostOnly");
 			}
@@ -507,14 +523,14 @@ describe("only the host writes", () => {
 	it("lets the guest who started a puzzle write it with their guest id, signed in or not", async () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
-		const guest = writes(t, sessionId, GUEST);
+		const guest = writes(t, sessionId, SOLVER);
 		await guest.saveProgress();
 		await guest.setPaused();
 		// A guest who signs in later still holds the puzzle they started.
 		await writes(
 			t.withIdentity({ subject: "user_later" }),
 			sessionId,
-			GUEST,
+			SOLVER,
 		).rename();
 		await expect(guest.complete()).resolves.toEqual({ completed: true });
 		expect((await storedState(t, sessionId)).status).toBe("completed");
@@ -534,14 +550,15 @@ describe("only the host writes", () => {
 		await expectUntouched(t, sessionId);
 	});
 
-	it("still takes a guest's puzzle write with no guest id, as clients before APP-352 send it", async () => {
-		// LEGACY(APP-354): delete with the no-guest-id branch in `isPuzzleHost`.
+	it("answers hostOnly to no guest id on a guest's puzzle, signed in or not", async () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
-		const legacy = writes(t, sessionId);
-		await legacy.saveProgress();
-		await legacy.rename();
-		await expect(legacy.complete()).resolves.toEqual({ completed: true });
+		for (const caller of [t, t.withIdentity({ subject: "user_stranger" })]) {
+			for (const write of Object.values(writes(caller, sessionId))) {
+				await expectCode(write(), "hostOnly");
+			}
+		}
+		await expectUntouched(t, sessionId);
 	});
 
 	it("checks the host before treating a completed puzzle as done", async () => {
@@ -556,7 +573,6 @@ describe("only the host writes", () => {
 
 describe("only the host reads", () => {
 	const OWNER = "user_owner";
-	const GUEST = guestIdOf("solver");
 
 	function accountPuzzle(t: T) {
 		return t.withIdentity({ subject: OWNER }).mutation(api.sudoku.create, {
@@ -594,7 +610,7 @@ describe("only the host reads", () => {
 		const t = setup();
 		const { sessionId } = await accountPuzzle(t);
 		const stranger = t.withIdentity({ subject: "user_stranger" });
-		for (const guestId of [undefined, GUEST]) {
+		for (const guestId of [undefined, SOLVER]) {
 			await expect(read(stranger, sessionId, guestId)).resolves.toBeNull();
 		}
 	});
@@ -602,7 +618,7 @@ describe("only the host reads", () => {
 	it("is null for a signed-out caller on an account's puzzle", async () => {
 		const t = setup();
 		const { sessionId } = await accountPuzzle(t);
-		for (const guestId of [undefined, GUEST]) {
+		for (const guestId of [undefined, SOLVER]) {
 			await expect(read(t, sessionId, guestId)).resolves.toBeNull();
 		}
 	});
@@ -611,7 +627,7 @@ describe("only the host reads", () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
 		for (const caller of [t, t.withIdentity({ subject: "user_later" })]) {
-			const result = await read(caller, sessionId, GUEST);
+			const result = await read(caller, sessionId, SOLVER);
 			expect(result?.state.givens).toBe(GIVENS);
 			expect(result?.session).toEqual({ _id: sessionId, title: "Puzzle" });
 			expect(result?.session.hostUserId).toBeUndefined();
@@ -628,11 +644,12 @@ describe("only the host reads", () => {
 		}
 	});
 
-	it("still answers a guest's puzzle read with no guest id, as clients before APP-355 send it", async () => {
-		// LEGACY(APP-354): delete with the no-guest-id branch in `isPuzzleHost`.
+	it("is null for no guest id on a guest's puzzle, signed in or not", async () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
-		expect((await read(t, sessionId))?.state.givens).toBe(GIVENS);
+		for (const caller of [t, t.withIdentity({ subject: "user_stranger" })]) {
+			await expect(read(caller, sessionId)).resolves.toBeNull();
+		}
 	});
 
 	it("never sends the host's account id to anyone else", async () => {
@@ -640,7 +657,7 @@ describe("only the host reads", () => {
 		const { sessionId } = await accountPuzzle(t);
 		const results = [
 			await read(t, sessionId),
-			await read(t, sessionId, GUEST),
+			await read(t, sessionId, SOLVER),
 			await read(t.withIdentity({ subject: "user_stranger" }), sessionId),
 		];
 		expect(JSON.stringify(results)).not.toContain(OWNER);
@@ -658,7 +675,11 @@ describe("setPaused", () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
 		advance(65_600);
-		await t.mutation(api.sudoku.setPaused, { sessionId, paused: true });
+		await t.mutation(api.sudoku.setPaused, {
+			sessionId,
+			guestId: SOLVER,
+			paused: true,
+		});
 		const paused = await storedState(t, sessionId);
 		expect(paused.status).toBe("paused");
 		expect(paused.elapsedSeconds).toBe(66);
@@ -670,11 +691,23 @@ describe("setPaused", () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
 		advance(1000);
-		await t.mutation(api.sudoku.setPaused, { sessionId, paused: true });
+		await t.mutation(api.sudoku.setPaused, {
+			sessionId,
+			guestId: SOLVER,
+			paused: true,
+		});
 		advance(5000);
-		await t.mutation(api.sudoku.setPaused, { sessionId, paused: true });
+		await t.mutation(api.sudoku.setPaused, {
+			sessionId,
+			guestId: SOLVER,
+			paused: true,
+		});
 		expect((await storedState(t, sessionId)).elapsedSeconds).toBe(1);
-		await t.mutation(api.sudoku.setPaused, { sessionId, paused: false });
+		await t.mutation(api.sudoku.setPaused, {
+			sessionId,
+			guestId: SOLVER,
+			paused: false,
+		});
 		const resumed = await storedState(t, sessionId);
 		expect(resumed.status).toBe("active");
 		expect(resumed.elapsedSeconds).toBe(1);
@@ -685,7 +718,11 @@ describe("setPaused", () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
 		await complete(t, sessionId);
-		await t.mutation(api.sudoku.setPaused, { sessionId, paused: true });
+		await t.mutation(api.sudoku.setPaused, {
+			sessionId,
+			guestId: SOLVER,
+			paused: true,
+		});
 		expect((await storedState(t, sessionId)).status).toBe("completed");
 	});
 });
@@ -786,6 +823,7 @@ describe("rename", () => {
 		const { sessionId } = await soloSession(t);
 		await t.mutation(api.sudoku.rename, {
 			sessionId,
+			guestId: SOLVER,
 			title: `  ${"x".repeat(100)}  `,
 		});
 		const session = await t.run((ctx) => ctx.db.get(sessionId));
@@ -796,7 +834,11 @@ describe("rename", () => {
 		const t = setup();
 		const { sessionId } = await soloSession(t);
 		await expectCode(
-			t.mutation(api.sudoku.rename, { sessionId, title: "   " }),
+			t.mutation(api.sudoku.rename, {
+				sessionId,
+				guestId: SOLVER,
+				title: "   ",
+			}),
 			"titleEmpty",
 		);
 	});
@@ -808,7 +850,11 @@ describe("rename", () => {
 			await deletedSessionId(t),
 		]) {
 			await expectCode(
-				t.mutation(api.sudoku.rename, { sessionId, title: "x" }),
+				t.mutation(api.sudoku.rename, {
+					sessionId,
+					guestId: SOLVER,
+					title: "x",
+				}),
 				"sessionNotFound",
 			);
 		}
@@ -836,7 +882,7 @@ describe("create", () => {
 			const { sessionId } = await t.mutation(api.sudoku.create, {
 				title: "Puzzle",
 				displayName: "Solver",
-				guestId: guestIdOf("solver"),
+				guestId: SOLVER,
 				source: "generated",
 				difficulty: "easy",
 				variant: puzzle.variant,
