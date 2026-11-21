@@ -120,13 +120,6 @@ async function isPuzzleHost(
 	if (!host) {
 		return false;
 	}
-	// LEGACY(APP-354): web tabs and cached PWA bundles from before APP-352 and
-	// APP-355 send no guest id, so a guest's puzzle still answers a call
-	// without one. A wrong guest id is refused, and so is anyone but the
-	// account on an account's puzzle. Remove once those bundles are gone.
-	if (!host.userId && guestId === undefined) {
-		return true;
-	}
 	return await isCaller(ctx, host, guestId);
 }
 
