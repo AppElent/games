@@ -25,6 +25,7 @@ import {
 	ErrorBoundary as RouterErrorBoundary,
 	Stack,
 	ThemeProvider,
+	useRouter,
 } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -34,6 +35,7 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { publishableKey } from "../src/auth/config";
+import { takeReturnTarget } from "../src/auth/return-target";
 import { AppConvexProvider } from "../src/convex/provider";
 import { AppQueryCacheProvider } from "../src/convex/query-cache";
 import { useSudokuCloudSync } from "../src/features/sudoku/saves/use-sudoku-cloud-sync";
@@ -138,10 +140,19 @@ function ScopedQueryCache({ children }: { children: ReactNode }) {
 
 function RootNavigator({ windowReady }: { windowReady: boolean }) {
 	const colors = useTokens();
-	const { isLoaded } = useAuth();
+	const { isLoaded, userId } = useAuth();
+	const router = useRouter();
 	const ready = isLoaded && windowReady;
 	useNavigationBreadcrumbs();
 	useSudokuCloudSync();
+
+	// A sign-in that was asked to come back (`auth/return-target`) rebuilt the
+	// tree on Play; go back to where it started.
+	useEffect(() => {
+		if (!ready || !userId) return;
+		const target = takeReturnTarget(userId);
+		if (target) router.navigate(target);
+	}, [ready, userId, router]);
 
 	useEffect(() => {
 		if (ready) SplashScreen.hideAsync();

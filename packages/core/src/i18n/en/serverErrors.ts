@@ -89,6 +89,10 @@ export const serverErrors = {
 		"To delete, sign in again first. This keeps anyone else using this device from deleting your data or account.",
 	accountSignInToFinish:
 		"Your Arcade Club data is deleted, but your AppElent account isn't yet: it needs a recent sign-in. Sign in again, then delete your whole account again to finish.",
+	accountSessionEnded:
+		"Your session ended. Sign in again, then try deleting again.",
+	accountDeleteAgain:
+		"Your Arcade Club data is deleted, but your AppElent account isn't yet. Delete your account again to finish.",
 	signInToHost: "Sign in to host a game.",
 	signInToJoin: "Sign in to join this game.",
 	sessionNotFound: "This game no longer exists.",

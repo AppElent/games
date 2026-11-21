@@ -58,8 +58,12 @@ export function deletionSteps({
 	};
 }
 
-/** Refusals that a fresh sign-in, then deleting again, resolves. */
+/** Refusals that a fresh sign-in, then deleting again, resolves (no session included). */
 export function needsSignInAgain(error: unknown) {
 	const code = gameErrorData(error)?.code;
-	return code === "accountSignInFirst" || code === "accountSignInToFinish";
+	return (
+		code === "accountSignInFirst" ||
+		code === "accountSignInToFinish" ||
+		code === "accountSessionEnded"
+	);
 }

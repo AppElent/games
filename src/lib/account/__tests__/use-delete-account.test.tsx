@@ -17,6 +17,8 @@ let verifies = true;
 let verifyPrompts = 0;
 /** The live Clerk user; another tab can switch it. */
 let clerkUserId = "user_1";
+/** Whether Clerk still has a session (it ends in another tab or by expiry). */
+let hasSession = true;
 const checkAuthorization = vi.fn();
 const cancelled = { code: "reverification_cancelled" };
 
@@ -28,7 +30,9 @@ vi.mock("@clerk/react", () => ({
 	useClerk: () => ({
 		signOut,
 		get session() {
-			return { id: "sess_1", checkAuthorization, reload: async () => {} };
+			return hasSession
+				? { id: "sess_1", checkAuthorization, reload: async () => {} }
+				: null;
 		},
 		get user() {
 			return { id: clerkUserId, delete: deleteUser };
@@ -90,6 +94,7 @@ describe("useDeleteAccount", () => {
 		verifies = true;
 		verifyPrompts = 0;
 		clerkUserId = "user_1";
+		hasSession = true;
 		checkAuthorization.mockImplementation(() => recentSignIn);
 		deleteUser.mockResolvedValue(undefined);
 		signOut.mockResolvedValue(undefined);
@@ -260,7 +265,7 @@ describe("useDeleteAccount", () => {
 		);
 	});
 
-	it("says to sign in again to finish when Clerk refuses the account after the data", async () => {
+	it("says to delete again to finish when Clerk refuses the account after the data", async () => {
 		deleteMyData.mockResolvedValueOnce({ done: true });
 		const refusal = {
 			status: 403,
@@ -276,11 +281,11 @@ describe("useDeleteAccount", () => {
 		expect(signOut).not.toHaveBeenCalled();
 		expect(navigate).not.toHaveBeenCalled();
 		expect(result.current.error).toBe(
-			"Your Arcade Club data is deleted, but your AppElent account isn't yet: it needs a recent sign-in. Sign in again, then delete your whole account again to finish.",
+			"Your Arcade Club data is deleted, but your AppElent account isn't yet. Delete your account again to finish.",
 		);
 	});
 
-	it("says to sign in again to finish when Clerk still refuses after its dialog", async () => {
+	it("says to delete again to finish when Clerk still refuses after its dialog", async () => {
 		deleteMyData.mockResolvedValueOnce({ done: true });
 		deleteUser.mockRejectedValue({
 			status: 403,
@@ -289,6 +294,20 @@ describe("useDeleteAccount", () => {
 		const { ok, result } = await runDeletion();
 		expect(ok).toBe(false);
 		expect(deleteUser).toHaveBeenCalledTimes(2);
-		expect(result.current.error).toMatch(/^Your Arcade Club data is deleted/);
+		expect(result.current.error).toBe(
+			"Your Arcade Club data is deleted, but your AppElent account isn't yet. Delete your account again to finish.",
+		);
+	});
+
+	it("says the session ended, and deletes nothing, when Clerk has no session", async () => {
+		hasSession = false;
+		const { ok, result } = await runDeletion();
+		expect(ok).toBe(false);
+		expect(deleteMyData).not.toHaveBeenCalled();
+		expect(deleteUser).not.toHaveBeenCalled();
+		expect(signOut).not.toHaveBeenCalled();
+		expect(result.current.error).toBe(
+			"Your session ended. Sign in again, then try deleting again.",
+		);
 	});
 });

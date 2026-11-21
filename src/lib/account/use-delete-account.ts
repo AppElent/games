@@ -6,12 +6,13 @@ import {
 	NEEDS_RECENT_SIGN_IN,
 	deleteAccount as runDeletion,
 } from "@arcadeclub/core/account-deletion";
-import { GameRuleError } from "@arcadeclub/core/errors";
+import { GameRuleError, gameErrorData } from "@arcadeclub/core/errors";
 import { useClerk, useReverification, useUser } from "@clerk/react";
 import { isReverificationCancelledError } from "@clerk/react/errors";
 import { useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation } from "convex/react";
 import { useState } from "react";
+import { useErrorMessage } from "#/lib/games/errors";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -22,7 +23,7 @@ import { api } from "../../../convex/_generated/api";
  * whole AppElent account. Both need a recent sign-in, so an old one opens
  * Clerk's verify dialog (password or code) before anything is deleted. A
  * refusal (an active game, an account switch, a sign-in Clerk still finds too
- * old) or an interrupted run lands in `error`, localized; running it again
+ * old, a session that ended) or an interrupted run lands in `error`, localized; running it again
  * resumes. Closing Clerk's dialog stops quietly. `deleteAccount` resolves
  * true once it is done, and the player lands on the home page rather than the
  * sign-in redirect that `RequireSignedIn` starts when the session ends; after
@@ -35,6 +36,7 @@ export function useDeleteAccount() {
 	const navigate = useNavigate();
 	const deleteMyData = useMutation(api.account.deleteMyData);
 	const copy = useMessages().profile.deleteAccount;
+	const errorMessage = useErrorMessage();
 	const { error, setError, run } = useGameAction();
 	const [busy, setBusy] = useState(false);
 
@@ -66,7 +68,12 @@ export function useDeleteAccount() {
 			return false;
 		}
 		const sessionId = clerk.session?.id;
-		if (!sessionId) return false;
+		if (!sessionId) {
+			setError(
+				errorMessage(new GameRuleError("accountSessionEnded"), copy.failed),
+			);
+			return false;
+		}
 		const account = { userId: user.id, sessionId };
 		setBusy(true);
 		try {
@@ -78,11 +85,19 @@ export function useDeleteAccount() {
 				signOut: () => clerk.signOut({ redirectUrl: landing }),
 			};
 			await run(async () => {
-				deleted = await runDeletion(
-					scope === "app"
-						? { ...common, scope }
-						: { ...common, scope, deleteUser: () => deleteUser(account) },
-				);
+				try {
+					deleted = await runDeletion(
+						scope === "app"
+							? { ...common, scope }
+							: { ...common, scope, deleteUser: () => deleteUser(account) },
+					);
+				} catch (caught) {
+					// Clerk's dialog opens again on the next delete, so pressing
+					// delete is all it takes; the shared copy says to sign in.
+					throw gameErrorData(caught)?.code === "accountSignInToFinish"
+						? new GameRuleError("accountDeleteAgain")
+						: caught;
+				}
 			}, copy.failed);
 			if (deleted) {
 				await navigate({

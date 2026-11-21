@@ -10,6 +10,7 @@
 import { useAuth } from "@clerk/expo";
 import { Stack, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect } from "react";
+import { forgetReturnTarget } from "../../src/auth/return-target";
 import { useTokens } from "../../src/theme";
 import { headerOptions } from "../../src/ui/header-options";
 import { modalCloseHeaderRight } from "../../src/ui/modal-close-button";
@@ -34,7 +35,11 @@ export default function AuthLayout() {
 			screenOptions={{
 				...headerOptions(colors),
 				title: "",
-				headerRight: modalCloseHeaderRight(close),
+				headerRight: modalCloseHeaderRight(() => {
+					// Closing without signing in drops a pending return.
+					forgetReturnTarget();
+					close();
+				}),
 			}}
 		/>
 	);

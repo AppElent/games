@@ -61,9 +61,13 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 
   An old sign-in stops before any data is deleted: the web opens Clerk's verify dialog
   (via `useReverification`); the app, which has no such dialog, refuses with
-  `accountSignInFirst` and offers "Sign in again". If Clerk still refuses the user after
-  the data is gone, both show `accountSignInToFinish`. Refusals (`accountInActiveGame`,
-  `accountChanged`) show localized; a rerun resumes.
+  `accountSignInFirst` and offers "Sign in again", after which it returns to the delete
+  screen (`apps/mobile/src/auth/return-target.ts`, honoured by the root navigator for the
+  same account, because signing in rebuilds the tree on Play). If Clerk still refuses the
+  user after the data is gone, the app shows `accountSignInToFinish`; the web, where
+  deleting again reopens Clerk's dialog, shows `accountDeleteAgain`. Refusals
+  (`accountInActiveGame`, `accountChanged`) and a Clerk session that has ended
+  (`accountSessionEnded`, "Sign in again" on the app) show localized; a rerun resumes.
 - `POST /clerk/webhook` (`convex/http.ts`) purges the data of a Clerk user deleted
   anywhere (another AppElent app, the Clerk dashboard) with the same
   `deleteAccountData` as `deleteMyData`, through `account.purgeDeletedUser`, which
