@@ -103,20 +103,33 @@ export function SudokuBoard({
 				const isHint = hintCells?.has(cell) ?? false;
 				const colorClass = SUDOKU_COLORS[board.colors[cell] - 1]?.tint ?? "";
 
+				// The board's own `border-2` is the outer edge, so cells on the edge
+				// draw no border there; box lines inside are 2px, cell lines 1px.
 				const borders = [
-					col % 3 === 0
-						? "border-l-2 border-l-slate-600 dark:border-l-slate-300/70"
-						: "border-l border-l-[var(--puzzle-line)]",
-					row % 3 === 0
-						? "border-t-2 border-t-slate-600 dark:border-t-slate-300/70"
-						: "border-t border-t-[var(--puzzle-line)]",
-					col === 8
-						? "border-r-2 border-r-slate-600 dark:border-r-slate-300/70"
-						: "",
-					row === 8
-						? "border-b-2 border-b-slate-600 dark:border-b-slate-300/70"
-						: "",
+					col === 0
+						? ""
+						: col % 3 === 0
+							? "border-l-2 border-l-slate-600 dark:border-l-slate-300/70"
+							: "border-l border-l-[var(--puzzle-line)]",
+					row === 0
+						? ""
+						: row % 3 === 0
+							? "border-t-2 border-t-slate-600 dark:border-t-slate-300/70"
+							: "border-t border-t-[var(--puzzle-line)]",
 				].join(" ");
+
+				// The board's rounded corner is 2px smaller inside its border; the
+				// corner cells follow it so a filled one stays inside the edge.
+				const corner =
+					row === 0 && col === 0
+						? "rounded-tl-[calc(0.5rem-2px)]"
+						: row === 0 && col === 8
+							? "rounded-tr-[calc(0.5rem-2px)]"
+							: row === 8 && col === 0
+								? "rounded-bl-[calc(0.5rem-2px)]"
+								: row === 8 && col === 8
+									? "rounded-br-[calc(0.5rem-2px)]"
+									: "";
 
 				// Outside digit mode the selected cell also gets a solid ring on
 				// its edge: clear of the notes, and unlike the dashed cage lines.
@@ -133,15 +146,21 @@ export function SudokuBoard({
 						? "inset-ring-1 inset-ring-slate-600 dark:inset-ring-slate-300/70"
 						: "";
 
-				const background = isSelected
-					? "bg-sky-300/60 dark:bg-sky-400/30"
-					: isHint
-						? "bg-amber-300/50 dark:bg-amber-300/25"
-						: sameDigit
-							? "bg-sky-400/25 dark:bg-sky-500/20"
-							: isPeer
-								? "bg-slate-200 dark:bg-slate-700/40"
-								: "";
+				// One fill per cell, so no two `bg-*` classes compete (Tailwind's
+				// stylesheet order, not the class order, would pick the winner). A
+				// colour mark wins, as the phone's marker overlay does: its own ring
+				// above carries a selected, hinted or same-digit state.
+				const background =
+					colorClass ||
+					(isSelected
+						? "bg-sky-300/60 dark:bg-sky-400/30"
+						: isHint
+							? "bg-amber-300/50 dark:bg-amber-300/25"
+							: sameDigit
+								? "bg-sky-400/25 dark:bg-sky-500/20"
+								: isPeer
+									? "bg-slate-200 dark:bg-slate-700/40"
+									: "");
 
 				const cageEdges = cageInfo ? cageInfo.edges[cell] : null;
 				const cageSum = cageInfo?.sumAt.get(cell);
@@ -156,7 +175,7 @@ export function SudokuBoard({
 							col: col + 1,
 						})}
 						onClick={() => onSelectCell?.(cell)}
-						className={`@container relative flex items-center justify-center overflow-hidden p-0 ${borders} ${colorClass} ${background} ${modeRing} ${filledRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
+						className={`@container relative flex items-center justify-center overflow-hidden p-0 ${borders} ${corner} ${background} ${modeRing} ${filledRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
 					>
 						{cageEdges && !hidden ? (
 							<span

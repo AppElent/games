@@ -110,3 +110,45 @@ describe("SudokuInputSettingsPanel", () => {
 		});
 	});
 });
+
+describe("SudokuBoard edges and fills", () => {
+	afterEach(cleanup);
+
+	const cell = (row: number, col: number) =>
+		screen.getByRole("button", { name: `Row ${row}, column ${col}` });
+	const fills = (el: HTMLElement) =>
+		el.className.split(/\s+/).filter((c) => /(^|:)bg-/.test(c));
+	const empty = () => createBoardState(new Array(81).fill(0));
+
+	it("leaves the outer edge to the board's own border", () => {
+		inEnglish(<SudokuBoard board={empty()} selectedCell={null} />);
+		const board = cell(1, 1).parentElement as HTMLElement;
+		expect(board.className).toContain("border-2");
+		for (const i of [1, 5, 9]) {
+			expect(cell(1, i).className).not.toMatch(/\bborder-t/);
+			expect(cell(i, 1).className).not.toMatch(/\bborder-l/);
+			expect(cell(9, i).className).not.toMatch(/\bborder-b/);
+			expect(cell(i, 9).className).not.toMatch(/\bborder-r/);
+		}
+		// Box and cell lines inside are still drawn.
+		expect(cell(4, 4).className).toContain("border-l-2");
+		expect(cell(4, 4).className).toContain("border-t-2");
+		expect(cell(5, 5).className).toContain("border-l-[var(--puzzle-line)]");
+	});
+
+	it("gives a cell one fill: a colour mark over selected, hint, same-digit and peer", () => {
+		const board = empty();
+		board.colors[0] = 1;
+		inEnglish(
+			<SudokuBoard board={board} selectedCell={0} hintCells={new Set([0])} />,
+		);
+		expect(fills(cell(1, 1))).toEqual(["bg-sky-500/40"]);
+		// A peer of the selected cell with no mark keeps the peer fill.
+		expect(fills(cell(1, 2))).toEqual(["bg-slate-200", "dark:bg-slate-700/40"]);
+	});
+
+	it("keeps the selected state's fill on an unmarked cell", () => {
+		inEnglish(<SudokuBoard board={empty()} selectedCell={0} />);
+		expect(fills(cell(1, 1))).toEqual(["bg-sky-300/60", "dark:bg-sky-400/30"]);
+	});
+});

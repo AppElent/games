@@ -125,18 +125,46 @@ describe("card table controls reach 3:1 on the felt", () => {
 	const felts = Object.entries(cardColors.felts).map(
 		([name, [brightest]]) => [name, parse(brightest)] as const,
 	);
-	const css = repoFile("src/components/cards/cards.css");
-	const value = (selector: string, property: string) => {
-		const start = css.indexOf(`${selector} {`);
-		if (start < 0) throw new Error(`${selector} block not found in cards.css`);
-		const block = css.slice(start, css.indexOf("}", start));
-		return new RegExp(`\\s${property}:\\s*([^;]+);`).exec(block)?.[1].trim();
+	const css = repoFile("src/components/cards/cards.css").replace(
+		/\/\*[\s\S]*?\*\//g,
+		"",
+	);
+	const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+		selectors: m[1].split(",").map((s) => s.trim()),
+		body: m[2],
+	}));
+	// Every declaration of a selector across its rules, later ones winning.
+	const declarations = (selector: string) => {
+		const found = new Map<string, string>();
+		for (const rule of rules.filter((r) => r.selectors.includes(selector))) {
+			for (const m of rule.body.matchAll(/(?:^|[\s;])([\w-]+):\s*([^;]+);/g)) {
+				found.set(m[1], m[2].trim());
+			}
+		}
+		return found;
 	};
+	const value = (selector: string, property: string) =>
+		declarations(selector).get(property);
 
-	it.each(felts)("ivoryLine over a chip on %s", (_name, felt) => {
-		expect(
-			borderContrast(cardColors.ivoryLine, cardColors.chip, felt),
-		).toBeGreaterThanOrEqual(3);
+	// The web control classes whose edge is the felt's ivory line, and the
+	// property that draws it. A rule that starts using the line without being
+	// listed here fails the completeness test below.
+	const controls = [
+		[".btn-ghost", "border"],
+		[".game-tile", "border"],
+		[".mode-option", "border"],
+		[".stepper-btn", "border"],
+		[".rule-switch-track", "box-shadow"],
+		[".icon-chip", "border"],
+		[".seat-manage", "border"],
+	] as const;
+
+	it("ivoryLine over a chip on every felt", () => {
+		for (const [, felt] of felts) {
+			expect(
+				borderContrast(cardColors.ivoryLine, cardColors.chip, felt),
+			).toBeGreaterThanOrEqual(3);
+		}
 	});
 
 	it("ivoryLine over a chip on the result panel", () => {
@@ -149,14 +177,34 @@ describe("card table controls reach 3:1 on the felt", () => {
 		).toBeGreaterThanOrEqual(3);
 	});
 
-	// The web's icon chip has the darkest fill of any control on the felt; the
-	// seat menu button (`.seat-manage`) is one, and the phone's `manage` button
-	// is the `chip` fill tested above.
-	describe.each([".icon-chip", ".seat-manage"])("the web %s", (selector) => {
+	it.each(controls)(
+		"the web %s draws its edge from --ivory-line",
+		(selector, edge) => {
+			expect(value(selector, edge)).toContain("var(--ivory-line)");
+		},
+	);
+
+	it("no other web control rule draws its edge from --ivory-line unlisted", () => {
+		const listed = new Set<string>(controls.map(([selector]) => selector));
+		const unlisted = rules
+			.filter((r) =>
+				/(border|box-shadow):[^;]*var\(--ivory-line\)/.test(r.body),
+			)
+			.flatMap((r) => r.selectors)
+			// States and pseudo-elements restyle a listed control, they are not one.
+			.filter((selector) => !/[:[]/.test(selector))
+			.filter((selector) => !listed.has(selector));
+		expect(unlisted).toEqual([]);
+	});
+
+	// A flat fill is tested against the brightest felt. The icon chip has the
+	// darkest fill of any control on the felt; the seat menu button
+	// (`.seat-manage`) is one, and the phone's `manage` button is the `chip`
+	// fill tested above. Gradient fills (the game tile) sit on their own felt.
+	describe.each(controls)("the web %s fill", (selector) => {
 		it.each(felts)("border on %s", (_name, felt) => {
 			const fill = value(selector, "background");
-			if (!fill) throw new Error(`no ${selector} background in cards.css`);
-			expect(value(selector, "border")).toContain("var(--ivory-line)");
+			if (!fill || !/^(#|rgba)/.test(fill)) return;
 			expect(
 				borderContrast(cardColors.ivoryLine, fill, felt),
 			).toBeGreaterThanOrEqual(3);
@@ -183,51 +231,114 @@ describe("card table controls reach 3:1 on the felt", () => {
 			cardColors.felts.midnight[0],
 		);
 	});
+
+	// A sheet renders inside .cards-felt, so it inherits the palette; a copy on
+	// .sheet-body would drift from the felt's. Outside the felt it would also
+	// lose --ivory-line, and its close button its edge.
+	it("the table's rules sheet renders inside the felt", () => {
+		const table = repoFile("src/components/cards/Table.tsx");
+		const afterFelt = table.slice(table.indexOf('className="cards-felt"'));
+		expect(afterFelt.indexOf("<RulesSheet")).toBeGreaterThan(0);
+		expect(afterFelt.indexOf("<RulesSheet")).toBeLessThan(
+			afterFelt.lastIndexOf("</div>"),
+		);
+	});
+
+	it("sheets inherit the felt's palette instead of redeclaring it", () => {
+		const body = declarations(".sheet-body");
+		for (const name of ["--gold", "--gold-soft", "--ivory", "--ivory-muted"]) {
+			expect(body.has(name)).toBe(false);
+		}
+	});
 });
 
 describe("web backgammon controls reach 3:1", () => {
-	const line = /const CONTROL_LINE = "([^"]+)";/.exec(
-		repoFile("src/components/backgammon/BackgammonBoard.tsx"),
-	)?.[1];
+	const source = repoFile("src/components/backgammon/BackgammonBoard.tsx");
+	const line = /const CONTROL_LINE = "([^"]+)";/.exec(source)?.[1];
 	if (!line) throw new Error("CONTROL_LINE not found in BackgammonBoard.tsx");
 
 	// Buttons sit on the fullscreen stage (bg-slate-950); the off switch sits in
-	// the options panel, whose gradient starts at #2c2018.
-	it.each([
-		["the turn badge, white to move", "rgba(247, 238, 214, 0.14)", "#020617"],
-		["the turn badge, black to move", "rgba(20, 16, 12, 0.5)", "#020617"],
-		["a ghost button on the stage", "rgba(255, 255, 255, 0.05)", "#020617"],
-		["the reset button on the stage", "rgba(0, 0, 0, 0)", "#020617"],
-		[
-			"an off switch in the options panel",
-			"rgba(255, 255, 255, 0.12)",
-			"#2c2018",
-		],
-	])("%s", (_label, fill, ground) => {
-		expect(borderContrast(line, fill, parse(ground))).toBeGreaterThanOrEqual(3);
+	// the options panel, whose gradient starts at its first colour.
+	const stage = "#020617";
+	const panel = /linear-gradient\(160deg,\s*(#[0-9a-f]{6})/i.exec(source)?.[1];
+	if (!panel) throw new Error("options panel gradient not found");
+
+	// Every control whose style draws its edge with CONTROL_LINE, with the fills
+	// its `background:` (the property just before the border) can take: the
+	// rgba() literals in it. A transparent fill has none and sits on the ground.
+	const edges = [...source.matchAll(/border: `1px solid \$\{([^}`]*)\}`/g)];
+	const controls = edges
+		.filter((m) => m[1].includes("CONTROL_LINE"))
+		.map((m) => {
+			const style = source.slice(
+				source.lastIndexOf("style={", m.index),
+				m.index,
+			);
+			const background = style.slice(style.lastIndexOf("background:"));
+			const fills = [...background.matchAll(/rgba\([^)]+\)/g)].map((f) => f[0]);
+			// The switch's border is CONTROL_LINE only while it is off.
+			const onPanel = m[1].includes("on ?");
+			return { fills, ground: onPanel ? panel : stage };
+		});
+
+	it("finds every control that uses CONTROL_LINE", () => {
+		// Every mention but the declaration is a control's edge.
+		expect(controls.length).toBe(
+			(source.match(/CONTROL_LINE/g) ?? []).length - 1,
+		);
 	});
+
+	it.each(controls.map((c, i) => [i, c] as const))(
+		"control %i",
+		(_i, { fills, ground }) => {
+			for (const fill of fills.length ? fills : ["rgba(0, 0, 0, 0)"]) {
+				expect(
+					borderContrast(line, fill, parse(ground)),
+				).toBeGreaterThanOrEqual(3);
+			}
+		},
+	);
 });
 
 describe("web header", () => {
-	// Header.tsx: bg-slate-950/72 over the page. A white page is the worst case.
-	const bar = parse("rgba(2, 6, 23, 0.72)", parse("#ffffff"));
-	const css = readFileSync(
-		join(__dirname, "../../../../src/styles.css"),
-		"utf8",
-	);
-
-	it("nav links (and Sign in) reach 4.5:1 on the bar over a light page", () => {
-		const color = /\.club-nav-link \{[^}]*color:\s*(#[0-9a-f]{6});/i.exec(
-			css,
+	// Header.tsx renders `club-header`; styles.css owns the bar colour and the
+	// tokens its links and buttons read, so the test reads them from there.
+	const css = repoFile("src/styles.css");
+	const rule = (selector: string) => {
+		const start = css.indexOf(`${selector} {`);
+		if (start < 0) throw new Error(`${selector} not found in styles.css`);
+		return css.slice(start, css.indexOf("}", start));
+	};
+	const property = (selector: string, name: string) => {
+		const found = new RegExp(`(?:^|[\\s;{])${name}:\\s*([^;]+);`).exec(
+			rule(selector),
 		)?.[1];
-		if (!color) throw new Error(".club-nav-link color not found");
-		expect(contrast(parse(color), bar)).toBeGreaterThanOrEqual(4.5);
+		if (!found) throw new Error(`${name} missing in ${selector}`);
+		return found.trim();
+	};
+	// A light page behind a translucent bar is the worst case; an opaque bar
+	// ignores it.
+	const bar = parse(property(".club-header", "background"), parse("#ffffff"));
+
+	it("Header.tsx renders the bar the test reads", () => {
+		expect(repoFile("src/components/Header.tsx")).toContain(
+			'className="club-header ',
+		);
 	});
 
-	it("white/60 button borders reach 3:1 against the button's white/10 fill", () => {
-		const fill = parse("rgba(255, 255, 255, 0.1)", bar);
-		const border = parse("rgba(255, 255, 255, 0.6)", fill);
-		expect(contrast(border, fill)).toBeGreaterThanOrEqual(3);
+	it("nav links (and Sign in) reach 4.5:1 on the bar", () => {
+		expect(
+			contrast(parse(property(".club-nav-link", "color")), bar),
+		).toBeGreaterThanOrEqual(4.5);
+	});
+
+	it("button borders reach 3:1 against the bar", () => {
+		expect(property(".club-header-button", "background")).toBe("transparent");
+		expect(property(".club-header-button", "border")).toContain(
+			"var(--club-line-strong)",
+		);
+		const border = parse(property(".club-header", "--club-line-strong"), bar);
+		expect(contrast(border, bar)).toBeGreaterThanOrEqual(3);
 	});
 });
 
