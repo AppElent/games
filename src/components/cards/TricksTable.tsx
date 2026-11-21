@@ -442,16 +442,16 @@ export function TricksTable({
 						<>
 							<button
 								type="button"
-								className="btn-gold"
+								className="btn-gold whitespace-nowrap"
 								disabled={controls.pending}
 								onClick={() => view.offered && callTrump(view.offered)}
 							>
-								<SuitIcon suit={view.offered} />
+								<SuitIcon suit={view.offered} className="size-4 shrink-0" />
 								{fmt(t.playTrump, { suit: cards.suits[view.offered] })}
 							</button>
 							<button
 								type="button"
-								className="btn-ghost"
+								className="btn-ghost whitespace-nowrap"
 								disabled={controls.pending}
 								onClick={() => controls.act({ type: "passTrump" })}
 							>
@@ -464,11 +464,11 @@ export function TricksTable({
 								<button
 									key={suit}
 									type="button"
-									className="btn-gold"
+									className="btn-gold whitespace-nowrap"
 									disabled={controls.pending}
 									onClick={() => callTrump(suit)}
 								>
-									<SuitIcon suit={suit} />
+									<SuitIcon suit={suit} className="size-4 shrink-0" />
 									{fmt(t.playTrump, { suit: cards.suits[suit] })}
 								</button>
 							))
