@@ -7,9 +7,13 @@
  * as new and can clear them without `onChangeText`, so this screen stands
  * alone and `useCredentialForm` syncs each field from `onEndEditing` too.
  *
+ * A successful change signs the account's other sessions out
+ * (`passwordUpdate`); this one stays signed in.
+ *
  * An account with no password (social sign-in or emailed codes only) has
  * nothing to change; Profile hides the link and this screen explains.
  */
+import { passwordUpdate } from "@arcadeclub/core/account-password";
 import { useAuth, useUser } from "@clerk/expo";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -66,10 +70,7 @@ export function ChangePasswordScreen() {
 		setBusy(true);
 		setErrorKey(null);
 		try {
-			await user.updatePassword({
-				currentPassword: current,
-				newPassword: next,
-			});
+			await user.updatePassword(passwordUpdate(current, next));
 		} catch (failure) {
 			setErrorKey(passwordChangeError(failure));
 			return;

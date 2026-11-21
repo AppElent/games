@@ -34,9 +34,15 @@ jest.mock("expo-router", () => ({
 }));
 
 // Clerk: signed out. The real package boots clerk-js, which leaves handles open.
+// A test signs a user in with `jest.mocked(useUser).mockReturnValue(...)`.
 jest.mock("@clerk/expo", () => ({
-	useUser: () => ({ isLoaded: true, isSignedIn: false, user: null }),
-	useAuth: () => ({ isLoaded: true, isSignedIn: false, getToken: jest.fn() }),
+	useUser: jest.fn(() => ({ isLoaded: true, isSignedIn: false, user: null })),
+	useAuth: () => ({
+		isLoaded: true,
+		isSignedIn: false,
+		getToken: jest.fn(),
+		signOut: jest.fn(),
+	}),
 }));
 
 jest.mock("expo-keep-awake", () => ({

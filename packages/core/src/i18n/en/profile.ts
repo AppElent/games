@@ -21,7 +21,8 @@ export const profile = {
 		rules: "At least 8 characters.",
 		submit: "Change password",
 		changed: "Password changed",
-		changedBody: "Use your new password the next time you sign in.",
+		changedBody:
+			"Your other devices are signed out. Use your new password the next time you sign in.",
 		failed: "Your password could not be changed. Try again.",
 		none: "This account signs in without a password, with another service or an emailed code, so there is no password to change.",
 	},
