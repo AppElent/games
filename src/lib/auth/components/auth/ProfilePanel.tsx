@@ -127,7 +127,10 @@ export function ProfilePanel() {
 							type="password"
 							autoComplete="current-password"
 							value={currentPassword}
-							onChange={setCurrentPassword}
+							onChange={(value) => {
+								setCurrentPassword(value);
+								if (fieldError?.field === "current") setFieldError(null);
+							}}
 							error={
 								fieldError?.field === "current"
 									? messages.auth.errors[fieldError.key]
@@ -139,7 +142,10 @@ export function ProfilePanel() {
 							type="password"
 							autoComplete="new-password"
 							value={newPassword}
-							onChange={setNewPassword}
+							onChange={(value) => {
+								setNewPassword(value);
+								if (fieldError?.field === "new") setFieldError(null);
+							}}
 							error={
 								fieldError?.field === "new"
 									? messages.auth.errors[fieldError.key]

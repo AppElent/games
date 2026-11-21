@@ -34,7 +34,8 @@ function entries(error: unknown): ClerkEntry[] {
 /**
  * Codes Clerk puts on `current_password` when that password is wrong. It
  * uses `form_password_validation_failed`, the weak-new-password code too,
- * so only the field name tells the two apart.
+ * so only the field name tells the two apart; `form_password_incorrect`
+ * means the current password on its own.
  */
 const WRONG_CURRENT = new Set([
 	"form_password_validation_failed",
@@ -57,11 +58,14 @@ export function passwordFailure(error: unknown): PasswordFailure | null {
 	const list = entries(error);
 	const wrongCurrent = list.some(
 		(entry) =>
-			entry.meta?.paramName === "current_password" &&
-			typeof entry.code === "string" &&
-			WRONG_CURRENT.has(entry.code),
+			entry.code === "form_password_incorrect" ||
+			(entry.meta?.paramName === "current_password" &&
+				typeof entry.code === "string" &&
+				WRONG_CURRENT.has(entry.code)),
 	);
 	if (wrongCurrent) return { field: "current", key: "passwordIncorrect" };
+	// Any remaining password code refuses the new password, whatever field
+	// Clerk names: `updatePassword` checks only the two passwords.
 	for (const entry of list) {
 		const key = typeof entry.code === "string" ? WEAK_NEW[entry.code] : null;
 		if (key) return { field: "new", key };

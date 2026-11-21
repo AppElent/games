@@ -26,9 +26,9 @@ function passwordFailure(
 	}[];
 	const wrongCurrent = entries.some(
 		(e) =>
-			e.meta?.paramName === "current_password" &&
-			(e.code === "form_password_validation_failed" ||
-				e.code === "form_password_incorrect"),
+			e.code === "form_password_incorrect" ||
+			(e.meta?.paramName === "current_password" &&
+				e.code === "form_password_validation_failed"),
 	);
 	if (wrongCurrent) {
 		return { field: "current", message: "That password is not right." };

@@ -28,6 +28,13 @@ describe("passwordFailure", () => {
 		}
 	});
 
+	it("reads form_password_incorrect without a field as the current password", () => {
+		expect(passwordFailure(clerkError("form_password_incorrect"))).toEqual({
+			field: "current",
+			key: "passwordIncorrect",
+		});
+	});
+
 	it("puts the same code on the new password on the new field as too weak", () => {
 		expect(
 			passwordFailure(

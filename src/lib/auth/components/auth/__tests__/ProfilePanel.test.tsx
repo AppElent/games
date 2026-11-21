@@ -133,6 +133,20 @@ describe("ProfilePanel", () => {
 		expect(screen.queryByRole("alert")).toBeNull();
 	});
 
+	it("clears a field's error once that field is edited", async () => {
+		updatePassword.mockRejectedValue(
+			clerkError("form_password_validation_failed", "current_password"),
+		);
+		renderPanel();
+		await submitPassword("wrong", "new-pass-456");
+		const current = screen.getByLabelText("Current password");
+		await screen.findByText("That password is not right.");
+		expect(current.getAttribute("aria-invalid")).toBe("true");
+		fireEvent.change(current, { target: { value: "wrong-again" } });
+		expect(screen.queryByText("That password is not right.")).toBeNull();
+		expect(current.getAttribute("aria-invalid")).toBeNull();
+	});
+
 	it("puts a weak new password on the new field", async () => {
 		updatePassword.mockRejectedValue(
 			clerkError("form_password_validation_failed", "new_password"),

@@ -31,17 +31,20 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   new). Both build that call with `passwordUpdate` (`@arcadeclub/core/account-password`),
   which passes `signOutOfOtherSessions: true`: a successful change signs the account out
   on every other device and browser, so a stolen session ends with the old password,
-  while the session that made the change stays signed in; the success message says so. On the phone the name sits on Profile (`account-name-card.tsx`); a failed save
-  keeps the typed name and shows the localized Clerk reason. Change password is its own
-  pushed screen, `(tabs)/profile/change-password`, with the read-only email as
+  while the session that made the change stays signed in; the success message says so.
+  On the phone the name sits on Profile (`account-name-card.tsx`); a failed save keeps
+  the typed name and shows the localized Clerk reason. Change password is its own pushed
+  screen, `(tabs)/profile/change-password`, with the read-only email as
   `username` above the current and new fields (the auth standard's password-manager
   rules). Clerk reports a wrong current password as `form_password_validation_failed`
   on `current_password`, the weak-password code too, so the field name decides the
-  message (`passwordFailure`, shared): on the web it sits under the current or the new
+  message; `form_password_incorrect` alone also means the current password
+  (`passwordFailure`, shared). On the web it sits under the current or the new
   password field, and any other failure shows above the panel. If Clerk asks for
   reverification the phone screen offers "Sign in again". An account without a
   password (`passwordEnabled` false: social or emailed-code sign-in only) gets no link
-  on the phone and no form on `/account`, and an explanation instead (`profile.password.none`). Changing the email is on neither platform.
+  on the phone and no form on `/account`, and an explanation instead
+  (`profile.password.none`). Changing the email is on neither platform.
 - On the phone, the display name other players see is not the account name. It stays
   the phone-local name (`use-player-identity.ts`), defaulting to the Clerk first name and
   otherwise "Player 123"; the web hosts as the Clerk first name
