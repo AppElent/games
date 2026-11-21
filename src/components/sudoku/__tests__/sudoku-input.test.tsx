@@ -110,3 +110,58 @@ describe("SudokuInputSettingsPanel", () => {
 		});
 	});
 });
+
+describe("SudokuBoard edges and fills", () => {
+	afterEach(cleanup);
+
+	const cell = (row: number, col: number) =>
+		screen.getByRole("button", { name: `Row ${row}, column ${col}` });
+	const fills = (el: HTMLElement) =>
+		el.className.split(/\s+/).filter((c) => /(^|:)bg-/.test(c));
+	const empty = () => createBoardState(new Array(81).fill(0));
+
+	it("leaves the outer edge to the board's own border", () => {
+		inEnglish(<SudokuBoard board={empty()} selectedCell={null} />);
+		const board = cell(1, 1).parentElement as HTMLElement;
+		expect(board.className).toContain("border-2");
+		for (const i of [1, 5, 9]) {
+			expect(cell(1, i).className).not.toMatch(/\bborder-t/);
+			expect(cell(i, 1).className).not.toMatch(/\bborder-l/);
+			expect(cell(9, i).className).not.toMatch(/\bborder-b/);
+			expect(cell(i, 9).className).not.toMatch(/\bborder-r/);
+		}
+		// Box and cell lines inside are still drawn.
+		expect(cell(4, 4).className).toContain("border-l-2");
+		expect(cell(4, 4).className).toContain("border-t-2");
+		expect(cell(5, 5).className).toContain("border-l-[var(--puzzle-line)]");
+	});
+
+	it("keeps a selected marked cell distinguishable from a marked one in digit mode", () => {
+		const board = empty();
+		board.colors[0] = 1;
+		board.colors[1] = 1;
+		inEnglish(<SudokuBoard board={board} selectedCell={0} mode="digit" />);
+		// Same mark, but the selected cell carries the selected fill, not the mark's.
+		expect(fills(cell(1, 1))).toEqual(["bg-sky-300/60", "dark:bg-sky-400/30"]);
+		expect(fills(cell(1, 2))).toEqual(["bg-sky-500/40"]);
+		expect(fills(cell(1, 1))).not.toEqual(fills(cell(1, 2)));
+	});
+
+	it("gives a cell one fill: a mark beats hint, same-digit and peer", () => {
+		const board = empty();
+		board.colors[1] = 2; // hinted and marked
+		board.colors[2] = 3; // a peer of the selected cell, marked
+		inEnglish(
+			<SudokuBoard board={board} selectedCell={0} hintCells={new Set([1])} />,
+		);
+		expect(fills(cell(1, 2))).toEqual(["bg-emerald-500/40"]);
+		expect(fills(cell(1, 3))).toEqual(["bg-amber-500/40"]);
+		// A peer with no mark keeps the peer fill.
+		expect(fills(cell(1, 4))).toEqual(["bg-slate-200", "dark:bg-slate-700/40"]);
+	});
+
+	it("keeps the selected state's fill on an unmarked cell", () => {
+		inEnglish(<SudokuBoard board={empty()} selectedCell={0} />);
+		expect(fills(cell(1, 1))).toEqual(["bg-sky-300/60", "dark:bg-sky-400/30"]);
+	});
+});

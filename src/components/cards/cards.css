@@ -1563,10 +1563,6 @@ button.meld[data-target="true"] {
 	overscroll-behavior: contain;
 	touch-action: pan-y;
 	--card-w: 44px;
-	--gold: #e6c06a;
-	--ivory: #f8f2e2;
-	--ivory-muted: rgba(248, 242, 226, 0.72);
-	--gold-soft: rgba(230, 192, 106, 0.32);
 }
 
 /* The way forward stays in view however long the sheet gets, on its own footer
