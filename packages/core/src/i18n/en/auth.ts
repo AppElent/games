@@ -57,6 +57,7 @@ export const auth = {
 		passwordDoesNotMeetRequirements: "That password is not strong enough.",
 		codeIncorrect: "That code is not right.",
 		codeExpired: "That code has expired. Send a new one.",
+		codeAttemptsExceeded: "Too many wrong codes. Send a new one.",
 		tooManyRequests: "Too many attempts. Try again in a moment.",
 		network: "Network error. Check your connection and try again.",
 		tooLong: "That is too long.",

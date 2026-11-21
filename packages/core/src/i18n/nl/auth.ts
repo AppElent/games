@@ -59,6 +59,7 @@ export const auth = {
 		passwordDoesNotMeetRequirements: "Dat wachtwoord is niet sterk genoeg.",
 		codeIncorrect: "Die code klopt niet.",
 		codeExpired: "Die code is verlopen. Vraag een nieuwe aan.",
+		codeAttemptsExceeded: "Te veel foute codes. Vraag een nieuwe aan.",
 		tooManyRequests: "Te veel pogingen. Probeer het zo opnieuw.",
 		network: "Netwerkfout. Controleer je verbinding en probeer opnieuw.",
 		tooLong: "Dat is te lang.",
