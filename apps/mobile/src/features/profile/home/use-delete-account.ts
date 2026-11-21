@@ -6,15 +6,21 @@
  * Clerk deletes an account only after a recent sign-in. Clerk's verify
  * dialog is web-only, so the app checks first and, when the sign-in is old,
  * stops before anything is deleted and offers `signInAgain`: the app's own
- * sign-in, with password autofill or an emailed code, gives a fresh one.
+ * sign-in, with password autofill or an emailed code, gives a fresh one, and
+ * the app returns to the delete screen afterwards.
  */
 import {
 	type DeletionScope,
 	deleteAccount as runDeletion,
 } from "@arcadeclub/core/account-deletion";
+import { GameRuleError } from "@arcadeclub/core/errors";
 import { useAuth, useClerk, useUser } from "@clerk/expo";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import {
+	forgetReturnTarget,
+	returnAfterSignIn,
+} from "../../../auth/return-target";
 import { api } from "../../../convex/api";
 import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
 import { useSessionAction } from "../../sessions/use-session-action";
@@ -39,7 +45,11 @@ export function useDeleteAccount() {
 		}
 		setUnavailable(false);
 		const sessionId = clerk.session?.id;
-		if (!sessionId) return false;
+		if (!sessionId) {
+			// Nothing to delete with; a fresh sign-in starts one.
+			await run(() => Promise.reject(new GameRuleError("accountSessionEnded")));
+			return false;
+		}
 		const account = { userId: user.id, sessionId };
 		return (
 			(await run(() =>
@@ -71,7 +81,15 @@ export function useDeleteAccount() {
 		 */
 		signInAgain: async () => {
 			reset();
-			await signOut();
+			// Signing in rebuilds the app on Play; this brings the person back.
+			if (user) returnAfterSignIn("/profile/delete-account", user.id);
+			try {
+				await signOut();
+			} catch (caught) {
+				// Still signed in; a later sign-in must not jump to this screen.
+				forgetReturnTarget();
+				throw caught;
+			}
 		},
 	};
 }
