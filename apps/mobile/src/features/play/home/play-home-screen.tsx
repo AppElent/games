@@ -4,8 +4,10 @@
  */
 import { useAuth } from "@clerk/expo";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
+import { api } from "../../../convex/api";
+import { useQuery } from "../../../convex/query-cache";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
 import { relativeTime } from "../../../i18n/relative-time";
@@ -23,8 +25,13 @@ import { Icon } from "../../../ui/icon";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { useAppUpdate } from "../../../updates/use-app-update";
+import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
 import { APP_GAMES } from "../app-games";
-import { type ContinueItem, listContinueItems } from "./continue-items";
+import {
+	accountSessionsOf,
+	type ContinueItem,
+	listContinueItems,
+} from "./continue-items";
 import { type OnlineStatus, useOnlineStatuses } from "./online-status";
 
 const GAMES = Object.values(APP_GAMES);
@@ -37,20 +44,28 @@ export function PlayHomeScreen() {
 	const tokens = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const stacked = useAccessibilityTextSize();
-	const [items, setItems] = useState<ContinueItem[]>([]);
 	const { isSignedIn, userId } = useAuth();
+	const { ready } = useBackendAuthReady();
 	const owner = isSignedIn && userId ? userId : null;
+	const participation = useQuery(
+		api.sessions.listParticipation,
+		ready ? {} : "skip",
+	);
+	const account = useMemo(
+		() => (owner && participation ? accountSessionsOf(participation) : []),
+		[owner, participation],
+	);
+	const [items, setItems] = useState<ContinueItem[]>([]);
 	const statuses = useOnlineStatuses(items);
 	const update = useAppUpdate();
 	const visible = items
 		.filter((item) => statuses[item.id] !== null)
 		.slice(0, CONTINUE_LIMIT);
 
-	useFocusEffect(
-		useCallback(() => {
-			setItems(listContinueItems(Date.now(), owner));
-		}, [owner]),
-	);
+	const refresh = useCallback(() => {
+		setItems(listContinueItems(Date.now(), owner, account));
+	}, [owner, account]);
+	useFocusEffect(refresh);
 
 	const remove = (item: ContinueItem) => {
 		const online = Boolean(item.seat);
@@ -65,7 +80,7 @@ export function PlayHomeScreen() {
 					style: "destructive",
 					onPress: () => {
 						item.remove();
-						setItems(listContinueItems(Date.now(), owner));
+						refresh();
 					},
 				},
 			],

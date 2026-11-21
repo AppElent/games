@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing which games the Arcade Club mobile app offers, or how it talks to Convex and stores seats and saves.
-version: 1.3.0
+version: 1.4.0
 status: current
 ---
 
@@ -37,6 +37,10 @@ the [mobile runbook](../runbooks/mobile.md).
   with its secret, through `reclaimSeat`, see [card games](card-games.md)). On iOS the
   Production and Preview builds open those links themselves (universal links,
   `apps/mobile/src/lib/app-links.ts`, [ADR 0002](../adr/0002-ship-every-game-on-web-and-mobile.md#universal-links)).
+- The Play tab's Continue list is this phone's saves and seats. A signed-in player's
+  open games from any device join it, read from `sessions.listParticipation`; a seat
+  the phone holds wins over the account's row, and removing an account game only hides
+  it on this phone. A guest keeps the phone-only list.
 - Sudoku saves on the phone first, so play works offline. A guest's puzzles stay on
   the phone. A signed-in player's puzzles also go to their account through the web's
   `api.sudoku` functions (`saves/sudoku-cloud-sync.ts`, mounted at the root): each
