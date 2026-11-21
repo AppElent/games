@@ -89,9 +89,9 @@ export const serverErrors = {
 	accountInActiveGame:
 		"Je zit nu in een spel met andere spelers. Maak het eerst af, of probeer het over {minutes} minuten opnieuw.",
 	accountSignInFirst:
-		"Log eerst opnieuw in om je account te verwijderen. Zo kan niemand anders op dit apparaat het verwijderen.",
+		"Log eerst opnieuw in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",
 	accountSignInToFinish:
-		"Je Arcade Club-gegevens zijn verwijderd, maar je account nog niet: daarvoor moet je net zijn ingelogd. Log opnieuw in en verwijder je account nog een keer om het af te ronden.",
+		"Je Arcade Club-gegevens zijn verwijderd, maar je AppElent-account nog niet: daarvoor moet je net zijn ingelogd. Log opnieuw in en verwijder je hele account nog een keer om het af te ronden.",
 	signInToHost: "Log in om een spel te hosten.",
 	signInToJoin: "Log in om mee te doen met dit spel.",
 	sessionNotFound: "Dit spel bestaat niet meer.",

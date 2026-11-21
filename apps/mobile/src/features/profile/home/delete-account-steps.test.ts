@@ -1,4 +1,7 @@
-import { deleteAccount } from "@arcadeclub/core/account-deletion";
+import {
+	type DeletionScope,
+	deleteAccount,
+} from "@arcadeclub/core/account-deletion";
 import { gameErrorData } from "@arcadeclub/core/errors";
 import { forgetAccountSaves } from "../../sudoku/saves/sudoku-save-store";
 import { deletionSteps, needsSignInAgain } from "./delete-account-steps";
@@ -9,7 +12,13 @@ jest.mock("../../sudoku/saves/sudoku-save-store", () => ({
 
 const account = { userId: "user_1", sessionId: "sess_1" };
 
-function setup({ recent = true } = {}) {
+function setup({
+	recent = true,
+	scope = "account",
+}: {
+	recent?: boolean;
+	scope?: DeletionScope;
+} = {}) {
 	const calls: string[] = [];
 	const clerk = {
 		user: {
@@ -34,7 +43,13 @@ function setup({ recent = true } = {}) {
 	const signOut = jest.fn(async () => {
 		calls.push("signOut");
 	});
-	const steps = deletionSteps({ clerk, account, deleteBatch, signOut });
+	const steps = deletionSteps({
+		clerk,
+		account,
+		scope,
+		deleteBatch,
+		signOut,
+	});
 	return { calls, clerk, steps, deleteBatch, signOut };
 }
 
@@ -56,6 +71,21 @@ describe("deletionSteps", () => {
 			reverification: { level: "second_factor", afterMinutes: 5 },
 		});
 		expect(forgetAccountSaves).toHaveBeenCalledWith("user_1");
+	});
+
+	it("deletes only Arcade Club's data and the phone's saves, keeps the Clerk user, then signs out", async () => {
+		const { calls, clerk, steps } = setup({ scope: "app" });
+		await expect(deleteAccount(steps)).resolves.toBe(true);
+		expect(calls).toEqual(["reload", "batch", "signOut"]);
+		expect(clerk.user.delete).not.toHaveBeenCalled();
+		expect(forgetAccountSaves).toHaveBeenCalledWith("user_1");
+	});
+
+	it("asks for a recent sign-in before deleting only the data", async () => {
+		const { calls, steps } = setup({ scope: "app", recent: false });
+		const error = await failure(deleteAccount(steps));
+		expect(gameErrorData(error)?.code).toBe("accountSignInFirst");
+		expect(calls).toEqual(["reload"]);
 	});
 
 	it("deletes nothing and asks to sign in again when the sign-in is old", async () => {

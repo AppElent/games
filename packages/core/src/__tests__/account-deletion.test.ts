@@ -16,6 +16,7 @@ function steps(batches: boolean[]) {
 		return { done };
 	});
 	return {
+		scope: "account" as const,
 		calls,
 		deleteBatch,
 		deleteUser: vi.fn(async () => {
@@ -28,6 +29,36 @@ function steps(batches: boolean[]) {
 }
 
 describe("deleteAccount", () => {
+	it("deletes only the app's data and keeps the login when the scope is the app", async () => {
+		const s = steps([false, true]);
+		const confirmRecentSignIn = vi.fn(async () => {
+			s.calls.push("confirm");
+			return true;
+		});
+		await expect(
+			deleteAccount({
+				scope: "app",
+				confirmRecentSignIn,
+				deleteBatch: s.deleteBatch,
+				signOut: s.signOut,
+			}),
+		).resolves.toBe(true);
+		expect(s.calls).toEqual(["confirm", "batch", "batch", "signOut"]);
+		expect(s.deleteUser).not.toHaveBeenCalled();
+	});
+
+	it("still succeeds when signing out fails after the app's data is gone", async () => {
+		const s = steps([true]);
+		s.signOut.mockRejectedValueOnce(new Error("offline"));
+		await expect(
+			deleteAccount({
+				scope: "app",
+				deleteBatch: s.deleteBatch,
+				signOut: s.signOut,
+			}),
+		).resolves.toBe(true);
+	});
+
 	it("repeats batches until done, then deletes the user and signs out", async () => {
 		const s = steps([false, false, true]);
 		await expect(deleteAccount(s)).resolves.toBe(true);

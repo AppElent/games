@@ -134,6 +134,22 @@ export const ENTRIES = [
 		},
 	},
 	{
+		key: "clerkWebhookSecret",
+		infisicalKey: "clerk-webhook-secret",
+		description:
+			"Svix signing secret (whsec_) of the Clerk `user.deleted` endpoint at /clerk/webhook.",
+		// Each Clerk instance signs its own endpoint: development for dev,
+		// production for production. Set on production only with Eric's go.
+		optional: true,
+		secret: true,
+		lands: {
+			"convex-functions": {
+				name: "CLERK_WEBHOOK_SECRET",
+				environments: ["dev", "production"],
+			},
+		},
+	},
+	{
 		key: "testUserEmail",
 		infisicalKey: "test-user-email",
 		description: "+clerk_test address on the development instance.",

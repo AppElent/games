@@ -93,11 +93,12 @@ export const FEATURES = defineFeatures([
 		routes: { mobile: ["(tabs)/profile/change-password"] },
 	},
 	{
+		// Web: a dialog on /account. Mobile: pushed from Profile.
 		id: "account-deletion",
 		kind: "floor",
 		status: "parity",
 		platforms: ["web", "mobile"],
-		routes: {},
+		routes: { mobile: ["(tabs)/profile/delete-account"] },
 	},
 	{
 		// "Download my data" on web /account and the app's Profile.

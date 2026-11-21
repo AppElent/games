@@ -1,19 +1,28 @@
 /**
- * Deleting the signed-in account, the same on web and in the app: a recent
- * sign-in first, then the Arcade Club data, one batch of
- * `account.deleteMyData` at a time until the backend reports `done`, then the
- * Clerk user, then the session. The Clerk user is the shared Appelent
- * account, so it goes last: a failure part way (an active game, a dropped
- * connection) leaves the account able to sign in and run it again, and the
- * rerun resumes where the last one stopped.
+ * Deleting from the signed-in account, the same on web and in the app. The
+ * login is the shared AppElent account (Gather, Foundry, Fairway and Arcade
+ * Club), so the person picks a `DeletionScope` first:
  *
- * Clerk deletes a user only after a recent sign-in ("strict" reverification).
- * Checking it before the first batch keeps a stale session from deleting the
- * data and then failing on the account.
+ * - `app`: only Arcade Club's data. A recent sign-in, then
+ *   `account.deleteMyData` one batch at a time until the backend reports
+ *   `done`, then sign-out on this device. The Clerk user stays, and nothing
+ *   marks it, so signing in again starts an empty profile.
+ * - `account`: the same, then the Clerk user before the sign-out. The other
+ *   apps purge their own data from Clerk's `user.deleted` webhook.
+ *
+ * The Clerk user goes last: a failure part way (an active game, a dropped
+ * connection) leaves the account able to sign in and run it again, and the
+ * rerun resumes where the last one stopped. Clerk deletes a user only after a
+ * recent sign-in ("strict" reverification); checking it before the first
+ * batch keeps a stale session from deleting the data and then failing on the
+ * account, and keeps anyone else on the device from deleting either.
  */
 import { GameRuleError } from "./errors";
 
-export type AccountDeletionSteps = {
+/** What the person deletes: Arcade Club's data, or the whole AppElent account. */
+export type DeletionScope = "app" | "account";
+
+type CommonSteps = {
 	/**
 	 * Confirms a recent sign-in before anything is deleted. Resolves false
 	 * when the person cancelled; throws a keyed error (such as
@@ -23,17 +32,26 @@ export type AccountDeletionSteps = {
 	/** One `deleteMyData` call for the account being deleted. */
 	deleteBatch: () => Promise<{ done: boolean }>;
 	/**
-	 * Deletes the identity-provider (Clerk) user. Resolving or throwing
-	 * Clerk's reverification refusal ends the run with `accountSignInToFinish`.
-	 */
-	deleteUser: () => Promise<unknown>;
-	/**
-	 * Ends the session. Best-effort: the account is already gone, and Clerk
-	 * may have signed the client out with it, so a failure here is not a
-	 * failed deletion.
+	 * Ends the session on this device. Best-effort: the data (and with
+	 * `account`, the login) is already gone, and Clerk may have signed the
+	 * client out with the user, so a failure here is not a failed deletion.
 	 */
 	signOut: () => Promise<unknown>;
 };
+
+export type AccountDeletionSteps = CommonSteps &
+	(
+		| { scope: "app" }
+		| {
+				scope: "account";
+				/**
+				 * Deletes the identity-provider (Clerk) user. Resolving or
+				 * throwing Clerk's reverification refusal ends the run with
+				 * `accountSignInToFinish`.
+				 */
+				deleteUser: () => Promise<unknown>;
+		  }
+	);
 
 /** How recent the sign-in must be: half Clerk's 10-minute "strict" window, so it doesn't lapse while the data is deleted. */
 export const RECENT_SIGN_IN = {
@@ -129,20 +147,25 @@ export function isRecentSignInRefusal(value: unknown, depth = 0): boolean {
 }
 
 /**
- * Runs the deletion. Resolves true once the account is gone, false when the
- * person cancelled the sign-in check (nothing was deleted).
+ * Runs the deletion. Resolves true once the data (and with `account`, the
+ * login) is gone, false when the person cancelled the sign-in check (nothing
+ * was deleted).
  */
-export async function deleteAccount({
-	confirmRecentSignIn,
-	deleteBatch,
-	deleteUser,
-	signOut,
-}: AccountDeletionSteps): Promise<boolean> {
+export async function deleteAccount(
+	steps: AccountDeletionSteps,
+): Promise<boolean> {
+	const { confirmRecentSignIn, deleteBatch, signOut } = steps;
 	if (confirmRecentSignIn && !(await confirmRecentSignIn())) return false;
 	let done = false;
 	while (!done) {
 		({ done } = await deleteBatch());
 	}
+	if (steps.scope === "account") await deleteUserOrRefuse(steps.deleteUser);
+	await signOut().catch(() => {});
+	return true;
+}
+
+async function deleteUserOrRefuse(deleteUser: () => Promise<unknown>) {
 	// The window can still lapse during a long deletion; the data is gone by
 	// now, so the person needs to know a fresh sign-in finishes it.
 	let result: unknown;
@@ -157,6 +180,4 @@ export async function deleteAccount({
 	if (isRecentSignInRefusal(result)) {
 		throw new GameRuleError("accountSignInToFinish");
 	}
-	await signOut().catch(() => {});
-	return true;
 }
