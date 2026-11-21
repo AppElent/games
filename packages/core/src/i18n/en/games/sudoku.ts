@@ -220,6 +220,17 @@ export const sudoku = {
 		cellTypeEmpty: "Empty",
 		clearCell: "Clear cell",
 		previewLabel: "Preview — exactly how the puzzle will start",
+		validation: {
+			conflict: "Some digits conflict in a row, column, or box.",
+			tooFewGivens: {
+				one: "Only {count} given recognized — a valid Sudoku needs at least {min}.",
+				other:
+					"Only {count} givens recognized — a valid Sudoku needs at least {min}.",
+			},
+			noSolution: "The recognized givens have no solution.",
+			userDigitsIncompatible:
+				"The handwritten digits are not compatible with any solution of the givens.",
+		},
 		multipleSolutionsWarning:
 			"The givens allow more than one solution. You can still play, but consider double-checking for missed digits.",
 		uniqueSolution: "Looks good: the givens define a unique solution.",

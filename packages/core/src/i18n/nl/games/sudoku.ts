@@ -221,6 +221,17 @@ export const sudoku = {
 		cellTypeEmpty: "Leeg",
 		clearCell: "Vakje wissen",
 		previewLabel: "Voorbeeld — precies hoe de puzzel zal starten",
+		validation: {
+			conflict: "Sommige cijfers botsen in een rij, kolom of blok.",
+			tooFewGivens: {
+				one: "Maar {count} gegeven cijfer herkend — een geldige sudoku heeft er minstens {min} nodig.",
+				other:
+					"Maar {count} gegeven cijfers herkend — een geldige sudoku heeft er minstens {min} nodig.",
+			},
+			noSolution: "De herkende gegeven cijfers hebben geen oplossing.",
+			userDigitsIncompatible:
+				"De handgeschreven cijfers passen bij geen enkele oplossing van de gegeven cijfers.",
+		},
 		multipleSolutionsWarning:
 			"De gegeven cijfers laten meer dan één oplossing toe. Je kunt nog steeds spelen, maar controleer voor de zekerheid op gemiste cijfers.",
 		uniqueSolution:

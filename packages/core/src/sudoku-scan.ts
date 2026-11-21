@@ -1,3 +1,5 @@
+import type { sudoku as sudokuCopy } from "./i18n/en/games/sudoku";
+import { fmt, plural } from "./i18n/format";
 import type { SudokuGrid } from "./sudoku";
 import {
 	countSolutions,
@@ -139,6 +141,17 @@ export function clearScanCell(cells: ScanCell[], index: number): ScanCell[] {
 	return withCell(cells, index, emptyScanCell());
 }
 
+/** Fewest givens a Sudoku with a unique solution can have. */
+export const MIN_SCAN_GIVENS = 17;
+
+/** Why a scan cannot be confirmed yet. `describeScanErrors` turns these into
+ * text in the player's language. */
+export type ScanValidationError =
+	| "conflict"
+	| "tooFewGivens"
+	| "noSolution"
+	| "userDigitsIncompatible";
+
 type ScanValidation = {
 	ok: boolean;
 	/** Cells whose given/user digits break Sudoku rules. */
@@ -151,7 +164,9 @@ type ScanValidation = {
 	userDigitsCompatible: boolean;
 	/** At least a minimal amount of content was recognized. */
 	hasGivens: boolean;
-	errors: string[];
+	/** Number of given digits recognized. */
+	givenCount: number;
+	errors: ScanValidationError[];
 };
 
 function scanGivensGrid(cells: ScanCell[]): SudokuGrid {
@@ -175,21 +190,19 @@ function scanMergedGrid(cells: ScanCell[]): SudokuGrid {
 }
 
 export function validateScanResult(cells: ScanCell[]): ScanValidation {
-	const errors: string[] = [];
+	const errors: ScanValidationError[] = [];
 	const givens = scanGivensGrid(cells);
 	const merged = scanMergedGrid(cells);
 
 	const conflictCells = [...findConflicts(merged)];
 	if (conflictCells.length > 0) {
-		errors.push("Some digits conflict in a row, column, or box.");
+		errors.push("conflict");
 	}
 
 	const givenCount = givens.filter((value) => value !== 0).length;
-	const hasGivens = givenCount >= 17; // minimum clues for a unique Sudoku
+	const hasGivens = givenCount >= MIN_SCAN_GIVENS;
 	if (!hasGivens) {
-		errors.push(
-			`Only ${givenCount} givens recognized — a valid Sudoku needs at least 17.`,
-		);
+		errors.push("tooFewGivens");
 	}
 
 	let givensSolvable = false;
@@ -200,13 +213,11 @@ export function validateScanResult(cells: ScanCell[]): ScanValidation {
 		givensSolvable = solutionCount >= 1;
 		givensUnique = solutionCount === 1;
 		if (!givensSolvable) {
-			errors.push("The recognized givens have no solution.");
+			errors.push("noSolution");
 		}
 		userDigitsCompatible = givensSolvable && countSolutions(merged, 1) >= 1;
 		if (givensSolvable && !userDigitsCompatible) {
-			errors.push(
-				"The handwritten digits are not compatible with any solution of the givens.",
-			);
+			errors.push("userDigitsIncompatible");
 		}
 	}
 
@@ -217,8 +228,26 @@ export function validateScanResult(cells: ScanCell[]): ScanValidation {
 		givensUnique,
 		userDigitsCompatible,
 		hasGivens,
+		givenCount,
 		errors,
 	};
+}
+
+type ScanValidationCopy = typeof sudokuCopy.scan.validation;
+
+/** The validation errors as text, in the order `validateScanResult` found them. */
+export function describeScanErrors(
+	validation: Pick<ScanValidation, "errors" | "givenCount">,
+	copy: ScanValidationCopy,
+	locale: string,
+): string[] {
+	return validation.errors.map((error) =>
+		error === "tooFewGivens"
+			? fmt(plural(locale, validation.givenCount, copy.tooFewGivens), {
+					min: MIN_SCAN_GIVENS,
+				})
+			: copy[error],
+	);
 }
 
 /** Convert a confirmed scan into an initial board state. */
