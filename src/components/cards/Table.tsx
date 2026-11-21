@@ -623,14 +623,14 @@ export function TableFrame({
 				) : null}
 				{flightLayer}
 				{overlays}
+				<RulesSheet
+					game={game}
+					options={table.options}
+					seats={table.seats.length}
+					open={rulesOpen}
+					onClose={() => setRulesOpen(false)}
+				/>
 			</div>
-			<RulesSheet
-				game={game}
-				options={table.options}
-				seats={table.seats.length}
-				open={rulesOpen}
-				onClose={() => setRulesOpen(false)}
-			/>
 		</FullscreenGameShell>
 	);
 }
