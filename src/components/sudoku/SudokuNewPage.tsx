@@ -123,7 +123,7 @@ export function SudokuNewPage() {
 					onChange={(event) => setName(event.target.value)}
 					placeholder={sudoku.newGame.namePlaceholder}
 					maxLength={MAX_TITLE_LENGTH}
-					className="w-full rounded-md border border-[var(--club-line-strong)] bg-slate-800/70 px-3 py-2 text-white placeholder:text-slate-500"
+					className="club-field w-full rounded-md px-3 py-2"
 				/>
 			</label>
 

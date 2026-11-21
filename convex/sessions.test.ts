@@ -11,6 +11,7 @@ import {
 	fixRandom,
 	freezeClock,
 	getDoc,
+	guestIdOf,
 	HOST_USER,
 	hostSession,
 	impostor,
@@ -37,7 +38,7 @@ function guestSolo(t: T) {
 		authPolicy: "guestAllowed",
 		title: "Solo",
 		displayName: "Solver",
-		guestId: "guest_solver",
+		guestId: guestIdOf("solver"),
 	});
 }
 
@@ -87,7 +88,7 @@ describe("create", () => {
 		});
 		expect(fields(await getDoc(t, created.participantId))).toEqual({
 			sessionId: created.sessionId,
-			guestId: "guest_solver",
+			guestId: guestIdOf("solver"),
 			displayName: "Solver",
 			role: "host",
 			seat: "host",
@@ -211,7 +212,7 @@ describe("joinByCode", () => {
 	it("adds a player and reports no card seat", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await room(t);
-		const joined = await joinWithCode(t, joinCode, "guest_one");
+		const joined = await joinWithCode(t, joinCode, guestIdOf("one"));
 		expect(joined).toEqual({
 			sessionId,
 			participantId: joined.participantId,
@@ -220,8 +221,8 @@ describe("joinByCode", () => {
 		});
 		expect(fields(await getDoc(t, joined.participantId))).toEqual({
 			sessionId,
-			guestId: "guest_one",
-			displayName: "guest_one",
+			guestId: guestIdOf("one"),
+			displayName: guestIdOf("one"),
 			role: "player",
 			connected: true,
 			lastSeen: T0,
@@ -232,14 +233,14 @@ describe("joinByCode", () => {
 		const t = setup();
 		const { sessionId, joinCode } = await room(t);
 		const typed = ` ${joinCode.slice(0, 3).toLowerCase()}-${joinCode.slice(3)}`;
-		const joined = await joinWithCode(t, typed, "guest_one");
+		const joined = await joinWithCode(t, typed, guestIdOf("one"));
 		expect(joined.sessionId).toBe(sessionId);
 	});
 
 	it("adds a spectator as a watcher", async () => {
 		const t = setup();
 		const { joinCode } = await room(t);
-		const joined = await joinWithCode(t, joinCode, "guest_watch", {
+		const joined = await joinWithCode(t, joinCode, guestIdOf("watch"), {
 			asSpectator: true,
 		});
 		expect(joined.seatClaimed).toBe(false);
@@ -254,7 +255,7 @@ describe("joinByCode", () => {
 		const joined = await asUser(t).mutation(api.sessions.joinByCode, {
 			joinCode,
 			displayName: "Joiner",
-			guestId: "guest_ignored",
+			guestId: guestIdOf("ignored"),
 		});
 		const row = await getDoc(t, joined.participantId);
 		expect(row?.userId).toBe("user_joiner");
@@ -264,19 +265,19 @@ describe("joinByCode", () => {
 	it("reclaims a guest's row and refreshes presence, not the name", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await room(t);
-		const first = await joinWithCode(t, joinCode, "guest_one");
+		const first = await joinWithCode(t, joinCode, guestIdOf("one"));
 		await arrange(t, first.participantId, { connected: false });
 		advance(1000);
 		const again = await t.mutation(api.sessions.joinByCode, {
 			joinCode,
 			displayName: "New name",
-			guestId: "guest_one",
+			guestId: guestIdOf("one"),
 		});
 		expect(again.participantId).toBe(first.participantId);
 		const row = await getDoc(t, first.participantId);
 		expect(row?.connected).toBe(true);
 		expect(row?.lastSeen).toBe(T0 + 1000);
-		expect(row?.displayName).toBe("guest_one");
+		expect(row?.displayName).toBe(guestIdOf("one"));
 		expect(await allParticipants(t, sessionId)).toHaveLength(2);
 	});
 
@@ -286,12 +287,12 @@ describe("joinByCode", () => {
 		const first = await asUser(t).mutation(api.sessions.joinByCode, {
 			joinCode,
 			displayName: "Joiner",
-			guestId: "guest_a",
+			guestId: guestIdOf("a"),
 		});
 		const again = await asUser(t).mutation(api.sessions.joinByCode, {
 			joinCode,
 			displayName: "Joiner",
-			guestId: "guest_b",
+			guestId: guestIdOf("b"),
 		});
 		expect(again.participantId).toBe(first.participantId);
 		expect(await allParticipants(t, sessionId)).toHaveLength(2);
@@ -300,13 +301,13 @@ describe("joinByCode", () => {
 	it("keeps a returning row's role, whichever way they ask to join", async () => {
 		const t = setup();
 		const { joinCode } = await room(t);
-		const watcher = await joinWithCode(t, joinCode, "guest_watch", {
+		const watcher = await joinWithCode(t, joinCode, guestIdOf("watch"), {
 			asSpectator: true,
 		});
-		await joinWithCode(t, joinCode, "guest_watch");
+		await joinWithCode(t, joinCode, guestIdOf("watch"));
 		expect((await getDoc(t, watcher.participantId))?.role).toBe("watcher");
-		const player = await joinWithCode(t, joinCode, "guest_play");
-		await joinWithCode(t, joinCode, "guest_play", { asSpectator: true });
+		const player = await joinWithCode(t, joinCode, guestIdOf("play"));
+		await joinWithCode(t, joinCode, guestIdOf("play"), { asSpectator: true });
 		expect((await getDoc(t, player.participantId))?.role).toBe("player");
 	});
 
@@ -323,11 +324,11 @@ describe("joinByCode", () => {
 	it("pins that signing in leaves the guest's old row behind", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await room(t);
-		const asGuest = await joinWithCode(t, joinCode, "guest_one");
+		const asGuest = await joinWithCode(t, joinCode, guestIdOf("one"));
 		const signedIn = await asUser(t).mutation(api.sessions.joinByCode, {
 			joinCode,
-			displayName: "guest_one",
-			guestId: "guest_one",
+			displayName: guestIdOf("one"),
+			guestId: guestIdOf("one"),
 		});
 		expect(signedIn.participantId).not.toBe(asGuest.participantId);
 		expect(await allParticipants(t, sessionId)).toHaveLength(3);
@@ -339,7 +340,7 @@ describe("joinByCode", () => {
 		const joined = await t.mutation(api.sessions.joinByCode, {
 			joinCode,
 			displayName: "x",
-			guestId: "guest_one",
+			guestId: guestIdOf("one"),
 			seatSecret: "secret",
 		});
 		expect(joined.seatClaimed).toBe(false);
@@ -347,11 +348,17 @@ describe("joinByCode", () => {
 
 	it("answers roomNotFound for an unknown or closed room", async () => {
 		const t = setup();
-		await expectCode(joinWithCode(t, "NOPE22", "guest_one"), "roomNotFound");
+		await expectCode(
+			joinWithCode(t, "NOPE22", guestIdOf("one")),
+			"roomNotFound",
+		);
 		for (const status of ["completed", "cancelled"] as const) {
 			const { sessionId, joinCode } = await room(t);
 			await setStatus(t, sessionId, status);
-			await expectCode(joinWithCode(t, joinCode, "guest_one"), "roomNotFound");
+			await expectCode(
+				joinWithCode(t, joinCode, guestIdOf("one")),
+				"roomNotFound",
+			);
 		}
 	});
 
@@ -359,35 +366,35 @@ describe("joinByCode", () => {
 		const t = setup();
 		const { sessionId, joinCode } = await room(t);
 		await arrange(t, sessionId, { status: "active" });
-		const joined = await joinWithCode(t, joinCode, "guest_one");
+		const joined = await joinWithCode(t, joinCode, guestIdOf("one"));
 		expect(joined.sessionId).toBe(sessionId);
 	});
 
 	it("answers roomLocked to a newcomer, but lets a known row back in", async () => {
 		const t = setup();
 		const { host, sessionId, hostId, joinCode } = await room(t);
-		const known = await joinWithCode(t, joinCode, "guest_known");
+		const known = await joinWithCode(t, joinCode, guestIdOf("known"));
 		await host.mutation(api.sessions.setLocked, {
 			sessionId,
 			hostParticipantId: hostId,
 			locked: true,
 		});
-		await expectCode(joinWithCode(t, joinCode, "guest_new"), "roomLocked");
-		const again = await joinWithCode(t, joinCode, "guest_known");
+		await expectCode(joinWithCode(t, joinCode, guestIdOf("new")), "roomLocked");
+		const again = await joinWithCode(t, joinCode, guestIdOf("known"));
 		expect(again.participantId).toBe(known.participantId);
 	});
 
 	it("answers removedByHost to a kicked row, even with the lock open", async () => {
 		const t = setup();
 		const { host, sessionId, hostId, joinCode } = await room(t);
-		const kicked = await joinWithCode(t, joinCode, "guest_kicked");
+		const kicked = await joinWithCode(t, joinCode, guestIdOf("kicked"));
 		await host.mutation(api.sessions.kickParticipant, {
 			sessionId,
 			hostParticipantId: hostId,
 			targetParticipantId: kicked.participantId,
 		});
 		await expectCode(
-			joinWithCode(t, joinCode, "guest_kicked"),
+			joinWithCode(t, joinCode, guestIdOf("kicked")),
 			"removedByHost",
 		);
 	});
@@ -395,7 +402,10 @@ describe("joinByCode", () => {
 	it("answers signInToJoin to a guest of a members-only room", async () => {
 		const t = setup();
 		const { joinCode } = await room(t, "signedInRequired");
-		await expectCode(joinWithCode(t, joinCode, "guest_one"), "signInToJoin");
+		await expectCode(
+			joinWithCode(t, joinCode, guestIdOf("one")),
+			"signInToJoin",
+		);
 		await expect(
 			asUser(t).mutation(api.sessions.joinByCode, {
 				joinCode,
@@ -409,7 +419,7 @@ describe("joinByToken", () => {
 	it("adds a player with no seat outside the duels", async () => {
 		const t = setup();
 		const { sessionId, shareToken } = await challenge(t);
-		const joined = await joinWithToken(t, shareToken, "guest_one");
+		const joined = await joinWithToken(t, shareToken, guestIdOf("one"));
 		expect(joined).toEqual({
 			sessionId,
 			participantId: joined.participantId,
@@ -418,8 +428,8 @@ describe("joinByToken", () => {
 		});
 		expect(fields(await getDoc(t, joined.participantId))).toEqual({
 			sessionId,
-			guestId: "guest_one",
-			displayName: "guest_one",
+			guestId: guestIdOf("one"),
+			displayName: guestIdOf("one"),
 			role: "player",
 			connected: true,
 			lastSeen: T0,
@@ -429,7 +439,7 @@ describe("joinByToken", () => {
 	it("adds a spectator as a watcher", async () => {
 		const t = setup();
 		const { shareToken } = await challenge(t);
-		const joined = await joinWithToken(t, shareToken, "guest_watch", {
+		const joined = await joinWithToken(t, shareToken, guestIdOf("watch"), {
 			asSpectator: true,
 		});
 		expect((await getDoc(t, joined.participantId))?.role).toBe("watcher");
@@ -438,10 +448,10 @@ describe("joinByToken", () => {
 	it("reclaims a row and refreshes presence", async () => {
 		const t = setup();
 		const { sessionId, shareToken } = await challenge(t);
-		const first = await joinWithToken(t, shareToken, "guest_one");
+		const first = await joinWithToken(t, shareToken, guestIdOf("one"));
 		await arrange(t, first.participantId, { connected: false });
 		advance(1000);
-		const again = await joinWithToken(t, shareToken, "guest_one");
+		const again = await joinWithToken(t, shareToken, guestIdOf("one"));
 		expect(again.participantId).toBe(first.participantId);
 		const row = await getDoc(t, first.participantId);
 		expect(row?.connected).toBe(true);
@@ -451,12 +461,15 @@ describe("joinByToken", () => {
 
 	it("answers gameUnavailable for an unknown or closed token", async () => {
 		const t = setup();
-		await expectCode(joinWithToken(t, "nope", "guest_one"), "gameUnavailable");
+		await expectCode(
+			joinWithToken(t, "nope", guestIdOf("one")),
+			"gameUnavailable",
+		);
 		for (const status of ["completed", "cancelled"] as const) {
 			const { sessionId, shareToken } = await challenge(t);
 			await setStatus(t, sessionId, status);
 			await expectCode(
-				joinWithToken(t, shareToken, "guest_one"),
+				joinWithToken(t, shareToken, guestIdOf("one")),
 				"gameUnavailable",
 			);
 		}
@@ -465,14 +478,14 @@ describe("joinByToken", () => {
 	it("answers roomLocked, removedByHost, and signInToJoin like the code route", async () => {
 		const t = setup();
 		const { host, sessionId, hostId, shareToken } = await challenge(t);
-		const kicked = await joinWithToken(t, shareToken, "guest_kicked");
+		const kicked = await joinWithToken(t, shareToken, guestIdOf("kicked"));
 		await host.mutation(api.sessions.kickParticipant, {
 			sessionId,
 			hostParticipantId: hostId,
 			targetParticipantId: kicked.participantId,
 		});
 		await expectCode(
-			joinWithToken(t, shareToken, "guest_kicked"),
+			joinWithToken(t, shareToken, guestIdOf("kicked")),
 			"removedByHost",
 		);
 		await host.mutation(api.sessions.setLocked, {
@@ -480,11 +493,14 @@ describe("joinByToken", () => {
 			hostParticipantId: hostId,
 			locked: true,
 		});
-		await expectCode(joinWithToken(t, shareToken, "guest_new"), "roomLocked");
+		await expectCode(
+			joinWithToken(t, shareToken, guestIdOf("new")),
+			"roomLocked",
+		);
 
 		const membersOnly = await challenge(t, "signedInRequired");
 		await expectCode(
-			joinWithToken(t, membersOnly.shareToken, "guest_one"),
+			joinWithToken(t, membersOnly.shareToken, guestIdOf("one")),
 			"signInToJoin",
 		);
 	});
@@ -503,7 +519,7 @@ describe("getBundle", () => {
 	it("ships user ids to all readers but keeps guest ids out", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await room(t);
-		await joinWithCode(t, joinCode, "guest_one");
+		await joinWithCode(t, joinCode, guestIdOf("one"));
 		const result = await t.query(api.sessions.getBundle, { sessionId });
 		expect(Object.keys(result ?? {}).sort()).toEqual([
 			"participants",
@@ -515,6 +531,91 @@ describe("getBundle", () => {
 			undefined,
 		]);
 		expect(result?.participants.every((row) => !("guestId" in row))).toBe(true);
+	});
+});
+
+describe("a guest and an account on one browser", () => {
+	const BROWSER = guestIdOf("shared");
+
+	/** Everything a signed-out client on that browser can do with its guest id. */
+	async function asTheGuest(
+		t: T,
+		joinCode: string,
+		sessionId: SessionId,
+		account: ParticipantId,
+	) {
+		const rejoined = await joinWithCode(t, joinCode, BROWSER);
+		const seat = await impostor(t).query(api.sessions.ownSeat, {
+			sessionId,
+			participantId: account,
+			guestId: BROWSER,
+		});
+		const heartbeat = impostor(t).mutation(api.sessions.heartbeat, {
+			participantId: account,
+			guestId: BROWSER,
+		});
+		return { rejoined: rejoined.participantId, seat, heartbeat };
+	}
+
+	it("never takes the account's seat for the guest's", async () => {
+		const t = setup();
+		const { sessionId, joinCode } = await room(t);
+		const guest = await joinWithCode(t, joinCode, BROWSER);
+		const account = await asUser(t).mutation(api.sessions.joinByCode, {
+			joinCode,
+			displayName: "Joiner",
+			guestId: BROWSER,
+		});
+		expect(account.participantId).not.toBe(guest.participantId);
+		expect((await getDoc(t, account.participantId))?.guestId).toBeUndefined();
+
+		const { rejoined, seat, heartbeat } = await asTheGuest(
+			t,
+			joinCode,
+			sessionId,
+			account.participantId,
+		);
+		expect(rejoined).toBe(guest.participantId);
+		expect(seat).toBeNull();
+		await expectCode(heartbeat, "participantNotFound");
+	});
+
+	it("never matches an account's row that still carries the browser's guest id", async () => {
+		const t = setup();
+		const { sessionId, joinCode } = await room(t);
+		// No write path stores both today; a row from an older one, or a future
+		// write that forgets to drop the guest id, must still not match.
+		const account = await t.run((ctx) =>
+			ctx.db.insert("sessionParticipants", {
+				sessionId,
+				userId: "user_joiner",
+				guestId: BROWSER,
+				displayName: "Joiner",
+				role: "player",
+				connected: true,
+				lastSeen: T0,
+			}),
+		);
+
+		const { rejoined, seat, heartbeat } = await asTheGuest(
+			t,
+			joinCode,
+			sessionId,
+			account,
+		);
+		expect(rejoined).not.toBe(account);
+		expect((await getDoc(t, rejoined))?.userId).toBeUndefined();
+		expect(seat).toBeNull();
+		await expectCode(heartbeat, "participantNotFound");
+		expect(
+			(
+				await asUser(t).mutation(api.sessions.joinByCode, {
+					joinCode,
+					displayName: "Joiner",
+					guestId: BROWSER,
+				})
+			).participantId,
+		).toBe(account);
 	});
 });
 
@@ -533,7 +634,7 @@ describe("heartbeat", () => {
 	it("pins that a kicked row can mark itself connected again", async () => {
 		const t = setup();
 		const { host, sessionId, hostId, joinCode } = await room(t);
-		const { participantId } = await joinWithCode(t, joinCode, "guest_one");
+		const { participantId } = await joinWithCode(t, joinCode, guestIdOf("one"));
 		await host.mutation(api.sessions.kickParticipant, {
 			sessionId,
 			hostParticipantId: hostId,
@@ -567,7 +668,7 @@ describe("ownSeat", () => {
 		subject: string | undefined,
 		sessionId: SessionId,
 		participantId?: string,
-		guestId = "guest_device",
+		guestId = guestIdOf("device"),
 	) {
 		const caller = subject
 			? impostor(t).withIdentity({ subject })
@@ -583,7 +684,7 @@ describe("ownSeat", () => {
 		return asUser(t).mutation(api.sessions.joinByCode, {
 			joinCode,
 			displayName: "Joiner",
-			guestId: "guest_device",
+			guestId: guestIdOf("device"),
 		});
 	}
 
@@ -593,12 +694,12 @@ describe("ownSeat", () => {
 		const { participantId: guest } = await joinWithCode(
 			t,
 			joinCode,
-			"guest_one",
+			guestIdOf("one"),
 		);
 		expect(await ownSeat(t, HOST_USER, sessionId, hostId)).toBe(hostId);
-		expect(await ownSeat(t, undefined, sessionId, guest, "guest_one")).toBe(
-			guest,
-		);
+		expect(
+			await ownSeat(t, undefined, sessionId, guest, guestIdOf("one")),
+		).toBe(guest);
 	});
 
 	it("gives a host who signed out and back in their seat, with none held", async () => {
@@ -621,7 +722,7 @@ describe("ownSeat", () => {
 		const { participantId: guest } = await joinWithCode(
 			t,
 			joinCode,
-			"guest_one",
+			guestIdOf("one"),
 		);
 		for (const held of [undefined, hostId, guest]) {
 			expect(await ownSeat(t, undefined, sessionId, held)).toBeNull();
@@ -664,7 +765,7 @@ describe("host controls", () => {
 		const { participantId } = await joinWithCode(
 			t,
 			created.joinCode,
-			"guest_one",
+			guestIdOf("one"),
 		);
 		return { ...created, guest: participantId };
 	}
@@ -783,14 +884,14 @@ describe("host controls", () => {
 		await expectCode(
 			impostor(t).mutation(api.sessions.setLocked, {
 				...args,
-				guestId: "guest_other",
+				guestId: guestIdOf("other"),
 			}),
 			"hostOnly",
 		);
 		expect((await getDoc(t, sessionId))?.locked).toBeUndefined();
 		await impostor(t).mutation(api.sessions.setLocked, {
 			...args,
-			guestId: "guest_solver",
+			guestId: guestIdOf("solver"),
 		});
 		expect((await getDoc(t, sessionId))?.locked).toBe(true);
 	});
@@ -1037,7 +1138,7 @@ describe("ownership", () => {
 	it("answers participantNotFound to a heartbeat for someone else", async () => {
 		const t = setup();
 		const { joinCode } = await room(t);
-		const { participantId } = await joinWithCode(t, joinCode, "guest_one");
+		const { participantId } = await joinWithCode(t, joinCode, guestIdOf("one"));
 		await arrange(t, participantId, { connected: false, lastSeen: 0 });
 		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
 			await expectCode(

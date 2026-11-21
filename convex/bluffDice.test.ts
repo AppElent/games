@@ -11,6 +11,7 @@ import {
 	fields,
 	fixRandom,
 	freezeClock,
+	guestIdOf,
 	HOST_USER,
 	HOSTED,
 	hostSession,
@@ -67,7 +68,7 @@ async function startedGame(t: T, guests = 1) {
 	const room = await newRoom(t);
 	const others: ParticipantId[] = [];
 	for (let index = 0; index < guests; index += 1) {
-		const joined = await joinWithCode(t, room.joinCode, `guest_${index}`);
+		const joined = await joinWithCode(t, room.joinCode, guestIdOf(`${index}`));
 		others.push(joined.participantId);
 	}
 	fixRandom(ALL_FOURS);
@@ -160,7 +161,7 @@ describe("joining", () => {
 	it("adds a code joiner as an unseated player", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await newRoom(t);
-		const joined = await joinWithCode(t, joinCode, "guest_two");
+		const joined = await joinWithCode(t, joinCode, guestIdOf("two"));
 		expect(joined).toEqual({
 			sessionId,
 			participantId: joined.participantId,
@@ -170,7 +171,7 @@ describe("joining", () => {
 		const { participants } = await bundle(t, sessionId);
 		expect(fields(participants[1])).toEqual({
 			sessionId,
-			displayName: "guest_two",
+			displayName: guestIdOf("two"),
 			role: "player",
 			connected: true,
 			lastSeen: T0,
@@ -180,7 +181,7 @@ describe("joining", () => {
 	it("adds a spectator as a watcher", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await newRoom(t);
-		await joinWithCode(t, joinCode, "guest_watch", { asSpectator: true });
+		await joinWithCode(t, joinCode, guestIdOf("watch"), { asSpectator: true });
 		expect((await bundle(t, sessionId)).participants[1].role).toBe("watcher");
 	});
 });
@@ -206,8 +207,8 @@ describe("start", () => {
 	it("leaves watchers out", async () => {
 		const t = setup();
 		const { sessionId, hostId, joinCode } = await newRoom(t);
-		const player = await joinWithCode(t, joinCode, "guest_two");
-		await joinWithCode(t, joinCode, "guest_watch", { asSpectator: true });
+		const player = await joinWithCode(t, joinCode, guestIdOf("two"));
+		await joinWithCode(t, joinCode, guestIdOf("watch"), { asSpectator: true });
 		await t.mutation(api.bluffDice.start, { sessionId, participantId: hostId });
 		expect((await storedState(t, sessionId)).turnOrder).toEqual([
 			hostId,
@@ -218,8 +219,8 @@ describe("start", () => {
 	it("pins that a kicked player is still dealt in", async () => {
 		const t = setup();
 		const { host, sessionId, hostId, joinCode } = await newRoom(t);
-		const player = await joinWithCode(t, joinCode, "guest_two");
-		const kicked = await joinWithCode(t, joinCode, "guest_kicked");
+		const player = await joinWithCode(t, joinCode, guestIdOf("two"));
+		const kicked = await joinWithCode(t, joinCode, guestIdOf("kicked"));
 		await host.mutation(api.sessions.kickParticipant, {
 			sessionId,
 			hostParticipantId: hostId,
@@ -236,7 +237,7 @@ describe("start", () => {
 	it("answers hostOnlyStart to a guest", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await newRoom(t);
-		const joined = await joinWithCode(t, joinCode, "guest_two");
+		const joined = await joinWithCode(t, joinCode, guestIdOf("two"));
 		await expectCode(
 			t.mutation(api.bluffDice.start, {
 				sessionId,
@@ -249,7 +250,7 @@ describe("start", () => {
 	it("answers needTwoPlayers to a lone host, not counting watchers", async () => {
 		const t = setup();
 		const { sessionId, hostId, joinCode } = await newRoom(t);
-		await joinWithCode(t, joinCode, "guest_watch", { asSpectator: true });
+		await joinWithCode(t, joinCode, guestIdOf("watch"), { asSpectator: true });
 		await expectCode(
 			t.mutation(api.bluffDice.start, { sessionId, participantId: hostId }),
 			"needTwoPlayers",
@@ -260,7 +261,7 @@ describe("start", () => {
 		const t = setup();
 		const { sessionId, hostId, joinCode } = await newRoom(t);
 		for (let index = 0; index < 8; index += 1) {
-			await joinWithCode(t, joinCode, `guest_${index}`);
+			await joinWithCode(t, joinCode, guestIdOf(`${index}`));
 		}
 		await expectCode(
 			t.mutation(api.bluffDice.start, { sessionId, participantId: hostId }),
@@ -561,7 +562,7 @@ describe("getMyDice", () => {
 			impostor(t).query(api.bluffDice.getMyDice, {
 				sessionId,
 				participantId: guest,
-				guestId: "guest_other",
+				guestId: guestIdOf("other"),
 			}),
 			"notInGame",
 		);
@@ -570,7 +571,7 @@ describe("getMyDice", () => {
 	it("is null for a watcher, or ahead of the state", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await newRoom(t);
-		const watcher = await joinWithCode(t, joinCode, "guest_watch", {
+		const watcher = await joinWithCode(t, joinCode, guestIdOf("watch"), {
 			asSpectator: true,
 		});
 		await expect(
@@ -605,7 +606,7 @@ describe("getMyDice", () => {
 			}),
 			"notInGame",
 		);
-		const kicked = await joinWithCode(t, joinCode, "guest_kicked");
+		const kicked = await joinWithCode(t, joinCode, guestIdOf("kicked"));
 		await host.mutation(api.sessions.kickParticipant, {
 			sessionId,
 			hostParticipantId: hostId,
@@ -625,8 +626,9 @@ describe("ownership", () => {
 	it("answers notInGame to anyone acting for another player's seat", async () => {
 		const t = setup();
 		const { sessionId, joinCode, hostId } = await newRoom(t);
-		const guest = (await joinWithCode(t, joinCode, "guest_0")).participantId;
-		for (const caller of impostors(t, { guestIds: ["guest_0"] })) {
+		const guest = (await joinWithCode(t, joinCode, guestIdOf("0")))
+			.participantId;
+		for (const caller of impostors(t, { guestIds: [guestIdOf("0")] })) {
 			await expectCode(
 				caller.mutation(api.bluffDice.start, {
 					sessionId,
@@ -637,7 +639,7 @@ describe("ownership", () => {
 		}
 		fixRandom(ALL_FOURS);
 		await t.mutation(api.bluffDice.start, { sessionId, participantId: hostId });
-		for (const caller of impostors(t, { guestIds: ["guest_0"] })) {
+		for (const caller of impostors(t, { guestIds: [guestIdOf("0")] })) {
 			await expectCode(claim(caller, sessionId, hostId, 1, 4), "notInGame");
 		}
 		await claim(t, sessionId, hostId, 1, 4);

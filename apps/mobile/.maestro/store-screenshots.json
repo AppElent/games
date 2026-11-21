@@ -1,0 +1,33 @@
+{
+  "$comment": "Labels the store-screenshots flow taps, per language (developer-home scripts/store-screenshots.mjs passes them with maestro -e). L_BACK is the system back button's accessibility label.",
+  "languages": {
+    "en": {
+      "L_BACK": "Back",
+      "L_SUDOKU": "Sudoku",
+      "L_KILLER": "Killer",
+      "L_MEDIUM": "Medium",
+      "L_CARDS": "Card Club",
+      "L_PESTEN": "Pesten",
+      "L_DEAL": "Deal the cards",
+      "L_DICE": "Dice Club",
+      "L_BACKGAMMON": "Backgammon",
+      "L_NEW_GAME": "New game",
+      "L_CONTINUE": "Continue game",
+      "L_ROLL": "Roll"
+    },
+    "nl": {
+      "L_BACK": "Vorige",
+      "L_SUDOKU": "Sudoku",
+      "L_KILLER": "Killer",
+      "L_MEDIUM": "Gemiddeld",
+      "L_CARDS": "Kaartclub",
+      "L_PESTEN": "Pesten",
+      "L_DEAL": "Delen maar",
+      "L_DICE": "Dobbelclub",
+      "L_BACKGAMMON": "Backgammon",
+      "L_NEW_GAME": "Nieuw spel",
+      "L_CONTINUE": "Verder spelen",
+      "L_ROLL": "Gooien"
+    }
+  }
+}

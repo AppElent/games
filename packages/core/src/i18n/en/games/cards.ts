@@ -167,6 +167,7 @@ export const cards = {
 		bankName: "Bank",
 		stakeHint: "How many points is this hand worth?",
 		stakeButton: { one: "{count} point", other: "{count} points" },
+		roundSettled: "Round {round} is settled.",
 		stakeWaiting: "Waiting for the others to pick their points.",
 		playingFor: { one: "for {count} point", other: "for {count} points" },
 		hit: "Another card",
@@ -325,6 +326,9 @@ export const cards = {
 		layOffOn: "Lay off on this {kind}",
 		knockerMelds: "{name}'s melds",
 		knockerDeadwood: "{name}'s deadwood",
+		inMeld: "meld {n}",
+		laidOffCard: "laid off",
+		laidOffLegend: "Outlined cards were laid off on {name}'s melds.",
 		sortByMelds: "Group melds",
 		handLabel: "Hand {round} · to {target}",
 		handOver: "Hand {round}",
@@ -681,6 +685,7 @@ export const cards = {
 				up: "Round 1 deals one card each, and every round one more, up to as many as the deck allows for the table.",
 				down: "The first round deals as many cards as the deck allows for the table, and every round one fewer, down to one.",
 			},
+			maxHand: "No hand is bigger than {max} cards.",
 			bid: "Before play, everyone says how many tricks they'll take, starting left of the dealer. The dealer bids last.",
 			dealerRule:
 				"The dealer may not bid so the bids add up to the tricks in the round: someone has to miss.",
@@ -974,6 +979,10 @@ export const cards = {
 				dealerFree: {
 					label: "Dealer bids freely",
 					hint: "The dealer may make the bids add up to the tricks in the round.",
+				},
+				shortHands: {
+					label: "Seven cards at most",
+					hint: "No hand is bigger than seven cards, so a game at three players is 13 deals instead of 33.",
 				},
 				noTrump: {
 					label: "No trump",

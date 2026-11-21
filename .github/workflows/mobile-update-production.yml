@@ -40,9 +40,15 @@ jobs:
       # (developer-home standards/releases.md, "Android pause").
       ANDROID_ENABLED: ${{ vars.ANDROID_ENABLED }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup
       - uses: ./.github/actions/require-expo-token
+      # Decide and publish are separate steps, so a skipped update shows as a
+      # skipped "Publish production update" (the developer-home changelog reads it).
+      - name: Gate production update
+        id: gate
+        run: node apps/mobile/scripts/ci-publish-update.mjs gate production
       - name: Publish production update
-        run: node apps/mobile/scripts/ci-publish-update.mjs production
+        if: steps.gate.outputs.publish == 'true'
+        run: node apps/mobile/scripts/ci-publish-update.mjs publish production

@@ -45,12 +45,19 @@ seat claims, read [the decision](../adr/0001-card-games-use-rule-families-and-co
   part of the game state, not a seat. Players pick a stake from a fixed set of points
   each round, and the bank's face-down card stays hidden until the bank plays. Text
   speaks of points only, never money or betting.
+  Everyone's cards are face up, so opponents' seats list theirs as marks (`faceUpCards`).
+  A settled round stays on show for `ROUND_PAUSE_MS` before stakes are offered again;
+  that pause is the client's (`useRoundPause`), the state moves straight to `stake`.
+- A seat on autopilot offers no moves of its own: the tables hide their buttons and
+  hand taps while `onAutopilot(table)` holds, leaving only "take my seat back".
 - A table is created in one step by `cardGames.createTable`, and joiners claim a seat
   through `ON_JOIN` (`convex/lib/tableSeats.ts`). A seat is proven by a secret the
-  device keeps, since participant ids are public. A signed-in player whose browser or
-  device holds no secret for their seat, or holds one the table turns away, gets it
-  back once auth settles: `reclaimSeat` hands their account the seat's existing secret,
-  so their other devices stay seated. Guests, other accounts and removed players get
+  device keeps, since participant ids are public. Clients make it with
+  `createSeatSecret` (two UUIDs), and the server takes only that shape
+  (`isSeatSecret`). A signed-in player whose browser or device holds no secret
+  for their seat, or holds one the table turns away, gets it back once auth
+  settles: `reclaimSeat` hands their account the seat's existing secret, so their
+  other devices stay seated. Guests, other accounts and removed players get
   nothing and watch.
 - Web (`src/components/cards`) and mobile (`apps/mobile/src/features/cards`) draw the
   same card art from `packages/core/src/cards/art.ts` and derive the same table logic
@@ -76,6 +83,7 @@ A game sets these `TricksRules` fields:
 | `firstLead` | The face that opens each deal; null means left of the dealer leads | C2 | null | null |
 | `breaking` | A suit nobody leads until it has been played, and faces that also break it | hearts | null | null |
 | `schedule` | Which function in `SCHEDULES` sets each seat's hand size per deal; cards left over stay undealt, and a schedule with no next deal ends the match | `fullDeck` | `fourEach` | `upDown` (`up`, `down`) |
+| `maxHand` | Optional. No hand bigger than this for `up`, `down` and `upDown` (house rule `shortHands`: 7); nothing changes where the deck already deals fewer | absent | absent | absent (7 with `shortHands`) |
 | `trumpChoice` | Which function in `TRUMPS` picks a deal's trump suit from the undealt cards | `none` | `none` | `turnUp` |
 | `seating` | Which function in `SEATINGS` puts seats into teams; partners share a total | `alone` | `alone` | `alone` |
 | `scoring` | Which function in `SCORERS` turns tricks taken into points | `penaltyCards` | `lastTrick` | `bids` |
@@ -129,10 +137,14 @@ House rules are shallow patches on these fields, as in the other families.
   and passes its most dangerous cards. Under `lastTrick` it spends its weakest legal
   card and keeps the best for the last trick. For points and roem it calls trump on a
   strong hand, draws trumps with the top trump, feeds points to a partner holding the
-  trick and wins cheaply. It never plays an illegal card.
+  trick and wins cheaply. A top side card counts as a sure winner only while no
+  opponent known to be out of its suit (`voids`, filled from cards played face up) can
+  still trump it. It never plays an illegal card.
 - In a bidding game the bot bids from its high trumps, aces and guarded kings (the
   nearest allowed number), then wins as cheaply as it can while short of its bid and
   loses with its highest losing card once it has it.
+- The seat note "Passed" (`trumpPassed`) marks the seats that passed on the suit on offer;
+  once everyone has and the first seat must name a suit, no seat is marked.
 - A trump call is two actions, `passTrump` and `chooseTrump`; refusals are
   `cardsNotCallingTrump`, `cardsCallTrumpFirst`, `cardsMustChooseTrump` and
   `cardsTrumpNotOffered`. Follow refusals add `cardsMustTrump`, `cardsMustOvertrump` and

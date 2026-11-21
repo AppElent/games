@@ -13,6 +13,7 @@ import {
 	fixRandom,
 	freezeClock,
 	getDoc,
+	guestIdOf,
 	HOST_USER,
 	HOSTED,
 	hostSession,
@@ -64,7 +65,7 @@ async function fullMatch(t: T) {
 	const joined = await joinWithToken(
 		t,
 		await shareTokenOf(t, match.sessionId),
-		"guest_black",
+		guestIdOf("black"),
 	);
 	return { ...match, black: joined.participantId };
 }
@@ -180,7 +181,7 @@ describe("joining", () => {
 		const joined = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_black",
+			guestIdOf("black"),
 		);
 		expect(joined).toEqual({
 			sessionId,
@@ -195,8 +196,8 @@ describe("joining", () => {
 		expect(result.state.updatedAt).toBe(T0 + 500);
 		expect(fields(await getDoc(t, joined.participantId))).toEqual({
 			sessionId,
-			guestId: "guest_black",
-			displayName: "guest_black",
+			guestId: guestIdOf("black"),
+			displayName: guestIdOf("black"),
 			role: "player",
 			seat: "black",
 			connected: true,
@@ -210,7 +211,7 @@ describe("joining", () => {
 		const third = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_third",
+			guestIdOf("third"),
 		);
 		const row = await getDoc(t, third.participantId);
 		expect(row?.role).toBe("watcher");
@@ -222,7 +223,7 @@ describe("joining", () => {
 		const t = setup();
 		const { host, sessionId, white, black } = await fullMatch(t);
 		const token = await shareTokenOf(t, sessionId);
-		const again = await joinWithToken(t, token, "guest_black");
+		const again = await joinWithToken(t, token, guestIdOf("black"));
 		expect(again.participantId).toBe(black);
 		const hostAgain = await host.mutation(api.sessions.joinByToken, {
 			shareToken: token,
@@ -240,7 +241,7 @@ describe("joining", () => {
 		const spectator = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_watch",
+			guestIdOf("watch"),
 			{ asSpectator: true },
 		);
 		const row = await getDoc(t, spectator.participantId);
@@ -255,10 +256,10 @@ describe("joining", () => {
 		const t = setup();
 		const { sessionId } = await newMatch(t);
 		const token = await shareTokenOf(t, sessionId);
-		const first = await joinWithToken(t, token, "guest_watch", {
+		const first = await joinWithToken(t, token, guestIdOf("watch"), {
 			asSpectator: true,
 		});
-		await joinWithToken(t, token, "guest_watch");
+		await joinWithToken(t, token, guestIdOf("watch"));
 		const row = await getDoc(t, first.participantId);
 		expect(row?.seat).toBe("black");
 		expect(row?.role).toBe("watcher");
@@ -278,7 +279,7 @@ describe("joining", () => {
 			sessionId,
 			hostParticipantId: hostId,
 		});
-		const joined = await joinWithCode(t, joinCode as string, "guest_code");
+		const joined = await joinWithCode(t, joinCode as string, guestIdOf("code"));
 		expect(joined.seatClaimed).toBe(false);
 		const row = await getDoc(t, joined.participantId);
 		expect(row?.role).toBe("player");
@@ -294,7 +295,7 @@ describe("joining", () => {
 		const joined = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_early",
+			guestIdOf("early"),
 		);
 		const row = await getDoc(t, joined.participantId);
 		expect(row?.role).toBe("player");
@@ -374,7 +375,7 @@ describe("rollDice", () => {
 		const watcher = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_watch",
+			guestIdOf("watch"),
 		);
 		await expectCode(roll(t, sessionId, watcher.participantId), "notYourTurn");
 	});
@@ -770,7 +771,7 @@ describe("rematch", () => {
 		const watcher = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_watch",
+			guestIdOf("watch"),
 		);
 		const { state } = await bundle(t, sessionId);
 		await arrange(t, state._id, { phase: "finished" });
@@ -787,7 +788,7 @@ describe("rematch", () => {
 		const t = setup();
 		const { sessionId } = await finishedMatch(t);
 		await expectCode(
-			joinWithToken(t, await shareTokenOf(t, sessionId), "guest_late"),
+			joinWithToken(t, await shareTokenOf(t, sessionId), guestIdOf("late")),
 			"gameUnavailable",
 		);
 	});
@@ -857,7 +858,7 @@ describe("create", () => {
 		const joined = await joinWithToken(
 			t,
 			created.shareToken as string,
-			"guest_two",
+			guestIdOf("two"),
 		);
 		expect(joined.sessionId).toBe(created.sessionId);
 	});
@@ -873,7 +874,7 @@ describe("ownership", () => {
 	it("answers notInGame to anyone acting for another player's seat", async () => {
 		const t = setup();
 		const { sessionId, white, black } = await fullMatch(t);
-		for (const caller of impostors(t, { guestIds: ["guest_black"] })) {
+		for (const caller of impostors(t, { guestIds: [guestIdOf("black")] })) {
 			await expectCode(roll(caller, sessionId, white), "notInGame");
 			await expectCode(
 				caller.mutation(api.backgammon.endTurn, {

@@ -141,13 +141,18 @@ pnpm mobile:update:production --message "…"
 `apps/mobile/scripts/publish-update.mjs` sets `APP_VARIANT` and `--environment` from
 the channel, so the update's runtime matches that channel's builds, and uploads the
 source maps. It refuses when no finished build on the channel has this checkout's
-runtime, since nothing would load the update; `--without-build` overrides that. The root scripts add `SENTRY_AUTH_TOKEN` from Infisical through
+runtime, since nothing would load the update; `--without-build` overrides that. The
+update message is the OTA label (`<version> · <d mmm> · <short sha>`, the same line
+Profile shows as `Versie <version> (<build>) · update <label> · <channel>`, or `geen
+update` on the embedded bundle); `--message` overrides it. The root scripts add `SENTRY_AUTH_TOKEN` from Infisical through
 `env:exec`. Production refuses to publish without it. If only the upload failed,
 retry with `--upload-only`; don't publish again. A bare `eas update` resolves to the
 development variant, so no preview or production build would ever load it.
 
 CI follows the [releases](https://github.com/AppElent/developer-home/blob/main/standards/releases.md) standard; both channels use
-`apps/mobile/scripts/ci-publish-update.mjs`:
+`apps/mobile/scripts/ci-publish-update.mjs`, as two workflow steps: `gate <channel>`
+decides, `publish <channel>` runs only when it said so, so a skipped update shows as
+a skipped "Publish … update" step in the Actions run:
 
 - **Preview, every merge.** `deploy.yml` publishes `main` to `preview` once the
   production backend it calls is live. It publishes only for the platforms where a

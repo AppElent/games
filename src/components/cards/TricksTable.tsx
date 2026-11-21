@@ -5,6 +5,7 @@ import {
 	bidTotal,
 	cardTilt,
 	isTeamGame,
+	onAutopilot,
 	openTrickSlots,
 	seatName,
 	sortTricksHand,
@@ -119,7 +120,9 @@ function BidPicker({
 
 /**
  * The cards on the table: the trick being played, or the last one with its
- * taker until the next card goes down. Played cards fly to it as "discard".
+ * taker until the next card goes down. Played cards fly to it as "discard",
+ * landing on the card just played (the last one), at its own lean, so they
+ * settle without a jump.
  */
 function TrickArea({
 	table,
@@ -139,12 +142,11 @@ function TrickArea({
 	return (
 		<section
 			className="trick"
-			{...zoneAttr("discard")}
 			data-landing={landing}
 			data-done={winner !== null}
 			aria-label={cards.tricks.trickLabel}
 		>
-			{plays.map((play) => (
+			{plays.map((play, index) => (
 				<figure
 					key={play.card}
 					className="trick-play"
@@ -152,7 +154,8 @@ function TrickArea({
 				>
 					<span
 						className="trick-card"
-						style={{ transform: `rotate(${cardTilt(play.card) / 2}deg)` }}
+						{...(index === plays.length - 1 ? zoneAttr("discard") : {})}
+						style={{ transform: `rotate(${cardTilt(play.card)}deg)` }}
 					>
 						<PlayingCard card={play.card} label={cardName(play.card)} />
 					</span>
@@ -218,10 +221,10 @@ export function TricksTable({
 	const bidding = view.phase === "bidding";
 	// Someone has the turn: to bid, or to play a card.
 	const live = playing || bidding;
-	const mine = playing && view.turn === you;
+	const mine = playing && view.turn === you && !onAutopilot(table);
 	const calling = view.phase === "trump";
-	const callingMine = calling && view.turn === you;
-	const myBid = bidding && view.turn === you;
+	const callingMine = calling && view.turn === you && !onAutopilot(table);
+	const myBid = bidding && view.turn === you && !onAutopilot(table);
 	const choosing = view.phase === "passing" && you !== null && !view.passed;
 	const legal = new Set(view.legal);
 	const finished = view.phase === "finished";

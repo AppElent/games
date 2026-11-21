@@ -1,5 +1,6 @@
 import { CARD_ENGINE } from "@arcadeclub/core/cards/engine";
 import { DICE_ENGINE } from "@arcadeclub/core/dice/engine";
+import { isSeatSecret } from "@arcadeclub/core/sessions";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { gameError } from "./errors";
@@ -20,11 +21,9 @@ export type TableGameType = keyof typeof TABLE_ENGINES;
 type Table = Doc<"cardGameStates">;
 type ParticipantId = Id<"sessionParticipants">;
 
-const MIN_SECRET_LENGTH = 16;
-const MAX_SECRET_LENGTH = 128;
-
+/** A seat secret must have the shape every client makes; see `createSeatSecret`. */
 export function requireSeatSecret(secret: string) {
-	if (secret.length < MIN_SECRET_LENGTH || secret.length > MAX_SECRET_LENGTH) {
+	if (!isSeatSecret(secret)) {
 		throw gameError("cardsSeatCredential");
 	}
 }

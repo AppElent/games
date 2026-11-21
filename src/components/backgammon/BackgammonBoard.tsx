@@ -69,7 +69,7 @@ const PIPS: Record<number, number[]> = {
 const SIZE = 40;
 const MONO = "'Spline Sans Mono', ui-monospace, monospace";
 const SERIF = "'Cormorant Garamond', Georgia, serif";
-/** Button and switch borders: 3:1 against the dark stage and the options panel. */
+/** Button, switch and turn-badge borders: 3:1 against the dark stage and the options panel. */
 const CONTROL_LINE = "rgba(233, 217, 189, 0.45)";
 
 type DragState = {
@@ -617,7 +617,7 @@ export function BackgammonBoard({
 							active === "white"
 								? "rgba(247,238,214,0.14)"
 								: "rgba(20,16,12,0.5)",
-						border: `1px solid ${active === "white" ? "rgba(233,217,189,0.4)" : "rgba(233,217,189,0.22)"}`,
+						border: `1px solid ${CONTROL_LINE}`,
 						color: "#e9d9bd",
 					}}
 				>

@@ -6,6 +6,7 @@ import type { RummyView } from "@arcadeclub/core/cards/rummy";
 import {
 	cardName,
 	meldCardNames,
+	onAutopilot,
 	rummyHint,
 	rummyMeldAction,
 	rummyTurn,
@@ -420,71 +421,75 @@ export function RummyTable({
 					</FeltText>
 					<EventTicker events={view.events} table={table} />
 					<View style={styles.actions}>
-						{canOpenNow ? (
-							<TableButton
-								label={fmt(cards.rummy.openingConfirm, {
-									points: openingWithShape,
-								})}
-								disabled={controls.pending}
-								onPress={() => layDown([...staged, selection])}
-								testID="cards-open-now"
-							/>
-						) : null}
-						{playing && !opened && shape ? (
-							<TableButton
-								ghost={canOpenNow}
-								label={fmt(cards.rummy.stageMeld, { points: shapePoints })}
-								onPress={() => {
-									haptics.selectionChanged();
-									setStaged((current) => [...current, selection]);
-									setSelected([]);
-								}}
-								testID="cards-stage"
-							/>
-						) : null}
-						{playing && opened && shape && keepsOne ? (
-							<TableButton
-								label={fmt(cards.rummy.layMeld, { points: shapePoints })}
-								disabled={controls.pending}
-								onPress={() => layDown([selection])}
-								testID="cards-lay"
-							/>
-						) : null}
-						{canOpen ? (
-							<TableButton
-								label={fmt(cards.rummy.openingConfirm, {
-									points: stagedPoints,
-								})}
-								disabled={controls.pending}
-								onPress={() => layDown(staged)}
-								testID="cards-open-staged"
-							/>
-						) : null}
-						{staged.length > 0 ? (
-							<TableButton
-								ghost
-								label={cards.rummy.openingCancel}
-								onPress={() => setStaged([])}
-								testID="cards-take-back"
-							/>
-						) : null}
-						{canDiscard ? (
-							<TableButton
-								label={cards.rummy.discardCard}
-								disabled={controls.pending}
-								onPress={discard}
-								testID="cards-discard-action"
-							/>
-						) : null}
-						{playing && selection.length > 1 ? (
-							<TableButton
-								ghost
-								label={cards.rummy.clearSelection}
-								onPress={() => setSelected([])}
-								testID="cards-clear"
-							/>
-						) : null}
-						{you !== null && table.seats[you]?.autopilot ? (
+						{onAutopilot(table) ? null : (
+							<>
+								{canOpenNow ? (
+									<TableButton
+										label={fmt(cards.rummy.openingConfirm, {
+											points: openingWithShape,
+										})}
+										disabled={controls.pending}
+										onPress={() => layDown([...staged, selection])}
+										testID="cards-open-now"
+									/>
+								) : null}
+								{playing && !opened && shape ? (
+									<TableButton
+										ghost={canOpenNow}
+										label={fmt(cards.rummy.stageMeld, { points: shapePoints })}
+										onPress={() => {
+											haptics.selectionChanged();
+											setStaged((current) => [...current, selection]);
+											setSelected([]);
+										}}
+										testID="cards-stage"
+									/>
+								) : null}
+								{playing && opened && shape && keepsOne ? (
+									<TableButton
+										label={fmt(cards.rummy.layMeld, { points: shapePoints })}
+										disabled={controls.pending}
+										onPress={() => layDown([selection])}
+										testID="cards-lay"
+									/>
+								) : null}
+								{canOpen ? (
+									<TableButton
+										label={fmt(cards.rummy.openingConfirm, {
+											points: stagedPoints,
+										})}
+										disabled={controls.pending}
+										onPress={() => layDown(staged)}
+										testID="cards-open-staged"
+									/>
+								) : null}
+								{staged.length > 0 ? (
+									<TableButton
+										ghost
+										label={cards.rummy.openingCancel}
+										onPress={() => setStaged([])}
+										testID="cards-take-back"
+									/>
+								) : null}
+								{canDiscard ? (
+									<TableButton
+										label={cards.rummy.discardCard}
+										disabled={controls.pending}
+										onPress={discard}
+										testID="cards-discard-action"
+									/>
+								) : null}
+								{playing && selection.length > 1 ? (
+									<TableButton
+										ghost
+										label={cards.rummy.clearSelection}
+										onPress={() => setSelected([])}
+										testID="cards-clear"
+									/>
+								) : null}
+							</>
+						)}
+						{onAutopilot(table) && you !== null ? (
 							<TableButton
 								label={cards.table.autopilotBack}
 								onPress={() => controls.setAutopilot(you, false)}

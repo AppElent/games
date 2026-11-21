@@ -76,8 +76,9 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   app's Profile run the same steps, `@arcadeclub/core/account-export`: every page of
   `account.exportMyData` (what each table exports: `convex/lib/accountExport.ts`),
   merged into `arcade-club-export-YYYY-MM-DD.json`. The web downloads it; the app adds
-  its phone-only sudoku saves under `localOnly.sudoku`, writes the file to its cache and
-  opens the share sheet.
+  what it keeps only on the phone under `localOnly` (`displayName`, `backgammon`,
+  `seats` without their seat secret, `sudoku`; never the guest identity), writes the
+  file to its cache and opens the share sheet.
 - Theme (light, dark, auto) is driven by `#/lib/auth`'s
   `getInitialMode`/`applyThemeMode`/`setThemeMode`, `ThemeSync` (reconciles with Clerk
   `unsafeMetadata` on sign-in) and the `THEME_INIT_SCRIPT` inline pre-paint script in

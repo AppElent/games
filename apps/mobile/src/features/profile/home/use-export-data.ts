@@ -1,10 +1,12 @@
 /**
  * "Download my data" on Profile; the steps live in
  * `@arcadeclub/core/account-export`, shared with the web Account page. The
- * file also holds what this phone keeps only locally (`localOnly`): its sudoku
- * saves that have no account session yet. Synced puzzles are in the account
- * export itself. It is written to the cache directory and handed to
- * the share sheet, so the player saves it to Files or sends it on.
+ * file also holds what this phone keeps only locally (`localOnly`, see
+ * `local-only-export.ts`): the name typed here, the pass-and-play backgammon
+ * match, the online seats, and the sudoku saves that have no account session
+ * yet. Synced puzzles are in the account export itself. It is written to the
+ * cache directory and handed to the share sheet, so the player saves it to
+ * Files or sends it on.
  */
 import {
 	accountExportFileName,
@@ -18,7 +20,7 @@ import * as Sharing from "expo-sharing";
 import { api } from "../../../convex/api";
 import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
 import { useSessionAction } from "../../sessions/use-session-action";
-import { readLocalOnlySudokuSaves } from "../../sudoku/saves/sudoku-save-store";
+import { readLocalOnlyExport } from "./local-only-export";
 
 export function useExportData(dialogTitle: string) {
 	const convex = useConvex();
@@ -34,7 +36,7 @@ export function useExportData(dialogTitle: string) {
 				fetchPage: (cursor) =>
 					convex.query(api.account.exportMyData, { cursor }),
 				now,
-				localOnly: { sudoku: readLocalOnlySudokuSaves(userId ?? null) },
+				localOnly: readLocalOnlyExport(userId ?? null),
 			});
 			const file = new File(Paths.cache, accountExportFileName(now));
 			file.create({ overwrite: true });

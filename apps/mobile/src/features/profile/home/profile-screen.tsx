@@ -27,6 +27,7 @@ import { Screen } from "../../../ui/screen";
 import { Segmented } from "../../../ui/segmented";
 import { AppText } from "../../../ui/text";
 import { TextField } from "../../../ui/text-field";
+import { buildInfoLine } from "../../../updates/build-info";
 import {
 	PLAYER_NAME_MAX,
 	usePlayerIdentity,
@@ -58,7 +59,15 @@ export function ProfileScreen() {
 	const exporter = useExportData(copy.exportData.action);
 
 	const email = user?.primaryEmailAddress?.emailAddress ?? "";
-	const version = Constants.expoConfig?.version ?? "";
+	const buildInfo = {
+		version: Constants.expoConfig?.version ?? "",
+		build: Constants.platform?.ios?.buildNumber,
+		channel: Updates.channel,
+		// An update's own bundle carries the commit it was published from.
+		updateCreatedAt:
+			Updates.isEnabled && !Updates.isEmbeddedLaunch ? Updates.createdAt : null,
+		sha: env.gitCommit,
+	};
 
 	return (
 		<Screen inTabs>
@@ -187,18 +196,7 @@ export function ProfileScreen() {
 					/>
 				) : null}
 				<AppText variant="caption" selectable>
-					{t.common.appName} · {fmt(copy.version, { version })}
-					{Updates.isEnabled && Updates.channel
-						? `\n${fmt(
-								Updates.isEmbeddedLaunch || !Updates.updateId
-									? copy.runningBuild
-									: copy.runningUpdate,
-								{
-									channel: Updates.channel,
-									id: Updates.updateId?.slice(0, 8) ?? "",
-								},
-							)}`
-						: null}
+					{t.common.appName} · {buildInfoLine(buildInfo, copy)}
 				</AppText>
 			</Section>
 		</Screen>

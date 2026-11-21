@@ -5,6 +5,7 @@ import type { Meld } from "@arcadeclub/core/cards/melds";
 import {
 	ginHint,
 	ginLayoffOrder,
+	ginMeldMarks,
 	ginResultText,
 	ginTurn,
 	groupGinHand,
@@ -51,9 +52,12 @@ type Sort = "melds" | "suit";
 function ShownHand({
 	shown,
 	deadwood,
+	laidOff = [],
 }: {
 	shown: GinHandResult["shown"][number];
 	deadwood: number;
+	/** Cards in these melds that the defender laid off. */
+	laidOff?: readonly CardId[];
 }) {
 	const { locale } = useI18n();
 	const cards = useMessages().games.cards;
@@ -63,9 +67,18 @@ function ShownHand({
 		<div className="flex flex-wrap items-center gap-2">
 			{shown.melds.map((meld) => (
 				<div key={meld.join()} className="meld" style={small}>
-					{meld.map((card) => (
-						<PlayingCard key={card} card={card} label={cardName(card)} />
-					))}
+					{meld.map((card) =>
+						laidOff.includes(card) ? (
+							<PlayingCard
+								key={card}
+								card={card}
+								className="laid-off"
+								label={`${cardName(card)}, ${cards.gin.laidOffCard}`}
+							/>
+						) : (
+							<PlayingCard key={card} card={card} label={cardName(card)} />
+						),
+					)}
 				</div>
 			))}
 			{shown.deadwood.length > 0 ? (
@@ -143,6 +156,7 @@ export function GinTable({
 	}, [step]);
 
 	const fresh = useFreshCards(view.hand, mine, view.events);
+	const meldMarks = ginMeldMarks(view.hand, rules);
 	const handShown =
 		sortBy === "melds"
 			? groupGinHand(view.hand, rules)
@@ -415,22 +429,35 @@ export function GinTable({
 					cards={handShown}
 					label={cards.table.handLabel}
 					fresh={fresh}
-					render={(card, style) => (
-						<button
-							type="button"
-							className="hand-card"
-							style={style}
-							{...cardAttr(card)}
-							aria-label={cardName(card)}
-							aria-pressed={selection.includes(card)}
-							aria-disabled={!playing && !layingOff}
-							data-selected={selection.includes(card)}
-							data-new={fresh.has(card)}
-							onClick={() => tap(card)}
-						>
-							<PlayingCard card={card} />
-						</button>
-					)}
+					render={(card, style) => {
+						const mark = meldMarks.get(card);
+						return (
+							<button
+								type="button"
+								className="hand-card"
+								style={style}
+								{...cardAttr(card)}
+								data-meld={mark}
+								aria-label={
+									mark
+										? `${cardName(card)}, ${fmt(cards.gin.inMeld, { n: mark })}`
+										: cardName(card)
+								}
+								aria-pressed={selection.includes(card)}
+								aria-disabled={!playing && !layingOff}
+								data-selected={selection.includes(card)}
+								data-new={fresh.has(card)}
+								onClick={() => tap(card)}
+							>
+								<PlayingCard card={card} />
+								{mark ? (
+									<span className="meld-mark" aria-hidden="true">
+										{mark}
+									</span>
+								) : null}
+							</button>
+						);
+					}}
 				/>
 			}
 			overlays={
@@ -477,10 +504,20 @@ export function GinTable({
 											<ShownHand
 												shown={shown}
 												deadwood={result.deadwood[seat]}
+												laidOff={result.laidOff}
 											/>
 										</li>
 									))}
 								</ul>
+								{result.laidOff &&
+								result.laidOff.length > 0 &&
+								result.knocker !== null ? (
+									<p className="mb-3 text-xs">
+										{fmt(cards.gin.laidOffLegend, {
+											name: seatName(cards, table, result.knocker),
+										})}
+									</p>
+								) : null}
 								<div className="mb-4">
 									<ScoreBoard
 										table={table}

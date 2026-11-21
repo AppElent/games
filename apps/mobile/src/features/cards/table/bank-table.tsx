@@ -5,6 +5,8 @@ import {
 	bankHint,
 	bankSeatNote,
 	cardName,
+	faceUpCards,
+	onAutopilot,
 	seatName,
 	signedPoints,
 } from "@arcadeclub/core/cards/table-view";
@@ -26,6 +28,7 @@ import { SeatRow } from "./seat-row";
 import { EventTicker, TableFrame } from "./table-frame";
 import type { CardTableBundle, CardTableControls } from "./use-card-table";
 import { useFreshCards } from "./use-fresh-cards";
+import { useRoundPause } from "./use-round-pause";
 
 const NO_MELD = () => null;
 const NO_CARDS: readonly string[] = [];
@@ -57,8 +60,9 @@ export function BankTable({
 	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "play";
-	const mine = playing && view.turn === you;
-	const hint = bankHint(view, you, words);
+	const mine = playing && view.turn === you && !onAutopilot(table);
+	const paused = useRoundPause(view.round);
+	const hint = bankHint(view, you, words, paused);
 	const hand = you === null ? NO_CARDS : view.hands[you];
 	const fresh = useFreshCards(hand, mine, view.events);
 	const yourNote = you === null ? "" : bankSeatNote(words, view, you);
@@ -113,6 +117,7 @@ export function BankTable({
 					zones={flights.zones}
 					controls={controls}
 					note={(seat) => bankSeatNote(words, view, seat)}
+					shown={(seat) => faceUpCards(cards, view.hands[seat])}
 				/>
 			}
 			center={
@@ -190,56 +195,60 @@ export function BankTable({
 					</FeltText>
 					<EventTicker events={view.events} table={table} />
 					<View style={styles.actions}>
-						{view.canStake
-							? view.stakeOptions.map((amount) => (
+						{onAutopilot(table) ? null : (
+							<>
+								{view.canStake && !paused
+									? view.stakeOptions.map((amount) => (
+											<TableButton
+												key={amount}
+												label={plural(locale, amount, cards.bank.stakeButton)}
+												disabled={controls.pending}
+												onPress={() => {
+													haptics.selectionChanged();
+													controls.act({ type: "stake", amount });
+												}}
+												testID={`cards-stake-${amount}`}
+											/>
+										))
+									: null}
+								{mine ? (
 									<TableButton
-										key={amount}
-										label={plural(locale, amount, cards.bank.stakeButton)}
+										label={cards.bank.hit}
 										disabled={controls.pending}
 										onPress={() => {
-											haptics.selectionChanged();
-											controls.act({ type: "stake", amount });
+											haptics.valueEntered();
+											controls.act({ type: "hit" });
 										}}
-										testID={`cards-stake-${amount}`}
+										testID="cards-hit"
 									/>
-								))
-							: null}
-						{mine ? (
-							<TableButton
-								label={cards.bank.hit}
-								disabled={controls.pending}
-								onPress={() => {
-									haptics.valueEntered();
-									controls.act({ type: "hit" });
-								}}
-								testID="cards-hit"
-							/>
-						) : null}
-						{mine ? (
-							<TableButton
-								ghost
-								label={cards.bank.stand}
-								disabled={controls.pending}
-								onPress={() => {
-									haptics.moveMade();
-									controls.act({ type: "stand" });
-								}}
-								testID="cards-stand"
-							/>
-						) : null}
-						{view.canDouble ? (
-							<TableButton
-								ghost
-								label={cards.bank.double}
-								disabled={controls.pending}
-								onPress={() => {
-									haptics.moveMade();
-									controls.act({ type: "double" });
-								}}
-								testID="cards-double"
-							/>
-						) : null}
-						{you !== null && table.seats[you]?.autopilot ? (
+								) : null}
+								{mine ? (
+									<TableButton
+										ghost
+										label={cards.bank.stand}
+										disabled={controls.pending}
+										onPress={() => {
+											haptics.moveMade();
+											controls.act({ type: "stand" });
+										}}
+										testID="cards-stand"
+									/>
+								) : null}
+								{view.canDouble ? (
+									<TableButton
+										ghost
+										label={cards.bank.double}
+										disabled={controls.pending}
+										onPress={() => {
+											haptics.moveMade();
+											controls.act({ type: "double" });
+										}}
+										testID="cards-double"
+									/>
+								) : null}
+							</>
+						)}
+						{onAutopilot(table) && you !== null ? (
 							<TableButton
 								label={cards.table.autopilotBack}
 								onPress={() => controls.setAutopilot(you, false)}

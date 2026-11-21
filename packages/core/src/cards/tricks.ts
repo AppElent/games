@@ -61,6 +61,12 @@ export type TricksRules = {
 	breaking: { suit: Suit; alsoBrokenBy: readonly string[] } | null;
 	/** Which entry in `SCHEDULES` sets how many cards each seat is dealt. */
 	schedule: keyof typeof SCHEDULES;
+	/**
+	 * No hand is dealt bigger than this, for a schedule that grows with the
+	 * deck (up, down, upDown). Absent: as many as the deck allows. It changes
+	 * nothing where the deck already deals fewer.
+	 */
+	maxHand?: number;
 	/** Which entry in `TRUMPS` picks a deal's trump suit. */
 	trumpChoice: keyof typeof TRUMPS;
 	/** Which entry in `SEATINGS` puts seats into teams. */
@@ -190,6 +196,12 @@ export type TricksState = {
 	offered?: Suit | null;
 	/** How many seats have passed on the trump this deal. */
 	trumpPasses?: number;
+	/**
+	 * Per seat, the suits it failed to follow this deal. Public, since it comes
+	 * from cards played face up; the bot reads it to know who can trump a suit.
+	 * Absent in tables dealt before it existed: nobody is known to be void.
+	 */
+	voids?: Suit[][];
 	/** Who called trump; their team must win the deal. */
 	maker?: number | null;
 	/** Roem each seat took with its tricks this deal. */
@@ -601,30 +613,32 @@ export function legalTricksCards(
 	);
 }
 
-/** The most cards each seat can be dealt from this deck. */
-const mostCards = (deck: number, seats: number) => Math.floor(deck / seats);
+/** The most cards each seat can be dealt from this deck, within `cap` when there is one. */
+const mostCards = (deck: number, seats: number, cap?: number) =>
+	Math.min(Math.floor(deck / seats), cap ?? Number.POSITIVE_INFINITY);
 
 /**
  * Hand sizes by name: the whole deck shared out, or a size that changes with
  * the round. Null means the schedule has no such round, so the match is over.
  */
 const SCHEDULES = {
-	fullDeck: (deck: number, seats: number, _round: number) => deck / seats,
-	fourEach: (_deck: number, _seats: number, _round: number) => 4,
+	fullDeck: (deck: number, seats: number, _round: number, _cap?: number) =>
+		deck / seats,
+	fourEach: (_deck: number, _seats: number, _round: number, _cap?: number) => 4,
 	/** One card, up to as many as the deck allows, and back down to one. */
-	upDown: (deck: number, seats: number, round: number) => {
-		const most = mostCards(deck, seats);
+	upDown: (deck: number, seats: number, round: number, cap?: number) => {
+		const most = mostCards(deck, seats, cap);
 		return round <= most ? round : round < most * 2 ? most * 2 - round : null;
 	},
-	up: (deck: number, seats: number, round: number) =>
-		round <= mostCards(deck, seats) ? round : null,
-	down: (deck: number, seats: number, round: number) => {
-		const most = mostCards(deck, seats);
+	up: (deck: number, seats: number, round: number, cap?: number) =>
+		round <= mostCards(deck, seats, cap) ? round : null,
+	down: (deck: number, seats: number, round: number, cap?: number) => {
+		const most = mostCards(deck, seats, cap);
 		return round <= most ? most + 1 - round : null;
 	},
 } satisfies Record<
 	string,
-	(deck: number, seats: number, round: number) => number | null
+	(deck: number, seats: number, round: number, cap?: number) => number | null
 >;
 
 /** A schedule that still deals after this many rounds is treated as endless. */
@@ -636,6 +650,7 @@ export function handSizeFor(rules: TricksRules, seats: number, round: number) {
 		tricksDeck(rules, seats).length,
 		seats,
 		round,
+		rules.maxHand,
 	);
 }
 
@@ -644,7 +659,10 @@ export function dealsInMatch(rules: TricksRules, seats: number) {
 	const deck = tricksDeck(rules, seats).length;
 	const sizeOf = SCHEDULES[rules.schedule];
 	let round = 0;
-	while (round < ENDLESS && sizeOf(deck, seats, round + 1) !== null) {
+	while (
+		round < ENDLESS &&
+		sizeOf(deck, seats, round + 1, rules.maxHand) !== null
+	) {
 		round += 1;
 	}
 	return round === ENDLESS ? null : round;
@@ -700,7 +718,12 @@ function dealTricks(
 	const round = carried?.round ?? 1;
 	const out = carried?.out ?? Array.from({ length: seats }, () => false);
 	const live = out.flatMap((gone, seat) => (gone ? [] : [seat]));
-	const handSize = SCHEDULES[rules.schedule](stock.length, live.length, round);
+	const handSize = SCHEDULES[rules.schedule](
+		stock.length,
+		live.length,
+		round,
+		rules.maxHand,
+	);
 	if (
 		handSize === null ||
 		!Number.isInteger(handSize) ||
@@ -745,6 +768,7 @@ function dealTricks(
 		...(rules.bidding ? { bids: hands.map(() => null) } : {}),
 		offered: calling ? trump : null,
 		trumpPasses: 0,
+		voids: hands.map(() => []),
 		maker: null,
 		roem: hands.map(() => 0),
 		lastDeal: null,
@@ -1221,6 +1245,7 @@ function playCard(
 		throw new GameRuleError(why);
 	}
 	removeCard(state.hands[seat], card);
+	noteVoid(state, seat, card);
 	state.trick.push({ seat, card });
 	pushEvent(state, { type: "play", seat, card });
 	const breaking = rules.breaking;
@@ -1238,6 +1263,21 @@ function playCard(
 		return;
 	}
 	takeTrick(rules, state);
+}
+
+/** A seat that plays off the suit led has none left of it: remember that. */
+function noteVoid(state: TricksState, seat: number, card: CardId) {
+	if (state.trick.length === 0) {
+		return;
+	}
+	const led = suitOf(state.trick[0].card);
+	if (suitOf(card) === led) {
+		return;
+	}
+	state.voids ??= state.hands.map(() => []);
+	if (!state.voids[seat].includes(led)) {
+		state.voids[seat].push(led);
+	}
 }
 
 /** Every seat still in the deal has played to the trick; folded seats' cards stay in it. */
@@ -1509,9 +1549,12 @@ export function viewTricks(
 		turn: state.turn,
 		teams: teamsOf(rules, seats),
 		offered: state.phase === "trump" ? (state.offered ?? null) : null,
+		// Once everyone has passed the suit on offer, the first seat must name one
+		// (`offered` is null): nobody has passed that question, so none is marked.
 		trumpPassed: state.hands.map(
 			(_, index) =>
 				state.phase === "trump" &&
+				state.offered !== null &&
 				(index - state.dealer - 1 + seats) % seats < passes,
 		),
 		maker: state.maker ?? null,
@@ -1877,6 +1920,21 @@ export function choosePointsCard(
 		);
 	const isBoss = (card: CardId) =>
 		unseen(suitOf(card)).every((other) => power(other) < power(card));
+	// An opponent known to be out of the suit, with cards left, can trump a
+	// plain winner while any trump is unseen. Trump itself cannot be trumped.
+	const trumpable = (card: CardId) =>
+		trump !== null &&
+		suitOf(card) !== trump &&
+		unseen(trump).length > 0 &&
+		state.hands.some(
+			(hand, other) =>
+				teams[other] !== teams[seat] &&
+				hand.length > 0 &&
+				!state.trick.some((play) => play.seat === other) &&
+				(state.voids?.[other] ?? []).includes(suitOf(card)),
+		);
+	// A card nobody can beat: the top of its suit, and not open to a trump.
+	const isSure = (card: CardId) => isBoss(card) && !trumpable(card);
 	const cheapest = (cards: CardId[]) =>
 		[...cards].sort((a, b) => value(a) - value(b) || power(a) - power(b))[0];
 	const richest = (cards: CardId[]) =>
@@ -1890,11 +1948,11 @@ export function choosePointsCard(
 		const trumps = legal.filter(isTrump);
 		if (calling && trumps.length > 0 && trump && unseen(trump).length > 0) {
 			const top = [...trumps].sort((a, b) => power(b) - power(a))[0];
-			if (isBoss(top)) {
+			if (isSure(top)) {
 				return top;
 			}
 		}
-		const winners = side.filter(isBoss);
+		const winners = side.filter(isSure);
 		if (winners.length > 0) {
 			return richest(winners);
 		}
@@ -1905,7 +1963,7 @@ export function choosePointsCard(
 	if (teams[winning] === teams[seat]) {
 		const partnerCard = state.trick.find((play) => play.seat === winning);
 		const safe =
-			last || (partnerCard !== undefined && isBoss(partnerCard.card));
+			last || (partnerCard !== undefined && isSure(partnerCard.card));
 		if (safe && side.length > 0) {
 			return richest(side);
 		}
@@ -1922,7 +1980,7 @@ export function choosePointsCard(
 		const sideBeats = beats.filter((card) => !isTrump(card));
 		return sideBeats.length > 0 ? richest(sideBeats) : cheapest(beats);
 	}
-	const safeBeats = beats.filter(isBoss);
+	const safeBeats = beats.filter(isSure);
 	if (safeBeats.length > 0) {
 		return cheapest(safeBeats);
 	}

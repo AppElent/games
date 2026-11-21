@@ -3,6 +3,7 @@ import { type CardId, SUITS, type Suit } from "@arcadeclub/core/cards/deck";
 import { type CardGame, familyRules } from "@arcadeclub/core/cards/engine";
 import { powerOf, type SheddingView } from "@arcadeclub/core/cards/shedding";
 import {
+	onAutopilot,
 	seatName,
 	sheddingHint,
 	sortCards,
@@ -67,7 +68,7 @@ export function SheddingTable({
 	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "playing";
-	const mine = playing && view.turn === you;
+	const mine = playing && view.turn === you && !onAutopilot(table);
 	const legal = new Set(view.legal);
 	const callable =
 		mine &&

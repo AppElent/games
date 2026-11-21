@@ -1,6 +1,13 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { cardColors, darkColors, lightColors, type Tokens } from "./tokens";
+import {
+	cardColors,
+	darkColors,
+	lightColors,
+	markerColors,
+	type Tokens,
+} from "./tokens";
 
 type Rgb = readonly [number, number, number];
 
@@ -142,13 +149,28 @@ describe("card table controls reach 3:1 on the felt", () => {
 		).toBeGreaterThanOrEqual(3);
 	});
 
-	// The web's icon chip has the darkest fill of any control on the felt.
-	it.each(felts)("the web icon chip's border on %s", (_name, felt) => {
-		const fill = value(".icon-chip", "background");
-		if (!fill) throw new Error("no .icon-chip background in cards.css");
-		expect(
-			borderContrast(cardColors.ivoryLine, fill, felt),
-		).toBeGreaterThanOrEqual(3);
+	// The web's icon chip has the darkest fill of any control on the felt; the
+	// seat menu button (`.seat-manage`) is one, and the phone's `manage` button
+	// is the `chip` fill tested above.
+	describe.each([".icon-chip", ".seat-manage"])("the web %s", (selector) => {
+		it.each(felts)("border on %s", (_name, felt) => {
+			const fill = value(selector, "background");
+			if (!fill) throw new Error(`no ${selector} background in cards.css`);
+			expect(value(selector, "border")).toContain("var(--ivory-line)");
+			expect(
+				borderContrast(cardColors.ivoryLine, fill, felt),
+			).toBeGreaterThanOrEqual(3);
+		});
+	});
+
+	it("the phone's seat menu button has the ivoryLine border", () => {
+		const source = repoFile(
+			"apps/mobile/src/features/cards/table/seat-row.tsx",
+		);
+		const manage = source.slice(source.indexOf("manage: {"));
+		expect(manage.slice(0, manage.indexOf("},"))).toContain(
+			"borderColor: cardColors.ivoryLine",
+		);
 	});
 
 	it("the web table carries the same line and felts", () => {
@@ -172,6 +194,8 @@ describe("web backgammon controls reach 3:1", () => {
 	// Buttons sit on the fullscreen stage (bg-slate-950); the off switch sits in
 	// the options panel, whose gradient starts at #2c2018.
 	it.each([
+		["the turn badge, white to move", "rgba(247, 238, 214, 0.14)", "#020617"],
+		["the turn badge, black to move", "rgba(20, 16, 12, 0.5)", "#020617"],
 		["a ghost button on the stage", "rgba(255, 255, 255, 0.05)", "#020617"],
 		["the reset button on the stage", "rgba(0, 0, 0, 0)", "#020617"],
 		[
@@ -267,4 +291,205 @@ describe("web puzzle boards", () => {
 			expect(source).toContain("puzzle-board ");
 		}
 	});
+});
+
+describe("web field and error utilities (club-field, club-error)", () => {
+	const css = repoFile("src/styles.css");
+	const utility = (name: string) => {
+		const start = css.indexOf(`@utility ${name} {`);
+		if (start < 0) throw new Error(`@utility ${name} not found in styles.css`);
+		return css.slice(start, css.indexOf("}", start));
+	};
+	const tokens = (selector: string) => {
+		const start = css.indexOf(`${selector} {`);
+		const block = css.slice(start, css.indexOf("}", start));
+		return (name: string) => {
+			const found = new RegExp(`--${name}:\\s*([^;]+);`).exec(block)?.[1];
+			if (!found) throw new Error(`--${name} missing in ${selector}`);
+			return found.trim();
+		};
+	};
+
+	// A fixed palette colour in either utility would be right on one theme only,
+	// which is how the dark-only `club-input-dark` and `club-error` slipped onto
+	// light pages. Colours come from --club-* variables, so each theme (and the
+	// pinned-dark game screens) resolves its own.
+	it.each([
+		"club-field",
+		"club-error",
+		"club-panel-heading",
+		"club-field-label",
+	])("%s only uses --club-* colours", (name) => {
+		const apply = /@apply ([^;]+);/.exec(utility(name))?.[1] ?? "";
+		const colours = apply
+			.split(/\s+/)
+			.filter((c) => /(^|:)(bg|text|border|placeholder|outline|ring)-/.test(c))
+			.filter((c) => !/-(none|px|sm|xs|md|lg|xl|\d+)$/.test(c));
+		expect(colours.length).toBeGreaterThan(0);
+		for (const c of colours) expect(c).toContain("var(--club-");
+	});
+
+	it("no component brings back the dark-only field, or hand-writes a field or button border", () => {
+		const files: string[] = execFileSync("git", ["ls-files", "src/**/*.tsx"], {
+			cwd: join(__dirname, "../../../.."),
+			encoding: "utf8",
+		})
+			.split("\n")
+			.filter(Boolean);
+		expect(files.length).toBeGreaterThan(50);
+		const offenders = files.filter((file) => {
+			const source = repoFile(file);
+			return (
+				source.includes("club-input-dark") ||
+				// `club-field` and `club-btn-outline` own this edge.
+				source.includes("border border-[var(--club-line-strong)]")
+			);
+		});
+		expect(offenders).toEqual([]);
+	});
+
+	const pages = [
+		["light", ".light", ["#ffffff", "#eef2ff"]],
+		["dark", ":root", ["#080a12", "#111827"]],
+		["game screen", ".game-fullscreen", ["#020617"]],
+	] as const;
+
+	describe.each(pages)("%s", (_label, selector, grounds) => {
+		// :root holds the dark defaults, .light and .game-fullscreen override.
+		const read = (name: string) => {
+			try {
+				return tokens(selector)(name);
+			} catch {
+				return tokens(":root")(name);
+			}
+		};
+		it.each(grounds)("club-field on a %s page", (hex) => {
+			const ground = parse(hex);
+			const fill = parse(read("club-panel-strong"), ground);
+			expect(contrast(parse(read("club-text")), fill)).toBeGreaterThanOrEqual(
+				4.5,
+			);
+			expect(contrast(parse(read("club-soft")), fill)).toBeGreaterThanOrEqual(
+				4.5,
+			);
+			expect(
+				borderContrast(
+					read("club-line-strong"),
+					read("club-panel-strong"),
+					ground,
+				),
+			).toBeGreaterThanOrEqual(3);
+			expect(
+				borderContrast(read("club-cyan"), read("club-panel-strong"), ground),
+			).toBeGreaterThanOrEqual(3);
+		});
+
+		it.each(grounds)("club-error on a %s page", (hex) => {
+			const ground = parse(hex);
+			expect(
+				contrast(parse(read("club-orange")), ground),
+			).toBeGreaterThanOrEqual(4.5);
+		});
+	});
+});
+
+describe("filled puzzle cells carry a 3:1 edge", () => {
+	// The grid line beside a hinted, same-digit, selected or colour-marked cell
+	// is about 2:1 against its fill in dark mode, so those cells draw their own
+	// 1px ring in the box-line colour.
+	it.each(schemes)("the phone's ring on %s fills", (_name, t) => {
+		const ground = parse(t.surface);
+		const fills = [t.accentDim, t.orangeDim, ...markerColors.map((m) => m)].map(
+			(f) => parse(f, ground),
+		);
+		for (const fill of fills) {
+			expect(contrast(parse(t.text), fill)).toBeGreaterThanOrEqual(3);
+		}
+	});
+
+	// SudokuBoard.tsx: tints are Tailwind -500 at /40, selected sky-300/60 and
+	// sky-400/30, hint amber-300/50 and /25, same digit sky-400/25 and sky-500/20.
+	const tw = {
+		sky300: "#7dd3fc",
+		sky400: "#38bdf8",
+		sky500: "#0ea5e9",
+		amber300: "#fcd34d",
+		amber500: "#f59e0b",
+		emerald500: "#10b981",
+		rose500: "#f43f5e",
+		violet500: "#8b5cf6",
+		teal500: "#14b8a6",
+		orange500: "#f97316",
+		pink500: "#ec4899",
+	};
+	const tint = (name: keyof typeof tw, alpha: number, ground: Rgb): Rgb => {
+		const [r, g, b] = parse(tw[name]);
+		return parse(`rgba(${r}, ${g}, ${b}, ${alpha})`, ground);
+	};
+	const colourTints = [
+		"sky500",
+		"emerald500",
+		"amber500",
+		"rose500",
+		"violet500",
+		"teal500",
+		"orange500",
+		"pink500",
+	] as const;
+
+	it("the web board's classes are the ones tested here", () => {
+		const source = readFileSync(
+			join(__dirname, "../../../../src/components/sudoku/SudokuBoard.tsx"),
+			"utf8",
+		);
+		expect(source).toContain("inset-ring-1 inset-ring-slate-600");
+		expect(source).toContain("dark:inset-ring-slate-300/70");
+		for (const c of [
+			"sky-300/60",
+			"sky-400/30",
+			"amber-300/50",
+			"amber-300/25",
+		])
+			expect(source).toContain(c);
+		for (const c of colourTints)
+			expect(source).toContain(`bg-${c.replace(/(\d+)/, "-$1")}/40`);
+	});
+
+	// [selected, hint, same digit] as [colour, alpha], per theme.
+	const themes = [
+		[
+			"light",
+			"#ffffff",
+			"#475569",
+			[
+				["sky300", 0.6],
+				["amber300", 0.5],
+				["sky400", 0.25],
+			],
+		],
+		[
+			"dark",
+			"#0f172a",
+			"rgba(203, 213, 225, 0.7)",
+			[
+				["sky400", 0.3],
+				["amber300", 0.25],
+				["sky500", 0.2],
+			],
+		],
+	] as const;
+
+	it.each(themes)(
+		"the web board's ring on %s fills",
+		(_name, board, ring, states) => {
+			const ground = parse(board);
+			const fills = [
+				...states.map(([name, alpha]) => tint(name, alpha, ground)),
+				...colourTints.map((name) => tint(name, 0.4, ground)),
+			];
+			for (const fill of fills) {
+				expect(contrast(parse(ring, fill), fill)).toBeGreaterThanOrEqual(3);
+			}
+		},
+	);
 });

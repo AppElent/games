@@ -9,6 +9,7 @@ import {
 	fields,
 	freezeClock,
 	getDoc,
+	guestIdOf,
 	HOST_USER,
 	HOSTED,
 	hostSession,
@@ -46,7 +47,7 @@ async function fullMatch(t: T) {
 	const joined = await joinWithToken(
 		t,
 		await shareTokenOf(t, match.sessionId),
-		"guest_yellow",
+		guestIdOf("yellow"),
 	);
 	return { ...match, yellow: joined.participantId };
 }
@@ -110,7 +111,7 @@ describe("joining", () => {
 		const joined = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_two",
+			guestIdOf("two"),
 		);
 		expect(joined).toEqual({
 			sessionId,
@@ -139,7 +140,7 @@ describe("joining", () => {
 		const joined = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_two",
+			guestIdOf("two"),
 		);
 		expect((await getDoc(t, joined.participantId))?.seat).toBe("red");
 		expect((await bundle(t, sessionId)).state.redParticipantId).toBe(
@@ -153,7 +154,7 @@ describe("joining", () => {
 		const third = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_third",
+			guestIdOf("third"),
 		);
 		const row = await getDoc(t, third.participantId);
 		expect(row?.role).toBe("watcher");
@@ -166,7 +167,7 @@ describe("joining", () => {
 		const again = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_yellow",
+			guestIdOf("yellow"),
 		);
 		expect(again.participantId).toBe(yellow);
 		const row = await getDoc(t, yellow);
@@ -180,7 +181,7 @@ describe("joining", () => {
 		const spectator = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_watch",
+			guestIdOf("watch"),
 			{ asSpectator: true },
 		);
 		expect((await getDoc(t, spectator.participantId))?.role).toBe("watcher");
@@ -193,10 +194,10 @@ describe("joining", () => {
 		const t = setup();
 		const { sessionId } = await newMatch(t);
 		const token = await shareTokenOf(t, sessionId);
-		const first = await joinWithToken(t, token, "guest_watch", {
+		const first = await joinWithToken(t, token, guestIdOf("watch"), {
 			asSpectator: true,
 		});
-		await joinWithToken(t, token, "guest_watch");
+		await joinWithToken(t, token, guestIdOf("watch"));
 		const row = await getDoc(t, first.participantId);
 		expect(row?.seat).toBe("yellow");
 		expect(row?.role).toBe("watcher");
@@ -206,7 +207,7 @@ describe("joining", () => {
 		const t = setup();
 		const { sessionId } = await newMatch(t);
 		await arrange(t, sessionId, { joinMode: "room", joinCode: "ROOM01" });
-		const joined = await joinWithCode(t, "ROOM01", "guest_code");
+		const joined = await joinWithCode(t, "ROOM01", guestIdOf("code"));
 		const row = await getDoc(t, joined.participantId);
 		expect(row?.role).toBe("player");
 		expect(row?.seat).toBeUndefined();
@@ -258,7 +259,7 @@ describe("drop", () => {
 		const watcher = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_watch",
+			guestIdOf("watch"),
 		);
 		await expectCode(drop(t, sessionId, watcher.participantId, 0), "notSeated");
 		await expectCode(drop(t, sessionId, yellow, 0), "notYourTurn");
@@ -414,7 +415,7 @@ describe("resign", () => {
 		const watcher = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_watch",
+			guestIdOf("watch"),
 		);
 		await expectCode(
 			t.mutation(api.connectFour.resign, {
@@ -479,7 +480,7 @@ describe("rematch", () => {
 		const watcher = await joinWithToken(
 			t,
 			await shareTokenOf(t, sessionId),
-			"guest_watch",
+			guestIdOf("watch"),
 		);
 		await t.mutation(api.connectFour.resign, { sessionId, participantId: red });
 		await expectCode(
@@ -531,7 +532,7 @@ describe("create", () => {
 		const joined = await joinWithToken(
 			t,
 			created.shareToken as string,
-			"guest_two",
+			guestIdOf("two"),
 		);
 		expect(joined.sessionId).toBe(created.sessionId);
 	});
@@ -557,7 +558,7 @@ describe("ownership", () => {
 			.mutation(api.sessions.joinByToken, {
 				shareToken: await shareTokenOf(t, sessionId),
 				displayName: "Yellow",
-				guestId: "guest_device",
+				guestId: guestIdOf("device"),
 			});
 		const host = impostor(t).withIdentity({ subject: HOST_USER });
 		await expectCode(
@@ -573,7 +574,7 @@ describe("ownership", () => {
 				await host.query(api.sessions.ownSeat, {
 					sessionId,
 					participantId: held,
-					guestId: "guest_device",
+					guestId: guestIdOf("device"),
 				}),
 			).toBe(red);
 		}
@@ -588,7 +589,7 @@ describe("ownership", () => {
 	it("answers notInGame to anyone acting for another player's seat", async () => {
 		const t = setup();
 		const { sessionId, red, yellow } = await fullMatch(t);
-		for (const caller of impostors(t, { guestIds: ["guest_yellow"] })) {
+		for (const caller of impostors(t, { guestIds: [guestIdOf("yellow")] })) {
 			await expectCode(drop(caller, sessionId, red, 0), "notInGame");
 		}
 		for (const caller of impostors(t, { userIds: [HOST_USER] })) {

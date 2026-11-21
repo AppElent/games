@@ -3,6 +3,8 @@ import type { CardGame } from "@arcadeclub/core/cards/engine";
 import {
 	bankHint,
 	bankSeatNote,
+	faceUpCards,
+	onAutopilot,
 	seatName,
 	signedPoints,
 } from "@arcadeclub/core/cards/table-view";
@@ -17,6 +19,7 @@ import { Hand, SeatRow, TableFrame, TurnStatus, useFreshCards } from "./Table";
 import type { CardTableBundle, CardTableControls } from "./useCardTable";
 import { useCardWords } from "./useCardWords";
 import { useFlights } from "./useFlights";
+import { useRoundPause } from "./useRoundPause";
 import { zoneAttr } from "./zones";
 
 const NO_MELD = () => null;
@@ -51,8 +54,9 @@ export function BankTable({
 	const name = cards.games[game.id].name;
 	const you = table.you;
 	const playing = view.phase === "play";
-	const mine = playing && view.turn === you;
-	const hint = bankHint(view, you, words);
+	const mine = playing && view.turn === you && !onAutopilot(table);
+	const paused = useRoundPause(view.round);
+	const hint = bankHint(view, you, words, paused);
 	const hand = you === null ? NO_CARDS : view.hands[you];
 	const fresh = useFreshCards(hand, mine, view.events);
 	const yourNote = you === null ? "" : bankSeatNote(words, view, you);
@@ -100,6 +104,7 @@ export function BankTable({
 					flash={flights.flash}
 					controls={controls}
 					note={(seat) => bankSeatNote(words, view, seat) || " "}
+					shown={(seat) => faceUpCards(cards, view.hands[seat])}
 				/>
 			}
 			center={
@@ -149,7 +154,7 @@ export function BankTable({
 					mine={mine}
 					hint={hint}
 				>
-					{view.canStake
+					{view.canStake && !paused
 						? view.stakeOptions.map((amount) => (
 								<button
 									key={amount}

@@ -23,13 +23,16 @@ import {
 	cardTilt,
 	describeEvent,
 	eventsSince,
+	faceUpCards,
 	ginHint,
 	ginLayoffOrder,
+	ginMeldMarks,
 	ginTurn,
 	groupGinHand,
 	latestEventText,
 	meldCardNames,
 	nextFreshCards,
+	onAutopilot,
 	openTrickSlots,
 	opponentOrder,
 	planFlights,
@@ -57,6 +60,7 @@ import {
 } from "../cards/table-view";
 import type { TricksRules, TricksView } from "../cards/tricks";
 import { en } from "../i18n/en";
+import { fmt } from "../i18n/format";
 import { nl } from "../i18n/nl";
 import { seatIsSilent } from "../table-engine";
 
@@ -421,6 +425,43 @@ describe("bank table", () => {
 		expect(bankHint(staking, null, words)).toBeNull();
 	});
 
+	it("holds the next stakes back while the last round's result is on show", () => {
+		const staking = bankView({ phase: "stake", canStake: true, round: 3 });
+		expect(bankHint(staking, 1, words, true)).toBe(
+			words.fmt(cards.bank.roundSettled, { round: 2 }),
+		);
+		expect(bankHint(staking, 1, words, false)).toBe(cards.bank.stakeHint);
+	});
+
+	it("shows face-up cards as marks and as spoken names", () => {
+		const shown = faceUpCards(cards, ["SK#0", "H7#0", "D10#0"]);
+		expect(shown.text).toBe("K♠ 7♥ 10♦");
+		expect(shown.label).toBe(
+			[
+				cardName(cards, "SK#0"),
+				cardName(cards, "H7#0"),
+				cardName(cards, "D10#0"),
+			].join(", "),
+		);
+		expect(faceUpCards(cards, []).text).toBe("");
+	});
+
+	it("knows when the computer plays this device's seat", () => {
+		const seat = (autopilot: boolean) => ({
+			botIndex: null,
+			name: null,
+			autopilot,
+			lastSeen: null,
+		});
+		expect(onAutopilot({ seats: [seat(false), seat(true)], you: 1 })).toBe(
+			true,
+		);
+		expect(onAutopilot({ seats: [seat(false), seat(true)], you: 0 })).toBe(
+			false,
+		);
+		expect(onAutopilot({ seats: [seat(true)], you: null })).toBe(false);
+	});
+
 	it("gives the total on your turn only", () => {
 		expect(bankHint(bankView(), 1, words)).toBe(
 			words.fmt(cards.bank.playHint, { total: 16 }),
@@ -752,6 +793,24 @@ describe("gin turns", () => {
 			...ids("SA S2 S3"),
 			...sortCards(ids("C9 HK"), "suit"),
 		]);
+	});
+
+	it("numbers each meld from 1 and leaves deadwood unmarked", () => {
+		const hand = ids("HK S3 SA C9 S2 H5 D5 C5");
+		const marks = ginMeldMarks(hand, ginRules);
+		const run = marks.get("SA#0");
+		const set = marks.get("H5#0");
+		expect([run, set].sort()).toEqual([1, 2]);
+		expect(marks.get("S2#0")).toBe(run);
+		expect(marks.get("S3#0")).toBe(run);
+		expect(marks.get("D5#0")).toBe(set);
+		expect(marks.get("C5#0")).toBe(set);
+		expect(marks.has("HK#0")).toBe(false);
+		expect(marks.has("C9#0")).toBe(false);
+		// The numbers follow the order groupGinHand lays the melds out in.
+		const grouped = groupGinHand(hand, ginRules);
+		expect(marks.get(grouped[0])).toBe(1);
+		expect(marks.get(grouped[3])).toBe(2);
 	});
 });
 
@@ -1636,7 +1695,12 @@ describe("bidding at the table", () => {
 		["en", en.games.cards],
 		["nl", nl.games.cards],
 	] as const)("writes the bidding rules in %s", (_, messages) => {
-		for (const options of [[], ["upOnly", "dealerFree"], ["downOnly"]]) {
+		for (const options of [
+			[],
+			["upOnly", "dealerFree"],
+			["downOnly"],
+			["shortHands"],
+		]) {
 			const lines = tricksRuleLines(wordsFor(messages), boerenbridge(options));
 			expect(lines.passing).toBeNull();
 			const all = [
@@ -1668,5 +1732,12 @@ describe("bidding at the table", () => {
 			boerenbridge(["upOnly", "dealerFree"]),
 		);
 		expect(house.bidding).toEqual([r.schedules.up, r.bid]);
+		const short = tricksRuleLines(words, boerenbridge(["shortHands"]));
+		expect(short.bidding).toEqual([
+			r.schedules.upDown,
+			fmt(r.maxHand, { max: 7 }),
+			r.bid,
+			r.dealerRule,
+		]);
 	});
 });

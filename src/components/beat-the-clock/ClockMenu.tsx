@@ -164,7 +164,7 @@ export function ClockMenu(props: ClockScreenProps & { onClose: () => void }) {
 						type="button"
 						aria-label={copy.menu.close}
 						onClick={close}
-						className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--club-line-strong)] text-[var(--club-text)]"
+						className="flex h-11 w-11 items-center justify-center rounded-full club-btn-outline text-[var(--club-text)]"
 					>
 						<X aria-hidden="true" className="h-5 w-5" />
 					</button>
@@ -255,7 +255,7 @@ export function ClockMenu(props: ClockScreenProps & { onClose: () => void }) {
 								<HostModeration {...props} />
 								<Link
 									to="/"
-									className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--club-line-strong)] font-bold text-[var(--club-text)]"
+									className="inline-flex min-h-11 items-center justify-center rounded-full club-btn-outline font-bold text-[var(--club-text)]"
 								>
 									{common.gameShell.returnToGames}
 								</Link>

@@ -9,6 +9,7 @@ import {
 	fields,
 	freezeClock,
 	getDoc,
+	guestIdOf,
 	HOST_USER,
 	HOSTED,
 	hostSession,
@@ -85,7 +86,7 @@ async function newQuiz(t: T) {
 
 async function quizWithPlayer(t: T) {
 	const quiz = await newQuiz(t);
-	const joined = await joinWithCode(t, quiz.joinCode, "guest_player");
+	const joined = await joinWithCode(t, quiz.joinCode, guestIdOf("player"));
 	return { ...quiz, player: joined.participantId };
 }
 
@@ -248,14 +249,14 @@ describe("joining", () => {
 	it("adds a code joiner as a player and a spectator as a watcher", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await newQuiz(t);
-		const player = await joinWithCode(t, joinCode, "guest_two");
+		const player = await joinWithCode(t, joinCode, guestIdOf("two"));
 		expect(player).toEqual({
 			sessionId,
 			participantId: player.participantId,
 			gameType: "live-quiz",
 			seatClaimed: false,
 		});
-		await joinWithCode(t, joinCode, "guest_watch", { asSpectator: true });
+		await joinWithCode(t, joinCode, guestIdOf("watch"), { asSpectator: true });
 		const { participants } = await bundle(t, sessionId);
 		expect(participants.map((row) => row.role)).toEqual([
 			"host",
@@ -335,8 +336,8 @@ describe("advancePhase", () => {
 	it("names every top scorer a winner", async () => {
 		const t = setup();
 		const { sessionId, joinCode, player, stateId } = await quizWithPlayer(t);
-		const tied = await joinWithCode(t, joinCode, "guest_tied");
-		const loser = await joinWithCode(t, joinCode, "guest_loser");
+		const tied = await joinWithCode(t, joinCode, guestIdOf("tied"));
+		const loser = await joinWithCode(t, joinCode, guestIdOf("loser"));
 		await advancePhase(t, sessionId);
 		await answer(t, sessionId, player, ["a"]);
 		await answer(t, sessionId, tied.participantId, ["a"]);
@@ -440,7 +441,7 @@ describe("submitAnswer", () => {
 	it("answers spectatorsCannotAnswer to a watcher", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await newQuiz(t);
-		const watcher = await joinWithCode(t, joinCode, "guest_watch", {
+		const watcher = await joinWithCode(t, joinCode, guestIdOf("watch"), {
 			asSpectator: true,
 		});
 		await advancePhase(t, sessionId);
@@ -526,7 +527,7 @@ describe("create", () => {
 		const joined = await joinWithCode(
 			t,
 			created.joinCode as string,
-			"guest_two",
+			guestIdOf("two"),
 		);
 		expect(joined.sessionId).toBe(created.sessionId);
 	});
@@ -561,7 +562,7 @@ describe("ownership", () => {
 		for (const caller of impostors(t, { userIds: [HOST_USER] })) {
 			await expectCode(answer(caller, sessionId, player, ["a"]), "notInGame");
 		}
-		for (const caller of impostors(t, { guestIds: ["guest_player"] })) {
+		for (const caller of impostors(t, { guestIds: [guestIdOf("player")] })) {
 			await expectCode(answer(caller, sessionId, hostId, ["a"]), "notInGame");
 		}
 		expect((await bundle(t, sessionId)).answers).toEqual([]);

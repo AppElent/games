@@ -32,8 +32,7 @@ export function HitsterSetupForm() {
 		packId,
 		HITSTER_SETUP_DEFAULTS.playbackMode,
 	).length;
-	const selectClass =
-		"mt-1 w-full rounded-xl border border-[var(--club-line-strong)] bg-[var(--club-panel-strong)] px-3 py-2.5 text-[var(--club-text)] focus-visible:outline-2 focus-visible:outline-blue-400";
+	const selectClass = "mt-1 w-full rounded-xl club-field px-3 py-2.5";
 
 	return (
 		<div className="max-w-2xl space-y-5 rounded-3xl border border-[var(--club-line)] bg-[var(--club-panel)] p-6">

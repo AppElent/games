@@ -27,7 +27,7 @@ Project facts for the [deployments](../standards/deployments.md),
   `games-staging` Worker from the `staging` GitHub Environment), then for production
   (production Convex and the `games` Worker from the `production` Environment), then
   publishes the preview app's OTA update when an installed build can load it
-  (`apps/mobile/scripts/ci-publish-update.mjs preview`, repo secret
+  (`apps/mobile/scripts/ci-publish-update.mjs gate|publish preview`, repo secret
   `PREVIEW_EXPO_TOKEN`), because that app calls the production backend. Each target
   ends with a smoke check: `/version` must report the run's commit within two
   minutes, and `/` must answer 200. Production runs only after staging passed. No
@@ -44,10 +44,11 @@ Project facts for the [deployments](../standards/deployments.md),
 - `mobile-runtime.yml` comments on each mobile PR whether it changes the runtime
   fingerprint; `mobile-build.yml` and `eas-local-build.yml` build the app on a runner
   (`eas build --local`) for PRs labelled `build:ios`/`build:android` or a manual run.
-- `dependabot-blast-radius.yml` labels each Dependabot PR from
-  `dependabot/fetch-metadata`'s update type: patch `blast-radius:low`, minor or major
-  `blast-radius:med`. It swaps only those two labels and skips a PR marked
-  `blast-radius:high`.
+- `dependabot-blast-radius.yml` is the toolkit labeler template, copied unchanged
+  (rules in [dependency updates](../standards/dependency-updates.md)): a PR whose
+  every update is a patch gets `blast-radius:low`; anything else, or a change under
+  `.github/`, gets `blast-radius:med`. It swaps only those two labels and skips a PR
+  marked `blast-radius:high`.
 
 ## Versions and releases
 
@@ -61,6 +62,10 @@ Project facts for the [deployments](../standards/deployments.md),
 - Sentry release: `arcadeclub@<version>+<short sha>` for the browser bundle, the
   Worker, and OTA updates (`publish-update.mjs` inlines the commit as
   `EXPO_PUBLIC_GIT_COMMIT`). A build's embedded bundle keeps the SDK's native release.
+- OTA label: every update's EAS message, and what Profile shows after "update", is
+  `<version> · <d mmm> · <short sha>` (`apps/mobile/src/updates/ota-label.mjs`, a copy
+  of developer-home's definition; `publish-update.mjs` sets the message, the bundle
+  gets the sha through `EXPO_PUBLIC_GIT_COMMIT`).
 - Tags: `ota-preview` (moved by `deploy.yml`), `ota-production` (moved by the daily
   job), and `v<version>` on the commit of each store build. Web deploys need no tags.
 - A red smoke check leaves the new Convex functions and Worker live; nothing rolls

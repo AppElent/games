@@ -59,6 +59,11 @@ type TableSeat = {
 };
 type TableSeats = { seats: readonly TableSeat[]; you: number | null };
 
+/** The computer is playing this device's seat, so it must not offer moves of its own. */
+export function onAutopilot(table: TableSeats): boolean {
+	return table.you !== null && table.seats[table.you]?.autopilot === true;
+}
+
 export function seatName(
 	cards: CardMessages,
 	table: TableSeats,
@@ -1089,6 +1094,9 @@ export function tricksRuleLines(
 					...(rules.schedule === "fullDeck" || rules.schedule === "fourEach"
 						? []
 						: [r.schedules[rules.schedule]]),
+					...(rules.maxHand === undefined
+						? []
+						: [fmt(r.maxHand, { max: rules.maxHand })]),
 					r.bid,
 					...(bidding.dealerMayMatch ? [] : [r.dealerRule]),
 				]
@@ -1357,11 +1365,16 @@ export function bankHint(
 	view: BankView,
 	you: number | null,
 	{ cards, fmt }: Pick<CardWords, "cards" | "fmt">,
+	/** The last round's result is still on show, before the next stakes. */
+	paused = false,
 ) {
 	if (you === null || view.phase === "finished") {
 		return null;
 	}
 	if (view.phase === "stake") {
+		if (paused) {
+			return fmt(cards.bank.roundSettled, { round: view.round - 1 });
+		}
 		return view.canStake ? cards.bank.stakeHint : cards.bank.stakeWaiting;
 	}
 	if (view.turn !== you) {
@@ -1369,6 +1382,25 @@ export function bankHint(
 	}
 	return fmt(cards.bank.playHint, { total: view.handTotals[you] });
 }
+
+/** Face-up cards as short marks ("K♠ 7♥") plus the spoken names for a screen reader. */
+export function faceUpCards(cards: CardMessages, ids: readonly CardId[]) {
+	const marks = { S: "♠", H: "♥", D: "♦", C: "♣" } as const;
+	const text = ids
+		.map((id) => {
+			const card = parseCard(id);
+			if (card.joker) {
+				return cards.joker;
+			}
+			const rank = (cards.rankGlyphs as Record<string, string>)[card.rank];
+			return `${rank ?? card.rank}${marks[card.suit]}`;
+		})
+		.join(" ");
+	return { text, label: ids.map((id) => cardName(cards, id)).join(", ") };
+}
+
+/** How long a settled round stays on screen before the next round's points are picked. */
+export const ROUND_PAUSE_MS = 2500;
 
 /** Points won or lost in a round, signed: "+3", "−2" or "±0". */
 export function signedPoints(
@@ -1574,6 +1606,20 @@ export function groupGinHand(hand: readonly CardId[], rules: GinRules) {
 		),
 		...sortCards(arranged.deadwood, "suit"),
 	];
+}
+
+/**
+ * Which meld each card of a hand sits in, numbered from 1 in the order
+ * `groupGinHand` lays them out. Deadwood has no entry.
+ */
+export function ginMeldMarks(hand: readonly CardId[], rules: GinRules) {
+	const marks = new Map<CardId, number>();
+	arrangeHand(hand, rules).melds.forEach((meld, index) => {
+		for (const card of meld.cards) {
+			marks.set(card, index + 1);
+		}
+	});
+	return marks;
 }
 
 /** The newest event number, or null for an empty log. */

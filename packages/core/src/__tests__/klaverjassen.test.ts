@@ -152,6 +152,20 @@ describe("klaverjassen trump call", () => {
 		});
 	});
 
+	it("marks only the seats that passed on the suit offered", () => {
+		let state = deal();
+		const first = state.turn;
+		expect(viewOf(state, 0).trumpPassed).toEqual([false, false, false, false]);
+		state = act(state, first, { type: "passTrump" });
+		state = act(state, state.turn, { type: "passTrump" });
+		const marked = viewOf(state, 0).trumpPassed;
+		expect(marked.filter(Boolean)).toHaveLength(2);
+		expect(marked[first]).toBe(true);
+		expect(marked[(first + 1) % 4]).toBe(true);
+		expect(marked[(first + 2) % 4]).toBe(false);
+		expect(marked[(first + 3) % 4]).toBe(false);
+	});
+
 	it("makes the first seat choose any suit when everyone passes", () => {
 		let state = deal();
 		const first = state.turn;
@@ -161,7 +175,13 @@ describe("klaverjassen trump call", () => {
 		expect(state.phase).toBe("trump");
 		expect(state.turn).toBe(first);
 		expect(state.offered).toBeNull();
-		expect(viewOf(state, first).trumpPassed).toEqual([true, true, true, true]);
+		// Nobody has passed the question now put (name any suit): no seat is marked.
+		expect(viewOf(state, first).trumpPassed).toEqual([
+			false,
+			false,
+			false,
+			false,
+		]);
 		expectRule(
 			() => act(state, first, { type: "passTrump" }),
 			"cardsMustChooseTrump",
@@ -741,6 +761,87 @@ describe("klaverjassen bot", () => {
 		);
 		state.hands = [["C7#0"], ["C8#0"], ["C9#0"], ["DA#0", "D7#0"]];
 		expect(choosePointsCard(rules, state, 3)).toBe("D7#0");
+	});
+
+	describe("sure winners", () => {
+		// Seat 0 leads with hearts trump. Spades: it holds the ace and the king;
+		// everything above them has been played, so the ace is the boss.
+		const lead = (overrides: Partial<TricksState> = {}) => {
+			const state = midTrick([], 0, ["SA#0", "DK#0"], {
+				trump: "H",
+				taken: [[], [], [], []],
+				...overrides,
+			});
+			state.hands = [
+				["SA#0", "DK#0"],
+				["C7#0", "C8#0"],
+				["C9#0", "CQ#0"],
+				["D7#0", "D8#0"],
+			];
+			return state;
+		};
+
+		it("leads a top side card when no opponent is out of the suit", () => {
+			expect(choosePointsCard(rules, lead(), 0)).toBe("SA#0");
+		});
+
+		it("holds the ace back when an opponent out of spades can still trump", () => {
+			const state = lead({ voids: [[], ["S"], [], []] });
+			expect(choosePointsCard(rules, state, 0)).not.toBe("SA#0");
+		});
+
+		it("leads the ace again once every trump is gone", () => {
+			const trumps = ["H7", "H8", "H9", "H10", "HJ", "HQ", "HK", "HA"].map(
+				(face) => `${face}#0`,
+			);
+			const state = lead({
+				voids: [[], ["S"], [], []],
+				taken: [trumps, [], [], []],
+			});
+			expect(choosePointsCard(rules, state, 0)).toBe("SA#0");
+		});
+
+		it("does not count a partner out of the suit", () => {
+			const state = lead({ voids: [[], [], ["S"], []] });
+			expect(choosePointsCard(rules, state, 0)).toBe("SA#0");
+		});
+
+		it("ignores an opponent who already played to the trick", () => {
+			const state = midTrick(
+				[
+					[3, "S7#0"],
+					[0, "SQ#0"],
+					[1, "S8#0"],
+				],
+				2,
+				["SA#0", "DK#0"],
+				{ trump: "H", voids: [[], [], [], ["S"]] },
+			);
+			state.hands = [[], [], ["SA#0", "DK#0"], ["C7#0"]];
+			// Seat 3 already played, so no opponent can trump the ace.
+			expect(choosePointsCard(rules, state, 2)).toBe("SA#0");
+		});
+
+		it("remembers the suit a seat failed to follow", () => {
+			let state = deal(AMSTERDAMS, 3);
+			state = { ...state, phase: "playing", trump: "H", maker: 0 };
+			const seat = state.turn;
+			const next = (seat + 1) % 4;
+			const lead = state.hands[seat].find((card) => !card.startsWith("H"));
+			if (!lead) {
+				throw new Error("expected a side card");
+			}
+			const ledSuit = lead[0] as "S" | "H" | "D" | "C";
+			// Give the next seat no card of the suit led, so it must play off suit.
+			state.hands[next] = state.hands[next].filter(
+				(card) => card[0] !== ledSuit,
+			);
+			state = act(state, seat, { type: "play", card: lead }, AMSTERDAMS);
+			const off = legalTricksCards(rulesWith(AMSTERDAMS), state, next)[0];
+			state = act(state, next, { type: "play", card: off }, AMSTERDAMS);
+			expect(state.voids?.[next]).toContain(ledSuit);
+			expect(state.voids?.[seat]).toEqual([]);
+		});
 	});
 
 	it.each([[[]], [["amsterdams"]], [["forcedTrump", "amsterdams"]]])(

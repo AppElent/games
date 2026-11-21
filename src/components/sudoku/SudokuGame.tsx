@@ -17,9 +17,9 @@ import {
 import type { SudokuHint } from "@arcadeclub/core/sudoku-hints";
 import { describeHint, findHint } from "@arcadeclub/core/sudoku-hints";
 import {
-	isModeCycleTap,
 	nextTapMode,
 	type SudokuInputSettings,
+	tapCell,
 } from "@arcadeclub/core/sudoku-input";
 import {
 	boardConflictsWithCages,
@@ -184,19 +184,20 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 		}
 	}, [isActive, mode, inputSettings]);
 
-	// When the selected cell was picked, so a quick double tap only selects.
+	// When the selected cell was last picked or switched mode, so a quick
+	// double tap or double-click only does one of them.
 	const selectedAtRef = useRef(0);
 	const selectCell = useCallback(
 		(cell: number) => {
-			const now = Date.now();
-			const selection = {
-				cell: selectedCell,
-				selectedAt: selectedAtRef.current,
-			};
-			if (isModeCycleTap(cell, selection, now)) {
+			const { action, selection } = tapCell(
+				{ cell: selectedCell, selectedAt: selectedAtRef.current },
+				cell,
+				Date.now(),
+			);
+			selectedAtRef.current = selection.selectedAt;
+			if (action === "cycle") {
 				cycleMode();
-			} else if (cell !== selectedCell) {
-				selectedAtRef.current = now;
+			} else if (action === "select") {
 				setSelectedCell(cell);
 			}
 		},
@@ -361,7 +362,7 @@ export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
 										setEditingTitle(false);
 									}
 								}}
-								className="w-full rounded-md border border-[var(--club-line-strong)] bg-slate-800 px-2 py-1 text-sm text-white"
+								className="club-field w-full rounded-md px-2 py-1 text-sm"
 								maxLength={MAX_TITLE_LENGTH}
 							/>
 						) : (

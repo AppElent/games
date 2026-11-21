@@ -126,6 +126,26 @@ describe("the round schedule", () => {
 		]);
 	});
 
+	it("caps the hand at seven cards under shortHands, with any schedule", () => {
+		const base = rulesWith([]);
+		expect(dealsInMatch(base, 3)).toBe(33);
+		const short = rulesWith(["shortHands"]);
+		expect(dealsInMatch(short, 3)).toBe(13);
+		expect([1, 7, 8, 13].map((round) => handSizeFor(short, 3, round))).toEqual([
+			1, 7, 6, 1,
+		]);
+		expect(handSizeFor(short, 3, 14)).toBeNull();
+		// It combines with the other schedules, and changes nothing where the deck
+		// already deals no more than seven (seven players deal seven at most).
+		expect(dealsInMatch(rulesWith(["shortHands", "upOnly"]), 3)).toBe(7);
+		expect(handSizeFor(rulesWith(["shortHands", "downOnly"]), 3, 1)).toBe(7);
+		expect(dealsInMatch(short, 7)).toBe(dealsInMatch(base, 7));
+		expect(normalizeOptions(game, ["shortHands", "upOnly"])).toEqual([
+			"upOnly",
+			"shortHands",
+		]);
+	});
+
 	it("can't have both house rules: switching one on switches the other off", () => {
 		expect(toggleHouseRule(game.options, ["upOnly"], "downOnly")).toEqual([
 			"downOnly",

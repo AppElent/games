@@ -38,7 +38,7 @@ export const serverErrors = {
 	cardsCannotDouble: "Verdubbelen kan alleen op je eerste twee kaarten.",
 	cardsMustFollow:
 		"Kleur bekennen: je hebt nog een kaart van de gevraagde kleur.",
-	cardsMustOpenWith: "Kom uit met klaveren twee om de ronde te openen.",
+	cardsMustOpenWith: "De ronde moet met de startkaart beginnen.",
 	cardsLeadNotBroken: "Met die kleur mag je pas uitkomen als hij gebroken is.",
 	cardsNotPassing: "Er valt nu niets door te geven.",
 	cardsAlreadyPassed: "Je hebt je kaarten al doorgegeven.",
