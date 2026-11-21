@@ -7,11 +7,18 @@
  * is fetched first, so a puzzle played on the web since opens where the web
  * left it; with no answer in `FETCH_TIMEOUT_MS` (offline), the phone's copy
  * opens instead.
+ *
+ * An answer is kept only while the account that asked is still the one
+ * signed in. The Convex client already drops a result computed under an
+ * earlier token, so this only has to catch Clerk moving on before React
+ * re-runs the fetch (the same check as `isCurrent` in
+ * `use-sudoku-cloud-sync.ts`).
  */
 import { useAuth } from "@clerk/expo";
 import { useConvex } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type Id } from "../../../convex/api";
+import { readGuestIdentity } from "../../players/identity/use-player-identity";
 import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
 import { saveFromBundle } from "../saves/sudoku-cloud-sync";
 import {
@@ -54,6 +61,8 @@ export function useOpenedSave(id: string): OpenedSave {
 	const convex = useConvex();
 	const { isSignedIn, userId } = useAuth();
 	const backend = useBackendAuthReady();
+	const signedInAs = useRef(userId);
+	signedInAs.current = userId;
 	const [opened, setOpened] = useState<OpenedSave>(() => {
 		const local = readLocal(id);
 		if (
@@ -86,14 +95,18 @@ export function useOpenedSave(id: string): OpenedSave {
 		}
 		let active = true;
 		const sessionId = (local?.cloud?.sessionId ?? id) as Id<"gameSessions">;
+		const isCurrent = () => active && signedInAs.current === userId;
+		// The install's guest id: the server then refuses someone else's guest
+		// puzzle, which it still answers a call without one for (APP-354).
+		const { id: guestId } = readGuestIdentity();
 		withTimeout(
-			convex.query(api.sudoku.getBundle, { sessionId }),
+			convex.query(api.sudoku.getBundle, { sessionId, guestId }),
 			FETCH_TIMEOUT_MS,
 		)
 			.then((bundle) => {
-				if (!active) return;
+				if (!isCurrent()) return;
 				if (bundle === "timeout") return setOpened(fallback());
-				if (!bundle || bundle.session.hostUserId !== userId) {
+				if (!bundle) {
 					return setOpened(local ? fallback() : { state: "missing" });
 				}
 				// A move may have landed while the account answered.
@@ -111,7 +124,7 @@ export function useOpenedSave(id: string): OpenedSave {
 			})
 			.catch(() => {
 				// Not a session id the server knows, or the call failed.
-				if (active) setOpened(local ? fallback() : { state: "missing" });
+				if (isCurrent()) setOpened(local ? fallback() : { state: "missing" });
 			});
 		return () => {
 			active = false;
