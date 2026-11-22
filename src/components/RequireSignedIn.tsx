@@ -1,6 +1,6 @@
 import { Show } from "@clerk/react";
-import { useLocation, useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useEffect } from "react";
+import { useNavigate, useRouter } from "@tanstack/react-router";
+import { type ReactNode, useEffect, useRef } from "react";
 import { authConfig } from "#/lib/auth-config";
 
 /**
@@ -20,11 +20,20 @@ export function RequireSignedIn({ children }: { children: ReactNode }) {
 
 function RedirectToSignIn() {
 	const navigate = useNavigate();
-	const here = useLocation({ select: (location) => location.href });
+	const router = useRouter();
+	const sent = useRef(false);
 
+	// Once, with the page as it was on mount: the location changes as the
+	// navigation starts, and following it would nest `redirect` forever.
 	useEffect(() => {
-		navigate({ to: authConfig.paths.signIn, search: { redirect: here } });
-	}, [navigate, here]);
+		if (sent.current) return;
+		sent.current = true;
+		const { pathname, href } = router.state.location;
+		navigate({
+			to: authConfig.paths.signIn,
+			search: pathname === authConfig.paths.signIn ? {} : { redirect: href },
+		});
+	}, [navigate, router]);
 
 	return null;
 }
