@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthCard, SignInForm } from "#/lib/auth";
+import { useMessages } from "#/lib/i18n";
 import { authConfig } from "../lib/auth-config";
 
 export const Route = createFileRoute("/sign-in")({
@@ -8,9 +9,10 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignInPage() {
 	const navigate = useNavigate();
+	const title = useMessages().auth.signIn.title;
 
 	return (
-		<AuthCard title="Sign in">
+		<AuthCard title={title}>
 			<SignInForm
 				onSuccess={() => navigate({ to: authConfig.paths.afterAuth })}
 			/>

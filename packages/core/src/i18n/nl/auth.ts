@@ -7,6 +7,7 @@ export const auth = {
 		email: "E-mail",
 		password: "Wachtwoord",
 		submit: "Inloggen",
+		busy: "Even geduld…",
 		emailCode: "Mail me een inlogcode",
 		emailFirst: "Vul eerst je e-mailadres in.",
 		forgotPassword: "Wachtwoord vergeten?",

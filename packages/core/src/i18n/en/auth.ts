@@ -5,6 +5,7 @@ export const auth = {
 		email: "Email",
 		password: "Password",
 		submit: "Sign in",
+		busy: "Please wait…",
 		emailCode: "Email me a sign-in code",
 		emailFirst: "Enter your email first.",
 		forgotPassword: "Forgot password?",

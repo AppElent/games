@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { type Ref, useId } from "react";
 import { cn } from "#/lib/auth/lib/utils";
 import type { SlotClassNames } from "./types";
 
@@ -10,6 +10,9 @@ export function AuthField({
 	error,
 	autoComplete,
 	required,
+	inputMode,
+	maxLength,
+	inputRef,
 	classNames,
 }: {
 	label: string;
@@ -19,6 +22,9 @@ export function AuthField({
 	error?: string;
 	autoComplete?: string;
 	required?: boolean;
+	inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+	maxLength?: number;
+	inputRef?: Ref<HTMLInputElement>;
 	classNames?: SlotClassNames<"root" | "label" | "input" | "error">;
 }) {
 	const id = useId();
@@ -36,10 +42,13 @@ export function AuthField({
 			</label>
 			<input
 				id={id}
+				ref={inputRef}
 				type={type}
 				value={value}
 				required={required}
 				autoComplete={autoComplete}
+				inputMode={inputMode}
+				maxLength={maxLength}
 				aria-describedby={error ? errorId : undefined}
 				onChange={(e) => onChange(e.target.value)}
 				className={cn(
