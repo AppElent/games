@@ -102,6 +102,13 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   what it keeps only on the phone under `localOnly` (`displayName`, `backgammon`,
   `seats` without their seat secret, `sudoku`; never the guest identity), writes the
   file to its cache and opens the share sheet.
+- The AppElent account portal (account.appelent.nl) calls `convex/accountPortal.ts`
+  with the shared Clerk `convex` token, per developer-home `standards/account-portal.md`
+  (contract 1): `summary` (counts of seats, drafts and quiz sets, capped at 1,000;
+  `lastActiveAt` null; null for a never-used caller), `deletionBlocker`
+  (`accountInActiveGame` from `inActiveGame`) and `exportPage`, the in-app export's
+  pages with its cursor as an opaque JSON string. None takes a user id or writes.
+  `deleteAppData` follows APP-392.
 - Theme (light, dark, auto) is driven by `#/lib/auth`'s
   `getInitialMode`/`applyThemeMode`/`setThemeMode`, `ThemeSync` (reconciles with Clerk
   `unsafeMetadata` on sign-in) and the `THEME_INIT_SCRIPT` inline pre-paint script in
@@ -114,5 +121,5 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 
 - `src/lib/auth/__tests__`, `src/lib/auth/components/auth/__tests__`,
   `src/lib/account/__tests__`, `packages/core/src/__tests__/auth-errors.test.ts`,
-  `convex/account.test.ts`, `convex/http.test.ts` and
-  `convex/accountExport.test.ts` pass.
+  `convex/account.test.ts`, `convex/http.test.ts`, `convex/accountExport.test.ts`
+  and `convex/accountPortal.test.ts` pass.
