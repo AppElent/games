@@ -85,6 +85,8 @@ export const serverErrors = {
 		"You switched accounts. Sign in to the account you want to delete and try again.",
 	accountInActiveGame:
 		"You're in a game with other players right now. Finish it first, or try again in {minutes} minutes.",
+	accountExportCursorInvalid:
+		"This export can't continue. Start the download again.",
 	accountSignInFirst:
 		"To delete, sign in again first. This keeps anyone else using this device from deleting your data or account.",
 	accountSignInToFinish:

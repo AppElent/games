@@ -88,6 +88,8 @@ export const serverErrors = {
 		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",
 	accountInActiveGame:
 		"Je zit nu in een spel met andere spelers. Maak het eerst af, of probeer het over {minutes} minuten opnieuw.",
+	accountExportCursorInvalid:
+		"Deze export kan niet verder. Begin de download opnieuw.",
 	accountSignInFirst:
 		"Log eerst opnieuw in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",
 	accountSignInToFinish:
