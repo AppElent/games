@@ -347,6 +347,23 @@ const OF_SEAT = pick("ofSeat");
  */
 const SOURCES = [...OWNED.map(([table]) => table), SEATS[0]];
 
+/** How many sources an export walks; a cursor's `source` stays below it. */
+export const EXPORT_SOURCES = SOURCES.length;
+
+/**
+ * The rows the export reads by owner, per table: the account's seats, then
+ * each owned table. Every other exported row hangs off one of them, so an
+ * account with none of these has nothing to export.
+ */
+export function ownerRows(db: Db, userId: string) {
+	return [
+		[SEATS[0], SEATS[1].seats(db, userId)] as const,
+		...OWNED.map(
+			([table, treatment]) => [table, treatment.owned(db, userId)] as const,
+		),
+	];
+}
+
 /** Owned rows per page; quiz sets with their questions are the largest. */
 const OWNED_PAGE = 50;
 /**
