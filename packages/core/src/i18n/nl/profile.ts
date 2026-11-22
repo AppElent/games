@@ -23,7 +23,8 @@ export const profile = {
 		rules: "Minstens 8 tekens.",
 		submit: "Wachtwoord wijzigen",
 		changed: "Wachtwoord gewijzigd",
-		changedBody: "Gebruik je nieuwe wachtwoord de volgende keer dat je inlogt.",
+		changedBody:
+			"Je andere apparaten zijn uitgelogd. Gebruik je nieuwe wachtwoord de volgende keer dat je inlogt.",
 		failed: "Je wachtwoord kon niet worden gewijzigd. Probeer het opnieuw.",
 		none: "Dit account logt in zonder wachtwoord, via een andere dienst of een gemailde code, dus er is geen wachtwoord om te wijzigen.",
 	},

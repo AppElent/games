@@ -1,6 +1,12 @@
+import {
+	type PasswordFailure,
+	passwordFailure,
+	passwordUpdate,
+} from "@arcadeclub/core/account-password";
 import { useClerk, useUser } from "@clerk/react";
 import { useEffect, useState } from "react";
 import { AppearanceSettings } from "#/lib/auth/components/account/AppearanceSettings";
+import { useMessages } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
@@ -8,6 +14,8 @@ import { clerkErrorMessage } from "./types";
 import { UsernameHint } from "./UsernameHint";
 
 export function ProfilePanel() {
+	const messages = useMessages();
+	const copy = messages.profile.password;
 	const { isLoaded, user } = useUser();
 	const { signOut } = useClerk();
 	const [firstName, setFirstName] = useState("");
@@ -15,6 +23,8 @@ export function ProfilePanel() {
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [fieldError, setFieldError] = useState<PasswordFailure | null>(null);
+	const [passwordChanged, setPasswordChanged] = useState(false);
 	const [savingProfile, setSavingProfile] = useState(false);
 	const [savingPassword, setSavingPassword] = useState(false);
 
@@ -51,13 +61,21 @@ export function ProfilePanel() {
 			return;
 		}
 		setError(null);
+		setFieldError(null);
+		setPasswordChanged(false);
 		setSavingPassword(true);
 		try {
-			await user.updatePassword({ currentPassword, newPassword });
+			await user.updatePassword(passwordUpdate(currentPassword, newPassword));
 			setCurrentPassword("");
 			setNewPassword("");
+			setPasswordChanged(true);
 		} catch (err) {
-			setError(clerkErrorMessage(err));
+			const failure = passwordFailure(err);
+			if (failure) {
+				setFieldError(failure);
+			} else {
+				setError(clerkErrorMessage(err));
+			}
 		} finally {
 			setSavingPassword(false);
 		}
@@ -94,31 +112,57 @@ export function ProfilePanel() {
 			</section>
 
 			<section className="rm-panel p-4">
-				<p className="rm-label">Security</p>
-				<form
-					onSubmit={changePassword}
-					className="mt-3 flex flex-col gap-3"
-					noValidate
-				>
-					<UsernameHint
-						username={user.primaryEmailAddress?.emailAddress ?? ""}
-					/>
-					<AuthField
-						label="Current password"
-						type="password"
-						autoComplete="current-password"
-						value={currentPassword}
-						onChange={setCurrentPassword}
-					/>
-					<AuthField
-						label="New password"
-						type="password"
-						autoComplete="new-password"
-						value={newPassword}
-						onChange={setNewPassword}
-					/>
-					<AuthButton loading={savingPassword}>Change password</AuthButton>
-				</form>
+				<p className="rm-label">{copy.title}</p>
+				{user.passwordEnabled ? (
+					<form
+						onSubmit={changePassword}
+						className="mt-3 flex flex-col gap-3"
+						noValidate
+					>
+						<UsernameHint
+							username={user.primaryEmailAddress?.emailAddress ?? ""}
+						/>
+						<AuthField
+							label={copy.current}
+							type="password"
+							autoComplete="current-password"
+							value={currentPassword}
+							onChange={(value) => {
+								setCurrentPassword(value);
+								if (fieldError?.field === "current") setFieldError(null);
+							}}
+							error={
+								fieldError?.field === "current"
+									? messages.auth.errors[fieldError.key]
+									: undefined
+							}
+						/>
+						<AuthField
+							label={copy.new}
+							type="password"
+							autoComplete="new-password"
+							value={newPassword}
+							onChange={(value) => {
+								setNewPassword(value);
+								if (fieldError?.field === "new") setFieldError(null);
+							}}
+							error={
+								fieldError?.field === "new"
+									? messages.auth.errors[fieldError.key]
+									: undefined
+							}
+						/>
+						<AuthButton loading={savingPassword}>{copy.submit}</AuthButton>
+						{passwordChanged ? (
+							<p role="status" className="text-sm text-[var(--auth-muted)]">
+								{copy.changed}. {copy.changedBody}
+							</p>
+						) : null}
+					</form>
+				) : (
+					// Social or emailed-code sign-in only: nothing to change.
+					<p className="mt-3 text-sm text-[var(--auth-muted)]">{copy.none}</p>
+				)}
 			</section>
 
 			<AppearanceSettings />
