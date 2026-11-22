@@ -73,6 +73,7 @@ export function useSudokuCloudSync() {
 					sudokuSessionsOf(
 						await convex.query(api.sessions.listParticipation, {}),
 					),
+				// No guest id: sync reads only the account's own puzzles.
 				getBundle: (sessionId) =>
 					convex.query(api.sudoku.getBundle, { sessionId }),
 			},
