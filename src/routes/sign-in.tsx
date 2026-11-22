@@ -14,7 +14,9 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignInPage() {
 	const navigate = useNavigate();
-	const { redirect } = Route.useSearch();
+	// Checked here too: the root route passes the raw search through, so
+	// `useSearch` can still hold what `validateSearch` dropped.
+	const redirect = safeReturnPath(Route.useSearch().redirect);
 	const title = useMessages().auth.signIn.title;
 
 	return (
