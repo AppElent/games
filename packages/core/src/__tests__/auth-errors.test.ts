@@ -25,6 +25,17 @@ describe("clerkErrorKey", () => {
 		);
 	});
 
+	it("reads the code inside a ClerkAPIResponseError, not its wrapper code", () => {
+		const apiError = Object.assign(new Error("Clerk: Bad request"), {
+			code: "api_response_error",
+			errors: [{ code: "strategy_for_user_invalid", longMessage: "No." }],
+		});
+		expect(clerkErrorKey(apiError)).toBe("noPassword");
+		expect(clerkErrorKey({ code: "api_response_error", errors: [] })).toBe(
+			"generic",
+		);
+	});
+
 	it("falls back to generic for an unknown code or a bare error", () => {
 		expect(clerkErrorKey({ code: "something_new" })).toBe("generic");
 		expect(clerkErrorKey(new Error("boom"))).toBe("generic");

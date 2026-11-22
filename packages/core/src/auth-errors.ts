@@ -39,17 +39,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
 }
 
-/** A machine-stable code, searched through nested `errors` arrays. */
+/**
+ * A machine-stable code. Nested `errors` win over the error's own code: a
+ * `ClerkAPIResponseError` carries `code: "api_response_error"` on itself
+ * and the real code, such as `form_password_incorrect`, in `errors[]`.
+ */
 function clerkErrorCode(error: unknown, depth = 0): string | null {
 	if (!isRecord(error) || depth > 8) return null;
-	if (typeof error.code === "string") return error.code;
 	if (Array.isArray(error.errors)) {
 		for (const nested of error.errors) {
 			const code = clerkErrorCode(nested, depth + 1);
 			if (code) return code;
 		}
 	}
-	return null;
+	return typeof error.code === "string" ? error.code : null;
 }
 
 /** The catalog key for an error, `generic` for an unknown one, `null` for none. */

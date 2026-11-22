@@ -113,7 +113,13 @@ describe("SignInForm", () => {
 	});
 
 	it("points a code-only account to the emailed code", async () => {
-		signIn.password.mockResolvedValue(clerkError("strategy_for_user_invalid"));
+		// The real shape: Clerk's wrapper code on top, the API code inside.
+		signIn.password.mockResolvedValue({
+			error: {
+				code: "api_response_error",
+				errors: [{ code: "strategy_for_user_invalid" }],
+			},
+		});
 		renderForm();
 		fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
 		expect((await screen.findByRole("alert")).textContent).toBe(
