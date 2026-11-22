@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, sign-up, account, theme sync, or how the Clerk session reaches Convex.
-version: 1.1.0
+version: 1.2.0
 status: current
 ---
 
@@ -23,6 +23,17 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 - `src/integrations/convex/provider.tsx` must use `ConvexProviderWithClerk` (from
   `convex/react-clerk`) with Clerk's `useAuth`, not a bare `ConvexProvider`; otherwise
   the JWT never reaches Convex.
+- Web sign-in (`SignInForm`) takes email and password, or "Email me a sign-in code"
+  (`useEmailCodeSignIn`, Clerk's `emailCode` first factor, as on the phone) for
+  accounts without a password: the code step replaces the password step on the same
+  screen, with resend and "Use a different email". Its labels and errors, on both
+  paths, come from `messages.auth`, errors through `@arcadeclub/core/auth-errors` (Clerk
+  code to catalog key), never Clerk's text. A sign-in that needs a step the web does not
+  offer (a second factor) says so (`unsupportedStep`) instead of finalizing.
+- `RequireSignedIn` sends a signed-out visitor to `/sign-in?redirect=<path>`, and
+  sign-in returns there afterwards; `safeReturnPath` (`src/lib/auth/core.ts`) keeps only
+  an in-app path, so the parameter cannot send anyone off the site. Without it, sign-in
+  goes to `authConfig.paths.afterAuth`.
 - `src/routes/{sign-in,sign-up,forgot-password,account}.tsx` are thin wrappers around
   `#/lib/auth`'s `AuthCard` and form components; `src/components/Header.tsx` uses its
   `HeaderUser`.
@@ -109,5 +120,6 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 ## Acceptance
 
 - `src/lib/auth/__tests__`, `src/lib/auth/components/auth/__tests__`,
-  `src/lib/account/__tests__`, `convex/account.test.ts`, `convex/http.test.ts` and
-  `convex/accountExport.test.ts` and `convex/accountPortal.test.ts` pass.
+  `src/lib/account/__tests__`, `packages/core/src/__tests__/auth-errors.test.ts`,
+  `convex/account.test.ts`, `convex/http.test.ts`, `convex/accountExport.test.ts`
+  and `convex/accountPortal.test.ts` pass.

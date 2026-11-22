@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { clerkErrorMessage, shouldShowTestLogin } from "../core";
+import {
+	clerkErrorMessage,
+	safeReturnPath,
+	shouldShowTestLogin,
+	signInDestination,
+} from "../core";
 
 describe("shouldShowTestLogin", () => {
 	it("is false on a live key even with creds present", () => {
@@ -74,5 +79,41 @@ describe("clerkErrorMessage", () => {
 		expect(clerkErrorMessage(undefined, "Custom fallback")).toBe(
 			"Custom fallback",
 		);
+	});
+});
+
+describe("safeReturnPath", () => {
+	it("keeps an in-app path with its query", () => {
+		expect(safeReturnPath("/account")).toBe("/account");
+		expect(safeReturnPath("/sudoku/play?id=1")).toBe("/sudoku/play?id=1");
+	});
+
+	it("drops anything that could leave the site", () => {
+		for (const value of [
+			"https://evil.example",
+			"//evil.example",
+			"/\\evil.example",
+			"/.//evil.example",
+			"/a/..//evil.example",
+			"javascript:alert(1)",
+			"account",
+			"/\taccount",
+			"",
+			undefined,
+			42,
+		]) {
+			expect(safeReturnPath(value)).toBeUndefined();
+		}
+	});
+});
+
+describe("signInDestination", () => {
+	it("returns to a checked in-app path, else the fallback", () => {
+		expect(signInDestination("/account", "/dashboard")).toBe("/account");
+		// What `useSearch` still holds when `validateSearch` dropped it.
+		expect(signInDestination("//evil.example", "/dashboard")).toBe(
+			"/dashboard",
+		);
+		expect(signInDestination(undefined, "/dashboard")).toBe("/dashboard");
 	});
 });

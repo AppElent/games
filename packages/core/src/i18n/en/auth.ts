@@ -5,6 +5,7 @@ export const auth = {
 		email: "Email",
 		password: "Password",
 		submit: "Sign in",
+		busy: "Please wait…",
 		emailCode: "Email me a sign-in code",
 		emailFirst: "Enter your email first.",
 		forgotPassword: "Forgot password?",
@@ -48,6 +49,8 @@ export const auth = {
 		generic: "Something went wrong. Please try again.",
 		identifierNotFound: "No account found with that email.",
 		passwordIncorrect: "That password is not right.",
+		noPassword:
+			'This account has no password. Use "Email me a sign-in code" instead.',
 		identifierExists: "An account with that email already exists.",
 		emailInvalid: "Enter a valid email address.",
 		required: "This field is required.",
@@ -62,5 +65,7 @@ export const auth = {
 		network: "Network error. Check your connection and try again.",
 		tooLong: "That is too long.",
 		signInAgain: "For your security, sign in again first, then try once more.",
+		unsupportedStep:
+			"Signing in to this account needs another step this page doesn't support yet.",
 	},
 };

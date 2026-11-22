@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { type Ref, useId } from "react";
 import { cn } from "#/lib/auth/lib/utils";
 import type { SlotClassNames } from "./types";
 
@@ -10,6 +10,10 @@ export function AuthField({
 	error,
 	autoComplete,
 	required,
+	inputMode,
+	inputRef,
+	describedBy,
+	invalid,
 	classNames,
 }: {
 	label: string;
@@ -19,6 +23,11 @@ export function AuthField({
 	error?: string;
 	autoComplete?: string;
 	required?: boolean;
+	inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+	inputRef?: Ref<HTMLInputElement>;
+	/** Ids of text outside the field that describes it, such as a form error. */
+	describedBy?: string;
+	invalid?: boolean;
 	classNames?: SlotClassNames<"root" | "label" | "input" | "error">;
 }) {
 	const id = useId();
@@ -36,12 +45,17 @@ export function AuthField({
 			</label>
 			<input
 				id={id}
+				ref={inputRef}
 				type={type}
 				value={value}
 				required={required}
 				autoComplete={autoComplete}
-				aria-describedby={error ? errorId : undefined}
-				aria-invalid={error ? true : undefined}
+				inputMode={inputMode}
+				aria-describedby={
+					[describedBy, error ? errorId : null].filter(Boolean).join(" ") ||
+					undefined
+				}
+				aria-invalid={invalid || error ? true : undefined}
 				onChange={(e) => onChange(e.target.value)}
 				className={cn(
 					"rounded-[var(--auth-radius)] border border-[var(--auth-border)] bg-[var(--auth-field-bg)] px-3 py-2 text-sm text-[var(--auth-fg)] outline-none focus:border-[var(--auth-accent)]",

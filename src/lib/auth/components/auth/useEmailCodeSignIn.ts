@@ -1,0 +1,94 @@
+/**
+ * Passwordless sign-in for accounts made on the phone with an emailed code:
+ * email a 6-digit code, then trade it for a session. Mirrors apps/mobile's
+ * `use-email-code-sign-in.ts`; on the web both steps live on one screen, so
+ * one instance of this hook carries the whole attempt.
+ *
+ * Failures come back as `messages.auth.errors` keys, never Clerk's text.
+ */
+import {
+	type AuthErrorKey,
+	pickClerkErrorKey,
+} from "@arcadeclub/core/auth-errors";
+import { useSignIn } from "@clerk/react";
+import { useState } from "react";
+
+/** Digits in the code Clerk emails. */
+export const EMAIL_CODE_LENGTH = 6;
+
+type Step = () => Promise<{ error: unknown } | "unsupported">;
+type Busy = "send" | "resend" | "verify" | null;
+type Failure = { error: unknown } | "unsupported" | null;
+
+export function useEmailCodeSignIn() {
+	const { signIn, errors } = useSignIn();
+	const [busy, setBusy] = useState<Busy>(null);
+	const [failure, setFailure] = useState<Failure>(null);
+
+	/**
+	 * Runs the steps in turn; true when every one succeeded. A successful
+	 * `verify` stays busy: the session is active and the page is leaving.
+	 */
+	async function run(kind: Exclude<Busy, null>, ...steps: Step[]) {
+		if (busy) return false;
+		setFailure(null);
+		setBusy(kind);
+		let done = false;
+		try {
+			for (const step of steps) {
+				const result = await step();
+				if (result === "unsupported" || result.error) {
+					setFailure(result);
+					return false;
+				}
+			}
+			done = true;
+			return true;
+		} catch (err) {
+			setFailure({ error: err ?? new Error("email code sign-in failed") });
+			return false;
+		} finally {
+			if (!done || kind !== "verify") setBusy(null);
+		}
+	}
+
+	// Read at render time: Clerk refreshes the `errors` signal per call.
+	const errorKey: AuthErrorKey | null =
+		failure === "unsupported"
+			? "unsupportedStep"
+			: failure
+				? pickClerkErrorKey(errors, failure.error)
+				: null;
+
+	return {
+		/** Emails a code to `email`, starting a new attempt. */
+		send: (email: string) =>
+			run("send", () =>
+				signIn.emailCode.sendCode({ emailAddress: email.trim() }),
+			),
+		/** Emails a fresh code for the attempt already started. */
+		resend: () => run("resend", () => signIn.emailCode.sendCode()),
+		/** Trades the code for a session; true once it is active. */
+		verify: (code: string) =>
+			run(
+				"verify",
+				() => signIn.emailCode.verifyCode({ code }),
+				// A second factor is not offered here; `finalize()` would fail.
+				async () =>
+					signIn.status === "complete" ? signIn.finalize() : "unsupported",
+			),
+		/**
+		 * Drops the attempt so another email can start one; no request. A
+		 * failed reset is harmless: the next `send` starts a new attempt.
+		 */
+		startOver: async () => {
+			setFailure(null);
+			try {
+				await signIn.reset();
+			} catch {}
+		},
+		clearError: () => setFailure(null),
+		busy,
+		errorKey,
+	};
+}

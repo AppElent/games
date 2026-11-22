@@ -7,6 +7,7 @@ export const auth = {
 		email: "E-mail",
 		password: "Wachtwoord",
 		submit: "Inloggen",
+		busy: "Even geduld…",
 		emailCode: "Mail me een inlogcode",
 		emailFirst: "Vul eerst je e-mailadres in.",
 		forgotPassword: "Wachtwoord vergeten?",
@@ -51,6 +52,8 @@ export const auth = {
 		generic: "Er ging iets mis. Probeer het opnieuw.",
 		identifierNotFound: "Geen account gevonden met dat e-mailadres.",
 		passwordIncorrect: "Dat wachtwoord klopt niet.",
+		noPassword:
+			'Dit account heeft geen wachtwoord. Gebruik "Mail me een inlogcode".',
 		identifierExists: "Er bestaat al een account met dat e-mailadres.",
 		emailInvalid: "Vul een geldig e-mailadres in.",
 		required: "Dit veld is verplicht.",
@@ -65,5 +68,7 @@ export const auth = {
 		tooLong: "Dat is te lang.",
 		signInAgain:
 			"Log voor je veiligheid eerst opnieuw in en probeer het dan nog eens.",
+		unsupportedStep:
+			"Inloggen op dit account vraagt een extra stap die deze pagina nog niet ondersteunt.",
 	},
 } satisfies typeof en;
