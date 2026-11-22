@@ -2,6 +2,7 @@
  * The decisions behind Profile's account edits, apart from the screens so
  * they run in tests without Clerk or native modules.
  */
+import { passwordFailure } from "@arcadeclub/core/account-password";
 import {
 	clerkErrorKey,
 	type ErrorKey,
@@ -24,31 +25,7 @@ export function nameUpdate(
 		: next;
 }
 
-type ClerkEntry = { code?: unknown; meta?: { paramName?: unknown } };
-
-function entries(error: unknown): ClerkEntry[] {
-	const list = (error as { errors?: unknown } | null)?.errors;
-	return Array.isArray(list) ? (list as ClerkEntry[]) : [];
-}
-
-/**
- * Codes Clerk puts on `current_password` when that password is wrong. It
- * uses `form_password_validation_failed`, the weak-new-password code too,
- * so only the field name tells the two apart.
- */
-const WRONG_CURRENT = new Set([
-	"form_password_validation_failed",
-	"form_password_incorrect",
-]);
-
 /** The message key for a failed `user.updatePassword`. */
 export function passwordChangeError(error: unknown): ErrorKey {
-	const wrongCurrent = entries(error).some(
-		(entry) =>
-			entry.meta?.paramName === "current_password" &&
-			typeof entry.code === "string" &&
-			WRONG_CURRENT.has(entry.code),
-	);
-	if (wrongCurrent) return "passwordIncorrect";
-	return clerkErrorKey(error) ?? "generic";
+	return passwordFailure(error)?.key ?? clerkErrorKey(error) ?? "generic";
 }
