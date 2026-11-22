@@ -66,5 +66,7 @@ export const auth = {
 		tooLong: "Dat is te lang.",
 		signInAgain:
 			"Log voor je veiligheid eerst opnieuw in en probeer het dan nog eens.",
+		unsupportedStep:
+			"Inloggen op dit account vraagt een extra stap die deze pagina nog niet ondersteunt.",
 	},
 } satisfies typeof en;

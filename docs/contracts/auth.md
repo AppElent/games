@@ -26,9 +26,14 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 - Web sign-in (`SignInForm`) takes email and password, or "Email me a sign-in code"
   (`useEmailCodeSignIn`, Clerk's `emailCode` first factor, as on the phone) for
   accounts without a password: the code step replaces the password step on the same
-  screen, with resend and "Use a different email". Its labels and errors come from
-  `messages.auth`, errors through `@arcadeclub/core/auth-errors` (Clerk code to catalog
-  key), never Clerk's text.
+  screen, with resend and "Use a different email". Its labels and errors, on both
+  paths, come from `messages.auth`, errors through `@arcadeclub/core/auth-errors` (Clerk
+  code to catalog key), never Clerk's text. A sign-in that needs a step the web does not
+  offer (a second factor) says so (`unsupportedStep`) instead of finalizing.
+- `RequireSignedIn` sends a signed-out visitor to `/sign-in?redirect=<path>`, and
+  sign-in returns there afterwards; `safeReturnPath` (`src/lib/auth/core.ts`) keeps only
+  an in-app path, so the parameter cannot send anyone off the site. Without it, sign-in
+  goes to `authConfig.paths.afterAuth`.
 - `src/routes/{sign-in,sign-up,forgot-password,account}.tsx` are thin wrappers around
   `#/lib/auth`'s `AuthCard` and form components; `src/components/Header.tsx` uses its
   `HeaderUser`.

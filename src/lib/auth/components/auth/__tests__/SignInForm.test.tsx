@@ -90,13 +90,33 @@ describe("SignInForm", () => {
 		);
 	});
 
-	it("shows a readable error on failure", async () => {
+	it("shows catalog copy for a password failure, not Clerk's text", async () => {
 		signIn.password.mockResolvedValue({
-			error: { errors: [{ message: "Invalid." }] },
+			error: {
+				errors: [
+					{ code: "form_password_incorrect", longMessage: "Clerk says no." },
+				],
+			},
 		});
 		renderForm();
 		fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
-		expect(await screen.findByText("Invalid.")).toBeDefined();
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"That password is not right.",
+		);
+		expect(screen.queryByText("Clerk says no.")).toBeNull();
+		expect(signIn.finalize).not.toHaveBeenCalled();
+	});
+
+	it("says so when the password sign-in needs a step it does not offer", async () => {
+		signIn.password.mockImplementation(async () => {
+			signIn.status = "needs_second_factor";
+			return ok;
+		});
+		renderForm(vi.fn(), "nl");
+		fireEvent.click(screen.getByRole("button", { name: "Inloggen" }));
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"Inloggen op dit account vraagt een extra stap die deze pagina nog niet ondersteunt.",
+		);
 		expect(signIn.finalize).not.toHaveBeenCalled();
 	});
 
@@ -113,7 +133,10 @@ describe("SignInForm", () => {
 		});
 
 		it("sends a code, focuses the code field and signs in with it", async () => {
-			signIn.emailCode.verifyCode.mockResolvedValue(ok);
+			signIn.emailCode.verifyCode.mockImplementation(async () => {
+				signIn.status = "complete";
+				return ok;
+			});
 			signIn.finalize.mockResolvedValue(ok);
 			const onSuccess = vi.fn();
 			renderForm(onSuccess);
@@ -127,10 +150,15 @@ describe("SignInForm", () => {
 			expect(document.activeElement).toBe(field);
 			expect(field.getAttribute("autocomplete")).toBe("one-time-code");
 			expect(field.getAttribute("inputmode")).toBe("numeric");
+			const describedBy = field.getAttribute("aria-describedby") ?? "";
+			expect(document.getElementById(describedBy)?.textContent).toBe(
+				"We sent a 6-digit code to a@b.com.",
+			);
 
 			const submit = screen.getByRole("button", { name: "Sign in" });
 			expect(submit.hasAttribute("disabled")).toBe(true);
-			fireEvent.change(field, { target: { value: "12 34-56" } });
+			// A pasted code with separators, longer than six characters.
+			fireEvent.change(field, { target: { value: "123-456-7" } });
 			expect((field as HTMLInputElement).value).toBe("123456");
 			fireEvent.click(submit);
 			await vi.waitFor(() => expect(onSuccess).toHaveBeenCalled());
@@ -166,9 +194,47 @@ describe("SignInForm", () => {
 			const field = await openCodeStep();
 			fireEvent.change(field, { target: { value: "000000" } });
 			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
-			expect((await screen.findByRole("alert")).textContent).toBe(copy);
+			const alert = await screen.findByRole("alert");
+			expect(alert.textContent).toBe(copy);
+			expect(field.getAttribute("aria-invalid")).toBe("true");
+			expect(field.getAttribute("aria-describedby")).toContain(alert.id);
 			expect(signIn.finalize).not.toHaveBeenCalled();
 			expect(onSuccess).not.toHaveBeenCalled();
+			await vi.waitFor(() => expect(document.activeElement).toBe(field));
+		});
+
+		it("stops on a step it does not offer instead of finalizing", async () => {
+			signIn.emailCode.verifyCode.mockImplementation(async () => {
+				signIn.status = "needs_second_factor";
+				return ok;
+			});
+			const onSuccess = vi.fn();
+			renderForm(onSuccess);
+			const field = await openCodeStep();
+			fireEvent.change(field, { target: { value: "424242" } });
+			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+			expect((await screen.findByRole("alert")).textContent).toBe(
+				"Signing in to this account needs another step this page doesn't support yet.",
+			);
+			expect(signIn.finalize).not.toHaveBeenCalled();
+			expect(onSuccess).not.toHaveBeenCalled();
+		});
+
+		it("returns focus to the email field when sending fails", async () => {
+			signIn.emailCode.sendCode.mockResolvedValue(
+				clerkError("too_many_requests"),
+			);
+			renderForm();
+			typeEmail();
+			fireEvent.click(
+				screen.getByRole("button", { name: "Email me a sign-in code" }),
+			);
+			expect((await screen.findByRole("alert")).textContent).toBe(
+				"Too many attempts. Try again in a moment.",
+			);
+			await vi.waitFor(() =>
+				expect(document.activeElement).toBe(screen.getByLabelText("Email")),
+			);
 		});
 
 		it("resends a code and says so", async () => {

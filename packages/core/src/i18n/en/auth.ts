@@ -63,5 +63,7 @@ export const auth = {
 		network: "Network error. Check your connection and try again.",
 		tooLong: "That is too long.",
 		signInAgain: "For your security, sign in again first, then try once more.",
+		unsupportedStep:
+			"Signing in to this account needs another step this page doesn't support yet.",
 	},
 };

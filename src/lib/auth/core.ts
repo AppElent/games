@@ -34,3 +34,16 @@ export function clerkErrorMessage(
 	const first = e?.errors?.[0];
 	return first?.longMessage ?? first?.message ?? fallback;
 }
+
+/**
+ * The in-app path to return to after sign-in, or `undefined` for anything
+ * that could leave the site: only a single leading `/`, never `//` or `/\`
+ * (which browsers read as another host), and no control characters.
+ */
+export function safeReturnPath(value: unknown): string | undefined {
+	if (typeof value !== "string" || !value.startsWith("/")) return undefined;
+	if (value.startsWith("//") || value.startsWith("/\\")) return undefined;
+	// biome-ignore lint/suspicious/noControlCharactersInRegex: rejecting them is the point.
+	if (/[\u0000-\u001f\u007f]/.test(value)) return undefined;
+	return value;
+}

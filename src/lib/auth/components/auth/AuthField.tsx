@@ -11,8 +11,9 @@ export function AuthField({
 	autoComplete,
 	required,
 	inputMode,
-	maxLength,
 	inputRef,
+	describedBy,
+	invalid,
 	classNames,
 }: {
 	label: string;
@@ -23,8 +24,10 @@ export function AuthField({
 	autoComplete?: string;
 	required?: boolean;
 	inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
-	maxLength?: number;
 	inputRef?: Ref<HTMLInputElement>;
+	/** Ids of text outside the field that describes it, such as a form error. */
+	describedBy?: string;
+	invalid?: boolean;
 	classNames?: SlotClassNames<"root" | "label" | "input" | "error">;
 }) {
 	const id = useId();
@@ -48,8 +51,11 @@ export function AuthField({
 				required={required}
 				autoComplete={autoComplete}
 				inputMode={inputMode}
-				maxLength={maxLength}
-				aria-describedby={error ? errorId : undefined}
+				aria-describedby={
+					[describedBy, error ? errorId : null].filter(Boolean).join(" ") ||
+					undefined
+				}
+				aria-invalid={invalid || error ? true : undefined}
 				onChange={(e) => onChange(e.target.value)}
 				className={cn(
 					"rounded-[var(--auth-radius)] border border-[var(--auth-border)] bg-[var(--auth-field-bg)] px-3 py-2 text-sm text-[var(--auth-fg)] outline-none focus:border-[var(--auth-accent)]",

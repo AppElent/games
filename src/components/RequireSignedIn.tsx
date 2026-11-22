@@ -1,9 +1,12 @@
 import { Show } from "@clerk/react";
-import { useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import { authConfig } from "#/lib/auth-config";
 
-/** A page for accounts only: signed-out visitors go to sign-in. */
+/**
+ * A page for accounts only: signed-out visitors go to sign-in, which brings
+ * them back here afterwards.
+ */
 export function RequireSignedIn({ children }: { children: ReactNode }) {
 	return (
 		<>
@@ -17,10 +20,11 @@ export function RequireSignedIn({ children }: { children: ReactNode }) {
 
 function RedirectToSignIn() {
 	const navigate = useNavigate();
+	const here = useLocation({ select: (location) => location.href });
 
 	useEffect(() => {
-		navigate({ to: authConfig.paths.signIn });
-	}, [navigate]);
+		navigate({ to: authConfig.paths.signIn, search: { redirect: here } });
+	}, [navigate, here]);
 
 	return null;
 }

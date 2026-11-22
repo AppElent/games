@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { clerkErrorMessage, shouldShowTestLogin } from "../core";
+import {
+	clerkErrorMessage,
+	safeReturnPath,
+	shouldShowTestLogin,
+} from "../core";
 
 describe("shouldShowTestLogin", () => {
 	it("is false on a live key even with creds present", () => {
@@ -74,5 +78,28 @@ describe("clerkErrorMessage", () => {
 		expect(clerkErrorMessage(undefined, "Custom fallback")).toBe(
 			"Custom fallback",
 		);
+	});
+});
+
+describe("safeReturnPath", () => {
+	it("keeps an in-app path with its query", () => {
+		expect(safeReturnPath("/account")).toBe("/account");
+		expect(safeReturnPath("/sudoku/play?id=1")).toBe("/sudoku/play?id=1");
+	});
+
+	it("drops anything that could leave the site", () => {
+		for (const value of [
+			"https://evil.example",
+			"//evil.example",
+			"/\\evil.example",
+			"javascript:alert(1)",
+			"account",
+			"/\taccount",
+			"",
+			undefined,
+			42,
+		]) {
+			expect(safeReturnPath(value)).toBeUndefined();
+		}
 	});
 });

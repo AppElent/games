@@ -16,35 +16,49 @@ import { useState } from "react";
 /** Digits in the code Clerk emails. */
 export const EMAIL_CODE_LENGTH = 6;
 
-type Step = () => Promise<{ error: unknown }>;
+type Step = () => Promise<{ error: unknown } | "unsupported">;
 type Busy = "send" | "resend" | "verify" | null;
+type Failure = { error: unknown } | "unsupported" | null;
 
 export function useEmailCodeSignIn() {
 	const { signIn, errors } = useSignIn();
 	const [busy, setBusy] = useState<Busy>(null);
-	const [returned, setReturned] = useState<unknown>(null);
+	const [failure, setFailure] = useState<Failure>(null);
 
-	/** Runs the steps in turn; true when every one succeeded. */
+	/**
+	 * Runs the steps in turn; true when every one succeeded. A successful
+	 * `verify` stays busy: the session is active and the page is leaving.
+	 */
 	async function run(kind: Exclude<Busy, null>, ...steps: Step[]) {
 		if (busy) return false;
-		setReturned(null);
+		setFailure(null);
 		setBusy(kind);
+		let done = false;
 		try {
 			for (const step of steps) {
-				const { error } = await step();
-				if (error) {
-					setReturned(error);
+				const result = await step();
+				if (result === "unsupported" || result.error) {
+					setFailure(result);
 					return false;
 				}
 			}
+			done = true;
 			return true;
 		} catch (err) {
-			setReturned(err ?? new Error("email code sign-in failed"));
+			setFailure({ error: err ?? new Error("email code sign-in failed") });
 			return false;
 		} finally {
-			setBusy(null);
+			if (!done || kind !== "verify") setBusy(null);
 		}
 	}
+
+	// Read at render time: Clerk refreshes the `errors` signal per call.
+	const errorKey: AuthErrorKey | null =
+		failure === "unsupported"
+			? "unsupportedStep"
+			: failure
+				? pickClerkErrorKey(errors, failure.error)
+				: null;
 
 	return {
 		/** Emails a code to `email`, starting a new attempt. */
@@ -59,17 +73,22 @@ export function useEmailCodeSignIn() {
 			run(
 				"verify",
 				() => signIn.emailCode.verifyCode({ code }),
-				() => signIn.finalize(),
+				// A second factor is not offered here; `finalize()` would fail.
+				async () =>
+					signIn.status === "complete" ? signIn.finalize() : "unsupported",
 			),
-		/** Drops the attempt so another email can start one; no request. */
+		/**
+		 * Drops the attempt so another email can start one; no request. A
+		 * failed reset is harmless: the next `send` starts a new attempt.
+		 */
 		startOver: async () => {
-			setReturned(null);
-			await signIn.reset();
+			setFailure(null);
+			try {
+				await signIn.reset();
+			} catch {}
 		},
-		clearError: () => setReturned(null),
+		clearError: () => setFailure(null),
 		busy,
-		errorKey: (returned
-			? pickClerkErrorKey(errors, returned)
-			: null) as AuthErrorKey | null,
+		errorKey,
 	};
 }
