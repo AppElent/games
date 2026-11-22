@@ -1,5 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AuthCard, SignInForm, safeReturnPath } from "#/lib/auth";
+import {
+	AuthCard,
+	SignInForm,
+	safeReturnPath,
+	signInDestination,
+} from "#/lib/auth";
 import { useMessages } from "#/lib/i18n";
 import { authConfig } from "../lib/auth-config";
 
@@ -14,20 +19,17 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignInPage() {
 	const navigate = useNavigate();
-	// Checked here too: the root route passes the raw search through, so
+	// Checked again here: the root route passes the raw search through, so
 	// `useSearch` can still hold what `validateSearch` dropped.
-	const redirect = safeReturnPath(Route.useSearch().redirect);
+	const destination = signInDestination(
+		Route.useSearch().redirect,
+		authConfig.paths.afterAuth,
+	);
 	const title = useMessages().auth.signIn.title;
 
 	return (
 		<AuthCard title={title}>
-			<SignInForm
-				onSuccess={() =>
-					redirect
-						? navigate({ href: redirect })
-						: navigate({ to: authConfig.paths.afterAuth })
-				}
-			/>
+			<SignInForm onSuccess={() => navigate({ href: destination })} />
 		</AuthCard>
 	);
 }

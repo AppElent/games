@@ -10,7 +10,11 @@ const signIn = {
 	reset: vi.fn(),
 	emailCode: { sendCode: vi.fn(), verifyCode: vi.fn() },
 };
-const errors = { fields: {}, global: null, raw: null };
+const errors: { fields: object; global: null; raw: null } = {
+	fields: {},
+	global: null,
+	raw: null,
+};
 vi.mock("@clerk/react", () => ({ useSignIn: () => ({ signIn, errors }) }));
 
 import { type Locale, LocaleProvider } from "#/lib/i18n";
@@ -47,6 +51,7 @@ describe("SignInForm", () => {
 	afterEach(() => {
 		cleanup();
 		signIn.status = null;
+		errors.fields = {};
 		for (const fn of [
 			signIn.password,
 			signIn.finalize,
@@ -105,6 +110,15 @@ describe("SignInForm", () => {
 		);
 		expect(screen.queryByText("Clerk says no.")).toBeNull();
 		expect(signIn.finalize).not.toHaveBeenCalled();
+	});
+
+	it("points a code-only account to the emailed code", async () => {
+		signIn.password.mockResolvedValue(clerkError("strategy_for_user_invalid"));
+		renderForm();
+		fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			'This account has no password. Use "Email me a sign-in code" instead.',
+		);
 	});
 
 	it("says so when the password sign-in needs a step it does not offer", async () => {
@@ -234,6 +248,20 @@ describe("SignInForm", () => {
 			);
 			await vi.waitFor(() =>
 				expect(document.activeElement).toBe(screen.getByLabelText("Email")),
+			);
+		});
+
+		it("reads Clerk's field error before the returned wrapper", async () => {
+			signIn.emailCode.verifyCode.mockImplementation(async () => {
+				errors.fields = { code: { code: "verification_expired" } };
+				return clerkError("something_new");
+			});
+			renderForm();
+			const field = await openCodeStep();
+			fireEvent.change(field, { target: { value: "000000" } });
+			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+			expect((await screen.findByRole("alert")).textContent).toBe(
+				"That code has expired. Send a new one.",
 			);
 		});
 

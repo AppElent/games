@@ -15,6 +15,8 @@ export type AuthErrorKey = keyof Messages["auth"]["errors"];
 const CODE_MAP: Readonly<Record<string, AuthErrorKey>> = {
 	form_identifier_not_found: "identifierNotFound",
 	form_password_incorrect: "passwordIncorrect",
+	// A password attempt on an account made with an emailed code (APP-561).
+	strategy_for_user_invalid: "noPassword",
 	form_identifier_exists: "identifierExists",
 	form_param_format_invalid: "emailInvalid",
 	form_param_nil: "required",

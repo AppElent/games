@@ -49,6 +49,8 @@ export const auth = {
 		generic: "Something went wrong. Please try again.",
 		identifierNotFound: "No account found with that email.",
 		passwordIncorrect: "That password is not right.",
+		noPassword:
+			'This account has no password. Use "Email me a sign-in code" instead.',
 		identifierExists: "An account with that email already exists.",
 		emailInvalid: "Enter a valid email address.",
 		required: "This field is required.",

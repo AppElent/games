@@ -52,6 +52,8 @@ export const auth = {
 		generic: "Er ging iets mis. Probeer het opnieuw.",
 		identifierNotFound: "Geen account gevonden met dat e-mailadres.",
 		passwordIncorrect: "Dat wachtwoord klopt niet.",
+		noPassword:
+			'Dit account heeft geen wachtwoord. Gebruik "Mail me een inlogcode".',
 		identifierExists: "Er bestaat al een account met dat e-mailadres.",
 		emailInvalid: "Vul een geldig e-mailadres in.",
 		required: "Dit veld is verplicht.",

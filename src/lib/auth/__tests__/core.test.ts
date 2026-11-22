@@ -3,6 +3,7 @@ import {
 	clerkErrorMessage,
 	safeReturnPath,
 	shouldShowTestLogin,
+	signInDestination,
 } from "../core";
 
 describe("shouldShowTestLogin", () => {
@@ -92,6 +93,8 @@ describe("safeReturnPath", () => {
 			"https://evil.example",
 			"//evil.example",
 			"/\\evil.example",
+			"/.//evil.example",
+			"/a/..//evil.example",
 			"javascript:alert(1)",
 			"account",
 			"/\taccount",
@@ -101,5 +104,16 @@ describe("safeReturnPath", () => {
 		]) {
 			expect(safeReturnPath(value)).toBeUndefined();
 		}
+	});
+});
+
+describe("signInDestination", () => {
+	it("returns to a checked in-app path, else the fallback", () => {
+		expect(signInDestination("/account", "/dashboard")).toBe("/account");
+		// What `useSearch` still holds when `validateSearch` dropped it.
+		expect(signInDestination("//evil.example", "/dashboard")).toBe(
+			"/dashboard",
+		);
+		expect(signInDestination(undefined, "/dashboard")).toBe("/dashboard");
 	});
 });

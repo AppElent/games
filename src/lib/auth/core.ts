@@ -37,13 +37,26 @@ export function clerkErrorMessage(
 
 /**
  * The in-app path to return to after sign-in, or `undefined` for anything
- * that could leave the site: only a single leading `/`, never `//` or `/\`
- * (which browsers read as another host), and no control characters.
+ * that could leave the site. Resolved against a placeholder origin, so
+ * `//host`, `/\host` and tricks like `/.//host` count by where a browser
+ * would go, not by how the string starts.
  */
 export function safeReturnPath(value: unknown): string | undefined {
 	if (typeof value !== "string" || !value.startsWith("/")) return undefined;
-	if (value.startsWith("//") || value.startsWith("/\\")) return undefined;
 	// biome-ignore lint/suspicious/noControlCharactersInRegex: rejecting them is the point.
-	if (/[\u0000-\u001f\u007f]/.test(value)) return undefined;
-	return value;
+	if (/[\u0000-\u001f\u007f\\]/.test(value)) return undefined;
+	const base = "https://return.invalid";
+	let url: URL;
+	try {
+		url = new URL(value, base);
+	} catch {
+		return undefined;
+	}
+	if (url.origin !== base || url.pathname.startsWith("//")) return undefined;
+	return `${url.pathname}${url.search}${url.hash}`;
+}
+
+/** Where sign-in goes next: the checked return path, else `fallback`. */
+export function signInDestination(redirect: unknown, fallback: string): string {
+	return safeReturnPath(redirect) ?? fallback;
 }

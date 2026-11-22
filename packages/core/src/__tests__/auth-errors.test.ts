@@ -16,6 +16,10 @@ describe("clerkErrorKey", () => {
 		expect(clerkErrorKey({ errors: [{ code: "verification_failed" }] })).toBe(
 			"codeAttemptsExceeded",
 		);
+		// What Clerk returns for a password on a code-only account.
+		expect(
+			clerkErrorKey({ errors: [{ code: "strategy_for_user_invalid" }] }),
+		).toBe("noPassword");
 		expect(clerkErrorKey({ errors: [{ code: "too_many_requests" }] })).toBe(
 			"tooManyRequests",
 		);

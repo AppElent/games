@@ -20,7 +20,11 @@ export {
 	type SocialProvider,
 } from "#/lib/auth/components/auth/types";
 export { ThemeSync } from "#/lib/auth/components/ThemeSync";
-export { safeReturnPath, shouldShowTestLogin } from "#/lib/auth/core";
+export {
+	safeReturnPath,
+	shouldShowTestLogin,
+	signInDestination,
+} from "#/lib/auth/core";
 export { default as HeaderUser } from "#/lib/auth/integrations/clerk/header-user";
 export {
 	applyThemeMode,
