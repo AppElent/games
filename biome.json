@@ -27,6 +27,7 @@
 			"!scripts/workspace.mjs",
 			"!scripts/sync-devtools.mjs",
 			"!scripts/run-mobile.mjs",
+			"!scripts/store-screenshots.mjs",
 			"!scripts/lib",
 			"apps/mobile/scripts/**/*",
 			".github/scripts/**/*",
