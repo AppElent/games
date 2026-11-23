@@ -171,7 +171,8 @@ describe("SignInForm", () => {
 			expect(
 				screen.getByText("We sent a 6-digit code to a@b.com."),
 			).toBeDefined();
-			expect(document.activeElement).toBe(field);
+			// The step's focus effect is passive: it can run after the field is found.
+			await vi.waitFor(() => expect(document.activeElement).toBe(field));
 			expect(field.getAttribute("autocomplete")).toBe("one-time-code");
 			expect(field.getAttribute("inputmode")).toBe("numeric");
 			const describedBy = field.getAttribute("aria-describedby") ?? "";
@@ -295,7 +296,8 @@ describe("SignInForm", () => {
 			const email = await screen.findByLabelText("Email");
 			expect(signIn.reset).toHaveBeenCalled();
 			expect((email as HTMLInputElement).value).toBe("a@b.com");
-			expect(document.activeElement).toBe(email);
+			// The step's focus effect is passive: it can run after the field is found.
+			await vi.waitFor(() => expect(document.activeElement).toBe(email));
 		});
 
 		it("shows catalog copy when finalize throws after a good code", async () => {
