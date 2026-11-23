@@ -46,17 +46,17 @@
   "dependencies": {
     "@arcadeclub/chess": "workspace:*",
     "@arcadeclub/core": "workspace:*",
-    "@clerk/react": "^6.18.4",
-    "@cloudflare/vite-plugin": "^1.68.0",
-    "@sentry/cloudflare": "11.11.0",
-    "@sentry/react": "11.11.0",
+    "@clerk/react": "^6.18.8",
+    "@cloudflare/vite-plugin": "^1.69.1",
+    "@sentry/cloudflare": "11.12.0",
+    "@sentry/react": "11.12.0",
     "@tailwindcss/vite": "^4.3.5",
     "@tanstack/react-devtools": "^0.10.14",
     "@tanstack/react-router": "^1.170.46",
     "@tanstack/react-router-devtools": "^1.167.3",
     "@tanstack/react-start": "^1.169.5",
     "clsx": "^2.1.1",
-    "convex": "^1.49.0",
+    "convex": "^1.50.0",
     "lucide-react": "^0.577.0",
     "qrcode": "^1.5.4",
     "react": "19.3.0",
@@ -67,10 +67,10 @@
     "tw-animate-css": "^1.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.6",
+    "@biomejs/biome": "2.6.8",
     "@edge-runtime/vm": "^5.0.0",
-    "@sentry/node": "11.11.0",
-    "@sentry/vite-plugin": "11.11.0",
+    "@sentry/node": "11.12.0",
+    "@sentry/vite-plugin": "11.12.0",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "^0.8.6",
     "@tanstack/router-cli": "^1.168.0",
@@ -82,13 +82,13 @@
     "@types/react-dom": "~19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
     "concurrently": "^10.0.7",
-    "convex-test": "^0.0.67",
+    "convex-test": "^0.0.71",
     "jsdom": "^29.1.1",
     "lefthook": "^2.2.2",
     "typescript": "~6.0.3",
-    "vite": "^8.3.7",
+    "vite": "^8.3.8",
     "vitest": "^4.1.12",
     "workbox-build": "^7.4.1",
-    "wrangler": "^4.158.0"
+    "wrangler": "^4.162.0"
   }
 }
