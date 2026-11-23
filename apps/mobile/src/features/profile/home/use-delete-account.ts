@@ -17,10 +17,7 @@ import { GameRuleError } from "@arcadeclub/core/errors";
 import { useAuth, useClerk, useUser } from "@clerk/expo";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import {
-	forgetReturnTarget,
-	returnAfterSignIn,
-} from "../../../auth/return-target";
+import { signOutToReturn } from "../../../auth/return-target";
 import { api } from "../../../convex/api";
 import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
 import { useSessionAction } from "../../sessions/use-session-action";
@@ -38,14 +35,14 @@ export function useDeleteAccount() {
 
 	/** Resolves true once the deletion is done and this phone signed out. */
 	async function deleteAccount(scope: DeletionScope) {
-		if (!user || busy) return false;
-		if (scope === "account" && !user.deleteSelfEnabled) {
+		if (busy) return false;
+		if (user && scope === "account" && !user.deleteSelfEnabled) {
 			setUnavailable(true);
 			return false;
 		}
 		setUnavailable(false);
 		const sessionId = clerk.session?.id;
-		if (!sessionId) {
+		if (!user || !sessionId) {
 			// Nothing to delete with; a fresh sign-in starts one.
 			await run(() => Promise.reject(new GameRuleError("accountSessionEnded")));
 			return false;
@@ -70,7 +67,10 @@ export function useDeleteAccount() {
 	return {
 		deleteAccount,
 		busy,
-		ready: backendAuth.ready,
+		/** Nobody is signed in: there is nothing to sign out of first. */
+		signedOut: !user,
+		/** Signed out counts: deleting then says so and offers the sign-in. */
+		ready: backendAuth.ready || !backendAuth.isSignedIn,
 		error,
 		unavailable,
 		/** The refusal asks for a fresh sign-in; offer `signInAgain`. */
@@ -80,16 +80,11 @@ export function useDeleteAccount() {
 		 * recent sign-in. The refusal goes, so it doesn't greet the new session.
 		 */
 		signInAgain: async () => {
+			if (!user) return;
 			reset();
-			// Signing in rebuilds the app on Play; this brings the person back.
-			if (user) returnAfterSignIn("/profile/delete-account", user.id);
-			try {
-				await signOut();
-			} catch (caught) {
-				// Still signed in; a later sign-in must not jump to this screen.
-				forgetReturnTarget();
-				throw caught;
-			}
+			await signOutToReturn("/profile/delete-account", user.id, () =>
+				signOut(),
+			);
 		},
 	};
 }
