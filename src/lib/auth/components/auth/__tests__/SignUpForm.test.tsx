@@ -11,14 +11,20 @@ const signUp = {
 };
 vi.mock("@clerk/react", () => ({ useSignUp: () => ({ signUp }) }));
 
+import { type Locale, LocaleProvider } from "#/lib/i18n";
 import { AuthConfigProvider } from "../AuthConfigProvider";
 import { SignUpForm } from "../SignUpForm";
 
-function renderForm(onSuccess = vi.fn()) {
+function renderForm(
+	onSuccess = vi.fn(),
+	{ locale = "en", redirect }: { locale?: Locale; redirect?: string } = {},
+) {
 	return render(
-		<AuthConfigProvider>
-			<SignUpForm onSuccess={onSuccess} />
-		</AuthConfigProvider>,
+		<LocaleProvider initialLocale={locale}>
+			<AuthConfigProvider>
+				<SignUpForm onSuccess={onSuccess} redirect={redirect} />
+			</AuthConfigProvider>
+		</LocaleProvider>,
 	);
 }
 
@@ -59,7 +65,7 @@ describe("SignUpForm", () => {
 		signUp.verifications.sendEmailCode.mockResolvedValue(ok);
 		renderForm();
 		submitDetails();
-		expect(await screen.findByLabelText(/verification code/i)).toBeDefined();
+		expect(await screen.findByLabelText("Code")).toBeDefined();
 		expect(signUp.password).toHaveBeenCalledWith({
 			emailAddress: "a@b.com",
 			password: "pw12345!",
@@ -78,7 +84,7 @@ describe("SignUpForm", () => {
 		const onSuccess = vi.fn();
 		renderForm(onSuccess);
 		submitDetails();
-		const code = await screen.findByLabelText(/verification code/i);
+		const code = await screen.findByLabelText("Code");
 		fireEvent.change(code, { target: { value: "123456" } });
 		fireEvent.click(screen.getByRole("button", { name: /verify/i }));
 		await vi.waitFor(() => expect(signUp.finalize).toHaveBeenCalled());
@@ -86,5 +92,34 @@ describe("SignUpForm", () => {
 			code: "123456",
 		});
 		expect(onSuccess).toHaveBeenCalled();
+	});
+
+	it("shows catalog copy for a Clerk failure, not Clerk's text (APP-596)", async () => {
+		signUp.password.mockResolvedValue({
+			error: {
+				code: "api_response_error",
+				errors: [{ code: "form_identifier_exists", message: "Taken." }],
+			},
+		});
+		renderForm();
+		submitDetails();
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"An account with that email already exists.",
+		);
+	});
+
+	it("speaks Dutch", () => {
+		renderForm(vi.fn(), { locale: "nl" });
+		expect(screen.getByLabelText("Wachtwoord")).toBeDefined();
+		expect(
+			screen.getByRole("button", { name: "Account aanmaken" }),
+		).toBeDefined();
+	});
+
+	it("keeps the return page on the link back to sign-in (APP-596)", () => {
+		renderForm(vi.fn(), { redirect: "/sudoku?id=1" });
+		expect(
+			screen.getByRole("link", { name: /sign in/i }).getAttribute("href"),
+		).toBe("/sign-in?redirect=%2Fsudoku%3Fid%3D1");
 	});
 });

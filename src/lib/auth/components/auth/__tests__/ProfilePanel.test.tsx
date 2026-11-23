@@ -58,14 +58,32 @@ function clerkError(code: string, paramName: string) {
 	return { errors: [{ code, message: "Clerk says no", meta: { paramName } }] };
 }
 
-async function submitPassword(current: string, next: string) {
-	fireEvent.change(screen.getByLabelText("Current password"), {
+const PASSWORD_LABELS = {
+	en: {
+		current: "Current password",
+		new: "New password",
+		submit: /^change password$/i,
+	},
+	nl: {
+		current: "Huidig wachtwoord",
+		new: "Nieuw wachtwoord",
+		submit: /^wachtwoord wijzigen$/i,
+	},
+};
+
+async function submitPassword(
+	current: string,
+	next: string,
+	locale: "en" | "nl" = "en",
+) {
+	const labels = PASSWORD_LABELS[locale];
+	fireEvent.change(screen.getByLabelText(labels.current), {
 		target: { value: current },
 	});
-	fireEvent.change(screen.getByLabelText("New password"), {
+	fireEvent.change(screen.getByLabelText(labels.new), {
 		target: { value: next },
 	});
-	fireEvent.click(screen.getByRole("button", { name: /^change password$/i }));
+	fireEvent.click(screen.getByRole("button", { name: labels.submit }));
 	await vi.waitFor(() => expect(updatePassword).toHaveBeenCalled());
 }
 
@@ -166,13 +184,26 @@ describe("ProfilePanel", () => {
 		).toBeNull();
 	});
 
-	it("shows other failures above the panel", async () => {
+	it("shows other failures above the panel as catalog copy", async () => {
 		updatePassword.mockRejectedValue({
 			errors: [{ code: "too_many_requests", message: "Slow down." }],
 		});
 		renderPanel();
 		await submitPassword("old-pass-123", "new-pass-456");
-		expect((await screen.findByRole("alert")).textContent).toBe("Slow down.");
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"Too many attempts. Try again in a moment.",
+		);
+	});
+
+	it("shows an unknown Clerk failure in Dutch, not Clerk's English (APP-596)", async () => {
+		updatePassword.mockRejectedValue({
+			errors: [{ code: "something_new", message: "Clerk says no." }],
+		});
+		renderPanel("nl");
+		await submitPassword("old-pass-123", "new-pass-456", "nl");
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"Er ging iets mis. Probeer het opnieuw.",
+		);
 	});
 
 	it("explains instead of asking for a password the account does not have", () => {

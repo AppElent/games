@@ -10,8 +10,12 @@
  * whatever asked for an account. That is why `finish` leaves `busy` on after
  * success: the screen is about to close.
  */
+
+import {
+	type ClerkErrorSignal,
+	pickClerkErrorKey,
+} from "@arcadeclub/core/auth-errors";
 import { useCallback, useState } from "react";
-import { type ClerkErrorSignal, pickClerkErrorKey } from "./clerk-errors";
 
 /**
  * One Clerk call. Resolving to `null` stops the flow without an error, for

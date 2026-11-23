@@ -2,6 +2,7 @@ import type { profile as en } from "../en/profile";
 
 export const profile = {
 	account: "Account",
+	accountMenu: "Accountmenu",
 	guestTitle: "Je speelt als gast",
 	guestBody:
 		"Solospellen worden op deze telefoon bewaard. Log in om online spellen te hosten.",

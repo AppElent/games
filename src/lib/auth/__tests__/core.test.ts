@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-	clerkErrorMessage,
+	authPageHref,
+	returnTarget,
 	safeReturnPath,
 	shouldShowTestLogin,
 	signInDestination,
@@ -60,28 +61,6 @@ describe("shouldShowTestLogin", () => {
 	});
 });
 
-describe("clerkErrorMessage", () => {
-	it("extracts the first error's longMessage when present", () => {
-		const err = { errors: [{ longMessage: "Long", message: "Short" }] };
-		expect(clerkErrorMessage(err)).toBe("Long");
-	});
-
-	it("falls back to message when longMessage is absent", () => {
-		expect(clerkErrorMessage({ errors: [{ message: "Short" }] })).toBe("Short");
-	});
-
-	it("falls back to the default message for non-Clerk errors", () => {
-		expect(clerkErrorMessage(new Error("boom"))).toBe("Something went wrong.");
-		expect(clerkErrorMessage(undefined)).toBe("Something went wrong.");
-	});
-
-	it("accepts a custom fallback", () => {
-		expect(clerkErrorMessage(undefined, "Custom fallback")).toBe(
-			"Custom fallback",
-		);
-	});
-});
-
 describe("safeReturnPath", () => {
 	it("keeps an in-app path with its query", () => {
 		expect(safeReturnPath("/account")).toBe("/account");
@@ -115,5 +94,54 @@ describe("signInDestination", () => {
 			"/dashboard",
 		);
 		expect(signInDestination(undefined, "/dashboard")).toBe("/dashboard");
+	});
+});
+
+describe("signInDestination on an auth page (APP-596)", () => {
+	it("never returns to a sign-in, sign-up or reset form", () => {
+		for (const value of [
+			"/sign-in",
+			"/sign-in?redirect=%2Faccount",
+			"/Sign-In/",
+			"/%73ign-in",
+			"/sign-up",
+			"/forgot-password#x",
+		]) {
+			expect(signInDestination(value, "/dashboard")).toBe("/dashboard");
+		}
+		expect(signInDestination("/sign-in-tips", "/dashboard")).toBe(
+			"/sign-in-tips",
+		);
+	});
+});
+
+describe("authPageHref", () => {
+	it("carries a checked return path", () => {
+		expect(authPageHref("/sign-in", "/sudoku/play?id=1")).toBe(
+			"/sign-in?redirect=%2Fsudoku%2Fplay%3Fid%3D1",
+		);
+	});
+
+	it("drops a return path that leaves the site or is an auth page", () => {
+		expect(authPageHref("/sign-in", "//evil.example")).toBe("/sign-in");
+		expect(authPageHref("/sign-up", "/sign-in")).toBe("/sign-up");
+		expect(authPageHref("/sign-in", undefined)).toBe("/sign-in");
+	});
+});
+
+describe("returnTarget", () => {
+	it("returns to the page itself", () => {
+		expect(returnTarget("/cards/toepen?mode=online")).toBe(
+			"/cards/toepen?mode=online",
+		);
+	});
+
+	it("passes on an auth page's own redirect", () => {
+		expect(returnTarget("/sign-in?redirect=%2Faccount")).toBe("/account");
+		expect(
+			returnTarget("/sign-up?redirect=%2F%2Fevil.example"),
+		).toBeUndefined();
+		expect(returnTarget("/sign-up?redirect=%2Fsign-in")).toBeUndefined();
+		expect(returnTarget("/forgot-password")).toBeUndefined();
 	});
 });

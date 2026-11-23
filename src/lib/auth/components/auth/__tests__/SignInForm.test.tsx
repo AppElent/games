@@ -24,11 +24,15 @@ import { SignInForm } from "../SignInForm";
 const ok = { error: null };
 const clerkError = (code: string) => ({ error: { errors: [{ code }] } });
 
-function renderForm(onSuccess = vi.fn(), locale: Locale = "en") {
+function renderForm(
+	onSuccess = vi.fn(),
+	locale: Locale = "en",
+	redirect?: string,
+) {
 	return render(
 		<LocaleProvider initialLocale={locale}>
 			<AuthConfigProvider>
-				<SignInForm onSuccess={onSuccess} />
+				<SignInForm onSuccess={onSuccess} redirect={redirect} />
 			</AuthConfigProvider>
 		</LocaleProvider>,
 	);
@@ -294,6 +298,63 @@ describe("SignInForm", () => {
 			expect(document.activeElement).toBe(email);
 		});
 
+		it("shows catalog copy when finalize throws after a good code", async () => {
+			signIn.emailCode.verifyCode.mockImplementation(async () => {
+				signIn.status = "complete";
+				return ok;
+			});
+			signIn.finalize.mockRejectedValue(new Error("network down"));
+			const onSuccess = vi.fn();
+			renderForm(onSuccess);
+			const field = await openCodeStep();
+			fireEvent.change(field, { target: { value: "123456" } });
+			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+			expect((await screen.findByRole("alert")).textContent).toBe(
+				"Something went wrong. Please try again.",
+			);
+			expect(onSuccess).not.toHaveBeenCalled();
+			// Not stuck busy: the code can be sent again.
+			expect(
+				screen
+					.getByRole("button", { name: "Send a new code" })
+					.hasAttribute("disabled"),
+			).toBe(false);
+		});
+
+		it("verifies once on a double click", async () => {
+			let finish: (value: typeof ok) => void = () => {};
+			signIn.emailCode.verifyCode.mockImplementation(
+				() =>
+					new Promise((resolve) => {
+						finish = resolve;
+					}),
+			);
+			renderForm();
+			const field = await openCodeStep();
+			fireEvent.change(field, { target: { value: "123456" } });
+			const submit = screen.getByRole("button", { name: "Sign in" });
+			fireEvent.click(submit);
+			fireEvent.click(submit);
+			fireEvent.submit(field.closest("form") as HTMLFormElement);
+			expect(signIn.emailCode.verifyCode).toHaveBeenCalledTimes(1);
+			signIn.status = "complete";
+			signIn.finalize.mockResolvedValue(ok);
+			finish(ok);
+			await vi.waitFor(() => expect(signIn.finalize).toHaveBeenCalledTimes(1));
+		});
+
+		it("still returns to the email step when dropping the attempt fails", async () => {
+			signIn.reset.mockRejectedValue(new Error("offline"));
+			renderForm();
+			await openCodeStep();
+			fireEvent.click(
+				screen.getByRole("button", { name: "Use a different email" }),
+			);
+			expect(await screen.findByLabelText("Email")).toBeDefined();
+			expect(signIn.reset).toHaveBeenCalled();
+			expect(screen.queryByRole("alert")).toBeNull();
+		});
+
 		it("speaks Dutch", async () => {
 			signIn.emailCode.verifyCode.mockResolvedValue(
 				clerkError("form_code_incorrect"),
@@ -313,5 +374,28 @@ describe("SignInForm", () => {
 				"Die code klopt niet.",
 			);
 		});
+	});
+
+	it("keeps the return page on the sign-up and reset links (APP-596)", () => {
+		renderForm(vi.fn(), "en", "/cards/toepen");
+		expect(
+			screen
+				.getByRole("link", { name: "Create an account" })
+				.getAttribute("href"),
+		).toBe("/sign-up?redirect=%2Fcards%2Ftoepen");
+		expect(
+			screen
+				.getByRole("link", { name: "Forgot password?" })
+				.getAttribute("href"),
+		).toBe("/forgot-password?redirect=%2Fcards%2Ftoepen");
+	});
+
+	it("leaves an unsafe return page off the links", () => {
+		renderForm(vi.fn(), "en", "//evil.example");
+		expect(
+			screen
+				.getByRole("link", { name: "Create an account" })
+				.getAttribute("href"),
+		).toBe("/sign-up");
 	});
 });

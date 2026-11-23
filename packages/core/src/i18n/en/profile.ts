@@ -1,5 +1,6 @@
 export const profile = {
 	account: "Account",
+	accountMenu: "Account menu",
 	guestTitle: "Playing as a guest",
 	guestBody:
 		"Solo games are saved on this phone. Sign in to host online games.",

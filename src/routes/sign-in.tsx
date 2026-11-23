@@ -21,15 +21,16 @@ function SignInPage() {
 	const navigate = useNavigate();
 	// Checked again here: the root route passes the raw search through, so
 	// `useSearch` can still hold what `validateSearch` dropped.
-	const destination = signInDestination(
-		Route.useSearch().redirect,
-		authConfig.paths.afterAuth,
-	);
+	const { redirect } = Route.useSearch();
+	const destination = signInDestination(redirect, authConfig.paths.afterAuth);
 	const title = useMessages().auth.signIn.title;
 
 	return (
 		<AuthCard title={title}>
-			<SignInForm onSuccess={() => navigate({ href: destination })} />
+			<SignInForm
+				redirect={redirect}
+				onSuccess={() => navigate({ href: destination })}
+			/>
 		</AuthCard>
 	);
 }

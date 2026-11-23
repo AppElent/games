@@ -1,14 +1,18 @@
 import { Show } from "@clerk/react";
+import { useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { authPageHref, returnTarget } from "#/lib/auth";
 import { authConfig } from "#/lib/auth-config";
 import { useMessages } from "#/lib/i18n";
 
 /**
  * Hosting a multiplayer session requires an account (guests can still join).
- * Renders children for signed-in users; guests get a sign-in prompt instead.
+ * Renders children for signed-in users; guests get a sign-in prompt instead,
+ * which brings them back to this page afterwards.
  */
 export function HostGate({ children }: { children: ReactNode }) {
 	const messages = useMessages();
+	const here = useRouterState({ select: (s) => s.location.href });
 	return (
 		<>
 			<Show when="signed-in">{children}</Show>
@@ -21,7 +25,7 @@ export function HostGate({ children }: { children: ReactNode }) {
 						{messages.common.hostGate.body}
 					</p>
 					<a
-						href={authConfig.paths.signIn}
+						href={authPageHref(authConfig.paths.signIn, returnTarget(here))}
 						className="inline-flex min-h-11 items-center rounded-md bg-cyan-300 px-5 py-2.5 font-bold text-slate-950 no-underline hover:bg-cyan-200"
 					>
 						{messages.common.hostGate.signIn}

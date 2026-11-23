@@ -21,5 +21,3 @@ export interface AuthConfig {
 	features: { forgotPassword: boolean };
 	socialProviders: SocialProvider[];
 }
-
-export { clerkErrorMessage } from "#/lib/auth/core";
