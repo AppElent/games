@@ -34,6 +34,13 @@ export const profile = {
 		failed: "Je wachtwoord kon niet worden gewijzigd. Probeer het opnieuw.",
 		none: "Dit account logt in zonder wachtwoord, via een andere dienst of een gemailde code, dus er is geen wachtwoord om te wijzigen.",
 	},
+	accountPortal: {
+		title: "AppElent-account",
+		body: "Je login werkt in elke AppElent-app. Beheer daar je e-mailadressen, inlogmethoden, apparaten en tweestapsverificatie.",
+		action: "Beheer je AppElent-account",
+		newTab: "(opent in een nieuw tabblad)",
+		failed: "Je AppElent-account kon niet worden geopend. Probeer het opnieuw.",
+	},
 	exportData: {
 		title: "Je gegevens",
 		body: "Download alles wat Arcade Club over je account bewaart als JSON-bestand: je spellen, plaatsen, antwoorden en inhoud. Namen van andere spelers staan er niet in.",
