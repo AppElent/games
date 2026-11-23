@@ -1,12 +1,12 @@
 /**
- * The image-independent half of reading a scanned sudoku, shared by the web
- * (canvas and tesseract.js) and the app (Apple Vision): where the grid's
+ * The image-independent half of reading a scanned sudoku: where the grid's
  * corners start, which ink in each cell of the straightened grid to read,
  * and what the digits read there make of the cell.
  *
- * Both platforms warp the grid to a square, hand its grayscale pixels to
- * `planGridReads`, read a digit in each box `readBoxes` lists, and turn the
- * reads into `ScanCell`s with `scanCellFromReads`.
+ * The web (canvas and tesseract.js) warps the grid to a square, hands its
+ * grayscale pixels to `planGridReads` and reads a digit in each box
+ * `readBoxes` lists. The app (Apple Vision) finds the ink itself, on curled
+ * pages too. Both turn the reads into `ScanCell`s with `scanCellFromReads`.
  */
 import { digitMask } from "./sudoku";
 import type { ScanCell } from "./sudoku-scan";
@@ -423,22 +423,4 @@ export function scanCellFromReads(
 		centerMask,
 		confidence: worst,
 	};
-}
-
-/** Every plan's reads in one list (as one batch for a reader), and back. */
-export function gridReadBoxes(plans: readonly CellReadPlan[]): InkBox[] {
-	return plans.flatMap(readBoxes);
-}
-
-export function scanCellsFromGridReads(
-	plans: readonly CellReadPlan[],
-	reads: readonly DigitRead[],
-): ScanCell[] {
-	let offset = 0;
-	return plans.map((plan) => {
-		const count = readBoxes(plan).length;
-		const cell = scanCellFromReads(plan, reads.slice(offset, offset + count));
-		offset += count;
-		return cell;
-	});
 }

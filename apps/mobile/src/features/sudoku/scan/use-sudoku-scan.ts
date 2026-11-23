@@ -1,9 +1,7 @@
 /**
  * The scan flow's steps, as on the web's `/sudoku/scan`: pick a photo, place
  * the grid's corners (prefilled from detection), read the cells, then check
- * and correct the recognized grid. Apple Vision reads the digits on the
- * phone; which ink to read and what it makes of a cell is shared with the
- * web in `@arcadeclub/core/sudoku-scan-ink`.
+ * and correct the recognized grid. `readGrid` does the reading.
  */
 import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
 import { defaultCorners, type Point } from "@arcadeclub/core/sudoku-scan-ink";
@@ -95,7 +93,7 @@ export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 		try {
 			const grid = await readGrid(
 				scanner,
-				back.photo.uri,
+				back.photo,
 				back.corners,
 				(progress) => {
 					if (current !== run.current) return false;

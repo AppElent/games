@@ -167,7 +167,7 @@ try {
 			: photo.corners.map(([x, y]) => ({ x, y }));
 		const started = performance.now();
 		const read = corners
-			? await readGrid(reader, image.uri, corners, () => true)
+			? await readGrid(reader, image, corners, () => true)
 			: null;
 		const ms = Math.round(performance.now() - started);
 		if (!read) {

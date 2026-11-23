@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing which games the Arcade Club mobile app offers, or how it talks to Convex and stores seats and saves.
-version: 1.4.0
+version: 1.5.0
 status: current
 ---
 
@@ -54,8 +54,12 @@ the [mobile runbook](../runbooks/mobile.md).
   the same way.
 - On iOS, Sudoku scans a paper puzzle from the camera or the photo library
   (`/sudoku/scan`). Apple Vision finds the grid and reads digits on the device
-  (local module `apps/mobile/modules/sudoku-scanner`); which cells hold ink, and
-  what it means, is `@arcadeclub/core/sudoku-scan-ink`, shared with the web. The
+  (local module `apps/mobile/modules/sudoku-scanner`). The rest is JavaScript in
+  `features/sudoku/scan`, so it ships as an update: it traces the grid's lines, so a
+  curled page reads straight, finds each cell's ink, and reads handwriting with a
+  small network next to Vision. What a read makes of a cell is
+  `@arcadeclub/core/sudoku-scan-ink`, shared with the web. Measure a change to it
+  with the [scan bench](../../apps/mobile/scripts/scan-bench/README.md). The
   player checks the grid in the web's verify step before it becomes a classic
   save with `source: "scan"` and no difficulty or solution. A build without the
   module (Android, or an older iOS build on a newer update) hides the entry and
@@ -70,5 +74,6 @@ the [mobile runbook](../runbooks/mobile.md).
   upload before removal),
 - `apps/mobile/src/features/play/app-games.test.ts` (including that `APP_GAMES`
   matches the games `features.ts` lists on mobile),
-  `apps/mobile/src/features/sessions/session-links.test.ts` and
-  `apps/mobile/src/features/sessions/session-seats.test.ts` pass.
+  `apps/mobile/src/features/sessions/session-links.test.ts`,
+  `apps/mobile/src/features/sessions/session-seats.test.ts` and the tests in
+  `apps/mobile/src/features/sudoku/scan` pass.
