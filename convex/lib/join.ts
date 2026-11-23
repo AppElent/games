@@ -10,6 +10,7 @@ import {
 	isGuestRowOf,
 	listParticipants,
 	markConnected,
+	requireGuestProof,
 } from "./gameSession";
 import { claimSeatOnJoin, type TableGameType } from "./tableSeats";
 
@@ -57,6 +58,7 @@ async function admitParticipant(
 	if (session.authPolicy === "signedInRequired" && !userId) {
 		throw gameError("signInToJoin");
 	}
+	requireGuestProof(userId, args.guestId);
 	const participants = await listParticipants(ctx, session._id);
 	const existing = participants.find(
 		(participant) =>

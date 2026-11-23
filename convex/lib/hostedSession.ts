@@ -5,14 +5,13 @@ import {
 	type JoinMode,
 	type SessionGameType,
 } from "@arcadeclub/core/games";
-import { isUnguessableGuestId } from "@arcadeclub/core/sessions";
 import { type ObjectType, v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { getOptionalUserId } from "./auth";
 import { makeJoinCode, makeShareToken } from "./codes";
 import { gameError } from "./errors";
-import { insertParticipant } from "./gameSession";
+import { insertParticipant, requireGuestProof } from "./gameSession";
 
 /** What every game's `create` takes besides its own settings. */
 export const hostedSessionArgs = {
@@ -54,12 +53,7 @@ export async function createHostedSession(
 	if (args.joinMode !== "solo" && !userId) {
 		throw gameError("signInToHost");
 	}
-	// A guest's id is the only proof of their session, so it must be the
-	// random one every client makes: an empty or short one could be matched
-	// by anyone who sends the same.
-	if (!userId && !isUnguessableGuestId(args.guestId ?? "")) {
-		throw gameError("guestIdInvalid");
-	}
+	requireGuestProof(userId, args.guestId);
 
 	let joinCode: string | undefined;
 	if (args.joinMode === "room") {

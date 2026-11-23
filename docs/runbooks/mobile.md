@@ -214,7 +214,7 @@ Hosting needs a signed-in user: set the test-account variables and sign in from
 Profile. To add a second player, join from the CLI as a guest:
 
 ```bash
-pnpm exec convex run sessions:joinByCode '{"joinCode":"ABCDEF","displayName":"CLI Guest","guestId":"cli-guest-1"}'
+pnpm exec convex run sessions:joinByCode '{"joinCode":"ABCDEF","displayName":"CLI Guest","guestId":"guest_00000000-0000-4000-8000-000000000001"}'
 ```
 
 Without a test account, host from the CLI against the local deployment and join
