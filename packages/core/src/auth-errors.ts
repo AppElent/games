@@ -5,8 +5,7 @@
  * machine-stable code also sits on the hook's `errors` signal, so field
  * errors are read first and the wrapper last.
  *
- * The web reads this module; apps/mobile still has its own copy in
- * `features/auth/components/clerk-errors.ts` with the same table.
+ * The web and apps/mobile both read this module: one table, one order.
  */
 import type { Messages } from "./i18n/en";
 
@@ -24,6 +23,13 @@ const CODE_MAP: Readonly<Record<string, AuthErrorKey>> = {
 	form_password_length_too_short: "passwordTooShort",
 	form_password_pwned: "passwordPwned",
 	form_password_validation_failed: "passwordDoesNotMeetRequirements",
+	// Clerk's per-rule password codes (Foundry APP-538 saw them live).
+	form_password_not_strong_enough: "passwordDoesNotMeetRequirements",
+	form_password_no_uppercase: "passwordDoesNotMeetRequirements",
+	form_password_no_lowercase: "passwordDoesNotMeetRequirements",
+	form_password_no_number: "passwordDoesNotMeetRequirements",
+	form_password_no_special_char: "passwordDoesNotMeetRequirements",
+	form_conditional_param_missing: "required",
 	form_code_incorrect: "codeIncorrect",
 	// Too many wrong codes: this code is spent, a new one works (APP-527).
 	verification_failed: "codeAttemptsExceeded",

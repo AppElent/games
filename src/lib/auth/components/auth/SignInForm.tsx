@@ -1,6 +1,6 @@
-import { clerkErrorKey } from "@arcadeclub/core/auth-errors";
 import { useSignIn } from "@clerk/react";
 import { useEffect, useId, useRef, useState } from "react";
+import { authPageHref } from "#/lib/auth/core";
 import { fmt, useMessages } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { useAuthConfig } from "./AuthConfigProvider";
@@ -8,6 +8,7 @@ import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
 import { orThrow } from "./clerkResult";
 import { TestLoginButton } from "./TestLoginButton";
+import { useAuthErrorText } from "./useAuthErrorText";
 import { EMAIL_CODE_LENGTH, useEmailCodeSignIn } from "./useEmailCodeSignIn";
 
 /**
@@ -15,10 +16,18 @@ import { EMAIL_CODE_LENGTH, useEmailCodeSignIn } from "./useEmailCodeSignIn";
  * (made on the phone with a code). The code step replaces the password step
  * on the same screen; "Use a different email" drops the attempt and returns.
  */
-export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
+export function SignInForm({
+	onSuccess,
+	redirect,
+}: {
+	onSuccess: () => void;
+	/** The page to return to, kept on the links to sign-up and reset. */
+	redirect?: string;
+}) {
 	const { signIn } = useSignIn();
 	const config = useAuthConfig();
 	const copy = useMessages().auth;
+	const errorText = useAuthErrorText();
 	const emailCode = useEmailCodeSignIn();
 	const [step, setStep] = useState<"password" | "code">("password");
 	const [email, setEmail] = useState("");
@@ -57,7 +66,7 @@ export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 				setError(copy.errors.unsupportedStep);
 			}
 		} catch (err) {
-			setError(copy.errors[clerkErrorKey(err) ?? "generic"]);
+			setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}
@@ -201,16 +210,22 @@ export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 			>
 				{copy.signIn.emailCode}
 			</AuthButton>
-			<TestLoginButton onSuccess={onSuccess} />
+			<TestLoginButton onSuccess={onSuccess} disabled={busy} />
 			<div className="mt-1 flex justify-between text-xs text-[var(--auth-muted)]">
 				{config.features.forgotPassword ? (
-					<a href={config.paths.forgotPassword} className="hover:underline">
+					<a
+						href={authPageHref(config.paths.forgotPassword, redirect)}
+						className="hover:underline"
+					>
 						{copy.signIn.forgotPassword}
 					</a>
 				) : (
 					<span />
 				)}
-				<a href={config.paths.signUp} className="hover:underline">
+				<a
+					href={authPageHref(config.paths.signUp, redirect)}
+					className="hover:underline"
+				>
 					{copy.signIn.createAccount}
 				</a>
 			</div>

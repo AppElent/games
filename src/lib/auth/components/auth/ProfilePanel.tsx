@@ -10,13 +10,14 @@ import { fmt, useMessages } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
-import { clerkErrorMessage } from "./types";
 import { UsernameHint } from "./UsernameHint";
+import { useAuthErrorText } from "./useAuthErrorText";
 
 export function ProfilePanel() {
 	const messages = useMessages();
 	const profile = messages.profile;
 	const copy = profile.password;
+	const errorText = useAuthErrorText();
 	const { isLoaded, user } = useUser();
 	const { signOut } = useClerk();
 	const [firstName, setFirstName] = useState("");
@@ -52,7 +53,7 @@ export function ProfilePanel() {
 		try {
 			await user.update({ firstName, lastName });
 		} catch (err) {
-			setError(clerkErrorMessage(err));
+			setError(errorText(err));
 		} finally {
 			setSavingProfile(false);
 		}
@@ -77,7 +78,7 @@ export function ProfilePanel() {
 			if (failure) {
 				setFieldError(failure);
 			} else {
-				setError(clerkErrorMessage(err));
+				setError(errorText(err));
 			}
 		} finally {
 			setSavingPassword(false);

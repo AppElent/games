@@ -13,14 +13,15 @@ export { ProfilePanel } from "#/lib/auth/components/auth/ProfilePanel";
 export { SignInForm } from "#/lib/auth/components/auth/SignInForm";
 export { SignUpForm } from "#/lib/auth/components/auth/SignUpForm";
 export { TestLoginButton } from "#/lib/auth/components/auth/TestLoginButton";
-export {
-	type AuthConfig,
-	clerkErrorMessage,
-	type SlotClassNames,
-	type SocialProvider,
+export type {
+	AuthConfig,
+	SlotClassNames,
+	SocialProvider,
 } from "#/lib/auth/components/auth/types";
 export { ThemeSync } from "#/lib/auth/components/ThemeSync";
 export {
+	authPageHref,
+	returnTarget,
 	safeReturnPath,
 	shouldShowTestLogin,
 	signInDestination,

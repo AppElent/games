@@ -15,14 +15,17 @@ const signIn = {
 };
 vi.mock("@clerk/react", () => ({ useSignIn: () => ({ signIn }) }));
 
+import { type Locale, LocaleProvider } from "#/lib/i18n";
 import { AuthConfigProvider } from "../AuthConfigProvider";
 import { ForgotPasswordForm } from "../ForgotPasswordForm";
 
-function renderForm(onSuccess = vi.fn()) {
+function renderForm(onSuccess = vi.fn(), locale: Locale = "en") {
 	return render(
-		<AuthConfigProvider>
-			<ForgotPasswordForm onSuccess={onSuccess} />
-		</AuthConfigProvider>,
+		<LocaleProvider initialLocale={locale}>
+			<AuthConfigProvider>
+				<ForgotPasswordForm onSuccess={onSuccess} />
+			</AuthConfigProvider>
+		</LocaleProvider>,
 	);
 }
 
@@ -64,20 +67,20 @@ describe("ForgotPasswordForm", () => {
 		);
 		expect(signIn.create).toHaveBeenCalledWith({ identifier: "a@b.com" });
 
-		const form = (await screen.findByLabelText(/code/i)).closest("form");
+		const form = (await screen.findByLabelText("Code")).closest("form");
 		const hint = form?.querySelector<HTMLInputElement>(
 			'input[autocomplete="username"]',
 		);
 		expect(hint?.value).toBe("a@b.com");
 		expect(hint?.hidden).toBe(true);
 
-		fireEvent.change(screen.getByLabelText(/code/i), {
+		fireEvent.change(screen.getByLabelText("Code"), {
 			target: { value: "123456" },
 		});
 		fireEvent.change(screen.getByLabelText(/new password/i), {
 			target: { value: "newpw123!" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: /reset password/i }));
+		fireEvent.click(screen.getByRole("button", { name: "Set password" }));
 		await vi.waitFor(() => expect(signIn.finalize).toHaveBeenCalled());
 		expect(signIn.resetPasswordEmailCode.verifyCode).toHaveBeenCalledWith({
 			code: "123456",
@@ -86,5 +89,47 @@ describe("ForgotPasswordForm", () => {
 			password: "newpw123!",
 		});
 		expect(onSuccess).toHaveBeenCalled();
+	});
+
+	it("shows catalog copy for an unknown email, in Dutch (APP-596)", async () => {
+		signIn.create.mockResolvedValue({
+			error: {
+				errors: [{ code: "form_identifier_not_found", message: "No." }],
+			},
+		});
+		renderForm(vi.fn(), "nl");
+		fireEvent.change(screen.getByLabelText("E-mail"), {
+			target: { value: "a@b.com" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Code versturen" }));
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"Geen account gevonden met dat e-mailadres.",
+		);
+		expect(signIn.resetPasswordEmailCode.sendCode).not.toHaveBeenCalled();
+	});
+
+	it("says so when the reset needs a step it does not offer", async () => {
+		signIn.create.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.sendCode.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.verifyCode.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.submitPassword.mockResolvedValue(ok);
+		const onSuccess = vi.fn();
+		renderForm(onSuccess);
+		fireEvent.change(screen.getByLabelText("Email"), {
+			target: { value: "a@b.com" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /send code/i }));
+		fireEvent.change(await screen.findByLabelText("Code"), {
+			target: { value: "123456" },
+		});
+		fireEvent.change(screen.getByLabelText(/new password/i), {
+			target: { value: "newpw123!" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Set password" }));
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"Signing in to this account needs another step this page doesn't support yet.",
+		);
+		expect(signIn.finalize).not.toHaveBeenCalled();
+		expect(onSuccess).not.toHaveBeenCalled();
 	});
 });

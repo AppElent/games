@@ -1,14 +1,17 @@
 import { useSignIn } from "@clerk/react";
 import { useState } from "react";
+import { fmt, useMessages } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
 import { orThrow } from "./clerkResult";
-import { clerkErrorMessage } from "./types";
 import { UsernameHint } from "./UsernameHint";
+import { useAuthErrorText } from "./useAuthErrorText";
 
 export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 	const { signIn } = useSignIn();
+	const copy = useMessages().auth;
+	const errorText = useAuthErrorText();
 	const [step, setStep] = useState<"request" | "reset">("request");
 	const [email, setEmail] = useState("");
 	const [code, setCode] = useState("");
@@ -25,7 +28,7 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 			await orThrow(signIn.resetPasswordEmailCode.sendCode());
 			setStep("reset");
 		} catch (err) {
-			setError(clerkErrorMessage(err));
+			setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}
@@ -42,10 +45,10 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 				await orThrow(signIn.finalize());
 				onSuccess();
 			} else {
-				setError("Could not reset password.");
+				setError(copy.errors.unsupportedStep);
 			}
 		} catch (err) {
-			setError(clerkErrorMessage(err));
+			setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}
@@ -55,24 +58,28 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 		return (
 			<form onSubmit={resetPassword} noValidate className="flex flex-col gap-3">
 				<AuthError message={error} />
+				<p className="text-sm text-[var(--auth-muted)]">
+					{fmt(copy.reset.codeBody, { email: email.trim() })}
+				</p>
 				<UsernameHint username={email} />
 				<AuthField
-					label="Code"
+					label={copy.signInCode.code}
 					type="text"
+					inputMode="numeric"
 					autoComplete="one-time-code"
 					value={code}
 					onChange={setCode}
 					required
 				/>
 				<AuthField
-					label="New password"
+					label={copy.reset.newPassword}
 					type="password"
 					autoComplete="new-password"
 					value={password}
 					onChange={setPassword}
 					required
 				/>
-				<AuthButton loading={loading}>Reset password</AuthButton>
+				<AuthButton loading={loading}>{copy.reset.submit}</AuthButton>
 			</form>
 		);
 	}
@@ -80,15 +87,16 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 	return (
 		<form onSubmit={requestCode} noValidate className="flex flex-col gap-3">
 			<AuthError message={error} />
+			<p className="text-sm text-[var(--auth-muted)]">{copy.reset.body}</p>
 			<AuthField
-				label="Email"
+				label={copy.signIn.email}
 				type="email"
 				autoComplete="username"
 				value={email}
 				onChange={setEmail}
 				required
 			/>
-			<AuthButton loading={loading}>Send code</AuthButton>
+			<AuthButton loading={loading}>{copy.reset.sendCode}</AuthButton>
 		</form>
 	);
 }
