@@ -1,5 +1,6 @@
 import type { GameErrorCode } from "@arcadeclub/core/errors";
 import type { GameType, SessionGameType } from "@arcadeclub/core/games";
+import { isUnguessableGuestId } from "@arcadeclub/core/sessions";
 import { type ObjectType, v } from "convex/values";
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
@@ -185,7 +186,8 @@ export type SeatArgs = ObjectType<typeof seatArgs>;
  * Whether this is a guest's row held by this guest id. The one place a guest id
  * is matched: an account's row never matches, even one that still carries the
  * guest id of the browser it joined from, so a guest sharing that browser can
- * never pass for the account.
+ * never pass for the account. Nor does a guessable id, so a row stored with an
+ * empty or short one before `requireGuestProof` is nobody's to act for.
  */
 export function isGuestRowOf(
 	participant: Pick<Doc<"sessionParticipants">, "userId" | "guestId">,
@@ -193,9 +195,24 @@ export function isGuestRowOf(
 ) {
 	return (
 		!participant.userId &&
-		participant.guestId !== undefined &&
+		guestId !== undefined &&
+		isUnguessableGuestId(guestId) &&
 		participant.guestId === guestId
 	);
+}
+
+/**
+ * Refuses a signed-out caller without the random guest id every client makes.
+ * It is the only proof of the row they host or join with: an empty or short
+ * one could be matched by anyone who sends the same.
+ */
+export function requireGuestProof(
+	userId: string | undefined,
+	guestId: string | undefined,
+) {
+	if (!userId && !isUnguessableGuestId(guestId ?? "")) {
+		throw gameError("guestIdInvalid");
+	}
 }
 
 /**

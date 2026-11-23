@@ -7,6 +7,7 @@ import schema from "./schema";
 import {
 	advance,
 	freezeClock,
+	guestIdOf,
 	HOST_USER,
 	hostSession,
 	joinWithCode,
@@ -97,7 +98,7 @@ async function seed(t: T) {
 		});
 	await hostSession(t, "live-quiz", "solo");
 	const room = await hostSession(t, "live-quiz", "room");
-	await joinWithCode(t, room.joinCode as string, "guest_a");
+	await joinWithCode(t, room.joinCode as string, guestIdOf("guest_a"));
 	advance(60 * 60_000);
 }
 

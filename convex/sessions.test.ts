@@ -311,16 +311,6 @@ describe("joinByCode", () => {
 		expect((await getDoc(t, player.participantId))?.role).toBe("player");
 	});
 
-	it("pins that a joiner with no identity gets a new row every time", async () => {
-		const t = setup();
-		const { sessionId, joinCode } = await room(t);
-		const args = { joinCode, displayName: "Anon" };
-		const first = await t.mutation(api.sessions.joinByCode, args);
-		const second = await t.mutation(api.sessions.joinByCode, args);
-		expect(second.participantId).not.toBe(first.participantId);
-		expect(await allParticipants(t, sessionId)).toHaveLength(3);
-	});
-
 	it("pins that signing in leaves the guest's old row behind", async () => {
 		const t = setup();
 		const { sessionId, joinCode } = await room(t);
@@ -531,6 +521,101 @@ describe("getBundle", () => {
 			undefined,
 		]);
 		expect(result?.participants.every((row) => !("guestId" in row))).toBe(true);
+	});
+});
+
+describe("a guest id that could be guessed", () => {
+	const MALFORMED = [
+		undefined,
+		"",
+		"guest_",
+		"guest_123456",
+		"guest_1a2b3c4d",
+		"not-a-guest-id",
+		` ${guestIdOf("one")}`,
+		guestIdOf("one").replace("guest_", ""),
+	];
+
+	it("answers guestIdInvalid to a signed-out joiner, by code or link, and stores no row", async () => {
+		const t = setup();
+		const byCode = await room(t);
+		const byLink = await challenge(t);
+		for (const guestId of MALFORMED) {
+			for (const asSpectator of [false, true]) {
+				const joiner = { displayName: "Guest", guestId, asSpectator };
+				await expectCode(
+					t.mutation(api.sessions.joinByCode, {
+						joinCode: byCode.joinCode,
+						...joiner,
+					}),
+					"guestIdInvalid",
+				);
+				await expectCode(
+					t.mutation(api.sessions.joinByToken, {
+						shareToken: byLink.shareToken,
+						...joiner,
+					}),
+					"guestIdInvalid",
+				);
+			}
+		}
+		expect(await allParticipants(t, byCode.sessionId)).toHaveLength(1);
+		expect(await allParticipants(t, byLink.sessionId)).toHaveLength(1);
+	});
+
+	it("leaves a signed-in joiner alone, whatever guest id they send", async () => {
+		const t = setup();
+		const { joinCode } = await room(t);
+		const { shareToken } = await challenge(t);
+		for (const guestId of MALFORMED) {
+			const joiner = { displayName: "Joiner", guestId };
+			const byCode = await asUser(t).mutation(api.sessions.joinByCode, {
+				joinCode,
+				...joiner,
+			});
+			const byLink = await asUser(t).mutation(api.sessions.joinByToken, {
+				shareToken,
+				...joiner,
+			});
+			for (const { participantId } of [byCode, byLink]) {
+				const row = await getDoc(t, participantId);
+				expect(row?.userId).toBe("user_joiner");
+				expect(row?.guestId).toBeUndefined();
+			}
+		}
+	});
+
+	it("never proves a row an older server stored with one", async () => {
+		const t = setup();
+		const { sessionId, joinCode } = await room(t);
+		for (const guestId of ["", "guest_123456"]) {
+			const seat = await t.run((ctx) =>
+				ctx.db.insert("sessionParticipants", {
+					sessionId,
+					guestId,
+					displayName: "Guest",
+					role: "player",
+					connected: true,
+					lastSeen: T0,
+				}),
+			);
+			const other = impostor(t);
+			expect(
+				await other.query(api.sessions.ownSeat, {
+					sessionId,
+					participantId: seat,
+					guestId,
+				}),
+			).toBeNull();
+			await expectCode(
+				other.mutation(api.sessions.heartbeat, {
+					participantId: seat,
+					guestId,
+				}),
+				"participantNotFound",
+			);
+			await expectCode(joinWithCode(t, joinCode, guestId), "guestIdInvalid");
+		}
 	});
 });
 
