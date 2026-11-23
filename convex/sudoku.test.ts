@@ -65,6 +65,7 @@ async function soloSession(t: T) {
 function createPuzzle(
 	t: T,
 	overrides: {
+		guestId?: string | undefined;
 		variant?: "classic" | "killer" | "binary";
 		cages?: { sum: number; cells: number[] }[];
 		size?: number;
@@ -186,6 +187,43 @@ describe("new puzzle", () => {
 			hostParticipantId: participantId,
 			startedAt: T0,
 		});
+	});
+
+	it("answers guestIdInvalid for a guest with an empty, short, or missing id", async () => {
+		const t = setup();
+		for (const guestId of ["", "guest_", "guest_1a2b3c4d", "not-a-guest-id"]) {
+			await expectCode(createPuzzle(t, { guestId }), "guestIdInvalid");
+		}
+		await expectCode(createPuzzle(t, { guestId: undefined }), "guestIdInvalid");
+		await expectCode(
+			t.mutation(api.sessions.create, {
+				gameType: "sudoku",
+				joinMode: "solo",
+				authPolicy: "guestAllowed",
+				title: "Puzzle",
+				displayName: "Solver",
+				guestId: "",
+			}),
+			"guestIdInvalid",
+		);
+		expect(await sessionCount(t)).toBe(0);
+	});
+
+	it("needs no guest id from a signed-in host", async () => {
+		const t = setup();
+		const host = t.withIdentity({ subject: "user_signed_in" });
+		for (const guestId of [undefined, ""]) {
+			const { sessionId } = await host.mutation(api.sudoku.create, {
+				title: "Puzzle",
+				displayName: "Solver",
+				guestId,
+				source: "generated",
+				givens: GIVENS,
+			});
+			await expect(
+				host.query(api.sudoku.getBundle, { sessionId }),
+			).resolves.not.toBeNull();
+		}
 	});
 
 	it("accepts digits, notes, and auto-cleanup from a scan flow", async () => {

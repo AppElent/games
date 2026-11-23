@@ -5,6 +5,7 @@ import {
 	type JoinMode,
 	type SessionGameType,
 } from "@arcadeclub/core/games";
+import { isUnguessableGuestId } from "@arcadeclub/core/sessions";
 import { type ObjectType, v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
@@ -52,6 +53,12 @@ export async function createHostedSession(
 	// sessions (sudoku) can be created as a guest.
 	if (args.joinMode !== "solo" && !userId) {
 		throw gameError("signInToHost");
+	}
+	// A guest's id is the only proof of their session, so it must be the
+	// random one every client makes: an empty or short one could be matched
+	// by anyone who sends the same.
+	if (!userId && !isUnguessableGuestId(args.guestId ?? "")) {
+		throw gameError("guestIdInvalid");
 	}
 
 	let joinCode: string | undefined;
