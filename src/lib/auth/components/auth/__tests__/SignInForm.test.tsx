@@ -351,6 +351,7 @@ describe("SignInForm", () => {
 				screen.getByRole("button", { name: "Use a different email" }),
 			);
 			expect(await screen.findByLabelText("Email")).toBeDefined();
+			expect(signIn.reset).toHaveBeenCalled();
 			expect(screen.queryByRole("alert")).toBeNull();
 		});
 
