@@ -37,6 +37,7 @@ export const profile = {
 		body: "Your login works in every AppElent app. Manage your email addresses, sign-in methods, devices and two-step verification there.",
 		action: "Manage your AppElent account",
 		newTab: "(opens in a new tab)",
+		failed: "Your AppElent account could not be opened. Try again.",
 	},
 	exportData: {
 		title: "Your data",

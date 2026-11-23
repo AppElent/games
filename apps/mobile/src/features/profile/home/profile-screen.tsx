@@ -60,6 +60,7 @@ export function ProfileScreen() {
 	const tokens = useTokens();
 	const [name, setName] = useState(identity.savedName);
 	const [signingOut, setSigningOut] = useState(false);
+	const [portalFailed, setPortalFailed] = useState(false);
 	const exporter = useExportData(copy.exportData.action);
 
 	const email = user?.primaryEmailAddress?.emailAddress ?? "";
@@ -72,6 +73,16 @@ export function ProfileScreen() {
 			Updates.isEnabled && !Updates.isEmbeddedLaunch ? Updates.createdAt : null,
 		sha: env.gitCommit,
 	};
+
+	async function openAccountPortal() {
+		setPortalFailed(false);
+		try {
+			await WebBrowser.openBrowserAsync(ACCOUNT_PORTAL_URL);
+		} catch {
+			// Android rejects when no browser can open the link.
+			setPortalFailed(true);
+		}
+	}
 
 	return (
 		<Screen inTabs>
@@ -106,10 +117,11 @@ export function ProfileScreen() {
 									/>
 								}
 								disabled={signingOut}
-								onPress={() =>
-									void WebBrowser.openBrowserAsync(ACCOUNT_PORTAL_URL)
-								}
+								onPress={() => void openAccountPortal()}
 								testID="profile-account-portal"
+							/>
+							<Notice
+								message={portalFailed ? copy.accountPortal.failed : null}
 							/>
 							<Button
 								variant="secondary"

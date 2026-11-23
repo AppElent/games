@@ -29,6 +29,10 @@ jest.mock("expo-web-browser", () => ({
 }));
 
 describe("ProfileScreen account portal row", () => {
+	beforeEach(() => {
+		jest.mocked(WebBrowser.openBrowserAsync).mockClear();
+	});
+
 	it.each(["en", "nl"] as const)(
 		"shows the %s label and opens the AppElent account portal",
 		async (locale) => {
@@ -44,10 +48,33 @@ describe("ProfileScreen account portal row", () => {
 			).toBe(row);
 
 			await fireEvent.press(row);
-			expect(WebBrowser.openBrowserAsync).toHaveBeenLastCalledWith(
+			expect(WebBrowser.openBrowserAsync).toHaveBeenCalledTimes(1);
+			expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(
 				ACCOUNT_PORTAL_URL,
 			);
 			expect(ACCOUNT_PORTAL_URL).toBe("https://account.appelent.nl");
+		},
+	);
+
+	it.each(["en", "nl"] as const)(
+		"says so when the portal cannot be opened (%s)",
+		async (locale) => {
+			jest
+				.mocked(WebBrowser.openBrowserAsync)
+				.mockRejectedValueOnce(new Error("No matching browser"));
+			await renderScreen(<ProfileScreen />);
+			await fireEvent.press(
+				screen.getByText(messages.en.profile.languages[locale]),
+			);
+
+			const { failed } = messages[locale].profile.accountPortal;
+			expect(screen.queryByText(failed)).toBeNull();
+			await fireEvent.press(screen.getByTestId("profile-account-portal"));
+			expect(await screen.findByText(failed)).toBeTruthy();
+
+			// A retry that opens clears the message.
+			await fireEvent.press(screen.getByTestId("profile-account-portal"));
+			expect(screen.queryByText(failed)).toBeNull();
 		},
 	);
 });
