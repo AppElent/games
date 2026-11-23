@@ -102,5 +102,11 @@ describe("findGridCorners", () => {
 		for (const worker of FakeWorker.made) {
 			expect(worker.terminate).toHaveBeenCalled();
 		}
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it("starts no search that was called off beforehand", async () => {
+		expect(await find(AbortSignal.abort())).toBeNull();
+		expect(FakeWorker.made).toEqual([]);
 	});
 });

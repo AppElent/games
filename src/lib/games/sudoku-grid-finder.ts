@@ -16,6 +16,8 @@ export async function findGridCorners(
 	signal: AbortSignal,
 ): Promise<Point[] | null> {
 	let worker: Worker | undefined;
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	let giveUp = () => {};
 	try {
 		const { pixels, width, height } = shrink(source);
 		if (signal.aborted) {
@@ -30,8 +32,9 @@ export async function findGridCorners(
 			searching.onmessage = ({ data }: MessageEvent<Point[] | null>) =>
 				resolve(data);
 			searching.onerror = () => resolve(null);
-			signal.addEventListener("abort", () => resolve(null), { once: true });
-			setTimeout(() => resolve(null), FIND_TIMEOUT_MS);
+			giveUp = () => resolve(null);
+			signal.addEventListener("abort", giveUp);
+			timer = setTimeout(giveUp, FIND_TIMEOUT_MS);
 			const request: DetectRequest = { pixels, width, height };
 			searching.postMessage(request, [pixels.buffer]);
 		});
@@ -46,6 +49,8 @@ export async function findGridCorners(
 		return null;
 	} finally {
 		worker?.terminate();
+		clearTimeout(timer);
+		signal.removeEventListener("abort", giveUp);
 	}
 }
 
