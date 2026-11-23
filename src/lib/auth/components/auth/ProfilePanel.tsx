@@ -6,7 +6,7 @@ import {
 import { useClerk, useUser } from "@clerk/react";
 import { useEffect, useState } from "react";
 import { AppearanceSettings } from "#/lib/auth/components/account/AppearanceSettings";
-import { useMessages } from "#/lib/i18n";
+import { fmt, useMessages } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
@@ -15,7 +15,8 @@ import { UsernameHint } from "./UsernameHint";
 
 export function ProfilePanel() {
 	const messages = useMessages();
-	const copy = messages.profile.password;
+	const profile = messages.profile;
+	const copy = profile.password;
 	const { isLoaded, user } = useUser();
 	const { signOut } = useClerk();
 	const [firstName, setFirstName] = useState("");
@@ -36,7 +37,9 @@ export function ProfilePanel() {
 	}, [user]);
 
 	if (!isLoaded || !user) {
-		return <p className="text-sm text-[var(--auth-muted)]">Loading…</p>;
+		return (
+			<p className="text-sm text-[var(--auth-muted)]">{profile.loading}</p>
+		);
 	}
 
 	async function saveProfile(e: React.FormEvent) {
@@ -86,28 +89,30 @@ export function ProfilePanel() {
 			<AuthError message={error} />
 
 			<section className="rm-panel p-4">
-				<p className="rm-label">Profile</p>
+				<p className="rm-label">{profile.profileTitle}</p>
 				<form
 					onSubmit={saveProfile}
 					className="mt-3 flex flex-col gap-3"
 					noValidate
 				>
 					<AuthField
-						label="First name"
+						label={profile.name.firstName}
 						type="text"
 						value={firstName}
 						onChange={setFirstName}
 					/>
 					<AuthField
-						label="Last name"
+						label={profile.name.lastName}
 						type="text"
 						value={lastName}
 						onChange={setLastName}
 					/>
 					<p className="text-xs text-[var(--auth-muted)]">
-						Email: {user.primaryEmailAddress?.emailAddress}
+						{fmt(profile.email, {
+							email: user.primaryEmailAddress?.emailAddress ?? "",
+						})}
 					</p>
-					<AuthButton loading={savingProfile}>Save profile</AuthButton>
+					<AuthButton loading={savingProfile}>{profile.saveProfile}</AuthButton>
 				</form>
 			</section>
 
@@ -168,10 +173,10 @@ export function ProfilePanel() {
 			<AppearanceSettings />
 
 			<section className="rm-panel p-4">
-				<p className="rm-label">Session</p>
+				<p className="rm-label">{profile.session}</p>
 				<div className="mt-3">
 					<AuthButton type="button" variant="ghost" onClick={() => signOut()}>
-						Sign out
+						{profile.signOut}
 					</AuthButton>
 				</div>
 			</section>
