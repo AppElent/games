@@ -2,7 +2,7 @@ import type { privacy as enPrivacy } from "../en/privacy";
 
 export const privacy = {
 	title: "Privacybeleid",
-	updated: "Laatst bijgewerkt: 19 november 2026",
+	updated: "Laatst bijgewerkt: 23 november 2026",
 	intro:
 		"Arcade Club is een verzameling party-, kaart- en bordspellen voor het web en iOS, gemaakt door Appelent. Dit beleid legt uit welke gegevens we verzamelen als je speelt, waarom, en wat je ermee kunt doen.",
 	sections: {
@@ -52,7 +52,9 @@ export const privacy = {
 			paragraphs: {
 				delete:
 					"Je kunt je gegevens op elk moment verwijderen op de Account-pagina van de website, in de iOS-app via Profiel → Account verwijderen, of door ons te mailen. Je kiest: alleen je Arcade Club-gegevens, waarbij je Appelent-login blijft voor de andere Appelent-apps, of je hele Appelent-account, waarmee je de login en je gegevens in alle Appelent-apps verwijdert.",
-				gdpr: "Je kunt ons vragen om een kopie van je gegevens, ze te corrigeren of te verwijderen, of bezwaar maken tegen het gebruik ervan, via privacy@appelent.nl. Je kunt ook een klacht indienen bij de Autoriteit Persoonsgegevens.",
+				download:
+					"Je kunt op elk moment zelf een kopie van je gegevens downloaden: op de Account-pagina van de website, of in de iOS-app via Profiel → Mijn gegevens downloaden. Je krijgt een JSON-bestand met je spellen, plaatsen, antwoorden en inhoud.",
+				gdpr: "Lukt dat niet, dan kun je ook per mail om een kopie vragen via privacy@appelent.nl. Via hetzelfde adres kun je ons vragen je gegevens te corrigeren of te verwijderen, of bezwaar maken tegen het gebruik ervan. Je kunt ook een klacht indienen bij de Autoriteit Persoonsgegevens.",
 				children:
 					"Arcade Club is niet bedoeld voor kinderen jonger dan 13 en we verzamelen niet bewust hun persoonsgegevens.",
 			},
