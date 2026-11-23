@@ -189,6 +189,31 @@ describe("ProfilePanel", () => {
 		expect(screen.getByText(/logt in zonder wachtwoord/i)).toBeTruthy();
 	});
 
+	it("shows the whole panel in Dutch", () => {
+		renderPanel("nl");
+		for (const text of [
+			"Profiel",
+			"E-mail: e@x.com",
+			"Weergave",
+			"Kies hoe Arcade Club eruitziet. Systeem volgt je apparaat.",
+			"Sessie",
+		]) {
+			expect(screen.getByText(text)).toBeTruthy();
+		}
+		expect(screen.getByLabelText("Voornaam")).toBeTruthy();
+		expect(screen.getByLabelText("Achternaam")).toBeTruthy();
+		for (const name of [
+			"Profiel opslaan",
+			"Licht",
+			"Systeem",
+			"Donker",
+			"Uitloggen",
+		]) {
+			expect(screen.getByRole("button", { name })).toBeTruthy();
+		}
+		expect(screen.queryByText(/^(Profile|Session|Appearance)$/)).toBeNull();
+	});
+
 	it("signs out", () => {
 		renderPanel();
 		fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
