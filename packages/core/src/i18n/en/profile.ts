@@ -32,6 +32,12 @@ export const profile = {
 		failed: "Your password could not be changed. Try again.",
 		none: "This account signs in without a password, with another service or an emailed code, so there is no password to change.",
 	},
+	accountPortal: {
+		title: "AppElent account",
+		body: "Your login works in every AppElent app. Manage your email addresses, sign-in methods, devices and two-step verification there.",
+		action: "Manage your AppElent account",
+		newTab: "(opens in a new tab)",
+	},
 	exportData: {
 		title: "Your data",
 		body: "Download everything Arcade Club keeps about your account as a JSON file: your games, seats, answers and content. Other players' names are left out.",
