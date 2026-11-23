@@ -96,6 +96,8 @@ export const serverErrors = {
 	accountDeleteAgain:
 		"Your Arcade Club data is deleted, but your AppElent account isn't yet. Delete your account again to finish.",
 	signInToHost: "Sign in to host a game.",
+	guestIdInvalid:
+		"Your guest profile on this device is invalid. Reload and try again.",
 	signInToJoin: "Sign in to join this game.",
 	sessionNotFound: "This game no longer exists.",
 	gameNotFound: "Game not found.",

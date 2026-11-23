@@ -99,6 +99,8 @@ export const serverErrors = {
 	accountDeleteAgain:
 		"Je Arcade Club-gegevens zijn verwijderd, maar je AppElent-account nog niet. Verwijder je account opnieuw om af te ronden.",
 	signInToHost: "Log in om een spel te hosten.",
+	guestIdInvalid:
+		"Je gastprofiel op dit apparaat is ongeldig. Laad opnieuw en probeer het nog eens.",
 	signInToJoin: "Log in om mee te doen met dit spel.",
 	sessionNotFound: "Dit spel bestaat niet meer.",
 	gameNotFound: "Spel niet gevonden.",
