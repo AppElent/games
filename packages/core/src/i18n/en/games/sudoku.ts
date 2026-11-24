@@ -199,6 +199,7 @@ export const sudoku = {
 		cameraDenied: "Allow camera access in Settings to take a photo.",
 		scannedTitle: "Scanned puzzle",
 		uploadImage: "Upload an image",
+		findingGrid: "Finding the grid...",
 		dragCorners: "Drag the four handles onto the corners of the sudoku grid.",
 		uploadedImageAlt: "Uploaded sudoku",
 		cornerHandle: "Corner {number}",

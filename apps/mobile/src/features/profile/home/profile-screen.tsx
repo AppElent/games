@@ -61,6 +61,7 @@ export function ProfileScreen() {
 	const [name, setName] = useState(identity.savedName);
 	const [signingOut, setSigningOut] = useState(false);
 	const [portalFailed, setPortalFailed] = useState(false);
+	const [privacyFailed, setPrivacyFailed] = useState(false);
 	const exporter = useExportData(copy.exportData.action);
 
 	const email = user?.primaryEmailAddress?.emailAddress ?? "";
@@ -73,16 +74,6 @@ export function ProfileScreen() {
 			Updates.isEnabled && !Updates.isEmbeddedLaunch ? Updates.createdAt : null,
 		sha: env.gitCommit,
 	};
-
-	async function openAccountPortal() {
-		setPortalFailed(false);
-		try {
-			await WebBrowser.openBrowserAsync(ACCOUNT_PORTAL_URL);
-		} catch {
-			// Android rejects when no browser can open the link.
-			setPortalFailed(true);
-		}
-	}
 
 	return (
 		<Screen inTabs>
@@ -117,7 +108,10 @@ export function ProfileScreen() {
 									/>
 								}
 								disabled={signingOut}
-								onPress={() => void openAccountPortal()}
+								accessibilityHint={copy.opensInBrowser}
+								onPress={() =>
+									void openInBrowser(ACCOUNT_PORTAL_URL, setPortalFailed)
+								}
 								testID="profile-account-portal"
 							/>
 							<Notice
@@ -213,12 +207,16 @@ export function ProfileScreen() {
 			</Section>
 			<Section title={copy.about}>
 				{PRIVACY_URL ? (
-					<Button
-						variant="secondary"
-						label={t.privacy.title}
-						onPress={() => void WebBrowser.openBrowserAsync(PRIVACY_URL)}
-						testID="profile-privacy-policy"
-					/>
+					<>
+						<Button
+							variant="secondary"
+							label={t.privacy.title}
+							accessibilityHint={copy.opensInBrowser}
+							onPress={() => void openInBrowser(PRIVACY_URL, setPrivacyFailed)}
+							testID="profile-privacy-policy"
+						/>
+						<Notice message={privacyFailed ? copy.privacyFailed : null} />
+					</>
 				) : null}
 				{sentryEnabled ? (
 					<Button
@@ -234,6 +232,23 @@ export function ProfileScreen() {
 			</Section>
 		</Screen>
 	);
+}
+
+/**
+ * Opens a link in the in-app browser and reports whether it failed, so the
+ * row can say so instead of doing nothing.
+ */
+async function openInBrowser(
+	url: string,
+	setFailed: (failed: boolean) => void,
+) {
+	setFailed(false);
+	try {
+		await WebBrowser.openBrowserAsync(url);
+	} catch {
+		// Android rejects when no browser can open the link; iOS when one is already open.
+		setFailed(true);
+	}
 }
 
 function Section({

@@ -27,6 +27,8 @@ type Variant = "primary" | "secondary" | "plain";
 
 type Props = {
 	label: string;
+	/** What happens on press when the label alone does not say, such as leaving the app. */
+	accessibilityHint?: string;
 	onPress: () => void;
 	variant?: Variant;
 	disabled?: boolean;
@@ -47,6 +49,7 @@ const HEADER_TEXT_SCALE = 1.25;
 
 export function Button({
 	label,
+	accessibilityHint,
 	onPress,
 	variant = "primary",
 	disabled = false,
@@ -65,6 +68,7 @@ export function Button({
 		<Pressable
 			accessibilityRole="button"
 			accessibilityLabel={label}
+			accessibilityHint={accessibilityHint}
 			accessibilityState={{ disabled: inactive, busy }}
 			disabled={inactive}
 			onPress={onPress}

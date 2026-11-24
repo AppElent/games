@@ -28,6 +28,9 @@ module.exports = {
 	// `src/updates/ota-label.mjs` is a copy of a shared ES module; compile it
 	// like the app's own sources.
 	transform: { "\\.mjs$": preset.transform["\\.[jt]sx?$"] },
+	// Jest runs tests in a vm, where every lookup of a global is slow; the scan's
+	// pixel loops ask for `Math` millions of times.
+	sandboxInjectedGlobals: ["Math"],
 	setupFiles: ["<rootDir>/jest.setup.ts"],
 	testMatch: ["<rootDir>/src/**/*.test.{ts,tsx}"],
 	transformIgnorePatterns: [

@@ -1,19 +1,10 @@
 /**
  * The scan flow's steps, as on the web's `/sudoku/scan`: pick a photo, place
  * the grid's corners (prefilled from detection), read the cells, then check
- * and correct the recognized grid. Apple Vision reads the digits on the
- * phone; which ink to read and what it makes of a cell is shared with the
- * web in `@arcadeclub/core/sudoku-scan-ink`.
+ * and correct the recognized grid. `readGrid` does the reading.
  */
 import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
-import {
-	type DigitRead,
-	defaultCorners,
-	gridReadBoxes,
-	type Point,
-	planGridReads,
-	scanCellsFromGridReads,
-} from "@arcadeclub/core/sudoku-scan-ink";
+import { defaultCorners, type Point } from "@arcadeclub/core/sudoku-scan-ink";
 import type { ImagePickerOptions } from "expo-image-picker";
 import { useRef, useState } from "react";
 import {
@@ -22,6 +13,7 @@ import {
 } from "../../../../modules/sudoku-scanner";
 import type { Messages } from "../../../i18n";
 import { reportError } from "../../../observability/report";
+import { readGrid } from "./read-grid";
 
 export type ScanStep =
 	| { id: "pick" }
@@ -31,8 +23,6 @@ export type ScanStep =
 	| { id: "verify"; gridUri: string; cells: ScanCell[] };
 
 export type PhotoSource = "camera" | "library";
-
-const CELLS_PER_ROW = 9;
 
 export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 	const [step, setStep] = useState<ScanStep>({ id: "pick" });
@@ -101,37 +91,18 @@ export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 		setError(null);
 		setStep({ id: "reading", gridUri: null, done: 0 });
 		try {
-			const grid = await scanner.warpGrid(back.photo.uri, back.corners);
-			const plans = planGridReads(grid.pixels, grid.size);
-			const reads: DigitRead[] = [];
-			// A row at a time, so the screen can count the cells read.
-			for (let row = 0; row < 9; row += 1) {
-				if (current !== run.current) return;
-				setStep({
-					id: "reading",
-					gridUri: grid.uri,
-					done: row * CELLS_PER_ROW,
-				});
-				const rowPlans = plans.slice(
-					row * CELLS_PER_ROW,
-					(row + 1) * CELLS_PER_ROW,
-				);
-				const boxes = gridReadBoxes(rowPlans);
-				const rowReads =
-					boxes.length > 0 ? await scanner.readDigits(grid.uri, boxes) : [];
-				if (rowReads.length !== boxes.length) {
-					throw new Error(
-						"The reader answered for a different number of boxes",
-					);
-				}
-				reads.push(...rowReads);
-			}
-			if (current !== run.current) return;
-			setStep({
-				id: "verify",
-				gridUri: grid.uri,
-				cells: scanCellsFromGridReads(plans, reads),
-			});
+			const grid = await readGrid(
+				scanner,
+				back.photo,
+				back.corners,
+				(progress) => {
+					if (current !== run.current) return false;
+					setStep({ id: "reading", ...progress });
+					return true;
+				},
+			);
+			if (!grid || current !== run.current) return;
+			setStep({ id: "verify", ...grid });
 		} catch (cause) {
 			if (current !== run.current) return;
 			reportError(cause);

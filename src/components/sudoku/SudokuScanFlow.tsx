@@ -15,7 +15,8 @@ import type { Point } from "@arcadeclub/core/sudoku-scan-ink";
 import { defaultCorners } from "@arcadeclub/core/sudoku-scan-ink";
 import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { findGridCorners } from "#/lib/games/sudoku-grid-finder";
 import { autoSessionTitle } from "#/lib/games/sudoku-local";
 import type { ScanProgress } from "#/lib/games/sudoku-scan-image";
 import {
@@ -32,7 +33,8 @@ import { SudokuBoard } from "./SudokuBoard";
 
 type Step =
 	| { id: "upload" }
-	| { id: "corners"; source: HTMLCanvasElement; corners: Point[] }
+	/** `corners` is null while the grid is being looked for. */
+	| { id: "corners"; source: HTMLCanvasElement; corners: Point[] | null }
 	| { id: "recognizing"; warpedUrl: string; progress: ScanProgress }
 	| { id: "verify"; warpedUrl: string; cells: ScanCell[] };
 
@@ -48,11 +50,7 @@ export function SudokuScanFlow() {
 		}
 		await run(async () => {
 			const source = await fileToCanvas(file);
-			setStep({
-				id: "corners",
-				source,
-				corners: defaultCorners(source.width, source.height),
-			});
+			setStep({ id: "corners", source, corners: null });
 		}, sudoku.scan.couldNotReadImage);
 	};
 
@@ -89,7 +87,7 @@ export function SudokuScanFlow() {
 					source={step.source}
 					corners={step.corners}
 					onChange={(corners) => setStep({ ...step, corners })}
-					onConfirm={() => runRecognition(step.source, step.corners)}
+					onConfirm={(corners) => runRecognition(step.source, corners)}
 					onBack={() => setStep({ id: "upload" })}
 				/>
 			) : null}
@@ -167,6 +165,9 @@ function UploadStep({ onFile }: { onFile: (file: File | undefined) => void }) {
 	);
 }
 
+const KEYBOARD_STEP_RATIO = 0.005;
+const KEYBOARD_SHIFT_STEP_RATIO = 0.05;
+
 function CornerStep({
 	source,
 	corners,
@@ -175,9 +176,9 @@ function CornerStep({
 	onBack,
 }: {
 	source: HTMLCanvasElement;
-	corners: Point[];
+	corners: Point[] | null;
 	onChange: (corners: Point[]) => void;
-	onConfirm: () => void;
+	onConfirm: (corners: Point[]) => void;
 	onBack: () => void;
 }) {
 	const messages = useMessages();
@@ -186,6 +187,22 @@ function CornerStep({
 	const [imageUrl] = useState(() => source.toDataURL("image/jpeg", 0.8));
 	const dragIndex = useRef<number | null>(null);
 
+	const placeCorners = useEffectEvent(onChange);
+	useEffect(() => {
+		const controller = new AbortController();
+		findGridCorners(source, controller.signal).then((found) => {
+			if (!controller.signal.aborted) {
+				placeCorners(found ?? defaultCorners(source.width, source.height));
+			}
+		});
+		return () => controller.abort();
+	}, [source]);
+
+	const clampPoint = (x: number, y: number): Point => ({
+		x: Math.max(0, Math.min(source.width, x)),
+		y: Math.max(0, Math.min(source.height, y)),
+	});
+
 	const toSourcePoint = (event: React.PointerEvent) => {
 		const rect = containerRef.current?.getBoundingClientRect();
 		if (!rect) {
@@ -193,10 +210,51 @@ function CornerStep({
 		}
 		const x = ((event.clientX - rect.left) / rect.width) * source.width;
 		const y = ((event.clientY - rect.top) / rect.height) * source.height;
-		return {
-			x: Math.max(0, Math.min(source.width, x)),
-			y: Math.max(0, Math.min(source.height, y)),
-		};
+		return clampPoint(x, y);
+	};
+
+	const moveCornerBy = (index: number, dx: number, dy: number) => {
+		if (!corners) {
+			return;
+		}
+		const current = corners[index];
+		const moved = clampPoint(current.x + dx, current.y + dy);
+		if (moved.x === current.x && moved.y === current.y) {
+			return;
+		}
+		const next = [...corners];
+		next[index] = moved;
+		onChange(next);
+	};
+
+	const onHandleKeyDown = (index: number, event: React.KeyboardEvent) => {
+		const step = Math.max(
+			1,
+			Math.round(
+				Math.max(source.width, source.height) *
+					(event.shiftKey ? KEYBOARD_SHIFT_STEP_RATIO : KEYBOARD_STEP_RATIO),
+			),
+		);
+		switch (event.key) {
+			case "ArrowLeft":
+				event.preventDefault();
+				moveCornerBy(index, -step, 0);
+				break;
+			case "ArrowRight":
+				event.preventDefault();
+				moveCornerBy(index, step, 0);
+				break;
+			case "ArrowUp":
+				event.preventDefault();
+				moveCornerBy(index, 0, -step);
+				break;
+			case "ArrowDown":
+				event.preventDefault();
+				moveCornerBy(index, 0, step);
+				break;
+			default:
+				break;
+		}
 	};
 
 	return (
@@ -206,7 +264,7 @@ function CornerStep({
 				ref={containerRef}
 				className="relative w-full touch-none select-none overflow-hidden rounded-lg border border-slate-600"
 				onPointerMove={(event) => {
-					if (dragIndex.current === null) {
+					if (dragIndex.current === null || !corners) {
 						return;
 					}
 					const point = toSourcePoint(event);
@@ -226,35 +284,96 @@ function CornerStep({
 					alt={sudoku.scan.uploadedImageAlt}
 					className="block w-full"
 				/>
-				<svg
-					viewBox={`0 0 ${source.width} ${source.height}`}
-					className="absolute inset-0 h-full w-full"
-					role="presentation"
-				>
-					<polygon
-						points={corners.map((p) => `${p.x},${p.y}`).join(" ")}
-						fill="rgba(56,189,248,0.12)"
-						stroke="#38bdf8"
-						strokeWidth={source.width / 250}
-					/>
-					{corners.map((point, index) => (
-						<circle
-							// biome-ignore lint/suspicious/noArrayIndexKey: fixed 4 corners
-							key={index}
-							cx={point.x}
-							cy={point.y}
-							r={source.width / 28}
-							fill="rgba(56,189,248,0.5)"
-							stroke="#e0f2fe"
-							strokeWidth={source.width / 300}
-							style={{ cursor: "grab" }}
-							onPointerDown={(event) => {
-								(event.target as Element).setPointerCapture?.(event.pointerId);
-								dragIndex.current = index;
-							}}
+				{corners ? (
+					<svg
+						viewBox={`0 0 ${source.width} ${source.height}`}
+						className="absolute inset-0 h-full w-full"
+						role="presentation"
+					>
+						<polygon
+							points={corners.map((p) => `${p.x},${p.y}`).join(" ")}
+							fill="rgba(56,189,248,0.12)"
+							stroke="#38bdf8"
+							strokeWidth={source.width / 250}
 						/>
-					))}
-				</svg>
+						{corners.map((point, index) => {
+							const handleRadius = source.width / 28;
+							const focusRadius = handleRadius * 1.38;
+							const xPercent =
+								source.width > 0
+									? Math.round((point.x / source.width) * 100)
+									: 0;
+							const yPercent =
+								source.height > 0
+									? Math.round((point.y / source.height) * 100)
+									: 0;
+							return (
+								<g
+									// biome-ignore lint/suspicious/noArrayIndexKey: fixed 4 corners
+									key={index}
+								>
+									<circle
+										cx={point.x}
+										cy={point.y}
+										r={handleRadius}
+										fill="rgba(56,189,248,0.5)"
+										stroke="#e0f2fe"
+										strokeWidth={source.width / 300}
+										tabIndex={0}
+										role="slider"
+										aria-label={fmt(sudoku.scan.cornerHandle, {
+											number: index + 1,
+										})}
+										aria-valuemin={0}
+										aria-valuemax={100}
+										aria-valuenow={xPercent}
+										aria-valuetext={`${xPercent}%, ${yPercent}%`}
+										className="peer cursor-grab outline-none focus-visible:outline-2 focus-visible:outline-transparent"
+										onKeyDown={(event) => onHandleKeyDown(index, event)}
+										onPointerDown={(event) => {
+											(event.target as Element).setPointerCapture?.(
+												event.pointerId,
+											);
+											dragIndex.current = index;
+										}}
+									/>
+									<ellipse
+										cx={point.x}
+										cy={point.y}
+										rx={focusRadius}
+										ry={focusRadius}
+										fill="none"
+										stroke="var(--club-on-accent)"
+										strokeWidth={source.width / 90}
+										pointerEvents="none"
+										className="opacity-0 peer-focus-visible:opacity-100"
+									/>
+									<ellipse
+										cx={point.x}
+										cy={point.y}
+										rx={focusRadius}
+										ry={focusRadius}
+										fill="none"
+										stroke="var(--club-cyan)"
+										strokeWidth={source.width / 160}
+										pointerEvents="none"
+										className="opacity-0 peer-focus-visible:opacity-100"
+									/>
+								</g>
+							);
+						})}
+					</svg>
+				) : (
+					<div className="absolute inset-0 flex items-center justify-center">
+						<p
+							role="status"
+							className="inline-flex items-center gap-2 rounded-full bg-slate-950/85 px-4 py-2 font-semibold text-white"
+						>
+							<Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+							{sudoku.scan.findingGrid}
+						</p>
+					</div>
+				)}
 			</div>
 			<div className="flex gap-3">
 				<button
@@ -264,7 +383,12 @@ function CornerStep({
 				>
 					{messages.common.actions.back}
 				</button>
-				<button type="button" onClick={onConfirm} className="club-btn-primary">
+				<button
+					type="button"
+					onClick={() => corners && onConfirm(corners)}
+					disabled={!corners}
+					className="club-btn-primary disabled:opacity-50"
+				>
 					{sudoku.scan.readGrid}
 				</button>
 			</div>
