@@ -534,6 +534,26 @@ describe("saveProgress", () => {
 			expect((await storedState(t, sessionId)).elapsedSeconds).toBe(50);
 		});
 
+		it("never lowers the clock from a stale base with the same board", async () => {
+			const t = setup();
+			const { sessionId, stale } = await webSavedSince(t);
+			// The web has played on: 42 s at save, plus 10 s since.
+			advance(10_000);
+			await expect(
+				t.mutation(
+					api.sudoku.saveProgress,
+					progress(sessionId, {
+						digits: WEB,
+						elapsedSeconds: 5,
+						baseUpdatedAt: stale,
+					}),
+				),
+			).resolves.toMatchObject({ saved: true });
+			const stored = await storedState(t, sessionId);
+			expect(stored.elapsedSeconds).toBe(52);
+			expect(stored.lastResumedAt).toBe(Date.now());
+		});
+
 		it("keeps a base fresh across pause and resume", async () => {
 			const t = setup();
 			const { sessionId, web } = await webSavedSince(t);

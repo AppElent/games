@@ -8,11 +8,13 @@
  * A write happens on every board or status change, every
  * `ELAPSED_SAVE_EVERY` seconds of play, and on unmount: leaving the screen
  * unmounts it before the blur-pause can re-render, so the final clock
- * reading is written there.
+ * reading is written there. The save counts as open (`openSudokuSave`)
+ * while the screen is mounted.
  */
 
 import type { SudokuStatus } from "@arcadeclub/core/sudoku";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { openSudokuSave } from "../saves/sudoku-save-store";
 import { useGameClock } from "./use-game-clock";
 
 const ELAPSED_SAVE_EVERY = 15;
@@ -20,7 +22,7 @@ const ELAPSED_SAVE_EVERY = 15;
 export type PuzzleProgress = { status: SudokuStatus; elapsedSeconds: number };
 
 export function usePuzzleSession(
-	save: PuzzleProgress,
+	save: PuzzleProgress & { id: string },
 	write: (progress: PuzzleProgress) => void,
 ) {
 	const [status, setStatus] = useState<SudokuStatus>(
@@ -42,6 +44,9 @@ export function usePuzzleSession(
 		onAway: pause,
 	});
 
+	// While open, the sync leaves the account's session running: the same
+	// puzzle may be played on the web at the same time.
+	useEffect(() => openSudokuSave(save.id), [save.id]);
 	useEffect(() => {
 		write({ status, elapsedSeconds: elapsedRef.current });
 	}, [write, status, elapsedRef]);

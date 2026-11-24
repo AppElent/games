@@ -250,7 +250,8 @@ function sameBoard(a: BoardFields, b: BoardFields) {
  * stored board is newer and differs, nothing is written and `saved` is false:
  * the caller takes the stored board instead (`getBundle`). Installed phone
  * builds and open tabs from before the argument send none and are not
- * checked. A completed puzzle also answers `saved: false`.
+ * checked. A completed puzzle also answers `saved: false`. The same board on
+ * an older version is stored, but its clock only counts when it is ahead.
  */
 export const saveProgress = mutation({
 	args: {
@@ -276,13 +277,16 @@ export const saveProgress = mutation({
 		assertMaskArray(args.centerNotes, grid.cells);
 		assertMaskArray(args.colors, grid.cells);
 		const changed = !sameBoard(args, state);
-		if (
-			changed &&
-			args.baseUpdatedAt !== undefined &&
-			state.updatedAt > args.baseUpdatedAt
-		) {
+		const stale =
+			args.baseUpdatedAt !== undefined && state.updatedAt > args.baseUpdatedAt;
+		if (changed && stale) {
 			return { saved: false, updatedAt: state.updatedAt };
 		}
+		// A device on an older version has not seen the time another one has
+		// played since, so its clock never lowers the stored one.
+		const elapsedSeconds = stale
+			? Math.max(args.elapsedSeconds, foldElapsed(state))
+			: args.elapsedSeconds;
 		// Strictly later, so two saves in one millisecond stay two versions.
 		const updatedAt = changed
 			? Math.max(Date.now(), state.updatedAt + 1)
@@ -292,7 +296,7 @@ export const saveProgress = mutation({
 			cornerNotes: args.cornerNotes,
 			centerNotes: args.centerNotes,
 			colors: args.colors,
-			elapsedSeconds: args.elapsedSeconds,
+			elapsedSeconds,
 			lastResumedAt: state.status === "active" ? Date.now() : undefined,
 			autoCleanup: args.autoCleanup ?? state.autoCleanup,
 			updatedAt,

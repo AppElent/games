@@ -32,6 +32,7 @@ import {
 	findSudokuSaveBySession,
 	hasUnsentChanges,
 	hideSudokuSession,
+	isSudokuSaveOpen,
 	listSudokuSaves,
 	markSynced,
 	readSudokuSave,
@@ -410,8 +411,12 @@ export async function syncSudokuSaves(
 			});
 		} else {
 			// Nobody plays it on the server between the phone's saves, so its
-			// clock stays stopped there; the web resumes it when opened.
-			await cloud.setPaused({ sessionId, paused: true });
+			// clock stays stopped there; the web resumes it when opened. While
+			// the phone plays it, the session runs on: the same puzzle may be
+			// played on the web, and pausing would stop that clock. The phone
+			// pauses it once it leaves the puzzle (its last write comes after).
+			const playingHere = isSudokuSaveOpen(id) && latest.status === "active";
+			if (!playingHere) await cloud.setPaused({ sessionId, paused: true });
 		}
 		markSynced(id, latest.updatedAt);
 	}
