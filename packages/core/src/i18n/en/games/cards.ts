@@ -90,7 +90,6 @@ export const cards = {
 		spectating: "You're watching",
 		rejoin: "Playing here? Rejoin",
 		actionFailed: "That didn't work. Try again.",
-		close: "Close",
 		sortBySuit: "Sort by suit",
 		sortByRank: "Sort by rank",
 	},

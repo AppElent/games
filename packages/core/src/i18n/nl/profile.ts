@@ -51,6 +51,13 @@ export const profile = {
 		exporting: "Bezig met voorbereiden…",
 		failed: "Je gegevens konden niet worden gedownload. Probeer het opnieuw.",
 	},
+	reverify: {
+		title: "Bevestig dat jij het bent",
+		passwordBody:
+			"Vul je wachtwoord in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",
+		submit: "Bevestigen en verwijderen",
+		emailCode: "Mail me in plaats daarvan een code",
+	},
 	deleteAccount: {
 		action: "Account verwijderen",
 		chooseTitle: "Wat wil je verwijderen?",

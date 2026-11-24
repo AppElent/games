@@ -10,6 +10,8 @@ let mockUser: { id: string; deleteSelfEnabled: boolean } | null;
 let mockSession: { id: string } | null;
 /** Whether the session's sign-in is recent enough for Clerk. */
 let mockRecentSignIn: boolean;
+/** What Clerk offers to verify the session with. */
+let mockFactors: { strategy: string }[];
 
 jest.mock("@clerk/expo", () => ({
 	useUser: () => ({ user: mockUser }),
@@ -21,6 +23,14 @@ jest.mock("@clerk/expo", () => ({
 					...mockSession,
 					checkAuthorization: () => mockRecentSignIn,
 					reload: async () => {},
+					startVerification: async () => ({
+						status: "needs_first_factor",
+						supportedFirstFactors: mockFactors,
+					}),
+					attemptFirstFactorVerification: async () => {
+						mockRecentSignIn = true;
+						return { status: "complete" };
+					},
 				}
 			);
 		},
@@ -59,6 +69,7 @@ describe("useDeleteAccount", () => {
 		mockUser = { id: "user_1", deleteSelfEnabled: true };
 		mockSession = { id: "sess_1" };
 		mockRecentSignIn = true;
+		mockFactors = [{ strategy: "passkey" }];
 		mockDeleteMyData.mockResolvedValue({ done: true });
 		mockDeleteUser.mockResolvedValue(undefined);
 		mockSignOut.mockResolvedValue(undefined);
@@ -142,12 +153,57 @@ describe("useDeleteAccount", () => {
 		);
 	});
 
-	it("refuses an old sign-in before deleting anything and offers a new one", async () => {
+	it("refuses an old sign-in the sheet can't verify before deleting anything and offers a new one", async () => {
 		mockRecentSignIn = false;
 		const { ok, result } = await run("app");
 		expect(ok).toBe(false);
 		expect(mockDeleteMyData).not.toHaveBeenCalled();
 		expect(result.current.needsSignIn).toBe(true);
+		expect(gameErrorData(result.current.error)?.code).toBe(
+			"accountVerifyUnsupported",
+		);
+	});
+
+	async function openSheet() {
+		mockRecentSignIn = false;
+		mockFactors = [{ strategy: "password" }];
+		const hook = await renderHook(() => useDeleteAccount());
+		let deletion!: Promise<boolean>;
+		await act(async () => {
+			deletion = hook.result.current.deleteAccount("account");
+		});
+		expect(hook.result.current.reverify.method).toBe("password");
+		expect(mockDeleteMyData).not.toHaveBeenCalled();
+		return { deletion, result: hook.result };
+	}
+
+	it("verifies an old sign-in in the sheet, then deletes without signing out first", async () => {
+		const { deletion, result } = await openSheet();
+		await act(async () => {
+			await result.current.reverify.submit("secret");
+			await deletion;
+		});
+		await expect(deletion).resolves.toBe(true);
+		expect(mockDeleteUser).toHaveBeenCalledTimes(1);
+		expect(mockSignOut).toHaveBeenCalledTimes(1);
+		expect(mockDeleteUser.mock.invocationCallOrder[0]).toBeLessThan(
+			mockSignOut.mock.invocationCallOrder[0],
+		);
+	});
+
+	it("deletes nothing and shows no error when the sheet is cancelled", async () => {
+		const { deletion, result } = await openSheet();
+		await act(async () => {
+			result.current.reverify.cancel();
+			await deletion;
+		});
+		await expect(deletion).resolves.toBe(false);
+		expect(mockDeleteMyData).not.toHaveBeenCalled();
+		expect(mockDeleteUser).not.toHaveBeenCalled();
+		expect(mockSignOut).not.toHaveBeenCalled();
+		expect(result.current.error).toBeNull();
+		expect(result.current.needsSignIn).toBe(false);
+		expect(result.current.busy).toBe(false);
 	});
 
 	it("says the session ended, deleting nothing, when Clerk has no session", async () => {

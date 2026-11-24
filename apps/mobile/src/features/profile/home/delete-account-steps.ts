@@ -8,10 +8,12 @@ import {
 	type DeletingAccount,
 	type DeletionScope,
 	hasRecentSignIn,
+	isRecentSignInRefusal,
 	type LiveClerk,
 } from "@arcadeclub/core/account-deletion";
 import { GameRuleError, gameErrorData } from "@arcadeclub/core/errors";
 import { forgetAccountSaves } from "../../sudoku/saves/sudoku-save-store";
+import type { ReverifyOutcome } from "../reverify/use-reverify";
 
 type Clerk = LiveClerk & {
 	readonly user?: { id: string; delete: () => Promise<unknown> } | null;
@@ -26,16 +28,25 @@ export function deletionSteps({
 	account,
 	scope,
 	deleteBatch,
+	reverify,
 	signOut,
 }: {
 	clerk: Clerk;
 	account: DeletingAccount;
 	scope: DeletionScope;
 	deleteBatch: AccountDeletionSteps["deleteBatch"];
+	/** Asks the person to confirm it's them, in the sheet. */
+	reverify: () => Promise<ReverifyOutcome>;
 	signOut: () => Promise<unknown>;
 }): AccountDeletionSteps {
 	const common = {
 		confirmRecentSignIn: async () => {
+			if (await hasRecentSignIn(clerk, account)) return true;
+			const outcome = await reverify();
+			if (outcome === "cancelled") return false;
+			if (outcome === "unsupported") {
+				throw new GameRuleError("accountVerifyUnsupported");
+			}
 			if (await hasRecentSignIn(clerk, account)) return true;
 			throw new GameRuleError("accountSignInFirst");
 		},
@@ -48,12 +59,26 @@ export function deletionSteps({
 		},
 	};
 	if (scope === "app") return { ...common, scope };
+	const deleteUser = async () => {
+		assertSameAccount(clerk, account);
+		return clerk.user?.delete();
+	};
 	return {
 		...common,
 		scope,
 		deleteUser: async () => {
-			assertSameAccount(clerk, account);
-			return clerk.user?.delete();
+			try {
+				return await deleteUser();
+			} catch (caught) {
+				// The sign-in aged past Clerk's window while the data went.
+				if (!isRecentSignInRefusal(caught)) throw caught;
+				const outcome = await reverify();
+				if (outcome === "cancelled") {
+					throw new GameRuleError("accountDeleteAgain");
+				}
+				if (outcome === "unsupported") throw caught;
+			}
+			return deleteUser();
 		},
 	};
 }
@@ -63,6 +88,7 @@ export function needsSignInAgain(error: unknown) {
 	const code = gameErrorData(error)?.code;
 	return (
 		code === "accountSignInFirst" ||
+		code === "accountVerifyUnsupported" ||
 		code === "accountSignInToFinish" ||
 		code === "accountSessionEnded"
 	);

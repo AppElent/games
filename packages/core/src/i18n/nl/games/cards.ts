@@ -90,7 +90,6 @@ export const cards = {
 		spectating: "Je kijkt mee",
 		rejoin: "Speel je mee? Sluit weer aan",
 		actionFailed: "Dat lukte niet. Probeer het opnieuw.",
-		close: "Sluiten",
 		sortBySuit: "Sorteer op kleur",
 		sortByRank: "Sorteer op waarde",
 	},

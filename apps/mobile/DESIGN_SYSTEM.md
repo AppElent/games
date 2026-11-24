@@ -29,6 +29,7 @@ lists the shared values. Fields, buttons, choice rows, keys and pressable cards 
 | `ChoiceList` | Radio list where each option needs a detail line (Hitster mode, pack) |
 | `TextField` | Labelled text entry |
 | `Notice` | Inline `info` or `error` message |
+| `Sheet` | Native page sheet with a title and close action (rules, scores, a short form) |
 | `CenteredState` | Loading, empty and not-found states |
 | `Icon` | SF Symbol on iOS, Material Symbol on Android |
 

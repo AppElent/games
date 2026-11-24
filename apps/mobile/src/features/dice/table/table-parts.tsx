@@ -11,8 +11,8 @@ import { AccessibilityInfo, StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
 import { spacing } from "../../../theme";
 import { Button, HeaderButton } from "../../../ui/button";
+import { Sheet } from "../../../ui/sheet";
 import { AppText } from "../../../ui/text";
-import { Sheet } from "../../cards/deck/sheet";
 import type { DiceTableBundle, DiceTableControls } from "./use-dice-table";
 
 /** Reads the latest news out once; keyed on `seq` too, so a second identical roll is still read. */

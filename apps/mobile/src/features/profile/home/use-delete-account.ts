@@ -3,11 +3,12 @@
  * AppElent account; the steps and their order live in
  * `@arcadeclub/core/account-deletion`, shared with the web Account page.
  *
- * Clerk deletes an account only after a recent sign-in. Clerk's verify
- * dialog is web-only, so the app checks first and, when the sign-in is old,
- * stops before anything is deleted and offers `signInAgain`: the app's own
- * sign-in, with password autofill or an emailed code, gives a fresh one, and
- * the app returns to the delete screen afterwards.
+ * Clerk deletes an account only after a recent sign-in. The app checks first
+ * and, when the sign-in is old, opens the verify sheet (`reverify`, for the
+ * screen to show) before anything is deleted; confirming continues the
+ * deletion, cancelling deletes nothing. Only an account the sheet can't
+ * handle is offered `signInAgain`: the app's own sign-in gives a fresh one,
+ * and the app returns to the delete screen afterwards.
  */
 import {
 	type DeletionScope,
@@ -21,6 +22,7 @@ import { signOutToReturn } from "../../../auth/return-target";
 import { api } from "../../../convex/api";
 import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
 import { useSessionAction } from "../../sessions/use-session-action";
+import { useReverify } from "../reverify/use-reverify";
 import { deletionSteps, needsSignInAgain } from "./delete-account-steps";
 
 export function useDeleteAccount() {
@@ -29,6 +31,7 @@ export function useDeleteAccount() {
 	const { signOut } = useAuth();
 	const backendAuth = useBackendAuthReady();
 	const deleteMyData = useMutation(api.account.deleteMyData);
+	const reverify = useReverify(clerk);
 	const { run, busy, error, reset } = useSessionAction();
 	/** The Clerk instance does not let users delete themselves. */
 	const [unavailable, setUnavailable] = useState(false);
@@ -57,6 +60,7 @@ export function useDeleteAccount() {
 						scope,
 						deleteBatch: () =>
 							deleteMyData({ expectedSubject: account.userId }),
+						reverify: () => reverify.verify(account),
 						signOut: () => signOut(),
 					}),
 				),
@@ -67,6 +71,8 @@ export function useDeleteAccount() {
 	return {
 		deleteAccount,
 		busy,
+		/** The verify sheet's state. */
+		reverify,
 		/** Nobody is signed in: there is nothing to sign out of first. */
 		signedOut: !user,
 		/** Signed out counts: deleting then says so and offers the sign-in. */

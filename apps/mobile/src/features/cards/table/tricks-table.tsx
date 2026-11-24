@@ -34,9 +34,9 @@ import {
 import { haptics } from "../../../feedback/haptics";
 import { fmt, plural, useI18n } from "../../../i18n";
 import { cardColors, metrics, radius, spacing } from "../../../theme";
+import { Sheet } from "../../../ui/sheet";
 import { AppText } from "../../../ui/text";
 import { PlayingCard, SuitIcon } from "../deck/playing-card";
-import { Sheet } from "../deck/sheet";
 import { useCardWords } from "../deck/use-card-words";
 import { BidPicker } from "./bid-picker";
 import { FeltText, Pill, PillRow, TableButton } from "./felt-ui";
