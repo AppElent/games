@@ -10,7 +10,7 @@ import {
 	waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LocaleProvider } from "#/lib/i18n";
+import { type Locale, LocaleProvider } from "#/lib/i18n";
 import { SudokuScanFlow } from "../SudokuScanFlow";
 
 const { findGridCorners, warpToSquare } = vi.hoisted(() => ({
@@ -39,9 +39,9 @@ const GRID: Point[] = [
 	{ x: 200, y: 550 },
 ];
 
-function choosePhoto() {
+function choosePhoto(locale: Locale = "en") {
 	const { container } = render(
-		<LocaleProvider initialLocale="en">
+		<LocaleProvider initialLocale={locale}>
 			<SudokuScanFlow />
 		</LocaleProvider>,
 	);
@@ -147,5 +147,77 @@ describe("the scan's corner handles", () => {
 		expect(signal.aborted).toBe(true);
 		await act(async () => found(GRID));
 		expect(screen.getByText("Take a photo")).toBeTruthy();
+	});
+
+	it("are focusable in corner order with translated names in en and nl", async () => {
+		findGridCorners.mockResolvedValue(GRID);
+		choosePhoto("en");
+		await waitFor(() => expect(screen.getAllByRole("slider")).toHaveLength(4));
+		const enSliders = screen.getAllByRole("slider");
+		expect(enSliders.map((el) => el.getAttribute("aria-label"))).toEqual([
+			"Corner 1",
+			"Corner 2",
+			"Corner 3",
+			"Corner 4",
+		]);
+		for (const slider of enSliders) {
+			expect(slider.getAttribute("tabindex")).toBe("0");
+			slider.focus();
+			expect(document.activeElement).toBe(slider);
+		}
+
+		cleanup();
+		choosePhoto("nl");
+		await waitFor(() => expect(screen.getAllByRole("slider")).toHaveLength(4));
+		const nlSliders = screen.getAllByRole("slider");
+		expect(nlSliders.map((el) => el.getAttribute("aria-label"))).toEqual([
+			"Hoek 1",
+			"Hoek 2",
+			"Hoek 3",
+			"Hoek 4",
+		]);
+	});
+
+	it("move with arrow keys, take a larger step with Shift, and clamp to the image bounds", async () => {
+		findGridCorners.mockResolvedValue([
+			{ x: 3, y: 2 },
+			{ x: 997, y: 10 },
+			{ x: 990, y: 798 },
+			{ x: 200, y: 550 },
+		]);
+		const container = choosePhoto();
+		await waitFor(() => expect(screen.getAllByRole("slider")).toHaveLength(4));
+
+		const [c1, c2, c3, c4] = screen.getAllByRole("slider");
+
+		// Small step (5px on 1000x800 image) and larger step with Shift (50px).
+		const arrowRight = new KeyboardEvent("keydown", {
+			key: "ArrowRight",
+			bubbles: true,
+			cancelable: true,
+		});
+		act(() => {
+			c4.dispatchEvent(arrowRight);
+		});
+		expect(arrowRight.defaultPrevented).toBe(true);
+		fireEvent.keyDown(c4, { key: "ArrowDown" });
+		expect(handles(container)[3]).toEqual({ x: 205, y: 555 });
+		expect(c4.getAttribute("aria-valuetext")).toBe("21%, 69%");
+
+		fireEvent.keyDown(c4, { key: "ArrowLeft", shiftKey: true });
+		fireEvent.keyDown(c4, { key: "ArrowUp", shiftKey: true });
+		expect(handles(container)[3]).toEqual({ x: 155, y: 505 });
+
+		// Clamping at (0, 0) and (width, height).
+		fireEvent.keyDown(c1, { key: "ArrowLeft" });
+		fireEvent.keyDown(c1, { key: "ArrowUp" });
+		expect(handles(container)[0]).toEqual({ x: 0, y: 0 });
+
+		fireEvent.keyDown(c2, { key: "ArrowRight" });
+		expect(handles(container)[1]).toEqual({ x: 1000, y: 10 });
+
+		fireEvent.keyDown(c3, { key: "ArrowDown", shiftKey: true });
+		fireEvent.keyDown(c3, { key: "ArrowRight", shiftKey: true });
+		expect(handles(container)[2]).toEqual({ x: 1000, y: 800 });
 	});
 });
