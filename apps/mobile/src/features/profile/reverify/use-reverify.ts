@@ -182,7 +182,7 @@ export function useReverify(clerk: VerifyingClerk) {
 		verify,
 		/** What the sheet asks for; `null` while it is closed. */
 		method: attempt?.method ?? null,
-		/** Masked by Clerk, such as `j***@example.com`. */
+		/** The address a code goes to, as Clerk shows it. */
 		email: attempt?.email?.email ?? null,
 		busy,
 		sending,
