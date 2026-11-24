@@ -14,6 +14,7 @@ import {
 	syncSudokuSaves,
 } from "./sudoku-cloud-sync";
 import {
+	type CloudLink,
 	deleteSudokuSave,
 	type GridSave,
 	hiddenSudokuSessions,
@@ -62,8 +63,14 @@ function fakeCloud(overrides: Partial<SudokuCloud> = {}) {
 			return answer;
 		};
 	const cloud: SudokuCloud = {
-		create: record("create", { sessionId: SESSION }) as SudokuCloud["create"],
-		saveProgress: record("saveProgress"),
+		create: record("create", {
+			sessionId: SESSION,
+			updatedAt: 1_000,
+		}) as SudokuCloud["create"],
+		saveProgress: record("saveProgress", {
+			saved: true,
+			updatedAt: 2_000,
+		}) as SudokuCloud["saveProgress"],
 		setPaused: record("setPaused"),
 		complete: record("complete"),
 		listSessions: async () => [],
@@ -115,7 +122,9 @@ describe("sudoku cloud sync", () => {
 			sessionId: SESSION,
 			synced: true,
 			title: "Classic · Easy",
+			baseUpdatedAt: 2_000,
 		});
+		expect(calls[1].args).toHaveProperty("baseUpdatedAt", 1_000);
 
 		await syncSudokuSaves(account(), cloud);
 		expect(names()).toHaveLength(3);
@@ -176,7 +185,10 @@ describe("sudoku cloud sync", () => {
 
 	it("sends moves made offline, after the create comes back, without a second create", async () => {
 		writeSudokuSave(gridSave("a", 1));
-		const answer = deferred<{ sessionId: Id<"gameSessions"> }>();
+		const answer = deferred<{
+			sessionId: Id<"gameSessions">;
+			updatedAt: number;
+		}>();
 		const { cloud, calls, names } = fakeCloud({
 			create: async () => {
 				calls.push({ name: "create", args: null });
@@ -190,7 +202,7 @@ describe("sudoku cloud sync", () => {
 		writeSudokuSave(gridSave("a", 2, 7));
 		void runner.request();
 		void runner.request();
-		answer.resolve({ sessionId: SESSION });
+		answer.resolve({ sessionId: SESSION, updatedAt: 1_000 });
 		await first;
 		expect(names().filter((name) => name === "create")).toHaveLength(1);
 		const progress = calls.filter((call) => call.name === "saveProgress");
@@ -211,6 +223,7 @@ describe("sudoku cloud sync", () => {
 		const { cloud } = fakeCloud({
 			saveProgress: async () => {
 				writeSudokuSave(gridSave("a", 5, 9));
+				return { saved: true, updatedAt: 2_000 };
 			},
 		});
 		await syncSudokuSaves(account(), cloud);
@@ -322,7 +335,7 @@ describe("sudoku cloud sync", () => {
 		const { cloud } = fakeCloud({
 			create: async () => {
 				deleteSudokuSave("a");
-				return { sessionId: SESSION };
+				return { sessionId: SESSION, updatedAt: 1_000 };
 			},
 		});
 		await syncSudokuSaves(account(), cloud);
@@ -336,7 +349,7 @@ describe("sudoku cloud sync", () => {
 		const { cloud, names } = fakeCloud({
 			create: async () => {
 				signedIn = false;
-				return { sessionId: SESSION };
+				return { sessionId: SESSION, updatedAt: 1_000 };
 			},
 		});
 		await syncSudokuSaves(account({ isCurrent: () => signedIn }), cloud, {
@@ -379,6 +392,196 @@ describe("sudoku cloud sync", () => {
 		gate.resolve();
 		await first;
 		expect(runs).toBe(2);
+	});
+});
+
+describe("a save the server refuses", () => {
+	const linked = (link: Partial<CloudLink> = {}) => ({
+		userId: ME,
+		sessionId: SESSION,
+		synced: false,
+		baseUpdatedAt: 1_000,
+		...link,
+	});
+	const refuse = async () => ({ saved: false, updatedAt: 9_000 });
+
+	/** The account's copy, as another device last saved it. */
+	function serverBundle(digits: string, overrides: object = {}) {
+		return {
+			session: { _id: SESSION, title: "Classic · Easy" },
+			state: {
+				status: "active",
+				givens: gridSave("a", 1).board.givens,
+				digits,
+				cornerNotes: new Array(81).fill(0),
+				centerNotes: new Array(81).fill(0),
+				colors: new Array(81).fill(0),
+				autoCleanup: true,
+				elapsedSeconds: 300,
+				createdAt: 500,
+				updatedAt: 9_000,
+				difficulty: "easy",
+				...overrides,
+			},
+		} as unknown as CloudBundle;
+	}
+	const WEB = gridSave("a", 1, 8).board.digits;
+	const digitsOf = (id: string) => {
+		const save = readSudokuSave(id);
+		return save?.variant === "classic" ? save.board.digits : undefined;
+	};
+
+	beforeEach(() => {
+		for (const item of listSudokuSaves(ME)) deleteSudokuSave(item.id);
+	});
+
+	it("replaces the stale phone copy with the server's newer board", async () => {
+		writeSudokuSave({ ...gridSave("a", 1, 3), cloud: linked() });
+		const { cloud, names } = fakeCloud({
+			saveProgress: refuse,
+			getBundle: async () => serverBundle(WEB),
+		});
+		await syncSudokuSaves(account(), cloud);
+		expect(digitsOf("a")).toBe(WEB);
+		expect(readSudokuSave("a")).toMatchObject({
+			elapsedSeconds: 300,
+			// The server never sends it; the phone keeps its own.
+			solution: gridSave("a", 1).solution,
+			cloud: { synced: true, baseUpdatedAt: 9_000, loadedUpdatedAt: 9_000 },
+		});
+		// The puzzle another device is playing is not paused either.
+		expect(names()).toEqual([]);
+		await syncSudokuSaves(account(), cloud);
+		expect(names()).toEqual([]);
+	});
+
+	it("drops later writes from a screen still showing the stale board", async () => {
+		const stale = { ...gridSave("a", 1, 3), cloud: linked() };
+		writeSudokuSave(stale);
+		const { cloud } = fakeCloud({
+			saveProgress: refuse,
+			getBundle: async () => serverBundle(WEB),
+		});
+		await syncSudokuSaves(account(), cloud);
+		writeSudokuSave({ ...stale, elapsedSeconds: 11 });
+		expect(digitsOf("a")).toBe(WEB);
+		expect(readSudokuSave("a")?.cloud?.synced).toBe(true);
+		// A screen that opened the newer board writes as usual.
+		const opened = readSudokuSave("a");
+		if (opened) writeSudokuSave({ ...opened, elapsedSeconds: 301 });
+		expect(readSudokuSave("a")).toMatchObject({
+			elapsedSeconds: 301,
+			cloud: { synced: false, baseUpdatedAt: 9_000 },
+		});
+	});
+
+	it("takes a puzzle another device finished", async () => {
+		writeSudokuSave({ ...gridSave("a", 1, 3), cloud: linked() });
+		const { cloud } = fakeCloud({
+			saveProgress: refuse,
+			getBundle: async () => serverBundle(WEB, { status: "completed" }),
+		});
+		await syncSudokuSaves(account(), cloud);
+		expect(readSudokuSave("a")?.status).toBe("completed");
+	});
+
+	it("still completes a puzzle solved on the phone", async () => {
+		writeSudokuSave({
+			...gridSave("a", 1, 3),
+			status: "completed",
+			cloud: linked(),
+		});
+		const { cloud, names } = fakeCloud({ saveProgress: refuse });
+		await syncSudokuSaves(account(), cloud);
+		expect(names()).toEqual(["complete"]);
+		expect(digitsOf("a")).toBe(gridSave("a", 1, 3).board.digits);
+		expect(readSudokuSave("a")?.cloud?.synced).toBe(true);
+	});
+
+	it("keeps a board solved while the refusal was on its way, then completes it", async () => {
+		const save = { ...gridSave("a", 1, 3), cloud: linked() };
+		writeSudokuSave(save);
+		const { cloud, names } = fakeCloud({
+			saveProgress: async () => {
+				writeSudokuSave({ ...gridSave("a", 2, 4), status: "completed" });
+				return refuse();
+			},
+			getBundle: async () => serverBundle(WEB),
+		});
+		await syncSudokuSaves(account(), cloud);
+		expect(digitsOf("a")).toBe(gridSave("a", 2, 4).board.digits);
+		expect(readSudokuSave("a")?.status).toBe("completed");
+		expect(names()).toEqual([]);
+
+		const next = fakeCloud({ saveProgress: refuse });
+		await syncSudokuSaves(account(), next.cloud);
+		expect(next.names()).toEqual(["complete"]);
+		expect(readSudokuSave("a")?.cloud?.synced).toBe(true);
+	});
+
+	it("keeps the phone's copy while the server's cannot be read", async () => {
+		writeSudokuSave({ ...gridSave("a", 1, 3), cloud: linked() });
+		const { cloud } = fakeCloud({
+			saveProgress: refuse,
+			getBundle: async () => {
+				throw new Error("network");
+			},
+		});
+		await syncSudokuSaves(account(), cloud);
+		expect(digitsOf("a")).toBe(gridSave("a", 1, 3).board.digits);
+		expect(readSudokuSave("a")?.cloud?.synced).toBe(false);
+	});
+
+	it("does not mistake its own unanswered save for another device's", async () => {
+		writeSudokuSave({ ...gridSave("a", 1, 3), cloud: linked() });
+		// The save reaches the server, but the answer does not come back.
+		await syncSudokuSaves(
+			account(),
+			fakeCloud({
+				saveProgress: async () => {
+					throw new Error("closed");
+				},
+			}).cloud,
+		);
+		expect(readSudokuSave("a")?.cloud?.sending).toBeDefined();
+		// The player goes on before the next run.
+		writeSudokuSave(gridSave("a", 2, 4));
+		const { cloud, calls } = fakeCloud({
+			getBundle: async () => serverBundle(gridSave("a", 1, 3).board.digits),
+		});
+		await syncSudokuSaves(account(), cloud);
+		expect(calls[0]).toMatchObject({
+			name: "saveProgress",
+			args: {
+				digits: gridSave("a", 2, 4).board.digits,
+				baseUpdatedAt: 9_000,
+			},
+		});
+		expect(digitsOf("a")).toBe(gridSave("a", 2, 4).board.digits);
+		expect(readSudokuSave("a")?.cloud?.sending).toBeUndefined();
+	});
+
+	it("keeps its base when the unanswered save never arrived", async () => {
+		writeSudokuSave({
+			...gridSave("a", 1, 3),
+			cloud: linked({ sending: "[]" }),
+		});
+		const { cloud, calls } = fakeCloud({
+			getBundle: async () => serverBundle(WEB),
+		});
+		await syncSudokuSaves(account(), cloud);
+		expect(calls[0].args).toHaveProperty("baseUpdatedAt", 1_000);
+	});
+
+	it("sends no base for a link from before saves were checked", async () => {
+		writeSudokuSave({
+			...gridSave("a", 1, 3),
+			cloud: { userId: ME, sessionId: SESSION, synced: false },
+		});
+		const { cloud, calls } = fakeCloud();
+		await syncSudokuSaves(account(), cloud);
+		expect(calls[0].args).toHaveProperty("baseUpdatedAt", undefined);
+		expect(readSudokuSave("a")?.cloud?.baseUpdatedAt).toBe(2_000);
 	});
 });
 
@@ -438,7 +641,14 @@ describe("saveFromBundle", () => {
 			entries: "1".repeat(36),
 			status: "completed",
 			elapsedSeconds: 30,
-			cloud: { userId: ME, sessionId: SESSION, synced: true, title: "Binary" },
+			cloud: {
+				userId: ME,
+				sessionId: SESSION,
+				synced: true,
+				title: "Binary",
+				baseUpdatedAt: 9_000,
+				loadedUpdatedAt: 9_000,
+			},
 		});
 	});
 });

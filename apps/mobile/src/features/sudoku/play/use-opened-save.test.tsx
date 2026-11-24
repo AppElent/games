@@ -3,11 +3,13 @@ import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { useConvex, useConvexAuth } from "convex/react";
 import type { Id } from "../../../convex/api";
 import { readGuestIdentity } from "../../players/identity/use-player-identity";
-import type { CloudBundle } from "../saves/sudoku-cloud-sync";
+import { type CloudBundle, saveFromBundle } from "../saves/sudoku-cloud-sync";
 import {
 	deleteSudokuSave,
 	findSudokuSaveBySession,
 	listSudokuSaves,
+	storeSyncedSave,
+	writeSudokuSave,
 } from "../saves/sudoku-save-store";
 import { useOpenedSave } from "./use-opened-save";
 
@@ -124,4 +126,33 @@ it("drops an answer that arrives after an account switch", async () => {
 	await act(async () => answers[1].resolve(null));
 	expect(result.current).toEqual({ state: "missing" });
 	expect(findSudokuSaveBySession(SESSION)).toBeNull();
+});
+
+it("opens the account's newer board once the sync replaces the phone's copy", async () => {
+	const { result } = await renderHook(() => useOpenedSave(SESSION));
+	await waitFor(() => expect(answers).toHaveLength(1));
+	await act(async () => answers[0].resolve(bundle));
+	const opened = result.current;
+	if (opened.state !== "ready") throw new Error("Expected a save");
+
+	// The player's own moves and their sync leave the screen's save alone.
+	await act(async () => {
+		writeSudokuSave({ ...opened.save, elapsedSeconds: 40 });
+	});
+	expect(result.current).toBe(opened);
+
+	const digits = "3".padEnd(81, "0");
+	const newer = {
+		...bundle,
+		state: { ...bundle.state, digits, updatedAt: 12_000 },
+	} as CloudBundle;
+	await act(async () => {
+		storeSyncedSave(
+			saveFromBundle(newer, { id: opened.save.id, userId: ALICE, now: 0 }),
+		);
+	});
+	expect(result.current).toMatchObject({
+		state: "ready",
+		save: { board: { digits }, cloud: { loadedUpdatedAt: 12_000 } },
+	});
 });

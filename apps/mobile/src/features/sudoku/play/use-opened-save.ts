@@ -8,6 +8,10 @@
  * left it; with no answer in `FETCH_TIMEOUT_MS` (offline), the phone's copy
  * opens instead.
  *
+ * Once open, the save stays the one the screen started from, until the sync
+ * replaces the phone's copy with a newer board from the account: then that
+ * one opens instead.
+ *
  * An answer is kept only while the account that asked is still the one
  * signed in. The Convex client already drops a result computed under an
  * earlier token, so this only has to catch Clerk moving on before React
@@ -24,6 +28,7 @@ import { saveFromBundle } from "../saves/sudoku-cloud-sync";
 import {
 	findSudokuSaveBySession,
 	hasUnsentChanges,
+	onSudokuSaveWritten,
 	readSudokuSave,
 	type SudokuSave,
 	storeSyncedSave,
@@ -130,6 +135,21 @@ export function useOpenedSave(id: string): OpenedSave {
 			active = false;
 		};
 	}, [waiting, canAsk, stillAuthenticating, convex, id, userId]);
+
+	useEffect(() => {
+		if (opened.state !== "ready") return;
+		const { save } = opened;
+		const follow = () => {
+			const stored = readSudokuSave(save.id);
+			const replaced =
+				stored?.cloud?.loadedUpdatedAt !== save.cloud?.loadedUpdatedAt;
+			if (stored && replaced) setOpened({ state: "ready", save: stored });
+		};
+		follow();
+		return onSudokuSaveWritten((change) => {
+			if (change === "sync") follow();
+		});
+	}, [opened]);
 
 	return opened;
 }

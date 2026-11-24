@@ -15,6 +15,12 @@
  * closed before the answer came back) first looks for that session in the
  * account (same title, created since, same givens) and only creates one when
  * there is none.
+ *
+ * Each save names the server version its board builds on (`baseUpdatedAt`).
+ * When another device has saved a newer board, the server refuses it and the
+ * phone takes the server's board instead; a solved board stands. So that a
+ * save whose answer got lost is not mistaken for another device's, the link
+ * keeps the board being sent until its answer is stored.
  */
 import type { SESSION_STATUSES } from "@arcadeclub/core/sessions";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
@@ -30,6 +36,7 @@ import {
 	markSynced,
 	readSudokuSave,
 	type SudokuSave,
+	storeSyncedSave,
 	updateCloudLink,
 } from "./sudoku-save-store";
 
@@ -78,8 +85,10 @@ export function sudokuSessionsOf(
 export type SudokuCloud = {
 	create(
 		args: FunctionArgs<SudokuApi["create"]>,
-	): Promise<{ sessionId: SessionId }>;
-	saveProgress(args: FunctionArgs<SudokuApi["saveProgress"]>): Promise<unknown>;
+	): Promise<{ sessionId: SessionId; updatedAt: number }>;
+	saveProgress(
+		args: FunctionArgs<SudokuApi["saveProgress"]>,
+	): Promise<FunctionReturnType<SudokuApi["saveProgress"]>>;
 	setPaused(args: FunctionArgs<SudokuApi["setPaused"]>): Promise<unknown>;
 	complete(args: FunctionArgs<SudokuApi["complete"]>): Promise<unknown>;
 	listSessions(): Promise<AccountSession[]>;
@@ -197,6 +206,8 @@ export function saveFromBundle(
 			sessionId: session._id,
 			synced: true,
 			title: session.title,
+			baseUpdatedAt: state.updatedAt,
+			loadedUpdatedAt: state.updatedAt,
 		},
 	} as const;
 	if (state.variant === "binary") {
@@ -221,6 +232,17 @@ export function saveFromBundle(
 		cages: state.cages,
 		autoCleanup: state.autoCleanup,
 	};
+}
+
+/** A board as `CloudLink.sending` holds it. */
+function boardKey(
+	board: Pick<
+		CloudBundle["state"],
+		"digits" | "cornerNotes" | "centerNotes" | "colors"
+	>,
+) {
+	const { digits, cornerNotes, centerNotes, colors } = board;
+	return JSON.stringify([digits, cornerNotes, centerNotes, colors]);
 }
 
 function errorCode(error: unknown) {
@@ -255,7 +277,10 @@ export async function syncSudokuSaves(
 		return sessions;
 	};
 
-	/** The session a create with no answer made, if it reached the server. */
+	/**
+	 * The session a create with no answer made, if it reached the server, with
+	 * the version it was created at: the phone has saved nothing to it yet.
+	 */
 	async function findCreated(save: SudokuSave, link: CloudLink) {
 		if (link.createStartedAt === undefined) return undefined;
 		const since = link.createStartedAt - CLOCK_SKEW_MS;
@@ -267,7 +292,10 @@ export async function syncSudokuSaves(
 			guard();
 			const bundle = await cloud.getBundle(candidate.sessionId);
 			if (bundle && bundle.state.givens === givensOf(save)) {
-				return candidate.sessionId;
+				return {
+					sessionId: candidate.sessionId,
+					updatedAt: bundle.state.createdAt,
+				};
 			}
 		}
 		return undefined;
@@ -275,9 +303,8 @@ export async function syncSudokuSaves(
 
 	async function ensureSession(save: SudokuSave, link: CloudLink) {
 		if (link.sessionId) return asSessionId(link.sessionId);
-		const found = await findCreated(save, link);
-		let sessionId = found;
-		if (!sessionId) {
+		let session = await findCreated(save, link);
+		if (!session) {
 			const title = link.title ?? account.titleOf(save);
 			updateCloudLink(save.id, (current) => ({
 				...current,
@@ -285,11 +312,11 @@ export async function syncSudokuSaves(
 				createStartedAt: now(),
 			}));
 			guard();
-			const created = await cloud.create(
+			session = await cloud.create(
 				createArgs(save, title, account.displayName),
 			);
-			sessionId = created.sessionId;
 		}
+		const { sessionId, updatedAt } = session;
 		// The Convex client resends a held create under whoever is signed in
 		// when it reconnects, so after an account change the answer may not be
 		// this account's session. The save stays unlinked with its start time;
@@ -299,10 +326,52 @@ export async function syncSudokuSaves(
 			...current,
 			sessionId,
 			createStartedAt: undefined,
+			baseUpdatedAt: updatedAt,
 		}));
 		// Deleted while the create was on its way: keep it off the list.
 		if (!linked) hideSudokuSession(sessionId);
 		return linked ? sessionId : undefined;
+	}
+
+	/**
+	 * Settles a save whose answer never came back: when the server holds
+	 * exactly that board, it arrived, and the phone's board builds on it.
+	 */
+	async function settleUnanswered(id: string, sessionId: SessionId) {
+		const sending = readSudokuSave(id)?.cloud?.sending;
+		if (sending === undefined) return;
+		guard();
+		const bundle = await cloud.getBundle(sessionId);
+		guard();
+		const arrived = bundle !== null && boardKey(bundle.state) === sending;
+		updateCloudLink(id, (current) => ({
+			...current,
+			baseUpdatedAt: arrived ? bundle.state.updatedAt : current.baseUpdatedAt,
+			sending: undefined,
+		}));
+	}
+
+	/** Replaces the phone's stale copy with the account's newer board. */
+	async function takeServerBoard(id: string, sessionId: SessionId) {
+		guard();
+		const bundle = await cloud.getBundle(sessionId);
+		guard();
+		const local = readSudokuSave(id);
+		// Gone from either side: nothing to replace, or the next run finds out.
+		if (!bundle || !local) return;
+		// Solved meanwhile: the board stands, and the next run completes it.
+		if (local.status === "completed") return;
+		const save = saveFromBundle(bundle, {
+			id,
+			userId: account.userId,
+			now: now(),
+		});
+		// What the server never sends, the phone still knows.
+		storeSyncedSave(
+			save.variant !== "binary" && local.variant !== "binary"
+				? { ...save, source: local.source, solution: local.solution }
+				: save,
+		);
 	}
 
 	async function send(id: string) {
@@ -311,11 +380,28 @@ export async function syncSudokuSaves(
 		if (save.cloud.userId !== account.userId) return;
 		const sessionId = await ensureSession(save, save.cloud);
 		if (!sessionId) return;
+		await settleUnanswered(id, sessionId);
 		// What was written while the session was being created goes too.
 		const latest = readSudokuSave(id);
 		if (!latest) return;
 		guard();
-		await cloud.saveProgress(progressArgs(sessionId, latest));
+		const progress = progressArgs(sessionId, latest);
+		updateCloudLink(id, (current) => ({
+			...current,
+			sending: boardKey(progress),
+		}));
+		const { saved, updatedAt } = await cloud.saveProgress({
+			...progress,
+			baseUpdatedAt: latest.cloud?.baseUpdatedAt,
+		});
+		updateCloudLink(id, (current) => ({
+			...current,
+			baseUpdatedAt: saved ? updatedAt : current.baseUpdatedAt,
+			sending: undefined,
+		}));
+		if (!saved && latest.status !== "completed") {
+			return takeServerBoard(id, sessionId);
+		}
 		if (latest.status === "completed") {
 			await cloud.complete({
 				sessionId,
@@ -345,6 +431,8 @@ export async function syncSudokuSaves(
 					...link,
 					sessionId: undefined,
 					synced: false,
+					baseUpdatedAt: undefined,
+					sending: undefined,
 				}));
 			}
 			onError(error);

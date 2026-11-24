@@ -5,8 +5,7 @@ import {
 	pageShell,
 	SessionBundleRoute,
 } from "#/components/games/SessionBundleRoute";
-import { BinaryGame } from "#/components/sudoku/BinaryGame";
-import { SudokuGame } from "#/components/sudoku/SudokuGame";
+import { SoloPuzzle } from "#/components/sudoku/SoloPuzzle";
 import { useGuestId } from "#/lib/games/sessions";
 import { useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
@@ -38,28 +37,23 @@ function SudokuSessionPage() {
 			loading={messages.games.sudoku.session.loadingPuzzle}
 			notFound={messages.games.sudoku.session.puzzleNotFound}
 		>
-			{(loaded) => {
-				// Both boards take the same props; only binary draws its own grid.
-				const Game =
-					loaded.state.variant === "binary" ? BinaryGame : SudokuGame;
-				return (
-					<FullscreenGamePage
+			{(loaded) => (
+				<FullscreenGamePage
+					title={loaded.session.title}
+					// Wide enough on desktop for the board and the 360px
+					// controls column side by side; narrower would squeeze
+					// the keypad.
+					maxWidthClassName="max-w-2xl lg:max-w-5xl"
+				>
+					<SoloPuzzle
+						// Remount when switching sessions so local state resets.
+						key={loaded.session._id}
+						sessionId={loaded.session._id}
 						title={loaded.session.title}
-						// Wide enough on desktop for the board and the 360px
-						// controls column side by side; narrower would squeeze
-						// the keypad.
-						maxWidthClassName="max-w-2xl lg:max-w-5xl"
-					>
-						<Game
-							// Remount when switching sessions so local state resets.
-							key={loaded.session._id}
-							sessionId={loaded.session._id}
-							title={loaded.session.title}
-							state={loaded.state}
-						/>
-					</FullscreenGamePage>
-				);
-			}}
+						state={loaded.state}
+					/>
+				</FullscreenGamePage>
+			)}
 		</SessionBundleRoute>
 	);
 }

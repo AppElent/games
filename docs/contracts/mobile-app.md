@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing which games the Arcade Club mobile app offers, or how it talks to Convex and stores seats and saves.
-version: 1.5.1
+version: 1.6.0
 status: current
 ---
 
@@ -48,7 +48,11 @@ the [mobile runbook](../runbooks/mobile.md).
   not). Guest saves become the account's on sign-in and upload once; nothing is
   removed until the server confirmed. `create` is made idempotent on the phone: a
   create with no answer is first looked up in the account (`listParticipation`, same
-  title and givens) before another is sent. The Sudoku list shows the account's
+  title and givens) before another is sent. A save names the server version its
+  board builds on (`baseUpdatedAt`); when another device has saved a newer board,
+  `sudoku.saveProgress` refuses it and the phone takes the account's board, also on
+  an open game screen (the web does the same). A board solved on the phone still
+  completes the puzzle. The Sudoku list shows the account's
   sessions (web ones too) beside the phone's pending puzzles; removing an account
   puzzle only hides it on that device. The web's list shows the account's sessions
   the same way.
@@ -72,7 +76,9 @@ the [mobile runbook](../runbooks/mobile.md).
   (claimed links, the AASA file, and each variant's associated domains),
 - `apps/mobile/src/features/sudoku/saves/sudoku-cloud-sync.test.ts` and
   `sudoku-save-store.test.ts` (offline, retry, idempotent create, guest saves,
-  upload before removal),
+  upload before removal, a refused stale save), and
+  `apps/mobile/src/features/sudoku/play/use-opened-save.test.tsx` and
+  `sudoku-play-screen.test.tsx`,
 - `apps/mobile/src/features/play/app-games.test.ts` (including that `APP_GAMES`
   matches the games `features.ts` lists on mobile),
   `apps/mobile/src/features/sessions/session-links.test.ts`,

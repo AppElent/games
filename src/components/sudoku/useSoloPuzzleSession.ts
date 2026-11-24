@@ -17,7 +17,7 @@ export type PuzzleStateDoc = NonNullable<
 /** What a debounced save writes, besides the session and the clock. */
 export type PuzzleProgress = Omit<
 	FunctionArgs<typeof api.sudoku.saveProgress>,
-	"sessionId" | "guestId" | "elapsedSeconds"
+	"sessionId" | "guestId" | "elapsedSeconds" | "baseUpdatedAt"
 >;
 
 const SAVE_DEBOUNCE_MS = 1200;
@@ -93,10 +93,15 @@ function initialElapsed(state: PuzzleStateDoc) {
  * The session around a solo puzzle board: status, the running clock, a
  * debounced progress save, pause and completion. Sudoku and Binary share it;
  * each keeps its own board and input model.
+ *
+ * Each save names the version its board builds on. When another device has
+ * saved a newer board, the server refuses the save and `onStale` runs: the
+ * owner reloads the board from the stored puzzle (`SoloPuzzle`).
  */
 export function useSoloPuzzleSession(
 	sessionId: Id<"gameSessions">,
 	state: PuzzleStateDoc,
+	onStale: () => void,
 ) {
 	const saveProgress = useMutation(api.sudoku.saveProgress);
 	const setPaused = useMutation(api.sudoku.setPaused);
@@ -120,33 +125,79 @@ export function useSoloPuzzleSession(
 	const saveTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
 		undefined,
 	);
-	useEffect(() => () => clearTimeout(saveTimeout.current), []);
+	const mounted = useRef(false);
+	useEffect(() => {
+		mounted.current = true;
+		return () => {
+			mounted.current = false;
+			clearTimeout(saveTimeout.current);
+		};
+	}, []);
+
+	// The version the board here builds on: the one it was loaded from, then
+	// the one each save answers with. Saves go one at a time, because a save
+	// sent before the last one's answer would name an outdated version.
+	const baseUpdatedAt = useRef(state.updatedAt);
+	const saving = useRef(false);
+	const queued = useRef<PuzzleProgress | null>(null);
+
+	const send = useCallback(
+		(progress: PuzzleProgress) => {
+			if (statusRef.current === "completed") {
+				return;
+			}
+			if (saving.current) {
+				queued.current = progress;
+				return;
+			}
+			saving.current = true;
+			const write = async () => {
+				try {
+					const { saved, updatedAt } = await saveProgress({
+						...puzzleWrite(sessionId),
+						...progress,
+						baseUpdatedAt: baseUpdatedAt.current,
+						elapsedSeconds: elapsedRef.current,
+					});
+					if (saved) {
+						baseUpdatedAt.current = updatedAt;
+						return;
+					}
+					queued.current = null;
+					clearTimeout(saveTimeout.current);
+					// A board solved meanwhile stands: `complete` decides.
+					if (mounted.current && statusRef.current !== "completed") {
+						onStale();
+					}
+				} finally {
+					saving.current = false;
+					const next = queued.current;
+					queued.current = null;
+					if (next) {
+						send(next);
+					}
+				}
+			};
+			bestEffort(write(), "sudoku:saveProgress");
+		},
+		[saveProgress, sessionId, onStale],
+	);
 
 	/** Saves `progress` once input has been quiet for a moment. */
 	const scheduleSave = useCallback(
 		(progress: PuzzleProgress) => {
 			clearTimeout(saveTimeout.current);
-			saveTimeout.current = setTimeout(() => {
-				if (statusRef.current === "completed") {
-					return;
-				}
-				bestEffort(
-					saveProgress({
-						...puzzleWrite(sessionId),
-						...progress,
-						elapsedSeconds: elapsedRef.current,
-					}),
-					"sudoku:saveProgress",
-				);
-			}, SAVE_DEBOUNCE_MS);
+			saveTimeout.current = setTimeout(() => send(progress), SAVE_DEBOUNCE_MS);
 		},
-		[saveProgress, sessionId],
+		[send],
 	);
 
 	/** Stops the clock and records the solved grid instead of a pending save. */
 	const finish = useCallback(
 		(digits: number[]) => {
 			clearTimeout(saveTimeout.current);
+			queued.current = null;
+			statusRef.current = "completed";
 			setStatus("completed");
 			bestEffort(
 				complete({
