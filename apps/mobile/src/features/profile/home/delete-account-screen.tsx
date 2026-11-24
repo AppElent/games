@@ -89,6 +89,11 @@ export function DeleteAccountScreen() {
 					busy={leaving}
 					onPress={async () => {
 						if (leaving) return;
+						if (deletion.signedOut) {
+							// Opens over this screen and closes back to it.
+							router.push("/sign-in");
+							return;
+						}
 						setLeaving(true);
 						router.dismissTo("/profile");
 						try {

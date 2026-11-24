@@ -19,6 +19,7 @@ import { useAuth, useUser } from "@clerk/expo";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert, type TextInputInstance } from "react-native";
+import { signOutToReturn } from "../../../auth/return-target";
 import { useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { CenteredState } from "../../../ui/centered-state";
@@ -147,7 +148,9 @@ export function ChangePasswordScreen() {
 						setLeaving(true);
 						router.dismissTo("/profile");
 						try {
-							await signOut();
+							await signOutToReturn("/profile/change-password", user.id, () =>
+								signOut(),
+							);
 							router.push("/sign-in");
 						} catch {
 							// Still signed in on Profile, whose Sign out stays at hand.

@@ -1,6 +1,7 @@
 import {
 	forgetReturnTarget,
 	returnAfterSignIn,
+	signOutToReturn,
 	takeReturnTarget,
 } from "./return-target";
 
@@ -32,6 +33,23 @@ describe("return target", () => {
 		jest.useFakeTimers();
 		returnAfterSignIn("/profile/delete-account", "user_1");
 		jest.advanceTimersByTime(11 * 60 * 1000);
+		expect(takeReturnTarget("user_1")).toBeNull();
+	});
+
+	it("is remembered before signing out, which unmounts the caller", async () => {
+		let remembered: unknown;
+		await signOutToReturn("/profile/change-password", "user_1", async () => {
+			remembered = takeReturnTarget("user_1");
+		});
+		expect(remembered).toBe("/profile/change-password");
+	});
+
+	it("is dropped when signing out fails, which still throws", async () => {
+		await expect(
+			signOutToReturn("/profile/change-password", "user_1", () =>
+				Promise.reject(new Error("offline")),
+			),
+		).rejects.toThrow("offline");
 		expect(takeReturnTarget("user_1")).toBeNull();
 	});
 

@@ -5,22 +5,34 @@ import * as WebBrowser from "expo-web-browser";
 import { renderScreen } from "../../../../test/render-screen";
 import { ProfileScreen } from "./profile-screen";
 
+let mockSignedIn = true;
+const mockRouter = {
+	push: jest.fn(),
+	replace: jest.fn(),
+	dismissTo: jest.fn(),
+};
+
+jest.mock("expo-router", () => ({ useRouter: () => mockRouter }));
 jest.mock("@clerk/expo", () => ({
 	useAuth: () => ({
 		isLoaded: true,
-		isSignedIn: true,
+		isSignedIn: mockSignedIn,
 		getToken: jest.fn(),
 		signOut: jest.fn(),
 	}),
 	useUser: () => ({
 		isLoaded: true,
-		isSignedIn: true,
-		user: {
-			passwordEnabled: true,
-			firstName: "Ada",
-			lastName: "Player",
-			primaryEmailAddress: { emailAddress: "player+clerk_test@example.com" },
-		},
+		isSignedIn: mockSignedIn,
+		user: mockSignedIn
+			? {
+					passwordEnabled: true,
+					firstName: "Ada",
+					lastName: "Player",
+					primaryEmailAddress: {
+						emailAddress: "player+clerk_test@example.com",
+					},
+				}
+			: null,
 	}),
 }));
 
@@ -34,6 +46,21 @@ jest.mock("../../../env", () => ({
 jest.mock("expo-web-browser", () => ({
 	openBrowserAsync: jest.fn(() => Promise.resolve({ type: "opened" })),
 }));
+
+describe("ProfileScreen for a guest", () => {
+	afterEach(() => {
+		mockSignedIn = true;
+	});
+
+	it("opens the sign-in over Profile, which it closes back to", async () => {
+		mockSignedIn = false;
+		await renderScreen(<ProfileScreen />);
+		await fireEvent.press(screen.getByTestId("profile-sign-in"));
+		expect(mockRouter.push).toHaveBeenCalledWith("/sign-in");
+		expect(mockRouter.replace).not.toHaveBeenCalled();
+		expect(mockRouter.dismissTo).not.toHaveBeenCalled();
+	});
+});
 
 describe("ProfileScreen account portal row", () => {
 	beforeEach(() => {

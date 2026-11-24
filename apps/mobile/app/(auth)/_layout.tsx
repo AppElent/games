@@ -9,7 +9,7 @@
  */
 import { useAuth } from "@clerk/expo";
 import { Stack, useNavigation, useRouter } from "expo-router";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { forgetReturnTarget } from "../../src/auth/return-target";
 import { useTokens } from "../../src/theme";
 import { headerOptions } from "../../src/ui/header-options";
@@ -26,6 +26,22 @@ export default function AuthLayout() {
 		else router.replace("/");
 	}, [navigation, router]);
 
+	const signedIn = useRef(isSignedIn);
+	useEffect(() => {
+		signedIn.current = isSignedIn;
+	}, [isSignedIn]);
+
+	// Leaving without signing in (Close, a swipe down, Android back) drops a
+	// pending return. Signed in, the modal closes itself and the target stays
+	// for the root navigator. `removed` fires after this cleanup, hence the
+	// microtask.
+	useEffect(() => {
+		const unsubscribe = navigation.addListener("removed", () => {
+			if (!signedIn.current) forgetReturnTarget();
+		});
+		return () => queueMicrotask(unsubscribe);
+	}, [navigation]);
+
 	useEffect(() => {
 		if (isSignedIn) close();
 	}, [isSignedIn, close]);
@@ -35,11 +51,7 @@ export default function AuthLayout() {
 			screenOptions={{
 				...headerOptions(colors),
 				title: "",
-				headerRight: modalCloseHeaderRight(() => {
-					// Closing without signing in drops a pending return.
-					forgetReturnTarget();
-					close();
-				}),
+				headerRight: modalCloseHeaderRight(close),
 			}}
 		/>
 	);

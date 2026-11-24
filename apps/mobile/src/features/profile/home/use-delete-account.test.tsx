@@ -33,7 +33,10 @@ jest.mock("convex/react", () => ({
 	useMutation: () => mockDeleteMyData,
 }));
 jest.mock("../../sessions/use-backend-auth-ready", () => ({
-	useBackendAuthReady: () => ({ ready: true }),
+	useBackendAuthReady: () => ({
+		isSignedIn: mockUser !== null,
+		ready: mockUser !== null,
+	}),
 }));
 jest.mock("../../sudoku/saves/sudoku-save-store", () => ({
 	forgetAccountSaves: jest.fn(),
@@ -62,13 +65,24 @@ describe("useDeleteAccount", () => {
 		takeReturnTarget("user_1");
 	});
 
-	it("does nothing without a signed-in user", async () => {
-		mockUser = null;
-		const { ok, result } = await run("app");
-		expect(ok).toBe(false);
-		expect(mockDeleteMyData).not.toHaveBeenCalled();
-		expect(result.current.error).toBeNull();
-	});
+	it.each(["app", "account"] as const)(
+		"says the session ended and offers a sign-in when nobody is signed in (%s)",
+		async (scope) => {
+			mockUser = null;
+			mockSession = null;
+			const { ok, result } = await run(scope);
+			expect(ok).toBe(false);
+			expect(mockDeleteMyData).not.toHaveBeenCalled();
+			expect(gameErrorData(result.current.error)?.code).toBe(
+				"accountSessionEnded",
+			);
+			expect(result.current.needsSignIn).toBe(true);
+			expect(result.current.unavailable).toBe(false);
+			// The screen's Continue must be pressable for any of that to show.
+			expect(result.current.ready).toBe(true);
+			expect(result.current.signedOut).toBe(true);
+		},
+	);
 
 	it("does nothing while a deletion is already running", async () => {
 		let release!: () => void;
