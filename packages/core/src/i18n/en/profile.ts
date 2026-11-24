@@ -39,6 +39,8 @@ export const profile = {
 		newTab: "(opens in a new tab)",
 		failed: "Your AppElent account could not be opened. Try again.",
 	},
+	privacyFailed: "The privacy policy could not be opened. Try again.",
+	opensInBrowser: "Opens in the browser",
 	exportData: {
 		title: "Your data",
 		body: "Download everything Arcade Club keeps about your account as a JSON file: your games, seats, answers and content. Other players' names are left out.",
