@@ -490,22 +490,23 @@ function VerifyStep({
 	const tabStop = focusIndex ?? selected ?? 0;
 
 	const cellName = (entry: ScanCell, index: number) => {
-		const digits =
-			entry.type === "cornerNotes" || entry.type === "centerNotes"
-				? [...digitsInMask(entry.cornerMask), ...digitsInMask(entry.centerMask)]
-				: [];
 		let value: string = sudoku.scan.verifyCellEmpty;
 		if (entry.type === "given" || entry.type === "userDigit") {
 			value = entry.digit ? String(entry.digit) : sudoku.scan.verifyCellUnknown;
-		} else if (digits.length > 0) {
-			const type =
-				entry.type === "cornerNotes"
-					? sudoku.scan.cellTypeCornerNotes
-					: sudoku.scan.cellTypeCenterNotes;
-			value = fmt(sudoku.scan.verifyCellNotes, {
-				type,
-				digits: digits.join(" "),
-			});
+		} else if (entry.type === "cornerNotes" || entry.type === "centerNotes") {
+			// A note cell can hold both kinds; name each kind with its own digits.
+			const parts = [
+				[sudoku.scan.cellTypeCornerNotes, digitsInMask(entry.cornerMask)],
+				[sudoku.scan.cellTypeCenterNotes, digitsInMask(entry.centerMask)],
+			] as const;
+			const named = parts
+				.filter(([, digits]) => digits.length > 0)
+				.map(([type, digits]) =>
+					fmt(sudoku.scan.verifyCellNotes, { type, digits: digits.join(" ") }),
+				);
+			if (named.length > 0) {
+				value = named.join("; ");
+			}
 		}
 		return fmt(sudoku.scan.verifyCellName, {
 			row: Math.floor(index / GRID_SIZE) + 1,

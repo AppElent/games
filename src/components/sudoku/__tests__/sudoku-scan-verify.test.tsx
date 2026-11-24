@@ -49,6 +49,13 @@ function scannedCells(): ScanCell[] {
 		centerMask: 0,
 		confidence: 1,
 	};
+	cells[3] = {
+		type: "centerNotes",
+		digit: 0,
+		cornerMask: 0b10,
+		centerMask: 0b1000,
+		confidence: 1,
+	};
 	cells[2] = { ...given(0), confidence: 0.3 };
 	return cells;
 }
@@ -143,6 +150,10 @@ describe("the verify step's recognised grid", () => {
 		);
 		expect(cellAt(1, 3).getAttribute("aria-label")).toBe(
 			"Row 1, column 3: unreadable digit",
+		);
+		// Both note kinds on one cell stay distinguishable.
+		expect(cellAt(1, 4).getAttribute("aria-label")).toBe(
+			"Row 1, column 4: Corner notes 2; Center notes 4",
 		);
 		expect(cellAt(9, 9).getAttribute("aria-label")).toBe(
 			"Row 9, column 9: empty",
