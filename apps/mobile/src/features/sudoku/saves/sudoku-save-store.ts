@@ -281,6 +281,23 @@ export function readLocalOnlySudokuSaves(owner: string | null): SudokuSave[] {
 		.flatMap((item) => readSudokuSave(item.id) ?? []);
 }
 
+const playing = new Map<string, number>();
+
+/**
+ * Marks `id` as on a game screen until the returned function is called, so
+ * the sync leaves its server session running while the phone plays it.
+ */
+export function openSudokuSave(id: string) {
+	playing.set(id, (playing.get(id) ?? 0) + 1);
+	return () => {
+		const left = (playing.get(id) ?? 1) - 1;
+		if (left > 0) playing.set(id, left);
+		else playing.delete(id);
+	};
+}
+
+export const isSudokuSaveOpen = (id: string) => playing.has(id);
+
 export type SaveChange = "game" | "sync";
 
 const listeners = new Set<(change: SaveChange) => void>();

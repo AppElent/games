@@ -19,6 +19,7 @@ import {
 	type GridSave,
 	hiddenSudokuSessions,
 	listSudokuSaves,
+	openSudokuSave,
 	readSudokuSave,
 	writeSudokuSave,
 } from "./sudoku-save-store";
@@ -297,6 +298,30 @@ describe("sudoku cloud sync", () => {
 				({ state: { givens: "9".repeat(81) } }) as CloudBundle,
 		});
 		await syncSudokuSaves(account(), cloud);
+		expect(names()).toEqual(["create", "saveProgress", "setPaused"]);
+	});
+
+	it("does not pause the server session while the puzzle is open", async () => {
+		writeSudokuSave(gridSave("a", 1, 3));
+		const leave = openSudokuSave("a");
+		const { cloud, names } = fakeCloud();
+		await syncSudokuSaves(account(), cloud);
+		expect(names()).toEqual(["create", "saveProgress"]);
+		expect(readSudokuSave("a")?.cloud?.synced).toBe(true);
+		// Leaving writes the save once more, and that send pauses the session.
+		leave();
+		writeSudokuSave(gridSave("a", 2, 3));
+		const next = fakeCloud();
+		await syncSudokuSaves(account(), next.cloud);
+		expect(next.names()).toEqual(["saveProgress", "setPaused"]);
+	});
+
+	it("pauses the server session when the open puzzle's own clock is paused", async () => {
+		writeSudokuSave({ ...gridSave("a", 1, 3), status: "paused" });
+		const leave = openSudokuSave("a");
+		const { cloud, names } = fakeCloud();
+		await syncSudokuSaves(account(), cloud);
+		leave();
 		expect(names()).toEqual(["create", "saveProgress", "setPaused"]);
 	});
 

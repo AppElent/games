@@ -10,7 +10,7 @@ import {
 import { act, renderHook } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 import { LocaleProvider } from "../../../i18n";
-import type { GridSave } from "../saves/sudoku-save-store";
+import { type GridSave, isSudokuSaveOpen } from "../saves/sudoku-save-store";
 import { useSudokuGame } from "./use-sudoku-game";
 
 const save: GridSave = {
@@ -36,6 +36,15 @@ async function setup(
 }
 
 type Hook = Awaited<ReturnType<typeof setup>>["result"];
+
+describe("sudoku game screen", () => {
+	it("counts its save as open while mounted", async () => {
+		const { unmount } = await setup();
+		expect(isSudokuSaveOpen(save.id)).toBe(true);
+		await act(async () => unmount());
+		expect(isSudokuSaveOpen(save.id)).toBe(false);
+	});
+});
 
 describe("sudoku cell taps", () => {
 	let now = 10_000;
