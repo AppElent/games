@@ -9,15 +9,21 @@ import {
 	type ThemeMode,
 } from "#/lib/auth/lib/theme";
 import { cn } from "#/lib/auth/lib/utils";
+import { fmt, useMessages } from "#/lib/i18n";
 
-const OPTIONS: { mode: ThemeMode; label: string; icon: typeof Sun }[] = [
-	{ mode: "light", label: "Light", icon: Sun },
-	{ mode: "auto", label: "Auto", icon: Monitor },
-	{ mode: "dark", label: "Dark", icon: Moon },
+const OPTIONS: {
+	mode: ThemeMode;
+	label: "light" | "system" | "dark";
+	icon: typeof Sun;
+}[] = [
+	{ mode: "light", label: "light", icon: Sun },
+	{ mode: "auto", label: "system", icon: Monitor },
+	{ mode: "dark", label: "dark", icon: Moon },
 ];
 
 export function AppearanceSettings() {
 	const { appName } = useAuthConfig();
+	const copy = useMessages().profile;
 	const [mode, setMode] = useState<ThemeMode>("auto");
 	const { user } = useUser();
 
@@ -53,9 +59,9 @@ export function AppearanceSettings() {
 
 	return (
 		<section className="rm-panel p-4">
-			<p className="rm-label">Appearance</p>
+			<p className="rm-label">{copy.appearance}</p>
 			<p className="mt-1 text-sm text-neutral-500">
-				Choose how {appName} looks. Auto follows your system setting.
+				{fmt(copy.appearanceBody, { appName })}
 			</p>
 			<div className="mt-3 inline-flex gap-1 rounded-md border border-neutral-200 p-1">
 				{OPTIONS.map(({ mode: optionMode, label, icon: Icon }) => (
@@ -71,7 +77,7 @@ export function AppearanceSettings() {
 								: "text-neutral-600 hover:bg-neutral-100",
 						)}
 					>
-						<Icon size={15} /> {label}
+						<Icon size={15} /> {copy.appearanceOptions[label]}
 					</button>
 				))}
 			</div>

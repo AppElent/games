@@ -11,7 +11,7 @@ import type { MutationCtx } from "../_generated/server";
 import { getOptionalUserId } from "./auth";
 import { makeJoinCode, makeShareToken } from "./codes";
 import { gameError } from "./errors";
-import { insertParticipant } from "./gameSession";
+import { insertParticipant, requireGuestProof } from "./gameSession";
 
 /** What every game's `create` takes besides its own settings. */
 export const hostedSessionArgs = {
@@ -53,6 +53,7 @@ export async function createHostedSession(
 	if (args.joinMode !== "solo" && !userId) {
 		throw gameError("signInToHost");
 	}
+	requireGuestProof(userId, args.guestId);
 
 	let joinCode: string | undefined;
 	if (args.joinMode === "room") {

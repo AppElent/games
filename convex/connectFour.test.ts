@@ -586,6 +586,33 @@ describe("ownership", () => {
 		expect((await bundle(t, sessionId)).state.activeColor).toBe("yellow");
 	});
 
+	it("seats no guest with an empty id, nor lets anyone act for one seated before", async () => {
+		const t = setup();
+		const { sessionId, red } = await newMatch(t);
+		const shareToken = await shareTokenOf(t, sessionId);
+		await expectCode(joinWithToken(t, shareToken, ""), "guestIdInvalid");
+		expect((await bundle(t, sessionId)).session.status).toBe("lobby");
+
+		const { participantId: yellow } = await joinWithToken(
+			t,
+			shareToken,
+			guestIdOf("yellow"),
+		);
+		// As a server before the check stored it.
+		await arrange(t, yellow, { guestId: "" });
+		await drop(t, sessionId, red, 0);
+		const asYellow = { sessionId, participantId: yellow, guestId: "" };
+		await expectCode(
+			impostor(t).mutation(api.connectFour.drop, { ...asYellow, column: 0 }),
+			"notInGame",
+		);
+		await expectCode(
+			impostor(t).mutation(api.connectFour.resign, asYellow),
+			"notInGame",
+		);
+		expect((await bundle(t, sessionId)).state.activeColor).toBe("yellow");
+	});
+
 	it("answers notInGame to anyone acting for another player's seat", async () => {
 		const t = setup();
 		const { sessionId, red, yellow } = await fullMatch(t);

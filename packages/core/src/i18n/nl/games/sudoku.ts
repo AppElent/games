@@ -198,6 +198,7 @@ export const sudoku = {
 			"Geef in Instellingen toegang tot de camera om een foto te maken.",
 		scannedTitle: "Gescande puzzel",
 		uploadImage: "Upload een afbeelding",
+		findingGrid: "Raster zoeken...",
 		dragCorners:
 			"Sleep de vier handvatten naar de hoeken van het sudokuraster.",
 		uploadedImageAlt: "Geüploade sudoku",

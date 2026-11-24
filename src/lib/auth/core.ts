@@ -21,20 +21,6 @@ export function shouldShowTestLogin(env: TestLoginEnv): boolean {
 	return onTestInstance && hasCreds;
 }
 
-interface ClerkLikeError {
-	errors?: { longMessage?: string; message?: string }[];
-}
-
-/** Extract a readable message from a thrown Clerk error (or any error). */
-export function clerkErrorMessage(
-	err: unknown,
-	fallback = "Something went wrong.",
-): string {
-	const e = err as ClerkLikeError;
-	const first = e?.errors?.[0];
-	return first?.longMessage ?? first?.message ?? fallback;
-}
-
 /**
  * The in-app path to return to after sign-in, or `undefined` for anything
  * that could leave the site. Resolved against a placeholder origin, so
@@ -56,7 +42,56 @@ export function safeReturnPath(value: unknown): string | undefined {
 	return `${url.pathname}${url.search}${url.hash}`;
 }
 
-/** Where sign-in goes next: the checked return path, else `fallback`. */
+/** The sign-in, sign-up and reset pages: never a page to return to. */
+export const AUTH_PAGE_PATHS: readonly string[] = [
+	"/sign-in",
+	"/sign-up",
+	"/forgot-password",
+];
+
+/** Compared the way the router matches: decoded, any case, any end slash. */
+function isAuthPage(path: string): boolean {
+	let pathname = path.split(/[?#]/, 1)[0];
+	try {
+		pathname = decodeURIComponent(pathname);
+	} catch {}
+	pathname = pathname.toLowerCase().replace(/\/+$/, "") || "/";
+	return AUTH_PAGE_PATHS.includes(pathname);
+}
+
+/** The checked return path, unless it is itself an auth page. */
+function returnPath(value: unknown): string | undefined {
+	const path = safeReturnPath(value);
+	return path && !isAuthPage(path) ? path : undefined;
+}
+
+/**
+ * Where sign-in goes next: the checked return path, else `fallback`. An
+ * auth page counts as no return path, so a finished sign-in never lands
+ * back on a sign-in form.
+ */
 export function signInDestination(redirect: unknown, fallback: string): string {
-	return safeReturnPath(redirect) ?? fallback;
+	return returnPath(redirect) ?? fallback;
+}
+
+/**
+ * A link to an auth page (`authPath`) that brings the visitor back to
+ * `returnTo` afterwards: `/sign-in?redirect=%2Fsudoku`. Without a usable
+ * return path, the bare page.
+ */
+export function authPageHref(authPath: string, returnTo: unknown): string {
+	const path = returnPath(returnTo);
+	return path ? `${authPath}?redirect=${encodeURIComponent(path)}` : authPath;
+}
+
+/**
+ * The page a link on `here` should return to: `here` itself, or, on an
+ * auth page, the `redirect` that page already carries.
+ */
+export function returnTarget(here: string): string | undefined {
+	const path = safeReturnPath(here);
+	if (!path) return undefined;
+	if (!isAuthPage(path)) return path;
+	const url = new URL(path, "https://return.invalid");
+	return returnPath(url.searchParams.get("redirect"));
 }

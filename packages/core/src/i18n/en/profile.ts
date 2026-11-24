@@ -1,10 +1,16 @@
 export const profile = {
 	account: "Account",
+	accountMenu: "Account menu",
 	guestTitle: "Playing as a guest",
 	guestBody:
 		"Solo games are saved on this phone. Sign in to host online games.",
 	signedInAs: "Signed in as {email}",
 	signOut: "Sign out",
+	loading: "Loading…",
+	profileTitle: "Profile",
+	email: "Email: {email}",
+	saveProfile: "Save profile",
+	session: "Session",
 	name: {
 		firstName: "First name",
 		lastName: "Last name",
@@ -26,6 +32,15 @@ export const profile = {
 		failed: "Your password could not be changed. Try again.",
 		none: "This account signs in without a password, with another service or an emailed code, so there is no password to change.",
 	},
+	accountPortal: {
+		title: "AppElent account",
+		body: "Your login works in every AppElent app. Manage your email addresses, sign-in methods, devices and two-step verification there.",
+		action: "Manage your AppElent account",
+		newTab: "(opens in a new tab)",
+		failed: "Your AppElent account could not be opened. Try again.",
+	},
+	privacyFailed: "The privacy policy could not be opened. Try again.",
+	opensInBrowser: "Opens in the browser",
 	exportData: {
 		title: "Your data",
 		body: "Download everything Arcade Club keeps about your account as a JSON file: your games, seats, answers and content. Other players' names are left out.",
@@ -71,6 +86,7 @@ export const profile = {
 	preferences: "Preferences",
 	appearance: "Appearance",
 	appearanceOptions: { system: "System", light: "Light", dark: "Dark" },
+	appearanceBody: "Choose how {appName} looks. System follows your device.",
 	language: "Language",
 	languages: { en: "English", nl: "Nederlands" },
 	about: "About",

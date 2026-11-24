@@ -1,9 +1,10 @@
 import { cn } from "#/lib/auth/lib/utils";
+import { useMessages } from "#/lib/i18n";
 
 export function AuthButton({
 	children,
 	loading,
-	busyLabel = "Please wait…",
+	busyLabel,
 	disabled,
 	variant = "primary",
 	type = "submit",
@@ -12,7 +13,7 @@ export function AuthButton({
 }: {
 	children: React.ReactNode;
 	loading?: boolean;
-	/** Shown in place of `children` while `loading`. */
+	/** Shown in place of `children` while `loading`; "Please wait…" by default. */
 	busyLabel?: string;
 	disabled?: boolean;
 	variant?: "primary" | "secondary" | "ghost";
@@ -20,6 +21,7 @@ export function AuthButton({
 	onClick?: () => void;
 	className?: string;
 }) {
+	const wait = useMessages().auth.signIn.busy;
 	return (
 		<button
 			type={type}
@@ -36,7 +38,7 @@ export function AuthButton({
 				className,
 			)}
 		>
-			{loading ? busyLabel : children}
+			{loading ? (busyLabel ?? wait) : children}
 		</button>
 	);
 }

@@ -3,10 +3,7 @@
  * they run in tests without Clerk or native modules.
  */
 import { passwordFailure } from "@arcadeclub/core/account-password";
-import {
-	clerkErrorKey,
-	type ErrorKey,
-} from "../../auth/components/clerk-errors";
+import { type AuthErrorKey, clerkErrorKey } from "@arcadeclub/core/auth-errors";
 
 export type AccountName = { firstName: string; lastName: string };
 
@@ -26,6 +23,6 @@ export function nameUpdate(
 }
 
 /** The message key for a failed `user.updatePassword`. */
-export function passwordChangeError(error: unknown): ErrorKey {
+export function passwordChangeError(error: unknown): AuthErrorKey {
 	return passwordFailure(error)?.key ?? clerkErrorKey(error) ?? "generic";
 }

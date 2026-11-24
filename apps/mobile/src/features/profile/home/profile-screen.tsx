@@ -3,6 +3,7 @@
  * other players see), then phone-local preferences.
  */
 
+import { ACCOUNT_PORTAL_URL } from "@arcadeclub/core/account-portal";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
 import { LOCALES } from "@arcadeclub/core/messages";
 import { useAuth, useUser } from "@clerk/expo";
@@ -19,9 +20,11 @@ import {
 	type AppearancePreference,
 	spacing,
 	useAppearance,
+	useTokens,
 } from "../../../theme";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
+import { Icon } from "../../../ui/icon";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { Segmented } from "../../../ui/segmented";
@@ -54,8 +57,11 @@ export function ProfileScreen() {
 	const { user } = useUser();
 	const identity = usePlayerIdentity();
 	const appearance = useAppearance();
+	const tokens = useTokens();
 	const [name, setName] = useState(identity.savedName);
 	const [signingOut, setSigningOut] = useState(false);
+	const [portalFailed, setPortalFailed] = useState(false);
+	const [privacyFailed, setPrivacyFailed] = useState(false);
 	const exporter = useExportData(copy.exportData.action);
 
 	const email = user?.primaryEmailAddress?.emailAddress ?? "";
@@ -90,6 +96,27 @@ export function ProfileScreen() {
 							) : user ? (
 								<AppText variant="secondary">{copy.password.none}</AppText>
 							) : null}
+							<Button
+								variant="secondary"
+								label={copy.accountPortal.action}
+								icon={
+									<Icon
+										ios="arrow.up.right.square"
+										android="open_in_new"
+										size={18}
+										color={tokens.accent}
+									/>
+								}
+								disabled={signingOut}
+								accessibilityHint={copy.opensInBrowser}
+								onPress={() =>
+									void openInBrowser(ACCOUNT_PORTAL_URL, setPortalFailed)
+								}
+								testID="profile-account-portal"
+							/>
+							<Notice
+								message={portalFailed ? copy.accountPortal.failed : null}
+							/>
 							<Button
 								variant="secondary"
 								label={copy.signOut}
@@ -180,12 +207,16 @@ export function ProfileScreen() {
 			</Section>
 			<Section title={copy.about}>
 				{PRIVACY_URL ? (
-					<Button
-						variant="secondary"
-						label={t.privacy.title}
-						onPress={() => void WebBrowser.openBrowserAsync(PRIVACY_URL)}
-						testID="profile-privacy-policy"
-					/>
+					<>
+						<Button
+							variant="secondary"
+							label={t.privacy.title}
+							accessibilityHint={copy.opensInBrowser}
+							onPress={() => void openInBrowser(PRIVACY_URL, setPrivacyFailed)}
+							testID="profile-privacy-policy"
+						/>
+						<Notice message={privacyFailed ? copy.privacyFailed : null} />
+					</>
 				) : null}
 				{sentryEnabled ? (
 					<Button
@@ -201,6 +232,23 @@ export function ProfileScreen() {
 			</Section>
 		</Screen>
 	);
+}
+
+/**
+ * Opens a link in the in-app browser and reports whether it failed, so the
+ * row can say so instead of doing nothing.
+ */
+async function openInBrowser(
+	url: string,
+	setFailed: (failed: boolean) => void,
+) {
+	setFailed(false);
+	try {
+		await WebBrowser.openBrowserAsync(url);
+	} catch {
+		// Android rejects when no browser can open the link; iOS when one is already open.
+		setFailed(true);
+	}
 }
 
 function Section({

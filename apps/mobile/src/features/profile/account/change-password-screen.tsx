@@ -14,17 +14,18 @@
  * nothing to change; Profile hides the link and this screen explains.
  */
 import { passwordUpdate } from "@arcadeclub/core/account-password";
+import type { AuthErrorKey } from "@arcadeclub/core/auth-errors";
 import { useAuth, useUser } from "@clerk/expo";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert, type TextInputInstance } from "react-native";
+import { signOutToReturn } from "../../../auth/return-target";
 import { useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { CenteredState } from "../../../ui/centered-state";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { TextField } from "../../../ui/text-field";
-import type { ErrorKey } from "../../auth/components/clerk-errors";
 import { EmailField } from "../../auth/components/email-field";
 import {
 	NEW_PASSWORD_RULES,
@@ -41,7 +42,7 @@ export function ChangePasswordScreen() {
 	const form = useCredentialForm({ current: "", next: "" });
 	const newField = useRef<TextInputInstance>(null);
 	const [busy, setBusy] = useState(false);
-	const [errorKey, setErrorKey] = useState<ErrorKey | null>(null);
+	const [errorKey, setErrorKey] = useState<AuthErrorKey | null>(null);
 	const [leaving, setLeaving] = useState(false);
 	// Swiping back while Clerk works unmounts this screen; a late success
 	// must not then pop the Profile screen underneath.
@@ -147,7 +148,9 @@ export function ChangePasswordScreen() {
 						setLeaving(true);
 						router.dismissTo("/profile");
 						try {
-							await signOut();
+							await signOutToReturn("/profile/change-password", user.id, () =>
+								signOut(),
+							);
 							router.push("/sign-in");
 						} catch {
 							// Still signed in on Profile, whose Sign out stays at hand.

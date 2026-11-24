@@ -25,6 +25,17 @@ describe("clerkErrorKey", () => {
 		);
 	});
 
+	it.each([
+		["form_password_not_strong_enough", "passwordDoesNotMeetRequirements"],
+		["form_password_no_uppercase", "passwordDoesNotMeetRequirements"],
+		["form_password_no_lowercase", "passwordDoesNotMeetRequirements"],
+		["form_password_no_number", "passwordDoesNotMeetRequirements"],
+		["form_password_no_special_char", "passwordDoesNotMeetRequirements"],
+		["form_conditional_param_missing", "required"],
+	])("maps %s to %s (APP-596)", (code, key) => {
+		expect(clerkErrorKey({ errors: [{ code }] })).toBe(key);
+	});
+
 	it("reads the code inside a ClerkAPIResponseError, not its wrapper code", () => {
 		const apiError = Object.assign(new Error("Clerk: Bad request"), {
 			code: "api_response_error",

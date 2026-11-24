@@ -1,13 +1,23 @@
 import { useSignIn } from "@clerk/react";
 import { useState } from "react";
 import { shouldShowTestLogin } from "#/lib/auth/core";
+import { useMessages } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { orThrow } from "./clerkResult";
-import { clerkErrorMessage } from "./types";
+import { useAuthErrorText } from "./useAuthErrorText";
 
-export function TestLoginButton({ onSuccess }: { onSuccess: () => void }) {
+export function TestLoginButton({
+	onSuccess,
+	disabled,
+}: {
+	onSuccess: () => void;
+	/** Another sign-in request is running on the same form. */
+	disabled?: boolean;
+}) {
 	const { signIn } = useSignIn();
+	const copy = useMessages().auth;
+	const errorText = useAuthErrorText();
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 
@@ -29,10 +39,10 @@ export function TestLoginButton({ onSuccess }: { onSuccess: () => void }) {
 				await orThrow(signIn.finalize());
 				onSuccess();
 			} else {
-				setError("Test user requires additional steps.");
+				setError(copy.errors.unsupportedStep);
 			}
 		} catch (err) {
-			setError(clerkErrorMessage(err));
+			setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}
@@ -44,6 +54,7 @@ export function TestLoginButton({ onSuccess }: { onSuccess: () => void }) {
 				type="button"
 				variant="ghost"
 				loading={loading}
+				disabled={disabled}
 				onClick={loginTestUser}
 			>
 				▶ Dev: log in as test user

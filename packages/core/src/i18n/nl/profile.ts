@@ -2,11 +2,17 @@ import type { profile as en } from "../en/profile";
 
 export const profile = {
 	account: "Account",
+	accountMenu: "Accountmenu",
 	guestTitle: "Je speelt als gast",
 	guestBody:
 		"Solospellen worden op deze telefoon bewaard. Log in om online spellen te hosten.",
 	signedInAs: "Ingelogd als {email}",
 	signOut: "Uitloggen",
+	loading: "Laden…",
+	profileTitle: "Profiel",
+	email: "E-mail: {email}",
+	saveProfile: "Profiel opslaan",
+	session: "Sessie",
 	name: {
 		firstName: "Voornaam",
 		lastName: "Achternaam",
@@ -28,6 +34,16 @@ export const profile = {
 		failed: "Je wachtwoord kon niet worden gewijzigd. Probeer het opnieuw.",
 		none: "Dit account logt in zonder wachtwoord, via een andere dienst of een gemailde code, dus er is geen wachtwoord om te wijzigen.",
 	},
+	accountPortal: {
+		title: "AppElent-account",
+		body: "Je login werkt in elke AppElent-app. Beheer daar je e-mailadressen, inlogmethoden, apparaten en tweestapsverificatie.",
+		action: "Beheer je AppElent-account",
+		newTab: "(opent in een nieuw tabblad)",
+		failed: "Je AppElent-account kon niet worden geopend. Probeer het opnieuw.",
+	},
+	privacyFailed:
+		"Het privacybeleid kon niet worden geopend. Probeer het opnieuw.",
+	opensInBrowser: "Opent in de browser",
 	exportData: {
 		title: "Je gegevens",
 		body: "Download alles wat Arcade Club over je account bewaart als JSON-bestand: je spellen, plaatsen, antwoorden en inhoud. Namen van andere spelers staan er niet in.",
@@ -73,6 +89,7 @@ export const profile = {
 	preferences: "Voorkeuren",
 	appearance: "Weergave",
 	appearanceOptions: { system: "Systeem", light: "Licht", dark: "Donker" },
+	appearanceBody: "Kies hoe {appName} eruitziet. Systeem volgt je apparaat.",
 	language: "Taal",
 	languages: { en: "English", nl: "Nederlands" },
 	about: "Over",

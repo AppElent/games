@@ -2,8 +2,8 @@
  * Where the app goes once a fresh sign-in finishes. Signing out and in again
  * rebuilds the whole navigation tree (`ScopedQueryCache` keys it on the
  * user), so the screen that asked for the sign-in is gone and the app starts
- * on Play. A screen that sends the person to sign in again, such as the
- * delete screen, names where to return; the root navigator takes it once the
+ * on Play. A screen that sends the person to sign in again (delete account,
+ * change password) names where to return; the root navigator takes it once the
  * same account is signed in.
  *
  * It lives in module state, which survives the rebuild. It only ever holds an
@@ -19,6 +19,24 @@ let pending: { href: Href; userId: string; lapsesAt: number } | null = null;
 /** Return to `href` after `userId` signs in again. */
 export function returnAfterSignIn(href: Href, userId: string) {
 	pending = { href, userId, lapsesAt: Date.now() + LAPSES_AFTER_MS };
+}
+
+/**
+ * Signs out so `userId` can sign in again and come back to `href`. Throws
+ * when signing out fails: still signed in, so a later sign-in must not jump.
+ */
+export async function signOutToReturn(
+	href: Href,
+	userId: string,
+	signOut: () => Promise<unknown>,
+) {
+	returnAfterSignIn(href, userId);
+	try {
+		await signOut();
+	} catch (caught) {
+		forgetReturnTarget();
+		throw caught;
+	}
 }
 
 /** The person closed the sign-in without signing in. */

@@ -6,6 +6,8 @@
  * (`usePlayerIdentity`); a first name saved here only becomes its default
  * when no display name is set (see `docs/contracts/auth.md`).
  */
+
+import { clerkErrorKey } from "@arcadeclub/core/auth-errors";
 import { useUser } from "@clerk/expo";
 import { useRef, useState } from "react";
 import type { TextInputInstance } from "react-native";
@@ -15,7 +17,6 @@ import { Card } from "../../../ui/card";
 import { Notice } from "../../../ui/notice";
 import { TextField } from "../../../ui/text-field";
 import { useResetOnChange } from "../../../ui/use-reset-on-change";
-import { clerkErrorKey } from "../../auth/components/clerk-errors";
 import { type AccountName, nameUpdate } from "./account-edits";
 
 export function AccountNameCard() {

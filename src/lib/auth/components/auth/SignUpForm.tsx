@@ -1,15 +1,26 @@
 import { useSignUp } from "@clerk/react";
 import { useState } from "react";
+import { authPageHref } from "#/lib/auth/core";
+import { fmt, useMessages } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { useAuthConfig } from "./AuthConfigProvider";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
 import { orThrow } from "./clerkResult";
-import { clerkErrorMessage } from "./types";
+import { useAuthErrorText } from "./useAuthErrorText";
 
-export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
+export function SignUpForm({
+	onSuccess,
+	redirect,
+}: {
+	onSuccess: () => void;
+	/** The page to return to, kept on the link to sign-in. */
+	redirect?: string;
+}) {
 	const { signUp } = useSignUp();
 	const config = useAuthConfig();
+	const copy = useMessages().auth;
+	const errorText = useAuthErrorText();
 	const [step, setStep] = useState<"details" | "verify">("details");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -26,7 +37,7 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 			await orThrow(signUp.verifications.sendEmailCode());
 			setStep("verify");
 		} catch (err) {
-			setError(clerkErrorMessage(err));
+			setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}
@@ -42,10 +53,10 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 				await orThrow(signUp.finalize());
 				onSuccess();
 			} else {
-				setError("Invalid or incomplete verification.");
+				setError(copy.errors.unsupportedStep);
 			}
 		} catch (err) {
-			setError(clerkErrorMessage(err));
+			setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}
@@ -56,17 +67,18 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 			<form onSubmit={submitCode} noValidate className="flex flex-col gap-3">
 				<AuthError message={error} />
 				<p className="text-sm text-[var(--auth-muted)]">
-					We sent a code to {email}.
+					{fmt(copy.verifyEmail.body, { email: email.trim() })}
 				</p>
 				<AuthField
-					label="Verification code"
+					label={copy.signInCode.code}
 					type="text"
+					inputMode="numeric"
 					autoComplete="one-time-code"
 					value={code}
 					onChange={setCode}
 					required
 				/>
-				<AuthButton loading={loading}>Verify</AuthButton>
+				<AuthButton loading={loading}>{copy.verifyEmail.submit}</AuthButton>
 			</form>
 		);
 	}
@@ -75,7 +87,7 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 		<form onSubmit={submitDetails} noValidate className="flex flex-col gap-3">
 			<AuthError message={error} />
 			<AuthField
-				label="Email"
+				label={copy.signIn.email}
 				type="email"
 				autoComplete="username"
 				value={email}
@@ -83,17 +95,20 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 				required
 			/>
 			<AuthField
-				label="Password"
+				label={copy.signIn.password}
 				type="password"
 				autoComplete="new-password"
 				value={password}
 				onChange={setPassword}
 				required
 			/>
-			<AuthButton loading={loading}>Create account</AuthButton>
+			<AuthButton loading={loading}>{copy.signUp.submit}</AuthButton>
 			<div className="mt-1 text-center text-xs text-[var(--auth-muted)]">
-				<a href={config.paths.signIn} className="hover:underline">
-					Already have an account? Sign in
+				<a
+					href={authPageHref(config.paths.signIn, redirect)}
+					className="hover:underline"
+				>
+					{copy.signUp.haveAccount} {copy.signIn.title}
 				</a>
 			</div>
 		</form>

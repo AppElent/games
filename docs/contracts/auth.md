@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, sign-up, account, theme sync, or how the Clerk session reaches Convex.
-version: 1.2.0
+version: 1.4.0
 status: current
 ---
 
@@ -30,10 +30,21 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   paths, come from `messages.auth`, errors through `@arcadeclub/core/auth-errors` (Clerk
   code to catalog key), never Clerk's text. A sign-in that needs a step the web does not
   offer (a second factor) says so (`unsupportedStep`) instead of finalizing.
+- Every auth form on the web (sign-in, sign-up, reset, `/account`, the dev test login)
+  and on the phone reads Clerk failures through the one table in
+  `@arcadeclub/core/auth-errors`; the web's `useAuthErrorText` turns the key into
+  `messages.auth.errors` copy. An unknown code shows `errors.generic` in the page's
+  language, never Clerk's English. The code inside `errors[]` wins over the wrapper's
+  own `api_response_error`.
 - `RequireSignedIn` sends a signed-out visitor to `/sign-in?redirect=<path>`, and
   sign-in returns there afterwards; `safeReturnPath` (`src/lib/auth/core.ts`) keeps only
   an in-app path, so the parameter cannot send anyone off the site. Without it, sign-in
-  goes to `authConfig.paths.afterAuth`.
+  goes to `authConfig.paths.afterAuth`. `/sign-up` and `/forgot-password` take the
+  same `redirect` and return there once signed in, and every link to an auth page
+  carries it (`authPageHref`): sign-in's links to sign-up and reset, sign-up's link
+  back, the header's "Sign in" and `HostGate`, which return to the page they sit on
+  (`returnTarget`). An auth page is never a return target: `signInDestination` falls
+  back to `afterAuth` for `/sign-in`, `/sign-up` or `/forgot-password`.
 - `src/routes/{sign-in,sign-up,forgot-password,account}.tsx` are thin wrappers around
   `#/lib/auth`'s `AuthCard` and form components; `src/components/Header.tsx` uses its
   `HeaderUser`.
@@ -81,12 +92,18 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   An old sign-in stops before any data is deleted: the web opens Clerk's verify dialog
   (via `useReverification`); the app, which has no such dialog, refuses with
   `accountSignInFirst` and offers "Sign in again", after which it returns to the delete
-  screen (`apps/mobile/src/auth/return-target.ts`, honoured by the root navigator for the
-  same account, because signing in rebuilds the tree on Play). If Clerk still refuses the
+  screen (return target, below). If Clerk still refuses the
   user after the data is gone, the app shows `accountSignInToFinish`; the web, where
   deleting again reopens Clerk's dialog, shows `accountDeleteAgain`. Refusals
   (`accountInActiveGame`, `accountChanged`) and a Clerk session that has ended
-  (`accountSessionEnded`, "Sign in again" on the app) show localized; a rerun resumes.
+  (`accountSessionEnded`, "Sign in again" on the app, also when nobody is signed in)
+  show localized; a rerun resumes.
+- On the phone, the sign-in modal closes back to the screen it opened over (a guest on
+  Profile, the host gate). "Sign in again" (delete account, change password) signs out
+  first, which rebuilds the app on Play, so it sets a return target
+  (`apps/mobile/src/auth/return-target.ts`) that the root navigator honours for the same
+  account. Leaving the sign-in modal without signing in (Close, swipe, Android back)
+  drops it.
 - `POST /clerk/webhook` (`convex/http.ts`) purges the data of a Clerk user deleted
   anywhere (another AppElent app, the Clerk dashboard) with the same
   `deleteAccountData` as `deleteMyData`, through `account.purgeDeletedUser`, which

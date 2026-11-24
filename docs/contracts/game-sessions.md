@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing how online games create, join, seat, start, finish or reopen a session, or how a game route renders.
-version: 1.1.0
+version: 1.2.0
 status: current
 ---
 
@@ -37,13 +37,15 @@ skill.
   `ON_JOIN` map holds each game's hook (seating a challenger, claiming a card seat), so
   `convex/sessions.ts` names no game.
 - Participants are signed-in users (`userId`) or guests (`guestId`, generated
-  client-side). Read identity with `getOptionalUserId`/`requireUserId` from
+  client-side). Hosting or joining signed out needs the `guest_<uuid>` every client
+  makes (`requireGuestProof`, else `guestIdInvalid`). Read identity with `getOptionalUserId`/`requireUserId` from
   `convex/lib/auth.ts`.
 - Participant ids are public, so every call acting for a seat takes `seatArgs` and
   proves the seat is the caller's with `requireOwnParticipant` (or `requireHost`) from
   `convex/lib/gameSession.ts`: the same account, or for a guest, the same guest id.
-  Match a guest id only through `isGuestRowOf`, which never matches a row with a
-  `userId`: on a shared browser a guest and an account send the same guest id.
+  Match a guest id only through `isGuestRowOf`, which never matches a guessable id, nor
+  a row with a `userId`: on a shared browser a guest and an account send the same
+  guest id.
 - A client finds its seat with `sessions.ownSeat`: the seat it holds while that seat
   is the caller's, else the signed-in account's own row in the session. So an
   account keeps its seat across sign-out and sign-in, a new tab or another device,
