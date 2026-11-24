@@ -219,16 +219,7 @@ export const getBundle = query({
 		}
 		const { solution: _solution, ...safeState } = state;
 		return {
-			session: {
-				_id: session._id,
-				title: session.title,
-				// LEGACY(APP-537): phone builds from before APP-366 check this
-				// against the signed-in account (`use-opened-save.ts`); current
-				// ones no longer read it. Only the host gets it, so it is their
-				// own id; a guest's puzzle has none. Remove once no installed
-				// build runs the old check.
-				hostUserId: session.hostUserId,
-			},
+			session: { _id: session._id, title: session.title },
 			state: safeState,
 		};
 	},
