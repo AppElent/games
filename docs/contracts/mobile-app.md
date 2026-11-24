@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing which games the Arcade Club mobile app offers, or how it talks to Convex and stores seats and saves.
-version: 1.6.0
+version: 1.6.1
 status: current
 ---
 
@@ -52,7 +52,9 @@ the [mobile runbook](../runbooks/mobile.md).
   board builds on (`baseUpdatedAt`); when another device has saved a newer board,
   `sudoku.saveProgress` refuses it and the phone takes the account's board, also on
   an open game screen (the web does the same). A board solved on the phone still
-  completes the puzzle. The Sudoku list shows the account's
+  completes the puzzle. Opening an account session folds at most five minutes of
+  running time into the clock, so a session left running by a killed app does not
+  count the idle hours. The Sudoku list shows the account's
   sessions (web ones too) beside the phone's pending puzzles; removing an account
   puzzle only hides it on that device. The web's list shows the account's sessions
   the same way.

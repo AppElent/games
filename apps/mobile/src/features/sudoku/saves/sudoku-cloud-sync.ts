@@ -107,6 +107,15 @@ export type SyncAccount = {
 
 /** How far the phone's clock may run ahead of the server's. */
 const CLOCK_SKEW_MS = 10 * 60_000;
+/**
+ * The most running time `saveFromBundle` folds into the clock. While the
+ * phone plays, every save (each 15 s of play and each move) moves the
+ * server's `lastResumedAt`, so a session that is still running was resumed
+ * moments ago. A killed or crashed app sends no pause, and its session would
+ * otherwise add all the idle time since. The bound only has to cover a web
+ * tab that plays on without saving, as a player thinking over a move does.
+ */
+export const MAX_FOLDED_RUNNING_SECONDS = 5 * 60;
 /** The server's answer when a session no longer exists. */
 const GONE = new Set(["gameNotFound", "sessionNotFound"]);
 
@@ -185,7 +194,9 @@ export function progressArgs(
 
 /**
  * An account session as a save on this phone. The clock folds in the time
- * the session has run since it was last resumed, as the web does. The server
+ * the session has run since it was last resumed, as the web does, but at most
+ * `MAX_FOLDED_RUNNING_SECONDS`: a session left running by a killed app is
+ * not still being played. The server
  * never sends a puzzle's source or solution, so a `local` copy of the same
  * puzzle lends its own.
  */
@@ -201,7 +212,10 @@ export function saveFromBundle(
 	const { session, state } = bundle;
 	const running =
 		state.status === "active" && state.lastResumedAt
-			? Math.max(0, Math.round((now - state.lastResumedAt) / 1000))
+			? Math.min(
+					MAX_FOLDED_RUNNING_SECONDS,
+					Math.max(0, Math.round((now - state.lastResumedAt) / 1000)),
+				)
 			: 0;
 	const base = {
 		id,
