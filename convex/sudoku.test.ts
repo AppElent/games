@@ -431,6 +431,142 @@ describe("saveProgress", () => {
 		expect(stored.elapsedSeconds).toBe(99);
 	});
 
+	describe("against a newer board", () => {
+		const PHONE = `5${EMPTY.slice(1)}`;
+		const WEB = `53${EMPTY.slice(2)}`;
+
+		/** A puzzle the web has saved since the phone loaded it. */
+		async function webSavedSince(t: T) {
+			const { sessionId, updatedAt } = await createPuzzle(t);
+			advance(1000);
+			const web = await t.mutation(
+				api.sudoku.saveProgress,
+				progress(sessionId, { digits: WEB, baseUpdatedAt: updatedAt }),
+			);
+			return { sessionId, stale: updatedAt, web };
+		}
+
+		it("refuses a stale base and leaves the stored board unchanged", async () => {
+			const t = setup();
+			const { sessionId, stale, web } = await webSavedSince(t);
+			const before = await storedState(t, sessionId);
+			advance(1000);
+			await expect(
+				t.mutation(
+					api.sudoku.saveProgress,
+					progress(sessionId, {
+						digits: PHONE,
+						elapsedSeconds: 7,
+						baseUpdatedAt: stale,
+					}),
+				),
+			).resolves.toEqual({ saved: false, updatedAt: web.updatedAt });
+			expect(await storedState(t, sessionId)).toEqual(before);
+		});
+
+		it.each(["cornerNotes", "centerNotes", "colors"])(
+			"refuses a stale base whose board differs only in %s",
+			async (field) => {
+				const t = setup();
+				const { sessionId, stale } = await webSavedSince(t);
+				const before = await storedState(t, sessionId);
+				const masks = ZEROES();
+				masks[7] = 1;
+				const answer = await t.mutation(
+					api.sudoku.saveProgress,
+					progress(sessionId, {
+						digits: WEB,
+						[field]: masks,
+						baseUpdatedAt: stale,
+					}),
+				);
+				expect(answer.saved).toBe(false);
+				expect(await storedState(t, sessionId)).toEqual(before);
+			},
+		);
+
+		it("saves on a fresh base, and on each answer after it", async () => {
+			const t = setup();
+			const { sessionId, updatedAt } = await createPuzzle(t);
+			let baseUpdatedAt = updatedAt;
+			// All in one millisecond: each is still a version of its own.
+			for (const digits of [PHONE, WEB, EMPTY]) {
+				const answer = await t.mutation(
+					api.sudoku.saveProgress,
+					progress(sessionId, { digits, baseUpdatedAt }),
+				);
+				expect(answer.saved).toBe(true);
+				expect(answer.updatedAt).toBeGreaterThan(baseUpdatedAt);
+				baseUpdatedAt = answer.updatedAt;
+				const stored = await storedState(t, sessionId);
+				expect(stored.digits).toBe(digits);
+				expect(stored.updatedAt).toBe(baseUpdatedAt);
+			}
+		});
+
+		it("saves with no base, as installed builds send it", async () => {
+			const t = setup();
+			const { sessionId, web } = await webSavedSince(t);
+			advance(1000);
+			const answer = await t.mutation(
+				api.sudoku.saveProgress,
+				progress(sessionId, { digits: PHONE }),
+			);
+			expect(answer.saved).toBe(true);
+			expect(answer.updatedAt).toBeGreaterThan(web.updatedAt);
+			expect((await storedState(t, sessionId)).digits).toBe(PHONE);
+		});
+
+		it("takes a stale base with the same board, without a new version", async () => {
+			const t = setup();
+			const { sessionId, stale, web } = await webSavedSince(t);
+			advance(1000);
+			await expect(
+				t.mutation(
+					api.sudoku.saveProgress,
+					progress(sessionId, {
+						digits: WEB,
+						elapsedSeconds: 50,
+						baseUpdatedAt: stale,
+					}),
+				),
+			).resolves.toEqual({ saved: true, updatedAt: web.updatedAt });
+			expect((await storedState(t, sessionId)).elapsedSeconds).toBe(50);
+		});
+
+		it("keeps a base fresh across pause and resume", async () => {
+			const t = setup();
+			const { sessionId, web } = await webSavedSince(t);
+			for (const paused of [true, false]) {
+				advance(1000);
+				await t.mutation(api.sudoku.setPaused, {
+					sessionId,
+					guestId: SOLVER,
+					paused,
+				});
+			}
+			const answer = await t.mutation(
+				api.sudoku.saveProgress,
+				progress(sessionId, { digits: PHONE, baseUpdatedAt: web.updatedAt }),
+			);
+			expect(answer.saved).toBe(true);
+		});
+
+		it("refuses any base once completed", async () => {
+			const t = setup();
+			const { sessionId, updatedAt } = await createPuzzle(t);
+			await complete(t, sessionId);
+			const stored = await storedState(t, sessionId);
+			expect(stored.updatedAt).toBeGreaterThan(updatedAt);
+			await expect(
+				t.mutation(
+					api.sudoku.saveProgress,
+					progress(sessionId, { baseUpdatedAt: updatedAt }),
+				),
+			).resolves.toEqual({ saved: false, updatedAt: stored.updatedAt });
+		});
+	});
+
 	it("answers invalidPuzzleData for bad digits, notes, or colours", async () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
@@ -719,7 +855,8 @@ describe("setPaused", () => {
 		expect(paused.status).toBe("paused");
 		expect(paused.elapsedSeconds).toBe(66);
 		expect(paused.lastResumedAt).toBeUndefined();
-		expect(paused.updatedAt).toBe(T0 + 65_600);
+		// The board did not change, so its version does not either.
+		expect(paused.updatedAt).toBe(T0);
 	});
 
 	it("does not add time on a second pause, and restarts the timer on resume", async () => {

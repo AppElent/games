@@ -13,6 +13,11 @@
  * marks it unsynced, so a screen opened before the session existed never
  * drops its id.
  *
+ * When the account turns out to hold a newer board (saved on another device),
+ * the sync replaces the phone's copy. A screen still showing the old board
+ * reloads (`use-opened-save.ts`); until it does, its writes are dropped, so
+ * the old board cannot come back as a new change.
+ *
  * When the list outgrows `LIMIT`, solved puzzles are dropped before
  * unfinished ones, and a puzzle with changes still to send is never dropped.
  */
@@ -50,6 +55,15 @@ export type CloudLink = {
 	createStartedAt?: number;
 	/** The session's title, as sent with `create` or read from the server. */
 	title?: string;
+	/**
+	 * The server's `updatedAt` this phone's board builds on. Absent on a link
+	 * from before saves were checked, until its first save is answered.
+	 */
+	baseUpdatedAt?: number;
+	/** The server's `updatedAt` the board was last taken from, if it was. */
+	loadedUpdatedAt?: number;
+	/** The board of a `saveProgress` whose answer has not come back yet. */
+	sending?: string;
 };
 
 type SaveBase = {
@@ -112,7 +126,12 @@ function isCloudLink(value: unknown): value is CloudLink {
 		(link.sessionId === undefined || typeof link.sessionId === "string") &&
 		(link.createStartedAt === undefined ||
 			typeof link.createStartedAt === "number") &&
-		(link.title === undefined || typeof link.title === "string")
+		(link.title === undefined || typeof link.title === "string") &&
+		(link.baseUpdatedAt === undefined ||
+			typeof link.baseUpdatedAt === "number") &&
+		(link.loadedUpdatedAt === undefined ||
+			typeof link.loadedUpdatedAt === "number") &&
+		(link.sending === undefined || typeof link.sending === "string")
 	);
 }
 
@@ -304,10 +323,14 @@ function store(save: SudokuSave, change: SaveChange) {
  * A game screen's write: the board, clock and status as they are now. The
  * stored cloud link wins over the one in `save`, and an account puzzle is
  * marked as holding unsent changes. `updatedAt` never goes backwards, so the
- * sync can tell a write that landed while it was sending.
+ * sync can tell a write that landed while it was sending. A write from a
+ * board the account's newer one has since replaced is dropped.
  */
 export function writeSudokuSave(save: SudokuSave) {
 	const stored = readSudokuSave(save.id);
+	if (stored && stored.cloud?.loadedUpdatedAt !== save.cloud?.loadedUpdatedAt) {
+		return;
+	}
 	const link = stored ? stored.cloud : save.cloud;
 	store(
 		{

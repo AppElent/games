@@ -1,7 +1,7 @@
 /**
  * Opens a puzzle by id and hands it to the screen for its variant. The save
  * is resolved once (`use-opened-save.ts`); the game screens own it from
- * there.
+ * there, and start over when a newer board from the account replaces it.
  */
 import { useRouter } from "expo-router";
 import { useI18n } from "../../../i18n";
@@ -35,9 +35,10 @@ export function SudokuPlayScreen({ id }: { id: string }) {
 		);
 	}
 	const { save } = opened;
+	const version = save.cloud?.loadedUpdatedAt;
 	return save.variant === "binary" ? (
-		<BinaryGameScreen save={save} />
+		<BinaryGameScreen key={version} save={save} />
 	) : (
-		<SudokuGameScreen save={save} />
+		<SudokuGameScreen key={version} save={save} />
 	);
 }

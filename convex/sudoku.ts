@@ -166,7 +166,7 @@ async function insertPuzzle(
 	assertMaskArray(centerNotes, cells);
 
 	const now = Date.now();
-	const stateId = await ctx.db.insert("sudokuStates", {
+	await ctx.db.insert("sudokuStates", {
 		sessionId: session._id,
 		difficulty: puzzle.difficulty,
 		source: puzzle.source,
@@ -186,16 +186,17 @@ async function insertPuzzle(
 		updatedAt: now,
 	});
 	await startSession(ctx, session, now);
-	return stateId;
+	return { updatedAt: now };
 }
 
 export const create = mutation({
 	args: { ...hostedSessionArgs, ...puzzleArgs },
-	returns: createdSessionValidator,
+	// `updatedAt` is the first `baseUpdatedAt` for `saveProgress`.
+	returns: createdSessionValidator.extend({ updatedAt: v.number() }),
 	handler: async (ctx, args) => {
 		const hosted = await hostGame(ctx, "sudoku", args);
-		await insertPuzzle(ctx, hosted.session, args);
-		return createdSession(hosted);
+		const { updatedAt } = await insertPuzzle(ctx, hosted.session, args);
+		return { ...createdSession(hosted), updatedAt };
 	},
 });
 
@@ -225,9 +226,36 @@ export const getBundle = query({
 	},
 });
 
+type BoardFields = Pick<
+	Doc<"sudokuStates">,
+	"digits" | "cornerNotes" | "centerNotes" | "colors"
+>;
+
+function sameBoard(a: BoardFields, b: BoardFields) {
+	const sameMasks = (x: number[], y: number[]) =>
+		x.length === y.length && x.every((mask, cell) => mask === y[cell]);
+	return (
+		a.digits === b.digits &&
+		sameMasks(a.cornerNotes, b.cornerNotes) &&
+		sameMasks(a.centerNotes, b.centerNotes) &&
+		sameMasks(a.colors, b.colors)
+	);
+}
+
+/**
+ * Stores the caller's board. `updatedAt` is the board's version: it moves
+ * when the board does, not when only the clock or the pause state changes.
+ *
+ * `baseUpdatedAt` is the version the caller's board builds on. When the
+ * stored board is newer and differs, nothing is written and `saved` is false:
+ * the caller takes the stored board instead (`getBundle`). Installed phone
+ * builds and open tabs from before the argument send none and are not
+ * checked. A completed puzzle also answers `saved: false`.
+ */
 export const saveProgress = mutation({
 	args: {
 		...puzzleCallArgs,
+		baseUpdatedAt: v.optional(v.number()),
 		digits: v.string(),
 		cornerNotes: v.array(v.number()),
 		centerNotes: v.array(v.number()),
@@ -235,17 +263,30 @@ export const saveProgress = mutation({
 		elapsedSeconds: v.number(),
 		autoCleanup: v.optional(v.boolean()),
 	},
+	returns: v.object({ saved: v.boolean(), updatedAt: v.number() }),
 	handler: async (ctx, args) => {
 		const { session, state } = await loadGame(ctx, "sudoku", args.sessionId);
 		await requirePuzzleHost(ctx, session, args.guestId);
 		if (state.status === "completed") {
-			return;
+			return { saved: false, updatedAt: state.updatedAt };
 		}
 		const grid = gridOf(state);
 		grid.assert(args.digits);
 		assertMaskArray(args.cornerNotes, grid.cells);
 		assertMaskArray(args.centerNotes, grid.cells);
 		assertMaskArray(args.colors, grid.cells);
+		const changed = !sameBoard(args, state);
+		if (
+			changed &&
+			args.baseUpdatedAt !== undefined &&
+			state.updatedAt > args.baseUpdatedAt
+		) {
+			return { saved: false, updatedAt: state.updatedAt };
+		}
+		// Strictly later, so two saves in one millisecond stay two versions.
+		const updatedAt = changed
+			? Math.max(Date.now(), state.updatedAt + 1)
+			: state.updatedAt;
 		await ctx.db.patch(state._id, {
 			digits: args.digits,
 			cornerNotes: args.cornerNotes,
@@ -254,11 +295,13 @@ export const saveProgress = mutation({
 			elapsedSeconds: args.elapsedSeconds,
 			lastResumedAt: state.status === "active" ? Date.now() : undefined,
 			autoCleanup: args.autoCleanup ?? state.autoCleanup,
-			updatedAt: Date.now(),
+			updatedAt,
 		});
+		return { saved: true, updatedAt };
 	},
 });
 
+/** Leaves `updatedAt` alone: the board does not change. */
 export const setPaused = mutation({
 	args: {
 		...puzzleCallArgs,
@@ -275,13 +318,11 @@ export const setPaused = mutation({
 				status: "paused",
 				elapsedSeconds: foldElapsed(state),
 				lastResumedAt: undefined,
-				updatedAt: Date.now(),
 			});
 		} else {
 			await ctx.db.patch(state._id, {
 				status: "active",
 				lastResumedAt: Date.now(),
-				updatedAt: Date.now(),
 			});
 		}
 	},
@@ -318,7 +359,7 @@ export const complete = mutation({
 				digits: args.digits,
 				elapsedSeconds: args.elapsedSeconds,
 				lastResumedAt: undefined,
-				updatedAt: now,
+				updatedAt: Math.max(now, state.updatedAt + 1),
 			},
 			{ now, winners: [] },
 		);

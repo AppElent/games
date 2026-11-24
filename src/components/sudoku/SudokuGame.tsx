@@ -52,14 +52,21 @@ type SudokuGameProps = {
 	sessionId: Id<"gameSessions">;
 	title: string;
 	state: PuzzleStateDoc;
+	/** Another device has saved a newer board; reload it. */
+	onStale: () => void;
 };
 
-export function SudokuGame({ sessionId, title, state }: SudokuGameProps) {
+export function SudokuGame({
+	sessionId,
+	title,
+	state,
+	onStale,
+}: SudokuGameProps) {
 	const messages = useMessages();
 	const sudoku = messages.games.sudoku;
 	const rename = useMutation(api.sudoku.rename);
 	const { status, elapsedLabel, isActive, scheduleSave, finish, togglePause } =
-		useSoloPuzzleSession(sessionId, state);
+		useSoloPuzzleSession(sessionId, state, onStale);
 
 	const [history, setHistory] = useState<SudokuHistory>(() =>
 		createHistory(

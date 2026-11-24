@@ -19,9 +19,16 @@ type BinaryGameProps = {
 	sessionId: Id<"gameSessions">;
 	title: string;
 	state: PuzzleStateDoc;
+	/** Another device has saved a newer board; reload it. */
+	onStale: () => void;
 };
 
-export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
+export function BinaryGame({
+	sessionId,
+	title,
+	state,
+	onStale,
+}: BinaryGameProps) {
 	const { locale, messages } = useI18n();
 	const sudoku = messages.games.sudoku;
 	const {
@@ -31,7 +38,7 @@ export function BinaryGame({ sessionId, title, state }: BinaryGameProps) {
 		scheduleSave: scheduleProgress,
 		finish,
 		togglePause,
-	} = useSoloPuzzleSession(sessionId, state);
+	} = useSoloPuzzleSession(sessionId, state, onStale);
 
 	const size = state.size ?? 6;
 	const cellCount = size * size;
