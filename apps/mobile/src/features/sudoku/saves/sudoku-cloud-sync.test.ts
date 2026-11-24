@@ -498,6 +498,27 @@ describe("a save the server refuses", () => {
 		expect(readSudokuSave("a")?.cloud?.synced).toBe(true);
 	});
 
+	it("keeps a board solved while the refusal was on its way, then completes it", async () => {
+		const save = { ...gridSave("a", 1, 3), cloud: linked() };
+		writeSudokuSave(save);
+		const { cloud, names } = fakeCloud({
+			saveProgress: async () => {
+				writeSudokuSave({ ...gridSave("a", 2, 4), status: "completed" });
+				return refuse();
+			},
+			getBundle: async () => serverBundle(WEB),
+		});
+		await syncSudokuSaves(account(), cloud);
+		expect(digitsOf("a")).toBe(gridSave("a", 2, 4).board.digits);
+		expect(readSudokuSave("a")?.status).toBe("completed");
+		expect(names()).toEqual([]);
+
+		const next = fakeCloud({ saveProgress: refuse });
+		await syncSudokuSaves(account(), next.cloud);
+		expect(next.names()).toEqual(["complete"]);
+		expect(readSudokuSave("a")?.cloud?.synced).toBe(true);
+	});
+
 	it("keeps the phone's copy while the server's cannot be read", async () => {
 		writeSudokuSave({ ...gridSave("a", 1, 3), cloud: linked() });
 		const { cloud } = fakeCloud({

@@ -359,6 +359,8 @@ export async function syncSudokuSaves(
 		const local = readSudokuSave(id);
 		// Gone from either side: nothing to replace, or the next run finds out.
 		if (!bundle || !local) return;
+		// Solved meanwhile: the board stands, and the next run completes it.
+		if (local.status === "completed") return;
 		const save = saveFromBundle(bundle, {
 			id,
 			userId: account.userId,
