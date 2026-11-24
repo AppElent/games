@@ -41,6 +41,9 @@ export const profile = {
 		newTab: "(opent in een nieuw tabblad)",
 		failed: "Je AppElent-account kon niet worden geopend. Probeer het opnieuw.",
 	},
+	privacyFailed:
+		"Het privacybeleid kon niet worden geopend. Probeer het opnieuw.",
+	opensInBrowser: "Opent in de browser",
 	exportData: {
 		title: "Je gegevens",
 		body: "Download alles wat Arcade Club over je account bewaart als JSON-bestand: je spellen, plaatsen, antwoorden en inhoud. Namen van andere spelers staan er niet in.",

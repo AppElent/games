@@ -24,6 +24,13 @@ jest.mock("@clerk/expo", () => ({
 	}),
 }));
 
+jest.mock("../../../env", () => ({
+	env: {
+		...jest.requireActual("../../../env").env,
+		webOrigin: "https://arcade.example/",
+	},
+}));
+
 jest.mock("expo-web-browser", () => ({
 	openBrowserAsync: jest.fn(() => Promise.resolve({ type: "opened" })),
 }));
@@ -74,6 +81,52 @@ describe("ProfileScreen account portal row", () => {
 
 			// A retry that opens clears the message.
 			await fireEvent.press(screen.getByTestId("profile-account-portal"));
+			expect(screen.queryByText(failed)).toBeNull();
+		},
+	);
+});
+
+describe("ProfileScreen privacy policy row", () => {
+	beforeEach(() => {
+		jest.mocked(WebBrowser.openBrowserAsync).mockClear();
+	});
+
+	it("opens the web app's privacy page and says it leaves the app", async () => {
+		await renderScreen(<ProfileScreen />);
+		await fireEvent.press(screen.getByText(messages.en.profile.languages.en));
+
+		const row = await screen.findByTestId("profile-privacy-policy");
+		expect(row.props.accessibilityHint).toBe(
+			messages.en.profile.opensInBrowser,
+		);
+		await fireEvent.press(row);
+		expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(
+			"https://arcade.example/privacy",
+		);
+		expect(screen.queryByText(messages.en.profile.privacyFailed)).toBeNull();
+	});
+
+	it.each(["en", "nl"] as const)(
+		"says so when the privacy policy cannot be opened (%s)",
+		async (locale) => {
+			jest
+				.mocked(WebBrowser.openBrowserAsync)
+				.mockRejectedValueOnce(new Error("No matching browser"));
+			await renderScreen(<ProfileScreen />);
+			await fireEvent.press(
+				screen.getByText(messages.en.profile.languages[locale]),
+			);
+
+			const failed = messages[locale].profile.privacyFailed;
+			await fireEvent.press(screen.getByTestId("profile-privacy-policy"));
+			expect(await screen.findByText(failed)).toBeTruthy();
+			// The account portal row keeps its own message.
+			expect(
+				screen.queryByText(messages[locale].profile.accountPortal.failed),
+			).toBeNull();
+
+			// A retry that opens clears the message.
+			await fireEvent.press(screen.getByTestId("profile-privacy-policy"));
 			expect(screen.queryByText(failed)).toBeNull();
 		},
 	);
