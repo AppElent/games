@@ -214,11 +214,11 @@ const RIDGE_SIDE = 7;
 const RIDGE_CONTRAST = 40;
 
 /**
- * Whether the pixel at `across` on the line `along` is part of a thin dark
- * line: darker than the paper a few pixels to either side. Thin grid lines
- * are often light grey, so this measures contrast, not an absolute level.
+ * How much darker the pixel at `across` on the line `along` is than the
+ * darker of the paper samples `RIDGE_SIDE` pixels to either side. Thin grid
+ * lines stand out above both neighbours; a wide digit stroke does not.
  */
-function onRidge(
+function ridgeContrast(
 	gray: ArrayLike<number>,
 	size: number,
 	vertical: boolean,
@@ -230,13 +230,28 @@ function onRidge(
 	const value = at(across);
 	const before = across - RIDGE_SIDE >= 0 ? at(across - RIDGE_SIDE) : 255;
 	const after = across + RIDGE_SIDE < size ? at(across + RIDGE_SIDE) : 255;
-	return Math.min(before, after) - value >= RIDGE_CONTRAST;
+	return Math.min(before, after) - value;
+}
+
+/**
+ * Whether the pixel at `across` on the line `along` is part of a thin dark
+ * line: darker than the paper a few pixels to either side. Thin grid lines
+ * are often light grey, so this measures contrast, not an absolute level.
+ */
+function onRidge(
+	gray: ArrayLike<number>,
+	size: number,
+	vertical: boolean,
+	along: number,
+	across: number,
+) {
+	return ridgeContrast(gray, size, vertical, along, across) >= RIDGE_CONTRAST;
 }
 
 /**
  * How much of a band a candidate line at `at` darkens: the number of slices
- * along the band in which some pixel within a few of `at` is on a ridge. A
- * grid line crosses every slice, even slightly slanted; a digit stroke a few.
+ * along the band in which some pixel within `tolerance` of `at` is on a ridge.
+ * A grid line crosses every slice, even slightly slanted; a digit stroke a few.
  */
 function lineScore(
 	gray: ArrayLike<number>,
@@ -245,6 +260,7 @@ function lineScore(
 	at: number,
 	from: number,
 	to: number,
+	tolerance = 4,
 ) {
 	let score = 0;
 	const slice = (to - from) / LINE_SLICES;
@@ -253,7 +269,11 @@ function lineScore(
 		const a = Math.floor(from + s * slice);
 		const b = Math.floor(from + (s + 1) * slice);
 		for (let along = a; along < b && !hit; along += 1) {
-			for (let across = at - 4; across <= at + 4 && !hit; across += 1) {
+			for (
+				let across = at - tolerance;
+				across <= at + tolerance && !hit;
+				across += 1
+			) {
 				if (across < 0 || across >= size) continue;
 				hit = onRidge(gray, size, vertical, along, across);
 			}
@@ -263,8 +283,11 @@ function lineScore(
 	return score;
 }
 
-/** How dark one row or column of pixels is along a band. */
-function lineInk(
+/**
+ * Total positive ridge contrast along one row or column of a band. Unlike raw
+ * darkness, this favours thin grid lines over darker, wider digit strokes.
+ */
+function lineRidgeSum(
 	gray: ArrayLike<number>,
 	size: number,
 	vertical: boolean,
@@ -272,11 +295,12 @@ function lineInk(
 	from: number,
 	to: number,
 ) {
-	let ink = 0;
+	let sum = 0;
 	for (let along = Math.floor(from); along < Math.floor(to); along += 1) {
-		ink += 255 - (vertical ? gray[along * size + at] : gray[at * size + along]);
+		const contrast = ridgeContrast(gray, size, vertical, along, at);
+		if (contrast > 0) sum += contrast;
 	}
-	return ink;
+	return sum;
 }
 
 /**
@@ -300,22 +324,29 @@ function bandLines(
 		const expected = Math.round(i * cell);
 		let best = expected;
 		let bestScore = LINE_MIN_SLICES - 1;
-		let bestInk = 0;
+		let bestTight = -1;
+		let bestRidge = -1;
 		for (let at = expected - reach; at <= expected + reach; at += 1) {
 			if (at < 0 || at >= size) continue;
 			const score = lineScore(gray, size, vertical, at, from, to);
 			if (score < bestScore || score < LINE_MIN_SLICES) continue;
-			// Several positions reach a line within a few pixels: take the
-			// darkest, the line's middle, and the nearest of equals.
-			const ink = lineInk(gray, size, vertical, at, from, to);
-			if (
+			// Several positions reach a line within a few pixels: prefer the
+			// tightest ridge support (within 1 px), then strongest ridge
+			// contrast along the band, then nearest to the even position.
+			const tight = lineScore(gray, size, vertical, at, from, to, 1);
+			const ridge = lineRidgeSum(gray, size, vertical, at, from, to);
+			const better =
 				score > bestScore ||
-				ink > bestInk ||
-				(ink === bestInk && Math.abs(at - expected) < Math.abs(best - expected))
-			) {
+				tight > bestTight ||
+				(tight === bestTight && ridge > bestRidge) ||
+				(tight === bestTight &&
+					ridge === bestRidge &&
+					Math.abs(at - expected) < Math.abs(best - expected));
+			if (better) {
 				best = at;
 				bestScore = score;
-				bestInk = ink;
+				bestTight = tight;
+				bestRidge = ridge;
 			}
 		}
 		return best;

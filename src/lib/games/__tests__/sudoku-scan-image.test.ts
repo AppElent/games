@@ -1,6 +1,17 @@
-import type { DigitRead, InkBox } from "@arcadeclub/core/sudoku-scan-ink";
+import { readFileSync } from "node:fs";
+import { inflateSync } from "node:zlib";
+import {
+	type DigitRead,
+	gridCells,
+	type InkBox,
+	planCellRead,
+} from "@arcadeclub/core/sudoku-scan-ink";
 import { describe, expect, it, vi } from "vitest";
-import { RETRY_MIN_CONFIDENCE, readDigitWithRetry } from "../sudoku-scan-image";
+import {
+	RETRY_MIN_CONFIDENCE,
+	readDigitWithRetry,
+	warpToSquare,
+} from "../sudoku-scan-image";
 
 const empty: DigitRead = { digit: 0, confidence: 0 };
 const box: InkBox = { x: 100, y: 200, width: 40, height: 60 };
@@ -75,5 +86,108 @@ describe("readDigitWithRetry", () => {
 		read.mockClear();
 		await readDigitWithRetry({ x: 10, y: 10, width: 2, height: 30 }, read);
 		expect(read).toHaveBeenCalledTimes(2);
+	});
+});
+
+/** Decode an unfiltered grayscale PNG from `./fixtures/` into a fake canvas. */
+function readGrayFixture(name: string) {
+	const file = readFileSync(new URL(`./fixtures/${name}`, import.meta.url));
+	const width = file.readUInt32BE(16);
+	const height = file.readUInt32BE(20);
+	const chunks: Buffer[] = [];
+	for (let at = 8; at < file.length; ) {
+		const length = file.readUInt32BE(at);
+		if (file.toString("latin1", at + 4, at + 8) === "IDAT") {
+			chunks.push(file.subarray(at + 8, at + 8 + length));
+		}
+		at += length + 12;
+	}
+	const rows = inflateSync(Buffer.concat(chunks));
+	const rgba = new Uint8ClampedArray(width * height * 4);
+	for (let y = 0; y < height; y += 1) {
+		const row = y * (width + 1);
+		for (let x = 0; x < width; x += 1) {
+			const g = rows[row + 1 + x];
+			const o = (y * width + x) * 4;
+			rgba[o] = g;
+			rgba[o + 1] = g;
+			rgba[o + 2] = g;
+			rgba[o + 3] = 255;
+		}
+	}
+	return { width, height, rgba };
+}
+
+function makeCanvas(width = 0, height = 0, initial?: Uint8ClampedArray) {
+	let data = initial ?? new Uint8ClampedArray(width * height * 4);
+	const canvas = {
+		width,
+		height,
+		getContext(kind: string) {
+			if (kind !== "2d") return null;
+			return {
+				getImageData: () => ({
+					width: canvas.width,
+					height: canvas.height,
+					data,
+				}),
+				createImageData: (w: number, h: number) => ({
+					width: w,
+					height: h,
+					data: new Uint8ClampedArray(w * h * 4),
+				}),
+				putImageData: (img: { data: Uint8ClampedArray }) => {
+					data = img.data;
+				},
+			};
+		},
+	};
+	return canvas as unknown as HTMLCanvasElement;
+}
+
+describe("line-finder tie-break on sudoku-book-page fixture", () => {
+	it("pins R7C8 and R9C2 cell lines off the digit strokes (APP-717)", () => {
+		const { width, height, rgba } = readGrayFixture("sudoku-book-page.png");
+		vi.stubGlobal("document", {
+			createElement: () => makeCanvas(),
+		});
+		try {
+			const warped = warpToSquare(makeCanvas(width, height, rgba), [
+				{ x: 48, y: 35 },
+				{ x: 148, y: 78 },
+				{ x: 157, y: 194 },
+				{ x: 37, y: 174 },
+			]);
+			const image = warped.getContext("2d")?.getImageData(0, 0, 900, 900);
+			if (!image) throw new Error("Missing warped image data");
+			const gray = new Float32Array(900 * 900);
+			for (let i = 0; i < gray.length; i += 1) {
+				const o = i * 4;
+				gray[i] =
+					0.299 * image.data[o] +
+					0.587 * image.data[o + 1] +
+					0.114 * image.data[o + 2];
+			}
+			const cells = gridCells(gray, 900);
+
+			// R9C2 (printed 8): previously the darkest-ink tie-break landed
+			// col 1 at x=124 on the digit stroke (width 54), clipping the 8
+			// so it misread as 4. With ridge tie-breaking it lands on the
+			// real grid line at x=85.
+			const r9c2 = cells[8 * 9 + 1];
+			expect(r9c2).toEqual({ x: 85, y: 811, width: 93, height: 88 });
+			expect(planCellRead(gray, 900, r9c2)).toMatchObject({
+				kind: "digit",
+				printed: true,
+				box: { x: 113, y: 831, width: 38, height: 56 },
+			});
+
+			// R7C8 (printed 2): col 8 settles at x=756 (stronger ridge support)
+			// instead of x=757 (darker stroke), dropping the spurious note read.
+			const r7c8 = cells[6 * 9 + 7];
+			expect(r7c8).toEqual({ x: 700, y: 601, width: 56, height: 102 });
+		} finally {
+			vi.unstubAllGlobals();
+		}
 	});
 });
