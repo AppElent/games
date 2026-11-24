@@ -100,13 +100,15 @@ export function useReverify(clerk: VerifyingClerk) {
 
 	// The screen under the sheet is gone (signed out elsewhere): nothing more
 	// may happen on its behalf.
-	useEffect(
-		() => () => {
+	const mounted = useRef(true);
+	useEffect(() => {
+		mounted.current = true;
+		return () => {
+			mounted.current = false;
 			open.current?.resolve("cancelled");
 			open.current = null;
-		},
-		[],
-	);
+		};
+	}, []);
 
 	async function sendCode(email: EmailFactor, resend = false) {
 		const call = open.current;
@@ -133,6 +135,8 @@ export function useReverify(clerk: VerifyingClerk) {
 		});
 		// Signed in to another account while Clerk answered.
 		assertSameAccount(clerk, account);
+		if (!mounted.current) return "cancelled";
+		if (started.status === "complete") return "verified";
 		if (started.status !== "needs_first_factor") return "unsupported";
 		const factors = started.supportedFirstFactors ?? [];
 		const hasPassword = factors.some(({ strategy }) => strategy === "password");

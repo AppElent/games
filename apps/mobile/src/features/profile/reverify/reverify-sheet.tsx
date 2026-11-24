@@ -100,7 +100,7 @@ function CodeStep({ reverify }: { reverify: Reverify }) {
 	return (
 		<>
 			<AppText variant="secondary">
-				{fmt(t.auth.signInCode.body, { email: reverify.email ?? "" })}
+				{fmt(copy.codeBody, { email: reverify.email ?? "" })}
 			</AppText>
 			<CodeField
 				{...form.field("code", codeDigits)}

@@ -179,6 +179,32 @@ describe("useReverify", () => {
 		expect(settled).toHaveBeenCalledWith("cancelled");
 	});
 
+	it("cancels when the screen goes away before Clerk answers", async () => {
+		const { hook, session, settled } = await setup([password]);
+		await act(async () => hook.result.current.cancel());
+		settled.mockClear();
+		let answer!: (value: never) => void;
+		session.startVerification.mockReturnValueOnce(
+			new Promise((resolve) => {
+				answer = resolve;
+			}),
+		);
+		const outcome = hook.result.current.verify(account);
+		await hook.unmount();
+		answer({
+			status: "needs_first_factor",
+			supportedFirstFactors: [email("e1", true)],
+		} as never);
+		await expect(outcome).resolves.toBe("cancelled");
+		expect(session.prepareFirstFactorVerification).not.toHaveBeenCalled();
+	});
+
+	it("is verified without a sheet when Clerk needs nothing more", async () => {
+		const { hook, settled } = await setup([], "complete");
+		expect(settled).toHaveBeenCalledWith("verified");
+		expect(hook.result.current.method).toBeNull();
+	});
+
 	it.each([
 		["no password or email code", [{ strategy: "passkey" }], undefined],
 		["a second factor", [password], "needs_second_factor"],

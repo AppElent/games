@@ -12,6 +12,7 @@ import {
 	type LiveClerk,
 } from "@arcadeclub/core/account-deletion";
 import { GameRuleError, gameErrorData } from "@arcadeclub/core/errors";
+import { reportError } from "../../../observability/report";
 import { forgetAccountSaves } from "../../sudoku/saves/sudoku-save-store";
 import type { ReverifyOutcome } from "../reverify/use-reverify";
 
@@ -72,7 +73,13 @@ export function deletionSteps({
 			} catch (caught) {
 				// The sign-in aged past Clerk's window while the data went.
 				if (!isRecentSignInRefusal(caught)) throw caught;
-				const outcome = await reverify();
+				// The data is gone, so whatever stops the sheet (offline, say) must
+				// not read as "nothing was deleted".
+				const outcome = await reverify().catch((failure) => {
+					if (gameErrorData(failure)) throw failure;
+					reportError(failure);
+					return "cancelled" as const;
+				});
 				if (outcome === "cancelled") {
 					throw new GameRuleError("accountDeleteAgain");
 				}

@@ -3,10 +3,12 @@ import {
 	deleteAccount,
 } from "@arcadeclub/core/account-deletion";
 import { gameErrorData } from "@arcadeclub/core/errors";
+import { reportError } from "../../../observability/report";
 import { forgetAccountSaves } from "../../sudoku/saves/sudoku-save-store";
 import type { ReverifyOutcome } from "../reverify/use-reverify";
 import { deletionSteps, needsSignInAgain } from "./delete-account-steps";
 
+jest.mock("../../../observability/report", () => ({ reportError: jest.fn() }));
 jest.mock("../../sudoku/saves/sudoku-save-store", () => ({
 	forgetAccountSaves: jest.fn(),
 }));
@@ -162,6 +164,17 @@ describe("deletionSteps", () => {
 			expect(forgetAccountSaves).not.toHaveBeenCalled();
 		},
 	);
+
+	it("says the data is gone but the user isn't when that sheet cannot open", async () => {
+		const { clerk, steps, reverify, signOut } = setup();
+		const offline = new Error("Network request failed");
+		clerk.user.delete.mockRejectedValueOnce(refusal);
+		reverify.mockRejectedValueOnce(offline);
+		const error = await failure(deleteAccount(steps));
+		expect(gameErrorData(error)?.code).toBe("accountDeleteAgain");
+		expect(reportError).toHaveBeenCalledWith(offline);
+		expect(signOut).not.toHaveBeenCalled();
+	});
 
 	it("refuses to finish on another account that signed in during the sheet", async () => {
 		const { clerk, steps, reverify } = setup();

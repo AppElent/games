@@ -57,6 +57,7 @@ export const profile = {
 			"Vul je wachtwoord in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",
 		submit: "Bevestigen en verwijderen",
 		emailCode: "Mail me in plaats daarvan een code",
+		codeBody: "Vul de 6-cijferige code in die we naar {email} mailen.",
 	},
 	deleteAccount: {
 		action: "Account verwijderen",

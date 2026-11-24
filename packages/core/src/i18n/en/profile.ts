@@ -54,6 +54,7 @@ export const profile = {
 			"Enter your password to delete. This keeps anyone else using this device from deleting your data or account.",
 		submit: "Confirm and delete",
 		emailCode: "Email me a code instead",
+		codeBody: "Enter the 6-digit code we email to {email}.",
 	},
 	deleteAccount: {
 		action: "Delete account",
