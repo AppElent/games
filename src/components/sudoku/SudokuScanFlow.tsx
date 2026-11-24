@@ -165,6 +165,9 @@ function UploadStep({ onFile }: { onFile: (file: File | undefined) => void }) {
 	);
 }
 
+const KEYBOARD_STEP_RATIO = 0.005;
+const KEYBOARD_SHIFT_STEP_RATIO = 0.05;
+
 function CornerStep({
 	source,
 	corners,
@@ -195,6 +198,11 @@ function CornerStep({
 		return () => controller.abort();
 	}, [source]);
 
+	const clampPoint = (x: number, y: number): Point => ({
+		x: Math.max(0, Math.min(source.width, x)),
+		y: Math.max(0, Math.min(source.height, y)),
+	});
+
 	const toSourcePoint = (event: React.PointerEvent) => {
 		const rect = containerRef.current?.getBoundingClientRect();
 		if (!rect) {
@@ -202,10 +210,51 @@ function CornerStep({
 		}
 		const x = ((event.clientX - rect.left) / rect.width) * source.width;
 		const y = ((event.clientY - rect.top) / rect.height) * source.height;
-		return {
-			x: Math.max(0, Math.min(source.width, x)),
-			y: Math.max(0, Math.min(source.height, y)),
-		};
+		return clampPoint(x, y);
+	};
+
+	const moveCornerBy = (index: number, dx: number, dy: number) => {
+		if (!corners) {
+			return;
+		}
+		const current = corners[index];
+		const moved = clampPoint(current.x + dx, current.y + dy);
+		if (moved.x === current.x && moved.y === current.y) {
+			return;
+		}
+		const next = [...corners];
+		next[index] = moved;
+		onChange(next);
+	};
+
+	const onHandleKeyDown = (index: number, event: React.KeyboardEvent) => {
+		const step = Math.max(
+			1,
+			Math.round(
+				Math.max(source.width, source.height) *
+					(event.shiftKey ? KEYBOARD_SHIFT_STEP_RATIO : KEYBOARD_STEP_RATIO),
+			),
+		);
+		switch (event.key) {
+			case "ArrowLeft":
+				event.preventDefault();
+				moveCornerBy(index, -step, 0);
+				break;
+			case "ArrowRight":
+				event.preventDefault();
+				moveCornerBy(index, step, 0);
+				break;
+			case "ArrowUp":
+				event.preventDefault();
+				moveCornerBy(index, 0, -step);
+				break;
+			case "ArrowDown":
+				event.preventDefault();
+				moveCornerBy(index, 0, step);
+				break;
+			default:
+				break;
+		}
 	};
 
 	return (
@@ -247,25 +296,72 @@ function CornerStep({
 							stroke="#38bdf8"
 							strokeWidth={source.width / 250}
 						/>
-						{corners.map((point, index) => (
-							<circle
-								// biome-ignore lint/suspicious/noArrayIndexKey: fixed 4 corners
-								key={index}
-								cx={point.x}
-								cy={point.y}
-								r={source.width / 28}
-								fill="rgba(56,189,248,0.5)"
-								stroke="#e0f2fe"
-								strokeWidth={source.width / 300}
-								style={{ cursor: "grab" }}
-								onPointerDown={(event) => {
-									(event.target as Element).setPointerCapture?.(
-										event.pointerId,
-									);
-									dragIndex.current = index;
-								}}
-							/>
-						))}
+						{corners.map((point, index) => {
+							const handleRadius = source.width / 28;
+							const focusRadius = handleRadius * 1.38;
+							const xPercent =
+								source.width > 0
+									? Math.round((point.x / source.width) * 100)
+									: 0;
+							const yPercent =
+								source.height > 0
+									? Math.round((point.y / source.height) * 100)
+									: 0;
+							return (
+								<g
+									// biome-ignore lint/suspicious/noArrayIndexKey: fixed 4 corners
+									key={index}
+								>
+									<circle
+										cx={point.x}
+										cy={point.y}
+										r={handleRadius}
+										fill="rgba(56,189,248,0.5)"
+										stroke="#e0f2fe"
+										strokeWidth={source.width / 300}
+										tabIndex={0}
+										role="slider"
+										aria-label={fmt(sudoku.scan.cornerHandle, {
+											number: index + 1,
+										})}
+										aria-valuemin={0}
+										aria-valuemax={100}
+										aria-valuenow={xPercent}
+										aria-valuetext={`${xPercent}%, ${yPercent}%`}
+										className="peer cursor-grab outline-none focus-visible:outline-2 focus-visible:outline-transparent"
+										onKeyDown={(event) => onHandleKeyDown(index, event)}
+										onPointerDown={(event) => {
+											(event.target as Element).setPointerCapture?.(
+												event.pointerId,
+											);
+											dragIndex.current = index;
+										}}
+									/>
+									<ellipse
+										cx={point.x}
+										cy={point.y}
+										rx={focusRadius}
+										ry={focusRadius}
+										fill="none"
+										stroke="var(--club-on-accent)"
+										strokeWidth={source.width / 90}
+										pointerEvents="none"
+										className="opacity-0 peer-focus-visible:opacity-100"
+									/>
+									<ellipse
+										cx={point.x}
+										cy={point.y}
+										rx={focusRadius}
+										ry={focusRadius}
+										fill="none"
+										stroke="var(--club-cyan)"
+										strokeWidth={source.width / 160}
+										pointerEvents="none"
+										className="opacity-0 peer-focus-visible:opacity-100"
+									/>
+								</g>
+							);
+						})}
 					</svg>
 				) : (
 					<div className="absolute inset-0 flex items-center justify-center">
