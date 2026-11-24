@@ -15,7 +15,14 @@ import type { Point } from "@arcadeclub/core/sudoku-scan-ink";
 import { defaultCorners } from "@arcadeclub/core/sudoku-scan-ink";
 import { useMutation } from "convex/react";
 import { Camera, Check, Loader2, Upload } from "lucide-react";
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import {
+	useEffect,
+	useEffectEvent,
+	useId,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { findGridCorners } from "#/lib/games/sudoku-grid-finder";
 import { autoSessionTitle } from "#/lib/games/sudoku-local";
 import type { ScanProgress } from "#/lib/games/sudoku-scan-image";
@@ -487,6 +494,7 @@ function VerifyStep({
 	// The one cell in the tab order; null until the player focuses a cell.
 	const [focusIndex, setFocusIndex] = useState<number | null>(null);
 	const cellRefs = useRef<(HTMLButtonElement | null)[]>([]);
+	const gridLabelId = useId();
 	const tabStop = focusIndex ?? selected ?? 0;
 
 	const cellName = (entry: ScanCell, index: number) => {
@@ -584,60 +592,91 @@ function VerifyStep({
 					/>
 				</div>
 				<div className="min-w-[260px] flex-1">
-					<p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+					<p
+						id={gridLabelId}
+						className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400"
+					>
 						{sudoku.scan.recognizedGridLabel}
 					</p>
-					<div className="grid aspect-square w-full max-w-[420px] grid-cols-9 grid-rows-9 rounded-md border-2 border-slate-300/80 bg-slate-900">
-						{cells.map((entry, index) => {
-							const row = Math.floor(index / 9);
-							const col = index % 9;
-							const borders = [
-								col % 3 === 0
-									? "border-l-2 border-l-slate-300/70"
-									: "border-l border-l-[var(--club-line-strong)]",
-								row % 3 === 0
-									? "border-t-2 border-t-slate-300/70"
-									: "border-t border-t-[var(--club-line-strong)]",
-							].join(" ");
-							const flag = conflictSet.has(index)
-								? "bg-red-500/30"
-								: isLowConfidence(entry)
-									? "bg-amber-400/25"
-									: "";
-							return (
-								<button
-									// biome-ignore lint/suspicious/noArrayIndexKey: fixed 81-cell grid
-									key={index}
-									ref={(node) => {
-										cellRefs.current[index] = node;
-									}}
-									type="button"
-									aria-label={cellName(entry, index)}
-									tabIndex={index === tabStop ? 0 : -1}
-									onClick={() => {
-										setSelected(index);
-										setFocusIndex(index);
-									}}
-									onFocus={() => setFocusIndex(index)}
-									onKeyDown={(event) => onCellKeyDown(index, event)}
-									className={`relative flex items-center justify-center ${borders} ${flag} ${
-										selected === index ? "ring-2 ring-inset ring-sky-300" : ""
-									}`}
-								>
-									<span
-										className={`text-[clamp(0.6rem,2.6vw,1rem)] font-semibold ${
-											entry.type === "given"
-												? "text-slate-100"
-												: entry.type === "userDigit"
-													? "text-sky-300"
-													: "text-slate-400"
-										}`}
-									>
-										{scanCellSummary(entry)}
-									</span>
-								</button>
-							);
-						})}
+					{/* A grid of 9 rows of 9 gridcells; each gridcell wraps the one real
+					    button, which keeps the per-cell name and roving tabindex. */}
+					{/* biome-ignore lint/a11y/useSemanticElements: CSS grid of divs keeps the visual layout; table elements would not */}
+					<div
+						role="grid"
+						aria-labelledby={gridLabelId}
+						className="grid aspect-square w-full max-w-[420px] grid-rows-9 rounded-md border-2 border-slate-300/80 bg-slate-900"
+					>
+						{Array.from({ length: GRID_SIZE }, (_, row) => (
+							// biome-ignore lint/a11y/useFocusableInteractive: focus lives on the button inside each gridcell (roving tabindex)
+							// biome-ignore lint/a11y/useSemanticElements: see the grid above
+							<div
+								// biome-ignore lint/suspicious/noArrayIndexKey: fixed 9-row grid
+								key={row}
+								role="row"
+								className="grid grid-cols-9"
+							>
+								{cells
+									.slice(row * GRID_SIZE, (row + 1) * GRID_SIZE)
+									.map((entry, col) => {
+										const index = row * GRID_SIZE + col;
+										const borders = [
+											col % 3 === 0
+												? "border-l-2 border-l-slate-300/70"
+												: "border-l border-l-[var(--club-line-strong)]",
+											row % 3 === 0
+												? "border-t-2 border-t-slate-300/70"
+												: "border-t border-t-[var(--club-line-strong)]",
+										].join(" ");
+										const flag = conflictSet.has(index)
+											? "bg-red-500/30"
+											: isLowConfidence(entry)
+												? "bg-amber-400/25"
+												: "";
+										return (
+											// biome-ignore lint/a11y/useFocusableInteractive: focus lives on the button inside (roving tabindex)
+											// biome-ignore lint/a11y/useSemanticElements: see the grid above
+											<div
+												key={index}
+												role="gridcell"
+												aria-selected={selected === index}
+												className={`flex min-h-0 min-w-0 ${borders} ${flag}`}
+											>
+												<button
+													ref={(node) => {
+														cellRefs.current[index] = node;
+													}}
+													type="button"
+													aria-label={cellName(entry, index)}
+													tabIndex={index === tabStop ? 0 : -1}
+													onClick={() => {
+														setSelected(index);
+														setFocusIndex(index);
+													}}
+													onFocus={() => setFocusIndex(index)}
+													onKeyDown={(event) => onCellKeyDown(index, event)}
+													className={`relative flex min-w-0 flex-1 items-center justify-center outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-1 focus-visible:outline-[var(--club-cyan)] focus-visible:shadow-[0_0_0_4px_var(--club-on-accent)] ${
+														selected === index
+															? "ring-2 ring-inset ring-[var(--club-cyan)]"
+															: ""
+													}`}
+												>
+													<span
+														className={`text-[clamp(0.6rem,2.6vw,1rem)] font-semibold ${
+															entry.type === "given"
+																? "text-slate-100"
+																: entry.type === "userDigit"
+																	? "text-sky-300"
+																	: "text-slate-400"
+														}`}
+													>
+														{scanCellSummary(entry)}
+													</span>
+												</button>
+											</div>
+										);
+									})}
+							</div>
+						))}
 					</div>
 					<p className="mt-1 text-xs text-slate-400">
 						{lowConfidenceCount > 0

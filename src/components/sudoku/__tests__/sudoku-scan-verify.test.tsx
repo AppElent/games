@@ -6,6 +6,7 @@ import {
 	render,
 	screen,
 	waitFor,
+	within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Locale, LocaleProvider } from "#/lib/i18n";
@@ -162,6 +163,11 @@ describe("the verify step's recognised grid", () => {
 
 	it("names each cell in Dutch", async () => {
 		await openVerifyStep("nl");
+		expect(
+			screen.getByRole("grid", {
+				name: "Herkend raster — tik op een vakje om het te corrigeren",
+			}),
+		).toBeTruthy();
 		expect(cellAt(1, 1, "nl").getAttribute("aria-label")).toBe(
 			"Rij 1, kolom 1: 5",
 		);
@@ -227,5 +233,92 @@ describe("the verify step's recognised grid", () => {
 		fireEvent.keyDown(target, { key: "ArrowDown" });
 		expect(cellAt(5, 7).tabIndex).toBe(0);
 		expect(target.tabIndex).toBe(-1);
+	});
+
+	it("exposes a named grid of 9 rows and 81 gridcells, one button each", async () => {
+		await openVerifyStep();
+		const grid = screen.getByRole("grid", {
+			name: "Recognized grid — tap a cell to correct it",
+		});
+		const rows = within(grid).getAllByRole("row");
+		expect(rows).toHaveLength(9);
+		for (const row of rows) {
+			expect(within(row).getAllByRole("gridcell")).toHaveLength(9);
+		}
+		expect(within(grid).getAllByRole("gridcell")).toHaveLength(81);
+		expect(within(grid).getAllByRole("button")).toHaveLength(81);
+		// The per-cell names live on the buttons inside the gridcells.
+		expect(cellAt(1, 2).closest('[role="gridcell"]')?.parentElement).toBe(
+			rows[0],
+		);
+		expect(cellAt(9, 9).closest('[role="gridcell"]')?.parentElement).toBe(
+			rows[8],
+		);
+		// Focus styling uses --club-* tokens and suppresses the browser default outline.
+		const classes = cellAt(1, 1).className;
+		expect(classes).toContain("outline-none");
+		expect(classes).toContain("focus-visible:outline-[var(--club-cyan)]");
+		expect(classes).toContain("focus-visible:outline-solid");
+		expect(classes).toContain(
+			"focus-visible:shadow-[0_0_0_4px_var(--club-on-accent)]",
+		);
+	});
+
+	it("marks only the selected cell as selected and follows clicks", async () => {
+		await openVerifyStep();
+		const selectedCells = () =>
+			screen
+				.getAllByRole("gridcell")
+				.filter((el) => el.getAttribute("aria-selected") === "true");
+		const gridcellOf = (button: HTMLElement) =>
+			button.closest('[role="gridcell"]') as HTMLElement;
+
+		// The first low-confidence cell is preselected.
+		await waitFor(() =>
+			expect(selectedCells()).toEqual([gridcellOf(cellAt(1, 3))]),
+		);
+		expect(gridcellOf(cellAt(1, 1)).getAttribute("aria-selected")).toBe(
+			"false",
+		);
+
+		fireEvent.click(cellAt(4, 7));
+		expect(selectedCells()).toEqual([gridcellOf(cellAt(4, 7))]);
+		// The selected ring comes from a --club-* token, not a fixed palette colour.
+		expect(cellAt(4, 7).className).toContain("ring-[var(--club-cyan)]");
+		expect(cellAt(4, 7).className).not.toContain("ring-sky-300");
+		expect(cellAt(1, 3).className).not.toContain("ring-inset");
+	});
+
+	it("moves focus, not selection, with the arrow keys", async () => {
+		await openVerifyStep();
+		const gridcellOf = (button: HTMLElement) =>
+			button.closest('[role="gridcell"]') as HTMLElement;
+		await waitFor(() =>
+			expect(gridcellOf(cellAt(1, 3)).getAttribute("aria-selected")).toBe(
+				"true",
+			),
+		);
+		const start = cellAt(5, 5);
+		start.focus();
+		fireEvent.keyDown(start, { key: "ArrowRight" });
+		expect(document.activeElement).toBe(cellAt(5, 6));
+		expect(gridcellOf(cellAt(1, 3)).getAttribute("aria-selected")).toBe("true");
+		expect(gridcellOf(cellAt(5, 6)).getAttribute("aria-selected")).toBe(
+			"false",
+		);
+	});
+
+	it("still edits the selected cell and renames it", async () => {
+		await openVerifyStep();
+		fireEvent.click(cellAt(9, 9));
+		expect(cellAt(9, 9).getAttribute("aria-label")).toBe(
+			"Row 9, column 9: empty",
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Given" }));
+		fireEvent.click(screen.getByRole("button", { name: "7" }));
+		expect(cellAt(9, 9).getAttribute("aria-label")).toBe("Row 9, column 9: 7");
+		expect(
+			cellAt(9, 9).closest('[role="gridcell"]')?.getAttribute("aria-selected"),
+		).toBe("true");
 	});
 });
