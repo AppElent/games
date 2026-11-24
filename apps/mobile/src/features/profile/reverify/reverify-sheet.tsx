@@ -123,13 +123,22 @@ function CodeStep({ reverify }: { reverify: Reverify }) {
 				onPress={() => void reverify.sendCode()}
 				testID="reverify-resend"
 			/>
+			{reverify.hasPassword ? (
+				<Button
+					variant="plain"
+					label={copy.usePassword}
+					disabled={reverify.busy || reverify.sending}
+					onPress={reverify.usePassword}
+					testID="reverify-use-password"
+				/>
+			) : null}
 		</>
 	);
 }
 
 function ReverifyNotices({ reverify }: { reverify: Reverify }) {
 	const { t } = useI18n();
-	const error = useAuthError(reverify.errorKey);
+	const error = useAuthError(reverify.error);
 	return (
 		<>
 			<Notice message={error} />

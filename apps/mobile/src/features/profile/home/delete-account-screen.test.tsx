@@ -1,14 +1,30 @@
 import { messages } from "@arcadeclub/core/messages";
-import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { Alert } from "react-native";
 import { renderScreen } from "../../../../test/render-screen";
 import { takeReturnTarget } from "../../../auth/return-target";
 import { DeleteAccountScreen } from "./delete-account-screen";
 
 const copy = messages.en.profile.deleteAccount;
+const reverifyCopy = messages.en.profile.reverify;
 const mockRouter = { push: jest.fn(), dismissTo: jest.fn() };
 const mockSignOut = jest.fn();
-let mockUser: { id: string; deleteSelfEnabled: boolean } | null;
+const mockDeleteMyData = jest.fn();
+const mockPrepareFirstFactor = jest.fn();
+const mockAttemptFirstFactor = jest.fn();
+let mockUser: {
+	id: string;
+	deleteSelfEnabled: boolean;
+	primaryEmailAddress?: { emailAddress: string };
+} | null;
+let mockSession: {
+	id: string;
+	reload: () => Promise<void>;
+	checkAuthorization: () => boolean;
+	startVerification: () => Promise<unknown>;
+	prepareFirstFactorVerification: typeof mockPrepareFirstFactor;
+	attemptFirstFactorVerification: typeof mockAttemptFirstFactor;
+} | null;
 
 jest.mock("expo-router", () => ({
 	Stack: { Screen: () => null },
@@ -17,20 +33,28 @@ jest.mock("expo-router", () => ({
 jest.mock("@clerk/expo", () => ({
 	useUser: () => ({ user: mockUser }),
 	useAuth: () => ({ isSignedIn: mockUser !== null, signOut: mockSignOut }),
-	// The session ended: Clerk has none, whether or not it still has the user.
-	useClerk: () => ({ session: null, user: mockUser }),
+	useClerk: () => ({ session: mockSession, user: mockUser }),
 }));
 jest.mock("convex/react", () => ({
 	useConvexAuth: () => ({ isLoading: false, isAuthenticated: true }),
-	useMutation: () => jest.fn(),
+	useMutation: () => mockDeleteMyData,
+}));
+jest.mock("../../sudoku/saves/sudoku-save-store", () => ({
+	forgetAccountSaves: jest.fn(),
 }));
 
 /** Chooses to delete, and confirms it in the native alert. */
-async function confirmDeletion() {
+async function confirmDeletionAlert() {
 	await renderScreen(<DeleteAccountScreen />);
 	await fireEvent.press(screen.getByTestId("delete-account-continue"));
 	const buttons = jest.mocked(Alert.alert).mock.calls[0]?.[2];
-	buttons?.find(({ style }) => style === "destructive")?.onPress?.();
+	await act(async () => {
+		buttons?.find(({ style }) => style === "destructive")?.onPress?.();
+	});
+}
+
+async function confirmDeletion() {
+	await confirmDeletionAlert();
 	expect(
 		await screen.findByText(messages.en.serverErrors.accountSessionEnded),
 	).toBeTruthy();
@@ -42,11 +66,18 @@ describe("DeleteAccountScreen once the session ended", () => {
 			.spyOn(Alert, "alert")
 			.mockReset()
 			.mockImplementation(() => {});
-		for (const mock of [mockRouter.push, mockRouter.dismissTo, mockSignOut]) {
+		for (const mock of [
+			mockRouter.push,
+			mockRouter.dismissTo,
+			mockSignOut,
+			mockDeleteMyData,
+		]) {
 			mock.mockReset();
 		}
 		mockSignOut.mockResolvedValue(undefined);
 		mockUser = { id: "user_1", deleteSelfEnabled: true };
+		// The session ended: Clerk has none, whether or not it still has the user.
+		mockSession = null;
 		takeReturnTarget("user_1");
 	});
 
@@ -71,5 +102,108 @@ describe("DeleteAccountScreen once the session ended", () => {
 		);
 		expect(mockSignOut).toHaveBeenCalledTimes(1);
 		expect(takeReturnTarget("user_1")).toBe("/profile/delete-account");
+	});
+});
+
+describe("DeleteAccountScreen re-verify sheet", () => {
+	let recentSignIn: boolean;
+
+	beforeEach(() => {
+		jest
+			.spyOn(Alert, "alert")
+			.mockReset()
+			.mockImplementation(() => {});
+		for (const mock of [
+			mockRouter.push,
+			mockRouter.dismissTo,
+			mockSignOut,
+			mockDeleteMyData,
+			mockPrepareFirstFactor,
+			mockAttemptFirstFactor,
+		]) {
+			mock.mockReset();
+		}
+		recentSignIn = false;
+		mockSignOut.mockResolvedValue(undefined);
+		mockDeleteMyData.mockResolvedValue({ done: true });
+		mockPrepareFirstFactor.mockResolvedValue({});
+		mockAttemptFirstFactor.mockImplementation(async () => {
+			recentSignIn = true;
+			return { status: "complete" };
+		});
+		mockUser = {
+			id: "user_1",
+			deleteSelfEnabled: true,
+			primaryEmailAddress: { emailAddress: "ann@example.com" },
+		};
+		mockSession = {
+			id: "sess_1",
+			reload: async () => {},
+			checkAuthorization: () => recentSignIn,
+			startVerification: async () => ({
+				status: "needs_first_factor",
+				supportedFirstFactors: [
+					{ strategy: "password" },
+					{
+						strategy: "email_code",
+						emailAddressId: "email_1",
+						safeIdentifier: "ann@example.com",
+						primary: true,
+					},
+				],
+			}),
+			prepareFirstFactorVerification: mockPrepareFirstFactor,
+			attemptFirstFactorVerification: mockAttemptFirstFactor,
+		};
+	});
+
+	it("mounts the sheet for an old sign-in, switches to code and back, and finishes deletion", async () => {
+		await confirmDeletionAlert();
+		expect(await screen.findByText(reverifyCopy.title)).toBeTruthy();
+
+		// Switch to emailed code, then back to password without cancelling.
+		await fireEvent.press(screen.getByTestId("reverify-email-code"));
+		expect(await screen.findByTestId("reverify-use-password")).toBeTruthy();
+		await fireEvent.press(screen.getByTestId("reverify-use-password"));
+		expect(await screen.findByTestId("reverify-password")).toBeTruthy();
+
+		// Wrong password stays on the sheet and deletes nothing.
+		mockAttemptFirstFactor.mockRejectedValueOnce({
+			code: "api_response_error",
+			errors: [{ code: "form_password_incorrect", message: "Wrong" }],
+		});
+		await fireEvent.changeText(
+			screen.getByTestId("reverify-password"),
+			"wrong",
+		);
+		await fireEvent.press(screen.getByTestId("reverify-submit"));
+		expect(
+			await screen.findByText(messages.en.auth.errors.passwordIncorrect),
+		).toBeTruthy();
+		expect(mockDeleteMyData).not.toHaveBeenCalled();
+
+		// Right password completes deletion and returns to Profile.
+		await fireEvent.changeText(
+			screen.getByTestId("reverify-password"),
+			"secret",
+		);
+		await fireEvent.press(screen.getByTestId("reverify-submit"));
+		await waitFor(() =>
+			expect(mockRouter.dismissTo).toHaveBeenCalledWith("/profile"),
+		);
+		expect(mockDeleteMyData).toHaveBeenCalledWith({
+			expectedSubject: "user_1",
+		});
+	});
+
+	it("closes the mounted sheet on cancel without deleting anything", async () => {
+		await confirmDeletionAlert();
+		expect(await screen.findByText(reverifyCopy.title)).toBeTruthy();
+		await fireEvent.press(screen.getByTestId("reverify-cancel"));
+		await waitFor(() =>
+			expect(screen.queryByText(reverifyCopy.title)).toBeNull(),
+		);
+		expect(mockDeleteMyData).not.toHaveBeenCalled();
+		expect(mockRouter.dismissTo).not.toHaveBeenCalled();
 	});
 });

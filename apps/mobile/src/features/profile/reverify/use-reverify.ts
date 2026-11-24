@@ -17,7 +17,7 @@ import {
 	type LiveClerk,
 	RECENT_SIGN_IN,
 } from "@arcadeclub/core/account-deletion";
-import { type AuthErrorKey, clerkErrorKey } from "@arcadeclub/core/auth-errors";
+import { type AuthError, clerkError } from "@arcadeclub/core/auth-errors";
 import { gameErrorData } from "@arcadeclub/core/errors";
 import type { useClerk } from "@clerk/expo";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -43,6 +43,8 @@ export type ReverifyMethod = "password" | "code";
 type EmailFactor = { emailAddressId: string; email: string };
 type Attempt = {
 	method: ReverifyMethod;
+	/** Whether Clerk also offered a password for this verification. */
+	hasPassword: boolean;
 	/** The address a code goes to; `null` when Clerk offers no code. */
 	email: EmailFactor | null;
 };
@@ -51,7 +53,7 @@ export function useReverify(clerk: VerifyingClerk) {
 	const [attempt, setAttempt] = useState<Attempt | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [sending, setSending] = useState(false);
-	const [errorKey, setErrorKey] = useState<AuthErrorKey | null>(null);
+	const [error, setError] = useState<AuthError | null>(null);
 	const [codeSent, setCodeSent] = useState(false);
 	/** The open `verify` call; a result for any other one is stale. */
 	const open = useRef<{
@@ -70,7 +72,7 @@ export function useReverify(clerk: VerifyingClerk) {
 		setAttempt(null);
 		setBusy(false);
 		setSending(false);
-		setErrorKey(null);
+		setError(null);
 		setCodeSent(false);
 	}, []);
 
@@ -93,9 +95,9 @@ export function useReverify(clerk: VerifyingClerk) {
 			call.reject(caught);
 			return;
 		}
-		const key = clerkErrorKey(caught) ?? "generic";
-		if (key === "generic") reportError(caught);
-		setErrorKey(key);
+		const mapped = clerkError(caught) ?? { key: "generic" as const };
+		if (mapped.key === "generic") reportError(caught);
+		setError(mapped);
 	};
 
 	// The screen under the sheet is gone (signed out elsewhere): nothing more
@@ -114,14 +116,16 @@ export function useReverify(clerk: VerifyingClerk) {
 		const call = open.current;
 		if (!call) return;
 		setSending(true);
-		setErrorKey(null);
+		setError(null);
 		setCodeSent(false);
 		try {
 			await liveSession(call.account).prepareFirstFactorVerification({
 				strategy: "email_code",
 				emailAddressId: email.emailAddressId,
 			});
-			if (open.current === call && resend) setCodeSent(true);
+			if (open.current !== call) return;
+			assertSameAccount(clerk, call.account);
+			if (resend) setCodeSent(true);
 		} catch (caught) {
 			fail(call, caught);
 		} finally {
@@ -149,7 +153,11 @@ export function useReverify(clerk: VerifyingClerk) {
 		const result = new Promise<ReverifyOutcome>((resolve, reject) => {
 			open.current = { account, resolve, reject };
 		});
-		setAttempt({ method: hasPassword ? "password" : "code", email });
+		setAttempt({
+			method: hasPassword ? "password" : "code",
+			hasPassword,
+			email,
+		});
 		if (!hasPassword && email) void sendCode(email);
 		return result;
 	}
@@ -158,7 +166,7 @@ export function useReverify(clerk: VerifyingClerk) {
 		const call = open.current;
 		if (!call || !attempt || busy) return;
 		setBusy(true);
-		setErrorKey(null);
+		setError(null);
 		setCodeSent(false);
 		try {
 			const { status } = await liveSession(
@@ -170,6 +178,8 @@ export function useReverify(clerk: VerifyingClerk) {
 			);
 			// Cancelled while Clerk checked: too late to count.
 			if (open.current !== call) return;
+			// Another account signed in while Clerk answered.
+			assertSameAccount(clerk, call.account);
 			settle(status === "complete" ? "verified" : "unsupported");
 		} catch (caught) {
 			fail(call, caught);
@@ -182,11 +192,14 @@ export function useReverify(clerk: VerifyingClerk) {
 		verify,
 		/** What the sheet asks for; `null` while it is closed. */
 		method: attempt?.method ?? null,
+		/** Whether this account can verify with its password. */
+		hasPassword: attempt?.hasPassword ?? false,
 		/** The address a code goes to, as Clerk shows it. */
 		email: attempt?.email?.email ?? null,
 		busy,
 		sending,
-		errorKey,
+		error,
+		errorKey: error?.key ?? null,
 		/** A new code was asked for and is on its way. */
 		codeSent,
 		submit,
@@ -195,6 +208,20 @@ export function useReverify(clerk: VerifyingClerk) {
 			if (!attempt?.email || busy || sending) return;
 			setAttempt({ ...attempt, method: "code" });
 			await sendCode(attempt.email, attempt.method === "code");
+		},
+		/** Returns to the password step without cancelling the sheet. */
+		usePassword: () => {
+			if (
+				!attempt?.hasPassword ||
+				attempt.method === "password" ||
+				busy ||
+				sending
+			) {
+				return;
+			}
+			setError(null);
+			setCodeSent(false);
+			setAttempt({ ...attempt, method: "password" });
 		},
 		cancel: () => settle("cancelled"),
 	};
