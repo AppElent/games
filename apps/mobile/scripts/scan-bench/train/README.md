@@ -13,7 +13,7 @@ Makes `src/features/sudoku/scan/digit-net-weights.ts`, the weights of the networ
 
 Unpack the datasets into `<data>/pen`, `<data>/optical`, `<data>/semeion` and
 `<data>/emnist` (its `.Z` files with `uncompress`), outside the repository. Then, with
-Python 3.9 and `requirements.txt` installed:
+Python 3.14 and `requirements.txt` installed:
 
 ```bash
 python -I fonts.py <google/fonts> > fonts.txt
