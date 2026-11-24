@@ -123,6 +123,7 @@ export function useOpenedSave(id: string): OpenedSave {
 					id: now?.id ?? sessionId,
 					userId,
 					now: Date.now(),
+					local: now ?? undefined,
 				});
 				storeSyncedSave(save);
 				setOpened({ state: "ready", save });
