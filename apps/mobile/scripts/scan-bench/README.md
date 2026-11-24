@@ -40,8 +40,10 @@ From the corners the app finds (`--detect`), before → APP-555:
 
 Vision's grid detection finds the wrong rectangle on `handwritten-2002` and
 `handwritten-2003`, and nothing on `handwritten-newspaper`; the player places those
-corners. `doubt-grid.ts` flags every cell of a read from a wrong rectangle: 54 and 4
-digits on those two would otherwise be wrong and unflagged.
+corners. `doubt-grid.ts` flags every cell of both reads: 54 and 4 digits would otherwise
+be wrong and unflagged. It sees a wrong rectangle only where a line between the boxes is
+missing, only the box lines are there, or the corners move three cells; a rectangle
+exactly one row off can pass it. A right grid with such a line missing is flagged too.
 
 Its rules were chosen on this set and on the other 391 photos of the Sudoku Dataset
 that its labels fit (`images` and `mixed`, with `--detect`; the dataset is not in this

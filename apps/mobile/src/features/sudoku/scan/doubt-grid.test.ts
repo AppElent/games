@@ -49,8 +49,8 @@ describe("doubtWrongGrid", () => {
 	it("flags a grid whose corners were far off", () => {
 		const all = "||||||||||";
 		const cells = scan();
-		expect(doubtWrongGrid(cells, mesh(all, all, 2.7))).toBe(cells);
-		const doubted = doubtWrongGrid(cells, mesh(all, all, 3.3));
+		expect(doubtWrongGrid(cells, mesh(all, all, 2.9))).toBe(cells);
+		const doubted = doubtWrongGrid(cells, mesh(all, all, 3));
 		expect(doubted.slice(0, 3).every(isLowConfidence)).toBe(true);
 	});
 
