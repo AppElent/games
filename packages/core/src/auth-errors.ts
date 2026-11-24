@@ -108,7 +108,8 @@ function lockoutSecondsFromRecord(
 	if (direct) return direct;
 	// `@clerk/shared`'s `ClerkAPIError` drops unknown `meta` fields, leaving the
 	// wait only inside `longMessage` (for example "try again in 30 minutes").
-	// Parse the numeric duration so we still show our own translated copy.
+	// Parse the numeric duration so we still show our own translated copy. A
+	// compound wait ("1 hour and 30 minutes") would understate, so it shows "later".
 	if (record.code !== "user_locked") return undefined;
 	const text =
 		typeof record.longMessage === "string"
@@ -116,7 +117,9 @@ function lockoutSecondsFromRecord(
 			: typeof record.long_message === "string"
 				? record.long_message
 				: null;
-	const match = text?.match(/\bin\s+(\d+)\s+(second|minute|hour)s?\b/i);
+	const match = text?.match(
+		/\bin\s+(\d+)\s+(second|minute|hour)s?\b(?!\s+and\s+\d)/i,
+	);
 	if (!match) return undefined;
 	const amount = Number.parseInt(match[1], 10);
 	const unit = UNIT_SECONDS[match[2].toLowerCase()];
@@ -138,7 +141,7 @@ function clerkLockoutSeconds(error: unknown, depth = 0): number | undefined {
 export function clerkErrorKey(error: unknown): AuthErrorKey | null {
 	if (!error) return null;
 	const code = clerkErrorCode(error);
-	if (code && code in CODE_MAP) return CODE_MAP[code];
+	if (code && Object.hasOwn(CODE_MAP, code)) return CODE_MAP[code];
 	if (isRecord(error) && error.status === 429) return "tooManyRequests";
 	return "generic";
 }

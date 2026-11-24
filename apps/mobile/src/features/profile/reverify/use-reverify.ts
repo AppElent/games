@@ -96,7 +96,10 @@ export function useReverify(clerk: VerifyingClerk) {
 			return;
 		}
 		const mapped = clerkError(caught) ?? { key: "generic" as const };
-		if (mapped.key === "generic") reportError(caught);
+		// A session or permission fault inside the sheet is never a wrong entry:
+		// keep telling Sentry about it, as the generic copy used to.
+		if (mapped.key === "generic" || mapped.key === "signInAgain")
+			reportError(caught);
 		setError(mapped);
 	};
 

@@ -213,6 +213,16 @@ describe("useReverify", () => {
 		expect(reportError).not.toHaveBeenCalled();
 	});
 
+	it("reports a session fault that is not a wrong entry", async () => {
+		const { session, hook } = await setup([password]);
+		session.attemptFirstFactorVerification.mockRejectedValueOnce(
+			refusal("authorization_invalid"),
+		);
+		await act(() => hook.result.current.submit("wrong"));
+		expect(hook.result.current.errorKey).toBe("signInAgain");
+		expect(reportError).toHaveBeenCalledTimes(1);
+	});
+
 	it("maps HTTP 429 without a code to tooManyRequests without reporting", async () => {
 		const { session, hook } = await setup([password]);
 		session.attemptFirstFactorVerification.mockRejectedValueOnce({

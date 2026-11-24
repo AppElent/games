@@ -166,6 +166,17 @@ describe("clerkError and authErrorMessage", () => {
 				],
 			}),
 		).toEqual({ key: "accountLocked" });
+		expect(
+			clerkError({
+				errors: [
+					{
+						code: "user_locked",
+						longMessage: "You can try again in 1 hour and 30 minutes.",
+					},
+				],
+			}),
+		).toEqual({ key: "accountLocked" });
+		expect(clerkErrorKey({ code: "toString" })).toBe("generic");
 		expect(clerkError(null)).toBeNull();
 	});
 
