@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sudoku board updated</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="{{rootStyle}}">
+
+  <sc-if value="{{isPhone}}" hint-placeholder-val="{{ true }}">
+    <div style="height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-bottom: 1px solid {{c.border}}; background: {{c.bg}};">
+      <button type="button" style="min-width: 88px; height: 44px; display: flex; align-items: center; gap: 2px; background: none; border: 0; padding: 0 8px; color: {{c.accent}}; font: inherit; font-size: 17px; cursor: pointer;">
+        <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true"><path d="M10 2 2 10l8 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Sudoku</span>
+      </button>
+      <span style="font-size: 17px; font-weight: 600;">{{s.title}}</span>
+      <button type="button" aria-label="{{s.pause}}" style="min-width: 88px; height: 44px; display: flex; align-items: center; justify-content: flex-end; background: none; border: 0; padding: 0 12px; color: {{c.accent}}; cursor: pointer;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </sc-if>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 12px 20px 0;">
+    <div style="width: 350px; display: flex; flex-direction: column; gap: 14px;">
+
+      <sc-if value="{{isPhone}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; align-items: center; justify-content: space-between; min-height: 24px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 15px; color: {{c.textMuted}}; font-variant-numeric: tabular-nums;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 9v4l2.5 2M9 2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            {{clock}}
+          </span>
+          <span style="font-size: 13px; color: {{c.textMuted}};">{{s.filled}}</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isWeb}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <div style="min-width: 0;">
+            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #f8fafc;">Sudoku</div>
+            <div style="font-size: 12px; color: #94a3b8;">{{s.title}}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(71,85,105,0.7); background: rgba(30,41,59,0.7); border-radius: 6px; padding: 4px 8px; font-family: ui-monospace, Menlo, monospace; font-size: 14px; color: #e2e8f0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 9v4l2.5 2M9 2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              {{clock}}
+            </span>
+            <button type="button" style="display: inline-flex; align-items: center; gap: 4px; min-height: 32px; border: 1px solid rgba(148,163,184,0.6); background: rgba(30,41,59,0.7); border-radius: 6px; padding: 4px 8px; font: inherit; font-size: 14px; font-weight: 600; color: #e2e8f0; cursor: pointer;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+              {{s.pause}}
+            </button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showInline}}" hint-placeholder-val="{{ true }}">
+        <div role="status" aria-live="polite" style="{{noticeStyle}}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex: none; margin-top: 2px; color: {{noticeIcon}};"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 15px; font-weight: 700; color: {{noticeTitle}};">{{s.nTitle}}</span>
+            <span style="font-size: 14px; line-height: 1.4; color: {{noticeBody}};">{{body}}</span>
+          </div>
+          <button type="button" onClick="{{dismiss}}" style="flex: none; align-self: center; min-width: 44px; min-height: 44px; margin: -8px -8px -8px 0; padding: 0 10px; background: none; border: 0; font: inherit; font-size: 15px; font-weight: 700; color: {{noticeAction}}; cursor: pointer;">{{s.ok}}</button>
+        </div>
+      </sc-if>
+
+      <div style="width: 350px; height: 350px; box-sizing: border-box; border: 2px solid {{c.thick}}; border-radius: 6px; overflow: hidden; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); background: {{c.surface}};" role="img" aria-label="Sudoku board">
+        <sc-for list="{{cells}}" as="cell" hint-placeholder-count="81">
+          <div style="{{cell.style}}">{{cell.d}}</div>
+        </sc-for>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; padding: 3px; border-radius: 12px; background: {{c.surface2}};">
+        <sc-for list="{{modes}}" as="m" hint-placeholder-count="4">
+          <button type="button" style="{{m.style}}">{{m.label}}</button>
+        </sc-for>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px;">
+        <sc-for list="{{keys}}" as="k" hint-placeholder-count="10">
+          <button type="button" onClick="{{k.press}}" aria-label="{{k.aria}}" style="{{keyStyle}}">{{k.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{showToast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" aria-live="polite" style="{{toastStyle}}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex: none; color: {{toastIcon}};"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span style="flex: 1; font-size: 15px; line-height: 1.35;">{{s.toast}}</span>
+      <button type="button" onClick="{{dismiss}}" style="flex: none; min-width: 44px; min-height: 44px; padding: 0 8px; background: none; border: 0; font: inherit; font-size: 15px; font-weight: 700; color: {{toastIcon}}; cursor: pointer;">{{s.ok}}</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{showDialog}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(2, 6, 23, 0.55); display: flex; align-items: center; justify-content: center; padding: 24px;">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="dlg-title" style="{{dialogStyle}}">
+        <div style="width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: {{c.accentDim}}; color: {{c.accent}};">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h2 id="dlg-title" style="margin: 0; font-size: 22px; font-weight: 700;">{{s.nTitle}}</h2>
+        <p style="margin: 0; font-size: 16px; line-height: 1.45; color: {{c.textMuted}};">{{body}}</p>
+        <button type="button" onClick="{{dismiss}}" style="height: 50px; border: 0; border-radius: 999px; background: {{c.accent}}; color: {{c.onAccent}}; font: inherit; font-size: 17px; font-weight: 700; cursor: pointer;">{{s.cont}}</button>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"option":{"editor":"enum","options":["A","B","C","none"],"default":"A"},"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"lang":{"editor":"enum","options":["en","nl"],"default":"en"},"surface":{"editor":"enum","options":["phone","web"],"default":"phone"},"lost":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { hidden: false, sel: 40 };
+  }
+  renderVals() {
+    const option = this.props.option ?? 'A';
+    const surface = this.props.surface ?? 'phone';
+    const isWeb = surface === 'web';
+    const theme = isWeb ? 'dark' : (this.props.theme ?? 'dark');
+    const lang = this.props.lang ?? 'en';
+    const lost = this.props.lost ?? true;
+
+    const dark = {
+      bg: '#080a12', surface: '#121626', surface2: '#191f34', border: 'rgba(148, 163, 184, 0.18)',
+      thick: 'rgba(148, 163, 184, 0.6)', thin: 'rgba(148, 163, 184, 0.22)',
+      text: '#f8fafc', textMuted: '#aab6cc', accent: '#22d3ee', accentDim: 'rgba(34, 211, 238, 0.14)',
+      onAccent: '#04121a', given: '#f8fafc', user: '#22d3ee'
+    };
+    const light = {
+      bg: '#f8fafc', surface: '#ffffff', surface2: '#eef2f7', border: 'rgba(15, 23, 42, 0.12)',
+      thick: 'rgba(15, 23, 42, 0.5)', thin: 'rgba(15, 23, 42, 0.14)',
+      text: '#0f172a', textMuted: '#475569', accent: '#0e7490', accentDim: 'rgba(14, 116, 144, 0.09)',
+      onAccent: '#ffffff', given: '#0f172a', user: '#0e7490'
+    };
+    const web = Object.assign({}, dark, { bg: '#020617', surface: '#0f172a', surface2: '#1e293b' });
+    const c = isWeb ? web : (theme === 'light' ? light : dark);
+
+    const copy = {
+      en: {
+        title: 'Classic · Medium', pause: 'Pause', filled: '47 of 81 filled',
+        nTitle: 'Board updated',
+        nBody: 'You played on another device, so this board now shows where you left off there.',
+        nLost: 'Moves you made here since then were not kept.',
+        ok: 'OK', toast: 'Board updated from your other device.', cont: 'Continue',
+        modes: ['Digit', 'Corner', 'Centre', 'Colour'], erase: 'Erase'
+      },
+      nl: {
+        title: 'Klassiek · Gemiddeld', pause: 'Pauze', filled: '47 van 81 ingevuld',
+        nTitle: 'Bord bijgewerkt',
+        nBody: 'Je speelde op een ander apparaat, dus dit bord toont nu waar je daar was gebleven.',
+        nLost: 'Zetten die je hier sindsdien deed, zijn niet bewaard.',
+        ok: 'Oké', toast: 'Bord bijgewerkt vanaf je andere apparaat.', cont: 'Verder spelen',
+        modes: ['Cijfer', 'Hoek', 'Midden', 'Kleur'], erase: 'Wissen'
+      }
+    };
+    const s = copy[lang] || copy.en;
+    const body = lost ? s.nBody + ' ' + s.nLost : s.nBody;
+
+    const shown = !this.state.hidden;
+    const dismiss = () => this.setState({ hidden: true });
+
+    const SOL = '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
+    const cells = [];
+    for (let i = 0; i < 81; i++) {
+      const r = Math.floor(i / 9), col = i % 9;
+      const given = (r * 4 + col * 7) % 3 === 0;
+      const user = !given && (r * 2 + col * 5) % 4 === 1;
+      const selected = i === this.state.sel;
+      const right = col === 8 ? 'none' : ((col % 3 === 2) ? '2px solid ' + c.thick : '1px solid ' + c.thin);
+      const bottom = r === 8 ? 'none' : ((r % 3 === 2) ? '2px solid ' + c.thick : '1px solid ' + c.thin);
+      const style = 'aspect-ratio: 1; display: flex; align-items: center; justify-content: center; box-sizing: border-box;'
+        + ' border-right: ' + right + '; border-bottom: ' + bottom + ';'
+        + ' font-size: 21px; font-weight: ' + (given ? '600' : '500') + ';'
+        + ' color: ' + (given ? c.given : c.user) + ';'
+        + ' background: ' + (selected ? c.accentDim : 'transparent') + ';';
+      cells.push({ d: (given || user) ? SOL[i] : '', style: style });
+    }
+
+    const modes = s.modes.map((label, i) => ({
+      label: label,
+      style: 'min-height: 36px; border: 0; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;'
+        + (i === 0 ? ' background: ' + c.accent + '; color: ' + c.onAccent + ';' : ' background: transparent; color: ' + c.text + ';')
+    }));
+
+    const keys = [];
+    for (let d = 1; d <= 9; d++) {
+      keys.push({ label: String(d), aria: String(d), press: () => this.setState({ hidden: option === 'A' ? true : this.state.hidden }) });
+    }
+    keys.push({ label: '⌫', aria: s.erase, press: () => this.setState({ hidden: option === 'A' ? true : this.state.hidden }) });
+
+    const keyStyle = 'height: 52px; border-radius: 12px; border: 1px solid ' + c.thick + '; background: ' + c.surface
+      + '; color: ' + c.text + '; font: inherit; font-size: 22px; font-weight: 600; cursor: pointer;';
+
+    const fontFamily = isWeb ? "Manrope, system-ui, sans-serif" : "-apple-system, 'SF Pro Text', system-ui, sans-serif";
+    const rootStyle = 'position: relative; width: 390px; height: 844px; overflow: hidden; box-sizing: border-box; background: '
+      + c.bg + '; color: ' + c.text + '; font-family: ' + fontFamily + ';' + (isWeb ? ' padding-top: 8px;' : '');
+
+    const noticeStyle = isWeb
+      ? 'display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(6, 182, 212, 0.15);'
+      : 'display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-radius: 12px; background: ' + c.accentDim + ';';
+
+    const toastBg = theme === 'light' ? '#0f172a' : '#191f34';
+    const toastStyle = 'position: absolute; left: 20px; right: 20px; bottom: 150px; display: flex; gap: 10px; align-items: center;'
+      + ' padding: 4px 8px 4px 16px; border-radius: 14px; background: ' + toastBg + '; color: #f8fafc;'
+      + ' border: 1px solid rgba(148, 163, 184, 0.6); box-shadow: 0 8px 24px rgba(2, 6, 23, 0.35);';
+
+    const dialogStyle = 'width: 100%; max-width: 320px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;'
+      + ' padding: 24px; border-radius: 18px; background: ' + c.surface + '; color: ' + c.text + ';';
+
+    return {
+      c: c, s: s, body: body,
+      isPhone: !isWeb, isWeb: isWeb,
+      clock: '14:32',
+      showInline: shown && option === 'A',
+      showToast: shown && option === 'B',
+      showDialog: shown && option === 'C',
+      dismiss: dismiss,
+      cells: cells, modes: modes, keys: keys, keyStyle: keyStyle,
+      rootStyle: rootStyle, noticeStyle: noticeStyle,
+      noticeIcon: isWeb ? '#67e8f9' : c.accent,
+      noticeTitle: isWeb ? '#cffafe' : c.text,
+      noticeBody: isWeb ? '#cffafe' : c.text,
+      noticeAction: isWeb ? '#67e8f9' : c.accent,
+      toastStyle: toastStyle, toastIcon: theme === 'light' ? '#67e8f9' : '#22d3ee',
+      dialogStyle: dialogStyle
+    };
+  }
+}
+</script>
+</body>
+</html>

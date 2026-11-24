@@ -5,3 +5,4 @@ Approved design studies, per the [design studies standard](../docs/standards/des
 | Area | Study | Status | Canvas |
 | --- | --- | --- | --- |
 | Party games | [Overview](party-games/README.md): [room and join](party-games/room-and-join_final.md), [Beat the Clock](party-games/beat-the-clock_final.md), [Doen, Durven of de Waarheid](party-games/doen-durven_final.md) | Approved 2026-11-13, not built ([APP-28](https://linear.app/appelent/issue/APP-28)) | [Arcade Club party games](https://claude.ai/artifact/LnbzrJHgP1Etu4RqnLDxF5) |
+| Sudoku | [Newer-board notice](sudoku/newer-board-notice_final.md) | Approved 2026-11-24, not built ([APP-791](https://linear.app/appelent/issue/APP-791)) | [Arcade Club — Sudoku](https://claude.ai/artifact/FTvoMxXhkD2xDGHWgtHDzu) |
