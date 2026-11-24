@@ -4,7 +4,11 @@
  * a cell is shared with the app in `@arcadeclub/core/sudoku-scan-ink`.
  */
 import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
-import type { DigitRead, Point } from "@arcadeclub/core/sudoku-scan-ink";
+import type {
+	DigitRead,
+	InkBox,
+	Point,
+} from "@arcadeclub/core/sudoku-scan-ink";
 import {
 	planGridReads,
 	readBoxes,
@@ -185,6 +189,49 @@ async function recognizeDigit(worker: OcrWorker, crop: HTMLCanvasElement) {
 	}
 }
 
+/**
+ * Tesseract sometimes reads nothing from a clear printed digit, and a 1 px
+ * change of the crop decides it. For an empty read the crop is grown by 2 px,
+ * then shrunk by 1 px (per side). A retry only counts at this confidence: on
+ * the scan-bench photos 0.9 keeps every right read the retry finds and adds no
+ * wrong read, where an ungated retry also turned empty cells into wrong digits.
+ */
+const RETRY_INSETS = [-2, 1];
+export const RETRY_MIN_CONFIDENCE = 0.9;
+
+function insetBox(box: InkBox, inset: number): InkBox | null {
+	const x = Math.max(0, box.x + inset);
+	const y = Math.max(0, box.y + inset);
+	const width = Math.min(WARP_SIZE, box.x + box.width - inset) - x;
+	const height = Math.min(WARP_SIZE, box.y + box.height - inset) - y;
+	return width > 0 && height > 0 ? { x, y, width, height } : null;
+}
+
+/**
+ * Read a digit box; on an empty read, retry with the box grown and then
+ * shrunk, and take the first retry that reads a digit with enough confidence.
+ */
+export async function readDigitWithRetry(
+	box: InkBox,
+	read: (box: InkBox) => Promise<DigitRead>,
+): Promise<DigitRead> {
+	const first = await read(box);
+	if (first.digit !== 0) {
+		return first;
+	}
+	for (const inset of RETRY_INSETS) {
+		const retryBox = insetBox(box, inset);
+		if (!retryBox) {
+			continue;
+		}
+		const retry = await read(retryBox);
+		if (retry.digit !== 0 && retry.confidence >= RETRY_MIN_CONFIDENCE) {
+			return retry;
+		}
+	}
+	return first;
+}
+
 export type ScanProgress = {
 	step: "preparing" | "recognizing";
 	cellsDone: number;
@@ -228,17 +275,18 @@ export async function recognizeGrid(
 			const plan = plans[cell];
 			// Notes are small: scale them up more before tesseract reads them.
 			const scale = plan.kind === "notes" ? 5 : 3;
+			const readBox = (box: InkBox) =>
+				recognizeDigit(
+					worker,
+					cropToCanvas(warped, box.x, box.y, box.width, box.height, scale),
+				);
 			const reads: DigitRead[] = [];
 			for (const box of readBoxes(plan)) {
-				const crop = cropToCanvas(
-					warped,
-					box.x,
-					box.y,
-					box.width,
-					box.height,
-					scale,
+				reads.push(
+					plan.kind === "digit"
+						? await readDigitWithRetry(box, readBox)
+						: await readBox(box),
 				);
-				reads.push(await recognizeDigit(worker, crop));
 			}
 			cells.push(scanCellFromReads(plan, reads));
 		}
