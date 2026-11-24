@@ -8,6 +8,7 @@ import {
 	type AccountSession,
 	type CloudBundle,
 	createSyncRunner,
+	MAX_FOLDED_RUNNING_SECONDS,
 	type SudokuCloud,
 	type SyncAccount,
 	saveFromBundle,
@@ -643,6 +644,33 @@ describe("saveFromBundle", () => {
 			status: "active",
 		});
 		expect(save?.variant === "classic" && save.solution).toBeUndefined();
+	});
+
+	it("counts a session still running elsewhere, within the bound", () => {
+		// Resumed 2 minutes ago: played on the web right now.
+		const save = saveFromBundle(bundle, {
+			id: SESSION,
+			userId: ME,
+			now: 10_000 + 120_000,
+		});
+		expect(save.elapsedSeconds).toBe(30 + 120);
+	});
+
+	it("does not fold the idle time of a killed app into the clock", () => {
+		// Left running for a day: the app was killed before it could pause.
+		const save = saveFromBundle(bundle, {
+			id: SESSION,
+			userId: ME,
+			now: 10_000 + 24 * 3600_000,
+		});
+		expect(save.elapsedSeconds).toBe(30 + MAX_FOLDED_RUNNING_SECONDS);
+	});
+
+	it("ignores a resume time ahead of the phone's clock", () => {
+		expect(
+			saveFromBundle(bundle, { id: SESSION, userId: ME, now: 0 })
+				.elapsedSeconds,
+		).toBe(30);
 	});
 
 	it("reads a binary session", () => {
