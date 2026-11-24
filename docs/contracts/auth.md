@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, sign-up, account, theme sync, or how the Clerk session reaches Convex.
-version: 1.4.0
+version: 1.5.0
 status: current
 ---
 
@@ -90,10 +90,17 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
     Apple, so there is nothing to revoke.
 
   An old sign-in stops before any data is deleted: the web opens Clerk's verify dialog
-  (via `useReverification`); the app, which has no such dialog, refuses with
-  `accountSignInFirst` and offers "Sign in again", after which it returns to the delete
-  screen (return target, below). If Clerk still refuses the
-  user after the data is gone, the app shows `accountSignInToFinish`; the web, where
+  (via `useReverification`); the app opens its own
+  verify sheet over the delete screen (`apps/mobile/src/features/profile/reverify`,
+  Clerk's session verification at the "strict" level): the password when the account
+  has one, with "Email me a code instead" when Clerk also offers a code, otherwise an
+  emailed code. Confirming continues the deletion in the same session; cancelling
+  deletes nothing. Failures show through `@arcadeclub/core/auth-errors`. An account the
+  sheet can't handle (no password or email code, such as social-only, or a second
+  factor) gets `accountVerifyUnsupported` and "Sign in again", after which it returns
+  to the delete screen (return target, below). If Clerk still refuses the user after
+  the data is gone, the sheet opens once more; cancelled, the app shows
+  `accountDeleteAgain`, and when it can't help, `accountSignInToFinish`; the web, where
   deleting again reopens Clerk's dialog, shows `accountDeleteAgain`. Refusals
   (`accountInActiveGame`, `accountChanged`) and a Clerk session that has ended
   (`accountSessionEnded`, "Sign in again" on the app, also when nobody is signed in)

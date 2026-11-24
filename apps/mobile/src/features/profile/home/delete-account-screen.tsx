@@ -3,8 +3,9 @@
  * account, so the person first picks what goes: Arcade Club's data only
  * (listed first; the login keeps working in the other apps) or the whole
  * AppElent account, which names the other apps it reaches. A native alert
- * confirms the choice, then `useDeleteAccount` runs it. An old sign-in stops
- * before anything is deleted and offers "Sign in again" here.
+ * confirms the choice, then `useDeleteAccount` runs it. An old sign-in opens
+ * the verify sheet over this screen before anything is deleted; an account the
+ * sheet can't handle is offered "Sign in again" here.
  */
 import type { DeletionScope } from "@arcadeclub/core/account-deletion";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
@@ -17,6 +18,7 @@ import { ChoiceList } from "../../../ui/choice-list";
 import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
+import { ReverifySheet } from "../reverify/reverify-sheet";
 import { useDeleteAccount } from "./use-delete-account";
 
 const SCOPES: readonly DeletionScope[] = ["app", "account"];
@@ -82,7 +84,7 @@ export function DeleteAccountScreen() {
 				}
 			/>
 			{deletion.needsSignIn ? (
-				// Clerk wants a fresh sign-in; the app's own sign-in gives one.
+				// The sheet can't confirm this account; the app's own sign-in can.
 				<Button
 					variant="secondary"
 					label={copy.signInAgain}
@@ -106,6 +108,7 @@ export function DeleteAccountScreen() {
 					testID="delete-account-sign-in-again"
 				/>
 			) : null}
+			<ReverifySheet reverify={deletion.reverify} />
 		</Screen>
 	);
 }

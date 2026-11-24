@@ -89,6 +89,8 @@ export const serverErrors = {
 		"This export can't continue. Start the download again.",
 	accountSignInFirst:
 		"To delete, sign in again first. This keeps anyone else using this device from deleting your data or account.",
+	accountVerifyUnsupported:
+		"We can't confirm it's you here with a password or an emailed code. Sign in again first, then delete.",
 	accountSignInToFinish:
 		"Your Arcade Club data is deleted, but your AppElent account isn't yet: it needs a recent sign-in. Sign in again, then delete your whole account again to finish.",
 	accountSessionEnded:

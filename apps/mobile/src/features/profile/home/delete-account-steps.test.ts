@@ -3,9 +3,12 @@ import {
 	deleteAccount,
 } from "@arcadeclub/core/account-deletion";
 import { gameErrorData } from "@arcadeclub/core/errors";
+import { reportError } from "../../../observability/report";
 import { forgetAccountSaves } from "../../sudoku/saves/sudoku-save-store";
+import type { ReverifyOutcome } from "../reverify/use-reverify";
 import { deletionSteps, needsSignInAgain } from "./delete-account-steps";
 
+jest.mock("../../../observability/report", () => ({ reportError: jest.fn() }));
 jest.mock("../../sudoku/saves/sudoku-save-store", () => ({
 	forgetAccountSaves: jest.fn(),
 }));
@@ -15,9 +18,12 @@ const account = { userId: "user_1", sessionId: "sess_1" };
 function setup({
 	recent = true,
 	scope = "account",
+	outcome = "verified",
 }: {
 	recent?: boolean;
 	scope?: DeletionScope;
+	/** How the verify sheet ends. */
+	outcome?: ReverifyOutcome;
 } = {}) {
 	const calls: string[] = [];
 	const clerk = {
@@ -43,14 +49,19 @@ function setup({
 	const signOut = jest.fn(async () => {
 		calls.push("signOut");
 	});
+	const reverify = jest.fn(async (): Promise<ReverifyOutcome> => {
+		calls.push("reverify");
+		return outcome;
+	});
 	const steps = deletionSteps({
 		clerk,
 		account,
 		scope,
 		deleteBatch,
+		reverify,
 		signOut,
 	});
-	return { calls, clerk, steps, deleteBatch, signOut };
+	return { calls, clerk, steps, deleteBatch, reverify, signOut };
 }
 
 async function failure(run: Promise<unknown>) {
@@ -81,33 +92,100 @@ describe("deletionSteps", () => {
 		expect(forgetAccountSaves).toHaveBeenCalledWith("user_1");
 	});
 
-	it("asks for a recent sign-in before deleting only the data", async () => {
-		const { calls, steps } = setup({ scope: "app", recent: false });
+	it.each([
+		["app", ["reload", "reverify", "reload", "batch", "signOut"]],
+		["account", ["reload", "reverify", "reload", "batch", "user", "signOut"]],
+	] as const)(
+		"verifies an old sign-in, then deletes (%s)",
+		async (scope, order) => {
+			const { calls, clerk, steps } = setup({ scope });
+			clerk.session.checkAuthorization.mockReturnValueOnce(false);
+			await expect(deleteAccount(steps)).resolves.toBe(true);
+			expect(calls).toEqual(order);
+		},
+	);
+
+	it.each(["app", "account"] as const)(
+		"deletes nothing when the sheet is cancelled (%s)",
+		async (scope) => {
+			const { calls, steps } = setup({
+				scope,
+				recent: false,
+				outcome: "cancelled",
+			});
+			await expect(deleteAccount(steps)).resolves.toBe(false);
+			expect(calls).toEqual(["reload", "reverify"]);
+		},
+	);
+
+	it("deletes nothing and offers signing in again when the sheet can't verify the account", async () => {
+		const { calls, steps } = setup({ recent: false, outcome: "unsupported" });
 		const error = await failure(deleteAccount(steps));
-		expect(gameErrorData(error)?.code).toBe("accountSignInFirst");
-		expect(calls).toEqual(["reload"]);
+		expect(gameErrorData(error)?.code).toBe("accountVerifyUnsupported");
+		expect(needsSignInAgain(error)).toBe(true);
+		expect(calls).toEqual(["reload", "reverify"]);
 	});
 
-	it("deletes nothing and asks to sign in again when the sign-in is old", async () => {
+	it("deletes nothing when Clerk still finds the sign-in old after the sheet", async () => {
 		const { calls, steps } = setup({ recent: false });
 		const error = await failure(deleteAccount(steps));
 		expect(gameErrorData(error)?.code).toBe("accountSignInFirst");
 		expect(needsSignInAgain(error)).toBe(true);
-		expect(calls).toEqual(["reload"]);
+		expect(calls).toEqual(["reload", "reverify", "reload"]);
 	});
 
-	it("asks to sign in again to finish when Clerk refuses the user after the data", async () => {
-		const { calls, clerk, steps, signOut } = setup();
-		clerk.user.delete.mockRejectedValueOnce({
-			status: 403,
-			errors: [{ code: "session_reverification_required" }],
+	const refusal = {
+		status: 403,
+		errors: [{ code: "session_reverification_required" }],
+	};
+
+	it("verifies and finishes when Clerk refuses the user after the data", async () => {
+		const { calls, clerk, steps } = setup();
+		clerk.user.delete.mockRejectedValueOnce(refusal);
+		await expect(deleteAccount(steps)).resolves.toBe(true);
+		expect(calls).toEqual(["reload", "batch", "reverify", "user", "signOut"]);
+	});
+
+	it.each([
+		["cancelled", "accountDeleteAgain", false],
+		["unsupported", "accountSignInToFinish", true],
+		// Verified, but Clerk refuses again.
+		["verified", "accountSignInToFinish", true],
+	] as const)(
+		"says the data is gone but the user isn't when that sheet ends %s",
+		async (outcome, code, signInAgain) => {
+			const { calls, clerk, steps, signOut } = setup({ outcome });
+			clerk.user.delete.mockRejectedValue(refusal);
+			const error = await failure(deleteAccount(steps));
+			expect(gameErrorData(error)?.code).toBe(code);
+			expect(needsSignInAgain(error)).toBe(signInAgain);
+			expect(calls).toEqual(["reload", "batch", "reverify"]);
+			expect(signOut).not.toHaveBeenCalled();
+			expect(forgetAccountSaves).not.toHaveBeenCalled();
+		},
+	);
+
+	it("says the data is gone but the user isn't when that sheet cannot open", async () => {
+		const { clerk, steps, reverify, signOut } = setup();
+		const offline = new Error("Network request failed");
+		clerk.user.delete.mockRejectedValueOnce(refusal);
+		reverify.mockRejectedValueOnce(offline);
+		const error = await failure(deleteAccount(steps));
+		expect(gameErrorData(error)?.code).toBe("accountDeleteAgain");
+		expect(reportError).toHaveBeenCalledWith(offline);
+		expect(signOut).not.toHaveBeenCalled();
+	});
+
+	it("refuses to finish on another account that signed in during the sheet", async () => {
+		const { clerk, steps, reverify } = setup();
+		clerk.user.delete.mockRejectedValueOnce(refusal);
+		reverify.mockImplementationOnce(async () => {
+			clerk.user.id = "user_2";
+			return "verified";
 		});
 		const error = await failure(deleteAccount(steps));
-		expect(gameErrorData(error)?.code).toBe("accountSignInToFinish");
-		expect(needsSignInAgain(error)).toBe(true);
-		expect(calls).toEqual(["reload", "batch"]);
-		expect(signOut).not.toHaveBeenCalled();
-		expect(forgetAccountSaves).not.toHaveBeenCalled();
+		expect(gameErrorData(error)?.code).toBe("accountChanged");
+		expect(clerk.user.delete).toHaveBeenCalledTimes(1);
 	});
 
 	it("refuses when another account is signed in by the time the user is deleted", async () => {

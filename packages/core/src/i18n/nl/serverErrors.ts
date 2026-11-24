@@ -92,6 +92,8 @@ export const serverErrors = {
 		"Deze export kan niet verder. Begin de download opnieuw.",
 	accountSignInFirst:
 		"Log eerst opnieuw in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",
+	accountVerifyUnsupported:
+		"We kunnen hier niet met een wachtwoord of een code per e-mail bevestigen dat jij het bent. Log eerst opnieuw in en verwijder daarna.",
 	accountSignInToFinish:
 		"Je Arcade Club-gegevens zijn verwijderd, maar je AppElent-account nog niet: daarvoor moet je net zijn ingelogd. Log opnieuw in en verwijder je hele account nog een keer om het af te ronden.",
 	accountSessionEnded:

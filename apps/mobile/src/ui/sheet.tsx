@@ -1,24 +1,30 @@
 /**
  * A native page sheet with a title and close action, swipe down to dismiss.
- * Its surface follows the app's scheme: it sits above the table, not on it.
+ * Its surface follows the app's scheme, also over a table. A form in it keeps
+ * its focused field above the keyboard.
  */
 import type { ReactNode } from "react";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useI18n } from "../../../i18n";
-import { metrics, spacing, useTokens } from "../../../theme";
-import { HeaderButton } from "../../../ui/button";
-import { AppText } from "../../../ui/text";
+import { useI18n } from "../i18n";
+import { metrics, spacing, useTokens } from "../theme";
+import { HeaderButton } from "./button";
+import { AppText } from "./text";
 
 export function Sheet({
 	open,
 	title,
 	onClose,
+	closeLabel,
+	closeTestID = "sheet-close",
 	children,
 }: {
 	open: boolean;
 	title: string;
 	onClose: () => void;
+	/** The close action's name when it does more than close, such as Cancel. */
+	closeLabel?: string;
+	closeTestID?: string;
 	children: ReactNode;
 }) {
 	const { t } = useI18n();
@@ -42,12 +48,14 @@ export function Sheet({
 						{title}
 					</AppText>
 					<HeaderButton
-						label={t.games.cards.table.close}
+						label={closeLabel ?? t.common.actions.close}
 						onPress={onClose}
-						testID="cards-sheet-close"
+						testID={closeTestID}
 					/>
 				</View>
 				<ScrollView
+					automaticallyAdjustKeyboardInsets
+					keyboardShouldPersistTaps="handled"
 					contentContainerStyle={[
 						styles.content,
 						{ paddingBottom: insets.bottom + spacing.xxl },
