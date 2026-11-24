@@ -637,11 +637,8 @@ describe("only the host reads", () => {
 		const result = await read(t.withIdentity({ subject: OWNER }), sessionId);
 		expect(result?.state.givens).toBe(GIVENS);
 		expect(result?.state).not.toHaveProperty("solution");
-		expect(result?.session).toEqual({
-			_id: sessionId,
-			title: "Puzzle",
-			hostUserId: OWNER,
-		});
+		expect(result?.session).toEqual({ _id: sessionId, title: "Puzzle" });
+		expect(result?.session).not.toHaveProperty("hostUserId");
 	});
 
 	it("is null for another account, even holding the guest id", async () => {
@@ -668,7 +665,7 @@ describe("only the host reads", () => {
 			const result = await read(caller, sessionId, SOLVER);
 			expect(result?.state.givens).toBe(GIVENS);
 			expect(result?.session).toEqual({ _id: sessionId, title: "Puzzle" });
-			expect(result?.session.hostUserId).toBeUndefined();
+			expect(result?.session).not.toHaveProperty("hostUserId");
 		}
 	});
 
