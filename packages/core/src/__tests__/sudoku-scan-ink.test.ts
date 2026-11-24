@@ -4,11 +4,10 @@ import {
 	type CellReadPlan,
 	defaultCorners,
 	gridCells,
-	gridReadBoxes,
 	planCellRead,
 	planGridReads,
+	readBoxes,
 	scanCellFromReads,
-	scanCellsFromGridReads,
 } from "../sudoku-scan-ink";
 
 const SIZE = 900;
@@ -162,22 +161,16 @@ describe("scanCellFromReads", () => {
 	});
 });
 
-describe("grid reads", () => {
-	it("hands every box to one batch and maps the reads back per cell", () => {
+describe("planGridReads", () => {
+	it("plans every cell of a grid", () => {
 		const gray = blankGrid(2);
 		fill(gray, 0, { x: 40, y: 28, width: 20, height: 44 }, 30);
 		fill(gray, 80, { x: 40, y: 28, width: 20, height: 44 }, 30);
 		const plans = planGridReads(gray, SIZE);
-		const boxes = gridReadBoxes(plans);
-		expect(boxes).toHaveLength(2);
-		const cells = scanCellsFromGridReads(plans, [
-			{ digit: 4, confidence: 1 },
-			{ digit: 9, confidence: 1 },
-		]);
-		expect(cells).toHaveLength(81);
-		expect(cells[0]).toMatchObject({ type: "given", digit: 4 });
-		expect(cells[80]).toMatchObject({ type: "given", digit: 9 });
-		expect(cells.filter((cell) => cell.type !== "empty")).toHaveLength(2);
+		expect(plans).toHaveLength(81);
+		expect(plans[0].kind).toBe("digit");
+		expect(plans[80].kind).toBe("digit");
+		expect(plans.flatMap(readBoxes)).toHaveLength(2);
 	});
 });
 
