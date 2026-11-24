@@ -185,11 +185,18 @@ export function progressArgs(
 
 /**
  * An account session as a save on this phone. The clock folds in the time
- * the session has run since it was last resumed, as the web does.
+ * the session has run since it was last resumed, as the web does. The server
+ * never sends a puzzle's source or solution, so a `local` copy of the same
+ * puzzle lends its own.
  */
 export function saveFromBundle(
 	bundle: CloudBundle,
-	{ id, userId, now }: { id: string; userId: string; now: number },
+	{
+		id,
+		userId,
+		now,
+		local,
+	}: { id: string; userId: string; now: number; local?: SudokuSave },
 ): SudokuSave {
 	const { session, state } = bundle;
 	const running =
@@ -223,6 +230,11 @@ export function saveFromBundle(
 	return {
 		...base,
 		variant: state.variant === "killer" ? "killer" : "classic",
+		...(local &&
+			local.variant !== "binary" && {
+				source: local.source,
+				solution: local.solution,
+			}),
 		board: {
 			givens: state.givens,
 			digits: state.digits,
@@ -362,16 +374,13 @@ export async function syncSudokuSaves(
 		if (!bundle || !local) return;
 		// Solved meanwhile: the board stands, and the next run completes it.
 		if (local.status === "completed") return;
-		const save = saveFromBundle(bundle, {
-			id,
-			userId: account.userId,
-			now: now(),
-		});
-		// What the server never sends, the phone still knows.
 		storeSyncedSave(
-			save.variant !== "binary" && local.variant !== "binary"
-				? { ...save, source: local.source, solution: local.solution }
-				: save,
+			saveFromBundle(bundle, {
+				id,
+				userId: account.userId,
+				now: now(),
+				local,
+			}),
 		);
 	}
 

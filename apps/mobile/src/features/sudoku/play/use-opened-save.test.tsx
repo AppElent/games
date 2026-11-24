@@ -8,6 +8,7 @@ import {
 	deleteSudokuSave,
 	findSudokuSaveBySession,
 	listSudokuSaves,
+	readSudokuSave,
 	storeSyncedSave,
 	writeSudokuSave,
 } from "../saves/sudoku-save-store";
@@ -94,6 +95,42 @@ it("opens the account's puzzle from a bundle without hostUserId", async () => {
 		state: "ready",
 		save: { cloud: { userId: ALICE, sessionId: SESSION } },
 	});
+});
+
+it("keeps the phone's solution when the account's board replaces its copy", async () => {
+	const solution = "1".repeat(81);
+	storeSyncedSave({
+		id: SESSION,
+		variant: "classic",
+		difficulty: "hard",
+		updatedAt: 1_000,
+		elapsedSeconds: 10,
+		status: "active",
+		board: {
+			givens: bundle.state.givens,
+			digits: "0".repeat(81),
+			corner: new Array(81).fill(0),
+			center: new Array(81).fill(0),
+			colors: new Array(81).fill(0),
+		},
+		solution,
+		autoCleanup: false,
+		cloud: {
+			userId: ALICE,
+			sessionId: SESSION,
+			synced: true,
+			baseUpdatedAt: 1_000,
+			loadedUpdatedAt: 1_000,
+		},
+	});
+	const { result } = await renderHook(() => useOpenedSave(SESSION));
+	await waitFor(() => expect(answers).toHaveLength(1));
+	await act(async () => answers[0].resolve(bundle));
+	expect(result.current).toMatchObject({
+		state: "ready",
+		save: { solution, cloud: { loadedUpdatedAt: 9_000 } },
+	});
+	expect(readSudokuSave(SESSION)).toMatchObject({ solution });
 });
 
 it("asks with the install's guest id, so a stranger's guest puzzle is refused", async () => {
