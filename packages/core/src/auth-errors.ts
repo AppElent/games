@@ -82,7 +82,7 @@ function positiveSeconds(value: unknown): number | undefined {
  * `ClerkAPIResponseError` carries `code: "api_response_error"` on itself
  * and the real code, such as `form_password_incorrect`, in `errors[]`.
  */
-function clerkErrorCode(error: unknown, depth = 0): string | null {
+export function clerkErrorCode(error: unknown, depth = 0): string | null {
 	if (!isRecord(error) || depth > 8) return null;
 	if (Array.isArray(error.errors)) {
 		for (const nested of error.errors) {

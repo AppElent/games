@@ -7,12 +7,12 @@
  */
 import { useSignIn } from "@clerk/expo";
 import { useCallback, useState } from "react";
-import { useAuthFlow } from "../components/use-auth-flow";
+import { useSignInFlow } from "../components/use-sign-in-flow";
 
 export function useEmailCodeSignIn() {
 	const { signIn, errors } = useSignIn();
-	const flow = useAuthFlow(errors);
-	const { call, send: request, finish } = flow;
+	const flow = useSignInFlow(signIn, errors);
+	const { call, send: request, finishSignIn } = flow;
 	const [resending, setResending] = useState(false);
 
 	const send = useCallback(
@@ -34,14 +34,10 @@ export function useEmailCodeSignIn() {
 		await call(() => signIn.reset());
 	}, [call, signIn]);
 
+	/** Resolves to `"secondFactor"` when the account wants one first. */
 	const verify = useCallback(
-		async (code: string) => {
-			await finish(
-				() => signIn.emailCode.verifyCode({ code }),
-				() => signIn.finalize(),
-			);
-		},
-		[finish, signIn],
+		(code: string) => finishSignIn(() => signIn.emailCode.verifyCode({ code })),
+		[finishSignIn, signIn],
 	);
 
 	return {
@@ -51,6 +47,7 @@ export function useEmailCodeSignIn() {
 		startOver,
 		verify,
 		busy: flow.busy,
+		unsupported: flow.unsupported,
 		errorKey: flow.errorKey,
 	};
 }

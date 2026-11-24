@@ -35,12 +35,12 @@ export function SignInScreen() {
 
 	const ready =
 		form.values.email.trim().length > 0 && form.values.password.length > 0;
-	const submit = (values: typeof form.values) => {
+	async function submit(values: typeof form.values) {
 		setHint(null);
-		if (values.email.trim() && values.password) {
-			password.submit(values.email, values.password);
-		}
-	};
+		if (!values.email.trim() || !values.password) return;
+		const outcome = await password.submit(values.email, values.password);
+		if (outcome === "secondFactor") router.push("/sign-in-second-factor");
+	}
 
 	async function sendCode(values: typeof form.values) {
 		setHint(null);

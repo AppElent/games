@@ -21,7 +21,7 @@ import { useCallback, useState } from "react";
  * One Clerk call. Resolving to `null` stops the flow without an error, for
  * a state this app does not handle, which the hook reports its own way.
  */
-type Step = () => Promise<{ error: unknown } | null>;
+export type Step = () => Promise<{ error: unknown } | null>;
 
 export function useAuthFlow(errors: ClerkErrorSignal | null | undefined) {
 	const [busy, setBusy] = useState(false);

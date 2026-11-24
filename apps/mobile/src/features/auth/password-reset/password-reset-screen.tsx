@@ -7,6 +7,7 @@
  * new password, so password managers update the saved login for this account
  * instead of saving a second one.
  */
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { fmt, useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
@@ -30,6 +31,7 @@ export function PasswordResetScreen({
 }: {
 	initialEmail: string;
 }) {
+	const router = useRouter();
 	const { t } = useI18n();
 	const copy = t.auth.reset;
 	const flow = usePasswordReset();
@@ -64,16 +66,21 @@ export function PasswordResetScreen({
 	const ready =
 		reset.values.code.length === AUTH_CODE_LENGTH &&
 		reset.values.password.length > 0;
-	const submit = ({ code, password }: typeof reset.values) => {
-		if (code.length === AUTH_CODE_LENGTH && password) {
-			flow.submit(code, password);
+	const submit = async ({ code, password }: typeof reset.values) => {
+		if (code.length !== AUTH_CODE_LENGTH || !password) return;
+		// Replaces this screen: its code is spent, so there is no way back to it.
+		if ((await flow.submit(code, password)) === "secondFactor") {
+			router.replace({
+				pathname: "/sign-in-second-factor",
+				params: { from: "reset" },
+			});
 		}
 	};
 	return (
 		<AuthForm
 			title={copy.title}
 			subtitle={fmt(copy.codeBody, { email: sentTo })}
-			error={error}
+			error={error ?? (flow.unsupported ? t.auth.errors.unsupportedStep : null)}
 		>
 			<CodeField {...reset.field("code", codeDigits)} />
 			<EmailField value={sentTo} editable={false} testID="reset-email" />

@@ -15,7 +15,7 @@ export const auth = {
 		createAccount: "Account aanmaken",
 		devNote: "Testaccount ingevuld (ontwikkelomgeving).",
 		unsupportedStep:
-			"Inloggen vraagt een extra stap die deze app nog niet ondersteunt. Gebruik de webapp.",
+			'Inloggen vraagt een extra stap die deze app niet ondersteunt. Stel via "Wachtwoord vergeten?" een nieuw wachtwoord in.',
 	},
 	signInCode: {
 		title: "Check je e-mail",
@@ -25,6 +25,37 @@ export const auth = {
 		resend: "Stuur een nieuwe code",
 		resent: "Er komt een nieuwe code aan.",
 		differentEmail: "Ander e-mailadres gebruiken",
+	},
+	secondFactor: {
+		title: "Bevestig dat jij het bent",
+		prompt: {
+			totp: "Vul de code van 6 cijfers uit je authenticator-app in.",
+			phone_code:
+				"We hebben een code van 6 cijfers ge-sms't naar {destination}.",
+			email_code:
+				"We hebben een code van 6 cijfers gestuurd naar {destination}.",
+			backup_code: "Vul een van de back-upcodes in die je hebt bewaard.",
+		},
+		yourPhone: "je telefoon",
+		yourEmail: "je e-mailadres",
+		backupCode: "Back-upcode",
+		submit: "Bevestigen",
+		switchTo: {
+			totp: "Authenticator-app gebruiken",
+			phone_code: "Sms een code naar {destination}",
+			email_code: "Mail een code naar {destination}",
+			backup_code: "Back-upcode gebruiken",
+		},
+		passwordChanged:
+			"Je wachtwoord is gewijzigd. Nog één stap om in te loggen.",
+		methodLocked:
+			"Te veel foute codes voor deze methode. Kies hieronder een andere, of ga terug en log opnieuw in.",
+		onlyMethodLocked: "Te veel foute codes. Ga terug en log opnieuw in.",
+		attemptEnded:
+			"Deze inlogpoging duurde te lang en kan niet verder. Ga terug en log opnieuw in.",
+		noMethod:
+			"De tweede stap van je account werkt niet in Arcade Club. Een code uit een authenticator-app, sms of e-mail werkt wel, net als een back-upcode. Mail privacy@appelent.nl voor hulp. Je kunt als gast blijven spelen.",
+		backToSignIn: "Terug naar inloggen",
 	},
 	signUp: {
 		title: "Account aanmaken",

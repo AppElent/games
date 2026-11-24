@@ -1,3 +1,4 @@
+import { needsSecondFactor } from "@arcadeclub/core/second-factor";
 import { useSignIn } from "@clerk/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { authPageHref } from "#/lib/auth/core";
@@ -7,6 +8,7 @@ import { useAuthConfig } from "./AuthConfigProvider";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
 import { orThrow } from "./clerkResult";
+import { SecondFactorStep } from "./SecondFactorStep";
 import { TestLoginButton } from "./TestLoginButton";
 import { useAuthErrorText } from "./useAuthErrorText";
 import { EMAIL_CODE_LENGTH, useEmailCodeSignIn } from "./useEmailCodeSignIn";
@@ -15,6 +17,7 @@ import { EMAIL_CODE_LENGTH, useEmailCodeSignIn } from "./useEmailCodeSignIn";
  * Email and password, or an emailed code for accounts that have no password
  * (made on the phone with a code). The code step replaces the password step
  * on the same screen; "Use a different email" drops the attempt and returns.
+ * An account with two-step verification gets `SecondFactorStep` after either.
  */
 export function SignInForm({
 	onSuccess,
@@ -29,7 +32,9 @@ export function SignInForm({
 	const copy = useMessages().auth;
 	const errorText = useAuthErrorText();
 	const emailCode = useEmailCodeSignIn();
-	const [step, setStep] = useState<"password" | "code">("password");
+	const [step, setStep] = useState<"password" | "code" | "secondFactor">(
+		"password",
+	);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [code, setCode] = useState("");
@@ -46,6 +51,7 @@ export function SignInForm({
 	useEffect(() => {
 		if (stepShown.current === step) return;
 		stepShown.current = step;
+		// The second step focuses its own field.
 		(step === "code" ? codeRef : emailRef).current?.focus();
 	}, [step]);
 
@@ -62,6 +68,8 @@ export function SignInForm({
 			if (signIn.status === "complete") {
 				await orThrow(signIn.finalize());
 				onSuccess();
+			} else if (needsSecondFactor(signIn.status)) {
+				setStep("secondFactor");
 			} else {
 				setError(copy.errors.unsupportedStep);
 			}
@@ -92,8 +100,11 @@ export function SignInForm({
 	async function verifyCode(e: React.FormEvent) {
 		e.preventDefault();
 		setNotice(null);
-		if (await emailCode.verify(code)) {
+		const result = await emailCode.verify(code);
+		if (result === "signedIn") {
 			onSuccess();
+		} else if (result === "secondFactor") {
+			setStep("secondFactor");
 		} else {
 			codeRef.current?.focus();
 		}
@@ -112,6 +123,19 @@ export function SignInForm({
 		setCode("");
 		setNotice(null);
 		setStep("password");
+	}
+
+	if (step === "secondFactor") {
+		return (
+			<SecondFactorStep
+				onSuccess={onSuccess}
+				onBack={() => {
+					setPassword("");
+					setCode("");
+					setStep("password");
+				}}
+			/>
+		);
 	}
 
 	if (step === "code") {
@@ -210,7 +234,11 @@ export function SignInForm({
 			>
 				{copy.signIn.emailCode}
 			</AuthButton>
-			<TestLoginButton onSuccess={onSuccess} disabled={busy} />
+			<TestLoginButton
+				onSuccess={onSuccess}
+				onSecondFactor={() => setStep("secondFactor")}
+				disabled={busy}
+			/>
 			<div className="mt-1 flex justify-between text-xs text-[var(--auth-muted)]">
 				{config.features.forgotPassword ? (
 					<a

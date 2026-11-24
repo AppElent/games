@@ -22,11 +22,19 @@ export function SignInCodeScreen({ email }: { email: string }) {
 	const error = useAuthError(flow.errorKey);
 	const ready = code.length === AUTH_CODE_LENGTH;
 
+	async function verify() {
+		if (!ready || flow.busy) return;
+		// Replaces this screen: its code is spent, so there is no way back to it.
+		if ((await flow.verify(code)) === "secondFactor") {
+			router.replace("/sign-in-second-factor");
+		}
+	}
+
 	return (
 		<AuthForm
 			title={copy.title}
 			subtitle={fmt(copy.body, { email })}
-			error={error}
+			error={error ?? (flow.unsupported ? t.auth.signIn.unsupportedStep : null)}
 			notice={notice}
 			footer={
 				<>
@@ -50,16 +58,12 @@ export function SignInCodeScreen({ email }: { email: string }) {
 				</>
 			}
 		>
-			<CodeField
-				value={code}
-				onChangeText={setCode}
-				onSubmitEditing={() => ready && !flow.busy && flow.verify(code)}
-			/>
+			<CodeField value={code} onChangeText={setCode} onSubmitEditing={verify} />
 			<Button
 				label={copy.submit}
 				busy={flow.busy}
 				disabled={!ready}
-				onPress={() => flow.verify(code)}
+				onPress={verify}
 			/>
 		</AuthForm>
 	);

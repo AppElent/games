@@ -1,3 +1,4 @@
+import { needsSecondFactor } from "@arcadeclub/core/second-factor";
 import { useSignIn } from "@clerk/react";
 import { useState } from "react";
 import { fmt, useMessages } from "#/lib/i18n";
@@ -5,14 +6,24 @@ import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
 import { orThrow } from "./clerkResult";
+import { SecondFactorStep } from "./SecondFactorStep";
 import { UsernameHint } from "./UsernameHint";
 import { useAuthErrorText } from "./useAuthErrorText";
 
-export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
+export function ForgotPasswordForm({
+	onSuccess,
+	onBackToSignIn,
+}: {
+	onSuccess: () => void;
+	/** Leaves the second step an account with two-step verification gets. */
+	onBackToSignIn: () => void;
+}) {
 	const { signIn } = useSignIn();
 	const copy = useMessages().auth;
 	const errorText = useAuthErrorText();
-	const [step, setStep] = useState<"request" | "reset">("request");
+	const [step, setStep] = useState<"request" | "reset" | "secondFactor">(
+		"request",
+	);
 	const [email, setEmail] = useState("");
 	const [code, setCode] = useState("");
 	const [password, setPassword] = useState("");
@@ -44,6 +55,8 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 			if (signIn.status === "complete") {
 				await orThrow(signIn.finalize());
 				onSuccess();
+			} else if (needsSecondFactor(signIn.status)) {
+				setStep("secondFactor");
 			} else {
 				setError(copy.errors.unsupportedStep);
 			}
@@ -52,6 +65,16 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 		} finally {
 			setLoading(false);
 		}
+	}
+
+	if (step === "secondFactor") {
+		return (
+			<SecondFactorStep
+				notice={copy.secondFactor.passwordChanged}
+				onSuccess={onSuccess}
+				onBack={onBackToSignIn}
+			/>
+		);
 	}
 
 	if (step === "reset") {
