@@ -62,10 +62,18 @@ export const auth = {
 		codeExpired: "That code has expired. Send a new one.",
 		codeAttemptsExceeded: "Too many wrong codes. Send a new one.",
 		tooManyRequests: "Too many attempts. Try again in a moment.",
+		accountLocked:
+			"This account is temporarily locked after too many failed attempts. Try again later.",
 		network: "Network error. Check your connection and try again.",
 		tooLong: "That is too long.",
 		signInAgain: "For your security, sign in again first, then try once more.",
 		unsupportedStep:
 			"Signing in to this account needs another step this page doesn't support yet.",
+	},
+	lockout: {
+		body: "This account is temporarily locked after too many failed attempts. Try again in {duration}.",
+		seconds: { one: "{count} second", other: "{count} seconds" },
+		minutes: { one: "{count} minute", other: "{count} minutes" },
+		hours: { one: "{count} hour", other: "{count} hours" },
 	},
 };

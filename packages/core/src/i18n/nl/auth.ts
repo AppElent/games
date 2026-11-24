@@ -64,11 +64,19 @@ export const auth = {
 		codeExpired: "Die code is verlopen. Vraag een nieuwe aan.",
 		codeAttemptsExceeded: "Te veel foute codes. Vraag een nieuwe aan.",
 		tooManyRequests: "Te veel pogingen. Probeer het zo opnieuw.",
+		accountLocked:
+			"Dit account is tijdelijk vergrendeld na te veel mislukte pogingen. Probeer het later opnieuw.",
 		network: "Netwerkfout. Controleer je verbinding en probeer opnieuw.",
 		tooLong: "Dat is te lang.",
 		signInAgain:
 			"Log voor je veiligheid eerst opnieuw in en probeer het dan nog eens.",
 		unsupportedStep:
 			"Inloggen op dit account vraagt een extra stap die deze pagina nog niet ondersteunt.",
+	},
+	lockout: {
+		body: "Dit account is tijdelijk vergrendeld na te veel mislukte pogingen. Probeer het over {duration} opnieuw.",
+		seconds: { one: "{count} seconde", other: "{count} seconden" },
+		minutes: { one: "{count} minuut", other: "{count} minuten" },
+		hours: { one: "{count} uur", other: "{count} uur" },
 	},
 } satisfies typeof en;

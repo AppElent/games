@@ -94,8 +94,10 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   verify sheet over the delete screen (`apps/mobile/src/features/profile/reverify`,
   Clerk's session verification at the "strict" level): the password when the account
   has one, with "Email me a code instead" when Clerk also offers a code, otherwise an
-  emailed code. Confirming continues the deletion in the same session; cancelling
-  deletes nothing. Failures show through `@arcadeclub/core/auth-errors`. An account the
+  emailed code. An account with a password can go back to it from the code step
+  without cancelling. Confirming continues the deletion in the same session; cancelling
+  deletes nothing. Failures show through `@arcadeclub/core/auth-errors`, a locked account
+  with Clerk's wait when it gives one; session or permission faults are still reported to Sentry. An account the
   sheet can't handle (no password or email code, such as social-only, or a second
   factor) gets `accountVerifyUnsupported` and "Sign in again", after which it returns
   to the delete screen (return target, below). If Clerk still refuses the user after

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { clerkErrorKey, pickClerkErrorKey } from "../auth-errors";
+import {
+	authErrorMessage,
+	clerkError,
+	clerkErrorKey,
+	pickClerkErrorKey,
+} from "../auth-errors";
 import { messages } from "../messages";
 
 describe("clerkErrorKey", () => {
@@ -47,6 +52,33 @@ describe("clerkErrorKey", () => {
 		);
 	});
 
+	it.each([
+		["user_locked", "accountLocked"],
+		["too_many_attempts", "tooManyRequests"],
+		["too_many_verifications", "tooManyRequests"],
+		["verification_code_too_many_attempts", "codeAttemptsExceeded"],
+		["verification_max_attempts_reached", "codeAttemptsExceeded"],
+		["form_verification_max_attempts_reached", "codeAttemptsExceeded"],
+		["verification_not_sent", "codeExpired"],
+		["verification_missing", "codeExpired"],
+		["clerk_offline", "network"],
+		["session_not_found", "signInAgain"],
+		["authentication_invalid", "signInAgain"],
+		["authorization_invalid", "signInAgain"],
+	])("maps %s to %s (APP-777)", (code, key) => {
+		expect(clerkErrorKey({ errors: [{ code }] })).toBe(key);
+	});
+
+	it("maps HTTP 429 responses without a mapped code to tooManyRequests", () => {
+		expect(
+			clerkErrorKey({
+				code: "api_response_error",
+				status: 429,
+				errors: [],
+			}),
+		).toBe("tooManyRequests");
+	});
+
 	it("falls back to generic for an unknown code or a bare error", () => {
 		expect(clerkErrorKey({ code: "something_new" })).toBe("generic");
 		expect(clerkErrorKey(new Error("boom"))).toBe("generic");
@@ -80,5 +112,129 @@ describe("pickClerkErrorKey", () => {
 			),
 		).toBe("tooManyRequests");
 		expect(pickClerkErrorKey(null, null)).toBeNull();
+	});
+});
+
+describe("clerkError and authErrorMessage", () => {
+	it("extracts lockoutSeconds from meta, retryAfter, or longMessage fallback", () => {
+		expect(
+			clerkError({
+				errors: [
+					{ code: "user_locked", meta: { lockout_expires_in_seconds: 1800 } },
+				],
+			}),
+		).toEqual({ key: "accountLocked", lockoutSeconds: 1800 });
+		expect(
+			clerkError({
+				errors: [
+					{ code: "user_locked", meta: { lockoutExpiresInSeconds: 600 } },
+				],
+			}),
+		).toEqual({ key: "accountLocked", lockoutSeconds: 600 });
+		expect(
+			clerkError({
+				retryAfter: 90,
+				errors: [{ code: "user_locked" }],
+			}),
+		).toEqual({ key: "accountLocked", lockoutSeconds: 90 });
+		expect(
+			clerkError({
+				errors: [
+					{
+						code: "user_locked",
+						longMessage:
+							"Your account is locked. You will be able to try again in 30 minutes.",
+					},
+				],
+			}),
+		).toEqual({ key: "accountLocked", lockoutSeconds: 1800 });
+		expect(
+			clerkError({
+				errors: [
+					{
+						code: "user_locked",
+						longMessage:
+							"Your account is locked. For more information, contact support.",
+					},
+				],
+			}),
+		).toEqual({ key: "accountLocked" });
+		expect(
+			clerkError({
+				errors: [
+					{ code: "user_locked", meta: { lockout_expires_in_seconds: 0 } },
+				],
+			}),
+		).toEqual({ key: "accountLocked" });
+		expect(
+			clerkError({
+				errors: [
+					{
+						code: "user_locked",
+						longMessage: "You can try again in 1 hour and 30 minutes.",
+					},
+				],
+			}),
+		).toEqual({ key: "accountLocked" });
+		expect(clerkErrorKey({ code: "toString" })).toBe("generic");
+		expect(clerkError(null)).toBeNull();
+	});
+
+	it("formats accountLocked with and without a lockout wait in EN and NL", () => {
+		expect(authErrorMessage(messages.en, "en", null)).toBeNull();
+		expect(authErrorMessage(messages.en, "en", { key: "accountLocked" })).toBe(
+			messages.en.auth.errors.accountLocked,
+		);
+		expect(authErrorMessage(messages.nl, "nl", { key: "accountLocked" })).toBe(
+			messages.nl.auth.errors.accountLocked,
+		);
+		expect(
+			authErrorMessage(messages.en, "en", {
+				key: "accountLocked",
+				lockoutSeconds: 45,
+			}),
+		).toBe(
+			"This account is temporarily locked after too many failed attempts. Try again in 45 seconds.",
+		);
+		expect(
+			authErrorMessage(messages.nl, "nl", {
+				key: "accountLocked",
+				lockoutSeconds: 1,
+			}),
+		).toBe(
+			"Dit account is tijdelijk vergrendeld na te veel mislukte pogingen. Probeer het over 1 seconde opnieuw.",
+		);
+		expect(
+			authErrorMessage(messages.en, "en", {
+				key: "accountLocked",
+				lockoutSeconds: 1800,
+			}),
+		).toBe(
+			"This account is temporarily locked after too many failed attempts. Try again in 30 minutes.",
+		);
+		expect(
+			authErrorMessage(messages.nl, "nl", {
+				key: "accountLocked",
+				lockoutSeconds: 1800,
+			}),
+		).toBe(
+			"Dit account is tijdelijk vergrendeld na te veel mislukte pogingen. Probeer het over 30 minuten opnieuw.",
+		);
+		expect(
+			authErrorMessage(messages.en, "en", {
+				key: "accountLocked",
+				lockoutSeconds: 3600,
+			}),
+		).toBe(
+			"This account is temporarily locked after too many failed attempts. Try again in 1 hour.",
+		);
+		expect(
+			authErrorMessage(messages.nl, "nl", {
+				key: "accountLocked",
+				lockoutSeconds: 7200,
+			}),
+		).toBe(
+			"Dit account is tijdelijk vergrendeld na te veel mislukte pogingen. Probeer het over 2 uur opnieuw.",
+		);
 	});
 });

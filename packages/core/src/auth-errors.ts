@@ -8,8 +8,16 @@
  * The web and apps/mobile both read this module: one table, one order.
  */
 import type { Messages } from "./i18n/en";
+import { fmt, plural } from "./i18n/format";
 
 export type AuthErrorKey = keyof Messages["auth"]["errors"];
+
+/** A mapped Clerk failure: its catalog key, plus any lockout wait Clerk reported. */
+export type AuthError = {
+	key: AuthErrorKey;
+	/** Remaining seconds on a `user_locked` cooldown, when Clerk gives one. */
+	lockoutSeconds?: number;
+};
 
 const CODE_MAP: Readonly<Record<string, AuthErrorKey>> = {
 	form_identifier_not_found: "identifierNotFound",
@@ -33,16 +41,40 @@ const CODE_MAP: Readonly<Record<string, AuthErrorKey>> = {
 	form_code_incorrect: "codeIncorrect",
 	// Too many wrong codes: this code is spent, a new one works (APP-527).
 	verification_failed: "codeAttemptsExceeded",
+	verification_code_too_many_attempts: "codeAttemptsExceeded",
+	verification_max_attempts_reached: "codeAttemptsExceeded",
+	form_verification_max_attempts_reached: "codeAttemptsExceeded",
 	verification_expired: "codeExpired",
+	verification_not_sent: "codeExpired",
+	verification_missing: "codeExpired",
+	user_locked: "accountLocked",
 	too_many_requests: "tooManyRequests",
+	too_many_attempts: "tooManyRequests",
+	too_many_verifications: "tooManyRequests",
 	rate_limit_exceeded: "tooManyRequests",
 	network_error: "network",
+	clerk_offline: "network",
 	form_param_max_length_exceeded: "tooLong",
 	session_reverification_required: "signInAgain",
+	session_not_found: "signInAgain",
+	authentication_invalid: "signInAgain",
+	authorization_invalid: "signInAgain",
+};
+
+const UNIT_SECONDS: Readonly<Record<string, number>> = {
+	second: 1,
+	minute: 60,
+	hour: 3600,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
+}
+
+function positiveSeconds(value: unknown): number | undefined {
+	return typeof value === "number" && Number.isFinite(value) && value > 0
+		? value
+		: undefined;
 }
 
 /**
@@ -61,11 +93,90 @@ function clerkErrorCode(error: unknown, depth = 0): string | null {
 	return typeof error.code === "string" ? error.code : null;
 }
 
+function lockoutSecondsFromRecord(
+	record: Record<string, unknown>,
+): number | undefined {
+	const meta = isRecord(record.meta) ? record.meta : null;
+	const metaData = meta && isRecord(meta.data) ? meta.data : null;
+	const direct =
+		positiveSeconds(meta?.lockout_expires_in_seconds) ??
+		positiveSeconds(meta?.lockoutExpiresInSeconds) ??
+		positiveSeconds(metaData?.lockout_expires_in_seconds) ??
+		positiveSeconds(metaData?.lockoutExpiresInSeconds) ??
+		positiveSeconds(record.retryAfter) ??
+		positiveSeconds(record.retry_after);
+	if (direct) return direct;
+	// `@clerk/shared`'s `ClerkAPIError` drops unknown `meta` fields, leaving the
+	// wait only inside `longMessage` (for example "try again in 30 minutes").
+	// Parse the numeric duration so we still show our own translated copy. A
+	// compound wait ("1 hour and 30 minutes") would understate, so it shows "later".
+	if (record.code !== "user_locked") return undefined;
+	const text =
+		typeof record.longMessage === "string"
+			? record.longMessage
+			: typeof record.long_message === "string"
+				? record.long_message
+				: null;
+	const match = text?.match(
+		/\bin\s+(\d+)\s+(second|minute|hour)s?\b(?!\s+and\s+\d)/i,
+	);
+	if (!match) return undefined;
+	const amount = Number.parseInt(match[1], 10);
+	const unit = UNIT_SECONDS[match[2].toLowerCase()];
+	return positiveSeconds(unit ? amount * unit : undefined);
+}
+
+function clerkLockoutSeconds(error: unknown, depth = 0): number | undefined {
+	if (!isRecord(error) || depth > 8) return undefined;
+	if (Array.isArray(error.errors)) {
+		for (const nested of error.errors) {
+			const seconds = clerkLockoutSeconds(nested, depth + 1);
+			if (seconds) return seconds;
+		}
+	}
+	return lockoutSecondsFromRecord(error);
+}
+
 /** The catalog key for an error, `generic` for an unknown one, `null` for none. */
 export function clerkErrorKey(error: unknown): AuthErrorKey | null {
 	if (!error) return null;
 	const code = clerkErrorCode(error);
-	return (code ? CODE_MAP[code] : undefined) ?? "generic";
+	if (code && Object.hasOwn(CODE_MAP, code)) return CODE_MAP[code];
+	if (isRecord(error) && error.status === 429) return "tooManyRequests";
+	return "generic";
+}
+
+/** Mapped Clerk failure, including any lockout wait Clerk reported. */
+export function clerkError(error: unknown): AuthError | null {
+	const key = clerkErrorKey(error);
+	if (!key) return null;
+	if (key === "accountLocked") {
+		const lockoutSeconds = clerkLockoutSeconds(error);
+		if (lockoutSeconds) return { key, lockoutSeconds };
+	}
+	return { key };
+}
+
+/** Localized copy for a mapped Clerk error, never raw Clerk English. */
+export function authErrorMessage(
+	messages: Pick<Messages, "auth">,
+	locale: string,
+	error: AuthErrorKey | AuthError | null,
+): string | null {
+	if (!error) return null;
+	if (typeof error === "string") return messages.auth.errors[error];
+	if (error.key === "accountLocked" && positiveSeconds(error.lockoutSeconds)) {
+		const seconds = error.lockoutSeconds as number;
+		const { lockout } = messages.auth;
+		const duration =
+			seconds < 60
+				? plural(locale, Math.max(1, Math.ceil(seconds)), lockout.seconds)
+				: Math.ceil(seconds / 60) < 60
+					? plural(locale, Math.ceil(seconds / 60), lockout.minutes)
+					: plural(locale, Math.ceil(seconds / 3600), lockout.hours);
+		return fmt(lockout.body, { duration });
+	}
+	return messages.auth.errors[error.key];
 }
 
 export type ClerkErrorSignal = {
