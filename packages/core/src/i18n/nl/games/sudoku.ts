@@ -201,6 +201,8 @@ export const sudoku = {
 		findingGrid: "Raster zoeken...",
 		dragCorners:
 			"Sleep de vier handvatten naar de hoeken van het sudokuraster.",
+		cornerKeyboardHint:
+			"Met het toetsenbord: tab naar een handvat en verplaats het met de pijltjestoetsen. Houd Shift ingedrukt voor grotere stappen.",
 		uploadedImageAlt: "Geüploade sudoku",
 		cornerHandle: "Hoek {number}",
 		readGrid: "Lees dit raster",
@@ -214,6 +216,10 @@ export const sudoku = {
 		allConfident:
 			"Alle herkenningen zien er betrouwbaar uit — controleer toch nog even voordat je begint.",
 		cellLabel: "Vakje R{row}C{col}",
+		verifyCellName: "Rij {row}, kolom {col}: {value}",
+		verifyCellEmpty: "leeg",
+		verifyCellUnknown: "onleesbaar cijfer",
+		verifyCellNotes: "{type} {digits}",
 		lowConfidenceBadge: "lage betrouwbaarheid",
 		cellTypeGiven: "Gegeven",
 		cellTypeUserDigit: "Jouw cijfer",

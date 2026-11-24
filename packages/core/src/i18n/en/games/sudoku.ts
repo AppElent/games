@@ -201,6 +201,8 @@ export const sudoku = {
 		uploadImage: "Upload an image",
 		findingGrid: "Finding the grid...",
 		dragCorners: "Drag the four handles onto the corners of the sudoku grid.",
+		cornerKeyboardHint:
+			"With the keyboard, Tab to a handle and press the arrow keys to move it. Hold Shift for bigger steps.",
 		uploadedImageAlt: "Uploaded sudoku",
 		cornerHandle: "Corner {number}",
 		readGrid: "Read this grid",
@@ -213,6 +215,10 @@ export const sudoku = {
 		allConfident:
 			"All recognitions look confident — still, double-check before starting.",
 		cellLabel: "Cell R{row}C{col}",
+		verifyCellName: "Row {row}, column {col}: {value}",
+		verifyCellEmpty: "empty",
+		verifyCellUnknown: "unreadable digit",
+		verifyCellNotes: "{type} {digits}",
 		lowConfidenceBadge: "low confidence",
 		cellTypeGiven: "Given",
 		cellTypeUserDigit: "Your digit",

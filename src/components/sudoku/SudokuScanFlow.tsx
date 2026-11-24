@@ -198,6 +198,8 @@ function CornerStep({
 		return () => controller.abort();
 	}, [source]);
 
+	const polygonPoints = corners?.map((p) => `${p.x},${p.y}`).join(" ") ?? "";
+
 	const clampPoint = (x: number, y: number): Point => ({
 		x: Math.max(0, Math.min(source.width, x)),
 		y: Math.max(0, Math.min(source.height, y)),
@@ -259,7 +261,9 @@ function CornerStep({
 
 	return (
 		<div className="flex max-w-xl flex-col gap-3">
-			<p className="text-slate-300">{sudoku.scan.dragCorners}</p>
+			<p className="text-slate-300">
+				{sudoku.scan.dragCorners} {sudoku.scan.cornerKeyboardHint}
+			</p>
 			<div
 				ref={containerRef}
 				className="relative w-full touch-none select-none overflow-hidden rounded-lg border border-slate-600"
@@ -290,11 +294,22 @@ function CornerStep({
 						className="absolute inset-0 h-full w-full"
 						role="presentation"
 					>
+						{/* The dark halo keeps the cyan line readable on bright paper, the
+						    cyan keeps it readable on dark photo regions; .game-fullscreen
+						    pins both tokens. */}
 						<polygon
-							points={corners.map((p) => `${p.x},${p.y}`).join(" ")}
-							fill="rgba(56,189,248,0.12)"
-							stroke="#38bdf8"
+							points={polygonPoints}
+							fill="none"
+							stroke="var(--club-on-accent)"
+							strokeWidth={source.width / 110}
+							strokeLinejoin="round"
+						/>
+						<polygon
+							points={polygonPoints}
+							fill="var(--club-accent-dim)"
+							stroke="var(--club-cyan)"
 							strokeWidth={source.width / 250}
+							strokeLinejoin="round"
 						/>
 						{corners.map((point, index) => {
 							const handleRadius = source.width / 28;
@@ -312,12 +327,23 @@ function CornerStep({
 									// biome-ignore lint/suspicious/noArrayIndexKey: fixed 4 corners
 									key={index}
 								>
+									<ellipse
+										cx={point.x}
+										cy={point.y}
+										rx={handleRadius}
+										ry={handleRadius}
+										fill="none"
+										stroke="var(--club-on-accent)"
+										strokeWidth={source.width / 120}
+										pointerEvents="none"
+									/>
 									<circle
 										cx={point.x}
 										cy={point.y}
 										r={handleRadius}
-										fill="rgba(56,189,248,0.5)"
-										stroke="#e0f2fe"
+										fill="var(--club-cyan)"
+										fillOpacity={0.45}
+										stroke="var(--club-cyan)"
 										strokeWidth={source.width / 300}
 										tabIndex={0}
 										role="slider"
@@ -409,6 +435,30 @@ function scanCellSummary(cell: ScanCell) {
 	].join("");
 }
 
+const GRID_SIZE = 9;
+
+/** Where an arrow key (or Home/End) moves focus in the 9x9 grid, clamped at the edges. */
+function nextGridIndex(index: number, key: string): number | null {
+	const row = Math.floor(index / GRID_SIZE);
+	const col = index % GRID_SIZE;
+	switch (key) {
+		case "ArrowLeft":
+			return row * GRID_SIZE + Math.max(0, col - 1);
+		case "ArrowRight":
+			return row * GRID_SIZE + Math.min(GRID_SIZE - 1, col + 1);
+		case "ArrowUp":
+			return Math.max(0, row - 1) * GRID_SIZE + col;
+		case "ArrowDown":
+			return Math.min(GRID_SIZE - 1, row + 1) * GRID_SIZE + col;
+		case "Home":
+			return row * GRID_SIZE;
+		case "End":
+			return row * GRID_SIZE + GRID_SIZE - 1;
+		default:
+			return null;
+	}
+}
+
 function VerifyStep({
 	warpedUrl,
 	cells,
@@ -434,6 +484,45 @@ function VerifyStep({
 	const create = useMutation(api.sudoku.create);
 	const { busy, error, host } = useHostSession("sudoku");
 	const [selected, setSelected] = useState<number | null>(null);
+	// The one cell in the tab order; null until the player focuses a cell.
+	const [focusIndex, setFocusIndex] = useState<number | null>(null);
+	const cellRefs = useRef<(HTMLButtonElement | null)[]>([]);
+	const tabStop = focusIndex ?? selected ?? 0;
+
+	const cellName = (entry: ScanCell, index: number) => {
+		const digits =
+			entry.type === "cornerNotes" || entry.type === "centerNotes"
+				? [...digitsInMask(entry.cornerMask), ...digitsInMask(entry.centerMask)]
+				: [];
+		let value: string = sudoku.scan.verifyCellEmpty;
+		if (entry.type === "given" || entry.type === "userDigit") {
+			value = entry.digit ? String(entry.digit) : sudoku.scan.verifyCellUnknown;
+		} else if (digits.length > 0) {
+			const type =
+				entry.type === "cornerNotes"
+					? sudoku.scan.cellTypeCornerNotes
+					: sudoku.scan.cellTypeCenterNotes;
+			value = fmt(sudoku.scan.verifyCellNotes, {
+				type,
+				digits: digits.join(" "),
+			});
+		}
+		return fmt(sudoku.scan.verifyCellName, {
+			row: Math.floor(index / GRID_SIZE) + 1,
+			col: (index % GRID_SIZE) + 1,
+			value,
+		});
+	};
+
+	const onCellKeyDown = (index: number, event: React.KeyboardEvent) => {
+		const next = nextGridIndex(index, event.key);
+		if (next === null) {
+			return;
+		}
+		event.preventDefault();
+		setFocusIndex(next);
+		cellRefs.current[next]?.focus();
+	};
 
 	useEffect(() => {
 		if (error) {
@@ -518,8 +607,18 @@ function VerifyStep({
 								<button
 									// biome-ignore lint/suspicious/noArrayIndexKey: fixed 81-cell grid
 									key={index}
+									ref={(node) => {
+										cellRefs.current[index] = node;
+									}}
 									type="button"
-									onClick={() => setSelected(index)}
+									aria-label={cellName(entry, index)}
+									tabIndex={index === tabStop ? 0 : -1}
+									onClick={() => {
+										setSelected(index);
+										setFocusIndex(index);
+									}}
+									onFocus={() => setFocusIndex(index)}
+									onKeyDown={(event) => onCellKeyDown(index, event)}
 									className={`relative flex items-center justify-center ${borders} ${flag} ${
 										selected === index ? "ring-2 ring-inset ring-sky-300" : ""
 									}`}
