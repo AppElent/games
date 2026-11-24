@@ -13,6 +13,7 @@ import {
 	scanCellFromReads,
 } from "@arcadeclub/core/sudoku-scan-ink";
 import { type DigitGuess, guessDigit } from "./digit-net";
+import { doubtWrongGrid } from "./doubt-grid";
 import { fuseReads } from "./fuse-reads";
 import {
 	type CellInk,
@@ -95,11 +96,8 @@ export async function readGrid(
 	// Finding the lines takes a second on a phone: show the grid first.
 	await new Promise((resolve) => setTimeout(resolve, 0));
 	const gray = clearOutside(grid.pixels, grid.size);
-	const flat = flatten(
-		gray,
-		grid.size,
-		findMesh(gray, grid.size, frame.margins),
-	);
+	const mesh = findMesh(gray, grid.size, frame.margins);
+	const flat = flatten(gray, grid.size, mesh);
 	const dark = darkness(flat.pixels);
 	const inks = gridInk(dark);
 	const reads: DigitRead[][] = [];
@@ -150,5 +148,5 @@ export async function readGrid(
 	const cells = inks.map((ink, cell) =>
 		scanCellFromReads(planOf(ink, printed.get(cell) ?? false), reads[cell]),
 	);
-	return { gridUri: grid.uri, cells };
+	return { gridUri: grid.uri, cells: doubtWrongGrid(cells, mesh) };
 }

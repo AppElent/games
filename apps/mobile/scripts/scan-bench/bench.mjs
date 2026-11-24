@@ -135,6 +135,9 @@ function tally(results) {
 			(result) =>
 				!result.right && typeof result.found === "number" && result.sure,
 		).length,
+		// The player checks these for nothing.
+		rightFlagged: filled.filter((result) => result.right && !result.sure)
+			.length,
 		emptyAsDigit: of("empty").filter((result) => result.asDigit).length,
 		emptyAsNotes: of("empty").filter(
 			(result) => !result.right && !result.asDigit,
@@ -201,11 +204,11 @@ try {
 	}
 	rows.push({ name: "total", ...tally(all) });
 	console.log(
-		"| Photo | Right | Printed | Handwritten | Type right | Wrong, unflagged | Empty read as digit | Empty read as notes |\n| --- | --- | --- | --- | --- | --- | --- | --- |",
+		"| Photo | Right | Printed | Handwritten | Type right | Wrong, unflagged | Right, flagged | Empty read as digit | Empty read as notes |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
 	);
 	for (const row of rows) {
 		console.log(
-			`| ${row.name} | ${row.right}/${row.cells} | ${row.printedRight}/${row.printed} | ${row.writtenRight}/${row.written} | ${row.typeRight} | ${row.wrongSure} | ${row.emptyAsDigit} | ${row.emptyAsNotes} |`,
+			`| ${row.name} | ${row.right}/${row.cells} | ${row.printedRight}/${row.printed} | ${row.writtenRight}/${row.written} | ${row.typeRight} | ${row.wrongSure} | ${row.rightFlagged} | ${row.emptyAsDigit} | ${row.emptyAsNotes} |`,
 		);
 	}
 	if (option("json")) {

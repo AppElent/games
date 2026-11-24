@@ -52,6 +52,10 @@ export type GridMesh = {
 	vertical: Float32Array[];
 	/** `horizontal[i]`: the y of line `i` every `STEP` pixels along the image. */
 	horizontal: Float32Array[];
+	/** Which of the lines are in the image; the others only follow those. */
+	found: { vertical: boolean[]; horizontal: boolean[] };
+	/** Cells the four corners moved in all, one way, to get onto the lines. */
+	moved: number;
 };
 
 /** The corners to warp, and where the grid's even lines come out between them. */
@@ -405,7 +409,7 @@ function traceLines(
 	size: number,
 	vertical: boolean,
 	layout: Layout,
-): Float32Array[] {
+) {
 	const { cell } = layout;
 	const lines = linenessMap(gray, size, vertical);
 	const steps = lines.length / size;
@@ -436,7 +440,11 @@ function traceLines(
 				again.support >= MIN_SUPPORT ? again : { path: place, support: 0 };
 		}
 	}
-	return traces.map(({ path }) => path);
+	return {
+		paths: traces.map(({ path }) => path),
+		found: traces.map(({ support }) => support >= MIN_SUPPORT),
+		moved: shifts.reduce((sum, shift) => sum + Math.abs(shift), 0) / cell,
+	};
 }
 
 /** The mesh of grid lines in an image warped from a frame. */
@@ -447,19 +455,23 @@ export function findMesh(
 ): GridMesh {
 	const cellX = size / (9 + left + right);
 	const cellY = size / (9 + top + bottom);
+	const vertical = traceLines(gray, size, true, {
+		cell: cellX,
+		cellAlong: cellY,
+		before: left,
+		beforeAlong: top,
+	});
+	const horizontal = traceLines(gray, size, false, {
+		cell: cellY,
+		cellAlong: cellX,
+		before: top,
+		beforeAlong: left,
+	});
 	return {
-		vertical: traceLines(gray, size, true, {
-			cell: cellX,
-			cellAlong: cellY,
-			before: left,
-			beforeAlong: top,
-		}),
-		horizontal: traceLines(gray, size, false, {
-			cell: cellY,
-			cellAlong: cellX,
-			before: top,
-			beforeAlong: left,
-		}),
+		vertical: vertical.paths,
+		horizontal: horizontal.paths,
+		found: { vertical: vertical.found, horizontal: horizontal.found },
+		moved: Math.max(vertical.moved, horizontal.moved),
 	};
 }
 

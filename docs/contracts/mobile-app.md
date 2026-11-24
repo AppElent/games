@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing which games the Arcade Club mobile app offers, or how it talks to Convex and stores seats and saves.
-version: 1.5.0
+version: 1.5.1
 status: current
 ---
 
@@ -57,7 +57,8 @@ the [mobile runbook](../runbooks/mobile.md).
   (local module `apps/mobile/modules/sudoku-scanner`). The rest is JavaScript in
   `features/sudoku/scan`, so it ships as an update: it traces the grid's lines, so a
   curled page reads straight, finds each cell's ink, and reads handwriting with a
-  small network next to Vision. What a read makes of a cell is
+  small network next to Vision. When the lines say the grid is elsewhere in the
+  photo, every cell it read is flagged for a check. What a read makes of a cell is
   `@arcadeclub/core/sudoku-scan-ink`, shared with the web. Measure a change to it
   with the [scan bench](../../apps/mobile/scripts/scan-bench/README.md). The
   player checks the grid in the web's verify step before it becomes a classic

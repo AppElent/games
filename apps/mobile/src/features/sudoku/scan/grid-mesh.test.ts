@@ -92,6 +92,17 @@ describe("findMesh", () => {
 		const grid = drawGrid({ margin: 0.7 });
 		const margins = { left: 0.7, right: 0.7, top: 0.1, bottom: 1.3 };
 		expect(furthest(grid, margins)).toBeLessThan(0.05);
+		const { moved } = findMesh(grid.gray, grid.size, margins);
+		expect(moved).toBeCloseTo(4 * 0.67);
+	});
+
+	it.each([true, false])("says which lines it found: %s", (lines) => {
+		const { gray, size } = drawGrid({ margin: 0.7, lines });
+		const found = Array.from({ length: 10 }, () => lines);
+		expect(findMesh(gray, size, evenMargins(0.7))).toMatchObject({
+			found: { vertical: found, horizontal: found },
+			moved: 0,
+		});
 	});
 
 	it("falls back on the even grid when there are no lines", () => {

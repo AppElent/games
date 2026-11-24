@@ -1,3 +1,4 @@
+import { isLowConfidence } from "@arcadeclub/core/sudoku-scan";
 import type { InkBox, Point } from "@arcadeclub/core/sudoku-scan-ink";
 import { drawGrid } from "../../../../test/drawn-grid";
 import { readGrid } from "./read-grid";
@@ -48,6 +49,25 @@ describe("readGrid", () => {
 			[80, 2],
 		]);
 		expect(read?.gridUri).toBe("file://grid.png");
+	});
+
+	it("flags every digit when the photo shows no grid lines", async () => {
+		const grid = drawGrid({
+			margin: 0.7,
+			lines: false,
+			digits: [
+				{ row: 0, column: 4, digit: 7 },
+				{ row: 4, column: 0, digit: 4 },
+			],
+		});
+		const reader = drawnReader(grid);
+		reader.readDigits.mockImplementation(async (_uri, boxes) =>
+			boxes.map(() => ({ digit: 7, confidence: 1 })),
+		);
+		const read = await readGrid(reader, photo, corners, () => true);
+		const filled = read?.cells.filter((cell) => cell.type !== "empty");
+		expect(filled).toHaveLength(2);
+		expect(filled?.every(isLowConfidence)).toBe(true);
 	});
 
 	it("warps the photo with paper around the grid", async () => {
