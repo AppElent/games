@@ -40,10 +40,12 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   switches between those the account has. Too many wrong codes
   lock that method only; an attempt Clerk dropped, or an account with no factor we can
   handle, shows what to do and "Back to sign in". Once a code is accepted, a retry only
-  activates the session, so a one-time backup code is never spent twice. The web swaps
+  activates the session, so a one-time backup code is not sent again. The web swaps
   the form in place, so `?redirect=` is kept; the phone opens
-  `(auth)/sign-in-second-factor`. Leaving drops the attempt, and reloading the web page
-  starts the sign-in over.
+  `(auth)/sign-in-second-factor`. "Back to sign in" drops
+  the attempt; closed another way it stays unused, because every first step starts a
+  new one. A first step answered after its phone screen lost focus opens nothing
+  (`useOpenSecondFactor`). Reloading the web page starts the sign-in over.
 - Every auth form on the web (sign-in, sign-up, reset, `/account`, the dev test login)
   and on the phone reads Clerk failures through the one table in
   `@arcadeclub/core/auth-errors`; the web's `useAuthErrorText` turns the key into

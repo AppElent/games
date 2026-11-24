@@ -215,6 +215,16 @@ describe("createSecondFactorFlow", () => {
 		expect(actions.verify).not.toHaveBeenCalled();
 	});
 
+	it("sends nothing when there is no attempt to finish", () => {
+		const actions = { send: vi.fn(async () => ok), verify: vi.fn() };
+		const flow = createSecondFactorFlow([EMAIL], actions, true);
+		flow.start();
+		expect(actions.send).not.toHaveBeenCalled();
+		expect(secondFactorMessage(messages.en, "en", flow.getState())).toBe(
+			copy.attemptEnded,
+		);
+	});
+
 	it("tells subscribers until they leave", async () => {
 		const { flow } = setup([TOTP, BACKUP]);
 		const listener = vi.fn();
@@ -297,5 +307,7 @@ describe("signInSecondFactor", () => {
 		expect(secondFactorMessage(messages.en, "en", flow.getState())).toBe(
 			messages.en.auth.errors.unsupportedStep,
 		);
+		// The accepted code is not sent again.
+		expect(secondFactorOpen(flow.getState())).toBe(false);
 	});
 });

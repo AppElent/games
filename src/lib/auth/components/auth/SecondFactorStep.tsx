@@ -76,13 +76,13 @@ export function SecondFactorStep({
 		e.preventDefault();
 		setOpening(null);
 		if (await flow.verify(code)) onSuccess();
-		else fieldRef.current?.focus();
+		else (fieldRef.current ?? closedRef.current)?.focus();
 	}
 
 	async function act(action: Promise<boolean>) {
 		setOpening(null);
 		if (await action) setCode("");
-		fieldRef.current?.focus();
+		(fieldRef.current ?? closedRef.current)?.focus();
 	}
 
 	async function back() {

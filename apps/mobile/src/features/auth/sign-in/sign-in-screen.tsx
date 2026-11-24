@@ -15,11 +15,13 @@ import { AuthForm } from "../components/auth-form";
 import { EmailField } from "../components/email-field";
 import { useAuthError } from "../components/use-auth-error";
 import { useCredentialForm } from "../components/use-credential-form";
+import { useOpenSecondFactor } from "../second-factor/use-open-second-factor";
 import { useEmailCodeSignIn } from "./use-email-code-sign-in";
 import { usePasswordSignIn } from "./use-password-sign-in";
 
 export function SignInScreen() {
 	const router = useRouter();
+	const openSecondFactor = useOpenSecondFactor();
 	const { t } = useI18n();
 	const copy = t.auth.signIn;
 	const password = usePasswordSignIn();
@@ -39,7 +41,7 @@ export function SignInScreen() {
 		setHint(null);
 		if (!values.email.trim() || !values.password) return;
 		const outcome = await password.submit(values.email, values.password);
-		if (outcome === "secondFactor") router.push("/sign-in-second-factor");
+		if (outcome === "secondFactor") openSecondFactor("push");
 	}
 
 	async function sendCode(values: typeof form.values) {

@@ -6,6 +6,7 @@
  */
 import {
 	createSecondFactorFlow,
+	needsSecondFactor,
 	type SecondFactorActions,
 	signInSecondFactor,
 } from "@arcadeclub/core/second-factor";
@@ -21,8 +22,11 @@ import {
 export function useSecondFactor(
 	factors: Parameters<typeof createSecondFactorFlow>[0],
 	actions: SecondFactorActions,
+	ended = false,
 ) {
-	const [flow] = useState(() => createSecondFactorFlow(factors, actions));
+	const [flow] = useState(() =>
+		createSecondFactorFlow(factors, actions, ended),
+	);
 	const state = useSyncExternalStore(flow.subscribe, flow.getState);
 	useEffect(() => flow.start(), [flow]);
 	return { flow, state };
@@ -36,7 +40,12 @@ export function useSignInSecondFactor() {
 		live.current = signIn;
 	}, [signIn]);
 	const [actions] = useState(() => signInSecondFactor(() => live.current));
-	const step = useSecondFactor(signIn.supportedSecondFactors, actions);
+	const step = useSecondFactor(
+		signIn.supportedSecondFactors,
+		actions,
+		// Opened by a link, or after the attempt is gone.
+		!needsSecondFactor(signIn.status),
+	);
 
 	/** Drops the attempt; makes no request. */
 	const cancel = useCallback(async () => {

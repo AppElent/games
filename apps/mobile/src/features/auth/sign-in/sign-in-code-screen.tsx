@@ -10,10 +10,12 @@ import { Button } from "../../../ui/button";
 import { AuthForm } from "../components/auth-form";
 import { AUTH_CODE_LENGTH, CodeField } from "../components/code-field";
 import { useAuthError } from "../components/use-auth-error";
+import { useOpenSecondFactor } from "../second-factor/use-open-second-factor";
 import { useEmailCodeSignIn } from "./use-email-code-sign-in";
 
 export function SignInCodeScreen({ email }: { email: string }) {
 	const router = useRouter();
+	const openSecondFactor = useOpenSecondFactor();
 	const { t } = useI18n();
 	const copy = t.auth.signInCode;
 	const flow = useEmailCodeSignIn();
@@ -26,7 +28,7 @@ export function SignInCodeScreen({ email }: { email: string }) {
 		if (!ready || flow.busy) return;
 		// Replaces this screen: its code is spent, so there is no way back to it.
 		if ((await flow.verify(code)) === "secondFactor") {
-			router.replace("/sign-in-second-factor");
+			openSecondFactor("replace");
 		}
 	}
 

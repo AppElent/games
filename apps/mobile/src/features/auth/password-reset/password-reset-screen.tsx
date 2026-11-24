@@ -7,7 +7,6 @@
  * new password, so password managers update the saved login for this account
  * instead of saving a second one.
  */
-import { useRouter } from "expo-router";
 import { useState } from "react";
 import { fmt, useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
@@ -24,6 +23,7 @@ import {
 	NEW_PASSWORD_RULES,
 	useCredentialForm,
 } from "../components/use-credential-form";
+import { useOpenSecondFactor } from "../second-factor/use-open-second-factor";
 import { usePasswordReset } from "./use-password-reset";
 
 export function PasswordResetScreen({
@@ -31,7 +31,7 @@ export function PasswordResetScreen({
 }: {
 	initialEmail: string;
 }) {
-	const router = useRouter();
+	const openSecondFactor = useOpenSecondFactor();
 	const { t } = useI18n();
 	const copy = t.auth.reset;
 	const flow = usePasswordReset();
@@ -70,7 +70,7 @@ export function PasswordResetScreen({
 		if (code.length !== AUTH_CODE_LENGTH || !password) return;
 		// Replaces this screen: its code is spent, so there is no way back to it.
 		if ((await flow.submit(code, password)) === "secondFactor") {
-			router.replace({
+			openSecondFactor("replace", {
 				pathname: "/sign-in-second-factor",
 				params: { from: "reset" },
 			});

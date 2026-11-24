@@ -35,6 +35,7 @@ type Props = {
 export function SecondFactorStep({ flow, state, notice = null }: Props) {
 	const { locale, t } = useI18n();
 	const [opening, setOpening] = useState(notice);
+	const [resends, setResends] = useState(0);
 	const { strategy, options, busy, ended } = state;
 	const open = secondFactorOpen(state);
 	const option = options.find((o) => o.strategy === strategy);
@@ -47,7 +48,8 @@ export function SecondFactorStep({ flow, state, notice = null }: Props) {
 			) : null}
 			{open && strategy ? (
 				<CodeEntry
-					key={strategy}
+					// A new code starts with an empty field.
+					key={`${strategy}-${resends}`}
 					strategy={strategy}
 					busy={busy}
 					onSubmit={(code) => {
@@ -70,9 +72,9 @@ export function SecondFactorStep({ flow, state, notice = null }: Props) {
 					label={t.auth.signInCode.resend}
 					busy={busy === "send"}
 					disabled={busy !== null}
-					onPress={() => {
+					onPress={async () => {
 						setOpening(null);
-						void flow.resend();
+						if (await flow.resend()) setResends((n) => n + 1);
 					}}
 					testID="second-factor-resend"
 				/>
@@ -130,6 +132,8 @@ function CodeEntry({
 			) : (
 				<CodeField
 					{...form.field("code", clean)}
+					// `clean` limits it, so a pasted "123 456" keeps every digit.
+					maxLength={undefined}
 					onSubmitEditing={() => submit(form.values)}
 					testID="second-factor-code"
 				/>

@@ -3,7 +3,7 @@
  * screens. Clerk's sign-in and the router are mocked at the edge.
  */
 import { messages } from "@arcadeclub/core/messages";
-import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { renderScreen } from "../../../../test/render-screen";
 import { remove, STORAGE_KEYS, writeText } from "../../../storage/local-store";
 import { PasswordResetScreen } from "../password-reset/password-reset-screen";
@@ -17,7 +17,16 @@ const mockRouter = {
 	back: jest.fn(),
 	dismissTo: jest.fn(),
 };
-jest.mock("expo-router", () => ({ useRouter: () => mockRouter }));
+let mockBlur: () => void = () => {};
+jest.mock("expo-router", () => ({
+	useRouter: () => mockRouter,
+	useFocusEffect: (effect: () => () => void) =>
+		jest.requireActual("react").useEffect(() => {
+			const blur = effect();
+			mockBlur = blur;
+			return blur;
+		}, [effect]),
+}));
 
 type Factor = { strategy: string; safeIdentifier?: string };
 const mockSignIn = {
@@ -162,6 +171,66 @@ describe("the way in", () => {
 	});
 });
 
+describe("a first step answered after its screen is gone", () => {
+	type Call = jest.Mock;
+	async function answerLate(call: Call, submit: () => Promise<unknown>) {
+		let answer = () => {};
+		call.mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					answer = () => {
+						mockSignIn.status = "needs_second_factor";
+						resolve(ok);
+					};
+				}),
+		);
+		// Some handlers hand their promise to the press, which waits for it.
+		const pressed = submit();
+		await waitFor(() => expect(call).toHaveBeenCalled());
+		mockBlur();
+		await act(async () => answer());
+		await pressed;
+		expect(mockRouter.push).not.toHaveBeenCalled();
+		expect(mockRouter.replace).not.toHaveBeenCalled();
+		// A newer attempt may be running.
+		expect(mockSignIn.reset).not.toHaveBeenCalled();
+	}
+
+	it("opens nothing after a password", async () => {
+		await renderScreen(<SignInScreen />);
+		await type("sign-in-email", "ann@example.com");
+		await type("sign-in-password", "secret");
+		await answerLate(mockSignIn.password, async () =>
+			press(t.auth.signIn.submit),
+		);
+	});
+
+	it("opens nothing after an emailed code", async () => {
+		await renderScreen(<SignInCodeScreen email="ann@example.com" />);
+		await fireEvent.changeText(
+			screen.getByLabelText(t.auth.signInCode.code),
+			"424242",
+		);
+		await answerLate(mockSignIn.emailCode.verifyCode, async () =>
+			press(t.auth.signInCode.submit),
+		);
+	});
+
+	it("opens nothing after a password reset", async () => {
+		await renderScreen(<PasswordResetScreen initialEmail="ann@example.com" />);
+		await press(t.auth.reset.sendCode);
+		await fireEvent.changeText(
+			await screen.findByLabelText(t.auth.signInCode.code),
+			"424242",
+		);
+		await type("reset-new-password", "new-secret");
+		await answerLate(
+			mockSignIn.resetPasswordEmailCode.submitPassword,
+			async () => press(t.auth.reset.submit),
+		);
+	});
+});
+
 describe("SecondFactorScreen", () => {
 	const ALL = [{ strategy: "backup_code" }, { strategy: "totp" }];
 
@@ -235,8 +304,12 @@ describe("SecondFactorScreen", () => {
 		expect(
 			screen.getByText("We sent a 6-digit code to a***@b.com."),
 		).toBeTruthy();
+		await type("second-factor-code", "111111");
 		await press(t.auth.signInCode.resend);
 		expect(await screen.findByText(t.auth.signInCode.resent)).toBeTruthy();
+		await waitFor(() =>
+			expect(screen.getByTestId("second-factor-code").props.value).toBe(""),
+		);
 		expect(mockSignIn.mfa.sendEmailCode).toHaveBeenCalledTimes(2);
 	});
 
@@ -249,6 +322,12 @@ describe("SecondFactorScreen", () => {
 			expect(mockRouter.dismissTo).toHaveBeenCalledWith("/sign-in"),
 		);
 		expect(mockSignIn.reset).toHaveBeenCalled();
+	});
+
+	it("says the attempt is over when there is none", async () => {
+		await renderScreen(<SecondFactorScreen />);
+		expect(screen.getByText(copy.attemptEnded)).toBeTruthy();
+		expect(screen.queryByTestId("second-factor-code")).toBeNull();
 	});
 
 	it("says the password is changed after a reset", async () => {

@@ -191,6 +191,8 @@ export type SecondFactorFlow = ReturnType<typeof createSecondFactorFlow>;
 export function createSecondFactorFlow(
 	factors: Parameters<typeof secondFactorOptions>[0],
 	actions: SecondFactorActions,
+	/** There is no attempt to finish. */
+	ended = false,
 ) {
 	const options = secondFactorOptions(factors);
 	let state: SecondFactorState = {
@@ -199,7 +201,7 @@ export function createSecondFactorFlow(
 		locked: [],
 		busy: null,
 		error: null,
-		ended: false,
+		ended,
 		resent: false,
 	};
 	const listeners = new Set<() => void>();
@@ -231,7 +233,10 @@ export function createSecondFactorFlow(
 		set({
 			busy: null,
 			error: mapped,
-			ended: ATTEMPT_ENDED.has(clerkErrorCode(error) ?? ""),
+			// After an accepted code, the same code would only be refused.
+			ended:
+				error === NOT_FINISHED ||
+				ATTEMPT_ENDED.has(clerkErrorCode(error) ?? ""),
 			locked:
 				busy === "verify" && mapped.key === "codeAttemptsExceeded"
 					? [...state.locked, strategy]
@@ -266,7 +271,7 @@ export function createSecondFactorFlow(
 		start: () => {
 			if (started) return;
 			started = true;
-			if (state.strategy && sendsCode(state.strategy)) {
+			if (!state.ended && state.strategy && sendsCode(state.strategy)) {
 				void send(state.strategy);
 			}
 		},
@@ -315,8 +320,10 @@ export function secondFactorMessage(
 ): string | null {
 	const copy = messages.auth.secondFactor;
 	const { strategy, locked, options } = state;
+	if (state.ended && state.error?.key !== "unsupportedStep") {
+		return copy.attemptEnded;
+	}
 	if (!strategy) return copy.noMethod;
-	if (state.ended) return copy.attemptEnded;
 	const spent = locked.includes(strategy) && !sendsCode(strategy);
 	if (spent && (!state.error || state.error.key === "codeAttemptsExceeded")) {
 		const usable = options.some((o) => !locked.includes(o.strategy));
