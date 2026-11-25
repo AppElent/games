@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
+import { isKillerRead } from "@arcadeclub/core/sudoku-scan-cages";
 import {
 	type DigitRead,
 	gridCells,
@@ -10,6 +11,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	RETRY_MIN_CONFIDENCE,
 	readDigitWithRetry,
+	readWarpedCages,
 	warpToSquare,
 } from "../sudoku-scan-image";
 
@@ -186,6 +188,30 @@ describe("line-finder tie-break on sudoku-book-page fixture", () => {
 			// instead of x=757 (darker stroke), dropping the spurious note read.
 			const r7c8 = cells[6 * 9 + 7];
 			expect(r7c8).toEqual({ x: 700, y: 601, width: 56, height: 102 });
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+});
+
+describe("a classic grid on the sudoku-book-page fixture", () => {
+	it("does not read as a Killer", () => {
+		const { width, height, rgba } = readGrayFixture("sudoku-book-page.png");
+		vi.stubGlobal("document", {
+			createElement: () => makeCanvas(),
+		});
+		try {
+			const warped = warpToSquare(
+				makeCanvas(width, height, rgba),
+				[
+					{ x: 48, y: 35 },
+					{ x: 148, y: 78 },
+					{ x: 157, y: 194 },
+					{ x: 37, y: 174 },
+				],
+				{ smooth: true },
+			);
+			expect(isKillerRead(readWarpedCages(warped))).toBe(false);
 		} finally {
 			vi.unstubAllGlobals();
 		}

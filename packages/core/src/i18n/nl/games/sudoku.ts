@@ -247,6 +247,44 @@ export const sudoku = {
 		creatingPuzzle: "Puzzel wordt aangemaakt...",
 		confirmAndPlay: "Bevestigen en spelen",
 		couldNotCreateSession: "Kon de sessie niet aanmaken",
+		killer: {
+			readingSums: "Kooisommen lezen {done}/{total}...",
+			gridLabel: "Herkende kooien — tik op een vakje om de kooi te verbeteren",
+			cellName: "Rij {row}, kolom {col}: kooi van {count}, som {sum}",
+			cellNameNoSum: "Rij {row}, kolom {col}: kooi van {count}, nog geen som",
+			unsureLines: {
+				one: "{count} twijfelachtige kooilijn is geel gemarkeerd. Vergelijk hem met de foto.",
+				other:
+					"{count} twijfelachtige kooilijnen zijn geel gemarkeerd. Vergelijk ze met de foto.",
+			},
+			allLinesSure:
+				"Elke kooilijn is duidelijk gelezen. Vergelijk de kooien toch even met de foto.",
+			cageLabel: {
+				one: "Kooi van {count} vakje",
+				other: "Kooi van {count} vakjes",
+			},
+			sumLabel: "Som",
+			sumHint: "Een heel getal van 1 tot 45.",
+			linesLabel: "Kooilijnen rond dit vakje",
+			lineUp: "Lijn boven",
+			lineRight: "Lijn rechts",
+			lineDown: "Lijn onder",
+			lineLeft: "Lijn links",
+			unsure: "twijfel",
+			missingSums: {
+				one: "{count} kooi heeft nog geen som.",
+				other: "{count} kooien hebben nog geen som.",
+			},
+			invalidCages:
+				"Een kooi kan niet kloppen: hij heeft meer dan 9 vakjes, of een som die zijn vakjes niet kunnen maken.",
+			total: "De sommen tellen op tot {total}; bij een Killer is dat 405.",
+			noSolution:
+				"Deze kooien en sommen hebben geen oplossing. Vergelijk de sommen en lijnen met de foto.",
+			manySolutions:
+				"Deze kooien en sommen laten meer dan één oplossing toe. Vergelijk de sommen en lijnen met de foto.",
+			readAsClassic: "Geen Killer? Lees hem als gewone sudoku",
+			ready: "Kooien en sommen tellen op tot 405.",
+		},
 	},
 	newGame: {
 		heading: "Start een puzzel",

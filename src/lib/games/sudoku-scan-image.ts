@@ -4,6 +4,13 @@
  * a cell is shared with the app in `@arcadeclub/core/sudoku-scan-ink`.
  */
 import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
+import type { CageRead, SumInk } from "@arcadeclub/core/sudoku-scan-cages";
+import {
+	cageSumInk,
+	parseCageSum,
+	readCages,
+	sumGray,
+} from "@arcadeclub/core/sudoku-scan-cages";
 import type {
 	DigitRead,
 	InkBox,
@@ -86,10 +93,16 @@ function homographyFromCorners(corners: Point[], size: number) {
 	return [...h, 1];
 }
 
-/** Warp the quad described by corners into a square WARP_SIZE canvas. */
+/**
+ * Warp the quad described by corners into a square WARP_SIZE canvas. The
+ * classic read takes the nearest source pixel, which its grid-line finder is
+ * tuned on; `smooth` blends the four nearest instead, which keeps a Killer's
+ * thin dashes and small sums whole.
+ */
 export function warpToSquare(
 	source: HTMLCanvasElement,
 	corners: Point[],
+	{ smooth = false }: { smooth?: boolean } = {},
 ): HTMLCanvasElement {
 	const h = homographyFromCorners(corners, WARP_SIZE);
 	const srcCtx = source.getContext("2d");
@@ -112,21 +125,41 @@ export function warpToSquare(
 			const w = h[6] * x + h[7] * y + h[8];
 			const sx = (h[0] * x + h[1] * y + h[2]) / w;
 			const sy = (h[3] * x + h[4] * y + h[5]) / w;
-			const px = Math.round(sx);
-			const py = Math.round(sy);
 			const di = (y * WARP_SIZE + x) * 4;
-			if (px < 0 || py < 0 || px >= sw || py >= sh) {
-				outData.data[di] = 255;
-				outData.data[di + 1] = 255;
-				outData.data[di + 2] = 255;
-				outData.data[di + 3] = 255;
+			outData.data[di + 3] = 255;
+			if (!smooth) {
+				const px = Math.round(sx);
+				const py = Math.round(sy);
+				const inside = px >= 0 && py >= 0 && px < sw && py < sh;
+				const si = (py * sw + px) * 4;
+				for (let c = 0; c < 3; c += 1) {
+					outData.data[di + c] = inside ? srcData.data[si + c] : 255;
+				}
 				continue;
 			}
-			const si = (py * sw + px) * 4;
-			outData.data[di] = srcData.data[si];
-			outData.data[di + 1] = srcData.data[si + 1];
-			outData.data[di + 2] = srcData.data[si + 2];
-			outData.data[di + 3] = 255;
+			if (sx < 0 || sy < 0 || sx > sw - 1 || sy > sh - 1) {
+				for (let c = 0; c < 3; c += 1) {
+					outData.data[di + c] = 255;
+				}
+				continue;
+			}
+			const x0 = Math.floor(sx);
+			const y0 = Math.floor(sy);
+			const x1 = Math.min(sw - 1, x0 + 1);
+			const y1 = Math.min(sh - 1, y0 + 1);
+			const fx = sx - x0;
+			const fy = sy - y0;
+			const i00 = (y0 * sw + x0) * 4;
+			const i10 = (y0 * sw + x1) * 4;
+			const i01 = (y1 * sw + x0) * 4;
+			const i11 = (y1 * sw + x1) * 4;
+			for (let c = 0; c < 3; c += 1) {
+				const top =
+					srcData.data[i00 + c] * (1 - fx) + srcData.data[i10 + c] * fx;
+				const bottom =
+					srcData.data[i01 + c] * (1 - fx) + srcData.data[i11 + c] * fx;
+				outData.data[di + c] = top * (1 - fy) + bottom * fy;
+			}
 		}
 	}
 	outCtx.putImageData(outData, 0, 0);
@@ -233,7 +266,7 @@ export async function readDigitWithRetry(
 }
 
 export type ScanProgress = {
-	step: "preparing" | "recognizing";
+	step: "preparing" | "recognizing" | "cageSums";
 	cellsDone: number;
 	cellsTotal: number;
 };
@@ -295,4 +328,133 @@ export async function recognizeGrid(
 	}
 	onProgress?.({ step: "recognizing", cellsDone: 81, cellsTotal: 81 });
 	return cells;
+}
+
+/** The cages of a Killer, read from the warped grid's lines and dashes. */
+export function readWarpedCages(warped: HTMLCanvasElement): CageRead {
+	const ctx = warped.getContext("2d");
+	if (!ctx) {
+		throw new Error("Canvas not supported");
+	}
+	return readCages(
+		ctx.getImageData(0, 0, WARP_SIZE, WARP_SIZE).data,
+		WARP_SIZE,
+	);
+}
+
+/** Tesseract reads printed text best at about this height, in pixels. */
+const SUM_TEXT_HEIGHT = 28;
+const SUM_MARGIN = 16;
+
+/** Paints a cut-out sum (or one of its digits) at reading size. */
+function sumCanvas(source: HTMLCanvasElement, box: InkBox) {
+	const scale = SUM_TEXT_HEIGHT / box.height;
+	const out = document.createElement("canvas");
+	out.width = Math.max(1, Math.round(box.width * scale)) + SUM_MARGIN * 2;
+	out.height = SUM_TEXT_HEIGHT + SUM_MARGIN * 2;
+	const ctx = out.getContext("2d");
+	if (!ctx) {
+		throw new Error("Canvas not supported");
+	}
+	ctx.fillStyle = "#fff";
+	ctx.fillRect(0, 0, out.width, out.height);
+	ctx.imageSmoothingEnabled = true;
+	ctx.imageSmoothingQuality = "high";
+	ctx.drawImage(
+		source,
+		box.x,
+		box.y,
+		box.width,
+		box.height,
+		SUM_MARGIN,
+		SUM_MARGIN,
+		out.width - SUM_MARGIN * 2,
+		SUM_TEXT_HEIGHT,
+	);
+	return out;
+}
+
+function sumSource(rgba: Uint8ClampedArray, sum: SumInk) {
+	const gray = sumGray(rgba, WARP_SIZE, sum);
+	const canvas = document.createElement("canvas");
+	canvas.width = sum.box.width;
+	canvas.height = sum.box.height;
+	const ctx = canvas.getContext("2d");
+	if (!ctx) {
+		throw new Error("Canvas not supported");
+	}
+	const image = ctx.createImageData(sum.box.width, sum.box.height);
+	for (let i = 0; i < gray.length; i += 1) {
+		image.data[i * 4] = gray[i];
+		image.data[i * 4 + 1] = gray[i];
+		image.data[i * 4 + 2] = gray[i];
+		image.data[i * 4 + 3] = 255;
+	}
+	ctx.putImageData(image, 0, 0);
+	return canvas;
+}
+
+/**
+ * The sum printed in each cage, or null where none could be read. The
+ * sum's digits are cut out of the lines and dashes around them and read as
+ * one line; when that read has a different number of digits than were cut
+ * out, each digit is read on its own instead.
+ */
+export async function readCageSums(
+	warped: HTMLCanvasElement,
+	read: CageRead,
+	onProgress?: (progress: ScanProgress) => void,
+): Promise<(number | null)[]> {
+	const ctx = warped.getContext("2d");
+	if (!ctx) {
+		throw new Error("Canvas not supported");
+	}
+	const rgba = ctx.getImageData(0, 0, WARP_SIZE, WARP_SIZE).data;
+	const total = read.cages.length;
+	const { createWorker, PSM } = await import("tesseract.js");
+	const worker = await createWorker("eng");
+	const readText = async (canvas: HTMLCanvasElement, single: boolean) => {
+		await worker.setParameters({
+			tessedit_char_whitelist: "0123456789",
+			tessedit_pageseg_mode: single ? PSM.SINGLE_CHAR : PSM.SINGLE_LINE,
+		});
+		try {
+			const result = await worker.recognize(canvas);
+			return result.data.text.replace(/[^0-9]/g, "");
+		} catch {
+			return "";
+		}
+	};
+	const sums: (number | null)[] = [];
+	try {
+		for (const [index, cage] of read.cages.entries()) {
+			onProgress?.({ step: "cageSums", cellsDone: index, cellsTotal: total });
+			const sum =
+				cageSumInk(rgba, WARP_SIZE, cage, read.bounds, { ignoreBlue: true }) ??
+				cageSumInk(rgba, WARP_SIZE, cage, read.bounds, { ignoreBlue: false });
+			if (!sum) {
+				sums.push(null);
+				continue;
+			}
+			const source = sumSource(rgba, sum);
+			let text = await readText(
+				sumCanvas(source, { ...sum.box, x: 0, y: 0 }),
+				false,
+			);
+			if (text.length !== sum.digits.length) {
+				const digits: string[] = [];
+				for (const digit of sum.digits) {
+					digits.push(await readText(sumCanvas(source, digit), true));
+				}
+				if (digits.every((digit) => digit.length === 1)) {
+					text = digits.join("");
+				}
+			}
+			sums.push(parseCageSum(text));
+		}
+	} finally {
+		await worker.terminate();
+	}
+	onProgress?.({ step: "cageSums", cellsDone: total, cellsTotal: total });
+	return sums;
 }
