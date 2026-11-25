@@ -39,7 +39,7 @@ export function useDeleteAccount(
 	const backendAuth = useBackendAuthReady();
 	const deleteMyData = useMutation(api.account.deleteMyData);
 	/**
-	 * The data is deleted, the account not yet: failures must say so, on a later
+	 * The data is deleted, the account not yet: a session end must say so, on a later
 	 * try too. Another account gets a fresh screen (`AppQueryCacheProvider`).
 	 */
 	const dataGone = useRef(false);
