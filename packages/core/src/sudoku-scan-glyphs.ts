@@ -3,8 +3,8 @@
  * are taken out first and ink is followed across the cell's edges, so a
  * handwritten digit that touches or crosses a line stays whole.
  */
-import type { InkBox } from "@arcadeclub/core/sudoku-scan-ink";
-import { CELL, FLAT } from "./grid-mesh";
+import type { InkBox } from "./sudoku-scan-ink";
+import { CELL, FLAT } from "./sudoku-scan-mesh";
 
 /** One connected piece of ink, in flat pixels. */
 export type InkPiece = {

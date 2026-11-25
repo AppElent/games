@@ -1,4 +1,4 @@
-import { drawGrid } from "../../../../test/drawn-grid";
+import { describe, expect, it } from "vitest";
 import {
 	CELL,
 	clearOutside,
@@ -6,7 +6,8 @@ import {
 	findMesh,
 	flatMap,
 	withMargins,
-} from "./grid-mesh";
+} from "../sudoku-scan-mesh";
+import { drawGrid } from "../testing/drawn-grid";
 
 const photo = { width: 1200, height: 1600 };
 const evenMargins = (margin: number) => ({

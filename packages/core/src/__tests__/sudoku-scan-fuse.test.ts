@@ -1,4 +1,5 @@
-import { fuseReads } from "./fuse-reads";
+import { describe, expect, it } from "vitest";
+import { fuseReads } from "../sudoku-scan-fuse";
 
 const guess = (digit: number, confidence: number, junk = 0) => ({
 	digit,

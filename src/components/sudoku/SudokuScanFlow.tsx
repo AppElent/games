@@ -55,6 +55,8 @@ type Step =
 	| { id: "verify"; warpedUrl: string; cells: ScanCell[] }
 	| {
 			id: "verifyKiller";
+			source: HTMLCanvasElement;
+			corners: Point[];
 			warped: HTMLCanvasElement;
 			warpedUrl: string;
 			scan: KillerScan;
@@ -81,14 +83,18 @@ export function SudokuScanFlow() {
 			current.id === "recognizing" ? { ...current, progress } : current,
 		);
 
-	const readClassic = async (warped: HTMLCanvasElement, warpedUrl: string) => {
+	const readClassic = async (
+		source: HTMLCanvasElement,
+		corners: Point[],
+		warpedUrl: string,
+	) => {
 		const read = await run(async () => {
 			setStep({
 				id: "recognizing",
 				warpedUrl,
 				progress: { step: "preparing", cellsDone: 0, cellsTotal: 81 },
 			});
-			const cells = await recognizeGrid(warped, onProgress);
+			const cells = await recognizeGrid(source, corners, onProgress);
 			setStep({ id: "verify", warpedUrl, cells });
 		}, sudoku.scan.recognitionFailed);
 		if (!read) {
@@ -115,13 +121,15 @@ export function SudokuScanFlow() {
 				const sums = await readCageSums(smooth, cages, onProgress);
 				setStep({
 					id: "verifyKiller",
+					source,
+					corners,
 					warped,
 					warpedUrl,
 					scan: killerScanFromRead(cages, sums),
 				});
 				return;
 			}
-			const cells = await recognizeGrid(warped, onProgress);
+			const cells = await recognizeGrid(source, corners, onProgress);
 			setStep({ id: "verify", warpedUrl, cells });
 		}, sudoku.scan.recognitionFailed);
 		if (!read) {
@@ -183,7 +191,9 @@ export function SudokuScanFlow() {
 							current.id === "verifyKiller" ? { ...current, scan } : current,
 						)
 					}
-					onReadAsClassic={() => readClassic(step.warped, step.warpedUrl)}
+					onReadAsClassic={() =>
+						readClassic(step.source, step.corners, step.warpedUrl)
+					}
 					onRescan={() => setStep({ id: "upload" })}
 					onError={setError}
 				/>

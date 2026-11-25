@@ -2,8 +2,9 @@
  * One reading of a glyph from two: Apple Vision's, which is surest of print,
  * and the digit network's, which also reads handwriting.
  */
-import type { DigitRead } from "@arcadeclub/core/sudoku-scan-ink";
-import type { DigitGuess } from "./digit-net";
+
+import type { DigitGuess } from "./sudoku-digit-net";
+import type { DigitRead } from "./sudoku-scan-ink";
 
 /** Ink the network is this sure is no digit, and Vision reads nothing in. */
 const JUNK = 0.8;

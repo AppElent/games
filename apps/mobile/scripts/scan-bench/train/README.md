@@ -1,7 +1,7 @@
 # Digit network training
 
-Makes `src/features/sudoku/scan/digit-net-weights.ts`, the weights of the network in
-`digit-net.ts` that reads handwriting. No sudoku photos go into it.
+Makes `packages/core/src/sudoku-digit-net-weights.ts`, the weights of the network in
+`sudoku-digit-net.ts` that reads handwriting. No sudoku photos go into it.
 
 | Data                                                                                                        | Source                               | Licence            |
 | ----------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------ |
@@ -19,7 +19,7 @@ Python 3.14 and `requirements.txt` installed:
 python -I fonts.py <google/fonts> > fonts.txt
 python -I glyphs.py <data> <google/fonts> fonts.txt glyphs.npz
 python -I train.py glyphs.npz net.pt
-python -I export.py net.pt ../../../src/features/sudoku/scan/digit-net-weights.ts
+python -I export.py net.pt ../../../../../packages/core/src/sudoku-digit-net-weights.ts
 ```
 
 Training takes about three minutes on a Mac Studio and is not repeatable to the bit.

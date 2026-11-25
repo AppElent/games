@@ -1,7 +1,7 @@
 """Trains the digit network: `train.py <glyphs.npz> <out.pt> [epochs]`.
 
 Every glyph is bent, thickened, cut and blurred anew each time, then scaled
-into 28 x 28 as `glyphImage` in `grid-ink.ts` does.
+into 28 x 28 as `glyphImage` in core `sudoku-scan-glyphs.ts` does.
 """
 import sys
 import time
@@ -113,7 +113,7 @@ def samples(index):
 
 
 class Net(nn.Module):
-    """The same layers as `digit-net.ts`."""
+    """The same layers as core `sudoku-digit-net.ts`."""
 
     def __init__(self):
         super().__init__()

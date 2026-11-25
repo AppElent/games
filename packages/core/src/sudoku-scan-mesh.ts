@@ -3,7 +3,7 @@
  * bends them, so each line is traced as a curve instead of cut straight, and
  * the mesh maps the flat grid (9 × `CELL` pixels a side) onto the image.
  */
-import type { Point } from "@arcadeclub/core/sudoku-scan-ink";
+import type { Point } from "./sudoku-scan-ink";
 
 /** A cell's side in the flat grid. */
 export const CELL = 100;

@@ -3,8 +3,8 @@
  * look sure. The grid lines give it away; then every cell is flagged for the
  * player to check.
  */
-import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
-import type { GridMesh } from "./grid-mesh";
+import type { ScanCell } from "./sudoku-scan";
+import type { GridMesh } from "./sudoku-scan-mesh";
 
 /** Cells the four corners of a right grid move in all, one way, at most. */
 const FARTHEST_MOVE = 3;

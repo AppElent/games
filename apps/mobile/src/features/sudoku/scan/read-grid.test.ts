@@ -1,6 +1,6 @@
 import { isLowConfidence } from "@arcadeclub/core/sudoku-scan";
 import type { InkBox, Point } from "@arcadeclub/core/sudoku-scan-ink";
-import { drawGrid } from "../../../../test/drawn-grid";
+import { drawGrid } from "@arcadeclub/core/testing/drawn-grid";
 import { readGrid } from "./read-grid";
 
 const photo = { uri: "file://photo.jpg", width: 1200, height: 1600 };
