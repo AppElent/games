@@ -259,6 +259,22 @@ describe("gridCells", () => {
 			height: 100,
 		});
 	});
+
+	it("breaks line-score ties on ridge support rather than raw darkness", () => {
+		const xs = [...even];
+		xs[1] = 85;
+		const gray = drawnGrid(xs, even, 150);
+		// A darker, wider vertical stroke nearby that also reaches every slice
+		// via the ±4 px score window, so it ties the thin grid line on score
+		// and beats it on raw ink darkness, yet has far less ridge support.
+		for (let y = 0; y < CELL; y += 1) {
+			for (let x = 114; x <= 130; x += 1) {
+				gray[y * SIZE + x] = 20;
+			}
+		}
+		const cells = gridCells(gray, SIZE);
+		expectNear(cells[1], { x: 85, y: 1, width: 116, height: 100 });
+	});
 });
 
 describe("defaultCorners", () => {
