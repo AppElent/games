@@ -128,30 +128,38 @@ export type SecondFactorSignIn = {
 	};
 };
 
+/** Ends the step the way a dropped attempt does. */
+const SUPERSEDED: SecondFactorResult = { error: { code: "sign_in_expired" } };
+
 const NOT_FINISHED = Symbol("second factor verified, sign-in not complete");
 
 /**
  * The step as the end of a sign-in: a verified code still needs `finalize()`
  * before the session is active. `current` is read per call, so a resource
- * Clerk swapped in meanwhile is the one used.
+ * Clerk swapped in meanwhile is the one used. Once `isCurrent` says a newer
+ * attempt took over, nothing is sent, verified or finalized.
  */
 export function signInSecondFactor(
 	current: () => SecondFactorSignIn,
+	isCurrent: () => boolean = () => true,
 ): SecondFactorActions {
 	return {
-		send: (strategy) => {
+		send: async (strategy) => {
+			if (!isCurrent()) return SUPERSEDED;
 			const { mfa } = current();
 			return strategy === "phone_code"
 				? mfa.sendPhoneCode()
 				: mfa.sendEmailCode();
 		},
 		verify: async (strategy, code) => {
+			if (!isCurrent()) return SUPERSEDED;
 			const signIn = current();
 			const complete = () => signIn.status === "complete";
 			// A verified factor whose `finalize()` failed only needs the retry.
 			if (!complete()) {
 				const result = await verifyCode(signIn, strategy, code);
 				if (result.error) return result;
+				if (!isCurrent()) return SUPERSEDED;
 				if (!complete()) return { error: NOT_FINISHED };
 			}
 			return signIn.finalize();
@@ -193,11 +201,14 @@ export function createSecondFactorFlow(
 	actions: SecondFactorActions,
 	/** There is no attempt to finish. */
 	ended = false,
+	/** The method this attempt already sent a code for or tried: reopens on it, sends nothing. */
+	startedWith?: string | null,
 ) {
 	const options = secondFactorOptions(factors);
+	const resumed = options.find((o) => o.strategy === startedWith);
 	let state: SecondFactorState = {
 		options,
-		strategy: options[0]?.strategy ?? null,
+		strategy: (resumed ?? options[0])?.strategy ?? null,
 		locked: [],
 		busy: null,
 		error: null,
@@ -205,7 +216,7 @@ export function createSecondFactorFlow(
 		resent: false,
 	};
 	const listeners = new Set<() => void>();
-	let started = false;
+	let started = !!resumed;
 
 	function set(change: Partial<SecondFactorState>) {
 		state = { ...state, ...change };

@@ -4,20 +4,26 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 // Clerk Core 3: methods resolve to `{ error }` and update the resource in place.
 const signIn = {
+	id: undefined as string | undefined,
 	status: null as string | null,
+	secondFactorVerification: { strategy: null as string | null },
 	password: vi.fn(),
 	finalize: vi.fn(),
 	reset: vi.fn(),
 	emailCode: { sendCode: vi.fn(), verifyCode: vi.fn() },
 	supportedSecondFactors: [] as { strategy: string }[],
-	mfa: { verifyTOTP: vi.fn() },
+	mfa: { verifyTOTP: vi.fn(), sendEmailCode: vi.fn() },
 };
+const auth = { isLoaded: true };
 const errors: { fields: object; global: null; raw: null } = {
 	fields: {},
 	global: null,
 	raw: null,
 };
-vi.mock("@clerk/react", () => ({ useSignIn: () => ({ signIn, errors }) }));
+vi.mock("@clerk/react", () => ({
+	useSignIn: () => ({ signIn, errors }),
+	useAuth: () => auth,
+}));
 
 import { type Locale, LocaleProvider } from "#/lib/i18n";
 import { AuthConfigProvider } from "../AuthConfigProvider";
@@ -57,6 +63,11 @@ describe("SignInForm", () => {
 	afterEach(() => {
 		cleanup();
 		signIn.status = null;
+		signIn.id = undefined;
+		signIn.secondFactorVerification.strategy = null;
+		sessionStorage.clear();
+		auth.isLoaded = true;
+		window.history.replaceState(null, "", "/");
 		errors.fields = {};
 		signIn.supportedSecondFactors = [];
 		for (const fn of [
@@ -118,6 +129,15 @@ describe("SignInForm", () => {
 		);
 		expect(screen.queryByText("Clerk says no.")).toBeNull();
 		expect(signIn.finalize).not.toHaveBeenCalled();
+	});
+
+	it("says a reload is needed when an earlier submit already signed in", async () => {
+		signIn.password.mockResolvedValue(clerkError("session_exists"));
+		renderForm();
+		fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"You are already signed in. Reload the page or restart the app.",
+		);
 	});
 
 	it("points a code-only account to the emailed code", async () => {
@@ -451,6 +471,210 @@ describe("SignInForm", () => {
 				"Die code klopt niet.",
 			);
 		});
+	});
+
+	describe("a reload during the second step (APP-833)", () => {
+		function openStep() {
+			window.history.replaceState(null, "", "/sign-in?redirect=%2Faccount");
+			sessionStorage.setItem("arcade-second-factor", "/sign-in sia_1");
+			signIn.id = "sia_1";
+			signIn.status = "needs_second_factor";
+			signIn.supportedSecondFactors = [
+				{ strategy: "totp" },
+				{ strategy: "email_code" },
+			];
+		}
+
+		it("reopens on the method it was on, sending nothing, once Clerk loads", async () => {
+			openStep();
+			signIn.secondFactorVerification.strategy = "email_code";
+			auth.isLoaded = false;
+			const form = () => (
+				<LocaleProvider initialLocale="en">
+					<AuthConfigProvider>
+						<SignInForm onSuccess={vi.fn()} />
+					</AuthConfigProvider>
+				</LocaleProvider>
+			);
+			const { rerender } = render(form());
+			expect(screen.getByRole("status").textContent).toBe("Please wait…");
+			expect(screen.queryByLabelText("Password")).toBeNull();
+			auth.isLoaded = true;
+			rerender(form());
+			expect(
+				await screen.findByText("We sent a 6-digit code to your email."),
+			).toBeDefined();
+			expect(signIn.mfa.sendEmailCode).not.toHaveBeenCalled();
+		});
+
+		it("remembers the step while it is open, and forgets it on the way back", async () => {
+			window.history.replaceState(null, "", "/sign-in");
+			signIn.password.mockImplementation(async () => {
+				signIn.id = "sia_1";
+				signIn.status = "needs_second_factor";
+				signIn.supportedSecondFactors = [{ strategy: "totp" }];
+				return ok;
+			});
+			signIn.reset.mockResolvedValue(ok);
+			renderForm();
+			fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+			const back = await screen.findByRole("button", {
+				name: "Back to sign in",
+			});
+			expect(sessionStorage.getItem("arcade-second-factor")).toBe(
+				"/sign-in sia_1",
+			);
+			fireEvent.click(back);
+			await screen.findByLabelText("Password");
+			expect(sessionStorage.getItem("arcade-second-factor")).toBeNull();
+		});
+
+		it.each([
+			["another attempt", () => (signIn.id = "sia_2")],
+			["a finished attempt", () => (signIn.status = "complete")],
+			["no memory of the step", () => sessionStorage.clear()],
+			[
+				"another page's step",
+				() => window.history.replaceState(null, "", "/forgot-password"),
+			],
+		])("shows the form for %s", (_, change) => {
+			openStep();
+			change();
+			renderForm();
+			expect(screen.getByLabelText("Password")).toBeDefined();
+			expect(sessionStorage.getItem("arcade-second-factor")).toBeNull();
+		});
+	});
+
+	describe("a late Clerk answer (APP-833)", () => {
+		function pending() {
+			let answer: (value: unknown) => void = () => {};
+			signIn.password.mockImplementationOnce(
+				() =>
+					new Promise((resolve) => {
+						answer = resolve;
+					}),
+			);
+			return (status: string, result: unknown = ok) => {
+				signIn.status = status;
+				signIn.supportedSecondFactors = [{ strategy: "totp" }];
+				answer(result);
+				return new Promise((resolve) => setTimeout(resolve));
+			};
+		}
+		const submit = () =>
+			fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+
+		it("does not sign in or navigate after a newer submit", async () => {
+			const answer = pending();
+			const onSuccess = vi.fn();
+			renderForm(onSuccess);
+			submit();
+			cleanup();
+			renderForm(onSuccess);
+			pending();
+			submit();
+			await answer("complete");
+			expect(signIn.finalize).not.toHaveBeenCalled();
+			expect(onSuccess).not.toHaveBeenCalled();
+			expect(screen.getByLabelText("Password")).toBeDefined();
+		});
+
+		it("signs in without navigating when the player only left", async () => {
+			const answer = pending();
+			signIn.finalize.mockResolvedValue(ok);
+			const onSuccess = vi.fn();
+			renderForm(onSuccess);
+			submit();
+			cleanup();
+			await answer("complete");
+			expect(signIn.finalize).toHaveBeenCalledTimes(1);
+			expect(onSuccess).not.toHaveBeenCalled();
+		});
+
+		it("signs in without navigating when the form was only reopened", async () => {
+			const answer = pending();
+			signIn.finalize.mockResolvedValue(ok);
+			const onSuccess = vi.fn();
+			renderForm(onSuccess);
+			submit();
+			cleanup();
+			renderForm(onSuccess);
+			await answer("complete");
+			expect(signIn.finalize).toHaveBeenCalledTimes(1);
+			expect(onSuccess).not.toHaveBeenCalled();
+		});
+
+		it("does not check a code against another attempt; resending starts over", async () => {
+			signIn.id = "sia_b";
+			renderForm();
+			fireEvent.change(await openCodeStep(), { target: { value: "424242" } });
+			signIn.id = "sia_a";
+			// A stale error of an earlier try must not hide the reason.
+			errors.fields = { code: { code: "form_code_incorrect" } };
+			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+			expect((await screen.findByRole("alert")).textContent).toBe(
+				"That code has expired. Send a new one.",
+			);
+			expect(signIn.emailCode.verifyCode).not.toHaveBeenCalled();
+			fireEvent.click(screen.getByRole("button", { name: "Send a new code" }));
+			await vi.waitFor(() =>
+				expect(signIn.emailCode.sendCode).toHaveBeenLastCalledWith({
+					emailAddress: "a@b.com",
+				}),
+			);
+			expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(2);
+		});
+
+		it("ignores an emailed code's answer after a newer submit", async () => {
+			let answer: (value: typeof ok) => void = () => {};
+			signIn.emailCode.verifyCode.mockImplementation(
+				() =>
+					new Promise((resolve) => {
+						answer = resolve;
+					}),
+			);
+			const onSuccess = vi.fn();
+			renderForm(onSuccess);
+			fireEvent.change(await openCodeStep(), { target: { value: "424242" } });
+			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+			cleanup();
+			renderForm(onSuccess);
+			pending();
+			submit();
+			signIn.status = "complete";
+			answer(ok);
+			await new Promise((resolve) => setTimeout(resolve));
+			expect(signIn.finalize).not.toHaveBeenCalled();
+			expect(onSuccess).not.toHaveBeenCalled();
+		});
+	});
+
+	const locked = {
+		error: {
+			errors: [
+				{ code: "user_locked", meta: { lockout_expires_in_seconds: 600 } },
+			],
+		},
+	};
+
+	it("shows how long a locked account waits, for a password and a code", async () => {
+		signIn.password.mockResolvedValue(locked);
+		renderForm();
+		fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+		expect((await screen.findByRole("alert")).textContent).toContain(
+			"Try again in 10 minutes.",
+		);
+		cleanup();
+		signIn.emailCode.sendCode.mockResolvedValue(locked);
+		renderForm();
+		typeEmail();
+		fireEvent.click(
+			screen.getByRole("button", { name: "Email me a sign-in code" }),
+		);
+		expect((await screen.findByRole("alert")).textContent).toContain(
+			"Try again in 10 minutes.",
+		);
 	});
 
 	it("keeps the return page on the sign-up and reset links (APP-596)", () => {

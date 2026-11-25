@@ -21,13 +21,16 @@ import { useI18n } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
+import { useRememberSecondFactor } from "./secondFactorResume";
+import { type SignInAttempt, useSignInAttempt } from "./useSignInAttempt";
 
 /**
  * The second step of a sign-in: an authenticator code, a texted or emailed
  * code, or a backup code. Every way into a sign-in (password, emailed code,
  * password reset) opens it on the same screen. Each other method the account
  * has is a link; going back drops the attempt, so the next sign-in starts
- * clean. The rules live in `@arcadeclub/core/second-factor`.
+ * clean. A reload reopens it on the method last sent or tried, without a new code; an
+ * attempt another sign-in took over ends it. The rules live in `@arcadeclub/core/second-factor`.
  */
 export function SecondFactorStep({
 	onSuccess,
@@ -44,12 +47,21 @@ export function SecondFactorStep({
 	const copy = messages.auth.secondFactor;
 	const live = useRef(signIn);
 	live.current = signIn;
+	const begin = useSignInAttempt();
+	const [id] = useState(signIn.id);
+	const attempt = useRef<SignInAttempt | null>(null);
 	const [flow] = useState(() =>
 		createSecondFactorFlow(
 			signIn.supportedSecondFactors,
-			signInSecondFactor(() => live.current),
+			signInSecondFactor(
+				() => live.current,
+				() => live.current.id === id && (attempt.current?.isLatest() ?? true),
+			),
+			false,
+			signIn.secondFactorVerification?.strategy,
 		),
 	);
+	useRememberSecondFactor(id);
 	const state = useSyncExternalStore(
 		flow.subscribe,
 		flow.getState,
@@ -74,9 +86,13 @@ export function SecondFactorStep({
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
+		if (busy) return;
 		setOpening(null);
-		if (await flow.verify(code)) onSuccess();
-		else (fieldRef.current ?? closedRef.current)?.focus();
+		const current = begin();
+		attempt.current = current;
+		if (await flow.verify(code)) {
+			if (current.isShown()) onSuccess();
+		} else (fieldRef.current ?? closedRef.current)?.focus();
 	}
 
 	async function act(action: Promise<boolean>) {

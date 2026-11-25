@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const ok = { error: null };
 const signIn = {
+	id: "sia_1",
 	status: "needs_second_factor",
 	supportedSecondFactors: [] as { strategy: string; safeIdentifier?: string }[],
 	finalize: vi.fn(),
@@ -51,6 +52,7 @@ function enter(label: string, value: string, submit = "Verify") {
 
 describe("SecondFactorStep", () => {
 	beforeEach(() => {
+		signIn.id = "sia_1";
 		signIn.status = "needs_second_factor";
 		signIn.supportedSecondFactors = [
 			{ strategy: "backup_code" },
@@ -194,5 +196,39 @@ describe("SecondFactorStep", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Back to sign in" }));
 		await vi.waitFor(() => expect(onBack).toHaveBeenCalledTimes(1));
 		expect(signIn.reset).toHaveBeenCalled();
+	});
+
+	it("ends instead of finishing another attempt that took over (APP-833)", async () => {
+		renderStep();
+		// A late answer to an earlier sign-in lands in the same resource.
+		signIn.id = "sia_0";
+		signIn.status = "complete";
+		enter("Code", "123456");
+		expect((await screen.findByRole("alert")).textContent).toContain(
+			"Go back and sign in again.",
+		);
+		expect(signIn.mfa.verifyTOTP).not.toHaveBeenCalled();
+		expect(signIn.finalize).not.toHaveBeenCalled();
+	});
+
+	it("does not finalize a code answered after a newer submit (APP-833)", async () => {
+		let answer: (value: typeof ok) => void = () => {};
+		signIn.mfa.verifyTOTP.mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					answer = resolve;
+				}),
+		);
+		const { onSuccess } = renderStep();
+		enter("Code", "123456");
+		cleanup();
+		renderStep();
+		const answerOld = answer;
+		enter("Code", "654321");
+		await complete();
+		answerOld(ok);
+		await new Promise((resolve) => setTimeout(resolve));
+		expect(signIn.finalize).not.toHaveBeenCalled();
+		expect(onSuccess).not.toHaveBeenCalled();
 	});
 });
