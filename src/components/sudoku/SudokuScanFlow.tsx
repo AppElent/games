@@ -57,7 +57,6 @@ type Step =
 			id: "verifyKiller";
 			source: HTMLCanvasElement;
 			corners: Point[];
-			warped: HTMLCanvasElement;
 			warpedUrl: string;
 			scan: KillerScan;
 	  };
@@ -123,7 +122,6 @@ export function SudokuScanFlow() {
 					id: "verifyKiller",
 					source,
 					corners,
-					warped,
 					warpedUrl,
 					scan: killerScanFromRead(cages, sums),
 				});

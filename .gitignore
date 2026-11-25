@@ -33,3 +33,6 @@ review-notes/
 # Appelent env engine ledger and lock
 .appelent/env-state.json
 .appelent/env.lock/
+
+# Scratch page of apps/mobile/scripts/scan-bench/web-bench.mjs
+.scan-bench-web-*/

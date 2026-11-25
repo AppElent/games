@@ -95,10 +95,10 @@ function homographyFromCorners(corners: Point[], size: number) {
 }
 
 /**
- * Warp the quad described by corners into a square WARP_SIZE canvas. The
- * classic read takes the nearest source pixel, which its grid-line finder is
- * tuned on; `smooth` blends the four nearest instead, which keeps a Killer's
- * thin dashes and small sums whole.
+ * Warp the quad described by corners into a square WARP_SIZE canvas. By
+ * default it takes the nearest source pixel, which is enough for the picture
+ * the check step shows; `smooth` blends the four nearest instead, which keeps
+ * thin lines, a Killer's dashes and small digits whole for reading.
  */
 export function warpToSquare(
 	source: HTMLCanvasElement,
@@ -334,6 +334,9 @@ export async function recognizeGrid(
 			{ pixels: grayPixels(warped), size: WARP_SIZE },
 			frame.margins,
 			async (glyphs) => {
+				// Let the page paint the count between rows: the network alone
+				// would read the whole grid in one task.
+				await new Promise((resolve) => setTimeout(resolve, 0));
 				const reads: DigitRead[] = [];
 				for (const { box, guess } of glyphs) {
 					const sure = networkRead(guess);
@@ -358,7 +361,10 @@ export async function recognizeGrid(
 				return true;
 			},
 		);
-		return cells ?? [];
+		if (!cells) {
+			throw new Error("The grid read stopped");
+		}
+		return cells;
 	} finally {
 		if (ocr.worker) {
 			await (await ocr.worker).terminate();

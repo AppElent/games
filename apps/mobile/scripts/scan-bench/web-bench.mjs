@@ -67,6 +67,7 @@ function localFile(url) {
 // The page lives in a scratch folder inside the repo so Vite resolves `#/`.
 const page = mkdtempSync(path.join(root, ".scan-bench-web-"));
 process.on("exit", () => rmSync(page, { recursive: true, force: true }));
+process.on("SIGINT", () => process.exit(130));
 writeFileSync(
 	path.join(page, "index.html"),
 	'<!doctype html><meta charset="utf-8"><script type="module" src="./main.ts"></script>',
@@ -80,6 +81,7 @@ Object.assign(window, {
 		const bitmap = await createImageBitmap(blob);
 		const source = await fileToCanvas(blob);
 		const scale = source.width / bitmap.width;
+		bitmap.close();
 		const placed = corners.map(({ x, y }) => ({ x: x * scale, y: y * scale }));
 		return recognizeGrid(source, placed);
 	},
