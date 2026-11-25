@@ -3,7 +3,9 @@ import {
 	checkKillerScan,
 	edgeBetween,
 	edgeKey,
+	type KillerScanCheck,
 	killerScanCages,
+	parseCageSum,
 	setKillerSum,
 	toggleKillerBorder,
 } from "@arcadeclub/core/sudoku-scan-cages";
@@ -11,7 +13,6 @@ import { useMutation } from "convex/react";
 import { Check } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { autoSessionTitle } from "#/lib/games/sudoku-local";
-import { parseCageSum } from "#/lib/games/sudoku-scan-image";
 import { createSudokuSession } from "#/lib/games/sudoku-session";
 import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, plural, useI18n } from "#/lib/i18n";
@@ -49,12 +50,15 @@ export function KillerVerifyStep({
 	scan,
 	onScanChange,
 	onRescan,
+	onReadAsClassic,
 	onError,
 }: {
 	warpedUrl: string;
 	scan: KillerScan;
 	onScanChange: (scan: KillerScan) => void;
 	onRescan: () => void;
+	/** For a classic grid the cage read mistook for a Killer. */
+	onReadAsClassic: () => void;
 	onError: (message: string) => void;
 }) {
 	const { locale, messages } = useI18n();
@@ -156,17 +160,34 @@ export function KillerVerifyStep({
 		);
 	};
 
-	const checkMessage =
-		check === null
-			? null
-			: check.kind === "missingSums"
-				? plural(locale, check.count, killer.missingSums)
-				: check.kind === "total"
-					? fmt(killer.total, { total: check.total })
-					: killer.invalidCages;
+	// Counting solutions takes about a second, so it runs on confirm only.
+	const [confirmCheck, setConfirmCheck] = useState<{
+		scan: KillerScan;
+		check: KillerScanCheck;
+	} | null>(null);
+	const shownCheck =
+		check ?? (confirmCheck?.scan === scan ? confirmCheck.check : null);
 
-	const confirm = () =>
-		host(async ({ displayName, guestId }) => {
+	const describeCheck = (entry: KillerScanCheck) => {
+		switch (entry.kind) {
+			case "missingSums":
+				return plural(locale, entry.count, killer.missingSums);
+			case "total":
+				return fmt(killer.total, { total: entry.total });
+			case "notUnique":
+				return entry.solutions === 0 ? killer.noSolution : killer.manySolutions;
+			case "invalidCages":
+				return killer.invalidCages;
+		}
+	};
+
+	const confirm = () => {
+		const full = checkKillerScan(scan);
+		if (full) {
+			setConfirmCheck({ scan, check: full });
+			return;
+		}
+		return host(async ({ displayName, guestId }) => {
 			const title = autoSessionTitle(undefined, "scan");
 			return createSudokuSession(create, {
 				title,
@@ -181,6 +202,7 @@ export function KillerVerifyStep({
 				givens: "0".repeat(GRID_SIZE * GRID_SIZE),
 			});
 		}, sudoku.scan.couldNotCreateSession);
+	};
 
 	const unsureCount = scan.doubtful.length;
 
@@ -370,19 +392,20 @@ export function KillerVerifyStep({
 							const other = neighbor(selected, direction);
 							const edge: CageEdge | null =
 								other === null ? null : edgeBetween(selected, other);
-							const key = edge ? edgeKey(edge) : null;
-							const on = key === null || borders.has(key);
-							const unsure = key !== null && doubtful.has(key);
+							// The grid's own edge is always a cage line: nothing to toggle.
+							if (!edge) {
+								return null;
+							}
+							const key = edgeKey(edge);
+							const on = borders.has(key);
+							const unsure = doubtful.has(key);
 							return (
 								<button
 									key={direction}
 									type="button"
 									aria-pressed={on}
-									disabled={edge === null}
-									onClick={() =>
-										edge && onScanChange(toggleKillerBorder(scan, edge))
-									}
-									className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50 ${
+									onClick={() => onScanChange(toggleKillerBorder(scan, edge))}
+									className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold ${
 										on
 											? "bg-sky-400 text-slate-950"
 											: "club-btn-outline text-slate-300 hover:bg-slate-700"
@@ -402,9 +425,12 @@ export function KillerVerifyStep({
 			) : null}
 
 			<div className="max-w-xl">
-				{checkMessage ? (
-					<p className="mb-3 rounded-md border border-orange-400/40 bg-orange-500/10 px-4 py-3 club-error">
-						{checkMessage}
+				{shownCheck ? (
+					<p
+						role="status"
+						className="mb-3 rounded-md border border-orange-400/40 bg-orange-500/10 px-4 py-3 club-error"
+					>
+						{describeCheck(shownCheck)}
 					</p>
 				) : (
 					<p className="mb-3 rounded-md border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
@@ -421,7 +447,7 @@ export function KillerVerifyStep({
 					</button>
 					<button
 						type="button"
-						disabled={check !== null || busy}
+						disabled={shownCheck !== null || busy}
 						onClick={confirm}
 						className="inline-flex items-center gap-2 club-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
 					>
@@ -429,6 +455,13 @@ export function KillerVerifyStep({
 						{busy ? sudoku.scan.creatingPuzzle : sudoku.scan.confirmAndPlay}
 					</button>
 				</div>
+				<button
+					type="button"
+					onClick={onReadAsClassic}
+					className="mt-3 text-sm font-semibold text-slate-300 underline underline-offset-4 hover:text-white"
+				>
+					{killer.readAsClassic}
+				</button>
 			</div>
 		</div>
 	);

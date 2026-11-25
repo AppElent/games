@@ -579,11 +579,30 @@ export function toggleKillerBorder(
 	const borders = scan.borders.includes(key)
 		? scan.borders.filter((entry) => entry !== key)
 		: [...scan.borders, key];
-	return {
+	const toggled = {
 		...scan,
 		borders,
 		doubtful: scan.doubtful.filter((entry) => entry !== key),
 	};
+	// A join drops the absorbed cage's sum, so a later split asks for it
+	// again rather than bringing back a sum nobody looked at.
+	const firsts = new Set(killerScanCages(toggled).map((cage) => cage.cells[0]));
+	const sums: Record<number, number> = {};
+	for (const [cell, sum] of Object.entries(scan.sums)) {
+		if (firsts.has(Number(cell))) {
+			sums[Number(cell)] = sum;
+		}
+	}
+	return { ...toggled, sums };
+}
+
+/** A typed or read cage sum: a whole number from 1 to 45, else null. */
+export function parseCageSum(text: string): number | null {
+	if (!/^[0-9]{1,2}$/.test(text.trim())) {
+		return null;
+	}
+	const sum = Number(text.trim());
+	return sum >= 1 && sum <= 45 ? sum : null;
 }
 
 /** Sets (or clears, with null) the sum of the cage that holds `cell`. */

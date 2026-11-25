@@ -7,6 +7,7 @@ import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
 import type { CageRead, SumInk } from "@arcadeclub/core/sudoku-scan-cages";
 import {
 	cageSumInk,
+	parseCageSum,
 	readCages,
 	sumGray,
 } from "@arcadeclub/core/sudoku-scan-cages";
@@ -456,13 +457,4 @@ export async function readCageSums(
 	}
 	onProgress?.({ step: "cageSums", cellsDone: total, cellsTotal: total });
 	return sums;
-}
-
-/** A read cage sum: 1 to 45, else null. */
-export function parseCageSum(text: string): number | null {
-	if (!/^[0-9]{1,2}$/.test(text)) {
-		return null;
-	}
-	const sum = Number(text);
-	return sum >= 1 && sum <= 45 ? sum : null;
 }

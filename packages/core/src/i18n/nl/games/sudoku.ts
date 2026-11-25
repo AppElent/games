@@ -248,7 +248,6 @@ export const sudoku = {
 		confirmAndPlay: "Bevestigen en spelen",
 		couldNotCreateSession: "Kon de sessie niet aanmaken",
 		killer: {
-			readingCages: "Kooien lezen...",
 			readingSums: "Kooisommen lezen {done}/{total}...",
 			gridLabel: "Herkende kooien — tik op een vakje om de kooi te verbeteren",
 			cellName: "Rij {row}, kolom {col}: kooi van {count}, som {sum}",
@@ -279,6 +278,11 @@ export const sudoku = {
 			invalidCages:
 				"Een kooi kan niet kloppen: hij heeft meer dan 9 vakjes, of een som die zijn vakjes niet kunnen maken.",
 			total: "De sommen tellen op tot {total}; bij een Killer is dat 405.",
+			noSolution:
+				"Deze kooien en sommen hebben geen oplossing. Vergelijk de sommen en lijnen met de foto.",
+			manySolutions:
+				"Deze kooien en sommen laten meer dan één oplossing toe. Vergelijk de sommen en lijnen met de foto.",
+			readAsClassic: "Geen Killer? Lees hem als gewone sudoku",
 			ready: "Kooien en sommen tellen op tot 405.",
 		},
 	},

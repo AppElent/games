@@ -53,7 +53,12 @@ type Step =
 	| { id: "corners"; source: HTMLCanvasElement; corners: Point[] | null }
 	| { id: "recognizing"; warpedUrl: string; progress: ScanProgress }
 	| { id: "verify"; warpedUrl: string; cells: ScanCell[] }
-	| { id: "verifyKiller"; warpedUrl: string; scan: KillerScan };
+	| {
+			id: "verifyKiller";
+			warped: HTMLCanvasElement;
+			warpedUrl: string;
+			scan: KillerScan;
+	  };
 
 export function SudokuScanFlow() {
 	const messages = useMessages();
@@ -71,6 +76,26 @@ export function SudokuScanFlow() {
 		}, sudoku.scan.couldNotReadImage);
 	};
 
+	const onProgress = (progress: ScanProgress) =>
+		setStep((current) =>
+			current.id === "recognizing" ? { ...current, progress } : current,
+		);
+
+	const readClassic = async (warped: HTMLCanvasElement, warpedUrl: string) => {
+		const read = await run(async () => {
+			setStep({
+				id: "recognizing",
+				warpedUrl,
+				progress: { step: "preparing", cellsDone: 0, cellsTotal: 81 },
+			});
+			const cells = await recognizeGrid(warped, onProgress);
+			setStep({ id: "verify", warpedUrl, cells });
+		}, sudoku.scan.recognitionFailed);
+		if (!read) {
+			setStep({ id: "upload" });
+		}
+	};
+
 	const runRecognition = async (
 		source: HTMLCanvasElement,
 		corners: Point[],
@@ -83,10 +108,6 @@ export function SudokuScanFlow() {
 				warpedUrl,
 				progress: { step: "preparing", cellsDone: 0, cellsTotal: 81 },
 			});
-			const onProgress = (progress: ScanProgress) =>
-				setStep((current) =>
-					current.id === "recognizing" ? { ...current, progress } : current,
-				);
 			// A Killer prints dashed cages and sums instead of givens.
 			const smooth = warpToSquare(source, corners, { smooth: true });
 			const cages = readWarpedCages(smooth);
@@ -94,6 +115,7 @@ export function SudokuScanFlow() {
 				const sums = await readCageSums(smooth, cages, onProgress);
 				setStep({
 					id: "verifyKiller",
+					warped,
 					warpedUrl,
 					scan: killerScanFromRead(cages, sums),
 				});
@@ -156,7 +178,12 @@ export function SudokuScanFlow() {
 				<KillerVerifyStep
 					warpedUrl={step.warpedUrl}
 					scan={step.scan}
-					onScanChange={(scan) => setStep({ ...step, scan })}
+					onScanChange={(scan) =>
+						setStep((current) =>
+							current.id === "verifyKiller" ? { ...current, scan } : current,
+						)
+					}
+					onReadAsClassic={() => readClassic(step.warped, step.warpedUrl)}
 					onRescan={() => setStep({ id: "upload" })}
 					onError={setError}
 				/>

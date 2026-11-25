@@ -14,6 +14,7 @@ import {
 	KILLER_TOTAL,
 	killerScanCages,
 	killerScanFromRead,
+	parseCageSum,
 	readCages,
 	setKillerSum,
 	sumGray,
@@ -394,5 +395,37 @@ describe("cageSumInk", () => {
 		expect(
 			cageSumInk(rgba, SIZE, cells[6], bounds, { ignoreBlue: true }),
 		).toBeNull();
+	});
+});
+
+describe("parseCageSum", () => {
+	it("takes a whole sum from 1 to 45", () => {
+		expect(parseCageSum("7")).toBe(7);
+		expect(parseCageSum(" 45 ")).toBe(45);
+	});
+
+	it("refuses what no cage can add up to", () => {
+		expect(parseCageSum("")).toBeNull();
+		expect(parseCageSum("0")).toBeNull();
+		expect(parseCageSum("46")).toBeNull();
+		expect(parseCageSum("123")).toBeNull();
+		expect(parseCageSum("1a")).toBeNull();
+	});
+});
+
+describe("toggleKillerBorder and sums", () => {
+	it("asks again for a sum after a join is split", () => {
+		const rows = Array.from({ length: 9 }, (_, row) =>
+			Array.from({ length: 9 }, (_, col) => row * 9 + col),
+		);
+		const scan = killerScanFromRead(
+			readOf(rows),
+			rows.map(() => 45),
+		);
+		const edge = { cell: 0, side: "bottom" as const };
+		const joined = toggleKillerBorder(scan, edge);
+		expect(joined.sums[9]).toBeUndefined();
+		const split = toggleKillerBorder(joined, edge);
+		expect(checkKillerScan(split)).toEqual({ kind: "missingSums", count: 1 });
 	});
 });

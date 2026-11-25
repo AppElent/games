@@ -246,7 +246,6 @@ export const sudoku = {
 		confirmAndPlay: "Confirm and play",
 		couldNotCreateSession: "Could not create session",
 		killer: {
-			readingCages: "Reading the cages...",
 			readingSums: "Reading cage sums {done}/{total}...",
 			gridLabel: "Recognized cages — tap a cell to correct its cage",
 			cellName: "Row {row}, column {col}: cage of {count}, sum {sum}",
@@ -277,6 +276,11 @@ export const sudoku = {
 			invalidCages:
 				"A cage cannot be right: it has more than 9 cells, or a sum its cells cannot make.",
 			total: "The sums add up to {total}; a Killer's sums add up to 405.",
+			noSolution:
+				"These cages and sums have no solution. Compare the sums and lines with the photo.",
+			manySolutions:
+				"These cages and sums allow more than one solution. Compare the sums and lines with the photo.",
+			readAsClassic: "Not a Killer? Read it as a classic sudoku",
 			ready: "Cages and sums add up to 405.",
 		},
 	},

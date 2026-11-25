@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
+import { isKillerRead } from "@arcadeclub/core/sudoku-scan-cages";
 import {
 	type DigitRead,
 	gridCells,
@@ -8,9 +9,9 @@ import {
 } from "@arcadeclub/core/sudoku-scan-ink";
 import { describe, expect, it, vi } from "vitest";
 import {
-	parseCageSum,
 	RETRY_MIN_CONFIDENCE,
 	readDigitWithRetry,
+	readWarpedCages,
 	warpToSquare,
 } from "../sudoku-scan-image";
 
@@ -193,16 +194,26 @@ describe("line-finder tie-break on sudoku-book-page fixture", () => {
 	});
 });
 
-describe("parseCageSum", () => {
-	it("takes a whole sum from 1 to 45", () => {
-		expect(parseCageSum("7")).toBe(7);
-		expect(parseCageSum("45")).toBe(45);
-	});
-
-	it("refuses what no cage can add up to", () => {
-		expect(parseCageSum("")).toBeNull();
-		expect(parseCageSum("0")).toBeNull();
-		expect(parseCageSum("46")).toBeNull();
-		expect(parseCageSum("123")).toBeNull();
+describe("a classic grid on the sudoku-book-page fixture", () => {
+	it("does not read as a Killer", () => {
+		const { width, height, rgba } = readGrayFixture("sudoku-book-page.png");
+		vi.stubGlobal("document", {
+			createElement: () => makeCanvas(),
+		});
+		try {
+			const warped = warpToSquare(
+				makeCanvas(width, height, rgba),
+				[
+					{ x: 48, y: 35 },
+					{ x: 148, y: 78 },
+					{ x: 157, y: 194 },
+					{ x: 37, y: 174 },
+				],
+				{ smooth: true },
+			);
+			expect(isKillerRead(readWarpedCages(warped))).toBe(false);
+		} finally {
+			vi.unstubAllGlobals();
+		}
 	});
 });

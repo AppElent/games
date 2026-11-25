@@ -1,5 +1,10 @@
 // @vitest-environment jsdom
-import type { KillerScan } from "@arcadeclub/core/sudoku-scan-cages";
+import { mulberry32 } from "@arcadeclub/core/random";
+import { generateKillerPuzzle } from "@arcadeclub/core/sudoku-killer";
+import {
+	innerEdges,
+	type KillerScan,
+} from "@arcadeclub/core/sudoku-scan-cages";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -27,6 +32,28 @@ function rowScan(missing: number[] = []): KillerScan {
 	};
 }
 
+/** A generated Killer whose cages alone have one solution (seed 9). */
+function uniqueScan(): KillerScan {
+	const { cages } = generateKillerPuzzle("easy", mulberry32(9));
+	const cageOf = new Array<number>(81);
+	const sums: Record<number, number> = {};
+	cages.forEach((cage, index) => {
+		for (const cell of cage.cells) {
+			cageOf[cell] = index;
+		}
+		sums[Math.min(...cage.cells)] = cage.sum;
+	});
+	const borders = innerEdges()
+		.filter(
+			({ cell, side }) =>
+				cageOf[cell] !== cageOf[side === "right" ? cell + 1 : cell + 9],
+		)
+		.map(({ cell, side }) => `${cell}${side === "right" ? "r" : "b"}`);
+	return { borders, doubtful: [], sums };
+}
+
+const readAsClassic = vi.fn();
+
 function Harness({ initial }: { initial: KillerScan }) {
 	const [scan, setScan] = useState(initial);
 	return (
@@ -36,6 +63,7 @@ function Harness({ initial }: { initial: KillerScan }) {
 				scan={scan}
 				onScanChange={setScan}
 				onRescan={() => {}}
+				onReadAsClassic={readAsClassic}
 				onError={() => {}}
 			/>
 		</LocaleProvider>
@@ -63,11 +91,27 @@ describe("the Killer verify step", () => {
 	});
 
 	it("lets the player play once every sum is in and they add up to 405", () => {
-		render(<Harness initial={rowScan()} />);
+		render(<Harness initial={uniqueScan()} />);
 		expect(screen.getByText("Cages and sums add up to 405.")).toBeTruthy();
 		expect(confirmButton().disabled).toBe(false);
 		fireEvent.click(confirmButton());
 		expect(host).toHaveBeenCalledTimes(1);
+	});
+
+	it("refuses a puzzle with more than one solution on confirm", () => {
+		render(<Harness initial={rowScan()} />);
+		fireEvent.click(confirmButton());
+		expect(host).not.toHaveBeenCalled();
+		expect(screen.getByText(/more than one solution/)).toBeTruthy();
+		expect(confirmButton().disabled).toBe(true);
+	});
+
+	it("hands a classic grid back to the classic read", () => {
+		render(<Harness initial={rowScan()} />);
+		fireEvent.click(
+			screen.getByRole("button", { name: /Read it as a classic sudoku/ }),
+		);
+		expect(readAsClassic).toHaveBeenCalledTimes(1);
 	});
 
 	it("starts on a cage without a sum and takes the typed sum", () => {
