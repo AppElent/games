@@ -184,6 +184,18 @@ describe("the verify step's recognised grid", () => {
 		);
 	});
 
+	it("reads the photo as taken when the upright check fails", async () => {
+		await openVerifyStep("en", () => {
+			throw new Error("no grid");
+		});
+		const [source, marked] = uprightCorners.mock.calls[0];
+		expect(recognizeGrid).toHaveBeenCalledWith(
+			source,
+			marked,
+			expect.any(Function),
+		);
+	});
+
 	it("names each cell with its row, column and value in English", async () => {
 		await openVerifyStep("en");
 		expect(cellAt(1, 1).getAttribute("aria-label")).toBe("Row 1, column 1: 5");
