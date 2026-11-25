@@ -5,6 +5,7 @@ import {
 	boxOf,
 	colOf,
 	computeCandidates,
+	countSolutions,
 	digitMask,
 	digitsInMask,
 	findConflicts,
@@ -15,11 +16,12 @@ import {
 	SUDOKU_COLS,
 	SUDOKU_ROWS,
 } from "./sudoku";
+import { ADVANCED_TECHNIQUES, combinations } from "./sudoku-hints-advanced";
 
 type HintTechniqueLevel = "beginner" | "intermediate" | "advanced";
 
 type UnitKind = "row" | "column" | "box";
-type HintUnit = { kind: UnitKind; index: number };
+export type HintUnit = { kind: UnitKind; index: number };
 
 /**
  * What a hint is about. `describeHint` turns it into localized text; the
@@ -35,6 +37,17 @@ type HintTechnique =
 	| "naked-triple"
 	| "hidden-pair"
 	| "hidden-triple"
+	| "naked-quad"
+	| "hidden-quad"
+	| "x-wing"
+	| "swordfish"
+	| "skyscraper"
+	| "two-string-kite"
+	| "xy-wing"
+	| "xyz-wing"
+	| "w-wing"
+	| "unique-rectangle"
+	| "bug-plus-one"
 	| "snyder-pair";
 
 export type SudokuHint = {
@@ -52,11 +65,22 @@ export type SudokuHint = {
 	unit?: HintUnit;
 	line?: HintUnit;
 	box?: number;
+	/** The lines a fish or single-digit pattern stands on. */
+	baseLines?: HintUnit[];
+	/** The lines a fish clears outside its base lines. */
+	coverLines?: HintUnit[];
+	/**
+	 * True when the pattern only shows once candidates removed by earlier
+	 * hints are gone too.
+	 */
+	usesEarlierHints?: boolean;
 };
 
-type TechniqueDetector = {
+export type TechniqueDetector = {
 	id: string;
 	level: HintTechniqueLevel;
+	/** Only sound when the puzzle has exactly one solution. */
+	needsUniqueness?: boolean;
 	detect: (grid: SudokuGrid, candidates: number[]) => SudokuHint | null;
 };
 
@@ -228,25 +252,16 @@ const boxLineReduction: TechniqueDetector = {
 	},
 };
 
-function combinations<T>(items: readonly T[], size: number): T[][] {
-	if (size === 0) {
-		return [[]];
-	}
-	const result: T[][] = [];
-	items.forEach((item, index) => {
-		for (const rest of combinations(items.slice(index + 1), size - 1)) {
-			result.push([item, ...rest]);
-		}
-	});
-	return result;
-}
+type SetSize = 2 | 3 | 4;
+const SET_LABELS = { 2: "pair", 3: "triple", 4: "quad" } as const;
+const setLevel = (size: SetSize) => (size === 4 ? "advanced" : "intermediate");
 
 function findNakedSet(
 	grid: SudokuGrid,
 	candidates: number[],
-	size: 2 | 3,
+	size: SetSize,
 ): SudokuHint | null {
-	const label = size === 2 ? "pair" : "triple";
+	const label = SET_LABELS[size];
 	for (const unit of allUnits()) {
 		const open = unit.cells.filter(
 			(cell) => grid[cell] === 0 && maskSize(candidates[cell]) <= size,
@@ -271,7 +286,7 @@ function findNakedSet(
 			}
 			return {
 				technique: `naked-${label}`,
-				level: "intermediate",
+				level: setLevel(size),
 				cells: combo,
 				candidateDigits: digits,
 				eliminations,
@@ -286,9 +301,9 @@ function findNakedSet(
 function findHiddenSet(
 	grid: SudokuGrid,
 	candidates: number[],
-	size: 2 | 3,
+	size: SetSize,
 ): SudokuHint | null {
-	const label = size === 2 ? "pair" : "triple";
+	const label = SET_LABELS[size];
 	for (const unit of allUnits()) {
 		const open = unit.cells.filter((cell) => grid[cell] === 0);
 		const digitSpots = new Map<number, number[]>();
@@ -322,7 +337,7 @@ function findHiddenSet(
 			}
 			return {
 				technique: `hidden-${label}`,
-				level: "intermediate",
+				level: setLevel(size),
 				cells,
 				candidateDigits: combo,
 				eliminations,
@@ -356,6 +371,18 @@ const hiddenTriple: TechniqueDetector = {
 	id: "hidden-triple",
 	level: "intermediate",
 	detect: (grid, candidates) => findHiddenSet(grid, candidates, 3),
+};
+
+const nakedQuad: TechniqueDetector = {
+	id: "naked-quad",
+	level: "advanced",
+	detect: (grid, candidates) => findNakedSet(grid, candidates, 4),
+};
+
+const hiddenQuad: TechniqueDetector = {
+	id: "hidden-quad",
+	level: "advanced",
+	detect: (grid, candidates) => findHiddenSet(grid, candidates, 4),
 };
 
 /**
@@ -400,6 +427,9 @@ export const SUDOKU_TECHNIQUES: readonly TechniqueDetector[] = [
 	hiddenPair,
 	nakedTriple,
 	hiddenTriple,
+	nakedQuad,
+	hiddenQuad,
+	...ADVANCED_TECHNIQUES,
 	snyderSuggestion,
 ];
 
@@ -430,12 +460,71 @@ function findMistake(
 	};
 }
 
+/**
+ * Candidates earlier hints removed, with the board they were found on. An
+ * entry holds while every digit of that board is still in place.
+ */
+export type HintHistory = readonly {
+	grid: SudokuGrid;
+	eliminations: SudokuHint["eliminations"];
+}[];
+
 type HintOptions = {
 	/** The solved grid, when the client has it. */
 	solution?: SudokuGrid;
 	/** Non-zero for the puzzle's own digits, which are never the mistake. */
 	givens?: SudokuGrid;
+	/** Earlier hints in this game, so the next one moves on from them. */
+	history?: HintHistory;
+	/**
+	 * Killer cages, when the puzzle has them: its solution is then unique only
+	 * with the cages, so the uniqueness techniques stay off.
+	 */
+	cages?: readonly unknown[];
 };
+
+/** Adds a hint's eliminations to the history, tied to the board it saw. */
+export function rememberHint(
+	history: HintHistory,
+	grid: SudokuGrid,
+	hint: SudokuHint | null,
+): HintHistory {
+	if (!hint || hint.eliminations.length === 0) {
+		return history;
+	}
+	return [...history, { grid: [...grid], eliminations: hint.eliminations }];
+}
+
+function stillHolds(entryGrid: SudokuGrid, grid: SudokuGrid) {
+	return entryGrid.every((value, cell) => value === 0 || grid[cell] === value);
+}
+
+/** The candidates for `grid` once earlier hints' eliminations are applied. */
+function candidatesAfter(grid: SudokuGrid, history: HintHistory = []) {
+	const candidates = computeCandidates(grid);
+	for (const entry of history) {
+		if (!stillHolds(entry.grid, grid)) {
+			continue;
+		}
+		for (const { cell, digits } of entry.eliminations) {
+			for (const digit of digits) {
+				candidates[cell] &= ~digitMask(digit);
+			}
+		}
+	}
+	return candidates;
+}
+
+/** The last puzzle checked: hints come many times for the same one. */
+let uniqueCheck: { key: string; unique: boolean } | null = null;
+
+function hasUniqueSolution(givens: SudokuGrid) {
+	const key = givens.join("");
+	if (uniqueCheck?.key !== key) {
+		uniqueCheck = { key, unique: countSolutions(givens, 2) === 1 };
+	}
+	return uniqueCheck.unique;
+}
 
 export function findHint(
 	grid: SudokuGrid,
@@ -445,17 +534,53 @@ export function findHint(
 	if (mistake) {
 		return mistake;
 	}
-	const candidates = computeCandidates(grid);
+	const plain = computeCandidates(grid);
+	const candidates = candidatesAfter(grid, options.history);
+	// A cell with nothing left means a wrong digit somewhere: no technique
+	// can be trusted then.
+	if (grid.some((value, cell) => value === 0 && candidates[cell] === 0)) {
+		return null;
+	}
+	const unique =
+		!options.cages?.length &&
+		options.givens !== undefined &&
+		hasUniqueSolution(options.givens);
 	for (const detector of SUDOKU_TECHNIQUES) {
+		if (detector.needsUniqueness && !unique) {
+			continue;
+		}
 		const hint = detector.detect(grid, candidates);
 		if (hint) {
-			return hint;
+			const touched = [
+				...hint.cells,
+				...hint.eliminations.map((entry) => entry.cell),
+			];
+			return touched.some((cell) => plain[cell] !== candidates[cell])
+				? { ...hint, usesEarlierHints: true }
+				: hint;
 		}
 	}
 	return null;
 }
 
 type SudokuHintCopy = typeof sudokuCopy.hints;
+
+/** "rows 2 and 7", or "row 3 and column 5" when the kinds differ. */
+function unitList(units: HintUnit[], copy: SudokuHintCopy) {
+	const join = (items: (string | number)[]) =>
+		items.length < 2
+			? items.join("")
+			: `${items.slice(0, -1).join(", ")}${copy.and}${items[items.length - 1]}`;
+	const kinds = new Set(units.map((unit) => unit.kind));
+	if (units.length > 1 && kinds.size === 1) {
+		const kind = units[0].kind;
+		const numbers = join(units.map((unit) => unit.index + 1));
+		if (kind === "row" || kind === "column") {
+			return fmt(kind === "row" ? copy.rows : copy.columns, { list: numbers });
+		}
+	}
+	return join(units.map((unit) => fmt(copy[unit.kind], { n: unit.index + 1 })));
+}
 
 /**
  * A hint's title and the text for a level: 1 says where to look, 2 names the
@@ -468,20 +593,84 @@ export function describeHint(
 ) {
 	const cell = (index: number) =>
 		fmt(copy.cell, { row: rowOf(index) + 1, col: colOf(index) + 1 });
+	const cellList = (cells: number[]) => cells.map(cell).join(", ");
 	const unit = (ref: HintUnit) => fmt(copy[ref.kind], { n: ref.index + 1 });
 	const size = hint.technique === "mistake" ? 1 : hint.cells.length;
+	const [first, second, third, fourth] = hint.cells;
+	const [x, y, z] = hint.candidateDigits;
 	const values = {
-		cell: cell(hint.cells[0]),
-		cells: hint.cells.map(cell).join(", "),
-		digit: hint.candidateDigits[0],
+		cell: cell(first),
+		cells: cellList(hint.cells),
+		digit: x,
 		digits: hint.candidateDigits.join(", "),
-		eliminated: hint.eliminations.map((entry) => cell(entry.cell)).join(", "),
+		eliminated: cellList(hint.eliminations.map((entry) => entry.cell)),
 		unit: hint.unit ? unit(hint.unit) : "",
 		line: hint.line ? unit(hint.line) : "",
 		box: hint.box === undefined ? "" : unit({ kind: "box", index: hint.box }),
-		set: size === 2 ? copy.pair : copy.triple,
+		set: size === 2 ? copy.pair : size === 3 ? copy.triple : copy.quad,
 		size,
+		...patternValues(),
 	};
+	function patternValues(): Record<string, string | number> {
+		const base = unitList(hint.baseLines ?? [], copy);
+		const cover = unitList(hint.coverLines ?? [], copy);
+		switch (hint.technique) {
+			case "x-wing":
+			case "swordfish":
+				return {
+					base,
+					cover,
+					fish:
+						hint.technique === "x-wing" ? copy.fish.xWing : copy.fish.swordfish,
+					aFish:
+						hint.technique === "x-wing"
+							? copy.fish.anXWing
+							: copy.fish.aSwordfish,
+				};
+			case "skyscraper":
+			case "two-string-kite":
+				// Cells: the two linked ends, then the two free ends.
+				return {
+					base,
+					shared: cellList([first, third]),
+					ends: cellList([second, fourth]),
+				};
+			case "xy-wing":
+				return {
+					pivot: cell(first),
+					wingX: cell(second),
+					wingY: cell(third),
+					x,
+					y,
+					z,
+				};
+			case "xyz-wing":
+				return {
+					pivot: cell(first),
+					wings: cellList([second, third]),
+					x,
+					y,
+					z,
+				};
+			case "w-wing":
+				return {
+					base,
+					wings: cellList([first, second]),
+					link: cellList([third, fourth]),
+					x,
+					y,
+				};
+			case "unique-rectangle":
+				return {
+					floor: cellList([first, second, third]),
+					target: cell(fourth),
+					x,
+					y,
+				};
+			default:
+				return {};
+		}
+	}
 	const text = techniqueCopy(hint, copy);
 	const body =
 		level === 1 ? text.nudge : level === 2 ? text.direction : text.explanation;
@@ -491,9 +680,11 @@ export function describeHint(
 		hint.unit?.kind === "box"
 			? copy.hiddenSingle.crossHatch
 			: "";
+	const earlier =
+		level === 3 && hint.usesEarlierHints ? copy.afterEarlierHints : "";
 	return {
 		title: fmt(text.title, values),
-		text: fmt(body, values) + crossHatch,
+		text: fmt(body, values) + crossHatch + earlier,
 	};
 }
 
@@ -511,11 +702,69 @@ function techniqueCopy(hint: SudokuHint, copy: SudokuHintCopy) {
 			return copy.boxLine;
 		case "naked-pair":
 		case "naked-triple":
+		case "naked-quad":
 			return copy.nakedSet;
 		case "hidden-pair":
 		case "hidden-triple":
+		case "hidden-quad":
 			return copy.hiddenSet;
+		case "x-wing":
+		case "swordfish":
+			return copy.fish;
+		case "skyscraper":
+			return copy.skyscraper;
+		case "two-string-kite":
+			return copy.twoStringKite;
+		case "xy-wing":
+			return copy.xyWing;
+		case "xyz-wing":
+			return copy.xyzWing;
+		case "w-wing":
+			return copy.wWing;
+		case "unique-rectangle":
+			return copy.uniqueRectangle;
+		case "bug-plus-one":
+			return copy.bugPlusOne;
 		case "snyder-pair":
 			return copy.snyder;
 	}
+}
+
+function unitCells(ref: HintUnit) {
+	const units =
+		ref.kind === "row"
+			? SUDOKU_ROWS
+			: ref.kind === "column"
+				? SUDOKU_COLS
+				: SUDOKU_BOXES;
+	return units[ref.index];
+}
+
+/**
+ * What the board marks for a hint at a disclosure level: nothing at 1 (text
+ * only), the pattern's cells at 2, and at 3 also the cells it changes and the
+ * base and cover lines of a fish or single-digit pattern.
+ */
+export function hintHighlights(hint: SudokuHint | null, level: 1 | 2 | 3) {
+	if (!hint || level === 1) {
+		return undefined;
+	}
+	const cells = new Set(hint.cells);
+	const lines = new Set<number>();
+	if (level === 3) {
+		for (const entry of hint.eliminations) {
+			cells.add(entry.cell);
+		}
+		for (const entry of hint.placements) {
+			cells.add(entry.cell);
+		}
+		for (const ref of [...(hint.baseLines ?? []), ...(hint.coverLines ?? [])]) {
+			for (const cell of unitCells(ref)) {
+				if (!cells.has(cell)) {
+					lines.add(cell);
+				}
+			}
+		}
+	}
+	return { cells, lines };
 }

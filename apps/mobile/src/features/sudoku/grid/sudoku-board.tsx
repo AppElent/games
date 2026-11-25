@@ -44,6 +44,8 @@ type Props = {
 	conflicts: ReadonlySet<number>;
 	/** Cells a hint points at, once the player asks for more than its name. */
 	hintCells: ReadonlySet<number> | undefined;
+	/** The lines a fully explained fish or single-digit pattern uses. */
+	hintLines?: ReadonlySet<number>;
 	cages?: KillerCage[];
 	hidden: boolean;
 	/** Outside digit mode an empty, unmarked selected cell gets a deeper tint. */
@@ -88,6 +90,7 @@ export function SudokuBoard({
 	onDeselect,
 	conflicts,
 	hintCells,
+	hintLines,
 	cages,
 	hidden,
 	mode,
@@ -172,6 +175,7 @@ export function SudokuBoard({
 						}
 						conflict={!hidden && conflicts.has(index)}
 						hinted={!hidden && (hintCells?.has(index) ?? false)}
+						hintLine={!hidden && (hintLines?.has(index) ?? false)}
 						caged={cageInfo !== null}
 						onPress={onSelectCell}
 						onDeselect={onDeselect}
@@ -234,6 +238,7 @@ type CellProps = {
 	sameDigit: boolean;
 	conflict: boolean;
 	hinted: boolean;
+	hintLine: boolean;
 	/** A Killer cell: its notes keep clear of the dashed cage lines. */
 	caged: boolean;
 	onPress: (cell: number) => void;
@@ -269,6 +274,7 @@ const BoardCell = memo(function BoardCell({
 	sameDigit,
 	conflict,
 	hinted,
+	hintLine,
 	caged,
 	onPress,
 	onDeselect,
@@ -284,11 +290,13 @@ const BoardCell = memo(function BoardCell({
 		? tokens.accentDim
 		: hinted
 			? tokens.orangeDim
-			: sameDigit
-				? tokens.accentDim
-				: peer
-					? tokens.surface2
-					: "transparent";
+			: hintLine
+				? tokens.amberDim
+				: sameDigit
+					? tokens.accentDim
+					: peer
+						? tokens.surface2
+						: "transparent";
 	const digitColor = conflict
 		? tokens.danger
 		: given

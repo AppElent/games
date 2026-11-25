@@ -19,7 +19,13 @@ import {
 	serializeBoard,
 	undo,
 } from "@arcadeclub/core/sudoku-board";
-import { findHint, type SudokuHint } from "@arcadeclub/core/sudoku-hints";
+import {
+	findHint,
+	type HintHistory,
+	hintHighlights,
+	rememberHint,
+	type SudokuHint,
+} from "@arcadeclub/core/sudoku-hints";
 import {
 	nextTapMode,
 	type SudokuInputSettings,
@@ -54,6 +60,8 @@ export function useSudokuGame(
 	const [hint, setHint] = useState<SudokuHint | null>(null);
 	const [hintLevel, setHintLevel] = useState<1 | 2 | 3>(1);
 	const [noHint, setNoHint] = useState(false);
+	// Eliminations of hints explained in full, so the next hint moves on.
+	const hintHistory = useRef<HintHistory>([]);
 	// Every board or option change is written, with the clock alongside.
 	const write = useCallback(
 		(progress: PuzzleProgress) =>
@@ -176,27 +184,31 @@ export function useSudokuGame(
 	const requestHint = useCallback(() => {
 		if (statusRef.current !== "active") return;
 		if (hint) {
+			if (hintLevel === 2) {
+				hintHistory.current = rememberHint(
+					hintHistory.current,
+					effectiveGrid(history.current),
+					hint,
+				);
+			}
 			setHintLevel((level) => (level < 3 ? ((level + 1) as 2 | 3) : level));
 			return;
 		}
 		const found = findHint(effectiveGrid(history.current), {
 			solution,
 			givens: history.current.givens,
+			history: hintHistory.current,
+			cages,
 		});
 		setHint(found);
 		setHintLevel(1);
 		setNoHint(!found);
-	}, [hint, history, solution, statusRef]);
+	}, [hint, hintLevel, history, solution, cages, statusRef]);
 
-	const hintCells = useMemo(() => {
-		if (!hint || hintLevel === 1) return undefined;
-		const cells = new Set(hint.cells);
-		if (hintLevel === 3) {
-			for (const entry of hint.eliminations) cells.add(entry.cell);
-			for (const entry of hint.placements) cells.add(entry.cell);
-		}
-		return cells;
-	}, [hint, hintLevel]);
+	const highlights = useMemo(
+		() => hintHighlights(hint, hintLevel),
+		[hint, hintLevel],
+	);
 
 	// What a cell press reads at event time. Kept in a ref so `selectCell`
 	// stays the same function and the memoized cells don't all re-render.
@@ -260,7 +272,8 @@ export function useSudokuGame(
 		digitCounts,
 		hint,
 		hintLevel,
-		hintCells,
+		hintCells: highlights?.cells,
+		hintLines: highlights?.lines,
 		noHint,
 		dismissHint: () => {
 			setHint(null);
