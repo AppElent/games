@@ -8,6 +8,8 @@ export default defineConfig({
 		},
 	},
 	test: {
+		// Parallel agent runs share the Mac's memory (APP-852); CI keeps the default.
+		maxWorkers: process.env.CI ? undefined : "25%",
 		projects: [
 			{
 				extends: true,
