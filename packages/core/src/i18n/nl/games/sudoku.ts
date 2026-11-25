@@ -8,6 +8,12 @@ export const sudoku = {
 		box: "blok {n}",
 		pair: "paar",
 		triple: "drietal",
+		quad: "viertal",
+		rows: "rijen {list}",
+		columns: "kolommen {list}",
+		and: " en ",
+		afterEarlierHints:
+			" Dit rekent met de kandidaten die eerdere hints al wegstreepten.",
 		mistake: {
 			title: "Fout",
 			nudge: "Er klopt iets niet op het bord. Kijk nog eens naar {unit}.",
@@ -76,6 +82,78 @@ export const sudoku = {
 				"Gebruik Snyder-notatie in {box}: zet een hoeknotitie {digit} in de twee vakjes waar hij kan.",
 			explanation:
 				"In {box} kan de {digit} alleen in {cells}. Zet in allebei een hoeknotitie {digit}. Valt er later één af, dan weet je de andere zeker.",
+		},
+		fish: {
+			xWing: "X-Wing",
+			swordfish: "Swordfish",
+			anXWing: "een X-Wing",
+			aSwordfish: "een Swordfish",
+			title: "{fish}",
+			nudge:
+				"Volg de {digit} door {base}. In elk ervan heeft hij nog maar een paar plekken.",
+			direction:
+				"Er is {aFish} op de {digit}: in {base} kan hij alleen in {cover}.",
+			explanation:
+				"In {base} kan de {digit} alleen in {cells}, allemaal binnen {cover}. {base} krijgen elk hun {digit} in een van deze vakjes, dus {cover} krijgen de hunne daar ook, en de {digit} valt af in {eliminated}.",
+		},
+		skyscraper: {
+			title: "Skyscraper",
+			nudge:
+				"Kijk naar de {digit} in {base}: in elk ervan heeft hij precies twee plekken.",
+			direction:
+				"Er is een Skyscraper op de {digit} in {base}: twee sterke koppelingen die op dezelfde lijn staan.",
+			explanation:
+				"In {base} heeft de {digit} elk maar twee plekken. {shared} liggen op één lijn, dus hooguit één ervan is een {digit}, en minstens één van {ends} moet het zijn. De {digit} valt af in elk vakje dat beide ziet: {eliminated}.",
+		},
+		twoStringKite: {
+			title: "2-String Kite",
+			nudge: "Zoek waar de {digit} precies twee plekken heeft in {base}.",
+			direction:
+				"Er is een 2-String Kite op de {digit}: een sterke koppeling in {base}, verbonden in {box}.",
+			explanation:
+				"In {base} heeft de {digit} elk maar twee plekken. {shared} liggen in {box}, dus hooguit één ervan is een {digit}, en minstens één van {ends} moet het zijn. De {digit} valt af in elk vakje dat beide ziet: {eliminated}.",
+		},
+		xyWing: {
+			title: "XY-Wing",
+			nudge: "Kijk naar de vakjes met maar twee kandidaten rond {pivot}.",
+			direction:
+				"Er is een XY-Wing met de spil in {pivot}: de twee vleugels delen een {z}.",
+			explanation:
+				"{pivot} is een {x} of een {y}. Is het een {x}, dan moet {wingX} een {z} zijn; is het een {y}, dan moet {wingY} een {z} zijn. Hoe dan ook heeft één vleugel de {z}, dus de {z} valt af in elk vakje dat beide vleugels ziet: {eliminated}.",
+		},
+		xyzWing: {
+			title: "XYZ-Wing",
+			nudge: "Kijk naar {pivot} en de vakjes met twee kandidaten die het ziet.",
+			direction:
+				"Er is een XYZ-Wing met de spil in {pivot}: de spil en beide vleugels laten een {z} toe.",
+			explanation:
+				"{pivot} laat {x}, {y} en {z} toe; {wings} laten elk de {z} en een van de andere toe. Wat er ook in de spil komt, een van de drie vakjes is een {z}, dus de {z} valt af in elk vakje dat alle drie ziet: {eliminated}.",
+		},
+		wWing: {
+			title: "W-Wing",
+			nudge:
+				"{wings} laten dezelfde twee cijfers toe: {digits}. Zoek een koppeling tussen ze.",
+			direction:
+				"Er is een W-Wing op {wings}, gekoppeld door de {x} in {base}.",
+			explanation:
+				"In {base} kan de {x} alleen in {link}. Was geen van {wings} een {y}, dan waren ze allebei een {x}, en had {base} geen plek meer voor de {x}. Dus is een van beide een {y}, en de {y} valt af in elk vakje dat beide ziet: {eliminated}.",
+		},
+		uniqueRectangle: {
+			title: "Unieke rechthoek",
+			nudge:
+				"Vier vakjes in twee blokken delen bijna dezelfde twee kandidaten. Een puzzel met één oplossing laat dat niet toe.",
+			direction: "Er is een unieke rechthoek op {digits} in {cells}.",
+			explanation:
+				"{floor} laten alleen {digits} toe. Kon {target} ook alleen een {x} of {y} worden, dan konden de vier vakjes die cijfers ruilen en had de puzzel twee oplossingen. Hij heeft er één, dus {digits} vallen af in {target}.",
+		},
+		bugPlusOne: {
+			title: "BUG+1",
+			nudge:
+				"Bijna elk open vakje heeft nog twee kandidaten. Eén vakje is de uitzondering.",
+			direction:
+				"Dit is een BUG+1: elk open vakje heeft twee kandidaten, behalve {cell}.",
+			explanation:
+				"Zonder de {digit} in {cell} had elk cijfer precies twee plekken in elke rij, kolom en elk blok: een patroon dat nooit één oplossing heeft. Dus in {cell} komt een {digit}.",
 		},
 	},
 	saved: {

@@ -11,6 +11,12 @@ export const sudoku = {
 		box: "box {n}",
 		pair: "pair",
 		triple: "triple",
+		quad: "quad",
+		rows: "rows {list}",
+		columns: "columns {list}",
+		and: " and ",
+		afterEarlierHints:
+			" This counts the candidates that earlier hints already removed.",
 		mistake: {
 			title: "Mistake",
 			nudge:
@@ -80,6 +86,76 @@ export const sudoku = {
 				"Use Snyder notation in {box}: mark the two possible cells for {digit} with corner notes.",
 			explanation:
 				"In {box}, {digit} can only go in {cells}. Mark both with a corner note {digit}. When one is ruled out later, the other is certain.",
+		},
+		fish: {
+			xWing: "X-Wing",
+			swordfish: "Swordfish",
+			anXWing: "an X-Wing",
+			aSwordfish: "a Swordfish",
+			title: "{fish}",
+			nudge:
+				"Follow {digit} through {base}. In each, it has only a few places left.",
+			direction:
+				"There is {aFish} on {digit}: in {base}, it can only go in {cover}.",
+			explanation:
+				"In {base}, {digit} can only go in {cells}, all within {cover}. Each of {base} takes its {digit} in one of these cells, so {cover} get theirs there too, and {digit} can be removed from {eliminated}.",
+		},
+		skyscraper: {
+			title: "Skyscraper",
+			nudge: "Look at {digit} in {base}: in each, it has exactly two places.",
+			direction:
+				"There is a Skyscraper on {digit} in {base}: two strong links that stand on the same line.",
+			explanation:
+				"In {base}, {digit} has only two places each. {shared} line up, so at most one of them is {digit}, and at least one of {ends} must be. {digit} can be removed from every cell that sees both: {eliminated}.",
+		},
+		twoStringKite: {
+			title: "2-String Kite",
+			nudge: "Find where {digit} has exactly two places in {base}.",
+			direction:
+				"There is a 2-String Kite on {digit}: a strong link in each of {base}, joined in {box}.",
+			explanation:
+				"In {base}, {digit} has only two places each. {shared} sit in {box}, so at most one of them is {digit}, and at least one of {ends} must be. {digit} can be removed from every cell that sees both: {eliminated}.",
+		},
+		xyWing: {
+			title: "XY-Wing",
+			nudge: "Look at the cells with only two candidates around {pivot}.",
+			direction:
+				"There is an XY-Wing with its pivot in {pivot}: its two wings share a {z}.",
+			explanation:
+				"{pivot} is {x} or {y}. If it is {x}, {wingX} must be {z}; if it is {y}, {wingY} must be {z}. Either way one wing holds the {z}, so {z} can be removed from every cell that sees both wings: {eliminated}.",
+		},
+		xyzWing: {
+			title: "XYZ-Wing",
+			nudge: "Look at {pivot} and the two-candidate cells it sees.",
+			direction:
+				"There is an XYZ-Wing with its pivot in {pivot}: the pivot and both wings allow {z}.",
+			explanation:
+				"{pivot} allows {x}, {y} and {z}; {wings} each allow {z} and one of the others. Whatever goes in the pivot, one of the three cells is {z}, so {z} can be removed from every cell that sees all three: {eliminated}.",
+		},
+		wWing: {
+			title: "W-Wing",
+			nudge:
+				"{wings} allow the same two digits, {digits}. Look for a link between them.",
+			direction: "There is a W-Wing on {wings}, linked by {x} in {base}.",
+			explanation:
+				"In {base}, {x} can only go in {link}. If neither of {wings} were {y}, both would be {x}, leaving {base} without a place for {x}. So one of them is {y}, and {y} can be removed from every cell that sees both: {eliminated}.",
+		},
+		uniqueRectangle: {
+			title: "Unique rectangle",
+			nudge:
+				"Four cells in two boxes almost share the same two candidates. A puzzle with one solution can't allow that.",
+			direction: "There is a unique rectangle on {digits} in {cells}.",
+			explanation:
+				"{floor} allow only {digits}. If {target} could only be {x} or {y} as well, the four cells could swap those digits and the puzzle would have two solutions. It has one, so {digits} can be removed from {target}.",
+		},
+		bugPlusOne: {
+			title: "BUG+1",
+			nudge:
+				"Almost every open cell is down to two candidates. One cell is the exception.",
+			direction:
+				"This is a BUG+1: every open cell has two candidates except {cell}.",
+			explanation:
+				"If {cell} lost {digit}, every digit would have exactly two places in each row, column and box: a pattern that never has a single solution. So {digit} goes in {cell}.",
 		},
 	},
 	saved: {

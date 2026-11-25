@@ -49,6 +49,8 @@ type SudokuBoardProps = {
 	onSelectCell?: (cell: number) => void;
 	conflicts?: ReadonlySet<number>;
 	hintCells?: ReadonlySet<number>;
+	/** The lines a fully explained fish or single-digit pattern uses. */
+	hintLines?: ReadonlySet<number>;
 	hidden?: boolean;
 	className?: string;
 	/** Killer sudoku cages: dashed outlines plus a sum in each cage's corner. */
@@ -64,6 +66,7 @@ export function SudokuBoard({
 	onSelectCell,
 	conflicts,
 	hintCells,
+	hintLines,
 	hidden = false,
 	className = "",
 	cages,
@@ -101,6 +104,7 @@ export function SudokuBoard({
 					selectedDigit !== 0 && value === selectedDigit && !isSelected;
 				const isConflict = conflicts?.has(cell) ?? false;
 				const isHint = hintCells?.has(cell) ?? false;
+				const isHintLine = hintLines?.has(cell) ?? false;
 				const colorClass = SUDOKU_COLORS[board.colors[cell] - 1]?.tint ?? "";
 
 				// The board's own `border-2` is the outer edge, so cells on the edge
@@ -148,18 +152,21 @@ export function SudokuBoard({
 
 				// One fill per cell, so no two `bg-*` classes compete (Tailwind's
 				// stylesheet order, not the class order, would pick the winner).
-				// Order: selected, colour mark, hint, same digit, peer. The selected
-				// fill stays on a marked cell so the player can see where they are.
+				// Order: selected, colour mark, hint, hint line, same digit, peer.
+				// The selected fill stays on a marked cell so the player can see
+				// where they are.
 				const background = isSelected
 					? "bg-sky-300/60 dark:bg-sky-400/30"
 					: colorClass ||
 						(isHint
 							? "bg-amber-300/50 dark:bg-amber-300/25"
-							: sameDigit
-								? "bg-sky-400/25 dark:bg-sky-500/20"
-								: isPeer
-									? "bg-slate-200 dark:bg-slate-700/40"
-									: "");
+							: isHintLine
+								? "bg-amber-300/20 dark:bg-amber-300/10"
+								: sameDigit
+									? "bg-sky-400/25 dark:bg-sky-500/20"
+									: isPeer
+										? "bg-slate-200 dark:bg-slate-700/40"
+										: "");
 
 				const cageEdges = cageInfo ? cageInfo.edges[cell] : null;
 				const cageSum = cageInfo?.sumAt.get(cell);

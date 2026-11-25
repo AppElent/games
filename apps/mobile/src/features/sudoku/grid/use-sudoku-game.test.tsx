@@ -129,3 +129,45 @@ describe("sudoku cell taps", () => {
 		expect(result.current.mode).toBe("digit");
 	});
 });
+
+describe("sudoku hints", () => {
+	// A Classic board from a generated Expert puzzle where the next steps are
+	// eliminations, not placements.
+	const grid =
+		"850760129962081057170295860347852916598617040621900785039106578086579031715008690";
+	const hintSave: GridSave = {
+		...save,
+		id: "hint-test",
+		board: serializeBoard(createBoardState([...grid].map(Number))),
+		solution:
+			"854763129962481357173295864347852916598617243621934785439126578286579431715348692",
+	};
+
+	it("moves on to a new hint once one was explained in full", async () => {
+		const { result } = await renderHook(
+			() => useSudokuGame(hintSave, DEFAULT_SUDOKU_INPUT_SETTINGS),
+			{ wrapper },
+		);
+		await act(async () => result.current.requestHint());
+		const first = result.current.hint;
+		expect(first?.eliminations.length).toBeGreaterThan(0);
+		await act(async () => result.current.requestHint());
+		await act(async () => result.current.requestHint());
+		expect(result.current.hintLevel).toBe(3);
+		await act(async () => result.current.dismissHint());
+		await act(async () => result.current.requestHint());
+		expect(result.current.hint?.eliminations).not.toEqual(first?.eliminations);
+	});
+
+	it("repeats a hint that was dismissed before its explanation", async () => {
+		const { result } = await renderHook(
+			() => useSudokuGame(hintSave, DEFAULT_SUDOKU_INPUT_SETTINGS),
+			{ wrapper },
+		);
+		await act(async () => result.current.requestHint());
+		const first = result.current.hint;
+		await act(async () => result.current.dismissHint());
+		await act(async () => result.current.requestHint());
+		expect(result.current.hint).toEqual(first);
+	});
+});

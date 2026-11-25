@@ -14,8 +14,14 @@ import {
 	redo,
 	undo,
 } from "@arcadeclub/core/sudoku-board";
-import type { SudokuHint } from "@arcadeclub/core/sudoku-hints";
-import { describeHint, findHint } from "@arcadeclub/core/sudoku-hints";
+import {
+	describeHint,
+	findHint,
+	type HintHistory,
+	hintHighlights,
+	rememberHint,
+	type SudokuHint,
+} from "@arcadeclub/core/sudoku-hints";
 import {
 	nextTapMode,
 	type SudokuInputSettings,
@@ -88,6 +94,10 @@ export function SudokuGame({
 	const [autoCleanup, setAutoCleanup] = useState(state.autoCleanup);
 	const [hint, setHint] = useState<SudokuHint | null>(null);
 	const [hintLevel, setHintLevel] = useState<1 | 2 | 3>(1);
+	// Eliminations of hints explained in full, so the next hint moves on.
+	const hintHistory = useRef<HintHistory>([]);
+	// The board the shown hint was found on: undo and redo keep the hint open.
+	const hintGrid = useRef<number[]>([]);
 	const [editingTitle, setEditingTitle] = useState(false);
 	const [titleDraft, setTitleDraft] = useState(title);
 
@@ -220,13 +230,27 @@ export function SudokuGame({
 		if (!isActive() || hint) {
 			return;
 		}
+		const grid = effectiveGrid(history.current);
+		hintGrid.current = grid;
 		setHintLevel(1);
 		setHint(
-			findHint(effectiveGrid(history.current), {
+			findHint(grid, {
 				givens: history.current.givens,
+				history: hintHistory.current,
+				cages,
 			}),
 		);
-	}, [isActive, hint, history]);
+	}, [isActive, hint, history, cages]);
+
+	useEffect(() => {
+		if (hint && hintLevel === 3) {
+			hintHistory.current = rememberHint(
+				hintHistory.current,
+				hintGrid.current,
+				hint,
+			);
+		}
+	}, [hint, hintLevel]);
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -317,24 +341,10 @@ export function SudokuGame({
 		cycleMode,
 	]);
 
-	const hintCells = useMemo(() => {
-		if (!hint) {
-			return undefined;
-		}
-		if (hintLevel === 1) {
-			return undefined; // subtle nudge: text only
-		}
-		const cells = new Set(hint.cells);
-		if (hintLevel === 3) {
-			for (const entry of hint.eliminations) {
-				cells.add(entry.cell);
-			}
-			for (const entry of hint.placements) {
-				cells.add(entry.cell);
-			}
-		}
-		return cells;
-	}, [hint, hintLevel]);
+	const highlights = useMemo(
+		() => hintHighlights(hint, hintLevel),
+		[hint, hintLevel],
+	);
 
 	const saveTitle = useCallback(() => {
 		setEditingTitle(false);
@@ -410,7 +420,8 @@ export function SudokuGame({
 						selectedCell={selectedCell}
 						onSelectCell={selectCell}
 						conflicts={conflicts}
-						hintCells={hintCells}
+						hintCells={highlights?.cells}
+						hintLines={highlights?.lines}
 						hidden={status === "paused"}
 						cages={cages}
 						mode={mode}
