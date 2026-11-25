@@ -1,8 +1,11 @@
 /**
  * Browser-only image pipeline for the Sudoku scan flow: perspective
- * correction and OCR via tesseract.js. Which ink to read and what it makes of
- * a cell is shared with the app in `@arcadeclub/core/sudoku-scan-ink`.
+ * correction and OCR via tesseract.js. Finding the grid's lines and ink,
+ * reading digits with the digit network, and what it makes of a cell are
+ * shared with the phone app in `@arcadeclub/core/sudoku-scan-read`.
  */
+
+import type { DigitGuess } from "@arcadeclub/core/sudoku-digit-net";
 import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
 import type { CageRead, SumInk } from "@arcadeclub/core/sudoku-scan-cages";
 import {
@@ -11,16 +14,14 @@ import {
 	readCages,
 	sumGray,
 } from "@arcadeclub/core/sudoku-scan-cages";
+import { fuseReads } from "@arcadeclub/core/sudoku-scan-fuse";
 import type {
 	DigitRead,
 	InkBox,
 	Point,
 } from "@arcadeclub/core/sudoku-scan-ink";
-import {
-	planGridReads,
-	readBoxes,
-	scanCellFromReads,
-} from "@arcadeclub/core/sudoku-scan-ink";
+import { withMargins } from "@arcadeclub/core/sudoku-scan-mesh";
+import { readWarpedGrid } from "@arcadeclub/core/sudoku-scan-read";
 
 const WARP_SIZE = 900; // 9 cells x 100px
 
@@ -94,10 +95,10 @@ function homographyFromCorners(corners: Point[], size: number) {
 }
 
 /**
- * Warp the quad described by corners into a square WARP_SIZE canvas. The
- * classic read takes the nearest source pixel, which its grid-line finder is
- * tuned on; `smooth` blends the four nearest instead, which keeps a Killer's
- * thin dashes and small sums whole.
+ * Warp the quad described by corners into a square WARP_SIZE canvas. By
+ * default it takes the nearest source pixel, which is enough for the picture
+ * the check step shows; `smooth` blends the four nearest instead, which keeps
+ * thin lines, a Killer's dashes and small digits whole for reading.
  */
 export function warpToSquare(
 	source: HTMLCanvasElement,
@@ -272,62 +273,103 @@ export type ScanProgress = {
 };
 
 /**
- * Read the 81 cells of the warped grid: the shared planner picks the ink to
- * read in each cell, tesseract reads it, and the planner's rules turn the
- * reads into given / userDigit / cornerNotes / centerNotes / empty cells.
- *
- * Printed vs handwritten discrimination uses ink darkness as a rough
- * heuristic — the verifier screen exists precisely so the user can fix
- * misclassifications before play starts.
+ * How sure the digit network must be of a glyph to skip tesseract. Below it,
+ * tesseract reads the glyph too and `fuseReads` settles the two, as Apple
+ * Vision and the network do in the phone app.
  */
-export async function recognizeGrid(
-	warped: HTMLCanvasElement,
-	onProgress?: (progress: ScanProgress) => void,
-): Promise<ScanCell[]> {
-	const ctx = warped.getContext("2d");
+export const NETWORK_SURE = 0.95;
+/** Ink the network is this sure is no digit still goes to tesseract. */
+const NETWORK_JUNK = 0.2;
+
+/** The read of a glyph the network is sure of, or null to ask tesseract. */
+export function networkRead(guess: DigitGuess | null): DigitRead | null {
+	if (!guess || guess.confidence < NETWORK_SURE || guess.junk >= NETWORK_JUNK) {
+		return null;
+	}
+	return { digit: guess.digit, confidence: guess.confidence };
+}
+
+/** The grid as one gray value per pixel, as the core reader takes it. */
+function grayPixels(canvas: HTMLCanvasElement) {
+	const ctx = canvas.getContext("2d");
 	if (!ctx) {
 		throw new Error("Canvas not supported");
 	}
-	onProgress?.({ step: "preparing", cellsDone: 0, cellsTotal: 81 });
-	const image = ctx.getImageData(0, 0, WARP_SIZE, WARP_SIZE);
-	const gray = new Float32Array(WARP_SIZE * WARP_SIZE);
-	for (let i = 0; i < gray.length; i += 1) {
+	const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	const pixels = new Uint8Array(canvas.width * canvas.height);
+	for (let i = 0; i < pixels.length; i += 1) {
 		const o = i * 4;
-		gray[i] =
-			0.299 * image.data[o] +
-			0.587 * image.data[o + 1] +
-			0.114 * image.data[o + 2];
+		pixels[i] = 0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2];
 	}
+	return pixels;
+}
 
-	const plans = planGridReads(gray, WARP_SIZE);
-	const cells: ScanCell[] = [];
-	const worker = await createOcrWorker();
+/**
+ * Read the 81 cells of the grid inside `corners`, as the phone app does: the
+ * grid is warped with a margin, the shared core reader finds its lines and the
+ * ink in each cell, and the digit network reads each digit. Tesseract only
+ * reads what the network is unsure of, and the notes.
+ */
+export async function recognizeGrid(
+	source: HTMLCanvasElement,
+	corners: Point[],
+	onProgress?: (progress: ScanProgress) => void,
+): Promise<ScanCell[]> {
+	onProgress?.({ step: "preparing", cellsDone: 0, cellsTotal: 81 });
+	const frame = withMargins(corners, source);
+	const warped = warpToSquare(source, frame.corners, { smooth: true });
+	// Started on the first glyph the network is unsure of, if any.
+	const ocr: { worker: Promise<OcrWorker> | null } = { worker: null };
+	const readBox = (box: InkBox, scale: number) => {
+		ocr.worker ??= createOcrWorker();
+		return ocr.worker.then((ready) =>
+			recognizeDigit(
+				ready,
+				cropToCanvas(warped, box.x, box.y, box.width, box.height, scale),
+			),
+		);
+	};
 	try {
-		for (let cell = 0; cell < 81; cell += 1) {
-			onProgress?.({ step: "recognizing", cellsDone: cell, cellsTotal: 81 });
-			const plan = plans[cell];
-			// Notes are small: scale them up more before tesseract reads them.
-			const scale = plan.kind === "notes" ? 5 : 3;
-			const readBox = (box: InkBox) =>
-				recognizeDigit(
-					worker,
-					cropToCanvas(warped, box.x, box.y, box.width, box.height, scale),
-				);
-			const reads: DigitRead[] = [];
-			for (const box of readBoxes(plan)) {
-				reads.push(
-					plan.kind === "digit"
-						? await readDigitWithRetry(box, readBox)
-						: await readBox(box),
-				);
-			}
-			cells.push(scanCellFromReads(plan, reads));
+		const cells = await readWarpedGrid(
+			{ pixels: grayPixels(warped), size: WARP_SIZE },
+			frame.margins,
+			async (glyphs) => {
+				// Let the page paint the count between rows: the network alone
+				// would read the whole grid in one task.
+				await new Promise((resolve) => setTimeout(resolve, 0));
+				const reads: DigitRead[] = [];
+				for (const { box, guess } of glyphs) {
+					const sure = networkRead(guess);
+					if (sure) {
+						reads.push(sure);
+						continue;
+					}
+					if (!guess) {
+						// Notes are small: scale them up more before tesseract reads them.
+						reads.push(await readBox(box, 5));
+						continue;
+					}
+					const read = await readDigitWithRetry(box, (retry) =>
+						readBox(retry, 3),
+					);
+					reads.push(fuseReads(read, guess));
+				}
+				return reads;
+			},
+			(done) => {
+				onProgress?.({ step: "recognizing", cellsDone: done, cellsTotal: 81 });
+				return true;
+			},
+		);
+		if (!cells) {
+			throw new Error("The grid read stopped");
 		}
+		return cells;
 	} finally {
-		await worker.terminate();
+		if (ocr.worker) {
+			await (await ocr.worker).terminate();
+		}
 	}
-	onProgress?.({ step: "recognizing", cellsDone: 81, cellsTotal: 81 });
-	return cells;
 }
 
 /** The cages of a Killer, read from the warped grid's lines and dashes. */

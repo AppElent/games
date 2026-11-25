@@ -1,4 +1,4 @@
-import { type DrawnDigit, drawGrid } from "../../../../test/drawn-grid";
+import { describe, expect, it } from "vitest";
 import {
 	darkness,
 	GLYPH,
@@ -7,8 +7,9 @@ import {
 	heightOf,
 	imageBox,
 	inkDarkness,
-} from "./grid-ink";
-import { FLAT } from "./grid-mesh";
+} from "../sudoku-scan-glyphs";
+import { FLAT } from "../sudoku-scan-mesh";
+import { type DrawnDigit, drawGrid } from "../testing/drawn-grid";
 
 const read = (digits: DrawnDigit[]) => {
 	const dark = darkness(drawGrid({ digits }).gray);

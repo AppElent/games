@@ -1,5 +1,5 @@
 /** Grid images for the sudoku scan's tests, drawn pixel by pixel. */
-import type { Point } from "@arcadeclub/core/sudoku-scan-ink";
+import type { Point } from "../sudoku-scan-ink";
 
 const PAPER = 225;
 const INK = 40;

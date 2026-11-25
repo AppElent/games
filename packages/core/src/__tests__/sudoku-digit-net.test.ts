@@ -1,6 +1,7 @@
-import { drawGrid } from "../../../../test/drawn-grid";
-import { guessDigit } from "./digit-net";
-import { darkness, GLYPH, glyphImage, gridInk } from "./grid-ink";
+import { describe, expect, it } from "vitest";
+import { guessDigit } from "../sudoku-digit-net";
+import { darkness, GLYPH, glyphImage, gridInk } from "../sudoku-scan-glyphs";
+import { drawGrid } from "../testing/drawn-grid";
 
 describe("guessDigit", () => {
 	it.each([1, 2, 4, 7])("reads a drawn %i", (digit) => {

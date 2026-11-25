@@ -1,14 +1,11 @@
 import { readFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 import { isKillerRead } from "@arcadeclub/core/sudoku-scan-cages";
-import {
-	type DigitRead,
-	gridCells,
-	type InkBox,
-	planCellRead,
-} from "@arcadeclub/core/sudoku-scan-ink";
+import type { DigitRead, InkBox } from "@arcadeclub/core/sudoku-scan-ink";
 import { describe, expect, it, vi } from "vitest";
 import {
+	NETWORK_SURE,
+	networkRead,
 	RETRY_MIN_CONFIDENCE,
 	readDigitWithRetry,
 	readWarpedCages,
@@ -25,6 +22,28 @@ function recognizer(...answers: DigitRead[]) {
 	const read = vi.fn(async (_box: InkBox) => answers.shift() ?? empty);
 	return read;
 }
+
+describe("networkRead", () => {
+	const guess = (confidence: number, junk = 0) => ({
+		digit: 7,
+		confidence,
+		junk,
+		printScore: 0,
+	});
+
+	it("takes the network's digit when it is sure", () => {
+		expect(networkRead(guess(NETWORK_SURE))).toEqual({
+			digit: 7,
+			confidence: NETWORK_SURE,
+		});
+	});
+
+	it("asks tesseract when the network is unsure, sees junk, or reads a note", () => {
+		expect(networkRead(guess(NETWORK_SURE - 0.01))).toBeNull();
+		expect(networkRead(guess(0.99, 0.5))).toBeNull();
+		expect(networkRead(null)).toBeNull();
+	});
+});
 
 describe("readDigitWithRetry", () => {
 	it("does not retry a digit that was read", async () => {
@@ -146,53 +165,6 @@ function makeCanvas(width = 0, height = 0, initial?: Uint8ClampedArray) {
 	};
 	return canvas as unknown as HTMLCanvasElement;
 }
-
-describe("line-finder tie-break on sudoku-book-page fixture", () => {
-	it("pins R7C8 and R9C2 cell lines off the digit strokes (APP-717)", () => {
-		const { width, height, rgba } = readGrayFixture("sudoku-book-page.png");
-		vi.stubGlobal("document", {
-			createElement: () => makeCanvas(),
-		});
-		try {
-			const warped = warpToSquare(makeCanvas(width, height, rgba), [
-				{ x: 48, y: 35 },
-				{ x: 148, y: 78 },
-				{ x: 157, y: 194 },
-				{ x: 37, y: 174 },
-			]);
-			const image = warped.getContext("2d")?.getImageData(0, 0, 900, 900);
-			if (!image) throw new Error("Missing warped image data");
-			const gray = new Float32Array(900 * 900);
-			for (let i = 0; i < gray.length; i += 1) {
-				const o = i * 4;
-				gray[i] =
-					0.299 * image.data[o] +
-					0.587 * image.data[o + 1] +
-					0.114 * image.data[o + 2];
-			}
-			const cells = gridCells(gray, 900);
-
-			// R9C2 (printed 8): previously the darkest-ink tie-break landed
-			// col 1 at x=124 on the digit stroke (width 54), clipping the 8
-			// so it misread as 4. With ridge tie-breaking it lands on the
-			// real grid line at x=85.
-			const r9c2 = cells[8 * 9 + 1];
-			expect(r9c2).toEqual({ x: 85, y: 811, width: 93, height: 88 });
-			expect(planCellRead(gray, 900, r9c2)).toMatchObject({
-				kind: "digit",
-				printed: true,
-				box: { x: 113, y: 831, width: 38, height: 56 },
-			});
-
-			// R7C8 (printed 2): col 8 settles at x=756 (stronger ridge support)
-			// instead of x=757 (darker stroke), dropping the spurious note read.
-			const r7c8 = cells[6 * 9 + 7];
-			expect(r7c8).toEqual({ x: 700, y: 601, width: 56, height: 102 });
-		} finally {
-			vi.unstubAllGlobals();
-		}
-	});
-});
 
 describe("a classic grid on the sudoku-book-page fixture", () => {
 	it("does not read as a Killer", () => {

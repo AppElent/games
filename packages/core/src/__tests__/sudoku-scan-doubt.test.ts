@@ -1,9 +1,10 @@
+import { describe, expect, it } from "vitest";
 import {
 	emptyScanResult,
 	isLowConfidence,
 	type ScanCell,
-} from "@arcadeclub/core/sudoku-scan";
-import { doubtWrongGrid } from "./doubt-grid";
+} from "../sudoku-scan";
+import { doubtWrongGrid } from "../sudoku-scan-doubt";
 
 /** Two sure digits and a sure note, in the first three cells. */
 const scan = (): ScanCell[] => {

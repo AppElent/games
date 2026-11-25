@@ -1,4 +1,5 @@
-import { arePrinted } from "./printed-digits";
+import { describe, expect, it } from "vitest";
+import { arePrinted } from "../sudoku-scan-printed";
 
 const print = (score = 3) => ({ score, height: 60, darkness: 0.8 });
 const pen = (score = -3) => ({ score, height: 48, darkness: 0.5 });
