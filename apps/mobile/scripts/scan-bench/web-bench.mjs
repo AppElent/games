@@ -2,7 +2,7 @@
  * Measures the web Sudoku scan on the same labelled photos as `bench.mjs`:
  *
  *     node apps/mobile/scripts/scan-bench/web-bench.mjs [--only id,…]
- *       [--cells] [--json file] [--photos folder]
+ *       [--cells] [--json file] [--photos folder] [--turns]
  *
  * It serves the web scan (`src/lib/games/sudoku-scan-image.ts`) with Vite and
  * runs `recognizeGrid` in Playwright's Chromium from the labelled corners.
@@ -11,6 +11,10 @@
  * CDN's host to a local server with a throwaway certificate. Pass that
  * package's folder with `--tessdata` (unpack `npm pack @tesseract.js-data/eng`).
  * Needs Playwright (a global install will do) and openssl.
+ *
+ * `--turns` also turns each photo a quarter, a half and three quarters, hands
+ * the scan its corners in the order the turned photo shows them, and checks
+ * that `uprightCorners` turns the grid back before reading it.
  */
 import { execFileSync } from "node:child_process";
 import {
@@ -74,16 +78,55 @@ writeFileSync(
 );
 writeFileSync(
 	path.join(page, "main.ts"),
-	`import { fileToCanvas, recognizeGrid } from "#/lib/games/sudoku-scan-image";
+	`import { turnCorners } from "@arcadeclub/core/sudoku-scan-orientation";
+import {
+	fileToCanvas,
+	recognizeGrid,
+	uprightCorners,
+} from "#/lib/games/sudoku-scan-image";
+
+type Point = { x: number; y: number };
+
+/** The photo turned \`quarters\` quarter turns clockwise, and a point on it. */
+function turned(source: HTMLCanvasElement, quarters: number) {
+	const out = document.createElement("canvas");
+	const sideways = quarters % 2 === 1;
+	out.width = sideways ? source.height : source.width;
+	out.height = sideways ? source.width : source.height;
+	const ctx = out.getContext("2d") as CanvasRenderingContext2D;
+	ctx.translate(out.width / 2, out.height / 2);
+	ctx.rotate((quarters * Math.PI) / 2);
+	ctx.drawImage(source, -source.width / 2, -source.height / 2);
+	const move = ({ x, y }: Point): Point => {
+		for (let q = 0; q < quarters; q += 1) {
+			const height = q % 2 === 0 ? source.height : source.width;
+			[x, y] = [height - y, x];
+		}
+		return { x, y };
+	};
+	return { canvas: out, move };
+}
+
 Object.assign(window, {
-	async scanPhoto(url: string, corners: { x: number; y: number }[]) {
+	async scanPhoto(url: string, corners: Point[], quarters = 0) {
 		const blob = await (await fetch(url)).blob();
 		const bitmap = await createImageBitmap(blob);
 		const source = await fileToCanvas(blob);
 		const scale = source.width / bitmap.width;
 		bitmap.close();
 		const placed = corners.map(({ x, y }) => ({ x: x * scale, y: y * scale }));
-		return recognizeGrid(source, placed);
+		if (quarters === 0) {
+			return { cells: await recognizeGrid(source, placed), upright: true };
+		}
+		const { canvas, move } = turned(source, quarters);
+		const truth = placed.map(move);
+		// The corner finder orders corners as the turned photo shows them.
+		const shown = turnCorners(truth, 4 - quarters);
+		const upright = await uprightCorners(canvas, shown);
+		return {
+			cells: await recognizeGrid(canvas, upright),
+			upright: upright[0] === truth[0],
+		};
 	},
 });
 `,
@@ -169,38 +212,51 @@ try {
 	await tab.waitForFunction(() => "scanPhoto" in window);
 	const all = [];
 	const rows = [];
+	const turns = flag("turns") ? [0, 1, 2, 3] : [0];
+	const missedTurns = [];
 	for (const photo of labels) {
-		const url = `/@fs${path.join(photos, `${photo.id}.jpg`)}`;
-		const corners = photo.corners.map(([x, y]) => ({ x, y }));
-		const started = performance.now();
-		const cells = await tab.evaluate(
-			([url, corners]) => window.scanPhoto(url, corners),
-			[url, corners],
-		);
-		const ms = Math.round(performance.now() - started);
-		const results = cells.map((cell, index) => ({
-			photo: photo.id,
-			group: photo.kind,
-			...judge(photo, index, cell),
-		}));
-		all.push(...results);
-		rows.push({ name: photo.id, ...tally(results), ms });
-		if (flag("cells")) {
-			const wrong = results.filter(
-				(result) => result.kind !== "skip" && !result.right,
+		for (const quarters of turns) {
+			const url = `/@fs${path.join(photos, `${photo.id}.jpg`)}`;
+			const corners = photo.corners.map(([x, y]) => ({ x, y }));
+			const started = performance.now();
+			const { cells, upright } = await tab.evaluate(
+				([url, corners, quarters]) => window.scanPhoto(url, corners, quarters),
+				[url, corners, quarters],
 			);
-			console.log(
-				`${photo.id}: ${wrong
-					.map(
-						({ place, kind, want, found, sure }) =>
-							`${place} ${kind} ${want}→${found}${sure ? "!" : ""}`,
-					)
-					.join("; ")}`,
-			);
+			const ms = Math.round(performance.now() - started);
+			const name = quarters ? `${photo.id}@${quarters * 90}` : photo.id;
+			if (!upright) {
+				missedTurns.push(name);
+			}
+			const results = cells.map((cell, index) => ({
+				photo: name,
+				group: photo.kind,
+				...judge(photo, index, cell),
+			}));
+			all.push(...results);
+			rows.push({ name, ...tally(results), ms });
+			if (flag("cells")) {
+				const wrong = results.filter(
+					(result) => result.kind !== "skip" && !result.right,
+				);
+				console.log(
+					`${name}: ${wrong
+						.map(
+							({ place, kind, want, found, sure }) =>
+								`${place} ${kind} ${want}→${found}${sure ? "!" : ""}`,
+						)
+						.join("; ")}`,
+				);
+			}
 		}
 	}
 	summarize(all, rows);
 	printTable(rows);
+	if (flag("turns")) {
+		console.log(
+			`Turned back upright: ${labels.length * 4 - missedTurns.length}/${labels.length * 4}${missedTurns.length ? ` (missed ${missedTurns.join(", ")})` : ""}`,
+		);
+	}
 	if (option("json")) {
 		writeFileSync(option("json"), JSON.stringify(rows, null, "\t"));
 	}

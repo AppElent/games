@@ -36,6 +36,7 @@ import {
 	readCageSums,
 	readWarpedCages,
 	recognizeGrid,
+	uprightCorners,
 	warpToSquare,
 } from "#/lib/games/sudoku-scan-image";
 import { createSudokuSession } from "#/lib/games/sudoku-session";
@@ -101,18 +102,23 @@ export function SudokuScanFlow() {
 		}
 	};
 
-	const runRecognition = async (
-		source: HTMLCanvasElement,
-		corners: Point[],
-	) => {
+	const runRecognition = async (source: HTMLCanvasElement, marked: Point[]) => {
 		const read = await run(async () => {
-			const warped = warpToSquare(source, corners);
-			const warpedUrl = warped.toDataURL("image/jpeg", 0.8);
-			setStep({
-				id: "recognizing",
-				warpedUrl,
-				progress: { step: "preparing", cellsDone: 0, cellsTotal: 81 },
-			});
+			const preparing = (warpedUrl: string) =>
+				setStep({
+					id: "recognizing",
+					warpedUrl,
+					progress: { step: "preparing", cellsDone: 0, cellsTotal: 81 },
+				});
+			let warpedUrl = warpToSquare(source, marked).toDataURL("image/jpeg", 0.8);
+			preparing(warpedUrl);
+			// A photo taken sideways or upside down is read upright. Should that
+			// check fail, the photo is read as taken, as it was before the check.
+			const corners = await uprightCorners(source, marked).catch(() => marked);
+			if (corners[0] !== marked[0]) {
+				warpedUrl = warpToSquare(source, corners).toDataURL("image/jpeg", 0.8);
+				preparing(warpedUrl);
+			}
 			// A Killer prints dashed cages and sums instead of givens.
 			const smooth = warpToSquare(source, corners, { smooth: true });
 			const cages = readWarpedCages(smooth);
