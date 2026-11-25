@@ -9,6 +9,8 @@ const signIn = {
 	finalize: vi.fn(),
 	reset: vi.fn(),
 	emailCode: { sendCode: vi.fn(), verifyCode: vi.fn() },
+	supportedSecondFactors: [] as { strategy: string }[],
+	mfa: { verifyTOTP: vi.fn() },
 };
 const errors: { fields: object; global: null; raw: null } = {
 	fields: {},
@@ -56,12 +58,14 @@ describe("SignInForm", () => {
 		cleanup();
 		signIn.status = null;
 		errors.fields = {};
+		signIn.supportedSecondFactors = [];
 		for (const fn of [
 			signIn.password,
 			signIn.finalize,
 			signIn.reset,
 			signIn.emailCode.sendCode,
 			signIn.emailCode.verifyCode,
+			signIn.mfa.verifyTOTP,
 		]) {
 			fn.mockReset();
 		}
@@ -133,7 +137,7 @@ describe("SignInForm", () => {
 
 	it("says so when the password sign-in needs a step it does not offer", async () => {
 		signIn.password.mockImplementation(async () => {
-			signIn.status = "needs_second_factor";
+			signIn.status = "needs_new_password";
 			return ok;
 		});
 		renderForm(vi.fn(), "nl");
@@ -142,6 +146,77 @@ describe("SignInForm", () => {
 			"Inloggen op dit account vraagt een extra stap die deze pagina nog niet ondersteunt.",
 		);
 		expect(signIn.finalize).not.toHaveBeenCalled();
+	});
+
+	describe("second factor", () => {
+		const firstFactor = (status: string) => async () => {
+			signIn.status = status;
+			signIn.supportedSecondFactors = [{ strategy: "totp" }];
+			return ok;
+		};
+
+		async function enterTotp() {
+			signIn.mfa.verifyTOTP.mockImplementation(async () => {
+				signIn.status = "complete";
+				return ok;
+			});
+			signIn.finalize.mockResolvedValue(ok);
+			await screen.findByText(
+				"Enter the 6-digit code from your authenticator app.",
+			);
+			fireEvent.change(screen.getByLabelText("Code"), {
+				target: { value: "123456" },
+			});
+			fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+		}
+
+		it.each(["needs_second_factor", "needs_client_trust"])(
+			"follows a password that ends in %s",
+			async (status) => {
+				signIn.password.mockImplementation(firstFactor(status));
+				const onSuccess = vi.fn();
+				renderForm(onSuccess);
+				fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+				await enterTotp();
+				await vi.waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+				expect(signIn.mfa.verifyTOTP).toHaveBeenCalledWith({ code: "123456" });
+				expect(signIn.finalize).toHaveBeenCalledTimes(1);
+			},
+		);
+
+		it("follows an emailed code", async () => {
+			signIn.emailCode.verifyCode.mockImplementation(
+				firstFactor("needs_second_factor"),
+			);
+			const onSuccess = vi.fn();
+			renderForm(onSuccess);
+			fireEvent.change(await openCodeStep(), { target: { value: "424242" } });
+			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+			await enterTotp();
+			await vi.waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+			expect(signIn.finalize).toHaveBeenCalledTimes(1);
+		});
+
+		it("goes back to a clean sign-in", async () => {
+			signIn.password.mockImplementation(firstFactor("needs_second_factor"));
+			signIn.reset.mockResolvedValue(ok);
+			renderForm();
+			typeEmail();
+			fireEvent.change(screen.getByLabelText("Password"), {
+				target: { value: "pw" },
+			});
+			fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+			fireEvent.click(
+				await screen.findByRole("button", { name: "Back to sign in" }),
+			);
+			const email = await screen.findByLabelText("Email");
+			expect(signIn.reset).toHaveBeenCalled();
+			expect((email as HTMLInputElement).value).toBe("a@b.com");
+			expect(
+				(screen.getByLabelText("Password") as HTMLInputElement).value,
+			).toBe("");
+			await vi.waitFor(() => expect(document.activeElement).toBe(email));
+		});
 	});
 
 	describe("email code", () => {
@@ -230,7 +305,7 @@ describe("SignInForm", () => {
 
 		it("stops on a step it does not offer instead of finalizing", async () => {
 			signIn.emailCode.verifyCode.mockImplementation(async () => {
-				signIn.status = "needs_second_factor";
+				signIn.status = "needs_new_password";
 				return ok;
 			});
 			const onSuccess = vi.fn();

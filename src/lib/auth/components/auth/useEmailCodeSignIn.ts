@@ -10,6 +10,7 @@ import {
 	type AuthErrorKey,
 	pickClerkErrorKey,
 } from "@arcadeclub/core/auth-errors";
+import { needsSecondFactor } from "@arcadeclub/core/second-factor";
 import { useSignIn } from "@clerk/react";
 import { useState } from "react";
 
@@ -68,15 +69,32 @@ export function useEmailCodeSignIn() {
 			),
 		/** Emails a fresh code for the attempt already started. */
 		resend: () => run("resend", () => signIn.emailCode.sendCode()),
-		/** Trades the code for a session; true once it is active. */
-		verify: (code: string) =>
-			run(
+		/**
+		 * Trades the code for a session. "secondFactor" when the account wants a
+		 * second step first; `false` when the code failed.
+		 */
+		verify: async (
+			code: string,
+		): Promise<"signedIn" | "secondFactor" | false> => {
+			let secondFactor = false;
+			const done = await run(
 				"verify",
 				() => signIn.emailCode.verifyCode({ code }),
-				// A second factor is not offered here; `finalize()` would fail.
-				async () =>
-					signIn.status === "complete" ? signIn.finalize() : "unsupported",
-			),
+				async () => {
+					if (needsSecondFactor(signIn.status)) {
+						secondFactor = true;
+						return { error: null };
+					}
+					return signIn.status === "complete"
+						? signIn.finalize()
+						: "unsupported";
+				},
+			);
+			if (!done) return false;
+			if (!secondFactor) return "signedIn";
+			setBusy(null);
+			return "secondFactor";
+		},
 		/**
 		 * Drops the attempt so another email can start one; no request. A
 		 * failed reset is harmless: the next `send` starts a new attempt.

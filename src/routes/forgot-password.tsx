@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	AuthCard,
+	authPageHref,
 	ForgotPasswordForm,
 	safeReturnPath,
 	signInDestination,
@@ -19,15 +20,18 @@ export const Route = createFileRoute("/forgot-password")({
 
 function ForgotPasswordPage() {
 	const navigate = useNavigate();
-	const destination = signInDestination(
-		Route.useSearch().redirect,
-		authConfig.paths.afterAuth,
-	);
+	const { redirect } = Route.useSearch();
+	const destination = signInDestination(redirect, authConfig.paths.afterAuth);
 	const title = useMessages().auth.reset.title;
 
 	return (
 		<AuthCard title={title}>
-			<ForgotPasswordForm onSuccess={() => navigate({ href: destination })} />
+			<ForgotPasswordForm
+				onSuccess={() => navigate({ href: destination })}
+				onBackToSignIn={() =>
+					navigate({ href: authPageHref(authConfig.paths.signIn, redirect) })
+				}
+			/>
 		</AuthCard>
 	);
 }

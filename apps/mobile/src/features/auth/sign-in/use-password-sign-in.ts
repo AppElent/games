@@ -1,40 +1,28 @@
 /**
- * Email + password, all the way to an active session.
+ * Email + password, all the way to an active session or to the second step.
  *
  * Clerk Core 3 trap: a successful `signIn.password()` leaves the sign-in
- * `complete` but not active; `finalize()` promotes it. Any other status asks
- * for a step this app does not offer (such as a second factor), reported as
- * `unsupported`.
+ * `complete` but not active; `finalize()` promotes it.
  */
 import { useSignIn } from "@clerk/expo";
-import { useCallback, useState } from "react";
-import { useAuthFlow } from "../components/use-auth-flow";
+import { useCallback } from "react";
+import { useSignInFlow } from "../components/use-sign-in-flow";
 
 export function usePasswordSignIn() {
 	const { signIn, errors } = useSignIn();
-	const flow = useAuthFlow(errors);
-	const { finish } = flow;
-	const [unsupported, setUnsupported] = useState(false);
-
-	const submit = useCallback(
-		async (email: string, password: string) => {
-			setUnsupported(false);
-			await finish(
-				() => signIn.password({ identifier: email.trim(), password }),
-				async () => {
-					if (signIn.status === "complete") return signIn.finalize();
-					setUnsupported(true);
-					return null;
-				},
-			);
-		},
-		[finish, signIn],
+	const { finishSignIn, busy, errorKey, unsupported } = useSignInFlow(
+		signIn,
+		errors,
 	);
 
-	return {
-		submit,
-		busy: flow.busy,
-		unsupported,
-		errorKey: flow.errorKey,
-	};
+	/** Resolves to `"secondFactor"` when the account wants one first. */
+	const submit = useCallback(
+		(email: string, password: string) =>
+			finishSignIn(() =>
+				signIn.password({ identifier: email.trim(), password }),
+			),
+		[finishSignIn, signIn],
+	);
+
+	return { submit, busy, unsupported, errorKey };
 }

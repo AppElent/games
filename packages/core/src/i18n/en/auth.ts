@@ -13,7 +13,7 @@ export const auth = {
 		createAccount: "Create an account",
 		devNote: "Test account prefilled (development instance).",
 		unsupportedStep:
-			"Sign-in needs another step this app doesn't support yet. Use the web app instead.",
+			'Sign-in needs another step this app doesn\'t support. Try "Forgot password?" to set a new password.',
 	},
 	signInCode: {
 		title: "Check your email",
@@ -23,6 +23,34 @@ export const auth = {
 		resend: "Send a new code",
 		resent: "A new code is on its way.",
 		differentEmail: "Use a different email",
+	},
+	secondFactor: {
+		title: "Verify it's you",
+		prompt: {
+			totp: "Enter the 6-digit code from your authenticator app.",
+			phone_code: "We texted a 6-digit code to {destination}.",
+			email_code: "We sent a 6-digit code to {destination}.",
+			backup_code: "Enter one of the backup codes you saved.",
+		},
+		yourPhone: "your phone",
+		yourEmail: "your email",
+		backupCode: "Backup code",
+		submit: "Verify",
+		switchTo: {
+			totp: "Use your authenticator app",
+			phone_code: "Text a code to {destination}",
+			email_code: "Email a code to {destination}",
+			backup_code: "Use a backup code",
+		},
+		passwordChanged: "Your password is changed. One more step to sign in.",
+		methodLocked:
+			"Too many wrong codes for this method. Use another one below, or go back and sign in again.",
+		onlyMethodLocked: "Too many wrong codes. Go back and sign in again.",
+		attemptEnded:
+			"This sign-in took too long and can't continue. Go back and sign in again.",
+		noMethod:
+			"Arcade Club can't do your account's second step. It accepts a code from an authenticator app, a text message or an email, or a backup code. Email privacy@appelent.nl for help. You can keep playing as a guest.",
+		backToSignIn: "Back to sign in",
 	},
 	signUp: {
 		title: "Create an account",

@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, sign-up, account, theme sync, or how the Clerk session reaches Convex.
-version: 1.5.0
+version: 1.6.0
 status: current
 ---
 
@@ -28,8 +28,24 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   accounts without a password: the code step replaces the password step on the same
   screen, with resend and "Use a different email". Its labels and errors, on both
   paths, come from `messages.auth`, errors through `@arcadeclub/core/auth-errors` (Clerk
-  code to catalog key), never Clerk's text. A sign-in that needs a step the web does not
-  offer (a second factor) says so (`unsupportedStep`) instead of finalizing.
+  code to catalog key), never Clerk's text. A step neither app offers (such as
+  `needs_new_password`) says so (`unsupportedStep`) instead of finalizing.
+- A password, emailed code or password reset that ends in `needs_second_factor` or
+  `needs_client_trust` continues in a second step, on both apps. It depends only on the
+  attempt's status, so any later way to sign in reaches it the same way.
+  `@arcadeclub/core/second-factor` owns it (which factors, sending, verifying, locking,
+  copy); the web's `SecondFactorStep` and the phone's `second-factor-step.tsx` only draw
+  it, and the phone's `useSecondFactor` takes other actions than sign-in's. It handles
+  an authenticator app, texted and emailed codes and backup codes, in that order, and
+  switches between those the account has. Too many wrong codes
+  lock that method only; an attempt Clerk dropped, or an account with no factor we can
+  handle, shows what to do and "Back to sign in". Once a code is accepted, a retry only
+  activates the session, so a one-time backup code is not sent again. The web swaps
+  the form in place, so `?redirect=` is kept; the phone opens
+  `(auth)/sign-in-second-factor`. "Back to sign in" drops
+  the attempt; closed another way it stays unused, because every first step starts a
+  new one. A first step answered after its phone screen lost focus opens nothing
+  (`useOpenSecondFactor`). Reloading the web page starts the sign-in over.
 - Every auth form on the web (sign-in, sign-up, reset, `/account`, the dev test login)
   and on the phone reads Clerk failures through the one table in
   `@arcadeclub/core/auth-errors`; the web's `useAuthErrorText` turns the key into
@@ -147,5 +163,7 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
 
 - `src/lib/auth/__tests__`, `src/lib/auth/components/auth/__tests__`,
   `src/lib/account/__tests__`, `packages/core/src/__tests__/auth-errors.test.ts`,
+  `packages/core/src/__tests__/second-factor.test.ts`, the phone's
+  `second-factor-screens.test.tsx`,
   `convex/account.test.ts`, `convex/http.test.ts`, `convex/accountExport.test.ts`
   and `convex/accountPortal.test.ts` pass.

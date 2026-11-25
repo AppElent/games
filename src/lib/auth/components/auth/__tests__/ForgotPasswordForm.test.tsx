@@ -7,6 +7,9 @@ const signIn = {
 	status: null as string | null,
 	create: vi.fn(),
 	finalize: vi.fn(),
+	reset: vi.fn(),
+	supportedSecondFactors: [{ strategy: "totp" }],
+	mfa: { verifyTOTP: vi.fn() },
 	resetPasswordEmailCode: {
 		sendCode: vi.fn(),
 		verifyCode: vi.fn(),
@@ -19,11 +22,18 @@ import { type Locale, LocaleProvider } from "#/lib/i18n";
 import { AuthConfigProvider } from "../AuthConfigProvider";
 import { ForgotPasswordForm } from "../ForgotPasswordForm";
 
-function renderForm(onSuccess = vi.fn(), locale: Locale = "en") {
+function renderForm(
+	onSuccess = vi.fn(),
+	locale: Locale = "en",
+	onBackToSignIn = vi.fn(),
+) {
 	return render(
 		<LocaleProvider initialLocale={locale}>
 			<AuthConfigProvider>
-				<ForgotPasswordForm onSuccess={onSuccess} />
+				<ForgotPasswordForm
+					onSuccess={onSuccess}
+					onBackToSignIn={onBackToSignIn}
+				/>
 			</AuthConfigProvider>
 		</LocaleProvider>,
 	);
@@ -131,5 +141,48 @@ describe("ForgotPasswordForm", () => {
 		);
 		expect(signIn.finalize).not.toHaveBeenCalled();
 		expect(onSuccess).not.toHaveBeenCalled();
+	});
+
+	it("asks for the second step after the new password", async () => {
+		signIn.create.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.sendCode.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.verifyCode.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.submitPassword.mockImplementation(
+			async () => {
+				signIn.status = "needs_second_factor";
+				return ok;
+			},
+		);
+		signIn.mfa.verifyTOTP.mockImplementation(async () => {
+			signIn.status = "complete";
+			return ok;
+		});
+		signIn.finalize.mockResolvedValue(ok);
+		const onSuccess = vi.fn();
+		const onBackToSignIn = vi.fn();
+		renderForm(onSuccess, "en", onBackToSignIn);
+		fireEvent.change(screen.getByLabelText("Email"), {
+			target: { value: "a@b.com" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /send code/i }));
+		fireEvent.change(await screen.findByLabelText("Code"), {
+			target: { value: "123456" },
+		});
+		fireEvent.change(screen.getByLabelText(/new password/i), {
+			target: { value: "newpw123!" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Set password" }));
+		expect(
+			await screen.findByText(
+				"Your password is changed. One more step to sign in.",
+			),
+		).toBeDefined();
+		fireEvent.change(screen.getByLabelText("Code"), {
+			target: { value: "654321" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+		await vi.waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+		expect(signIn.mfa.verifyTOTP).toHaveBeenCalledWith({ code: "654321" });
+		expect(onBackToSignIn).not.toHaveBeenCalled();
 	});
 });

@@ -23,6 +23,7 @@ import {
 	NEW_PASSWORD_RULES,
 	useCredentialForm,
 } from "../components/use-credential-form";
+import { useOpenSecondFactor } from "../second-factor/use-open-second-factor";
 import { usePasswordReset } from "./use-password-reset";
 
 export function PasswordResetScreen({
@@ -30,6 +31,7 @@ export function PasswordResetScreen({
 }: {
 	initialEmail: string;
 }) {
+	const openSecondFactor = useOpenSecondFactor();
 	const { t } = useI18n();
 	const copy = t.auth.reset;
 	const flow = usePasswordReset();
@@ -64,16 +66,21 @@ export function PasswordResetScreen({
 	const ready =
 		reset.values.code.length === AUTH_CODE_LENGTH &&
 		reset.values.password.length > 0;
-	const submit = ({ code, password }: typeof reset.values) => {
-		if (code.length === AUTH_CODE_LENGTH && password) {
-			flow.submit(code, password);
+	const submit = async ({ code, password }: typeof reset.values) => {
+		if (code.length !== AUTH_CODE_LENGTH || !password) return;
+		// Replaces this screen: its code is spent, so there is no way back to it.
+		if ((await flow.submit(code, password)) === "secondFactor") {
+			openSecondFactor("replace", {
+				pathname: "/sign-in-second-factor",
+				params: { from: "reset" },
+			});
 		}
 	};
 	return (
 		<AuthForm
 			title={copy.title}
 			subtitle={fmt(copy.codeBody, { email: sentTo })}
-			error={error}
+			error={error ?? (flow.unsupported ? t.auth.errors.unsupportedStep : null)}
 		>
 			<CodeField {...reset.field("code", codeDigits)} />
 			<EmailField value={sentTo} editable={false} testID="reset-email" />

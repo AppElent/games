@@ -34,9 +34,12 @@ describe("TestLoginButton", () => {
 
 	it("renders nothing without a test instance + creds", () => {
 		vi.stubEnv("VITE_CLERK_PUBLISHABLE_KEY", "pk_live_x");
-		const { container } = render(<TestLoginButton onSuccess={() => {}} />, {
-			wrapper,
-		});
+		const { container } = render(
+			<TestLoginButton onSuccess={() => {}} onSecondFactor={() => {}} />,
+			{
+				wrapper,
+			},
+		);
 		expect(container.firstChild).toBeNull();
 	});
 
@@ -44,9 +47,12 @@ describe("TestLoginButton", () => {
 		vi.stubEnv("VITE_CLERK_PUBLISHABLE_KEY", "pk_test_x");
 		vi.stubEnv("VITE_TEST_USER_EMAIL", "");
 		vi.stubEnv("VITE_TEST_USER_PASSWORD", "");
-		const { container } = render(<TestLoginButton onSuccess={() => {}} />, {
-			wrapper,
-		});
+		const { container } = render(
+			<TestLoginButton onSuccess={() => {}} onSecondFactor={() => {}} />,
+			{
+				wrapper,
+			},
+		);
 		expect(container.firstChild).toBeNull();
 	});
 
@@ -59,7 +65,10 @@ describe("TestLoginButton", () => {
 		signIn.finalize.mockResolvedValue({ error: null });
 		const onSuccess = vi.fn();
 
-		render(<TestLoginButton onSuccess={onSuccess} />, { wrapper });
+		render(
+			<TestLoginButton onSuccess={onSuccess} onSecondFactor={() => {}} />,
+			{ wrapper },
+		);
 		screen.getByRole("button", { name: /test/i }).click();
 		await vi.waitFor(() => expect(signIn.finalize).toHaveBeenCalled());
 		expect(signIn.password).toHaveBeenCalledWith({
@@ -71,7 +80,14 @@ describe("TestLoginButton", () => {
 
 	it("stays disabled while the form runs another request (APP-596)", () => {
 		showButton();
-		render(<TestLoginButton onSuccess={() => {}} disabled />, { wrapper });
+		render(
+			<TestLoginButton
+				onSuccess={() => {}}
+				onSecondFactor={() => {}}
+				disabled
+			/>,
+			{ wrapper },
+		);
 		expect(
 			screen.getByRole("button", { name: /test/i }).hasAttribute("disabled"),
 		).toBe(true);
@@ -82,7 +98,9 @@ describe("TestLoginButton", () => {
 		signIn.password.mockResolvedValue({
 			error: { errors: [{ code: "form_password_incorrect", message: "Nope" }] },
 		});
-		render(<TestLoginButton onSuccess={() => {}} />, { wrapper });
+		render(<TestLoginButton onSuccess={() => {}} onSecondFactor={() => {}} />, {
+			wrapper,
+		});
 		screen.getByRole("button", { name: /test/i }).click();
 		expect((await screen.findByRole("alert")).textContent).toBe(
 			"That password is not right.",

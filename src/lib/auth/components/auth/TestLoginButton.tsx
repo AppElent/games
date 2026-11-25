@@ -1,3 +1,4 @@
+import { needsSecondFactor } from "@arcadeclub/core/second-factor";
 import { useSignIn } from "@clerk/react";
 import { useState } from "react";
 import { shouldShowTestLogin } from "#/lib/auth/core";
@@ -9,9 +10,11 @@ import { useAuthErrorText } from "./useAuthErrorText";
 
 export function TestLoginButton({
 	onSuccess,
+	onSecondFactor,
 	disabled,
 }: {
 	onSuccess: () => void;
+	onSecondFactor: () => void;
 	/** Another sign-in request is running on the same form. */
 	disabled?: boolean;
 }) {
@@ -38,6 +41,8 @@ export function TestLoginButton({
 			if (signIn.status === "complete") {
 				await orThrow(signIn.finalize());
 				onSuccess();
+			} else if (needsSecondFactor(signIn.status)) {
+				onSecondFactor();
 			} else {
 				setError(copy.errors.unsupportedStep);
 			}
