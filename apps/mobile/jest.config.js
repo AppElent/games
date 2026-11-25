@@ -25,6 +25,8 @@ const preset = require("jest-expo/jest-preset");
 
 module.exports = {
 	preset: "jest-expo",
+	// Parallel agent runs share the Mac's memory (APP-852); CI keeps Jest's default.
+	...(process.env.CI ? {} : { maxWorkers: "25%" }),
 	// `src/updates/ota-label.mjs` is a copy of a shared ES module; compile it
 	// like the app's own sources.
 	transform: { "\\.mjs$": preset.transform["\\.[jt]sx?$"] },
