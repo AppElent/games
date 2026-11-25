@@ -89,7 +89,7 @@ export type SudokuHint = {
 	coverLines?: HintUnit[];
 	/**
 	 * Two groups the board shows in two tones once the hint is explained: the
-	 * colours of Simple Coloring (the wrong colour first when they wrap), the
+	 * colours of Simple Coloring (the wrong colour second when they wrap), the
 	 * alternating cells of a chain, or the two sets of an ALS-XZ.
 	 */
 	colors?: [number[], number[]];
@@ -608,7 +608,14 @@ export function findHint(
 	grid: SudokuGrid,
 	options: HintOptions = {},
 ): SudokuHint | null {
-	const mistake = findMistake(grid, options);
+	// Killer givens are rarely unique without their cages, so only a
+	// solution the client passes is trusted there.
+	const solution =
+		options.solution ??
+		(!options.cages?.length && options.givens
+			? checkGivens(options.givens).solution
+			: undefined);
+	const mistake = findMistake(grid, { ...options, solution });
 	if (mistake) {
 		return mistake;
 	}
@@ -623,13 +630,6 @@ export function findHint(
 		!options.cages?.length &&
 		options.givens !== undefined &&
 		hasUniqueSolution(options.givens);
-	// Killer givens are rarely unique without their cages, so only a
-	// solution the client passes is trusted there.
-	const solution =
-		options.solution ??
-		(!options.cages?.length && options.givens
-			? checkGivens(options.givens).solution
-			: undefined);
 	for (const detector of SUDOKU_TECHNIQUES) {
 		if (detector.needsUniqueness && !unique) {
 			continue;
@@ -639,6 +639,11 @@ export function findHint(
 			(detector.id === "snyder-pair"
 				? revealCell(grid, candidates, solution)
 				: null) ?? detector.detect(grid, candidates);
+		if (hint?.technique === "reveal-cell") {
+			// A reveal comes from the solution, not from candidates, and is the
+			// last resort at every maximum level.
+			return hint;
+		}
 		if (hint) {
 			const touched = [
 				...hint.cells,
@@ -722,11 +727,11 @@ export function describeHint(
 				return { base, cover, fish: names[0], aFish: names[1] };
 			}
 			case "simple-coloring": {
-				const [wrong, right] = hint.colors ?? [[], []];
+				const [toneA, toneB] = hint.colors ?? [[], []];
 				return {
 					clash: cellList([first, second]),
-					colorA: cellList(wrong),
-					colorB: cellList(right),
+					colorA: cellList(toneA),
+					colorB: cellList(toneB),
 				};
 			}
 			case "x-chain":

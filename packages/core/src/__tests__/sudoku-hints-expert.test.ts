@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { sudoku as en } from "../i18n/en/games/sudoku";
 import { sudoku as nl } from "../i18n/nl/games/sudoku";
+import { mulberry32 } from "../random";
 import {
 	computeCandidates,
 	digitMask,
 	digitsInMask,
+	generatePuzzle,
 	parseGrid,
 } from "../sudoku";
 import {
@@ -13,6 +15,7 @@ import {
 	type HintHistory,
 	type HintOptions,
 	hintHighlights,
+	rememberHint,
 	SUDOKU_TECHNIQUES,
 	type SudokuHint,
 } from "../sudoku-hints";
@@ -142,8 +145,8 @@ const EXPECTED: Record<keyof typeof STATES, Partial<SudokuHint>> = {
 		coloring: "wrap",
 		candidateDigits: [3],
 		colors: [
-			[5, 28, 40, 45, 51, 55, 70, 75],
 			[3, 32, 42, 61, 67, 72],
+			[5, 28, 40, 45, 51, 55, 70, 75],
 		],
 	},
 	jellyfish: {
@@ -229,7 +232,8 @@ describe("expert sudoku hints", () => {
 
 	it("wraps on two cells of one colour that see each other", () => {
 		const hint = hintAt(STATES["simple-coloring-wrap"]) as SudokuHint;
-		const [wrong] = hint.colors ?? [[]];
+		// The wrong colour comes second, so the board shows it in pink.
+		const wrong = hint.colors?.[1] ?? [];
 		const [a, b] = hint.cells;
 		expect(wrong).toContain(a);
 		expect(wrong).toContain(b);
@@ -278,6 +282,37 @@ describe("expert sudoku hints", () => {
 		).toMatchObject(EXPECTED["reveal-cell"]);
 	});
 
+	it("reveals at any maximum, without the earlier-hints note", () => {
+		const state = STATES["reveal-cell"];
+		for (const maxLevel of ["beginner", "advanced", "expert"] as const) {
+			const hint = hintAt(state, { maxLevel });
+			expect(hint).toMatchObject(EXPECTED["reveal-cell"]);
+			expect(hint).not.toHaveProperty("aboveMaxLevel");
+			expect(hint).not.toHaveProperty("usesEarlierHints");
+		}
+	});
+
+	it("finds a wrong digit from the solved givens before revealing", () => {
+		const state = STATES["reveal-cell"];
+		const grid = parseGrid(state.grid);
+		const solution = parseGrid(state.solution);
+		// A wrong digit that clashes with nothing on the board.
+		const cell = grid.findIndex(
+			(value, index) =>
+				value === 0 &&
+				candidatesOf(state)[index] !== digitMask(solution[index]) &&
+				digitsInMask(computeCandidates(grid)[index]).length > 1,
+		);
+		const wrong = digitsInMask(computeCandidates(grid)[cell]).find(
+			(digit) => digit !== solution[cell],
+		) as number;
+		grid[cell] = wrong;
+		expect(findHint(grid, { givens: parseGrid(state.givens) })).toMatchObject({
+			technique: "mistake",
+			cells: [cell],
+		});
+	});
+
 	it("flags an expert step above an advanced maximum", () => {
 		const hint = hintAt(STATES["x-chain"], { maxLevel: "advanced" });
 		expect(hint).toMatchObject({ technique: "x-chain", aboveMaxLevel: true });
@@ -302,6 +337,30 @@ describe("expert sudoku hints", () => {
 			const start = Date.now();
 			hintAt(STATES[id]);
 			expect(Date.now() - start).toBeLessThan(50);
+		}
+	});
+
+	it("solves generated Expert puzzles without a wrong step", () => {
+		for (let seed = 1; seed <= 30; seed += 1) {
+			const { givens, solution } = generatePuzzle("expert", mulberry32(seed));
+			const grid = [...givens];
+			let history: HintHistory = [];
+			while (grid.includes(0)) {
+				const hint = findHint(grid, { givens, history });
+				expect(hint).not.toBeNull();
+				if (!hint) {
+					break;
+				}
+				for (const { cell, digits } of hint.eliminations) {
+					expect(digits).not.toContain(solution[cell]);
+				}
+				for (const { cell, digit } of hint.placements) {
+					expect(digit).toBe(solution[cell]);
+					grid[cell] = digit;
+				}
+				history = rememberHint(history, grid, hint);
+			}
+			expect(grid).toEqual(solution);
 		}
 	});
 });

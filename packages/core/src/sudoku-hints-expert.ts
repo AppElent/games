@@ -125,7 +125,8 @@ function findSimpleColoring(candidates: number[]): SudokuHint | null {
 							cell,
 							digits: [digit],
 						})),
-						colors: [groups[wrong], groups[1 - wrong]],
+						// The wrong colour second: the board shows it in pink, not green.
+						colors: [groups[1 - wrong], groups[wrong]],
 						coloring: "wrap",
 					});
 				}
