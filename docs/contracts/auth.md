@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, sign-up, account, theme sync, or how the Clerk session reaches Convex.
-version: 1.6.0
+version: 1.7.0
 status: current
 ---
 
@@ -79,7 +79,9 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   message; `form_password_incorrect` alone also means the current password
   (`passwordFailure`, shared). On the web it sits under the current or the new
   password field, and any other failure shows above the panel. If Clerk asks for
-  reverification the phone screen offers "Sign in again". An account without a
+  reverification the phone opens the verify sheet (below) over the screen; confirming
+  retries the change once, on the same account and session, cancelling changes nothing,
+  and only an account the sheet can't confirm is offered "Sign in again". An account without a
   password (`passwordEnabled` false: social or emailed-code sign-in only) gets no link
   on the phone and no form on `/account`, and an explanation instead
   (`profile.password.none`). Changing the email is on neither platform.
@@ -113,9 +115,14 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   emailed code. An account with a password can go back to it from the code step
   without cancelling. Confirming continues the deletion in the same session; cancelling
   deletes nothing. Failures show through `@arcadeclub/core/auth-errors`, a locked account
-  with Clerk's wait when it gives one; session or permission faults are still reported to Sentry. An account the
-  sheet can't handle (no password or email code, such as social-only, or a second
-  factor) gets `accountVerifyUnsupported` and "Sign in again", after which it returns
+  with Clerk's wait when it gives one; session or permission faults are still reported to Sentry. They also close the sheet with
+  `accountSessionEnded` or `accountSignInFirst` ("Sign in again"); once the data is
+  gone both read `accountSignInToFinish`. An account with two-step verification
+  confirms with its second factor (authenticator app, texted code or backup code), the
+  sign-in's step (`packages/core/src/second-factor.ts`). One whose second factor the
+  app can't do gets `accountSecondFactorUnsupported`, before it types anything where
+  Clerk tells, and no "Sign in again", which would only lock it out. An account the
+  sheet can't handle (no password or email code, such as social-only) gets `accountVerifyUnsupported` and "Sign in again", after which it returns
   to the delete screen (return target, below). If Clerk still refuses the user after
   the data is gone, the sheet opens once more; cancelled, the app shows
   `accountDeleteAgain`, and when it can't help, `accountSignInToFinish`; the web, where

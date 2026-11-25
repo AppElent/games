@@ -55,6 +55,12 @@ export const auth = {
 			"Deze inlogpoging duurde te lang en kan niet verder. Ga terug en log opnieuw in.",
 		noMethod:
 			"De tweede stap van je account werkt niet in Arcade Club. Een code uit een authenticator-app, sms of e-mail werkt wel, net als een back-upcode. Mail privacy@appelent.nl voor hulp. Je kunt als gast blijven spelen.",
+		confirm: {
+			methodLocked:
+				"Te veel foute codes voor deze methode. Gebruik hieronder een andere, of annuleer en probeer het opnieuw.",
+			onlyMethodLocked: "Te veel foute codes. Annuleer en probeer het opnieuw.",
+			attemptEnded: "Dit duurde te lang. Annuleer en probeer het opnieuw.",
+		},
 		backToSignIn: "Terug naar inloggen",
 	},
 	signUp: {

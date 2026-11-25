@@ -2,7 +2,7 @@ import {
 	type DeletionScope,
 	deleteAccount,
 } from "@arcadeclub/core/account-deletion";
-import { gameErrorData } from "@arcadeclub/core/errors";
+import { GameRuleError, gameErrorData } from "@arcadeclub/core/errors";
 import { reportError } from "../../../observability/report";
 import { forgetAccountSaves } from "../../sudoku/saves/sudoku-save-store";
 import type { ReverifyOutcome } from "../reverify/use-reverify";
@@ -126,6 +126,17 @@ describe("deletionSteps", () => {
 		expect(calls).toEqual(["reload", "reverify"]);
 	});
 
+	it("deletes nothing and offers no sign-in an unsupported second factor can't finish", async () => {
+		const { calls, steps } = setup({
+			recent: false,
+			outcome: "noSecondFactor",
+		});
+		const error = await failure(deleteAccount(steps));
+		expect(gameErrorData(error)?.code).toBe("accountSecondFactorUnsupported");
+		expect(needsSignInAgain(error)).toBe(false);
+		expect(calls).toEqual(["reload", "reverify"]);
+	});
+
 	it("deletes nothing when Clerk still finds the sign-in old after the sheet", async () => {
 		const { calls, steps } = setup({ recent: false });
 		const error = await failure(deleteAccount(steps));
@@ -148,6 +159,7 @@ describe("deletionSteps", () => {
 
 	it.each([
 		["cancelled", "accountDeleteAgain", false],
+		["noSecondFactor", "accountDeleteAgain", false],
 		["unsupported", "accountSignInToFinish", true],
 		// Verified, but Clerk refuses again.
 		["verified", "accountSignInToFinish", true],
@@ -175,6 +187,19 @@ describe("deletionSteps", () => {
 		expect(reportError).toHaveBeenCalledWith(offline);
 		expect(signOut).not.toHaveBeenCalled();
 	});
+
+	it.each(["accountSignInFirst", "accountSessionEnded"] as const)(
+		"says the data is gone when that sheet rejects with %s",
+		async (code) => {
+			const { clerk, steps, reverify, signOut } = setup();
+			clerk.user.delete.mockRejectedValueOnce(refusal);
+			reverify.mockRejectedValueOnce(new GameRuleError(code));
+			const error = await failure(deleteAccount(steps));
+			expect(gameErrorData(error)?.code).toBe("accountSignInToFinish");
+			expect(needsSignInAgain(error)).toBe(true);
+			expect(signOut).not.toHaveBeenCalled();
+		},
+	);
 
 	it("refuses to finish on another account that signed in during the sheet", async () => {
 		const { clerk, steps, reverify } = setup();

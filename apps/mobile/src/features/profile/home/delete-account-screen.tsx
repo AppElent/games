@@ -108,7 +108,7 @@ export function DeleteAccountScreen() {
 					testID="delete-account-sign-in-again"
 				/>
 			) : null}
-			<ReverifySheet reverify={deletion.reverify} />
+			<ReverifySheet reverify={deletion.reverify} purpose="delete" />
 		</Screen>
 	);
 }

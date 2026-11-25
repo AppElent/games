@@ -53,9 +53,16 @@ export const profile = {
 	},
 	reverify: {
 		title: "Bevestig dat jij het bent",
-		passwordBody:
-			"Vul je wachtwoord in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",
-		submit: "Bevestigen en verwijderen",
+		delete: {
+			passwordBody:
+				"Vul je wachtwoord in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",
+			submit: "Bevestigen en verwijderen",
+		},
+		changePassword: {
+			passwordBody:
+				"Vul je huidige wachtwoord nog een keer in om het te wijzigen. Zo kan niemand anders op dit apparaat je account overnemen.",
+			submit: "Bevestigen en wachtwoord wijzigen",
+		},
 		emailCode: "Mail me in plaats daarvan een code",
 		usePassword: "Toch mijn wachtwoord gebruiken",
 		codeBody: "Vul de 6-cijferige code in die we naar {email} mailen.",

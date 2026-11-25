@@ -7,14 +7,15 @@
  * as new and can clear them without `onChangeText`, so this screen stands
  * alone and `useCredentialForm` syncs each field from `onEndEditing` too.
  *
+ * When Clerk wants a recent sign-in, the verify sheet opens over this screen
+ * (`useChangePassword`).
+ *
  * A successful change signs the account's other sessions out
  * (`passwordUpdate`); this one stays signed in.
  *
  * An account with no password (social sign-in or emailed codes only) has
  * nothing to change; Profile hides the link and this screen explains.
  */
-import { passwordUpdate } from "@arcadeclub/core/account-password";
-import type { AuthErrorKey } from "@arcadeclub/core/auth-errors";
 import { useAuth, useUser } from "@clerk/expo";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -31,7 +32,8 @@ import {
 	NEW_PASSWORD_RULES,
 	useCredentialForm,
 } from "../../auth/components/use-credential-form";
-import { passwordChangeError } from "./account-edits";
+import { ReverifySheet } from "../reverify/reverify-sheet";
+import { useChangePassword } from "./use-change-password";
 
 export function ChangePasswordScreen() {
 	const { user } = useUser();
@@ -41,8 +43,12 @@ export function ChangePasswordScreen() {
 	const router = useRouter();
 	const form = useCredentialForm({ current: "", next: "" });
 	const newField = useRef<TextInputInstance>(null);
-	const [busy, setBusy] = useState(false);
-	const [errorKey, setErrorKey] = useState<AuthErrorKey | null>(null);
+	const {
+		changePassword,
+		busy,
+		error: errorKey,
+		reverify,
+	} = useChangePassword();
 	const [leaving, setLeaving] = useState(false);
 	// Swiping back while Clerk works unmounts this screen; a late success
 	// must not then pop the Profile screen underneath.
@@ -68,16 +74,7 @@ export function ChangePasswordScreen() {
 
 	const submit = async ({ current, next }: typeof form.values) => {
 		if (!current || !next || busy) return;
-		setBusy(true);
-		setErrorKey(null);
-		try {
-			await user.updatePassword(passwordUpdate(current, next));
-		} catch (failure) {
-			setErrorKey(passwordChangeError(failure));
-			return;
-		} finally {
-			setBusy(false);
-		}
+		if (!(await changePassword(current, next))) return;
 		Alert.alert(copy.changed, copy.changedBody);
 		if (mounted.current) router.back();
 	};
@@ -86,7 +83,9 @@ export function ChangePasswordScreen() {
 	const error = errorKey
 		? errorKey === "generic"
 			? copy.failed
-			: t.auth.errors[errorKey]
+			: errorKey === "secondFactorUnsupported"
+				? t.serverErrors.accountSecondFactorUnsupported
+				: t.auth.errors[errorKey]
 		: null;
 
 	return (
@@ -138,7 +137,7 @@ export function ChangePasswordScreen() {
 			/>
 			<Notice message={error} />
 			{errorKey === "signInAgain" ? (
-				// Clerk wants a fresh sign-in; the app's own sign-in gives one.
+				// The sheet can't confirm this account; the app's own sign-in can.
 				<Button
 					variant="secondary"
 					label={copy.signInAgain}
@@ -159,6 +158,7 @@ export function ChangePasswordScreen() {
 					testID="change-password-sign-in-again"
 				/>
 			) : null}
+			<ReverifySheet reverify={reverify} purpose="changePassword" />
 		</Screen>
 	);
 }

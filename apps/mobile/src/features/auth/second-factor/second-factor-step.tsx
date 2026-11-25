@@ -8,6 +8,7 @@ import {
 	type SecondFactorFlow,
 	type SecondFactorState,
 	type SecondFactorStrategy,
+	type SecondFactorUse,
 	secondFactorInput,
 	secondFactorMessage,
 	secondFactorOpen,
@@ -30,9 +31,19 @@ type Props = {
 	state: SecondFactorState;
 	/** Shown until the first action, such as after a password reset. */
 	notice?: string | null;
+	/** What the step ends, for its copy: a sign-in or a confirmation. */
+	use?: SecondFactorUse;
+	/** Names what a verified code goes on to do; "Verify" by default. */
+	submitLabel?: string;
 };
 
-export function SecondFactorStep({ flow, state, notice = null }: Props) {
+export function SecondFactorStep({
+	flow,
+	state,
+	notice = null,
+	use = "signIn",
+	submitLabel,
+}: Props) {
 	const { locale, t } = useI18n();
 	const [opening, setOpening] = useState(notice);
 	const [resends, setResends] = useState(0);
@@ -52,19 +63,20 @@ export function SecondFactorStep({ flow, state, notice = null }: Props) {
 					key={`${strategy}-${resends}`}
 					strategy={strategy}
 					busy={busy}
+					submitLabel={submitLabel}
 					onSubmit={(code) => {
 						setOpening(null);
 						void flow.verify(code);
 					}}
 				>
-					<Notice message={secondFactorMessage(t, locale, state)} />
+					<Notice message={secondFactorMessage(t, locale, state, use)} />
 					<Notice
 						message={state.resent ? t.auth.signInCode.resent : opening}
 						tone="info"
 					/>
 				</CodeEntry>
 			) : (
-				<Notice message={secondFactorMessage(t, locale, state)} />
+				<Notice message={secondFactorMessage(t, locale, state, use)} />
 			)}
 			{!ended && strategy && sendsCode(strategy) ? (
 				<Button
@@ -99,11 +111,13 @@ export function SecondFactorStep({ flow, state, notice = null }: Props) {
 function CodeEntry({
 	strategy,
 	busy,
+	submitLabel,
 	onSubmit,
 	children,
 }: {
 	strategy: SecondFactorStrategy;
 	busy: SecondFactorState["busy"];
+	submitLabel?: string;
 	onSubmit: (code: string) => void;
 	children: React.ReactNode;
 }) {
@@ -140,7 +154,7 @@ function CodeEntry({
 			)}
 			{children}
 			<Button
-				label={copy.submit}
+				label={submitLabel ?? copy.submit}
 				busy={busy === "verify"}
 				disabled={
 					busy !== null ||

@@ -94,6 +94,8 @@ export const serverErrors = {
 		"Log eerst opnieuw in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",
 	accountVerifyUnsupported:
 		"We kunnen hier niet met een wachtwoord of een code per e-mail bevestigen dat jij het bent. Log eerst opnieuw in en verwijder daarna.",
+	accountSecondFactorUnsupported:
+		"Arcade Club kan de tweede stap van je account niet uitvoeren om te bevestigen dat jij het bent. Een code uit een authenticator-app of sms, of een back-upcode, werkt wel. Mail privacy@appelent.nl voor hulp.",
 	accountSignInToFinish:
 		"Je Arcade Club-gegevens zijn verwijderd, maar je AppElent-account nog niet: daarvoor moet je net zijn ingelogd. Log opnieuw in en verwijder je hele account nog een keer om het af te ronden.",
 	accountSessionEnded:

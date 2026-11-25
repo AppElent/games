@@ -196,6 +196,65 @@ describe("DeleteAccountScreen re-verify sheet", () => {
 		});
 	});
 
+	it("deletes after a wrong, then a right authenticator code, asking no password", async () => {
+		const attempt = jest
+			.fn()
+			.mockRejectedValueOnce({
+				code: "api_response_error",
+				errors: [{ code: "form_code_incorrect", message: "Wrong" }],
+			})
+			.mockImplementationOnce(async () => {
+				recentSignIn = true;
+				return { status: "complete" };
+			});
+		Object.assign(mockSession as object, {
+			startVerification: async () => ({
+				status: "needs_second_factor",
+				supportedFirstFactors: null,
+				supportedSecondFactors: [{ strategy: "totp" }],
+			}),
+			attemptSecondFactorVerification: attempt,
+		});
+		await confirmDeletionAlert();
+		expect(await screen.findByText(reverifyCopy.title)).toBeTruthy();
+		expect(screen.queryByTestId("reverify-password")).toBeNull();
+		const enter = async (code: string) => {
+			await fireEvent.changeText(
+				screen.getByTestId("second-factor-code"),
+				code,
+			);
+			await fireEvent.press(screen.getByTestId("second-factor-submit"));
+		};
+		await enter("000000");
+		expect(
+			await screen.findByText(messages.en.auth.errors.codeIncorrect),
+		).toBeTruthy();
+		expect(mockDeleteMyData).not.toHaveBeenCalled();
+		await enter("123456");
+		await waitFor(() =>
+			expect(mockRouter.dismissTo).toHaveBeenCalledWith("/profile"),
+		);
+		expect(mockDeleteMyData).toHaveBeenCalledTimes(1);
+	});
+
+	it("closes the sheet and offers signing in again when the session ended", async () => {
+		await confirmDeletionAlert();
+		mockAttemptFirstFactor.mockRejectedValueOnce({
+			errors: [{ code: "session_not_found" }],
+		});
+		await fireEvent.changeText(
+			await screen.findByTestId("reverify-password"),
+			"secret",
+		);
+		await fireEvent.press(screen.getByTestId("reverify-submit"));
+		expect(
+			await screen.findByText(messages.en.serverErrors.accountSessionEnded),
+		).toBeTruthy();
+		expect(screen.queryByText(reverifyCopy.title)).toBeNull();
+		expect(screen.getByLabelText(copy.signInAgain)).toBeTruthy();
+		expect(mockDeleteMyData).not.toHaveBeenCalled();
+	});
+
 	it("closes the mounted sheet on cancel without deleting anything", async () => {
 		await confirmDeletionAlert();
 		expect(await screen.findByText(reverifyCopy.title)).toBeTruthy();

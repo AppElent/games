@@ -48,6 +48,10 @@ export function deletionSteps({
 			if (outcome === "unsupported") {
 				throw new GameRuleError("accountVerifyUnsupported");
 			}
+			if (outcome === "noSecondFactor") {
+				// Signing in again needs the same step, so it isn't offered.
+				throw new GameRuleError("accountSecondFactorUnsupported");
+			}
 			if (await hasRecentSignIn(clerk, account)) return true;
 			throw new GameRuleError("accountSignInFirst");
 		},
@@ -76,11 +80,17 @@ export function deletionSteps({
 				// The data is gone, so whatever stops the sheet (offline, say) must
 				// not read as "nothing was deleted".
 				const outcome = await reverify().catch((failure) => {
-					if (gameErrorData(failure)) throw failure;
+					const code = gameErrorData(failure)?.code;
+					if (code === "accountSignInFirst" || code === "accountSessionEnded") {
+						throw new GameRuleError("accountSignInToFinish");
+					}
+					if (code) throw failure;
 					reportError(failure);
 					return "cancelled" as const;
 				});
-				if (outcome === "cancelled") {
+				// Without a second step the app can do, signing in again would
+				// only lock the person out.
+				if (outcome === "cancelled" || outcome === "noSecondFactor") {
 					throw new GameRuleError("accountDeleteAgain");
 				}
 				if (outcome === "unsupported") throw caught;
