@@ -18,7 +18,7 @@ import {
 	setKillerSum,
 	toggleKillerBorder,
 } from "@arcadeclub/core/sudoku-scan-cages";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	Image,
 	Pressable,
@@ -160,14 +160,25 @@ export function ScanKillerVerifyStep({
 		onChange(toggleKillerBorder(scan, edge));
 	}
 
+	// Counting solutions blocks the JavaScript thread for a second or more:
+	// the button shows it is busy first, and a second tap does nothing.
+	const [checking, setChecking] = useState(false);
+	const checkingRef = useRef(false);
 	function confirm() {
-		const full = checkKillerScan(scan);
-		if (full) {
-			haptics.actionFailed();
-			setConfirmCheck({ scan, check: full });
-			return;
-		}
-		onConfirm();
+		if (checkingRef.current) return;
+		checkingRef.current = true;
+		setChecking(true);
+		setTimeout(() => {
+			const full = checkKillerScan(scan);
+			checkingRef.current = false;
+			setChecking(false);
+			if (full) {
+				haptics.actionFailed();
+				setConfirmCheck({ scan, check: full });
+				return;
+			}
+			onConfirm();
+		}, 0);
 	}
 
 	function describeCheck(entry: KillerScanCheck) {
@@ -449,6 +460,7 @@ export function ScanKillerVerifyStep({
 					label={copy.confirmAndPlay}
 					onPress={confirm}
 					disabled={check !== null}
+					busy={checking}
 					testID="killer-confirm"
 				/>
 				<Button
@@ -508,7 +520,7 @@ const createStyles = (colors: Tokens) =>
 		},
 		chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
 		chip: {
-			minHeight: 44,
+			minHeight: metrics.hitTarget,
 			flexDirection: "row",
 			alignItems: "center",
 			gap: spacing.xs,

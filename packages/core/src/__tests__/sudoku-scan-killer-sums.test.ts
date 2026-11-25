@@ -100,6 +100,16 @@ describe("readKillerSums", () => {
 	});
 });
 
+describe("readKillerSums with a short answer", () => {
+	it("refuses a reader that answers for fewer boxes", async () => {
+		const rgba = drawnKiller();
+		const read = readCages(rgba, SIZE);
+		await expect(
+			readKillerSums(rgba, SIZE, read, async () => []),
+		).rejects.toThrow("different number of boxes");
+	});
+});
+
 describe("looksLikeZero", () => {
 	const box = { x: 0, y: 0, width: 7, height: 10 };
 	const sumOf = (rows: string[]) => ({
@@ -149,6 +159,20 @@ describe("looksLikeZero", () => {
 			"#.....#",
 			".#####.",
 		]);
+		// A printed 4's closed counter runs half its height, in the top part.
+		const four = sumOf([
+			"....##.",
+			"...###.",
+			"..#.##.",
+			".#..##.",
+			"#...##.",
+			"#######",
+			"....##.",
+			"....##.",
+			"....##.",
+			"....##.",
+		]);
+		expect(looksLikeZero(four, box)).toBe(false);
 		expect(looksLikeZero(eight, box)).toBe(false);
 		expect(looksLikeZero(six, box)).toBe(false);
 	});

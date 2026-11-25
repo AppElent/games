@@ -6,7 +6,7 @@ import {
 	killerScanCages,
 } from "@arcadeclub/core/sudoku-scan-cages";
 import { generateVariantPuzzle } from "@arcadeclub/core/sudoku-variants";
-import { act, fireEvent, screen } from "@testing-library/react-native";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { renderScreen } from "../../../../test/render-screen";
 import { readSudokuSave, writeSudokuSave } from "../saves/sudoku-save-store";
 import { createKillerScanSave } from "./create-scan-save";
@@ -57,10 +57,13 @@ describe("ScanKillerVerifyStep", () => {
 	it("plays a Killer whose cages and sums check out", async () => {
 		const { onConfirm } = await setup(complete);
 		expect(screen.getByText("Cages and sums add up to 405.")).toBeTruthy();
-		await act(async () =>
-			fireEvent.press(screen.getByTestId("killer-confirm")),
-		);
-		expect(onConfirm).toHaveBeenCalled();
+		// Two quick taps: the solution count runs once, then play starts once.
+		const button = screen.getByTestId("killer-confirm");
+		await act(async () => {
+			fireEvent.press(button);
+			fireEvent.press(button);
+		});
+		await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
 	});
 
 	it("starts on a cage without a sum, and takes the sum typed in", async () => {

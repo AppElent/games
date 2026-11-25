@@ -29,8 +29,8 @@ export function grayToRgba(gray: ArrayLike<number>): Uint8ClampedArray {
 
 /**
  * Whether a cut-out digit is a 0: its paper holds one enclosed hole that
- * runs at least half the digit's height. A 6, 8 or 9 has its holes in one
- * half; a 4's is small.
+ * reaches from the digit's top third to its bottom third. A 6, 8 or 9 has
+ * its holes in one half; a 4's is small.
  */
 export function looksLikeZero(sum: SumInk, digit: InkBox) {
 	const { width, height } = digit;
@@ -113,8 +113,14 @@ export function looksLikeZero(sum: SumInk, digit: InkBox) {
 	if (holes.length !== 1) {
 		return false;
 	}
+	// A 0's hole runs from its top third to its bottom third; a 4's closed
+	// counter or a 6's or 9's bowl keeps to one half.
 	const [hole] = holes;
-	return hole.bottom - hole.top + 1 >= height * 0.5;
+	return (
+		hole.bottom - hole.top + 1 >= height * 0.5 &&
+		hole.top <= height * 0.3 &&
+		hole.bottom >= height * 0.7
+	);
 }
 
 /** How far a digit's box reaches past its ink, so a reader sees its edges. */
@@ -142,8 +148,9 @@ export async function readKillerSums(
 	const boxes: InkBox[] = [];
 	const plans = inks.map((sum) =>
 		sum
-			? sum.digits.map((digit) => {
-					if (looksLikeZero(sum, digit)) {
+			? sum.digits.map((digit, position) => {
+					// A sum never starts with 0 (10, 20, 30 and 40 end with one).
+					if (position > 0 && looksLikeZero(sum, digit)) {
 						return "0";
 					}
 					const x = Math.max(0, sum.box.x + digit.x - DIGIT_PAD);
@@ -162,6 +169,9 @@ export async function readKillerSums(
 			: null,
 	);
 	const reads = boxes.length > 0 ? await readDigits(boxes) : [];
+	if (reads.length !== boxes.length) {
+		throw new Error("The reader answered for a different number of boxes");
+	}
 	return inks.map((sum, index) => {
 		const plan = plans[index];
 		if (!sum || !plan || plan.length === 0) {
