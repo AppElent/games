@@ -123,28 +123,46 @@ function lacksSecondFactor(
 }
 
 /** Clerk codes for a session that is gone: a 401 signs the phone out. */
-export const SESSION_ENDED = new Set([
-	"session_not_found",
-	"authentication_invalid",
-]);
+const SESSION_ENDED = new Set(["session_not_found", "authentication_invalid"]);
 
-/** The error `verify` rejects with when the sheet can't go on; else `null`. */
-function sheetEnd(caught: unknown): unknown {
-	if (gameErrorData(caught)?.code === "accountChanged") return caught;
-	if (clerkError(caught)?.key !== "signInAgain") return null;
+/**
+ * `caught` as `accountSessionEnded` when the session behind it is gone: Clerk
+ * says so, or it has no user any more, whatever code the 401 carried. Anything
+ * else comes back as it is.
+ */
+export function asSessionEnd(
+	clerk: Pick<LiveClerk, "user">,
+	caught: unknown,
+): unknown {
+	const code = gameErrorData(caught)?.code;
+	// Signed out is not another account.
+	if (code === "accountChanged" && !clerk.user) {
+		return new GameRuleError("accountSessionEnded");
+	}
+	if (code) return caught;
+	if (clerk.user && !SESSION_ENDED.has(clerkErrorCode(caught) ?? "")) {
+		return caught;
+	}
 	// Never a wrong entry: keep telling Sentry about it.
 	reportError(caught);
-	return new GameRuleError(
-		SESSION_ENDED.has(clerkErrorCode(caught) ?? "")
-			? "accountSessionEnded"
-			: "accountSignInFirst",
-	);
+	return new GameRuleError("accountSessionEnded");
+}
+
+/** The error `verify` rejects with when the sheet can't go on; else `null`. */
+function sheetEnd(clerk: VerifyingClerk, caught: unknown): unknown {
+	const end = asSessionEnd(clerk, caught);
+	if (gameErrorData(end)) return end;
+	if (clerkError(caught)?.key !== "signInAgain") return null;
+	reportError(caught);
+	return new GameRuleError("accountSignInFirst");
 }
 
 type OpenCall = {
 	account: DeletingAccount;
 	resolve: (outcome: ReverifyOutcome) => void;
 	reject: (error: unknown) => void;
+	/** The screen went while this call was open; cancelling leaves it unset. */
+	abandoned?: boolean;
 };
 
 export type VerifyOptions = {
@@ -180,6 +198,8 @@ export function useReverify(
 
 	const close = useCallback(() => {
 		open.current = null;
+		// The next `verify` starts afresh, also one in this same tick.
+		running.current = null;
 		setAttempt(null);
 		setBusy(false);
 		setSending(false);
@@ -205,14 +225,14 @@ export function useReverify(
 		if (open.current !== call) {
 			// Cancelled, or the screen went with the call open: only the latter
 			// leaves a session end nobody will see.
-			if (!mounted.current) {
-				const end = sheetEnd(caught);
+			if (call.abandoned) {
+				const end = sheetEnd(clerk, caught);
 				if (end) unseen.current?.(end);
 			}
 			return null;
 		}
 		haptics.actionFailed();
-		const end = sheetEnd(caught);
+		const end = sheetEnd(clerk, caught);
 		if (end) {
 			close();
 			call.reject(end);
@@ -288,8 +308,12 @@ export function useReverify(
 		mounted.current = true;
 		return () => {
 			mounted.current = false;
-			open.current?.resolve("cancelled");
+			if (open.current) {
+				open.current.abandoned = true;
+				open.current.resolve("cancelled");
+			}
 			open.current = null;
+			running.current = null;
 		};
 	}, []);
 
@@ -344,7 +368,7 @@ export function useReverify(
 		const started = await liveSession(account)
 			.startVerification({ level: RECENT_SIGN_IN.level })
 			.catch((caught: unknown) => {
-				throw sheetEnd(caught) ?? caught;
+				throw sheetEnd(clerk, caught) ?? caught;
 			});
 		// Signed in to another account while Clerk answered.
 		assertSameAccount(clerk, account);

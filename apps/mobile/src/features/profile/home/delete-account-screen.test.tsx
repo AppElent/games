@@ -47,12 +47,16 @@ jest.mock("../../sudoku/saves/sudoku-save-store", () => ({
 async function confirmDeletionAlert(scope?: string) {
 	const view = await renderScreen(<DeleteAccountScreen />);
 	if (scope) await fireEvent.press(screen.getByText(scope));
+	await pressDelete();
+	return view;
+}
+
+async function pressDelete() {
 	await fireEvent.press(screen.getByTestId("delete-account-continue"));
-	const buttons = jest.mocked(Alert.alert).mock.calls[0]?.[2];
+	const buttons = jest.mocked(Alert.alert).mock.lastCall?.[2];
 	await act(async () => {
 		buttons?.find(({ style }) => style === "destructive")?.onPress?.();
 	});
-	return view;
 }
 
 async function confirmDeletion() {
@@ -292,6 +296,99 @@ describe("DeleteAccountScreen re-verify sheet", () => {
 			messages.en.serverErrors.accountSessionEnded,
 		);
 		expect(mockDeleteMyData).not.toHaveBeenCalled();
+	});
+
+	describe("once the data is gone", () => {
+		const finish = messages.en.serverErrors.accountSignInToFinish;
+
+		it("keeps saying so when the sheet's 401 lands after the screen went", async () => {
+			recentSignIn = true;
+			Object.assign(mockUser as object, {
+				delete: jest.fn().mockRejectedValue({
+					errors: [{ code: "session_reverification_required" }],
+				}),
+			});
+			let reject!: (reason: unknown) => void;
+			mockAttemptFirstFactor.mockReset().mockReturnValue(
+				new Promise((_resolve, fail) => {
+					reject = fail;
+				}),
+			);
+			const view = await confirmDeletionAlert(copy.account.label);
+			await fireEvent.changeText(
+				await screen.findByTestId("reverify-password"),
+				"secret",
+			);
+			await fireEvent.press(screen.getByTestId("reverify-submit"));
+			await view.unmount();
+			await act(async () => {
+				reject({ errors: [{ code: "session_not_found" }] });
+			});
+			expect(Alert.alert).toHaveBeenLastCalledWith(
+				reverifyCopy.endedTitle,
+				finish,
+			);
+			// The confirmation, then this one.
+			expect(Alert.alert).toHaveBeenCalledTimes(2);
+		});
+
+		it.each([true, false])(
+			"keeps saying so when deleting the account hits a 401 (screen gone: %s)",
+			async (gone) => {
+				recentSignIn = true;
+				let reject!: (reason: unknown) => void;
+				Object.assign(mockUser as object, {
+					delete: () =>
+						new Promise((_resolve, fail) => {
+							reject = fail;
+						}),
+				});
+				const view = await confirmDeletionAlert(copy.account.label);
+				await waitFor(() => expect(mockDeleteMyData).toHaveBeenCalled());
+				if (gone) await view.unmount();
+				await act(async () => {
+					reject({ status: 401, errors: [{ code: "session_not_found" }] });
+				});
+				if (gone) {
+					expect(Alert.alert).toHaveBeenLastCalledWith(
+						reverifyCopy.endedTitle,
+						finish,
+					);
+				} else {
+					expect(screen.getByText(finish)).toBeTruthy();
+					expect(screen.getByLabelText(copy.signInAgain)).toBeTruthy();
+				}
+			},
+		);
+
+		it("keeps saying so when trying again, as the screen asks, hits a 401", async () => {
+			recentSignIn = true;
+			Object.assign(mockUser as object, {
+				delete: jest.fn().mockRejectedValue({
+					errors: [{ code: "session_reverification_required" }],
+				}),
+			});
+			await confirmDeletionAlert(copy.account.label);
+			await fireEvent.press(await screen.findByTestId("reverify-cancel"));
+			await screen.findByText(messages.en.serverErrors.accountDeleteAgain);
+			recentSignIn = false;
+			mockAttemptFirstFactor.mockReset().mockImplementation(async () => {
+				mockSession = null;
+				throw { errors: [{ code: "session_not_found" }] };
+			});
+			await pressDelete();
+			await fireEvent.changeText(
+				await screen.findByTestId("reverify-password"),
+				"secret",
+			);
+			await fireEvent.press(screen.getByTestId("reverify-submit"));
+			expect(await screen.findByText(finish)).toBeTruthy();
+			expect(mockDeleteMyData).toHaveBeenCalledTimes(1);
+
+			// Signed out by now: trying once more still says it.
+			await pressDelete();
+			expect(await screen.findByText(finish)).toBeTruthy();
+		});
 	});
 
 	it("tells what to do next, not to delete again, when the second factor can't be done after the data is gone", async () => {

@@ -13,6 +13,9 @@
  * A successful change signs the account's other sessions out
  * (`passwordUpdate`); this one stays signed in.
  *
+ * Signed out (a session can end under this screen), it says so and offers the
+ * sign-in, which opens over this screen and closes back to it.
+ *
  * An account with no password (social sign-in or emailed codes only) has
  * nothing to change; Profile hides the link and this screen explains.
  */
@@ -37,7 +40,7 @@ import { useUnseenEnd } from "../reverify/use-unseen-end";
 import { useChangePassword } from "./use-change-password";
 
 export function ChangePasswordScreen() {
-	const { user } = useUser();
+	const { user, isLoaded } = useUser();
 	const { signOut } = useAuth();
 	const { t } = useI18n();
 	const copy = t.profile.password;
@@ -64,6 +67,20 @@ export function ChangePasswordScreen() {
 	const header = (
 		<Stack.Screen options={{ title: copy.title, headerLargeTitle: false }} />
 	);
+	if (isLoaded && !user) {
+		return (
+			<>
+				{header}
+				<CenteredState
+					message={t.serverErrors.accountSessionEnded}
+					action={{
+						label: copy.signInAgain,
+						onPress: () => router.push("/sign-in"),
+					}}
+				/>
+			</>
+		);
+	}
 	if (!user?.passwordEnabled) {
 		return (
 			<>
