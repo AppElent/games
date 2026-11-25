@@ -1,7 +1,8 @@
 /**
- * The sheet that confirms it's the account's owner, with the password or an
- * emailed code. `useReverify` owns the attempt; the sheet keeps only what is
- * typed, and drops it when the sheet closes or changes method.
+ * The sheet that confirms it's the account's owner, with the password, an
+ * emailed code or the account's second factor. `useReverify` owns the attempt;
+ * the sheet keeps only what is typed, and drops it when the sheet closes or
+ * changes method. `purpose` is what confirming goes on to do.
  */
 import { useUser } from "@clerk/expo";
 import { fmt, useI18n } from "../../../i18n";
@@ -18,11 +19,15 @@ import {
 import { EmailField } from "../../auth/components/email-field";
 import { useAuthError } from "../../auth/components/use-auth-error";
 import { useCredentialForm } from "../../auth/components/use-credential-form";
+import { SecondFactorStep } from "../../auth/second-factor/second-factor-step";
+import { useSecondFactor } from "../../auth/second-factor/use-second-factor";
 import type { useReverify } from "./use-reverify";
 
 type Reverify = ReturnType<typeof useReverify>;
+export type ReverifyPurpose = "delete" | "changePassword";
+type Props = { reverify: Reverify; purpose: ReverifyPurpose };
 
-export function ReverifySheet({ reverify }: { reverify: Reverify }) {
+export function ReverifySheet({ reverify, purpose }: Props) {
 	const { t } = useI18n();
 	return (
 		<Sheet
@@ -33,15 +38,17 @@ export function ReverifySheet({ reverify }: { reverify: Reverify }) {
 			closeTestID="reverify-cancel"
 		>
 			{reverify.method === "password" ? (
-				<PasswordStep reverify={reverify} />
+				<PasswordStep reverify={reverify} purpose={purpose} />
 			) : reverify.method === "code" ? (
-				<CodeStep reverify={reverify} />
+				<CodeStep reverify={reverify} purpose={purpose} />
+			) : reverify.secondFactor ? (
+				<SecondStep {...reverify.secondFactor} purpose={purpose} />
 			) : null}
 		</Sheet>
 	);
 }
 
-function PasswordStep({ reverify }: { reverify: Reverify }) {
+function PasswordStep({ reverify, purpose }: Props) {
 	const { t } = useI18n();
 	const { user } = useUser();
 	const copy = t.profile.reverify;
@@ -51,7 +58,7 @@ function PasswordStep({ reverify }: { reverify: Reverify }) {
 	};
 	return (
 		<>
-			<AppText variant="secondary">{copy.passwordBody}</AppText>
+			<AppText variant="secondary">{copy[purpose].passwordBody}</AppText>
 			<EmailField
 				value={user?.primaryEmailAddress?.emailAddress ?? ""}
 				editable={false}
@@ -71,7 +78,7 @@ function PasswordStep({ reverify }: { reverify: Reverify }) {
 			/>
 			<ReverifyNotices reverify={reverify} />
 			<Button
-				label={copy.submit}
+				label={copy[purpose].submit}
 				busy={reverify.busy}
 				disabled={!form.values.password && !form.editing}
 				onPress={() => form.press(submit)}
@@ -90,7 +97,7 @@ function PasswordStep({ reverify }: { reverify: Reverify }) {
 	);
 }
 
-function CodeStep({ reverify }: { reverify: Reverify }) {
+function CodeStep({ reverify, purpose }: Props) {
 	const { t } = useI18n();
 	const copy = t.profile.reverify;
 	const form = useCredentialForm({ code: "" });
@@ -109,7 +116,7 @@ function CodeStep({ reverify }: { reverify: Reverify }) {
 			/>
 			<ReverifyNotices reverify={reverify} />
 			<Button
-				label={copy.submit}
+				label={copy[purpose].submit}
 				busy={reverify.busy}
 				disabled={form.values.code.length !== AUTH_CODE_LENGTH && !form.editing}
 				onPress={() => form.press(submit)}
@@ -133,6 +140,23 @@ function CodeStep({ reverify }: { reverify: Reverify }) {
 				/>
 			) : null}
 		</>
+	);
+}
+
+function SecondStep({
+	factors,
+	actions,
+	purpose,
+}: NonNullable<Reverify["secondFactor"]> & Pick<Props, "purpose">) {
+	const { t } = useI18n();
+	const { flow, state } = useSecondFactor(factors, actions);
+	return (
+		<SecondFactorStep
+			flow={flow}
+			state={state}
+			use="confirm"
+			submitLabel={t.profile.reverify[purpose].submit}
+		/>
 	);
 }
 

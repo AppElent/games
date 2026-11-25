@@ -27,7 +27,12 @@ const refusal = (
 		...wrapper,
 	});
 
-async function setup(factors: unknown[], status = "needs_first_factor") {
+async function setup(
+	factors: unknown[],
+	status = "needs_first_factor",
+	secondFactors: unknown[] | null = null,
+	user: object = {},
+) {
 	const session = {
 		id: "sess_1",
 		reload: jest.fn(),
@@ -35,13 +40,18 @@ async function setup(factors: unknown[], status = "needs_first_factor") {
 		startVerification: jest.fn(async () => ({
 			status,
 			supportedFirstFactors: factors,
+			supportedSecondFactors: secondFactors,
 		})),
 		prepareFirstFactorVerification: jest.fn(async () => ({})),
 		attemptFirstFactorVerification: jest.fn(
 			async (): Promise<unknown> => ({ status: "complete" }),
 		),
+		prepareSecondFactorVerification: jest.fn(async () => ({})),
+		attemptSecondFactorVerification: jest.fn(
+			async (): Promise<unknown> => ({ status: "complete" }),
+		),
 	};
-	const clerk = { user: { id: "user_1" }, session };
+	const clerk = { user: { id: "user_1", ...user }, session };
 	const hook = await renderHook(() => useReverify(clerk as never));
 	const settled = jest.fn<void, [ReverifyOutcome]>();
 	const rejected = jest.fn();
@@ -213,14 +223,37 @@ describe("useReverify", () => {
 		expect(reportError).not.toHaveBeenCalled();
 	});
 
-	it("reports a session fault that is not a wrong entry", async () => {
+	it.each([
+		["authorization_invalid", "accountSignInFirst"],
+		["session_reverification_required", "accountSignInFirst"],
+		["session_not_found", "accountSessionEnded"],
+		["authentication_invalid", "accountSessionEnded"],
+	])(
+		"closes on a session fault, %s, and rejects with %s",
+		async (code, rejection) => {
+			const { session, hook, settled, rejected } = await setup([password]);
+			session.attemptFirstFactorVerification.mockRejectedValueOnce(
+				refusal(code),
+			);
+			await act(() => hook.result.current.submit("secret"));
+			expect(hook.result.current.method).toBeNull();
+			expect(settled).not.toHaveBeenCalled();
+			expect(gameErrorData(rejected.mock.calls[0]?.[0])?.code).toBe(rejection);
+			expect(reportError).toHaveBeenCalledTimes(1);
+		},
+	);
+
+	it("rejects when Clerk won't even start", async () => {
 		const { session, hook } = await setup([password]);
-		session.attemptFirstFactorVerification.mockRejectedValueOnce(
-			refusal("authorization_invalid"),
+		await act(async () => hook.result.current.cancel());
+		session.startVerification.mockRejectedValueOnce(
+			refusal("session_not_found"),
 		);
-		await act(() => hook.result.current.submit("wrong"));
-		expect(hook.result.current.errorKey).toBe("signInAgain");
-		expect(reportError).toHaveBeenCalledTimes(1);
+		const caught = await hook.result.current
+			.verify(account)
+			.catch((error: unknown) => error);
+		expect(gameErrorData(caught)?.code).toBe("accountSessionEnded");
+		expect(hook.result.current.method).toBeNull();
 	});
 
 	it("maps HTTP 429 without a code to tooManyRequests without reporting", async () => {
@@ -315,20 +348,196 @@ describe("useReverify", () => {
 
 	it.each([
 		["no password or email code", [{ strategy: "passkey" }], undefined],
-		["a second factor", [password], "needs_second_factor"],
+		["a status it doesn't know", [password], "needs_something_new"],
 	])("is unsupported without a sheet: %s", async (_name, factors, status) => {
 		const { hook, settled } = await setup(factors, status);
 		expect(settled).toHaveBeenCalledWith("unsupported");
 		expect(hook.result.current.method).toBeNull();
 	});
 
-	it("is unsupported when Clerk wants a second factor after the first", async () => {
-		const { session, hook, settled } = await setup([password]);
-		session.attemptFirstFactorVerification.mockResolvedValueOnce({
-			status: "needs_second_factor",
+	const totp = { strategy: "totp" };
+	const phone = {
+		strategy: "phone_code",
+		phoneNumberId: "phone_1",
+		safeIdentifier: "+1***55",
+	};
+	const backup = { strategy: "backup_code" };
+	const passkey = { strategy: "passkey" };
+	const secondStep = (factors: unknown[]) =>
+		setup([], "needs_second_factor", factors);
+
+	describe("second factor", () => {
+		it.each([
+			["totp", [totp, backup]],
+			["backup_code", [backup]],
+			["phone_code", [phone]],
+		] as const)("verifies with %s", async (strategy, factors) => {
+			const { session, hook, settled } = await secondStep([...factors]);
+			expect(hook.result.current.method).toBe("secondFactor");
+			await act(async () => {
+				await hook.result.current.secondFactor?.actions.verify(
+					strategy,
+					"123456",
+				);
+			});
+			expect(session.attemptSecondFactorVerification).toHaveBeenCalledWith({
+				strategy,
+				code: "123456",
+			});
+			expect(settled).toHaveBeenCalledWith("verified");
+			expect(hook.result.current.method).toBeNull();
 		});
-		await act(() => hook.result.current.submit("secret"));
-		expect(settled).toHaveBeenCalledWith("unsupported");
+
+		it("texts a code to the account's phone", async () => {
+			const { session, hook } = await secondStep([phone]);
+			await act(async () => {
+				await hook.result.current.secondFactor?.actions.send("phone_code");
+			});
+			expect(session.prepareSecondFactorVerification).toHaveBeenCalledWith({
+				strategy: "phone_code",
+				phoneNumberId: "phone_1",
+			});
+		});
+
+		it("follows the first factor when Clerk asks for both", async () => {
+			const { session, hook, settled } = await setup([password]);
+			session.attemptFirstFactorVerification.mockResolvedValueOnce({
+				status: "needs_second_factor",
+				supportedSecondFactors: [totp],
+			});
+			await act(() => hook.result.current.submit("secret"));
+			expect(hook.result.current.method).toBe("secondFactor");
+			expect(hook.result.current.busy).toBe(false);
+			expect(settled).not.toHaveBeenCalled();
+		});
+
+		it("stays open on a wrong code without reporting it", async () => {
+			const { session, hook, settled } = await secondStep([totp]);
+			const wrong = refusal("form_code_incorrect");
+			session.attemptSecondFactorVerification.mockRejectedValueOnce(wrong);
+			let result: unknown;
+			await act(async () => {
+				result = await hook.result.current.secondFactor?.actions.verify(
+					"totp",
+					"000000",
+				);
+			});
+			expect(result).toEqual({ error: wrong });
+			expect(hook.result.current.method).toBe("secondFactor");
+			expect(settled).not.toHaveBeenCalled();
+			expect(reportError).not.toHaveBeenCalled();
+		});
+
+		it("closes when the session ended", async () => {
+			const { session, hook, rejected } = await secondStep([totp]);
+			session.attemptSecondFactorVerification.mockRejectedValueOnce(
+				refusal("session_not_found"),
+			);
+			await act(async () => {
+				await hook.result.current.secondFactor?.actions.verify("totp", "1");
+			});
+			expect(hook.result.current.method).toBeNull();
+			expect(gameErrorData(rejected.mock.calls[0]?.[0])?.code).toBe(
+				"accountSessionEnded",
+			);
+		});
+
+		it("does not count a code accepted after cancelling", async () => {
+			const { session, hook, settled } = await secondStep([totp]);
+			let finish!: (value: unknown) => void;
+			session.attemptSecondFactorVerification.mockReturnValueOnce(
+				new Promise((resolve) => {
+					finish = resolve;
+				}),
+			);
+			const pending = hook.result.current.secondFactor?.actions.verify(
+				"totp",
+				"123456",
+			);
+			await act(async () => hook.result.current.cancel());
+			await act(async () => {
+				finish({ status: "complete" });
+				await pending;
+			});
+			expect(settled.mock.calls).toEqual([["cancelled"]]);
+		});
+
+		it.each([
+			["before the code is checked", true],
+			["while the code is checked", false],
+		])("never verifies an account switched to %s", async (_name, before) => {
+			const { clerk, session, hook, settled, rejected } = await secondStep([
+				totp,
+			]);
+			session.attemptSecondFactorVerification.mockImplementationOnce(
+				async () => {
+					clerk.user.id = "user_2";
+					return { status: "complete" };
+				},
+			);
+			if (before) clerk.user.id = "user_2";
+			await act(async () => {
+				await hook.result.current.secondFactor?.actions.verify("totp", "1");
+			});
+			expect(session.attemptSecondFactorVerification).toHaveBeenCalledTimes(
+				before ? 0 : 1,
+			);
+			expect(settled).not.toHaveBeenCalled();
+			expect(gameErrorData(rejected.mock.calls[0]?.[0])?.code).toBe(
+				"accountChanged",
+			);
+		});
+
+		it.each<[string, string, unknown[] | null, object]>([
+			["straight away", "needs_second_factor", [passkey], {}],
+			["no emailed code", "needs_second_factor", [email("e1", true)], {}],
+			[
+				"listed before the password",
+				"needs_first_factor",
+				[passkey],
+				{ twoFactorEnabled: true },
+			],
+			[
+				"not listed, on the user",
+				"needs_first_factor",
+				null,
+				{ twoFactorEnabled: true },
+			],
+		])(
+			"says nothing it can do helps, without a sheet: %s",
+			async (_name, status, factors, user) => {
+				const { hook, settled } = await setup(
+					[password],
+					status,
+					factors,
+					user,
+				);
+				expect(settled).toHaveBeenCalledWith("noSecondFactor");
+				expect(hook.result.current.method).toBeNull();
+			},
+		);
+
+		it("says so after the password only when Clerk didn't tell before", async () => {
+			const { session, hook, settled } = await setup([password]);
+			session.attemptFirstFactorVerification.mockResolvedValueOnce({
+				status: "needs_second_factor",
+				supportedSecondFactors: [passkey],
+			});
+			await act(() => hook.result.current.submit("secret"));
+			expect(settled).toHaveBeenCalledWith("noSecondFactor");
+		});
+
+		it.each([
+			{ totpEnabled: true },
+			{ backupCodeEnabled: true },
+			{ phoneNumbers: [{ reservedForSecondFactor: true }] },
+		])("asks for the password first when the user has %j", async (user) => {
+			const { hook } = await setup([password], "needs_first_factor", null, {
+				twoFactorEnabled: true,
+				...user,
+			});
+			expect(hook.result.current.method).toBe("password");
+		});
 	});
 
 	it("never verifies another account that signed in meanwhile", async () => {

@@ -4,6 +4,7 @@
  */
 import { passwordFailure } from "@arcadeclub/core/account-password";
 import { type AuthErrorKey, clerkErrorKey } from "@arcadeclub/core/auth-errors";
+import { gameErrorData } from "@arcadeclub/core/errors";
 
 export type AccountName = { firstName: string; lastName: string };
 
@@ -22,7 +23,18 @@ export function nameUpdate(
 		: next;
 }
 
-/** The message key for a failed `user.updatePassword`. */
-export function passwordChangeError(error: unknown): AuthErrorKey {
+export type PasswordChangeError = AuthErrorKey | "secondFactorUnsupported";
+
+/** The message key for a failed password change. */
+export function passwordChangeError(error: unknown): PasswordChangeError {
+	switch (gameErrorData(error)?.code) {
+		case "accountSignInFirst":
+		case "accountSessionEnded":
+			return "signInAgain";
+		case "accountSecondFactorUnsupported":
+			return "secondFactorUnsupported";
+		case "accountChanged":
+			return "generic";
+	}
 	return passwordFailure(error)?.key ?? clerkErrorKey(error) ?? "generic";
 }

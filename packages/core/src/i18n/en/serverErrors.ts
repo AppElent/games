@@ -91,6 +91,8 @@ export const serverErrors = {
 		"To delete, sign in again first. This keeps anyone else using this device from deleting your data or account.",
 	accountVerifyUnsupported:
 		"We can't confirm it's you here with a password or an emailed code. Sign in again first, then delete.",
+	accountSecondFactorUnsupported:
+		"Arcade Club can't do your account's second step to confirm it's you. It accepts a code from an authenticator app or a text message, or a backup code. Email privacy@appelent.nl for help.",
 	accountSignInToFinish:
 		"Your Arcade Club data is deleted, but your AppElent account isn't yet: it needs a recent sign-in. Sign in again, then delete your whole account again to finish.",
 	accountSessionEnded:

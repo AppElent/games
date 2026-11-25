@@ -50,6 +50,12 @@ export const auth = {
 			"This sign-in took too long and can't continue. Go back and sign in again.",
 		noMethod:
 			"Arcade Club can't do your account's second step. It accepts a code from an authenticator app, a text message or an email, or a backup code. Email privacy@appelent.nl for help. You can keep playing as a guest.",
+		confirm: {
+			methodLocked:
+				"Too many wrong codes for this method. Use another one below, or cancel and try again.",
+			onlyMethodLocked: "Too many wrong codes. Cancel and try again.",
+			attemptEnded: "This took too long. Cancel and try again.",
+		},
 		backToSignIn: "Back to sign in",
 	},
 	signUp: {

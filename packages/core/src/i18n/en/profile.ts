@@ -50,9 +50,16 @@ export const profile = {
 	},
 	reverify: {
 		title: "Confirm it's you",
-		passwordBody:
-			"Enter your password to delete. This keeps anyone else using this device from deleting your data or account.",
-		submit: "Confirm and delete",
+		delete: {
+			passwordBody:
+				"Enter your password to delete. This keeps anyone else using this device from deleting your data or account.",
+			submit: "Confirm and delete",
+		},
+		changePassword: {
+			passwordBody:
+				"Enter your current password once more to change it. This keeps anyone else using this device from taking over your account.",
+			submit: "Confirm and change password",
+		},
 		emailCode: "Email me a code instead",
 		usePassword: "Use my password instead",
 		codeBody: "Enter the 6-digit code we email to {email}.",

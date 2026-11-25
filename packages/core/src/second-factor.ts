@@ -312,13 +312,21 @@ export function secondFactorOpen(state: SecondFactorState): boolean {
 	);
 }
 
+/** What the step ends: a sign-in, or confirming it's you while signed in. */
+export type SecondFactorUse = "signIn" | "confirm";
+
 /** The localized failure to show, never raw Clerk English. */
 export function secondFactorMessage(
 	messages: Pick<Messages, "auth">,
 	locale: string,
 	state: SecondFactorState,
+	use: SecondFactorUse = "signIn",
 ): string | null {
-	const copy = messages.auth.secondFactor;
+	const { secondFactor } = messages.auth;
+	const copy =
+		use === "confirm"
+			? { ...secondFactor, ...secondFactor.confirm }
+			: secondFactor;
 	const { strategy, locked, options } = state;
 	if (state.ended && state.error?.key !== "unsupportedStep") {
 		return copy.attemptEnded;
