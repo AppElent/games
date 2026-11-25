@@ -9,11 +9,14 @@ Sudoku photos with every digit labelled by hand, in `labels.json`:
   that kind of digit.
 - `notes`: pencil marks, by `row,column`.
 - `cutOff`: cells the photo's edge cuts through; not measured.
+- `unreadable`: cells written over so often that no digit is certain; not
+  measured.
 
 Every photo is scaled to at most 1600 px (the size the app works on) and
-recompressed. `curled-book-page`, `handwritten-2001`, `handwritten-2002` and
-`handwritten-2005` are also turned a quarter. `handwritten-newspaper` is cut off
-at three corners, so its corners lie outside the photo.
+recompressed. `curled-book-page`, `handwritten-2001`, `handwritten-2002`,
+`handwritten-2005` and `handwritten-killer` are also turned a quarter.
+`handwritten-newspaper` is cut off at three corners, so its corners lie outside
+the photo.
 
 | File                                                 | Photo                                                                                             | By                                | Licence                                                         |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------- |
@@ -22,6 +25,7 @@ at three corners, so its corners lie outside the photo.
 | `curled-book-page.jpg`                               | [Sudoku 22](https://commons.wikimedia.org/wiki/File:Sudoku_22.jpg)                                | Paul Downey                       | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)       |
 | `handwritten-newspaper.jpg`                          | [Sudoku en periódico](https://commons.wikimedia.org/wiki/File:Sudoku_en_peri%C3%B3dico.jpg)       | Héctor Rodríguez                  | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)       |
 | `flat-*.jpg`, `curled-1*.jpg`, `handwritten-20*.jpg` | [Sudoku Dataset](https://github.com/wichtounet/sudoku_dataset) (`imageN.jpg` at commit `0db6de0`) | Baptiste Wicht and Jean Hennebert | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)       |
+| `handwritten-killer.jpg`                             | A filled-in Killer from a puzzle book, with notes and corrections                                 | The project owner                 | Shared for this bench with the owner's permission (25 Nov 2026) |
 
 `clean-print`, `angled-blue-print` and `curled-book-page` are the three photos
 games#96 measured. It reported 36 digits on the first; the print has 41.

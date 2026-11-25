@@ -92,7 +92,11 @@ const vite = await createServer({
 	root: page,
 	resolve: {
 		tsconfigPaths: true,
-		alias: { "#": path.join(root, "src") },
+		// This checkout's core, also from a worktree that links node_modules.
+		alias: {
+			"#": path.join(root, "src"),
+			"@arcadeclub/core": path.join(root, "packages/core/src"),
+		},
 	},
 	server: { port: 5198, fs: { allow: [root] } },
 	logLevel: "error",

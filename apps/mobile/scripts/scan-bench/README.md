@@ -49,14 +49,16 @@ From the corners the app finds (`--detect`), before → APP-555:
 
 The web, from the labelled corners, before → after APP-869. Before, the web read
 with tesseract alone; after, it reads with the phone's core reader and the digit
-network, and asks tesseract only for notes and for digits the network is unsure of:
+network, and asks tesseract only for notes and for digits the network is unsure of.
+This includes `handwritten-killer`, added in APP-869 (18/79 → 70/79); the phone
+tables above were measured before it was added:
 
 | Photos      | Right             | Wrong, unflagged | Right, flagged | Empty read as a digit | Empty read as notes |
 | ----------- | ----------------- | ---------------- | -------------- | --------------------- | ------------------- |
 | Clean       | 100/130 → 130/130 | 0 → 0            | 5 → 0          | 0 → 0                 | 0 → 0               |
 | Curled      | 109/148 → 146/148 | 1 → 0            | 2 → 0          | 0 → 0                 | 1 → 1               |
-| Handwritten | 152/375 → 367/375 | 11 → 1           | 23 → 15        | 0 → 0                 | 0 → 0               |
-| Total       | 361/653 → 643/653 | 12 → 1           | 30 → 15        | 0 → 0                 | 1 → 1               |
+| Handwritten | 170/454 → 437/454 | 11 → 1           | 33 → 36        | 0 → 0                 | 0 → 0               |
+| Total       | 379/732 → 713/732 | 12 → 1           | 40 → 36        | 0 → 0                 | 1 → 1               |
 
 Vision's grid detection finds the wrong rectangle on `handwritten-2002` and
 `handwritten-2003`, and nothing on `handwritten-newspaper`; the player places those

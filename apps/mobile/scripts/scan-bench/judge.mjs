@@ -10,7 +10,9 @@ export function judge(photo, index, cell) {
 	const row = Math.floor(index / 9);
 	const col = index % 9;
 	const place = `${row + 1},${col + 1}`;
-	if (photo.cutOff?.includes(place)) return { kind: "skip" };
+	if (photo.cutOff?.includes(place) || photo.unreadable?.includes(place)) {
+		return { kind: "skip" };
+	}
 	const printed = photo.printed[row][col];
 	const written = photo.handwritten[row][col];
 	const notes = photo.notes?.[place];
