@@ -47,12 +47,16 @@ jest.mock("../../sudoku/saves/sudoku-save-store", () => ({
 async function confirmDeletionAlert(scope?: string) {
 	const view = await renderScreen(<DeleteAccountScreen />);
 	if (scope) await fireEvent.press(screen.getByText(scope));
+	await pressDelete();
+	return view;
+}
+
+async function pressDelete() {
 	await fireEvent.press(screen.getByTestId("delete-account-continue"));
-	const buttons = jest.mocked(Alert.alert).mock.calls[0]?.[2];
+	const buttons = jest.mocked(Alert.alert).mock.lastCall?.[2];
 	await act(async () => {
 		buttons?.find(({ style }) => style === "destructive")?.onPress?.();
 	});
-	return view;
 }
 
 async function confirmDeletion() {
@@ -356,6 +360,35 @@ describe("DeleteAccountScreen re-verify sheet", () => {
 				}
 			},
 		);
+
+		it("keeps saying so when trying again, as the screen asks, hits a 401", async () => {
+			recentSignIn = true;
+			Object.assign(mockUser as object, {
+				delete: jest.fn().mockRejectedValue({
+					errors: [{ code: "session_reverification_required" }],
+				}),
+			});
+			await confirmDeletionAlert(copy.account.label);
+			await fireEvent.press(await screen.findByTestId("reverify-cancel"));
+			await screen.findByText(messages.en.serverErrors.accountDeleteAgain);
+			recentSignIn = false;
+			mockAttemptFirstFactor.mockReset().mockImplementation(async () => {
+				mockSession = null;
+				throw { errors: [{ code: "session_not_found" }] };
+			});
+			await pressDelete();
+			await fireEvent.changeText(
+				await screen.findByTestId("reverify-password"),
+				"secret",
+			);
+			await fireEvent.press(screen.getByTestId("reverify-submit"));
+			expect(await screen.findByText(finish)).toBeTruthy();
+			expect(mockDeleteMyData).toHaveBeenCalledTimes(1);
+
+			// Signed out by now: trying once more still says it.
+			await pressDelete();
+			expect(await screen.findByText(finish)).toBeTruthy();
+		});
 	});
 
 	it("tells what to do next, not to delete again, when the second factor can't be done after the data is gone", async () => {

@@ -38,7 +38,10 @@ export function useDeleteAccount(
 	const { signOut } = useAuth();
 	const backendAuth = useBackendAuthReady();
 	const deleteMyData = useMutation(api.account.deleteMyData);
-	/** The data is deleted, the account not yet: failures must say so. */
+	/**
+	 * The data is deleted, the account not yet: failures must say so, on a later
+	 * try too. Another account gets a fresh screen (`AppQueryCacheProvider`).
+	 */
 	const dataGone = useRef(false);
 	const inContext = (failure: unknown) =>
 		dataGone.current ? onceDataIsGone(failure) : failure;
@@ -64,11 +67,12 @@ export function useDeleteAccount(
 			return false;
 		}
 		setUnavailable(false);
-		dataGone.current = false;
 		const sessionId = clerk.session?.id;
 		if (!user || !sessionId) {
 			// Nothing to delete with; a fresh sign-in starts one.
-			await run(() => Promise.reject(new GameRuleError("accountSessionEnded")));
+			await run(() =>
+				Promise.reject(inContext(new GameRuleError("accountSessionEnded"))),
+			);
 			return false;
 		}
 		const account = { userId: user.id, sessionId };
@@ -84,7 +88,7 @@ export function useDeleteAccount(
 								const batch = await deleteMyData({
 									expectedSubject: account.userId,
 								});
-								dataGone.current = scope === "account" && batch.done;
+								if (scope === "account" && batch.done) dataGone.current = true;
 								return batch;
 							},
 							reverify: () => reverify.verify(account),
