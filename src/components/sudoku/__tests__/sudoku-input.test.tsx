@@ -113,7 +113,7 @@ describe("SudokuInputSettingsPanel", () => {
 	it("sets how far hints go and hides the level badge", () => {
 		const onChange = renderPanel();
 		expect(
-			(screen.getByRole("radio", { name: /^Advanced/ }) as HTMLInputElement)
+			(screen.getByRole("radio", { name: /^Expert/ }) as HTMLInputElement)
 				.checked,
 		).toBe(true);
 		fireEvent.click(screen.getByRole("radio", { name: /^Intermediate/ }));

@@ -5,7 +5,6 @@ import {
 	boxOf,
 	colOf,
 	computeCandidates,
-	countSolutions,
 	digitMask,
 	digitsInMask,
 	findConflicts,
@@ -15,11 +14,18 @@ import {
 	SUDOKU_BOXES,
 	SUDOKU_COLS,
 	SUDOKU_ROWS,
+	solveSudoku,
 } from "./sudoku";
 import { ADVANCED_TECHNIQUES, combinations } from "./sudoku-hints-advanced";
+import { EXPERT_TECHNIQUES } from "./sudoku-hints-expert";
 
 /** Hint levels from simplest to hardest; the settings name them "Basic" up. */
-export const HINT_LEVELS = ["beginner", "intermediate", "advanced"] as const;
+export const HINT_LEVELS = [
+	"beginner",
+	"intermediate",
+	"advanced",
+	"expert",
+] as const;
 export type HintTechniqueLevel = (typeof HINT_LEVELS)[number];
 
 function levelRank(level: HintTechniqueLevel) {
@@ -54,6 +60,12 @@ type HintTechnique =
 	| "w-wing"
 	| "unique-rectangle"
 	| "bug-plus-one"
+	| "jellyfish"
+	| "simple-coloring"
+	| "x-chain"
+	| "xy-chain"
+	| "als-xz"
+	| "reveal-cell"
 	| "snyder-pair";
 
 export type SudokuHint = {
@@ -75,6 +87,14 @@ export type SudokuHint = {
 	baseLines?: HintUnit[];
 	/** The lines a fish clears outside its base lines. */
 	coverLines?: HintUnit[];
+	/**
+	 * Two groups the board shows in two tones once the hint is explained: the
+	 * colours of Simple Coloring (the wrong colour first when they wrap), the
+	 * alternating cells of a chain, or the two sets of an ALS-XZ.
+	 */
+	colors?: [number[], number[]];
+	/** How Simple Coloring concludes: a colour wraps, or traps a cell. */
+	coloring?: "wrap" | "trap";
 	/**
 	 * True when the pattern only shows once candidates removed by earlier
 	 * hints are gone too.
@@ -441,6 +461,7 @@ export const SUDOKU_TECHNIQUES: readonly TechniqueDetector[] = [
 	nakedQuad,
 	hiddenQuad,
 	...ADVANCED_TECHNIQUES,
+	...EXPERT_TECHNIQUES,
 	snyderSuggestion,
 ];
 
@@ -529,14 +550,58 @@ function candidatesAfter(grid: SudokuGrid, history: HintHistory = []) {
 }
 
 /** The last puzzle checked: hints come many times for the same one. */
-let uniqueCheck: { key: string; unique: boolean } | null = null;
+let uniqueCheck: {
+	key: string;
+	unique: boolean;
+	solution?: SudokuGrid;
+} | null = null;
 
-function hasUniqueSolution(givens: SudokuGrid) {
+function checkGivens(givens: SudokuGrid) {
 	const key = givens.join("");
 	if (uniqueCheck?.key !== key) {
-		uniqueCheck = { key, unique: countSolutions(givens, 2) === 1 };
+		const solution = solveSudoku(givens) ?? undefined;
+		uniqueCheck = { key, unique: solution !== undefined, solution };
 	}
-	return uniqueCheck.unique;
+	return uniqueCheck;
+}
+
+function hasUniqueSolution(givens: SudokuGrid) {
+	return checkGivens(givens).unique;
+}
+
+/**
+ * The last resort once no technique applies: one open cell from the
+ * solution, the one with the fewest candidates left.
+ */
+function revealCell(
+	grid: SudokuGrid,
+	candidates: number[],
+	solution: SudokuGrid | undefined,
+): SudokuHint | null {
+	if (!solution) {
+		return null;
+	}
+	let best = -1;
+	for (let cell = 0; cell < 81; cell += 1) {
+		if (
+			grid[cell] === 0 &&
+			(best < 0 || maskSize(candidates[cell]) < maskSize(candidates[best]))
+		) {
+			best = cell;
+		}
+	}
+	if (best < 0) {
+		return null;
+	}
+	return {
+		technique: "reveal-cell",
+		level: "expert",
+		cells: [best],
+		candidateDigits: [solution[best]],
+		eliminations: [],
+		placements: [{ cell: best, digit: solution[best] }],
+		unit: { kind: "row", index: rowOf(best) },
+	};
 }
 
 export function findHint(
@@ -558,11 +623,22 @@ export function findHint(
 		!options.cages?.length &&
 		options.givens !== undefined &&
 		hasUniqueSolution(options.givens);
+	// Killer givens are rarely unique without their cages, so only a
+	// solution the client passes is trusted there.
+	const solution =
+		options.solution ??
+		(!options.cages?.length && options.givens
+			? checkGivens(options.givens).solution
+			: undefined);
 	for (const detector of SUDOKU_TECHNIQUES) {
 		if (detector.needsUniqueness && !unique) {
 			continue;
 		}
-		const hint = detector.detect(grid, candidates);
+		// Revealing a cell beats only suggesting notes.
+		const hint =
+			(detector.id === "snyder-pair"
+				? revealCell(grid, candidates, solution)
+				: null) ?? detector.detect(grid, candidates);
 		if (hint) {
 			const touched = [
 				...hint.cells,
@@ -637,16 +713,33 @@ export function describeHint(
 		switch (hint.technique) {
 			case "x-wing":
 			case "swordfish":
+			case "jellyfish": {
+				const names = {
+					"x-wing": [copy.fish.xWing, copy.fish.anXWing],
+					swordfish: [copy.fish.swordfish, copy.fish.aSwordfish],
+					jellyfish: [copy.fish.jellyfish, copy.fish.aJellyfish],
+				}[hint.technique];
+				return { base, cover, fish: names[0], aFish: names[1] };
+			}
+			case "simple-coloring": {
+				const [wrong, right] = hint.colors ?? [[], []];
 				return {
-					base,
-					cover,
-					fish:
-						hint.technique === "x-wing" ? copy.fish.xWing : copy.fish.swordfish,
-					aFish:
-						hint.technique === "x-wing"
-							? copy.fish.anXWing
-							: copy.fish.aSwordfish,
+					clash: cellList([first, second]),
+					colorA: cellList(wrong),
+					colorB: cellList(right),
 				};
+			}
+			case "x-chain":
+			case "xy-chain":
+				return {
+					start: cell(first),
+					end: cell(hint.cells[hint.cells.length - 1]),
+					chain: cellList(hint.cells),
+				};
+			case "als-xz": {
+				const [setA, setB] = hint.colors ?? [[], []];
+				return { alsA: cellList(setA), alsB: cellList(setB), x, z: y };
+			}
 			case "skyscraper":
 			case "two-string-kite":
 				// Cells: the two linked ends, then the two free ends.
@@ -745,6 +838,18 @@ function techniqueCopy(hint: SudokuHint, copy: SudokuHintCopy) {
 			return copy.uniqueRectangle;
 		case "bug-plus-one":
 			return copy.bugPlusOne;
+		case "jellyfish":
+			return copy.fish;
+		case "simple-coloring":
+			return hint.coloring === "wrap" ? copy.colorWrap : copy.colorTrap;
+		case "x-chain":
+			return copy.xChain;
+		case "xy-chain":
+			return copy.xyChain;
+		case "als-xz":
+			return copy.alsXz;
+		case "reveal-cell":
+			return copy.revealCell;
 		case "snyder-pair":
 			return copy.snyder;
 	}
@@ -760,17 +865,44 @@ function unitCells(ref: HintUnit) {
 	return units[ref.index];
 }
 
+export type HintHighlights = {
+	cells: Set<number>;
+	lines: Set<number>;
+	/** Two-tone groups at level 3: colours, a chain's links or ALS sets. */
+	tones?: [Set<number>, Set<number>];
+};
+
 /**
  * What the board marks for a hint at a disclosure level: nothing at 1 (text
  * only), the pattern's cells at 2, and at 3 also the cells it changes and the
- * base and cover lines of a fish or single-digit pattern.
+ * base and cover lines of a fish or single-digit pattern. At 3 a pattern
+ * with two groups shows them in two tones instead of the hint fill.
  */
-export function hintHighlights(hint: SudokuHint | null, level: 1 | 2 | 3) {
+export function hintHighlights(
+	hint: SudokuHint | null,
+	level: 1 | 2 | 3,
+): HintHighlights | undefined {
 	if (!hint || level === 1) {
 		return undefined;
 	}
 	const cells = new Set(hint.cells);
 	const lines = new Set<number>();
+	if (level === 3 && hint.colors) {
+		const tones: [Set<number>, Set<number>] = [
+			new Set(hint.colors[0]),
+			new Set(hint.colors[1]),
+		];
+		const toned = (cell: number) => tones[0].has(cell) || tones[1].has(cell);
+		const changed = [
+			...hint.eliminations.map((entry) => entry.cell),
+			...hint.placements.map((entry) => entry.cell),
+		];
+		return {
+			cells: new Set(changed.filter((cell) => !toned(cell))),
+			lines,
+			tones,
+		};
+	}
 	if (level === 3) {
 		for (const entry of hint.eliminations) {
 			cells.add(entry.cell);

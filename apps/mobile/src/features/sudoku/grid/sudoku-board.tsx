@@ -46,6 +46,8 @@ type Props = {
 	hintCells: ReadonlySet<number> | undefined;
 	/** The lines a fully explained fish or single-digit pattern uses. */
 	hintLines?: ReadonlySet<number>;
+	/** A fully explained chain, colouring or ALS pair, in two tones. */
+	hintTones?: readonly [ReadonlySet<number>, ReadonlySet<number>];
 	cages?: KillerCage[];
 	hidden: boolean;
 	/** Outside digit mode an empty, unmarked selected cell gets a deeper tint. */
@@ -91,6 +93,7 @@ export function SudokuBoard({
 	conflicts,
 	hintCells,
 	hintLines,
+	hintTones,
 	cages,
 	hidden,
 	mode,
@@ -176,6 +179,15 @@ export function SudokuBoard({
 						conflict={!hidden && conflicts.has(index)}
 						hinted={!hidden && (hintCells?.has(index) ?? false)}
 						hintLine={!hidden && (hintLines?.has(index) ?? false)}
+						hintTone={
+							hidden
+								? 0
+								: hintTones?.[0].has(index)
+									? 1
+									: hintTones?.[1].has(index)
+										? 2
+										: 0
+						}
 						caged={cageInfo !== null}
 						onPress={onSelectCell}
 						onDeselect={onDeselect}
@@ -239,6 +251,8 @@ type CellProps = {
 	conflict: boolean;
 	hinted: boolean;
 	hintLine: boolean;
+	/** 1 or 2 for the two tones of an explained chain or colouring, else 0. */
+	hintTone: 0 | 1 | 2;
 	/** A Killer cell: its notes keep clear of the dashed cage lines. */
 	caged: boolean;
 	onPress: (cell: number) => void;
@@ -275,6 +289,7 @@ const BoardCell = memo(function BoardCell({
 	conflict,
 	hinted,
 	hintLine,
+	hintTone,
 	caged,
 	onPress,
 	onDeselect,
@@ -288,15 +303,19 @@ const BoardCell = memo(function BoardCell({
 
 	const background = selected
 		? tokens.accentDim
-		: hinted
-			? tokens.orangeDim
-			: hintLine
-				? tokens.amberDim
-				: sameDigit
-					? tokens.accentDim
-					: peer
-						? tokens.surface2
-						: "transparent";
+		: hintTone === 1
+			? tokens.greenDim
+			: hintTone === 2
+				? tokens.pinkDim
+				: hinted
+					? tokens.orangeDim
+					: hintLine
+						? tokens.amberDim
+						: sameDigit
+							? tokens.accentDim
+							: peer
+								? tokens.surface2
+								: "transparent";
 	const digitColor = conflict
 		? tokens.danger
 		: given
@@ -378,7 +397,7 @@ const BoardCell = memo(function BoardCell({
 					{cageSum}
 				</AppText>
 			) : null}
-			{!selected && (hinted || sameDigit || marker > 0) ? (
+			{!selected && (hinted || hintTone > 0 || sameDigit || marker > 0) ? (
 				// The grid line beside a filled cell drops to about 2:1 in dark mode,
 				// so a hinted, same-digit or colour-marked cell carries its own 3:1 edge.
 				<View pointerEvents="none" style={styles.filledRing} />

@@ -88,6 +88,8 @@ export const sudoku = {
 			swordfish: "Swordfish",
 			anXWing: "een X-Wing",
 			aSwordfish: "een Swordfish",
+			jellyfish: "Jellyfish",
+			aJellyfish: "een Jellyfish",
 			title: "{fish}",
 			nudge:
 				"Volg de {digit} door {base}. In elk ervan heeft hij nog maar een paar plekken.",
@@ -155,6 +157,58 @@ export const sudoku = {
 			explanation:
 				"Zonder de {digit} in {cell} had elk cijfer precies twee plekken in elke rij, kolom en elk blok: een patroon dat nooit één oplossing heeft. Dus in {cell} komt een {digit}.",
 		},
+		colorTrap: {
+			title: "Simpel kleuren",
+			nudge:
+				"Volg de {digit} door de rijen, kolommen en blokken waar hij maar twee plekken heeft.",
+			direction:
+				"Kleur de vakjes waar de {digit} maar twee plekken heeft: bij elke koppeling wisselt de kleur, en één kleur bevat elke {digit}.",
+			explanation:
+				"Elke koppeling is een rij, kolom of blok waar de {digit} maar twee plekken heeft, dus het ene vakje is een {digit} en het andere niet. Langs de koppelingen zijn óf {colorA} óf {colorB} allemaal een {digit}. {eliminated} zien een vakje van elke kleur, dus daar valt de {digit} af.",
+		},
+		colorWrap: {
+			title: "Simpel kleuren",
+			nudge:
+				"Volg de {digit} door de rijen, kolommen en blokken waar hij maar twee plekken heeft.",
+			direction:
+				"Kleur de vakjes waar de {digit} maar twee plekken heeft: twee vakjes met dezelfde kleur komen elkaar tegen.",
+			explanation:
+				"Elke koppeling is een rij, kolom of blok waar de {digit} maar twee plekken heeft, dus de kleur wisselt erlangs en één kleur bevat elke {digit}. {clash} hebben dezelfde kleur en zien elkaar, dus ze kunnen niet allebei een {digit} zijn: die kleur is fout. De {digit} valt af in die hele kleur: {eliminated}.",
+		},
+		xChain: {
+			title: "X-Chain",
+			nudge:
+				"Volg de {digit} vanaf {start} langs vakjes die aan elkaar gekoppeld zijn.",
+			direction: "Er is een X-Chain op de {digit} van {start} naar {end}.",
+			explanation:
+				"Langs {chain} wisselen de koppelingen elkaar af: een rij, kolom of blok waar de {digit} maar twee plekken heeft, en dan twee vakjes die elkaar zien. Is {start} geen {digit}, dan dwingt de keten {end} om een {digit} te zijn. Eén van de uiteinden is dus een {digit}, en de {digit} valt af in elk vakje dat beide ziet: {eliminated}.",
+		},
+		xyChain: {
+			title: "XY-Chain",
+			nudge:
+				"Zoek een keten van vakjes met twee kandidaten die begint en eindigt met een {digit}.",
+			direction:
+				"Er is een XY-Chain van {start} naar {end}: beide uiteinden laten een {digit} toe.",
+			explanation:
+				"{chain} laten elk twee cijfers toe, en elk ziet het volgende. Is {start} geen {digit}, dan krijgt het zijn andere cijfer, en dat duwt elk volgend vakje naar zijn andere cijfer, tot {end} een {digit} is. Eén van de uiteinden is dus een {digit}, en de {digit} valt af in elk vakje dat beide ziet: {eliminated}.",
+		},
+		alsXz: {
+			title: "ALS-XZ",
+			nudge:
+				"Zoek twee groepen vakjes die elk één cijfer meer toelaten dan ze vakjes hebben.",
+			direction: "Er is een ALS-XZ op {alsA} en {alsB}, gekoppeld door de {x}.",
+			explanation:
+				"{alsA} en {alsB} laten elk één cijfer meer toe dan ze vakjes hebben. Elke {x} in de ene groep ziet elke {x} in de andere, dus hooguit één groep bevat de {x}. Een groep zonder {x} moet al zijn andere cijfers bevatten, de {z} ook, dus één van de groepen bevat de {z}, en de {z} valt af in elk vakje dat al hun {z}'s ziet: {eliminated}.",
+		},
+		revealCell: {
+			title: "Vakje onthullen",
+			nudge:
+				"Geen van de technieken die de app kent, vindt hier de volgende stap.",
+			direction:
+				"De app vindt geen stap die hij kan uitleggen, dus hij onthult één vakje voor je.",
+			explanation:
+				"{cell} is een {digit}. Dat komt uit de oplossing, niet uit een techniek, dus dit is de enige hint die niet uitlegt waarom.",
+		},
 	},
 	saved: {
 		empty: "Puzzels die je start verschijnen hier, zodat je later verder kunt.",
@@ -216,11 +270,13 @@ export const sudoku = {
 			beginner: "Basis",
 			intermediate: "Gemiddeld",
 			advanced: "Gevorderd",
+			expert: "Expert",
 		},
 		hintLevelNotes: {
 			beginner: "Alleen singles",
 			intermediate: "Ook paren, drietallen en wijzend",
 			advanced: "Ook X-Wing, Swordfish, wings en unieke rechthoek",
+			expert: "Ook ketens, kleuren en Jellyfish, daarna een vakje onthullen",
 		},
 		showHintLevel: "Toon het niveau bij elke hint",
 		tapCycleLabel: "Nog eens op het geselecteerde vakje tikken wisselt naar",
@@ -260,11 +316,13 @@ export const sudoku = {
 			beginner: "een basistechniek",
 			intermediate: "een gemiddelde techniek",
 			advanced: "een gevorderde techniek",
+			expert: "een experttechniek",
 		},
 		hintMax: {
 			beginner: "basis",
 			intermediate: "gemiddeld",
 			advanced: "gevorderd",
+			expert: "expert",
 		},
 		showHintAnyway: "Toch tonen",
 		autoCleanupLabel:
