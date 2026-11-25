@@ -18,7 +18,8 @@
  * another account rejects with `accountChanged` rather than verifying it.
  *
  * `verify` calls overlap safely: a second one for the same account while the
- * first is still starting or open gets the first one's result.
+ * first is still starting or open gets the first one's result, and its
+ * options (a known password) are ignored: the first call's apply.
  *
  * A caller that already has the password (change password just asked for it)
  * hands it to `verify`: it is tried before the sheet opens, and the sheet only
@@ -121,7 +122,11 @@ function lacksSecondFactor(
 	);
 }
 
-const SESSION_ENDED = new Set(["session_not_found", "authentication_invalid"]);
+/** Clerk codes for a session that is gone: a 401 signs the phone out. */
+export const SESSION_ENDED = new Set([
+	"session_not_found",
+	"authentication_invalid",
+]);
 
 /** The error `verify` rejects with when the sheet can't go on; else `null`. */
 function sheetEnd(caught: unknown): unknown {
@@ -382,6 +387,13 @@ export function useReverify(
 			} catch (caught) {
 				shown = refused(call, caught);
 				if (!shown) return promise;
+				if (shown.key === "passwordIncorrect") {
+					// Typing it again here would be a second wrong try on the same
+					// password; the screen's own field says it and takes the retry.
+					close();
+					call.reject(caught);
+					return promise;
+				}
 			}
 			// Settled, or on to the second step: nothing for the password sheet.
 			if (!shown) return promise;

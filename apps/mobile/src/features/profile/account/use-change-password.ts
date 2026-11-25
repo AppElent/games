@@ -58,7 +58,9 @@ export function useChangePassword(
 			}
 			return true;
 		} catch (failure) {
-			if (!mounted.current) onUnseenEnd?.(failure);
+			// A 401 signs the phone out. The screen then shows only a spinner, or is
+			// gone, so the Notice below would go unread: say it in an alert.
+			if (!mounted.current || !clerk.user) onUnseenEnd?.(failure);
 			setError(passwordChangeError(failure));
 			return false;
 		} finally {

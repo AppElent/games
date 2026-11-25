@@ -84,8 +84,9 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   password field, and any other failure shows above the panel. If Clerk asks for
   reverification the phone opens the verify sheet (below) over the screen, after
   trying the current password it just typed, so the person isn't asked for it twice:
-  the sheet appears only when that doesn't confirm (it shows Clerk's reason) or a
-  second factor is still due. Confirming retries the change once, on the same account
+  the sheet appears only when a second factor is still due or the password is
+  locked out (it shows the wait). A wrong password goes back to the screen's own
+  field, as one try, not into the sheet. Confirming retries the change once, on the same account
   and session, cancelling changes nothing, and only an account the sheet can't confirm
   is offered "Sign in again". Changing account meanwhile says so
   (`serverErrors.accountChanged`), not the generic failure. An account without a
@@ -128,9 +129,11 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   They also close the sheet with `accountSessionEnded` or `accountSignInFirst` ("Sign
   in again"); once the data is gone both read `accountSignInToFinish`. Their copy,
   and `accountChanged`'s, names no task, because change password shows them too.
-  Clerk signs the phone out on a real 401, which can take the screen away before the
-  call answers: a session end that arrives after the screen is gone is shown in a
-  native alert (`useUnseenEnd`) instead of a notice nobody would see.
+  Clerk signs the phone out on a real 401 before the call answers, which leaves
+  Change password a spinner and can take either screen away: a session end that
+  arrives then (no user, or the screen gone) is shown in a native alert
+  (`useUnseenEnd`, once per screen) instead of a notice nobody would see. Only codes
+  that end the session count; "reverification required" does not.
 
   An account with two-step verification confirms with its second factor
   (authenticator app, texted code or backup code), the sign-in's step

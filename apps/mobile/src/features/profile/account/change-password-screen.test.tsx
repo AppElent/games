@@ -132,17 +132,6 @@ describe("ChangePasswordScreen", () => {
 				supportedSecondFactors: second.map((strategy) => ({ strategy })),
 			});
 
-		/** Types the password into the sheet, when the typed one didn't confirm. */
-		async function confirmPassword() {
-			await fireEvent.changeText(
-				await screen.findByTestId("reverify-password"),
-				"old",
-			);
-			await fireEvent.press(
-				screen.getByLabelText(reverifyCopy.changePassword.submit),
-			);
-		}
-
 		it("confirms with the password it was given and retries the change once", async () => {
 			offer("needs_first_factor", ["password"]);
 			attemptFirst.mockResolvedValue({ status: "complete" });
@@ -169,21 +158,19 @@ describe("ChangePasswordScreen", () => {
 			expect(signOut).not.toHaveBeenCalled();
 		});
 
-		it("asks in the sheet, with Clerk's reason, when that password doesn't confirm", async () => {
+		it("shows a wrong current password on the screen, with one try, not in the sheet", async () => {
 			offer("needs_first_factor", ["password"]);
-			attemptFirst
-				.mockRejectedValueOnce({
-					errors: [{ code: "form_password_incorrect" }],
-				})
-				.mockResolvedValue({ status: "complete" });
+			attemptFirst.mockRejectedValueOnce({
+				errors: [{ code: "form_password_incorrect" }],
+			});
 			await submitChange();
 			expect(
 				await screen.findByText(messages.en.auth.errors.passwordIncorrect),
 			).toBeTruthy();
-			await confirmPassword();
-			await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
-			expect(attemptFirst).toHaveBeenCalledTimes(2);
-			expect(updatePassword).toHaveBeenCalledTimes(2);
+			expect(screen.queryByText(reverifyCopy.title)).toBeNull();
+			expect(attemptFirst).toHaveBeenCalledTimes(1);
+			expect(updatePassword).toHaveBeenCalledTimes(1);
+			expect(Alert.alert).not.toHaveBeenCalled();
 		});
 
 		it("confirms with a code from the authenticator app after the password", async () => {
@@ -322,6 +309,33 @@ describe("ChangePasswordScreen", () => {
 				messages.en.profile.reverify.endedTitle,
 				messages.en.serverErrors.accountSessionEnded,
 			);
+		});
+
+		it("says why in an alert when the 401 signs the phone out under a mounted screen", async () => {
+			offer("needs_first_factor", ["password"]);
+			attemptFirst.mockImplementation(async () => {
+				// Clerk drops the user before it rejects; nothing unmounts this screen.
+				(clerk as { user?: unknown }).user = undefined;
+				throw { errors: [{ code: "session_not_found" }] };
+			});
+			await submitChange();
+			await waitFor(() =>
+				expect(Alert.alert).toHaveBeenCalledWith(
+					messages.en.profile.reverify.endedTitle,
+					messages.en.serverErrors.accountSessionEnded,
+				),
+			);
+			expect(Alert.alert).toHaveBeenCalledTimes(1);
+		});
+
+		it("adds no alert when the Notice is on screen, still signed in", async () => {
+			offer("needs_first_factor", ["password"]);
+			attemptFirst.mockRejectedValue({
+				errors: [{ code: "session_not_found" }],
+			});
+			await submitChange();
+			expect(await screen.findByLabelText(copy.signInAgain)).toBeTruthy();
+			expect(Alert.alert).not.toHaveBeenCalled();
 		});
 
 		it("offers no sign-in that an unsupported second factor can't finish", async () => {

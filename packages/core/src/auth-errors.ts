@@ -118,7 +118,7 @@ function lockoutSecondsFromRecord(
 				? record.long_message
 				: null;
 	const match = text?.match(
-		/\bin\s+(\d+)\s+(second|minute|hour)s?\b(?!\s+and\s+\d)/i,
+		/\bin\s+(\d+)\s+(second|minute|hour)s?\b(?![\s,]+(?:and\s+)?\d)/i,
 	);
 	if (!match) return undefined;
 	const amount = Number.parseInt(match[1], 10);

@@ -197,6 +197,14 @@ describe("clerkError and authErrorMessage", () => {
 				],
 			}),
 		).toEqual({ key: "accountLocked" });
+		// A compound wait is not understated as its first part.
+		for (const text of ["in 1 hour, 30 minutes.", "in 1 hour 30 minutes."]) {
+			expect(
+				clerkError({
+					errors: [{ code: "user_locked", longMessage: `Try again ${text}` }],
+				}),
+			).toEqual({ key: "accountLocked" });
+		}
 		expect(clerkErrorKey({ code: "toString" })).toBe("generic");
 		expect(clerkError(null)).toBeNull();
 	});

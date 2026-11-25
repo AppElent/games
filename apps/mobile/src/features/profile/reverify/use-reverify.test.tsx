@@ -797,18 +797,16 @@ describe("useReverify", () => {
 			expect(session.attemptFirstFactorVerification).toHaveBeenCalledTimes(1);
 		});
 
-		it("opens the password sheet with Clerk's reason when it does not confirm", async () => {
+		it("hands a wrong password back to the caller instead of asking again in the sheet", async () => {
 			const { session, hook } = await start([password]);
-			session.attemptFirstFactorVerification.mockRejectedValueOnce(
-				refusal("form_password_incorrect"),
-			);
-			const { settled } = await verifyWith(hook);
-			expect(hook.result.current.method).toBe("password");
-			expect(hook.result.current.errorKey).toBe("passwordIncorrect");
+			const wrong = refusal("form_password_incorrect");
+			session.attemptFirstFactorVerification.mockRejectedValueOnce(wrong);
+			const { settled, rejected } = await verifyWith(hook);
+			expect(hook.result.current.method).toBeNull();
 			expect(settled).not.toHaveBeenCalled();
+			expect(rejected).toHaveBeenCalledWith(wrong);
+			expect(session.attemptFirstFactorVerification).toHaveBeenCalledTimes(1);
 			expect(reportError).not.toHaveBeenCalled();
-			await act(() => hook.result.current.submit("right"));
-			expect(settled).toHaveBeenCalledWith("verified");
 		});
 
 		it("keeps the lockout wait when that password locks the account", async () => {
