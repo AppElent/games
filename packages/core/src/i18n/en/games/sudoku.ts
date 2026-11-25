@@ -245,6 +245,40 @@ export const sudoku = {
 		creatingPuzzle: "Creating puzzle...",
 		confirmAndPlay: "Confirm and play",
 		couldNotCreateSession: "Could not create session",
+		killer: {
+			readingCages: "Reading the cages...",
+			readingSums: "Reading cage sums {done}/{total}...",
+			gridLabel: "Recognized cages — tap a cell to correct its cage",
+			cellName: "Row {row}, column {col}: cage of {count}, sum {sum}",
+			cellNameNoSum: "Row {row}, column {col}: cage of {count}, no sum yet",
+			unsureLines: {
+				one: "{count} unsure cage line is marked in amber. Compare it with the photo.",
+				other:
+					"{count} unsure cage lines are marked in amber. Compare them with the photo.",
+			},
+			allLinesSure:
+				"Every cage line read clearly. Still, compare the cages with the photo.",
+			cageLabel: {
+				one: "Cage of {count} cell",
+				other: "Cage of {count} cells",
+			},
+			sumLabel: "Sum",
+			sumHint: "A whole number from 1 to 45.",
+			linesLabel: "Cage lines around this cell",
+			lineUp: "Line above",
+			lineRight: "Line right",
+			lineDown: "Line below",
+			lineLeft: "Line left",
+			unsure: "unsure",
+			missingSums: {
+				one: "{count} cage has no sum yet.",
+				other: "{count} cages have no sum yet.",
+			},
+			invalidCages:
+				"A cage cannot be right: it has more than 9 cells, or a sum its cells cannot make.",
+			total: "The sums add up to {total}; a Killer's sums add up to 405.",
+			ready: "Cages and sums add up to 405.",
+		},
 	},
 	newGame: {
 		heading: "Start a puzzle",

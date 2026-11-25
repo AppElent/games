@@ -8,6 +8,7 @@ import {
 } from "@arcadeclub/core/sudoku-scan-ink";
 import { describe, expect, it, vi } from "vitest";
 import {
+	parseCageSum,
 	RETRY_MIN_CONFIDENCE,
 	readDigitWithRetry,
 	warpToSquare,
@@ -189,5 +190,19 @@ describe("line-finder tie-break on sudoku-book-page fixture", () => {
 		} finally {
 			vi.unstubAllGlobals();
 		}
+	});
+});
+
+describe("parseCageSum", () => {
+	it("takes a whole sum from 1 to 45", () => {
+		expect(parseCageSum("7")).toBe(7);
+		expect(parseCageSum("45")).toBe(45);
+	});
+
+	it("refuses what no cage can add up to", () => {
+		expect(parseCageSum("")).toBeNull();
+		expect(parseCageSum("0")).toBeNull();
+		expect(parseCageSum("46")).toBeNull();
+		expect(parseCageSum("123")).toBeNull();
 	});
 });

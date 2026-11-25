@@ -12,10 +12,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Locale, LocaleProvider } from "#/lib/i18n";
 import { SudokuScanFlow } from "../SudokuScanFlow";
 
-const { findGridCorners, recognizeGrid } = vi.hoisted(() => ({
-	findGridCorners: vi.fn(),
-	recognizeGrid: vi.fn(),
-}));
+const { findGridCorners, recognizeGrid, readWarpedCages, readCageSums } =
+	vi.hoisted(() => ({
+		findGridCorners: vi.fn(),
+		recognizeGrid: vi.fn(),
+		readWarpedCages: vi.fn(),
+		readCageSums: vi.fn(),
+	}));
 vi.mock("#/lib/games/sudoku-grid-finder", () => ({ findGridCorners }));
 vi.mock("#/lib/games/sudoku-scan-image", () => ({
 	fileToCanvas: async () =>
@@ -24,6 +27,9 @@ vi.mock("#/lib/games/sudoku-scan-image", () => ({
 			height: 800,
 		}),
 	recognizeGrid,
+	readWarpedCages,
+	readCageSums,
+	parseCageSum: (text: string) => (text ? Number(text) : null),
 	warpToSquare: () => document.createElement("canvas"),
 }));
 vi.mock("convex/react", () => ({ useMutation: () => vi.fn() }));
@@ -61,8 +67,17 @@ function scannedCells(): ScanCell[] {
 	return cells;
 }
 
+/** A classic grid: no dashes, so one cage holds every cell. */
+const classicRead = {
+	cages: [Array.from({ length: 81 }, (_, cell) => cell)],
+	borders: [],
+	doubtful: [],
+	bounds: { left: 0, right: 899, top: 0, bottom: 899 },
+};
+
 async function openVerifyStep(locale: Locale = "en") {
 	findGridCorners.mockResolvedValue(null);
+	readWarpedCages.mockReturnValue(classicRead);
 	recognizeGrid.mockResolvedValue(scannedCells());
 	const { container } = render(
 		<LocaleProvider initialLocale={locale}>

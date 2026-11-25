@@ -11,6 +11,11 @@ import {
 	toggleScanCellNote,
 	validateScanResult,
 } from "@arcadeclub/core/sudoku-scan";
+import type { KillerScan } from "@arcadeclub/core/sudoku-scan-cages";
+import {
+	isKillerRead,
+	killerScanFromRead,
+} from "@arcadeclub/core/sudoku-scan-cages";
 import type { Point } from "@arcadeclub/core/sudoku-scan-ink";
 import { defaultCorners } from "@arcadeclub/core/sudoku-scan-ink";
 import { useMutation } from "convex/react";
@@ -28,6 +33,8 @@ import { autoSessionTitle } from "#/lib/games/sudoku-local";
 import type { ScanProgress } from "#/lib/games/sudoku-scan-image";
 import {
 	fileToCanvas,
+	readCageSums,
+	readWarpedCages,
 	recognizeGrid,
 	warpToSquare,
 } from "#/lib/games/sudoku-scan-image";
@@ -37,13 +44,16 @@ import { useHostSession } from "#/lib/games/use-host-session";
 import { fmt, plural, useI18n, useMessages } from "#/lib/i18n";
 import { api } from "../../../convex/_generated/api";
 import { SudokuBoard } from "./SudokuBoard";
+import { KillerVerifyStep } from "./SudokuKillerVerifyStep";
+import { nextGridIndex } from "./scan-grid-keys";
 
 type Step =
 	| { id: "upload" }
 	/** `corners` is null while the grid is being looked for. */
 	| { id: "corners"; source: HTMLCanvasElement; corners: Point[] | null }
 	| { id: "recognizing"; warpedUrl: string; progress: ScanProgress }
-	| { id: "verify"; warpedUrl: string; cells: ScanCell[] };
+	| { id: "verify"; warpedUrl: string; cells: ScanCell[] }
+	| { id: "verifyKiller"; warpedUrl: string; scan: KillerScan };
 
 export function SudokuScanFlow() {
 	const messages = useMessages();
@@ -73,11 +83,23 @@ export function SudokuScanFlow() {
 				warpedUrl,
 				progress: { step: "preparing", cellsDone: 0, cellsTotal: 81 },
 			});
-			const cells = await recognizeGrid(warped, (progress) =>
+			const onProgress = (progress: ScanProgress) =>
 				setStep((current) =>
 					current.id === "recognizing" ? { ...current, progress } : current,
-				),
-			);
+				);
+			// A Killer prints dashed cages and sums instead of givens.
+			const smooth = warpToSquare(source, corners, { smooth: true });
+			const cages = readWarpedCages(smooth);
+			if (isKillerRead(cages)) {
+				const sums = await readCageSums(smooth, cages, onProgress);
+				setStep({
+					id: "verifyKiller",
+					warpedUrl,
+					scan: killerScanFromRead(cages, sums),
+				});
+				return;
+			}
+			const cells = await recognizeGrid(warped, onProgress);
 			setStep({ id: "verify", warpedUrl, cells });
 		}, sudoku.scan.recognitionFailed);
 		if (!read) {
@@ -104,10 +126,15 @@ export function SudokuScanFlow() {
 					<p>
 						{step.progress.step === "preparing"
 							? sudoku.scan.preparingImage
-							: fmt(sudoku.scan.readingCells, {
-									done: step.progress.cellsDone,
-									total: step.progress.cellsTotal,
-								})}
+							: fmt(
+									step.progress.step === "cageSums"
+										? sudoku.scan.killer.readingSums
+										: sudoku.scan.readingCells,
+									{
+										done: step.progress.cellsDone,
+										total: step.progress.cellsTotal,
+									},
+								)}
 					</p>
 					<img
 						src={step.warpedUrl}
@@ -121,6 +148,15 @@ export function SudokuScanFlow() {
 					warpedUrl={step.warpedUrl}
 					cells={step.cells}
 					onCellsChange={(cells) => setStep({ ...step, cells })}
+					onRescan={() => setStep({ id: "upload" })}
+					onError={setError}
+				/>
+			) : null}
+			{step.id === "verifyKiller" ? (
+				<KillerVerifyStep
+					warpedUrl={step.warpedUrl}
+					scan={step.scan}
+					onScanChange={(scan) => setStep({ ...step, scan })}
 					onRescan={() => setStep({ id: "upload" })}
 					onError={setError}
 				/>
@@ -443,28 +479,6 @@ function scanCellSummary(cell: ScanCell) {
 }
 
 const GRID_SIZE = 9;
-
-/** Where an arrow key (or Home/End) moves focus in the 9x9 grid, clamped at the edges. */
-function nextGridIndex(index: number, key: string): number | null {
-	const row = Math.floor(index / GRID_SIZE);
-	const col = index % GRID_SIZE;
-	switch (key) {
-		case "ArrowLeft":
-			return row * GRID_SIZE + Math.max(0, col - 1);
-		case "ArrowRight":
-			return row * GRID_SIZE + Math.min(GRID_SIZE - 1, col + 1);
-		case "ArrowUp":
-			return Math.max(0, row - 1) * GRID_SIZE + col;
-		case "ArrowDown":
-			return Math.min(GRID_SIZE - 1, row + 1) * GRID_SIZE + col;
-		case "Home":
-			return row * GRID_SIZE;
-		case "End":
-			return row * GRID_SIZE + GRID_SIZE - 1;
-		default:
-			return null;
-	}
-}
 
 function VerifyStep({
 	warpedUrl,
