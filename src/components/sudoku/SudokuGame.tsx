@@ -243,6 +243,12 @@ export function SudokuGame({
 		);
 	}, [isActive, hint, history, cages, inputSettings.hintsUpTo]);
 
+	// A changed maximum makes an open hint's offer or level stale.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs only when the maximum changes.
+	useEffect(() => {
+		setHint(null);
+	}, [inputSettings.hintsUpTo]);
+
 	useEffect(() => {
 		if (hint && hintLevel === 3) {
 			hintHistory.current = rememberHint(

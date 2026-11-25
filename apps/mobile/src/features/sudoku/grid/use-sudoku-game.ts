@@ -35,7 +35,7 @@ import {
 	boardConflictsWithCages,
 	isBoardSolved,
 } from "@arcadeclub/core/sudoku-killer";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo } from "react-native";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
@@ -221,6 +221,13 @@ export function useSudokuGame(
 		statusRef,
 		inputSettings.hintsUpTo,
 	]);
+
+	// A changed maximum makes an open hint's offer or level stale.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs only when the maximum changes.
+	useEffect(() => {
+		setHint(null);
+		setNoHint(false);
+	}, [inputSettings.hintsUpTo]);
 
 	const highlights = useMemo(
 		() => hintHighlights(hint, hintLevel),

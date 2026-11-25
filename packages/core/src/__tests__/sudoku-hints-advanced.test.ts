@@ -414,6 +414,21 @@ describe("maximum hint level", () => {
 		expect(hint?.aboveMaxLevel).toBe(true);
 	});
 
+	it("still points out a mistake first", () => {
+		const state = STATES["x-wing"];
+		const grid = parseGrid(state.grid);
+		const solution = parseGrid(state.solution);
+		const open = grid.indexOf(0);
+		grid[open] = (solution[open] % 9) + 1;
+		const hint = findHint(grid, {
+			givens: parseGrid(state.givens),
+			solution,
+			maxLevel: "beginner",
+		});
+		expect(hint?.technique).toBe("mistake");
+		expect(hint?.aboveMaxLevel).toBeUndefined();
+	});
+
 	it("leaves a step within the maximum unflagged", () => {
 		expect(
 			hintAt(STATES["x-wing"], { maxLevel: "advanced" })?.aboveMaxLevel,

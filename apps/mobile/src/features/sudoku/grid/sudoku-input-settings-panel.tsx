@@ -60,7 +60,11 @@ export function SudokuInputSettingsPanel({ settings, onChange }: Props) {
 			</Pressable>
 			{open ? (
 				<View style={styles.body}>
-					<AppText variant="caption" style={styles.heading}>
+					<AppText
+						variant="caption"
+						accessibilityRole="header"
+						style={styles.heading}
+					>
 						{copy.hintsHeading.toUpperCase()}
 					</AppText>
 					<AppText variant="caption">{copy.hintsUpToLabel}</AppText>
@@ -90,7 +94,11 @@ export function SudokuInputSettingsPanel({ settings, onChange }: Props) {
 						/>
 					</View>
 					<View style={styles.divider} />
-					<AppText variant="caption" style={styles.heading}>
+					<AppText
+						variant="caption"
+						accessibilityRole="header"
+						style={styles.heading}
+					>
 						{copy.inputHeading.toUpperCase()}
 					</AppText>
 					<AppText variant="caption">{copy.tapCycleLabel}</AppText>

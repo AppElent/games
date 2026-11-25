@@ -572,7 +572,8 @@ export function findHint(
 				? { ...hint, usesEarlierHints: true }
 				: hint;
 			// Detectors run simplest first, so a step above the maximum means
-			// no step within it exists.
+			// no progress step within it exists. The Snyder fallback, which
+			// only suggests notes, does not count as one.
 			return options.maxLevel &&
 				levelRank(hint.level) > levelRank(options.maxLevel)
 				? { ...marked, aboveMaxLevel: true }

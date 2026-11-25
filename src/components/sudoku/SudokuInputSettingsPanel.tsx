@@ -56,7 +56,7 @@ export function SudokuInputSettingsPanel({ settings, onChange }: Props) {
 						</label>
 					))}
 				</fieldset>
-				<label className="inline-flex min-h-8 cursor-pointer items-center gap-2">
+				<label className="inline-flex min-h-11 cursor-pointer items-center gap-2">
 					<input
 						type="checkbox"
 						checked={settings.showHintLevel}
