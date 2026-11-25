@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, sign-up, account, theme sync, or how the Clerk session reaches Convex.
-version: 1.9.0
+version: 1.10.0
 status: current
 ---
 
@@ -139,11 +139,14 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   They also close the sheet with `accountSessionEnded` or `accountSignInFirst` ("Sign
   in again"); once the data is gone both read `accountSignInToFinish`. Their copy,
   and `accountChanged`'s, names no task, because change password shows them too.
-  Clerk signs the phone out on a real 401 before the call answers, which leaves
-  Change password a spinner and can take either screen away: a session end that
-  arrives then (no user, or the screen gone) is shown in a native alert
-  (`useUnseenEnd`, once per screen) instead of a notice nobody would see. Only codes
-  that end the session count; "reverification required" does not.
+  Clerk signs the phone out on a real 401 before the call answers, which can take
+  either screen away: a session end that arrives then (Change password without a user,
+  or the screen gone) is shown in a native alert (`useUnseenEnd`, once per screen)
+  instead of a notice nobody would see, with `accountSignInToFinish` once the data is
+  gone; none follows a cancelled sheet. The session counts as ended (`asSessionEnd`) on
+  Clerk's codes for it, and on any failure once Clerk has no user, whatever its code;
+  "reverification required" while signed in does not. Signed out, Change password says
+  `accountSessionEnded` and offers the sign-in.
 
   An account with two-step verification confirms with its second factor
   (authenticator app, texted code or backup code), the sign-in's step

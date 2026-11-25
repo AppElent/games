@@ -12,7 +12,7 @@ import { passwordUpdate } from "@arcadeclub/core/account-password";
 import { GameRuleError } from "@arcadeclub/core/errors";
 import { useClerk } from "@clerk/expo";
 import { useEffect, useRef, useState } from "react";
-import { useReverify } from "../reverify/use-reverify";
+import { asSessionEnd, useReverify } from "../reverify/use-reverify";
 import { type PasswordChangeError, passwordChangeError } from "./account-edits";
 
 export function useChangePassword(
@@ -57,9 +57,10 @@ export function useChangePassword(
 				await update();
 			}
 			return true;
-		} catch (failure) {
-			// A 401 signs the phone out. The screen then shows only a spinner, or is
-			// gone, so the Notice below would go unread: say it in an alert.
+		} catch (caught) {
+			const failure = asSessionEnd(clerk, caught);
+			// A 401 signs the phone out. The form is then off the screen, so the
+			// Notice under it would go unread: say it in an alert.
 			if (!mounted.current || !clerk.user) onUnseenEnd?.(failure);
 			setError(passwordChangeError(failure));
 			return false;

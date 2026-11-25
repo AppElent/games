@@ -328,6 +328,55 @@ describe("ChangePasswordScreen", () => {
 			expect(Alert.alert).toHaveBeenCalledTimes(1);
 		});
 
+		it("names an unmapped 401 that signed the phone out, and frees the form", async () => {
+			offer("needs_first_factor", ["password"], ["totp"]);
+			attemptFirst.mockResolvedValue({
+				status: "needs_second_factor",
+				supportedSecondFactors: [{ strategy: "totp" }],
+			});
+			attemptSecond.mockImplementation(async () => {
+				(clerk as { user?: unknown }).user = undefined;
+				throw { status: 401, errors: [{ code: "some_new_401" }] };
+			});
+			await submitChange();
+			await fireEvent.changeText(
+				await screen.findByTestId("second-factor-code"),
+				"123456",
+			);
+			await fireEvent.press(screen.getByTestId("second-factor-submit"));
+			await waitFor(() =>
+				expect(Alert.alert).toHaveBeenCalledWith(
+					messages.en.profile.reverify.endedTitle,
+					messages.en.serverErrors.accountSessionEnded,
+				),
+			);
+			expect(Alert.alert).toHaveBeenCalledTimes(1);
+			expect(screen.queryByText(reverifyCopy.title)).toBeNull();
+			expect(
+				screen.getByTestId("change-password-submit").props.accessibilityState
+					?.busy,
+			).not.toBe(true);
+		});
+
+		it("names an unmapped 401 on the change itself", async () => {
+			offer("needs_first_factor", ["password"]);
+			attemptFirst.mockResolvedValue({ status: "complete" });
+			updatePassword.mockReset();
+			await submitChange();
+			jest.mocked(Alert.alert).mockClear();
+			updatePassword.mockReset().mockImplementation(async () => {
+				(clerk as { user?: unknown }).user = undefined;
+				throw { status: 401, errors: [{ code: "some_new_401" }] };
+			});
+			await fireEvent.press(screen.getByTestId("change-password-submit"));
+			await waitFor(() =>
+				expect(Alert.alert).toHaveBeenCalledWith(
+					messages.en.profile.reverify.endedTitle,
+					messages.en.serverErrors.accountSessionEnded,
+				),
+			);
+		});
+
 		it("adds no alert when the Notice is on screen, still signed in", async () => {
 			offer("needs_first_factor", ["password"]);
 			attemptFirst.mockRejectedValue({
@@ -371,6 +420,27 @@ describe("ChangePasswordScreen", () => {
 			expect(mockPush).not.toHaveBeenCalled();
 			expect(takeReturnTarget("user_1")).toBeNull();
 		});
+	});
+
+	it.each([
+		["offers the sign-in once nobody is signed in", true],
+		["waits while Clerk loads", false],
+	])("%s", async (_name, isLoaded) => {
+		signIn(true);
+		jest
+			.mocked(useUser)
+			.mockReturnValue({ isLoaded, user: null } as unknown as ReturnType<
+				typeof useUser
+			>);
+		await renderScreen(<ChangePasswordScreen />);
+		const notice = messages.en.serverErrors.accountSessionEnded;
+		if (!isLoaded) {
+			expect(screen.queryByText(notice)).toBeNull();
+			return;
+		}
+		expect(screen.getByText(notice)).toBeTruthy();
+		await fireEvent.press(screen.getByLabelText(copy.signInAgain));
+		expect(mockPush).toHaveBeenCalledWith("/sign-in");
 	});
 
 	it("explains instead of asking for a password the account does not have", async () => {

@@ -22,8 +22,12 @@ import { signOutToReturn } from "../../../auth/return-target";
 import { api } from "../../../convex/api";
 import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
 import { useSessionAction } from "../../sessions/use-session-action";
-import { useReverify } from "../reverify/use-reverify";
-import { deletionSteps, needsSignInAgain } from "./delete-account-steps";
+import { asSessionEnd, useReverify } from "../reverify/use-reverify";
+import {
+	deletionSteps,
+	needsSignInAgain,
+	onceDataIsGone,
+} from "./delete-account-steps";
 
 export function useDeleteAccount(
 	/** Told of a session end that the screen is gone to show. */
@@ -34,7 +38,13 @@ export function useDeleteAccount(
 	const { signOut } = useAuth();
 	const backendAuth = useBackendAuthReady();
 	const deleteMyData = useMutation(api.account.deleteMyData);
-	const reverify = useReverify(clerk, onUnseenEnd);
+	/** The data is deleted, the account not yet: failures must say so. */
+	const dataGone = useRef(false);
+	const inContext = (failure: unknown) =>
+		dataGone.current ? onceDataIsGone(failure) : failure;
+	const reverify = useReverify(clerk, (ended) =>
+		onUnseenEnd?.(inContext(ended)),
+	);
 	const { run, busy, error, reset } = useSessionAction();
 	/** The Clerk instance does not let users delete themselves. */
 	const [unavailable, setUnavailable] = useState(false);
@@ -54,6 +64,7 @@ export function useDeleteAccount(
 			return false;
 		}
 		setUnavailable(false);
+		dataGone.current = false;
 		const sessionId = clerk.session?.id;
 		if (!user || !sessionId) {
 			// Nothing to delete with; a fresh sign-in starts one.
@@ -69,13 +80,19 @@ export function useDeleteAccount(
 							clerk,
 							account,
 							scope,
-							deleteBatch: () =>
-								deleteMyData({ expectedSubject: account.userId }),
+							deleteBatch: async () => {
+								const batch = await deleteMyData({
+									expectedSubject: account.userId,
+								});
+								dataGone.current = scope === "account" && batch.done;
+								return batch;
+							},
 							reverify: () => reverify.verify(account),
 							signOut: () => signOut(),
 						}),
 					);
-				} catch (failure) {
+				} catch (caught) {
+					const failure = inContext(asSessionEnd(clerk, caught));
 					// A 401 signs the phone out, which can close this screen first.
 					if (!mounted.current) onUnseenEnd?.(failure);
 					throw failure;

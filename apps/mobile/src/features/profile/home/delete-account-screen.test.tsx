@@ -294,6 +294,70 @@ describe("DeleteAccountScreen re-verify sheet", () => {
 		expect(mockDeleteMyData).not.toHaveBeenCalled();
 	});
 
+	describe("once the data is gone", () => {
+		const finish = messages.en.serverErrors.accountSignInToFinish;
+
+		it("keeps saying so when the sheet's 401 lands after the screen went", async () => {
+			recentSignIn = true;
+			Object.assign(mockUser as object, {
+				delete: jest.fn().mockRejectedValue({
+					errors: [{ code: "session_reverification_required" }],
+				}),
+			});
+			let reject!: (reason: unknown) => void;
+			mockAttemptFirstFactor.mockReset().mockReturnValue(
+				new Promise((_resolve, fail) => {
+					reject = fail;
+				}),
+			);
+			const view = await confirmDeletionAlert(copy.account.label);
+			await fireEvent.changeText(
+				await screen.findByTestId("reverify-password"),
+				"secret",
+			);
+			await fireEvent.press(screen.getByTestId("reverify-submit"));
+			await view.unmount();
+			await act(async () => {
+				reject({ errors: [{ code: "session_not_found" }] });
+			});
+			expect(Alert.alert).toHaveBeenLastCalledWith(
+				reverifyCopy.endedTitle,
+				finish,
+			);
+			// The confirmation, then this one.
+			expect(Alert.alert).toHaveBeenCalledTimes(2);
+		});
+
+		it.each([true, false])(
+			"keeps saying so when deleting the account hits a 401 (screen gone: %s)",
+			async (gone) => {
+				recentSignIn = true;
+				let reject!: (reason: unknown) => void;
+				Object.assign(mockUser as object, {
+					delete: () =>
+						new Promise((_resolve, fail) => {
+							reject = fail;
+						}),
+				});
+				const view = await confirmDeletionAlert(copy.account.label);
+				await waitFor(() => expect(mockDeleteMyData).toHaveBeenCalled());
+				if (gone) await view.unmount();
+				await act(async () => {
+					reject({ status: 401, errors: [{ code: "session_not_found" }] });
+				});
+				if (gone) {
+					expect(Alert.alert).toHaveBeenLastCalledWith(
+						reverifyCopy.endedTitle,
+						finish,
+					);
+				} else {
+					expect(screen.getByText(finish)).toBeTruthy();
+					expect(screen.getByLabelText(copy.signInAgain)).toBeTruthy();
+				}
+			},
+		);
+	});
+
 	it("tells what to do next, not to delete again, when the second factor can't be done after the data is gone", async () => {
 		recentSignIn = true;
 		const refusal = { errors: [{ code: "session_reverification_required" }] };

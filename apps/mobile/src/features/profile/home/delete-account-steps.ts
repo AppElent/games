@@ -80,11 +80,7 @@ export function deletionSteps({
 				// The data is gone, so whatever stops the sheet (offline, say) must
 				// not read as "nothing was deleted".
 				const outcome = await reverify().catch((failure) => {
-					const code = gameErrorData(failure)?.code;
-					if (code === "accountSignInFirst" || code === "accountSessionEnded") {
-						throw new GameRuleError("accountSignInToFinish");
-					}
-					if (code) throw failure;
+					if (gameErrorData(failure)) throw onceDataIsGone(failure);
 					reportError(failure);
 					return "cancelled" as const;
 				});
@@ -101,6 +97,14 @@ export function deletionSteps({
 			return deleteUser();
 		},
 	};
+}
+
+/** `failure` once the data is deleted: signing in again then finishes it. */
+export function onceDataIsGone(failure: unknown): unknown {
+	const code = gameErrorData(failure)?.code;
+	return code === "accountSignInFirst" || code === "accountSessionEnded"
+		? new GameRuleError("accountSignInToFinish")
+		: failure;
 }
 
 /** Refusals that a fresh sign-in, then deleting again, resolves (no session included). */

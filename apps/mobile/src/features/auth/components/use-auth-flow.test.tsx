@@ -1,11 +1,21 @@
 import { authErrorMessage } from "@arcadeclub/core/auth-errors";
 import { messages } from "@arcadeclub/core/messages";
+import { ClerkAPIResponseError } from "@clerk/react/errors";
 import { act, renderHook } from "@testing-library/react-native";
 import { useAuthFlow } from "./use-auth-flow";
 
-const locked = {
-	errors: [{ code: "user_locked", meta: { lockout_expires_in_seconds: 1800 } }],
-};
+// The SDK drops `meta.lockout_expires_in_seconds`: the wait is in the text.
+const locked = new ClerkAPIResponseError("Locked", {
+	status: 422,
+	data: [
+		{
+			code: "user_locked",
+			message: "Account locked",
+			long_message:
+				"Your account is locked. You will be able to try again in 30 minutes.",
+		},
+	],
+});
 
 describe("useAuthFlow", () => {
 	it("keeps the lockout wait Clerk reports, for the screen to show", async () => {

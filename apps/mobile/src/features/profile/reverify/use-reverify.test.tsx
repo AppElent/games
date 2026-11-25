@@ -246,6 +246,44 @@ describe("useReverify", () => {
 		},
 	);
 
+	/** Clerk drops the user, then refuses with a code the app does not know. */
+	const signedOut401 = (clerk: object) => async () => {
+		Object.assign(clerk, { user: undefined, session: undefined });
+		throw refusal("some_new_401", undefined, { status: 401 });
+	};
+
+	it("settles as a session end on an unmapped 401 that signed the phone out", async () => {
+		const { clerk, session, hook, rejected } = await setup([password]);
+		session.attemptFirstFactorVerification.mockImplementationOnce(
+			signedOut401(clerk),
+		);
+		await act(() => hook.result.current.submit("secret"));
+		expect(hook.result.current.method).toBeNull();
+		expect(gameErrorData(rejected.mock.calls[0]?.[0])?.code).toBe(
+			"accountSessionEnded",
+		);
+		expect(reportError).toHaveBeenCalledTimes(1);
+	});
+
+	it("keeps the sheet open on the same unmapped 401 while still signed in", async () => {
+		const { session, hook, rejected } = await setup([password]);
+		session.attemptFirstFactorVerification.mockRejectedValueOnce(
+			refusal("some_new_401", undefined, { status: 401 }),
+		);
+		await act(() => hook.result.current.submit("secret"));
+		expect(hook.result.current.errorKey).toBe("generic");
+		expect(rejected).not.toHaveBeenCalled();
+	});
+
+	it("says the session ended, not that the account changed, once signed out", async () => {
+		const { clerk, hook, rejected } = await setup([password]);
+		Object.assign(clerk, { user: null, session: null });
+		await act(() => hook.result.current.submit("secret"));
+		expect(gameErrorData(rejected.mock.calls[0]?.[0])?.code).toBe(
+			"accountSessionEnded",
+		);
+	});
+
 	it("rejects when Clerk won't even start", async () => {
 		const { session, hook } = await setup([password]);
 		await act(async () => hook.result.current.cancel());
@@ -733,6 +771,17 @@ describe("useReverify", () => {
 			expect(session.startVerification).toHaveBeenCalledTimes(1);
 		});
 
+		it("start afresh in the same tick the first one settles", async () => {
+			const { session, hook } = await setup([password]);
+			session.startVerification.mockClear();
+			await act(async () => {
+				hook.result.current.cancel();
+				void hook.result.current.verify(account);
+			});
+			expect(session.startVerification).toHaveBeenCalledTimes(1);
+			expect(hook.result.current.method).toBe("password");
+		});
+
 		it("start a fresh verification once the first one is done", async () => {
 			const { session, hook } = await setup([password]);
 			await act(() => hook.result.current.submit("secret"));
@@ -874,7 +923,7 @@ describe("useReverify", () => {
 			await act(async () => {
 				hook.result.current.verify(account);
 			});
-			return { hook, session };
+			return { clerk, hook, session };
 		}
 
 		beforeEach(() => unseen.mockClear());
@@ -898,6 +947,43 @@ describe("useReverify", () => {
 			expect(gameErrorData(unseen.mock.calls[0]?.[0])?.code).toBe(
 				"accountSessionEnded",
 			);
+		});
+
+		it("is announced for an unmapped 401 that signed the phone out", async () => {
+			const { clerk, hook, session } = await openThenUnmount();
+			let late!: () => void;
+			session.attemptFirstFactorVerification.mockReturnValueOnce(
+				new Promise<void>((resolve) => {
+					late = resolve;
+				}).then(signedOut401(clerk)),
+			);
+			await act(async () => {
+				void hook.result.current.submit("secret");
+			});
+			await hook.unmount();
+			await act(async () => late());
+			expect(gameErrorData(unseen.mock.calls[0]?.[0])?.code).toBe(
+				"accountSessionEnded",
+			);
+		});
+
+		it("is not announced when it lands after Cancel and then leaving", async () => {
+			const { hook, session } = await openThenUnmount();
+			let reject!: (reason: unknown) => void;
+			session.attemptFirstFactorVerification.mockReturnValueOnce(
+				new Promise((_resolve, fail) => {
+					reject = fail;
+				}),
+			);
+			await act(async () => {
+				void hook.result.current.submit("secret");
+			});
+			await act(async () => hook.result.current.cancel());
+			await hook.unmount();
+			await act(async () => {
+				reject(refusal("session_not_found"));
+			});
+			expect(unseen).not.toHaveBeenCalled();
 		});
 
 		it("is not announced for a wrong entry or after cancelling", async () => {
