@@ -18,7 +18,7 @@
     "build": "vite build && node scripts/generate-sw.mjs",
     "build:development": "vite build --mode development && node scripts/generate-sw.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && pnpm --filter @arcadeclub/core --filter @arcadeclub/chess --filter @arcadeclub/mobile run typecheck",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p convex/tsconfig.json && pnpm --filter @arcadeclub/core --filter @arcadeclub/chess --filter @arcadeclub/mobile run typecheck",
     "test": "vitest run && pnpm --filter @arcadeclub/mobile test",
     "test:watch": "vitest",
     "format": "biome format",
