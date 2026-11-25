@@ -96,6 +96,8 @@ export function SudokuGame({
 	const [hintLevel, setHintLevel] = useState<1 | 2 | 3>(1);
 	// Eliminations of hints explained in full, so the next hint moves on.
 	const hintHistory = useRef<HintHistory>([]);
+	// The board the shown hint was found on: undo and redo keep the hint open.
+	const hintGrid = useRef<number[]>([]);
 	const [editingTitle, setEditingTitle] = useState(false);
 	const [titleDraft, setTitleDraft] = useState(title);
 
@@ -228,9 +230,11 @@ export function SudokuGame({
 		if (!isActive() || hint) {
 			return;
 		}
+		const grid = effectiveGrid(history.current);
+		hintGrid.current = grid;
 		setHintLevel(1);
 		setHint(
-			findHint(effectiveGrid(history.current), {
+			findHint(grid, {
 				givens: history.current.givens,
 				history: hintHistory.current,
 				cages,
@@ -242,7 +246,7 @@ export function SudokuGame({
 		if (hint && hintLevel === 3) {
 			hintHistory.current = rememberHint(
 				hintHistory.current,
-				effectiveGrid(historyRef.current.current),
+				hintGrid.current,
 				hint,
 			);
 		}

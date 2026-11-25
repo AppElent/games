@@ -94,7 +94,7 @@ export const sudoku = {
 			direction:
 				"Er is {aFish} op de {digit}: in {base} kan hij alleen in {cover}.",
 			explanation:
-				"In {base} kan de {digit} alleen in {cells}, allemaal binnen {cover}. Elk van {base} krijgt zijn {digit} in een van deze vakjes, dus {cover} krijgen de hunne daar ook, en de {digit} valt af in {eliminated}.",
+				"In {base} kan de {digit} alleen in {cells}, allemaal binnen {cover}. {base} krijgen elk hun {digit} in een van deze vakjes, dus {cover} krijgen de hunne daar ook, en de {digit} valt af in {eliminated}.",
 		},
 		skyscraper: {
 			title: "Skyscraper",

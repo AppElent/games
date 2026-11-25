@@ -62,6 +62,8 @@ export function useSudokuGame(
 	const [noHint, setNoHint] = useState(false);
 	// Eliminations of hints explained in full, so the next hint moves on.
 	const hintHistory = useRef<HintHistory>([]);
+	// The board the shown hint was found on.
+	const hintGrid = useRef<number[]>([]);
 	// Every board or option change is written, with the clock alongside.
 	const write = useCallback(
 		(progress: PuzzleProgress) =>
@@ -187,14 +189,16 @@ export function useSudokuGame(
 			if (hintLevel === 2) {
 				hintHistory.current = rememberHint(
 					hintHistory.current,
-					effectiveGrid(history.current),
+					hintGrid.current,
 					hint,
 				);
 			}
 			setHintLevel((level) => (level < 3 ? ((level + 1) as 2 | 3) : level));
 			return;
 		}
-		const found = findHint(effectiveGrid(history.current), {
+		const grid = effectiveGrid(history.current);
+		hintGrid.current = grid;
+		const found = findHint(grid, {
 			solution,
 			givens: history.current.givens,
 			history: hintHistory.current,
