@@ -208,7 +208,21 @@ export const sudoku = {
 		hint: "Hint",
 	},
 	inputSettings: {
-		title: "Invoerinstellingen",
+		title: "Instellingen",
+		hintsHeading: "Hints",
+		inputHeading: "Invoer",
+		hintsUpToLabel: "Hints gaan tot en met",
+		hintLevels: {
+			beginner: "Basis",
+			intermediate: "Gemiddeld",
+			advanced: "Gevorderd",
+		},
+		hintLevelNotes: {
+			beginner: "Alleen singles",
+			intermediate: "Ook paren, drietallen en wijzend",
+			advanced: "Ook X-Wing, Swordfish, wings en unieke rechthoek",
+		},
+		showHintLevel: "Toon het niveau bij elke hint",
 		tapCycleLabel: "Nog eens op het geselecteerde vakje tikken wisselt naar",
 		tapCycleNote: "Cijfer zit er altijd bij.",
 		tapCycleSwitchLabel: "{mode} in de tikvolgorde",
@@ -240,6 +254,19 @@ export const sudoku = {
 		hintFallbackTitle: "Hint",
 		dismissHint: "Sluiten",
 		tellMeMore: "Vertel meer",
+		hintAboveMax:
+			"Voor de volgende stap is {needed} nodig. Je hints gaan tot en met {max}.",
+		hintNeeds: {
+			beginner: "een basistechniek",
+			intermediate: "een gemiddelde techniek",
+			advanced: "een gevorderde techniek",
+		},
+		hintMax: {
+			beginner: "basis",
+			intermediate: "gemiddeld",
+			advanced: "gevorderd",
+		},
+		showHintAnyway: "Toch tonen",
 		autoCleanupLabel:
 			"Notities automatisch verwijderen zodra een cijfer wordt geplaatst",
 		restartConfirm:

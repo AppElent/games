@@ -170,4 +170,23 @@ describe("sudoku hints", () => {
 		await act(async () => result.current.requestHint());
 		expect(result.current.hint).toEqual(first);
 	});
+
+	it("asks before showing a step above the maximum hint level", async () => {
+		const { result } = await renderHook(
+			() =>
+				useSudokuGame(hintSave, {
+					...DEFAULT_SUDOKU_INPUT_SETTINGS,
+					hintsUpTo: "beginner",
+				}),
+			{ wrapper },
+		);
+		await act(async () => result.current.requestHint());
+		const offered = result.current.hint;
+		expect(offered?.aboveMaxLevel).toBe(true);
+		expect(result.current.hintCells).toBeUndefined();
+		await act(async () => result.current.requestHint());
+		expect(result.current.hint?.aboveMaxLevel).toBeUndefined();
+		expect(result.current.hint?.technique).toBe(offered?.technique);
+		expect(result.current.hintLevel).toBe(1);
+	});
 });

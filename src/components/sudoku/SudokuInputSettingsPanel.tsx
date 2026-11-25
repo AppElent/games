@@ -1,3 +1,4 @@
+import { HINT_LEVELS } from "@arcadeclub/core/sudoku-hints";
 import {
 	CORNER_NOTE_LAYOUTS,
 	SUDOKU_CYCLE_MODES,
@@ -6,12 +7,17 @@ import {
 import { ChevronDown } from "lucide-react";
 import { useMessages } from "#/lib/i18n";
 
+const HEADING = "text-[11px] font-bold uppercase tracking-wider text-slate-400";
+
 type Props = {
 	settings: SudokuInputSettings;
 	onChange: (settings: SudokuInputSettings) => void;
 };
 
-/** Which modes a second tap cycles through, and where corner notes sit. */
+/**
+ * How far hints go and whether they show their level, then which modes a
+ * second tap cycles through and where corner notes sit.
+ */
 export function SudokuInputSettingsPanel({ settings, onChange }: Props) {
 	const copy = useMessages().games.sudoku.inputSettings;
 	return (
@@ -24,6 +30,46 @@ export function SudokuInputSettingsPanel({ settings, onChange }: Props) {
 				/>
 			</summary>
 			<div className="flex flex-col gap-3 px-3 pb-3">
+				<h3 className={HEADING}>{copy.hintsHeading}</h3>
+				<fieldset className="flex flex-col">
+					<legend className="mb-1.5 text-slate-400">
+						{copy.hintsUpToLabel}
+					</legend>
+					{HINT_LEVELS.map((level) => (
+						<label
+							key={level}
+							className="flex min-h-11 cursor-pointer items-center gap-2"
+						>
+							<input
+								type="radio"
+								name="sudoku-hints-up-to"
+								checked={settings.hintsUpTo === level}
+								onChange={() => onChange({ ...settings, hintsUpTo: level })}
+								className="accent-sky-400"
+							/>
+							<span className="flex flex-col">
+								<span>{copy.hintLevels[level]}</span>
+								<span className="text-slate-400">
+									{copy.hintLevelNotes[level]}
+								</span>
+							</span>
+						</label>
+					))}
+				</fieldset>
+				<label className="inline-flex min-h-8 cursor-pointer items-center gap-2">
+					<input
+						type="checkbox"
+						checked={settings.showHintLevel}
+						onChange={(event) =>
+							onChange({ ...settings, showHintLevel: event.target.checked })
+						}
+						className="accent-sky-400"
+					/>
+					{copy.showHintLevel}
+				</label>
+				<h3 className={`${HEADING} border-t border-[var(--club-line)] pt-3`}>
+					{copy.inputHeading}
+				</h3>
 				<fieldset className="flex flex-col">
 					<legend className="mb-1.5 text-slate-400">
 						{copy.tapCycleLabel}

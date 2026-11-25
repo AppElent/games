@@ -1,7 +1,9 @@
 /**
- * Which modes a second tap on the selected cell cycles through, and where
- * corner notes sit. Folded away under the keypad until the player opens it.
+ * How far hints go and whether they show their level, then which modes a
+ * second tap on the selected cell cycles through and where corner notes sit.
+ * Folded away under the keypad until the player opens it.
  */
+import { HINT_LEVELS } from "@arcadeclub/core/sudoku-hints";
 import {
 	CORNER_NOTE_LAYOUTS,
 	SUDOKU_CYCLE_MODES,
@@ -19,6 +21,7 @@ import {
 	useThemedStyles,
 	useTokens,
 } from "../../../theme";
+import { ChoiceList } from "../../../ui/choice-list";
 import { Icon } from "../../../ui/icon";
 import { Segmented } from "../../../ui/segmented";
 import { AppText } from "../../../ui/text";
@@ -57,6 +60,39 @@ export function SudokuInputSettingsPanel({ settings, onChange }: Props) {
 			</Pressable>
 			{open ? (
 				<View style={styles.body}>
+					<AppText variant="caption" style={styles.heading}>
+						{copy.hintsHeading.toUpperCase()}
+					</AppText>
+					<AppText variant="caption">{copy.hintsUpToLabel}</AppText>
+					<ChoiceList
+						accessibilityLabel={copy.hintsUpToLabel}
+						choices={HINT_LEVELS.map((value) => ({
+							value,
+							label: copy.hintLevels[value],
+							detail: copy.hintLevelNotes[value],
+						}))}
+						value={settings.hintsUpTo}
+						onChange={(hintsUpTo) => onChange({ ...settings, hintsUpTo })}
+						testID="sudoku-hints-up-to"
+					/>
+					<View style={styles.row}>
+						<AppText variant="secondary" tone="default" style={styles.grow}>
+							{copy.showHintLevel}
+						</AppText>
+						<Switch
+							value={settings.showHintLevel}
+							onValueChange={(showHintLevel) =>
+								onChange({ ...settings, showHintLevel })
+							}
+							trackColor={{ true: tokens.accent, false: tokens.surface2 }}
+							accessibilityLabel={copy.showHintLevel}
+							testID="sudoku-show-hint-level"
+						/>
+					</View>
+					<View style={styles.divider} />
+					<AppText variant="caption" style={styles.heading}>
+						{copy.inputHeading.toUpperCase()}
+					</AppText>
 					<AppText variant="caption">{copy.tapCycleLabel}</AppText>
 					{SUDOKU_CYCLE_MODES.map((mode) => (
 						<View key={mode} style={styles.row}>
@@ -130,5 +166,11 @@ const createStyles = (colors: Tokens) =>
 			gap: spacing.sm,
 		},
 		section: { marginTop: spacing.sm },
+		heading: { fontWeight: "700", letterSpacing: 0.5 },
+		divider: {
+			height: StyleSheet.hairlineWidth,
+			backgroundColor: colors.border,
+			marginVertical: spacing.xs,
+		},
 		grow: { flex: 1 },
 	});

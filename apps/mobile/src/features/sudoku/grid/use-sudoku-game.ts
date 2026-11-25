@@ -185,6 +185,10 @@ export function useSudokuGame(
 
 	const requestHint = useCallback(() => {
 		if (statusRef.current !== "active") return;
+		if (hint?.aboveMaxLevel) {
+			setHint({ ...hint, aboveMaxLevel: undefined });
+			return;
+		}
 		if (hint) {
 			if (hintLevel === 2) {
 				hintHistory.current = rememberHint(
@@ -203,11 +207,20 @@ export function useSudokuGame(
 			givens: history.current.givens,
 			history: hintHistory.current,
 			cages,
+			maxLevel: inputSettings.hintsUpTo,
 		});
 		setHint(found);
 		setHintLevel(1);
 		setNoHint(!found);
-	}, [hint, hintLevel, history, solution, cages, statusRef]);
+	}, [
+		hint,
+		hintLevel,
+		history,
+		solution,
+		cages,
+		statusRef,
+		inputSettings.hintsUpTo,
+	]);
 
 	const highlights = useMemo(
 		() => hintHighlights(hint, hintLevel),

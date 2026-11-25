@@ -4,7 +4,7 @@
 import { describeHint } from "@arcadeclub/core/sudoku-hints";
 import { nextTapMode } from "@arcadeclub/core/sudoku-input";
 import { StyleSheet, Switch, View } from "react-native";
-import { useI18n } from "../../../i18n";
+import { fmt, useI18n } from "../../../i18n";
 import {
 	radius,
 	spacing,
@@ -41,12 +41,23 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 				{game.hint || game.noHint ? (
 					<View style={styles.hint} accessibilityLiveRegion="polite">
 						<View style={styles.hintHead}>
-							<AppText variant="label" style={{ color: tokens.orange }}>
-								{(game.hint && game.hintLevel >= 2
-									? describeHint(game.hint, game.hintLevel, copy.hints).title
-									: copy.game.hintFallbackTitle
-								).toUpperCase()}
-							</AppText>
+							<View style={styles.hintTitle}>
+								<AppText variant="label" style={{ color: tokens.orange }}>
+									{(game.hint && game.hintLevel >= 2 && !game.hint.aboveMaxLevel
+										? describeHint(game.hint, game.hintLevel, copy.hints).title
+										: copy.game.hintFallbackTitle
+									).toUpperCase()}
+								</AppText>
+								{game.hint &&
+								inputSettings.showHintLevel &&
+								game.hint.technique !== "mistake" ? (
+									<View style={styles.badge}>
+										<AppText variant="caption" style={styles.badgeText}>
+											{copy.inputSettings.hintLevels[game.hint.level]}
+										</AppText>
+									</View>
+								) : null}
+							</View>
 							<Button
 								variant="plain"
 								compact
@@ -54,7 +65,23 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 								onPress={game.dismissHint}
 							/>
 						</View>
-						{game.hint ? (
+						{game.hint?.aboveMaxLevel ? (
+							<>
+								<AppText variant="secondary" tone="default">
+									{fmt(copy.game.hintAboveMax, {
+										needed: copy.game.hintNeeds[game.hint.level],
+										max: copy.game.hintMax[inputSettings.hintsUpTo],
+									})}
+								</AppText>
+								<Button
+									variant="secondary"
+									compact
+									label={copy.game.showHintAnyway}
+									onPress={game.requestHint}
+									style={styles.start}
+								/>
+							</>
+						) : game.hint ? (
 							<>
 								<AppText variant="secondary" tone="default">
 									{describeHint(game.hint, game.hintLevel, copy.hints).text}
@@ -161,6 +188,20 @@ const createStyles = (colors: Tokens) =>
 			alignItems: "center",
 			justifyContent: "space-between",
 		},
+		hintTitle: {
+			flexDirection: "row",
+			flexWrap: "wrap",
+			alignItems: "center",
+			gap: spacing.sm,
+			flexShrink: 1,
+		},
+		badge: {
+			borderRadius: radius.pill,
+			borderWidth: 1,
+			borderColor: colors.orange,
+			paddingHorizontal: spacing.sm,
+		},
+		badgeText: { color: colors.orange, fontWeight: "700" },
 		start: { alignSelf: "flex-start" },
 		options: {
 			flexDirection: "row",
