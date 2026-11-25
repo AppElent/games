@@ -131,6 +131,15 @@ describe("SignInForm", () => {
 		expect(signIn.finalize).not.toHaveBeenCalled();
 	});
 
+	it("says a reload is needed when an earlier submit already signed in", async () => {
+		signIn.password.mockResolvedValue(clerkError("session_exists"));
+		renderForm();
+		fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"You are already signed in. Reload the page or restart the app.",
+		);
+	});
+
 	it("points a code-only account to the emailed code", async () => {
 		// The real shape: Clerk's wrapper code on top, the API code inside.
 		signIn.password.mockResolvedValue({
@@ -556,13 +565,15 @@ describe("SignInForm", () => {
 		const submit = () =>
 			fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
 
-		it("does not sign in or navigate once a newer form is open", async () => {
+		it("does not sign in or navigate after a newer submit", async () => {
 			const answer = pending();
 			const onSuccess = vi.fn();
 			renderForm(onSuccess);
 			submit();
 			cleanup();
 			renderForm(onSuccess);
+			pending();
+			submit();
 			await answer("complete");
 			expect(signIn.finalize).not.toHaveBeenCalled();
 			expect(onSuccess).not.toHaveBeenCalled();
@@ -581,7 +592,39 @@ describe("SignInForm", () => {
 			expect(onSuccess).not.toHaveBeenCalled();
 		});
 
-		it("ignores an emailed code's answer after a newer form opened", async () => {
+		it("signs in without navigating when the form was only reopened", async () => {
+			const answer = pending();
+			signIn.finalize.mockResolvedValue(ok);
+			const onSuccess = vi.fn();
+			renderForm(onSuccess);
+			submit();
+			cleanup();
+			renderForm(onSuccess);
+			await answer("complete");
+			expect(signIn.finalize).toHaveBeenCalledTimes(1);
+			expect(onSuccess).not.toHaveBeenCalled();
+		});
+
+		it("does not check a code against another attempt; resending starts over", async () => {
+			signIn.id = "sia_b";
+			renderForm();
+			fireEvent.change(await openCodeStep(), { target: { value: "424242" } });
+			signIn.id = "sia_a";
+			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+			expect((await screen.findByRole("alert")).textContent).toBe(
+				"That code has expired. Send a new one.",
+			);
+			expect(signIn.emailCode.verifyCode).not.toHaveBeenCalled();
+			fireEvent.click(screen.getByRole("button", { name: "Send a new code" }));
+			await vi.waitFor(() =>
+				expect(signIn.emailCode.sendCode).toHaveBeenLastCalledWith({
+					emailAddress: "a@b.com",
+				}),
+			);
+			expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(2);
+		});
+
+		it("ignores an emailed code's answer after a newer submit", async () => {
 			let answer: (value: typeof ok) => void = () => {};
 			signIn.emailCode.verifyCode.mockImplementation(
 				() =>
@@ -595,6 +638,8 @@ describe("SignInForm", () => {
 			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 			cleanup();
 			renderForm(onSuccess);
+			pending();
+			submit();
 			signIn.status = "complete";
 			answer(ok);
 			await new Promise((resolve) => setTimeout(resolve));

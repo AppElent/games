@@ -55,6 +55,8 @@ const CODE_MAP: Readonly<Record<string, AuthErrorKey>> = {
 	network_error: "network",
 	clerk_offline: "network",
 	form_param_max_length_exceeded: "tooLong",
+	// An earlier submit signed in, but this page has not picked its session up.
+	session_exists: "alreadySignedIn",
 	session_reverification_required: "signInAgain",
 	session_not_found: "signInAgain",
 	authentication_invalid: "signInAgain",

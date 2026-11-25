@@ -105,6 +105,8 @@ export const auth = {
 			"Dit account is tijdelijk vergrendeld na te veel mislukte pogingen. Probeer het later opnieuw.",
 		network: "Netwerkfout. Controleer je verbinding en probeer opnieuw.",
 		tooLong: "Dat is te lang.",
+		alreadySignedIn:
+			"Je bent al ingelogd. Herlaad de pagina of herstart de app.",
 		signInAgain:
 			"Log voor je veiligheid eerst opnieuw in en probeer het dan nog eens.",
 		unsupportedStep:

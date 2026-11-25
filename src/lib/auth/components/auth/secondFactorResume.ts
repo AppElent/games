@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * Lets the second step survive a page reload. Clerk keeps the attempt; this
- * tab remembers, for as long as the step is open, which attempt and page it
- * was. Only that attempt is resumed, so one someone else left in the browser
+ * tab remembers, until the step closes, which attempt and page it was. Only that attempt is resumed, so one someone else left in the browser
  * is not picked up. Without storage, a reload starts the sign-in over.
  */
 const KEY = "arcade-second-factor";

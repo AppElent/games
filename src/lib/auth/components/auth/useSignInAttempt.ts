@@ -2,13 +2,13 @@ import { useCallback, useEffect, useRef } from "react";
 
 /**
  * Clerk keeps one sign-in per page and writes every answer into it, so an
- * answer to an earlier submit would otherwise act on a later one. Counts each
- * form that opens and each submit, across all sign-in forms.
+ * answer to an earlier submit would otherwise act on a later one. Counts every
+ * submit, across all sign-in forms.
  */
 let latest = 0;
 
 export type SignInAttempt = {
-	/** No sign-in form has opened and nothing was submitted since. */
+	/** Nothing was submitted since. */
 	isLatest: () => boolean;
 	/** Also: the form that started it is still on screen. */
 	isShown: () => boolean;
@@ -22,7 +22,6 @@ export type SignInAttempt = {
 export function useSignInAttempt(): () => SignInAttempt {
 	const mounted = useRef(false);
 	useEffect(() => {
-		latest++;
 		mounted.current = true;
 		return () => {
 			mounted.current = false;

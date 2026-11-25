@@ -47,11 +47,14 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   new one. A first step answered after its phone screen lost focus opens nothing
   (`useOpenSecondFactor`). Reloading the web page reopens the step on the method it
   was on, without sending a new code: the tab remembers the attempt's id and page
-  while the step is open (`secondFactorResume.ts`), and resumes only that attempt.
-- Clerk writes every answer into one sign-in, so the web's sign-in forms count opened
-  forms and submits (`useSignInAttempt`). An answer to a superseded one does not
+  until the step closes (`secondFactorResume.ts`), and resumes only that attempt; coming
+  back to that page after a typed URL or a plain link resumes it too.
+- Clerk writes every answer into one sign-in, so the web's sign-in forms count
+  submits (`useSignInAttempt`). An answer to a superseded one does not
   finalize, navigate or change a form; one whose form was only closed still signs in,
-  without navigating. The second step ends when another attempt took over.
+  without navigating. The code and second
+  steps refuse to act on an attempt other than the one they opened for. A superseded
+  sign-in's session stays until a reload, so a next submit says so (`alreadySignedIn`).
 - Every auth form on the web (sign-in, sign-up, reset, `/account`, the dev test login)
   and on the phone reads Clerk failures through the one table in
   `@arcadeclub/core/auth-errors`; the web's `useAuthErrorText` turns the key into

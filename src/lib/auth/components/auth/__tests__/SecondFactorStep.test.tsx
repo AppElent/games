@@ -211,7 +211,7 @@ describe("SecondFactorStep", () => {
 		expect(signIn.finalize).not.toHaveBeenCalled();
 	});
 
-	it("does not finalize a code answered after a newer step opened (APP-833)", async () => {
+	it("does not finalize a code answered after a newer submit (APP-833)", async () => {
 		let answer: (value: typeof ok) => void = () => {};
 		signIn.mfa.verifyTOTP.mockImplementation(
 			() =>
@@ -223,8 +223,10 @@ describe("SecondFactorStep", () => {
 		enter("Code", "123456");
 		cleanup();
 		renderStep();
+		const answerOld = answer;
+		enter("Code", "654321");
 		await complete();
-		answer(ok);
+		answerOld(ok);
 		await new Promise((resolve) => setTimeout(resolve));
 		expect(signIn.finalize).not.toHaveBeenCalled();
 		expect(onSuccess).not.toHaveBeenCalled();

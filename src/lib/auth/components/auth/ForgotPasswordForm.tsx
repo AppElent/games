@@ -1,6 +1,6 @@
 import { needsSecondFactor } from "@arcadeclub/core/second-factor";
 import { useSignIn } from "@clerk/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { fmt, useMessages } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
@@ -32,6 +32,8 @@ export function ForgotPasswordForm({
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
+	/** The attempt the code was emailed for; an earlier answer can replace it. */
+	const emailed = useRef<string | undefined>(undefined);
 	const resuming = useResumeSecondFactor(() => setStep("secondFactor"));
 
 	async function requestCode(e: React.FormEvent) {
@@ -41,9 +43,11 @@ export function ForgotPasswordForm({
 		setLoading(true);
 		try {
 			await orThrow(signIn.create({ identifier: email }));
-			if (!attempt.isLatest()) return;
+			// Nobody is left to use the code.
+			if (!attempt.isShown()) return;
 			await orThrow(signIn.resetPasswordEmailCode.sendCode());
 			if (!attempt.isLatest()) return;
+			emailed.current = signIn.id;
 			setStep("reset");
 		} catch (err) {
 			if (attempt.isLatest()) setError(errorText(err));
@@ -58,6 +62,11 @@ export function ForgotPasswordForm({
 		setError(null);
 		setLoading(true);
 		try {
+			if (signIn.id !== emailed.current) {
+				setStep("request");
+				setError(copy.errors.codeExpired);
+				return;
+			}
 			await orThrow(signIn.resetPasswordEmailCode.verifyCode({ code }));
 			if (!attempt.isLatest()) return;
 			await orThrow(signIn.resetPasswordEmailCode.submitPassword({ password }));

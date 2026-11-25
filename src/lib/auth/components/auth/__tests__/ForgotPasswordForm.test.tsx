@@ -208,7 +208,22 @@ describe("ForgotPasswordForm", () => {
 		).toBeDefined();
 	});
 
-	it("drops a reset answered after a newer form opened (APP-833)", async () => {
+	it("does not check a reset code against another attempt (APP-833)", async () => {
+		signIn.create.mockResolvedValue(ok);
+		signIn.resetPasswordEmailCode.sendCode.mockResolvedValue(ok);
+		renderForm();
+		fireEvent.click(screen.getByRole("button", { name: /send code/i }));
+		const code = await screen.findByLabelText("Code");
+		signIn.id = "sia_other";
+		fireEvent.submit(code.closest("form") as HTMLFormElement);
+		expect((await screen.findByRole("alert")).textContent).toBe(
+			"That code has expired. Send a new one.",
+		);
+		expect(signIn.resetPasswordEmailCode.verifyCode).not.toHaveBeenCalled();
+		expect(screen.getByRole("button", { name: /send code/i })).toBeDefined();
+	});
+
+	it("sends no reset code once its form closed (APP-833)", async () => {
 		let answer: (value: typeof ok) => void = () => {};
 		signIn.create.mockImplementation(
 			() =>

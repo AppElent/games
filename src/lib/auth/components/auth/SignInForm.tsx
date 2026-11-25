@@ -121,7 +121,7 @@ export function SignInForm({
 
 	async function resendCode() {
 		setNotice(null);
-		if (await emailCode.resend()) {
+		if (await emailCode.resend(email)) {
 			setNotice(copy.signInCode.resent);
 		}
 		codeRef.current?.focus();
