@@ -38,7 +38,7 @@ export function PasswordResetScreen({
 	const request = useCredentialForm({ email: initialEmail });
 	const [sentTo, setSentTo] = useState<string | null>(null);
 	const reset = useCredentialForm({ code: "", password: "" });
-	const error = useAuthError(flow.errorKey);
+	const error = useAuthError(flow.error);
 
 	if (!sentTo) {
 		const ready = request.values.email.trim().length > 0;

@@ -159,7 +159,8 @@ describe("deletionSteps", () => {
 
 	it.each([
 		["cancelled", "accountDeleteAgain", false],
-		["noSecondFactor", "accountDeleteAgain", false],
+		// Deleting again meets the same wall, so it says who can finish it.
+		["noSecondFactor", "accountSecondFactorToFinish", false],
 		["unsupported", "accountSignInToFinish", true],
 		// Verified, but Clerk refuses again.
 		["verified", "accountSignInToFinish", true],

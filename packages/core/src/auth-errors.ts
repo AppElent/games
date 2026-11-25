@@ -157,6 +157,9 @@ export function clerkError(error: unknown): AuthError | null {
 	return { key };
 }
 
+/** The longest lockout wait shown as a number; beyond it the message says "later". */
+export const MAX_LOCKOUT_SECONDS = 24 * 3600;
+
 /** Localized copy for a mapped Clerk error, never raw Clerk English. */
 export function authErrorMessage(
 	messages: Pick<Messages, "auth">,
@@ -165,8 +168,13 @@ export function authErrorMessage(
 ): string | null {
 	if (!error) return null;
 	if (typeof error === "string") return messages.auth.errors[error];
-	if (error.key === "accountLocked" && positiveSeconds(error.lockoutSeconds)) {
-		const seconds = error.lockoutSeconds as number;
+	const seconds = positiveSeconds(error.lockoutSeconds);
+	// A wait of days (or a garbled one) reads as nonsense in hours: say "later".
+	if (
+		error.key === "accountLocked" &&
+		seconds !== undefined &&
+		seconds <= MAX_LOCKOUT_SECONDS
+	) {
 		const { lockout } = messages.auth;
 		const duration =
 			seconds < 60
@@ -184,17 +192,28 @@ export type ClerkErrorSignal = {
 	global?: readonly unknown[] | null;
 };
 
-/** Field errors first, then global, then the method's returned wrapper. */
+/**
+ * Field errors first, then global, then the method's returned wrapper; the
+ * mapped failure with any lockout wait Clerk gave.
+ */
+export function pickClerkError(
+	errors: ClerkErrorSignal | null | undefined,
+	returned: unknown,
+): AuthError | null {
+	for (const value of Object.values(errors?.fields ?? {})) {
+		const list = Array.isArray(value) ? value : [value];
+		for (const item of list) {
+			const error = clerkError(item);
+			if (error) return error;
+		}
+	}
+	return clerkError(errors?.global?.[0]) ?? clerkError(returned);
+}
+
+/** `pickClerkError`'s catalog key alone, for callers that show no wait. */
 export function pickClerkErrorKey(
 	errors: ClerkErrorSignal | null | undefined,
 	returned: unknown,
 ): AuthErrorKey | null {
-	for (const value of Object.values(errors?.fields ?? {})) {
-		const list = Array.isArray(value) ? value : [value];
-		for (const item of list) {
-			const key = clerkErrorKey(item);
-			if (key) return key;
-		}
-	}
-	return clerkErrorKey(errors?.global?.[0]) ?? clerkErrorKey(returned);
+	return pickClerkError(errors, returned)?.key ?? null;
 }

@@ -10,7 +10,7 @@ import { useSignInFlow } from "../components/use-sign-in-flow";
 
 export function usePasswordSignIn() {
 	const { signIn, errors } = useSignIn();
-	const { finishSignIn, busy, errorKey, unsupported } = useSignInFlow(
+	const { finishSignIn, busy, error, unsupported } = useSignInFlow(
 		signIn,
 		errors,
 	);
@@ -24,5 +24,5 @@ export function usePasswordSignIn() {
 		[finishSignIn, signIn],
 	);
 
-	return { submit, busy, unsupported, errorKey };
+	return { submit, busy, unsupported, error };
 }

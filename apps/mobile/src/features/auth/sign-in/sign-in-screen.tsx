@@ -32,8 +32,8 @@ export function SignInScreen() {
 		password: devLogin?.password ?? "",
 	});
 	const passwordRef = useRef<TextInputInstance>(null);
-	const passwordError = useAuthError(password.errorKey);
-	const codeError = useAuthError(emailCode.errorKey);
+	const passwordError = useAuthError(password.error);
+	const codeError = useAuthError(emailCode.error);
 
 	const ready =
 		form.values.email.trim().length > 0 && form.values.password.length > 0;

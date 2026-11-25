@@ -44,13 +44,15 @@ jest.mock("../../sudoku/saves/sudoku-save-store", () => ({
 }));
 
 /** Chooses to delete, and confirms it in the native alert. */
-async function confirmDeletionAlert() {
-	await renderScreen(<DeleteAccountScreen />);
+async function confirmDeletionAlert(scope?: string) {
+	const view = await renderScreen(<DeleteAccountScreen />);
+	if (scope) await fireEvent.press(screen.getByText(scope));
 	await fireEvent.press(screen.getByTestId("delete-account-continue"));
 	const buttons = jest.mocked(Alert.alert).mock.calls[0]?.[2];
 	await act(async () => {
 		buttons?.find(({ style }) => style === "destructive")?.onPress?.();
 	});
+	return view;
 }
 
 async function confirmDeletion() {
@@ -264,5 +266,57 @@ describe("DeleteAccountScreen re-verify sheet", () => {
 		);
 		expect(mockDeleteMyData).not.toHaveBeenCalled();
 		expect(mockRouter.dismissTo).not.toHaveBeenCalled();
+	});
+
+	it("says why in an alert when a 401 signed the phone out before the answer", async () => {
+		let reject!: (reason: unknown) => void;
+		mockAttemptFirstFactor.mockReturnValue(
+			new Promise((_resolve, fail) => {
+				reject = fail;
+			}),
+		);
+		const view = await confirmDeletionAlert();
+		await fireEvent.changeText(
+			await screen.findByTestId("reverify-password"),
+			"secret",
+		);
+		await fireEvent.press(screen.getByTestId("reverify-submit"));
+		await waitFor(() => expect(mockAttemptFirstFactor).toHaveBeenCalled());
+		// The signed-out app drops this screen first.
+		await view.unmount();
+		await act(async () => {
+			reject({ errors: [{ code: "session_not_found" }] });
+		});
+		expect(Alert.alert).toHaveBeenLastCalledWith(
+			reverifyCopy.endedTitle,
+			messages.en.serverErrors.accountSessionEnded,
+		);
+		expect(mockDeleteMyData).not.toHaveBeenCalled();
+	});
+
+	it("tells what to do next, not to delete again, when the second factor can't be done after the data is gone", async () => {
+		recentSignIn = true;
+		const refusal = { errors: [{ code: "session_reverification_required" }] };
+		Object.assign(mockUser as object, {
+			delete: jest.fn().mockRejectedValue(refusal),
+		});
+		Object.assign(mockSession as object, {
+			startVerification: async () => ({
+				status: "needs_second_factor",
+				supportedSecondFactors: [{ strategy: "passkey" }],
+			}),
+		});
+		await confirmDeletionAlert(copy.account.label);
+		expect(
+			await screen.findByText(
+				messages.en.serverErrors.accountSecondFactorToFinish,
+			),
+		).toBeTruthy();
+		expect(mockDeleteMyData).toHaveBeenCalledTimes(1);
+		expect(
+			screen.queryByText(messages.en.serverErrors.accountDeleteAgain),
+		).toBeNull();
+		// Signing in again would meet the same second step.
+		expect(screen.queryByLabelText(copy.signInAgain)).toBeNull();
 	});
 });

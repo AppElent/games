@@ -82,21 +82,22 @@ export const serverErrors = {
 	cardsNoKnock: "Nobody has knocked yet.",
 	signInRequired: "Sign in required.",
 	accountChanged:
-		"You switched accounts. Sign in to the account you want to delete and try again.",
+		"You switched accounts. Sign in to the account you started with and try again.",
 	accountInActiveGame:
 		"You're in a game with other players right now. Finish it first, or try again in {minutes} minutes.",
 	accountExportCursorInvalid:
 		"This export can't continue. Start the download again.",
 	accountSignInFirst:
-		"To delete, sign in again first. This keeps anyone else using this device from deleting your data or account.",
+		"Sign in again first, then try once more. This keeps anyone else using this device from taking over your account.",
 	accountVerifyUnsupported:
 		"We can't confirm it's you here with a password or an emailed code. Sign in again first, then delete.",
 	accountSecondFactorUnsupported:
 		"Arcade Club can't do your account's second step to confirm it's you. It accepts a code from an authenticator app or a text message, or a backup code. Email privacy@appelent.nl for help.",
+	accountSecondFactorToFinish:
+		"Your Arcade Club data is deleted, but your AppElent account isn't yet. Arcade Club can't do your account's second step to confirm it's you. Email privacy@appelent.nl for help finishing.",
 	accountSignInToFinish:
 		"Your Arcade Club data is deleted, but your AppElent account isn't yet: it needs a recent sign-in. Sign in again, then delete your whole account again to finish.",
-	accountSessionEnded:
-		"Your session ended. Sign in again, then try deleting again.",
+	accountSessionEnded: "Your session ended. Sign in again, then try again.",
 	accountDeleteAgain:
 		"Your Arcade Club data is deleted, but your AppElent account isn't yet. Delete your account again to finish.",
 	signInToHost: "Sign in to host a game.",

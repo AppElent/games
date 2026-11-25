@@ -37,6 +37,6 @@ export function usePasswordReset() {
 		submit,
 		busy: flow.busy,
 		unsupported: flow.unsupported,
-		errorKey: flow.errorKey,
+		error: flow.error,
 	};
 }

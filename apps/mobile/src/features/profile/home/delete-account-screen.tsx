@@ -19,6 +19,7 @@ import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { ReverifySheet } from "../reverify/reverify-sheet";
+import { useUnseenEnd } from "../reverify/use-unseen-end";
 import { useDeleteAccount } from "./use-delete-account";
 
 const SCOPES: readonly DeletionScope[] = ["app", "account"];
@@ -27,7 +28,7 @@ export function DeleteAccountScreen() {
 	const { t } = useI18n();
 	const copy = t.profile.deleteAccount;
 	const router = useRouter();
-	const deletion = useDeleteAccount();
+	const deletion = useDeleteAccount(useUnseenEnd());
 	const [scope, setScope] = useState<DeletionScope>("app");
 	const [leaving, setLeaving] = useState(false);
 
