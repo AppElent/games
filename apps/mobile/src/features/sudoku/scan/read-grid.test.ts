@@ -1,7 +1,17 @@
+import { mulberry32 } from "@arcadeclub/core/random";
+import { generateSolvedGrid } from "@arcadeclub/core/sudoku";
+import { generateKillerCages } from "@arcadeclub/core/sudoku-killer";
 import { isLowConfidence } from "@arcadeclub/core/sudoku-scan";
+import { killerScanCages } from "@arcadeclub/core/sudoku-scan-cages";
 import type { InkBox, Point } from "@arcadeclub/core/sudoku-scan-ink";
 import { drawGrid } from "@arcadeclub/core/testing/drawn-grid";
-import { readGrid } from "./read-grid";
+import {
+	CELL,
+	paintGlyph,
+	renderKiller,
+	SIZE,
+} from "@arcadeclub/core/testing/drawn-killer";
+import { readGrid, readKiller } from "./read-grid";
 
 const photo = { uri: "file://photo.jpg", width: 1200, height: 1600 };
 const corners = [
@@ -115,5 +125,46 @@ describe("readGrid", () => {
 		await expect(readGrid(reader, photo, corners, () => true)).rejects.toThrow(
 			"different number of boxes",
 		);
+	});
+});
+
+describe("readKiller", () => {
+	const rng = mulberry32(5);
+	const cages = generateKillerCages(generateSolvedGrid(rng), rng).map((cage) =>
+		[...cage.cells].sort((a, b) => a - b),
+	);
+	/** A drawn Killer as the phone warps it: gray, with a 0 in every corner. */
+	function killerReader() {
+		const rgba = renderKiller(cages, { rng: mulberry32(6) });
+		for (const cage of cages) {
+			paintGlyph(
+				rgba,
+				(cage[0] % 9) * CELL + 11,
+				Math.floor(cage[0] / 9) * CELL + 11,
+			);
+		}
+		const gray = Uint8Array.from({ length: SIZE * SIZE }, (_, i) =>
+			Math.round((rgba[i * 4] + rgba[i * 4 + 1] + rgba[i * 4 + 2]) / 3),
+		);
+		return drawnReader({ gray, size: SIZE, at: () => ({ x: 0, y: 0 }) });
+	}
+
+	it("reads the cages of a Killer, warped to the corners exactly", async () => {
+		const reader = killerReader();
+		const read = await readKiller(reader, photo, corners);
+		expect(reader.warpGrid).toHaveBeenCalledWith(photo.uri, corners);
+		expect(read?.gridUri).toBe("file://grid.png");
+		const found = killerScanCages(
+			read?.scan ?? { borders: [], doubtful: [], sums: {} },
+		);
+		expect(found.map((cage) => cage.cells)).toEqual(
+			[...cages].sort((a, b) => a[0] - b[0]),
+		);
+	});
+
+	it("leaves a classic grid to the classic read", async () => {
+		const reader = drawnReader(curled());
+		expect(await readKiller(reader, photo, corners)).toBeNull();
+		expect(reader.readDigits).not.toHaveBeenCalled();
 	});
 });

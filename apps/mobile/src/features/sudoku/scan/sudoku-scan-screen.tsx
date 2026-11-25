@@ -32,8 +32,9 @@ import { Notice } from "../../../ui/notice";
 import { Screen } from "../../../ui/screen";
 import { AppText } from "../../../ui/text";
 import { sudokuSaveHref, writeSudokuSave } from "../saves/sudoku-save-store";
-import { createScanSave } from "./create-scan-save";
+import { createKillerScanSave, createScanSave } from "./create-scan-save";
 import { ScanCornerEditor } from "./scan-corner-editor";
+import { ScanKillerVerifyStep } from "./scan-killer-verify-step";
 import { ScanVerifyStep } from "./scan-verify-step";
 import { useSudokuScan } from "./use-sudoku-scan";
 
@@ -49,9 +50,11 @@ export function SudokuScanScreen() {
 	const { step } = scan;
 	const [saveFailed, setSaveFailed] = useState(false);
 
-	function play(cells: Parameters<typeof createScanSave>[0]) {
+	function play(
+		make: (userId: string | null) => ReturnType<typeof createScanSave>,
+	) {
 		try {
-			const save = createScanSave(cells, isSignedIn && userId ? userId : null);
+			const save = make(isSignedIn && userId ? userId : null);
 			writeSudokuSave(save);
 			router.replace(sudokuSaveHref(save.id));
 		} catch (error) {
@@ -138,7 +141,28 @@ export function SudokuScanScreen() {
 						cells={step.cells}
 						onChange={scan.editCells}
 						onStartOver={scan.startOver}
-						onConfirm={() => play(step.cells)}
+						onConfirm={() => play((user) => createScanSave(step.cells, user))}
+						error={saveFailed ? copy.couldNotCreateSession : null}
+					/>
+				</Screen>
+			</>
+		);
+	}
+
+	if (step.id === "verifyKiller") {
+		return (
+			<>
+				{title}
+				<Screen>
+					<ScanKillerVerifyStep
+						gridUri={step.gridUri}
+						scan={step.scan}
+						onChange={scan.editKiller}
+						onStartOver={scan.startOver}
+						onReadAsClassic={scan.readAsClassic}
+						onConfirm={() =>
+							play((user) => createKillerScanSave(step.scan, user))
+						}
 						error={saveFailed ? copy.couldNotCreateSession : null}
 					/>
 				</Screen>

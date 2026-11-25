@@ -1,9 +1,12 @@
 /**
  * The scan flow's steps, as on the web's `/sudoku/scan`: pick a photo, place
  * the grid's corners (prefilled from detection), read the cells, then check
- * and correct the recognized grid. `readGrid` does the reading.
+ * and correct the recognized grid. A grid with cages is a Killer: its cages
+ * and sums are checked on their own step. `readKiller` and `readGrid` do the
+ * reading.
  */
 import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
+import type { KillerScan } from "@arcadeclub/core/sudoku-scan-cages";
 import { defaultCorners, type Point } from "@arcadeclub/core/sudoku-scan-ink";
 import type { ImagePickerOptions } from "expo-image-picker";
 import { useRef, useState } from "react";
@@ -13,14 +16,22 @@ import {
 } from "../../../../modules/sudoku-scanner";
 import type { Messages } from "../../../i18n";
 import { reportError } from "../../../observability/report";
-import { readGrid } from "./read-grid";
+import { readGrid, readKiller } from "./read-grid";
 
 export type ScanStep =
 	| { id: "pick" }
 	| { id: "preparing" }
 	| { id: "corners"; photo: PreparedPhoto; corners: Point[] }
 	| { id: "reading"; gridUri: string | null; done: number }
-	| { id: "verify"; gridUri: string; cells: ScanCell[] };
+	| { id: "verify"; gridUri: string; cells: ScanCell[] }
+	| {
+			id: "verifyKiller";
+			/** Kept so a mistaken Killer can be read as a classic grid. */
+			photo: PreparedPhoto;
+			corners: Point[];
+			gridUri: string;
+			scan: KillerScan;
+	  };
 
 export type PhotoSource = "camera" | "library";
 
@@ -84,13 +95,42 @@ export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 	}
 
 	async function read() {
+		if (step.id !== "corners") return;
+		await readPhoto(step, { tryKiller: true });
+	}
+
+	/** Reads a Killer the cage read mistook for one as a classic grid. */
+	async function readAsClassic() {
+		if (step.id !== "verifyKiller") return;
+		await readPhoto(
+			{ id: "corners", photo: step.photo, corners: step.corners },
+			{ tryKiller: false },
+		);
+	}
+
+	async function readPhoto(
+		back: Extract<ScanStep, { id: "corners" }>,
+		{ tryKiller }: { tryKiller: boolean },
+	) {
 		const scanner = sudokuScanner;
-		if (!scanner || step.id !== "corners") return;
-		const back = step;
+		if (!scanner) return;
 		const current = ++run.current;
 		setError(null);
 		setStep({ id: "reading", gridUri: null, done: 0 });
 		try {
+			if (tryKiller) {
+				const killer = await readKiller(scanner, back.photo, back.corners);
+				if (current !== run.current) return;
+				if (killer) {
+					setStep({
+						id: "verifyKiller",
+						photo: back.photo,
+						corners: back.corners,
+						...killer,
+					});
+					return;
+				}
+			}
 			const grid = await readGrid(
 				scanner,
 				back.photo,
@@ -117,6 +157,12 @@ export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 		);
 	}
 
+	function editKiller(scan: KillerScan) {
+		setStep((current) =>
+			current.id === "verifyKiller" ? { ...current, scan } : current,
+		);
+	}
+
 	function startOver() {
 		run.current += 1;
 		setError(null);
@@ -131,6 +177,8 @@ export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 		moveCorners,
 		read,
 		editCells,
+		editKiller,
+		readAsClassic,
 		startOver,
 	};
 }

@@ -6,12 +6,22 @@
  * same function.
  */
 import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
+import {
+	isKillerRead,
+	type KillerScan,
+	killerScanFromRead,
+	readCages,
+} from "@arcadeclub/core/sudoku-scan-cages";
 import { fuseReads } from "@arcadeclub/core/sudoku-scan-fuse";
 import type {
 	DigitRead,
 	InkBox,
 	Point,
 } from "@arcadeclub/core/sudoku-scan-ink";
+import {
+	grayToRgba,
+	readKillerSums,
+} from "@arcadeclub/core/sudoku-scan-killer-sums";
 import { withMargins } from "@arcadeclub/core/sudoku-scan-mesh";
 import { readWarpedGrid } from "@arcadeclub/core/sudoku-scan-read";
 
@@ -54,4 +64,24 @@ export async function readGrid(
 		(done) => onProgress({ gridUri: grid.uri, done }),
 	);
 	return cells ? { gridUri: grid.uri, cells } : null;
+}
+
+/**
+ * The cages and sums of a Killer, or null for a grid without cages: the
+ * classic read takes over then. The grid is warped to its corners exactly,
+ * as the web reads cages, and the sums' digits go to Vision as one batch.
+ */
+export async function readKiller(
+	reader: GridReader,
+	photo: { uri: string },
+	corners: Point[],
+): Promise<{ gridUri: string; scan: KillerScan } | null> {
+	const grid = await reader.warpGrid(photo.uri, corners);
+	const rgba = grayToRgba(grid.pixels);
+	const cages = readCages(rgba, grid.size);
+	if (!isKillerRead(cages)) return null;
+	const sums = await readKillerSums(rgba, grid.size, cages, (boxes) =>
+		reader.readDigits(grid.uri, boxes),
+	);
+	return { gridUri: grid.uri, scan: killerScanFromRead(cages, sums) };
 }
