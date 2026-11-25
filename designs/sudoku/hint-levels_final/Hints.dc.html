@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sudoku hint levels</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="{{rootStyle}}">
+
+  <sc-if value="{{isPhone}}" hint-placeholder-val="{{ true }}">
+    <div style="height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-bottom: 1px solid {{c.border}}; background: {{c.bg}};">
+      <button type="button" style="min-width: 88px; height: 44px; display: flex; align-items: center; gap: 2px; background: none; border: 0; padding: 0 8px; color: {{c.accent}}; font: inherit; font-size: 17px; cursor: pointer;">
+        <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true"><path d="M10 2 2 10l8 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Sudoku</span>
+      </button>
+      <span style="font-size: 17px; font-weight: 600;">{{s.title}}</span>
+      <button type="button" aria-label="{{s.pause}}" style="min-width: 88px; height: 44px; display: flex; align-items: center; justify-content: flex-end; background: none; border: 0; padding: 0 12px; color: {{c.accent}}; cursor: pointer;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </sc-if>
+
+  <div style="display: flex; flex-direction: column; align-items: center; padding: 12px 20px 0;">
+    <div style="width: 350px; display: flex; flex-direction: column; gap: 12px;">
+
+      <sc-if value="{{isWeb}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <div>
+            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #f8fafc;">Sudoku</div>
+            <div style="font-size: 12px; color: #94a3b8;">{{s.title}}</div>
+          </div>
+          <span style="border: 1px solid rgba(71,85,105,0.7); background: rgba(30,41,59,0.7); border-radius: 6px; padding: 4px 8px; font-family: ui-monospace, Menlo, monospace; font-size: 14px; color: #e2e8f0;">14:32</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showBoard}}" hint-placeholder-val="{{ true }}">
+        <div style="width: 350px; height: 350px; box-sizing: border-box; border: 2px solid {{c.thick}}; border-radius: 6px; overflow: hidden; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); background: {{c.surface}};" role="img" aria-label="Sudoku board">
+          <sc-for list="{{cells}}" as="cell" hint-placeholder-count="81">
+            <div style="{{cell.style}}">{{cell.d}}</div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showCard}}" hint-placeholder-val="{{ true }}">
+        <div role="status" aria-live="polite" style="{{cardStyle}}">
+          <div style="display: flex; align-items: center; gap: 8px; min-height: 32px;">
+            <span style="{{titleStyle}}">{{cardTitle}}</span>
+            <sc-if value="{{showBadge}}" hint-placeholder-val="{{ true }}">
+              <span style="{{badgeStyle}}">{{badge}}</span>
+            </sc-if>
+            <span style="flex: 1;"></span>
+            <button type="button" onClick="{{close}}" style="min-height: 44px; margin: -6px -8px; padding: 0 8px; background: none; border: 0; font: inherit; font-size: 15px; font-weight: 600; color: {{c.accent}}; cursor: pointer;">{{s.dismiss}}</button>
+          </div>
+          <span style="font-size: 15px; line-height: 1.45; color: {{c.text}};">{{cardText}}</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <sc-if value="{{isHigher}}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{showAnyway}}" style="{{buttonStyle}}">{{s.anyway}}</button>
+            </sc-if>
+            <sc-if value="{{showMore}}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{more}}" style="{{buttonStyle}}">{{s.more}}</button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px;">
+        <sc-for list="{{keys}}" as="k" hint-placeholder-count="10">
+          <button type="button" aria-label="{{k.label}}" style="{{keyStyle}}">{{k.label}}</button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{showSettings}}" hint-placeholder-val="{{ false }}">
+        <div style="{{panelStyle}}">
+          <div style="min-height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; font-size: 14px; font-weight: 600; color: {{c.text}};">
+            <span>{{s.settings}}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 15 6-6 6 6" stroke="{{c.textMuted}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 0 12px 12px;">
+            <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: {{c.textMuted}};">{{s.hintsHeading}}</span>
+            <span style="font-size: 14px; color: {{c.textMuted}};">{{s.upTo}}</span>
+            <div role="radiogroup" aria-label="{{s.upTo}}" style="display: flex; flex-direction: column; border-radius: 10px; overflow: hidden; background: {{c.surface2}};">
+              <sc-for list="{{tiers}}" as="t" hint-placeholder-count="3">
+                <button type="button" role="radio" aria-checked="{{t.checked}}" onClick="{{t.pick}}" style="{{t.style}}">
+                  <span style="display: flex; flex-direction: column; gap: 2px; flex: 1; text-align: left;">
+                    <span style="font-size: 15px; font-weight: 600; color: {{c.text}};">{{t.name}}</span>
+                    <span style="font-size: 13px; color: {{c.textMuted}};">{{t.desc}}</span>
+                  </span>
+                  <sc-if value="{{t.checked}}" hint-placeholder-val="{{ false }}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="{{c.accent}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+            <label style="min-height: 44px; display: flex; align-items: center; gap: 10px; margin-top: 4px; font-size: 15px; color: {{c.text}}; cursor: pointer;">
+              <span style="flex: 1;">{{s.showLevel}}</span>
+              <input type="checkbox" checked="{{badgeOn}}" onChange="{{toggleBadge}}" style="width: 22px; height: 22px; accent-color: {{c.accent}};">
+            </label>
+            <span style="height: 1px; background: {{c.border}}; margin: 6px 0;"></span>
+            <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: {{c.textMuted}};">{{s.inputHeading}}</span>
+            <span style="font-size: 14px; color: {{c.textMuted}};">{{s.inputRest}}</span>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"screen":{"editor":"enum","options":["card","higher","settings"],"default":"card"},"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"lang":{"editor":"enum","options":["en","nl"],"default":"en"},"surface":{"editor":"enum","options":["phone","web"],"default":"phone"},"step":{"editor":"enum","options":["1","2","3"],"default":"2"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: null, anyway: false, closed: false, max: 'intermediate', badgeOn: true };
+  }
+  renderVals() {
+    const screen = this.props.screen ?? 'card';
+    const surface = this.props.surface ?? 'phone';
+    const isWeb = surface === 'web';
+    const theme = isWeb ? 'dark' : (this.props.theme ?? 'dark');
+    const lang = this.props.lang ?? 'en';
+    const step = this.state.step ?? Number(this.props.step ?? 2);
+
+    const dark = {
+      bg: '#080a12', surface: '#121626', surface2: '#191f34', border: 'rgba(148, 163, 184, 0.18)',
+      thick: 'rgba(148, 163, 184, 0.6)', thin: 'rgba(148, 163, 184, 0.22)',
+      text: '#f8fafc', textMuted: '#aab6cc', accent: '#22d3ee', accentDim: 'rgba(34, 211, 238, 0.14)',
+      onAccent: '#04121a', given: '#f8fafc', user: '#22d3ee',
+      orange: '#fb923c', orangeDim: 'rgba(251, 146, 60, 0.16)', amberDim: 'rgba(251, 191, 36, 0.14)'
+    };
+    const light = {
+      bg: '#f8fafc', surface: '#ffffff', surface2: '#eef2f7', border: 'rgba(15, 23, 42, 0.12)',
+      thick: 'rgba(15, 23, 42, 0.5)', thin: 'rgba(15, 23, 42, 0.14)',
+      text: '#0f172a', textMuted: '#475569', accent: '#0e7490', accentDim: 'rgba(14, 116, 144, 0.09)',
+      onAccent: '#ffffff', given: '#0f172a', user: '#0e7490',
+      orange: '#ba3e0c', orangeDim: 'rgba(186, 62, 12, 0.10)', amberDim: 'rgba(146, 64, 14, 0.09)'
+    };
+    const web = Object.assign({}, dark, { bg: '#020617', surface: '#0f172a', surface2: '#1e293b', orange: '#fcd34d', orangeDim: 'rgba(245, 158, 11, 0.10)' });
+    const c = isWeb ? web : (theme === 'light' ? light : dark);
+
+    const copy = {
+      en: {
+        title: 'Classic · Expert', pause: 'Pause', dismiss: 'Dismiss', more: 'Tell me more', hint: 'Hint',
+        tiers: { basic: 'Basic', intermediate: 'Intermediate', advanced: 'Advanced' },
+        desc: { basic: 'Singles only', intermediate: 'Adds pairs, triples and pointing', advanced: 'Adds X-Wing, Swordfish, wings and unique rectangles' },
+        tech: 'X-Wing',
+        step1: 'Follow 5 through columns 1 and 9. In each, it has only a few places left.',
+        step2: 'There is an X-Wing on 5: in columns 1 and 9, it can only go in rows 1 and 9.',
+        step3: 'In columns 1 and 9, 5 can only go in R1C1, R9C1, R1C9, R9C9, all within rows 1 and 9, so 5 can be removed from R1C3, R1C7, R1C8, R9C7, R9C8.',
+        higher: 'The next step needs an advanced technique. Your hints go up to intermediate.',
+        anyway: 'Show it anyway',
+        settings: 'Settings', hintsHeading: 'Hints', upTo: 'Hints go up to', showLevel: 'Show the level on each hint',
+        inputHeading: 'Input', inputRest: 'Tap cycle and corner notes, as today'
+      },
+      nl: {
+        title: 'Klassiek · Expert', pause: 'Pauze', dismiss: 'Sluiten', more: 'Vertel meer', hint: 'Hint',
+        tiers: { basic: 'Basis', intermediate: 'Gemiddeld', advanced: 'Gevorderd' },
+        desc: { basic: 'Alleen singles', intermediate: 'Ook paren, drietallen en wijzend', advanced: 'Ook X-Wing, Swordfish, wings en unieke rechthoek' },
+        tech: 'X-Wing',
+        step1: 'Volg de 5 door kolommen 1 en 9. In elk ervan heeft hij nog maar een paar plekken.',
+        step2: 'Er is een X-Wing op de 5: in kolommen 1 en 9 kan hij alleen in rijen 1 en 9.',
+        step3: 'In kolommen 1 en 9 kan de 5 alleen in R1K1, R9K1, R1K9, R9K9, allemaal binnen rijen 1 en 9, dus de 5 valt af in R1K3, R1K7, R1K8, R9K7, R9K8.',
+        higher: 'Voor de volgende stap is een gevorderde techniek nodig. Je hints gaan tot en met gemiddeld.',
+        anyway: 'Toch tonen',
+        settings: 'Instellingen', hintsHeading: 'Hints', upTo: 'Hints gaan tot en met', showLevel: 'Toon het niveau bij elke hint',
+        inputHeading: 'Invoer', inputRest: 'Tikcyclus en hoeknotities, zoals nu'
+      }
+    };
+    const s = copy[lang] || copy.en;
+
+    const isHigher = screen === 'higher' && !this.state.anyway;
+    const showSettings = screen === 'settings';
+    const showCard = !showSettings && !this.state.closed;
+    const cardTitle = isHigher || step === 1 ? s.hint : s.tech;
+    const cardText = isHigher ? s.higher : (step === 1 ? s.step1 : step === 2 ? s.step2 : s.step3);
+    const badgeOn = this.state.badgeOn;
+
+    const xwing = [0, 8, 72, 80];
+    const elim = [2, 6, 7, 78, 79];
+    const lineCells = [];
+    for (let i = 0; i < 9; i++) { lineCells.push(i * 9, i * 9 + 8, i, 72 + i); }
+    const highlight = !isHigher && showCard && step >= 2;
+    const GRID = '000700000730001009208500000006050030800094001050070400000065703300217084000003000';
+    const cells = [];
+    for (let i = 0; i < 81; i++) {
+      const r = Math.floor(i / 9), col = i % 9;
+      const right = col === 8 ? 'none' : ((col % 3 === 2) ? '2px solid ' + c.thick : '1px solid ' + c.thin);
+      const bottom = r === 8 ? 'none' : ((r % 3 === 2) ? '2px solid ' + c.thick : '1px solid ' + c.thin);
+      const strong = highlight && (xwing.includes(i) || (step === 3 && elim.includes(i)));
+      const line = highlight && step === 3 && !strong && lineCells.includes(i);
+      const bg = strong ? c.orangeDim : line ? c.amberDim : 'transparent';
+      const ring = strong ? ' box-shadow: inset 0 0 0 1px ' + c.thick + ';' : '';
+      const d = GRID[i] === '0' ? '' : GRID[i];
+      cells.push({ d: d, style: 'aspect-ratio: 1; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border-right: ' + right + '; border-bottom: ' + bottom + '; font-size: 21px; font-weight: 600; color: ' + c.given + '; background: ' + bg + ';' + ring });
+    }
+
+    const keys = [];
+    for (let d = 1; d <= 9; d++) keys.push({ label: String(d) });
+    keys.push({ label: '⌫' });
+    const keyStyle = 'height: ' + (showSettings ? 52 : 44) + 'px; border-radius: 12px; border: 1px solid ' + c.thick + '; background: ' + c.surface + '; color: ' + c.text + '; font: inherit; font-size: 20px; font-weight: 600; cursor: pointer;';
+
+    const tierIds = ['basic', 'intermediate', 'advanced'];
+    const tiers = tierIds.map((id, i) => ({
+      name: s.tiers[id], desc: s.desc[id], checked: this.state.max === id,
+      pick: () => this.setState({ max: id }),
+      style: 'min-height: 56px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 0; background: transparent; font: inherit; cursor: pointer;'
+        + (i < tierIds.length - 1 ? ' border-bottom: 1px solid ' + c.border + ';' : '')
+    }));
+
+    const fontFamily = isWeb ? "Manrope, system-ui, sans-serif" : "-apple-system, 'SF Pro Text', system-ui, sans-serif";
+    return {
+      c: c, s: s,
+      isPhone: !isWeb, isWeb: isWeb,
+      showBoard: !showSettings, showCard: showCard, showSettings: showSettings,
+      isHigher: isHigher, showMore: !isHigher && step < 3,
+      showBadge: badgeOn && !showSettings,
+      badge: isHigher ? s.tiers.advanced : s.tiers.advanced,
+      cardTitle: cardTitle, cardText: cardText,
+      badgeOn: badgeOn,
+      toggleBadge: () => this.setState({ badgeOn: !this.state.badgeOn }),
+      close: () => this.setState({ closed: true }),
+      more: () => this.setState({ step: Math.min(3, step + 1) }),
+      showAnyway: () => this.setState({ anyway: true, step: 1 }),
+      cells: cells, keys: keys, keyStyle: keyStyle, tiers: tiers,
+      rootStyle: 'position: relative; width: 390px; height: 844px; overflow: hidden; box-sizing: border-box; background: ' + c.bg + '; color: ' + c.text + '; font-family: ' + fontFamily + ';' + (isWeb ? ' padding-top: 8px;' : ''),
+      cardStyle: isWeb
+        ? 'display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(251, 191, 36, 0.4); background: rgba(245, 158, 11, 0.10);'
+        : 'display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 12px; background: ' + c.orangeDim + ';',
+      titleStyle: 'font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: ' + c.orange + ';',
+      badgeStyle: 'display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid ' + c.orange + '; font-size: 12px; font-weight: 700; color: ' + c.orange + ';',
+      buttonStyle: 'min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid ' + c.thick + '; background: ' + c.surface + '; color: ' + c.text + '; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;',
+      panelStyle: 'border-radius: 12px; border: 1px solid ' + c.border + '; background: ' + c.bg + ';'
+    };
+  }
+}
+</script>
+</body>
+</html>

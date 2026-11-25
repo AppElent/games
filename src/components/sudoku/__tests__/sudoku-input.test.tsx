@@ -109,6 +109,26 @@ describe("SudokuInputSettingsPanel", () => {
 			cornerLayout: "topRight",
 		});
 	});
+
+	it("sets how far hints go and hides the level badge", () => {
+		const onChange = renderPanel();
+		expect(
+			(screen.getByRole("radio", { name: /^Advanced/ }) as HTMLInputElement)
+				.checked,
+		).toBe(true);
+		fireEvent.click(screen.getByRole("radio", { name: /^Intermediate/ }));
+		expect(onChange).toHaveBeenCalledWith({
+			...DEFAULT_SUDOKU_INPUT_SETTINGS,
+			hintsUpTo: "intermediate",
+		});
+		fireEvent.click(
+			screen.getByRole("checkbox", { name: "Show the level on each hint" }),
+		);
+		expect(onChange).toHaveBeenCalledWith({
+			...DEFAULT_SUDOKU_INPUT_SETTINGS,
+			showHintLevel: false,
+		});
+	});
 });
 
 describe("SudokuBoard edges and fills", () => {

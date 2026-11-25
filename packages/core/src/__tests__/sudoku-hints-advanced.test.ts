@@ -13,6 +13,7 @@ import {
 	describeHint,
 	findHint,
 	type HintHistory,
+	type HintOptions,
 	hintHighlights,
 	rememberHint,
 	SUDOKU_TECHNIQUES,
@@ -224,7 +225,7 @@ function historyOf(state: State): HintHistory {
 	return [{ grid, eliminations }];
 }
 
-function hintAt(state: State, options: { cages?: unknown[] } = {}) {
+function hintAt(state: State, options: HintOptions = {}) {
 	return findHint(parseGrid(state.grid), {
 		givens: parseGrid(state.givens),
 		history: historyOf(state),
@@ -403,6 +404,40 @@ describe("hint history", () => {
 		}
 		grid[9 * 4] = 9; // column 1 already has the 9 row 1 needs
 		expect(findHint(grid)).toBeNull();
+	});
+});
+
+describe("maximum hint level", () => {
+	it("flags a step above the maximum instead of hiding it", () => {
+		const hint = hintAt(STATES["x-wing"], { maxLevel: "intermediate" });
+		expect(hint?.technique).toBe("x-wing");
+		expect(hint?.aboveMaxLevel).toBe(true);
+	});
+
+	it("still points out a mistake first", () => {
+		const state = STATES["x-wing"];
+		const grid = parseGrid(state.grid);
+		const solution = parseGrid(state.solution);
+		const open = grid.indexOf(0);
+		grid[open] = (solution[open] % 9) + 1;
+		const hint = findHint(grid, {
+			givens: parseGrid(state.givens),
+			solution,
+			maxLevel: "beginner",
+		});
+		expect(hint?.technique).toBe("mistake");
+		expect(hint?.aboveMaxLevel).toBeUndefined();
+	});
+
+	it("leaves a step within the maximum unflagged", () => {
+		expect(
+			hintAt(STATES["x-wing"], { maxLevel: "advanced" })?.aboveMaxLevel,
+		).toBeUndefined();
+		const easy = findHint(parseGrid(STATES["x-wing"].solution).fill(0, 0, 1), {
+			maxLevel: "beginner",
+		});
+		expect(easy?.technique).toBe("naked-single");
+		expect(easy?.aboveMaxLevel).toBeUndefined();
 	});
 });
 

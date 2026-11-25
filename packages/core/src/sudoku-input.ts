@@ -1,11 +1,12 @@
 /**
  * How a player enters things on a Sudoku board, beyond the board itself:
- * which entry modes a second tap on the selected cell steps through, and
- * where corner notes sit in a cell. The web and the phone app keep these per
+ * which entry modes a second tap on the selected cell steps through, where
+ * corner notes sit in a cell, and how far hints go. The web and the phone app keep these per
  * device and read them back through `normalizeSudokuInputSettings`.
  */
 import { digitsInMask } from "./sudoku";
 import type { SudokuInputMode } from "./sudoku-board";
+import { HINT_LEVELS, type HintTechniqueLevel } from "./sudoku-hints";
 
 /** Every entry mode, in toolbar and tap-cycle order. */
 export const SUDOKU_INPUT_MODES = [
@@ -39,11 +40,17 @@ export type SudokuInputSettings = {
 	/** Whether each optional mode is part of the tap cycle. */
 	tapCycle: Record<SudokuCycleMode, boolean>;
 	cornerLayout: CornerNoteLayout;
+	/** The hardest technique a hint may use before it asks first. */
+	hintsUpTo: HintTechniqueLevel;
+	/** Whether each hint card shows its level. */
+	showHintLevel: boolean;
 };
 
 export const DEFAULT_SUDOKU_INPUT_SETTINGS: SudokuInputSettings = {
 	tapCycle: { corner: true, center: true, color: true },
 	cornerLayout: "spread",
+	hintsUpTo: "advanced",
+	showHintLevel: true,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -70,9 +77,15 @@ export function normalizeSudokuInputSettings(
 	const cornerLayout = CORNER_NOTE_LAYOUTS.find(
 		(layout) => layout === stored.cornerLayout,
 	);
+	const hintsUpTo = HINT_LEVELS.find((level) => level === stored.hintsUpTo);
 	return {
 		tapCycle,
 		cornerLayout: cornerLayout ?? DEFAULT_SUDOKU_INPUT_SETTINGS.cornerLayout,
+		hintsUpTo: hintsUpTo ?? DEFAULT_SUDOKU_INPUT_SETTINGS.hintsUpTo,
+		showHintLevel:
+			typeof stored.showHintLevel === "boolean"
+				? stored.showHintLevel
+				: DEFAULT_SUDOKU_INPUT_SETTINGS.showHintLevel,
 	};
 }
 

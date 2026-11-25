@@ -1,4 +1,5 @@
 import type { SudokuInputMode } from "../../../sudoku-board";
+import type { HintTechniqueLevel } from "../../../sudoku-hints";
 import type { CornerNoteLayout, SudokuCycleMode } from "../../../sudoku-input";
 
 /** Sudoku + binary-puzzle copy, including the hint templates that
@@ -209,7 +210,21 @@ export const sudoku = {
 		hint: "Hint",
 	},
 	inputSettings: {
-		title: "Input settings",
+		title: "Settings",
+		hintsHeading: "Hints",
+		inputHeading: "Input",
+		hintsUpToLabel: "Hints go up to",
+		hintLevels: {
+			beginner: "Basic",
+			intermediate: "Intermediate",
+			advanced: "Advanced",
+		} satisfies Record<HintTechniqueLevel, string>,
+		hintLevelNotes: {
+			beginner: "Singles only",
+			intermediate: "Adds pairs, triples and pointing",
+			advanced: "Adds X-Wing, Swordfish, wings and unique rectangles",
+		} satisfies Record<HintTechniqueLevel, string>,
+		showHintLevel: "Show the level on each hint",
 		tapCycleLabel: "Tapping the selected cell again switches to",
 		tapCycleNote: "Digit is always included.",
 		tapCycleSwitchLabel: "{mode} in the tap cycle",
@@ -241,6 +256,18 @@ export const sudoku = {
 		hintFallbackTitle: "Hint",
 		dismissHint: "Dismiss",
 		tellMeMore: "Tell me more",
+		hintAboveMax: "The next step needs {needed}. Your hints go up to {max}.",
+		hintNeeds: {
+			beginner: "a basic technique",
+			intermediate: "an intermediate technique",
+			advanced: "an advanced technique",
+		} satisfies Record<HintTechniqueLevel, string>,
+		hintMax: {
+			beginner: "basic",
+			intermediate: "intermediate",
+			advanced: "advanced",
+		} satisfies Record<HintTechniqueLevel, string>,
+		showHintAnyway: "Show it anyway",
 		autoCleanupLabel: "Auto-remove notes when a digit is placed",
 		restartConfirm:
 			"Restart this puzzle? Your progress is kept in undo history.",

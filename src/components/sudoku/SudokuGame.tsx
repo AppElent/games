@@ -238,9 +238,16 @@ export function SudokuGame({
 				givens: history.current.givens,
 				history: hintHistory.current,
 				cages,
+				maxLevel: inputSettings.hintsUpTo,
 			}),
 		);
-	}, [isActive, hint, history, cages]);
+	}, [isActive, hint, history, cages, inputSettings.hintsUpTo]);
+
+	// A changed maximum makes an open hint's offer or level stale.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs only when the maximum changes.
+	useEffect(() => {
+		setHint(null);
+	}, [inputSettings.hintsUpTo]);
 
 	useEffect(() => {
 		if (hint && hintLevel === 3) {
@@ -436,11 +443,18 @@ export function SudokuGame({
 				{hint ? (
 					<div className="w-full rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
 						<div className="flex items-center justify-between gap-2">
-							<p className="font-bold">
-								{hintLevel >= 2
-									? describeHint(hint, hintLevel, sudoku.hints).title
-									: sudoku.game.hintFallbackTitle}
-							</p>
+							<div className="flex flex-wrap items-center gap-2">
+								<p className="font-bold">
+									{hintLevel >= 2 && !hint.aboveMaxLevel
+										? describeHint(hint, hintLevel, sudoku.hints).title
+										: sudoku.game.hintFallbackTitle}
+								</p>
+								{inputSettings.showHintLevel && hint.technique !== "mistake" ? (
+									<span className="rounded-full border border-amber-300/60 px-2 text-xs font-bold leading-5 text-amber-300">
+										{sudoku.inputSettings.hintLevels[hint.level]}
+									</span>
+								) : null}
+							</div>
 							<button
 								type="button"
 								onClick={() => setHint(null)}
@@ -450,9 +464,26 @@ export function SudokuGame({
 							</button>
 						</div>
 						<p className="mt-1">
-							{describeHint(hint, hintLevel, sudoku.hints).text}
+							{hint.aboveMaxLevel
+								? fmt(sudoku.game.hintAboveMax, {
+										needed: sudoku.game.hintNeeds[hint.level],
+										max: sudoku.game.hintMax[inputSettings.hintsUpTo],
+									})
+								: describeHint(hint, hintLevel, sudoku.hints).text}
 						</p>
-						{hintLevel < 3 ? (
+						{hint.aboveMaxLevel ? (
+							<button
+								type="button"
+								onClick={() =>
+									setHint((shown) =>
+										shown ? { ...shown, aboveMaxLevel: undefined } : shown,
+									)
+								}
+								className="mt-2 rounded-md border border-amber-300/50 px-2 py-1 text-xs font-semibold hover:bg-amber-400/20"
+							>
+								{sudoku.game.showHintAnyway}
+							</button>
+						) : hintLevel < 3 ? (
 							<button
 								type="button"
 								onClick={() =>
