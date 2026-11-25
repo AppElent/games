@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running the dev server, the checks, or verifying a web change in Arcade Club.
-version: 1.1.0
+version: 1.1.1
 ---
 
 # Verification
@@ -19,7 +19,7 @@ Project commands for the [verification standard](../standards/verification.md). 
 | `pnpm run generate-routes` | `tsr generate`; run after adding or removing files under `src/routes/` |
 | `pnpm verify` | The one-command local check: `check`, `typecheck` and `test` in order; stops at the first failure |
 | `pnpm run check` | Just the Biome lint and format check, plus the mobile structure check (`pnpm run lint:fix` writes fixes) |
-| `pnpm run typecheck` | Just `tsc --noEmit` for the web app and every workspace package |
+| `pnpm run typecheck` | Just `tsc --noEmit` for the web app, Convex (again with `convex/tsconfig.json`, the config `convex deploy` checks with: ES2021 `lib`) and every workspace package |
 | `pnpm test` | Just Vitest, then Jest for `apps/mobile` (`pnpm run test:watch` to watch, `pnpm exec vitest run <path>` for one file) |
 | `pnpm run build` | Production build |
 
