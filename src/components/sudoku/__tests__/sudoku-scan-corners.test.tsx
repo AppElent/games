@@ -25,6 +25,7 @@ vi.mock("#/lib/games/sudoku-scan-image", () => ({
 			height: 800,
 		}),
 	recognizeGrid: () => new Promise(() => {}),
+	uprightCorners: async (_source: unknown, corners: unknown) => corners,
 	warpToSquare,
 }));
 vi.mock("convex/react", () => ({ useMutation: () => vi.fn() }));

@@ -36,6 +36,7 @@ import {
 	readCageSums,
 	readWarpedCages,
 	recognizeGrid,
+	uprightCorners,
 	warpToSquare,
 } from "#/lib/games/sudoku-scan-image";
 import { createSudokuSession } from "#/lib/games/sudoku-session";
@@ -101,11 +102,10 @@ export function SudokuScanFlow() {
 		}
 	};
 
-	const runRecognition = async (
-		source: HTMLCanvasElement,
-		corners: Point[],
-	) => {
+	const runRecognition = async (source: HTMLCanvasElement, marked: Point[]) => {
 		const read = await run(async () => {
+			// A photo taken sideways or upside down is read upright.
+			const corners = await uprightCorners(source, marked);
 			const warped = warpToSquare(source, corners);
 			const warpedUrl = warped.toDataURL("image/jpeg", 0.8);
 			setStep({

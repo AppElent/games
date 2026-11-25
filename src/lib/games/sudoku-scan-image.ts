@@ -10,6 +10,7 @@ import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
 import type { CageRead, SumInk } from "@arcadeclub/core/sudoku-scan-cages";
 import {
 	cageSumInk,
+	isKillerRead,
 	parseCageSum,
 	readCages,
 	sumGray,
@@ -21,6 +22,15 @@ import type {
 	Point,
 } from "@arcadeclub/core/sudoku-scan-ink";
 import { withMargins } from "@arcadeclub/core/sudoku-scan-mesh";
+import {
+	CLASSIC_TURNS,
+	findUprightTurns,
+	gridDigitGuesses,
+	KILLER_TURNS,
+	killerSumScore,
+	turnCorners,
+	uprightDigitScore,
+} from "@arcadeclub/core/sudoku-scan-orientation";
 import { readWarpedGrid } from "@arcadeclub/core/sudoku-scan-read";
 
 const WARP_SIZE = 900; // 9 cells x 100px
@@ -370,6 +380,47 @@ export async function recognizeGrid(
 			await (await ocr.worker).terminate();
 		}
 	}
+}
+
+/**
+ * The corners turned so the grid reads upright, for a photo taken sideways
+ * or upside down: a Killer by where its sums sit, a classic grid by how sure
+ * the digit network is of its digits.
+ */
+export async function uprightCorners(
+	source: HTMLCanvasElement,
+	corners: Point[],
+): Promise<Point[]> {
+	const smoothAt = (turns: number) =>
+		warpToSquare(source, turnCorners(corners, turns), { smooth: true });
+	const asTaken = smoothAt(0);
+	const cages = readWarpedCages(asTaken);
+	if (isKillerRead(cages)) {
+		const turns = await findUprightTurns((turn) => {
+			const warped = turn === 0 ? asTaken : smoothAt(turn);
+			const read = turn === 0 ? cages : readWarpedCages(warped);
+			return killerSumScore(rgbaOf(warped), WARP_SIZE, read);
+		}, KILLER_TURNS);
+		return turnCorners(corners, turns);
+	}
+	const turns = await findUprightTurns(async (turn) => {
+		const frame = withMargins(turnCorners(corners, turn), source);
+		const warped = warpToSquare(source, frame.corners, { smooth: true });
+		const guesses = await gridDigitGuesses(
+			{ pixels: grayPixels(warped), size: WARP_SIZE },
+			frame.margins,
+		);
+		return uprightDigitScore(guesses);
+	}, CLASSIC_TURNS);
+	return turnCorners(corners, turns);
+}
+
+function rgbaOf(warped: HTMLCanvasElement) {
+	const ctx = warped.getContext("2d");
+	if (!ctx) {
+		throw new Error("Canvas not supported");
+	}
+	return ctx.getImageData(0, 0, WARP_SIZE, WARP_SIZE).data;
 }
 
 /** The cages of a Killer, read from the warped grid's lines and dashes. */

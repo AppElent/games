@@ -12,13 +12,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Locale, LocaleProvider } from "#/lib/i18n";
 import { SudokuScanFlow } from "../SudokuScanFlow";
 
-const { findGridCorners, recognizeGrid, readWarpedCages, readCageSums } =
-	vi.hoisted(() => ({
-		findGridCorners: vi.fn(),
-		recognizeGrid: vi.fn(),
-		readWarpedCages: vi.fn(),
-		readCageSums: vi.fn(),
-	}));
+const {
+	findGridCorners,
+	recognizeGrid,
+	readWarpedCages,
+	readCageSums,
+	uprightCorners,
+} = vi.hoisted(() => ({
+	findGridCorners: vi.fn(),
+	recognizeGrid: vi.fn(),
+	readWarpedCages: vi.fn(),
+	readCageSums: vi.fn(),
+	uprightCorners: vi.fn(),
+}));
 vi.mock("#/lib/games/sudoku-grid-finder", () => ({ findGridCorners }));
 vi.mock("#/lib/games/sudoku-scan-image", () => ({
 	fileToCanvas: async () =>
@@ -29,6 +35,7 @@ vi.mock("#/lib/games/sudoku-scan-image", () => ({
 	recognizeGrid,
 	readWarpedCages,
 	readCageSums,
+	uprightCorners,
 	parseCageSum: (text: string) => (text ? Number(text) : null),
 	warpToSquare: () => document.createElement("canvas"),
 }));
@@ -75,10 +82,18 @@ const classicRead = {
 	bounds: { left: 0, right: 899, top: 0, bottom: 899 },
 };
 
-async function openVerifyStep(locale: Locale = "en") {
+type Corners = { x: number; y: number }[];
+
+async function openVerifyStep(
+	locale: Locale = "en",
+	upright: (corners: Corners) => Corners = (corners) => corners,
+) {
 	findGridCorners.mockResolvedValue(null);
 	readWarpedCages.mockReturnValue(classicRead);
 	recognizeGrid.mockResolvedValue(scannedCells());
+	uprightCorners.mockImplementation(
+		async (_source: unknown, corners: Corners) => upright(corners),
+	);
 	const { container } = render(
 		<LocaleProvider initialLocale={locale}>
 			<SudokuScanFlow />
@@ -156,6 +171,17 @@ describe("the verify step's recognised grid", () => {
 		cleanup();
 		vi.restoreAllMocks();
 		vi.clearAllMocks();
+	});
+
+	it("reads a turned photo with the corners turned upright", async () => {
+		const turned = (corners: Corners) => [...corners.slice(1), corners[0]];
+		await openVerifyStep("en", turned);
+		const [source, marked] = uprightCorners.mock.calls[0];
+		expect(recognizeGrid).toHaveBeenCalledWith(
+			source,
+			turned(marked),
+			expect.any(Function),
+		);
 	});
 
 	it("names each cell with its row, column and value in English", async () => {
