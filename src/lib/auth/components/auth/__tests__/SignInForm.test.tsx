@@ -610,6 +610,8 @@ describe("SignInForm", () => {
 			renderForm();
 			fireEvent.change(await openCodeStep(), { target: { value: "424242" } });
 			signIn.id = "sia_a";
+			// A stale error of an earlier try must not hide the reason.
+			errors.fields = { code: { code: "form_code_incorrect" } };
 			fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 			expect((await screen.findByRole("alert")).textContent).toBe(
 				"That code has expired. Send a new one.",

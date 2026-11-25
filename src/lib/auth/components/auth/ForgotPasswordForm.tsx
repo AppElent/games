@@ -63,6 +63,7 @@ export function ForgotPasswordForm({
 		setLoading(true);
 		try {
 			if (signIn.id !== emailed.current) {
+				setCode("");
 				setStep("request");
 				setError(copy.errors.codeExpired);
 				return;

@@ -8,6 +8,7 @@ import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
 import { orThrow } from "./clerkResult";
 import { useAuthErrorText } from "./useAuthErrorText";
+import { useSignInAttempt } from "./useSignInAttempt";
 
 export function SignUpForm({
 	onSuccess,
@@ -21,6 +22,7 @@ export function SignUpForm({
 	const config = useAuthConfig();
 	const copy = useMessages().auth;
 	const errorText = useAuthErrorText();
+	const begin = useSignInAttempt();
 	const [step, setStep] = useState<"details" | "verify">("details");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -30,6 +32,8 @@ export function SignUpForm({
 
 	async function submitDetails(e: React.FormEvent) {
 		e.preventDefault();
+		// Signing up supersedes a sign-in still waiting for its answer.
+		begin();
 		setError(null);
 		setLoading(true);
 		try {
@@ -45,6 +49,7 @@ export function SignUpForm({
 
 	async function submitCode(e: React.FormEvent) {
 		e.preventDefault();
+		begin();
 		setError(null);
 		setLoading(true);
 		try {

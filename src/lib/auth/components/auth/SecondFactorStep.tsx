@@ -29,7 +29,7 @@ import { type SignInAttempt, useSignInAttempt } from "./useSignInAttempt";
  * code, or a backup code. Every way into a sign-in (password, emailed code,
  * password reset) opens it on the same screen. Each other method the account
  * has is a link; going back drops the attempt, so the next sign-in starts
- * clean. A reload reopens it on the method it was on, without a new code; an
+ * clean. A reload reopens it on the method last sent or tried, without a new code; an
  * attempt another sign-in took over ends it. The rules live in `@arcadeclub/core/second-factor`.
  */
 export function SecondFactorStep({
@@ -50,8 +50,8 @@ export function SecondFactorStep({
 	const begin = useSignInAttempt();
 	const [id] = useState(signIn.id);
 	const attempt = useRef<SignInAttempt | null>(null);
-	const [flow] = useState(() => {
-		return createSecondFactorFlow(
+	const [flow] = useState(() =>
+		createSecondFactorFlow(
 			signIn.supportedSecondFactors,
 			signInSecondFactor(
 				() => live.current,
@@ -59,8 +59,8 @@ export function SecondFactorStep({
 			),
 			false,
 			signIn.secondFactorVerification?.strategy,
-		);
-	});
+		),
+	);
 	useRememberSecondFactor(id);
 	const state = useSyncExternalStore(
 		flow.subscribe,

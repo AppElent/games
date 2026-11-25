@@ -74,7 +74,7 @@ export function useEmailCodeSignIn() {
 		failure === "unsupported"
 			? { key: "unsupportedStep" }
 			: failure
-				? pickClerkError(errors, failure.error)
+				? pickClerkError(failure === EXPIRED ? null : errors, failure.error)
 				: null;
 
 	return {

@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+	cleanup,
+	fireEvent,
+	render,
+	renderHook,
+	screen,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ok = { error: null };
@@ -14,6 +20,7 @@ vi.mock("@clerk/react", () => ({ useSignUp: () => ({ signUp }) }));
 import { type Locale, LocaleProvider } from "#/lib/i18n";
 import { AuthConfigProvider } from "../AuthConfigProvider";
 import { SignUpForm } from "../SignUpForm";
+import { useSignInAttempt } from "../useSignInAttempt";
 
 function renderForm(
 	onSuccess = vi.fn(),
@@ -48,6 +55,16 @@ describe("SignUpForm", () => {
 			...Object.values(signUp.verifications),
 		])
 			m.mockReset();
+	});
+
+	it("supersedes a sign-in still waiting for its answer (APP-833)", () => {
+		const { result } = renderHook(() => useSignInAttempt());
+		const attempt = result.current();
+		expect(attempt.isLatest()).toBe(true);
+		signUp.password.mockResolvedValue(ok);
+		renderForm();
+		submitDetails();
+		expect(attempt.isLatest()).toBe(false);
 	});
 
 	it("marks the credential fields for password managers", () => {
