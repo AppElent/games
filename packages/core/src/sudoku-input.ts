@@ -49,7 +49,7 @@ export type SudokuInputSettings = {
 export const DEFAULT_SUDOKU_INPUT_SETTINGS: SudokuInputSettings = {
 	tapCycle: { corner: true, center: true, color: true },
 	cornerLayout: "spread",
-	hintsUpTo: "advanced",
+	hintsUpTo: "expert",
 	showHintLevel: true,
 };
 

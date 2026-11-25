@@ -298,6 +298,7 @@ export function useSudokuGame(
 		hintLevel,
 		hintCells: highlights?.cells,
 		hintLines: highlights?.lines,
+		hintTones: highlights?.tones,
 		noHint,
 		dismissHint: () => {
 			setHint(null);

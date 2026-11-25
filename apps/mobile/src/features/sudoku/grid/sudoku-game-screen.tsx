@@ -159,6 +159,7 @@ export function SudokuGameScreen({ save }: { save: GridSave }) {
 					conflicts={game.conflicts}
 					hintCells={game.hintCells}
 					hintLines={game.hintLines}
+					hintTones={game.hintTones}
 					cages={game.cages}
 					hidden={status === "paused"}
 					mode={game.mode}

@@ -510,21 +510,29 @@ describe("filled puzzle cells carry a 3:1 edge", () => {
 	// 1px ring in the box-line colour.
 	it.each(schemes)("the phone's ring on %s fills", (_name, t) => {
 		const ground = parse(t.surface);
-		const fills = [t.accentDim, t.orangeDim, ...markerColors.map((m) => m)].map(
-			(f) => parse(f, ground),
-		);
+		// accentDim selected, orangeDim hint, greenDim and pinkDim hint tones.
+		const fills = [
+			t.accentDim,
+			t.orangeDim,
+			t.greenDim,
+			t.pinkDim,
+			...markerColors.map((m) => m),
+		].map((f) => parse(f, ground));
 		for (const fill of fills) {
 			expect(contrast(parse(t.text), fill)).toBeGreaterThanOrEqual(3);
 		}
 	});
 
 	// SudokuBoard.tsx: tints are Tailwind -500 at /40, selected sky-300/60 and
-	// sky-400/30, hint amber-300/50 and /25, same digit sky-400/25 and sky-500/20.
+	// sky-400/30, hint amber-300/50 and /25, hint tones emerald-300 and pink-300
+	// at /50 and /25, same digit sky-400/25 and sky-500/20.
 	const tw = {
 		sky300: "#7dd3fc",
 		sky400: "#38bdf8",
 		sky500: "#0ea5e9",
 		amber300: "#fcd34d",
+		emerald300: "#6ee7b7",
+		pink300: "#f9a8d4",
 		amber500: "#f59e0b",
 		emerald500: "#10b981",
 		rose500: "#f43f5e",
@@ -560,13 +568,17 @@ describe("filled puzzle cells carry a 3:1 edge", () => {
 			"sky-400/30",
 			"amber-300/50",
 			"amber-300/25",
+			"emerald-300/50",
+			"emerald-300/25",
+			"pink-300/50",
+			"pink-300/25",
 		])
 			expect(source).toContain(c);
 		for (const c of colourTints)
 			expect(source).toContain(`bg-${c.replace(/(\d+)/, "-$1")}/40`);
 	});
 
-	// [selected, hint, same digit] as [colour, alpha], per theme.
+	// [selected, hint, hint tones, same digit] as [colour, alpha], per theme.
 	const themes = [
 		[
 			"light",
@@ -575,6 +587,8 @@ describe("filled puzzle cells carry a 3:1 edge", () => {
 			[
 				["sky300", 0.6],
 				["amber300", 0.5],
+				["emerald300", 0.5],
+				["pink300", 0.5],
 				["sky400", 0.25],
 			],
 		],
@@ -585,6 +599,8 @@ describe("filled puzzle cells carry a 3:1 edge", () => {
 			[
 				["sky400", 0.3],
 				["amber300", 0.25],
+				["emerald300", 0.25],
+				["pink300", 0.25],
 				["sky500", 0.2],
 			],
 		],

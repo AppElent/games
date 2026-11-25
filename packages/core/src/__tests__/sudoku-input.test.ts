@@ -118,8 +118,11 @@ describe("normalizeSudokuInputSettings", () => {
 			}),
 		).toMatchObject({ hintsUpTo: "intermediate", showHintLevel: false });
 		expect(
-			normalizeSudokuInputSettings({ hintsUpTo: "expert", showHintLevel: 1 }),
-		).toMatchObject({ hintsUpTo: "advanced", showHintLevel: true });
+			normalizeSudokuInputSettings({ hintsUpTo: "advanced" }),
+		).toMatchObject({ hintsUpTo: "advanced" });
+		expect(
+			normalizeSudokuInputSettings({ hintsUpTo: "master", showHintLevel: 1 }),
+		).toMatchObject({ hintsUpTo: "expert", showHintLevel: true });
 	});
 
 	it("drops an unknown corner layout and unknown fields", () => {

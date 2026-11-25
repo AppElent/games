@@ -429,6 +429,7 @@ export function SudokuGame({
 						conflicts={conflicts}
 						hintCells={highlights?.cells}
 						hintLines={highlights?.lines}
+						hintTones={highlights?.tones}
 						hidden={status === "paused"}
 						cages={cages}
 						mode={mode}

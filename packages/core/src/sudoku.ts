@@ -240,6 +240,38 @@ export function countSolutions(
 	return found.count;
 }
 
+/** The solution of a grid with exactly one, else null. */
+export function solveSudoku(grid: SudokuGrid): SudokuGrid | null {
+	if (findConflicts(grid).size > 0) {
+		return null;
+	}
+	const work = [...grid];
+	let solved: SudokuGrid | null = null;
+	let count = 0;
+	const fill = (): boolean => {
+		const candidates = computeCandidates(work);
+		const { cell, size } = findBestCell(work, candidates);
+		if (cell === -1) {
+			count += 1;
+			solved = [...work];
+			return count >= 2;
+		}
+		if (size === 0) {
+			return false;
+		}
+		for (const digit of digitsInMask(candidates[cell])) {
+			work[cell] = digit;
+			if (fill()) {
+				return true;
+			}
+			work[cell] = 0;
+		}
+		return false;
+	};
+	fill();
+	return count === 1 ? solved : null;
+}
+
 export function generateSolvedGrid(rng: Rng = Math.random): SudokuGrid {
 	const grid = emptyGrid();
 	const fill = (index: number): boolean => {

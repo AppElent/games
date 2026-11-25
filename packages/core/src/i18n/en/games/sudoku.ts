@@ -93,6 +93,8 @@ export const sudoku = {
 			swordfish: "Swordfish",
 			anXWing: "an X-Wing",
 			aSwordfish: "a Swordfish",
+			jellyfish: "Jellyfish",
+			aJellyfish: "a Jellyfish",
 			title: "{fish}",
 			nudge:
 				"Follow {digit} through {base}. In each, it has only a few places left.",
@@ -158,6 +160,56 @@ export const sudoku = {
 			explanation:
 				"If {cell} lost {digit}, every digit would have exactly two places in each row, column and box: a pattern that never has a single solution. So {digit} goes in {cell}.",
 		},
+		colorTrap: {
+			title: "Simple coloring",
+			nudge:
+				"Follow {digit} through the rows, columns and boxes where it has only two places.",
+			direction:
+				"Colour the cells where {digit} has only two places: the colour switches along each link, and one colour holds every {digit}.",
+			explanation:
+				"Each link is a row, column or box where {digit} has only two places, so one cell of it is {digit} and the other is not. Following the links, either {colorA} or {colorB} are all {digit}. {eliminated} see a cell of each colour, so {digit} can be removed there.",
+		},
+		colorWrap: {
+			title: "Simple coloring",
+			nudge:
+				"Follow {digit} through the rows, columns and boxes where it has only two places.",
+			direction:
+				"Colour the cells where {digit} has only two places: two cells of the same colour meet.",
+			explanation:
+				"Each link is a row, column or box where {digit} has only two places, so the colour switches along it and one colour holds every {digit}. {clash} have the same colour and see each other, so they can't both be {digit}: that colour is wrong. {digit} can be removed from all of it: {eliminated}.",
+		},
+		xChain: {
+			title: "X-Chain",
+			nudge: "Follow {digit} from {start} along cells that link to each other.",
+			direction: "There is an X-Chain on {digit} from {start} to {end}.",
+			explanation:
+				"Along {chain}, the links alternate: a row, column or box where {digit} has only two places, then two cells that see each other. If {start} isn't {digit}, the chain forces {end} to be {digit}. So one of the ends is {digit}, and {digit} can be removed from every cell that sees both: {eliminated}.",
+		},
+		xyChain: {
+			title: "XY-Chain",
+			nudge:
+				"Look for a chain of two-candidate cells that starts and ends with {digit}.",
+			direction:
+				"There is an XY-Chain from {start} to {end}: both ends allow {digit}.",
+			explanation:
+				"{chain} each allow two digits, and each sees the next one. If {start} isn't {digit}, it holds its other digit, which pushes each next cell to its other digit, until {end} is {digit}. So one of the ends is {digit}, and {digit} can be removed from every cell that sees both: {eliminated}.",
+		},
+		alsXz: {
+			title: "ALS-XZ",
+			nudge:
+				"Look for two groups of cells that each allow one digit more than they have cells.",
+			direction: "There is an ALS-XZ on {alsA} and {alsB}, linked by {x}.",
+			explanation:
+				"{alsA} and {alsB} each allow one digit more than they have cells. Every {x} in one group sees every {x} in the other, so at most one group holds {x}. A group without {x} must hold all its other digits, {z} among them, so one of the groups holds {z}, and {z} can be removed from every cell that sees all of their {z}s: {eliminated}.",
+		},
+		revealCell: {
+			title: "Reveal a cell",
+			nudge: "None of the techniques the app knows finds the next step here.",
+			direction:
+				"The app can't find a step it can explain, so it reveals one cell for you.",
+			explanation:
+				"{cell} is {digit}. This comes from the solution, not from a technique, so it is the one hint that doesn't explain why.",
+		},
 	},
 	saved: {
 		empty: "Puzzles you start appear here so you can pick them up later.",
@@ -218,11 +270,13 @@ export const sudoku = {
 			beginner: "Basic",
 			intermediate: "Intermediate",
 			advanced: "Advanced",
+			expert: "Expert",
 		} satisfies Record<HintTechniqueLevel, string>,
 		hintLevelNotes: {
 			beginner: "Singles only",
 			intermediate: "Adds pairs, triples and pointing",
 			advanced: "Adds X-Wing, Swordfish, wings and unique rectangles",
+			expert: "Adds chains, coloring and Jellyfish, then reveals a cell",
 		} satisfies Record<HintTechniqueLevel, string>,
 		showHintLevel: "Show the level on each hint",
 		tapCycleLabel: "Tapping the selected cell again switches to",
@@ -261,11 +315,13 @@ export const sudoku = {
 			beginner: "a basic technique",
 			intermediate: "an intermediate technique",
 			advanced: "an advanced technique",
+			expert: "an expert technique",
 		} satisfies Record<HintTechniqueLevel, string>,
 		hintMax: {
 			beginner: "basic",
 			intermediate: "intermediate",
 			advanced: "advanced",
+			expert: "expert",
 		} satisfies Record<HintTechniqueLevel, string>,
 		showHintAnyway: "Show it anyway",
 		autoCleanupLabel: "Auto-remove notes when a digit is placed",

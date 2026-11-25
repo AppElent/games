@@ -42,7 +42,7 @@ export function combinations<T>(items: readonly T[], size: number): T[][] {
 	return result;
 }
 
-function lineCells(kind: LineKind, index: number) {
+export function lineCells(kind: LineKind, index: number) {
 	return kind === "row" ? SUDOKU_ROWS[index] : SUDOKU_COLS[index];
 }
 
@@ -59,7 +59,7 @@ function cross(kind: LineKind): LineKind {
 	return kind === "row" ? "column" : "row";
 }
 
-function spotsOf(
+export function spotsOf(
 	cells: readonly number[],
 	candidates: number[],
 	digit: number,
@@ -68,7 +68,7 @@ function spotsOf(
 }
 
 /** Removes `digit` from every candidate cell that sees all of `targets`. */
-function eliminateSeenByAll(
+export function eliminateSeenByAll(
 	candidates: number[],
 	digit: number,
 	targets: readonly number[],
@@ -100,9 +100,14 @@ function advancedHint(
 	};
 }
 
-// --- Fish: X-Wing (2 lines) and Swordfish (3 lines) ---
+// --- Fish: X-Wing (2 lines), Swordfish (3) and Jellyfish (4, expert) ---
 
-function findFish(candidates: number[], size: 2 | 3): SudokuHint | null {
+const FISH = { 2: "x-wing", 3: "swordfish", 4: "jellyfish" } as const;
+
+export function findFish(
+	candidates: number[],
+	size: 2 | 3 | 4,
+): SudokuHint | null {
 	for (let digit = 1; digit <= 9; digit += 1) {
 		for (const kind of ["row", "column"] as const) {
 			const bases: { index: number; spots: number[] }[] = [];
@@ -133,7 +138,8 @@ function findFish(candidates: number[], size: 2 | 3): SudokuHint | null {
 				if (eliminations.length === 0) {
 					continue;
 				}
-				return advancedHint(size === 2 ? "x-wing" : "swordfish", {
+				return advancedHint(FISH[size], {
+					level: size === 4 ? "expert" : "advanced",
 					cells: combo.flatMap((base) => base.spots),
 					candidateDigits: [digit],
 					eliminations,
@@ -241,7 +247,7 @@ function findTwoStringKite(candidates: number[]): SudokuHint | null {
 
 // --- Wings ---
 
-function openCells(candidates: number[], size?: number) {
+export function openCells(candidates: number[], size?: number) {
 	const cells: number[] = [];
 	for (let cell = 0; cell < 81; cell += 1) {
 		const count = maskSize(candidates[cell]);
