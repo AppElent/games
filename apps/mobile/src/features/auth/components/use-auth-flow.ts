@@ -1,6 +1,6 @@
 /**
  * The state every Clerk flow shares: `busy` while a request runs and the
- * translated key of the last failure. Clerk Core 3 calls resolve to
+ * last failure, as `AuthError` (catalog key plus any lockout wait). Clerk Core 3 calls resolve to
  * `{ error }` instead of throwing, so a flow is a list of calls run in turn
  * until one of them returns an error.
  *
@@ -13,7 +13,7 @@
 
 import {
 	type ClerkErrorSignal,
-	pickClerkErrorKey,
+	pickClerkError,
 } from "@arcadeclub/core/auth-errors";
 import { useCallback, useState } from "react";
 
@@ -68,6 +68,6 @@ export function useAuthFlow(errors: ClerkErrorSignal | null | undefined) {
 		send,
 		finish,
 		busy,
-		errorKey: returned ? pickClerkErrorKey(errors, returned) : null,
+		error: returned ? pickClerkError(errors, returned) : null,
 	};
 }

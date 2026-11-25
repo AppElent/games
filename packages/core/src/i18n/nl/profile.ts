@@ -53,6 +53,7 @@ export const profile = {
 	},
 	reverify: {
 		title: "Bevestig dat jij het bent",
+		endedTitle: "Bevestigen is niet gelukt",
 		delete: {
 			passwordBody:
 				"Vul je wachtwoord in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",

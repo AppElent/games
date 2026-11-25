@@ -85,17 +85,19 @@ export const serverErrors = {
 	cardsNoKnock: "Er is nog niet geklopt.",
 	signInRequired: "Inloggen vereist.",
 	accountChanged:
-		"Je bent van account gewisseld. Log in met het account dat je wilt verwijderen en probeer het opnieuw.",
+		"Je bent van account gewisseld. Log in met het account waarmee je begon en probeer het opnieuw.",
 	accountInActiveGame:
 		"Je zit nu in een spel met andere spelers. Maak het eerst af, of probeer het over {minutes} minuten opnieuw.",
 	accountExportCursorInvalid:
 		"Deze export kan niet verder. Begin de download opnieuw.",
 	accountSignInFirst:
-		"Log eerst opnieuw in om te verwijderen. Zo kan niemand anders op dit apparaat je gegevens of account verwijderen.",
+		"Log eerst opnieuw in en probeer het dan nog eens. Zo kan niemand anders op dit apparaat je account overnemen.",
 	accountVerifyUnsupported:
 		"We kunnen hier niet met een wachtwoord of een code per e-mail bevestigen dat jij het bent. Log eerst opnieuw in en verwijder daarna.",
 	accountSecondFactorUnsupported:
 		"Arcade Club kan de tweede stap van je account niet uitvoeren om te bevestigen dat jij het bent. Een code uit een authenticator-app of sms, of een back-upcode, werkt wel. Mail privacy@appelent.nl voor hulp.",
+	accountSecondFactorToFinish:
+		"Je Arcade Club-gegevens zijn verwijderd, maar je AppElent-account nog niet. Arcade Club kan de tweede stap van je account niet uitvoeren om te bevestigen dat jij het bent. Mail privacy@appelent.nl voor hulp om het af te ronden.",
 	accountSignInToFinish:
 		"Je Arcade Club-gegevens zijn verwijderd, maar je AppElent-account nog niet: daarvoor moet je net zijn ingelogd. Log opnieuw in en verwijder je hele account nog een keer om het af te ronden.",
 	accountSessionEnded:

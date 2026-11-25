@@ -11,15 +11,25 @@ import {
 import { passwordUpdate } from "@arcadeclub/core/account-password";
 import { GameRuleError } from "@arcadeclub/core/errors";
 import { useClerk } from "@clerk/expo";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useReverify } from "../reverify/use-reverify";
 import { type PasswordChangeError, passwordChangeError } from "./account-edits";
 
-export function useChangePassword() {
+export function useChangePassword(
+	/** Told of a session end that the screen is gone to show. */
+	onUnseenEnd?: (ended: unknown) => void,
+) {
 	const clerk = useClerk();
-	const reverify = useReverify(clerk);
+	const reverify = useReverify(clerk, onUnseenEnd);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<PasswordChangeError | null>(null);
+	const mounted = useRef(true);
+	useEffect(() => {
+		mounted.current = true;
+		return () => {
+			mounted.current = false;
+		};
+	}, []);
 
 	/** Resolves true once the password is changed. */
 	async function changePassword(current: string, next: string) {
@@ -37,7 +47,8 @@ export function useChangePassword() {
 				await update();
 			} catch (refusal) {
 				if (!isRecentSignInRefusal(refusal)) throw refusal;
-				const outcome = await reverify.verify(account);
+				// The sheet need not ask for what was just typed.
+				const outcome = await reverify.verify(account, { password: current });
 				if (outcome === "cancelled") return false;
 				if (outcome === "unsupported") throw refusal;
 				if (outcome === "noSecondFactor") {
@@ -47,6 +58,9 @@ export function useChangePassword() {
 			}
 			return true;
 		} catch (failure) {
+			// A 401 signs the phone out. The screen then shows only a spinner, or is
+			// gone, so the Notice below would go unread: say it in an alert.
+			if (!mounted.current || !clerk.user) onUnseenEnd?.(failure);
 			setError(passwordChangeError(failure));
 			return false;
 		} finally {

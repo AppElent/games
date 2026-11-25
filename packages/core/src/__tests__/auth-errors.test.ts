@@ -3,6 +3,8 @@ import {
 	authErrorMessage,
 	clerkError,
 	clerkErrorKey,
+	MAX_LOCKOUT_SECONDS,
+	pickClerkError,
 	pickClerkErrorKey,
 } from "../auth-errors";
 import { messages } from "../messages";
@@ -115,6 +117,25 @@ describe("pickClerkErrorKey", () => {
 	});
 });
 
+describe("pickClerkError", () => {
+	it("keeps the lockout wait of the error it picks", () => {
+		const locked = {
+			errors: [
+				{ code: "user_locked", meta: { lockout_expires_in_seconds: 90 } },
+			],
+		};
+		expect(pickClerkError({ fields: {}, global: null }, locked)).toEqual({
+			key: "accountLocked",
+			lockoutSeconds: 90,
+		});
+		expect(pickClerkError({ fields: {}, global: [locked] }, null)).toEqual({
+			key: "accountLocked",
+			lockoutSeconds: 90,
+		});
+		expect(pickClerkError(null, null)).toBeNull();
+	});
+});
+
 describe("clerkError and authErrorMessage", () => {
 	it("extracts lockoutSeconds from meta, retryAfter, or longMessage fallback", () => {
 		expect(
@@ -176,6 +197,14 @@ describe("clerkError and authErrorMessage", () => {
 				],
 			}),
 		).toEqual({ key: "accountLocked" });
+		// A compound wait is not understated as its first part.
+		for (const text of ["in 1 hour, 30 minutes.", "in 1 hour 30 minutes."]) {
+			expect(
+				clerkError({
+					errors: [{ code: "user_locked", longMessage: `Try again ${text}` }],
+				}),
+			).toEqual({ key: "accountLocked" });
+		}
 		expect(clerkErrorKey({ code: "toString" })).toBe("generic");
 		expect(clerkError(null)).toBeNull();
 	});
@@ -236,5 +265,21 @@ describe("clerkError and authErrorMessage", () => {
 		).toBe(
 			"Dit account is tijdelijk vergrendeld na te veel mislukte pogingen. Probeer het over 2 uur opnieuw.",
 		);
+	});
+
+	it('says "later" instead of a wait beyond a day, in EN and NL', () => {
+		const wait = (lockoutSeconds: number) =>
+			({ key: "accountLocked", lockoutSeconds }) as const;
+		expect(
+			authErrorMessage(messages.en, "en", wait(MAX_LOCKOUT_SECONDS)),
+		).toContain("24 hours");
+		for (const seconds of [MAX_LOCKOUT_SECONDS + 1, 400 * 24 * 3600]) {
+			expect(authErrorMessage(messages.en, "en", wait(seconds))).toBe(
+				messages.en.auth.errors.accountLocked,
+			);
+			expect(authErrorMessage(messages.nl, "nl", wait(seconds))).toBe(
+				messages.nl.auth.errors.accountLocked,
+			);
+		}
 	});
 });

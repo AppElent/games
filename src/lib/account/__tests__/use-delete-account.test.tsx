@@ -191,7 +191,7 @@ describe("useDeleteAccount", () => {
 		const { ok, result } = await runDeletion();
 		expect(ok).toBe(false);
 		expect(result.current.error).toBe(
-			"You switched accounts. Sign in to the account you want to delete and try again.",
+			"You switched accounts. Sign in to the account you started with and try again.",
 		);
 		expect(deleteUser).not.toHaveBeenCalled();
 		expect(signOut).not.toHaveBeenCalled();
@@ -252,7 +252,7 @@ describe("useDeleteAccount", () => {
 		const { ok, result } = await runDeletion();
 		expect(ok).toBe(false);
 		expect(deleteMyData).not.toHaveBeenCalled();
-		expect(result.current.error).toMatch(/^To delete, sign in again first/);
+		expect(result.current.error).toMatch(/^Sign in again first/);
 	});
 
 	it("refuses when another account signs in before the check", async () => {
@@ -261,7 +261,7 @@ describe("useDeleteAccount", () => {
 		expect(ok).toBe(false);
 		expect(deleteMyData).not.toHaveBeenCalled();
 		expect(result.current.error).toBe(
-			"You switched accounts. Sign in to the account you want to delete and try again.",
+			"You switched accounts. Sign in to the account you started with and try again.",
 		);
 	});
 
@@ -307,7 +307,7 @@ describe("useDeleteAccount", () => {
 		expect(deleteUser).not.toHaveBeenCalled();
 		expect(signOut).not.toHaveBeenCalled();
 		expect(result.current.error).toBe(
-			"Your session ended. Sign in again, then try deleting again.",
+			"Your session ended. Sign in again, then try again.",
 		);
 	});
 });

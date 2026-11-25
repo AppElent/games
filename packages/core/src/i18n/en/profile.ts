@@ -50,6 +50,7 @@ export const profile = {
 	},
 	reverify: {
 		title: "Confirm it's you",
+		endedTitle: "Couldn't confirm it's you",
 		delete: {
 			passwordBody:
 				"Enter your password to delete. This keeps anyone else using this device from deleting your data or account.",

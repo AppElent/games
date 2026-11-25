@@ -89,10 +89,13 @@ export function deletionSteps({
 					return "cancelled" as const;
 				});
 				// Without a second step the app can do, signing in again would
-				// only lock the person out.
-				if (outcome === "cancelled" || outcome === "noSecondFactor") {
-					throw new GameRuleError("accountDeleteAgain");
+				// only lock the person out, and deleting again would meet the same
+				// wall: say who can finish it.
+				if (outcome === "noSecondFactor") {
+					throw new GameRuleError("accountSecondFactorToFinish");
 				}
+				if (outcome === "cancelled")
+					throw new GameRuleError("accountDeleteAgain");
 				if (outcome === "unsupported") throw caught;
 			}
 			return deleteUser();

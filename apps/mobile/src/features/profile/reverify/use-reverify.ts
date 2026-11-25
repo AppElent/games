@@ -16,6 +16,18 @@
  *
  * Every Clerk call goes through `account`'s live session, so a switch to
  * another account rejects with `accountChanged` rather than verifying it.
+ *
+ * `verify` calls overlap safely: a second one for the same account while the
+ * first is still starting or open gets the first one's result, and its
+ * options (a known password) are ignored: the first call's apply.
+ *
+ * A caller that already has the password (change password just asked for it)
+ * hands it to `verify`: it is tried before the sheet opens, and the sheet only
+ * appears, with Clerk's refusal shown, when that doesn't confirm.
+ *
+ * A session Clerk ended (a 401 signs the phone out) can take the screen away
+ * before the sheet's call answers; nobody is left to show the failure, so
+ * `onUnseenEnd` gets it for an alert.
  */
 import {
 	assertSameAccount,
@@ -110,7 +122,11 @@ function lacksSecondFactor(
 	);
 }
 
-const SESSION_ENDED = new Set(["session_not_found", "authentication_invalid"]);
+/** Clerk codes for a session that is gone: a 401 signs the phone out. */
+export const SESSION_ENDED = new Set([
+	"session_not_found",
+	"authentication_invalid",
+]);
 
 /** The error `verify` rejects with when the sheet can't go on; else `null`. */
 function sheetEnd(caught: unknown): unknown {
@@ -131,7 +147,16 @@ type OpenCall = {
 	reject: (error: unknown) => void;
 };
 
-export function useReverify(clerk: VerifyingClerk) {
+export type VerifyOptions = {
+	/** A password the person already typed for this confirmation. */
+	password?: string;
+};
+
+export function useReverify(
+	clerk: VerifyingClerk,
+	/** Told of a session end that arrives after the screen is gone. */
+	onUnseenEnd?: (ended: unknown) => void,
+) {
 	const [attempt, setAttempt] = useState<Attempt | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [sending, setSending] = useState(false);
@@ -139,6 +164,14 @@ export function useReverify(clerk: VerifyingClerk) {
 	const [codeSent, setCodeSent] = useState(false);
 	/** The open `verify` call; a result for any other one is stale. */
 	const open = useRef<OpenCall | null>(null);
+	/** The `verify` call running now, shared by overlapping calls. */
+	const running = useRef<{
+		account: DeletingAccount;
+		promise: Promise<ReverifyOutcome>;
+	} | null>(null);
+	const mounted = useRef(true);
+	const unseen = useRef(onUnseenEnd);
+	unseen.current = onUnseenEnd;
 
 	const liveSession = (account: DeletingAccount) => {
 		assertSameAccount(clerk, account);
@@ -169,7 +202,15 @@ export function useReverify(clerk: VerifyingClerk) {
 	 * Clerk's refusal to show; `null` when there is nothing left to show.
 	 */
 	const refused = (call: OpenCall, caught: unknown): AuthError | null => {
-		if (open.current !== call) return null;
+		if (open.current !== call) {
+			// Cancelled, or the screen went with the call open: only the latter
+			// leaves a session end nobody will see.
+			if (!mounted.current) {
+				const end = sheetEnd(caught);
+				if (end) unseen.current?.(end);
+			}
+			return null;
+		}
 		haptics.actionFailed();
 		const end = sheetEnd(caught);
 		if (end) {
@@ -243,7 +284,6 @@ export function useReverify(clerk: VerifyingClerk) {
 
 	// The screen under the sheet is gone (signed out elsewhere): nothing more
 	// may happen on its behalf.
-	const mounted = useRef(true);
 	useEffect(() => {
 		mounted.current = true;
 		return () => {
@@ -274,7 +314,33 @@ export function useReverify(clerk: VerifyingClerk) {
 		}
 	}
 
-	async function verify(account: DeletingAccount): Promise<ReverifyOutcome> {
+	/** Tries the first factor for `call`; throws Clerk's refusal. */
+	async function firstFactor(
+		call: OpenCall,
+		params:
+			| { strategy: "password"; password: string }
+			| { strategy: "email_code"; code: string },
+	) {
+		const { status, supportedSecondFactors } = await liveSession(
+			call.account,
+		).attemptFirstFactorVerification(params);
+		// Cancelled while Clerk checked: too late to count.
+		if (open.current !== call) return;
+		// Another account signed in while Clerk answered.
+		assertSameAccount(clerk, call.account);
+		if (status !== "needs_second_factor") {
+			settle(status === "complete" ? "verified" : "unsupported");
+			return;
+		}
+		const second = secondFactorAttempt(call, supportedSecondFactors);
+		if (second) setAttempt(second);
+		else settle("noSecondFactor");
+	}
+
+	async function run(
+		account: DeletingAccount,
+		known?: string,
+	): Promise<ReverifyOutcome> {
 		const started = await liveSession(account)
 			.startVerification({ level: RECENT_SIGN_IN.level })
 			.catch((caught: unknown) => {
@@ -307,13 +373,57 @@ export function useReverify(clerk: VerifyingClerk) {
 			? { emailAddressId: mail.emailAddressId, email: mail.safeIdentifier }
 			: null;
 		if (!hasPassword && !email) return "unsupported";
-		open.current = call;
-		setAttempt({
+		const first: Attempt = {
 			method: hasPassword ? "password" : "code",
 			hasPassword,
 			email,
-		});
+		};
+		open.current = call;
+		if (known && hasPassword) {
+			// The person already typed it: asking again would be the same question.
+			let shown: AuthError | null = null;
+			try {
+				await firstFactor(call, { strategy: "password", password: known });
+			} catch (caught) {
+				shown = refused(call, caught);
+				if (!shown) return promise;
+				if (shown.key === "passwordIncorrect") {
+					// Typing it again here would be a second wrong try on the same
+					// password; the screen's own field says it and takes the retry.
+					close();
+					call.reject(caught);
+					return promise;
+				}
+			}
+			// Settled, or on to the second step: nothing for the password sheet.
+			if (!shown) return promise;
+			setAttempt(first);
+			setError(shown);
+			return promise;
+		}
+		setAttempt(first);
 		if (!hasPassword && email) void sendCode(email);
+		return promise;
+	}
+
+	function verify(
+		account: DeletingAccount,
+		{ password }: VerifyOptions = {},
+	): Promise<ReverifyOutcome> {
+		const current = running.current;
+		if (
+			current &&
+			current.account.userId === account.userId &&
+			current.account.sessionId === account.sessionId
+		) {
+			return current.promise;
+		}
+		// A call for another account can't share this result.
+		if (open.current) settle("cancelled");
+		const promise = run(account, password).finally(() => {
+			if (running.current?.promise === promise) running.current = null;
+		});
+		running.current = { account, promise };
 		return promise;
 	}
 
@@ -324,24 +434,12 @@ export function useReverify(clerk: VerifyingClerk) {
 		setError(null);
 		setCodeSent(false);
 		try {
-			const { status, supportedSecondFactors } = await liveSession(
-				call.account,
-			).attemptFirstFactorVerification(
+			await firstFactor(
+				call,
 				attempt.method === "password"
 					? { strategy: "password", password: value }
 					: { strategy: "email_code", code: value },
 			);
-			// Cancelled while Clerk checked: too late to count.
-			if (open.current !== call) return;
-			// Another account signed in while Clerk answered.
-			assertSameAccount(clerk, call.account);
-			if (status !== "needs_second_factor") {
-				settle(status === "complete" ? "verified" : "unsupported");
-				return;
-			}
-			const second = secondFactorAttempt(call, supportedSecondFactors);
-			if (second) setAttempt(second);
-			else settle("noSecondFactor");
 		} catch (caught) {
 			fail(call, caught);
 		} finally {
@@ -368,13 +466,16 @@ export function useReverify(clerk: VerifyingClerk) {
 		submit,
 		/** Emails a (new) code, switching to it from the password. */
 		sendCode: async () => {
-			if (!attempt?.email || busy || sending) return;
-			setAttempt({ ...attempt, method: "code" });
+			// No open call: cancelled in the same moment, whatever this render saw.
+			if (!open.current || !attempt?.email || busy || sending) return;
+			setAttempt((now) => (now?.email ? { ...now, method: "code" } : now));
 			await sendCode(attempt.email, attempt.method === "code");
 		},
 		/** Returns to the password step without cancelling the sheet. */
 		usePassword: () => {
+			// No open call: cancelled in the same moment, whatever this render saw.
 			if (
+				!open.current ||
 				!attempt?.hasPassword ||
 				attempt.method === "password" ||
 				busy ||
@@ -384,7 +485,9 @@ export function useReverify(clerk: VerifyingClerk) {
 			}
 			setError(null);
 			setCodeSent(false);
-			setAttempt({ ...attempt, method: "password" });
+			setAttempt((now) =>
+				now?.hasPassword ? { ...now, method: "password" } : now,
+			);
 		},
 		cancel: () => settle("cancelled"),
 	};

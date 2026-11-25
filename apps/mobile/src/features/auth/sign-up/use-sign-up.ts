@@ -47,6 +47,6 @@ export function useSignUp() {
 		verify,
 		resend,
 		busy: flow.busy,
-		errorKey: flow.errorKey,
+		error: flow.error,
 	};
 }

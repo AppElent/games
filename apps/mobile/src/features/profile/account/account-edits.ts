@@ -23,7 +23,10 @@ export function nameUpdate(
 		: next;
 }
 
-export type PasswordChangeError = AuthErrorKey | "secondFactorUnsupported";
+export type PasswordChangeError =
+	| AuthErrorKey
+	| "secondFactorUnsupported"
+	| "accountChanged";
 
 /** The message key for a failed password change. */
 export function passwordChangeError(error: unknown): PasswordChangeError {
@@ -34,7 +37,7 @@ export function passwordChangeError(error: unknown): PasswordChangeError {
 		case "accountSecondFactorUnsupported":
 			return "secondFactorUnsupported";
 		case "accountChanged":
-			return "generic";
+			return "accountChanged";
 	}
 	return passwordFailure(error)?.key ?? clerkErrorKey(error) ?? "generic";
 }

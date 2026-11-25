@@ -21,7 +21,7 @@ export function SignInCodeScreen({ email }: { email: string }) {
 	const flow = useEmailCodeSignIn();
 	const [code, setCode] = useState("");
 	const [notice, setNotice] = useState<string | null>(null);
-	const error = useAuthError(flow.errorKey);
+	const error = useAuthError(flow.error);
 	const ready = code.length === AUTH_CODE_LENGTH;
 
 	async function verify() {

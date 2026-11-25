@@ -48,6 +48,6 @@ export function useEmailCodeSignIn() {
 		verify,
 		busy: flow.busy,
 		unsupported: flow.unsupported,
-		errorKey: flow.errorKey,
+		error: flow.error,
 	};
 }

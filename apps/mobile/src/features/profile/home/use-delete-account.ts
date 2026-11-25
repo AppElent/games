@@ -17,7 +17,7 @@ import {
 import { GameRuleError } from "@arcadeclub/core/errors";
 import { useAuth, useClerk, useUser } from "@clerk/expo";
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { signOutToReturn } from "../../../auth/return-target";
 import { api } from "../../../convex/api";
 import { useBackendAuthReady } from "../../sessions/use-backend-auth-ready";
@@ -25,16 +25,26 @@ import { useSessionAction } from "../../sessions/use-session-action";
 import { useReverify } from "../reverify/use-reverify";
 import { deletionSteps, needsSignInAgain } from "./delete-account-steps";
 
-export function useDeleteAccount() {
+export function useDeleteAccount(
+	/** Told of a session end that the screen is gone to show. */
+	onUnseenEnd?: (ended: unknown) => void,
+) {
 	const { user } = useUser();
 	const clerk = useClerk();
 	const { signOut } = useAuth();
 	const backendAuth = useBackendAuthReady();
 	const deleteMyData = useMutation(api.account.deleteMyData);
-	const reverify = useReverify(clerk);
+	const reverify = useReverify(clerk, onUnseenEnd);
 	const { run, busy, error, reset } = useSessionAction();
 	/** The Clerk instance does not let users delete themselves. */
 	const [unavailable, setUnavailable] = useState(false);
+	const mounted = useRef(true);
+	useEffect(() => {
+		mounted.current = true;
+		return () => {
+			mounted.current = false;
+		};
+	}, []);
 
 	/** Resolves true once the deletion is done and this phone signed out. */
 	async function deleteAccount(scope: DeletionScope) {
@@ -52,19 +62,25 @@ export function useDeleteAccount() {
 		}
 		const account = { userId: user.id, sessionId };
 		return (
-			(await run(() =>
-				runDeletion(
-					deletionSteps({
-						clerk,
-						account,
-						scope,
-						deleteBatch: () =>
-							deleteMyData({ expectedSubject: account.userId }),
-						reverify: () => reverify.verify(account),
-						signOut: () => signOut(),
-					}),
-				),
-			)) === true
+			(await run(async () => {
+				try {
+					return await runDeletion(
+						deletionSteps({
+							clerk,
+							account,
+							scope,
+							deleteBatch: () =>
+								deleteMyData({ expectedSubject: account.userId }),
+							reverify: () => reverify.verify(account),
+							signOut: () => signOut(),
+						}),
+					);
+				} catch (failure) {
+					// A 401 signs the phone out, which can close this screen first.
+					if (!mounted.current) onUnseenEnd?.(failure);
+					throw failure;
+				}
+			})) === true
 		);
 	}
 

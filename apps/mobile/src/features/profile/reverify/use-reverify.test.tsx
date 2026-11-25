@@ -1,4 +1,7 @@
+import { authErrorMessage } from "@arcadeclub/core/auth-errors";
 import { gameErrorData } from "@arcadeclub/core/errors";
+import { messages } from "@arcadeclub/core/messages";
+import { ClerkAPIResponseError } from "@clerk/react/errors";
 import { act, renderHook } from "@testing-library/react-native";
 import { reportError } from "../../../observability/report";
 import { type ReverifyOutcome, useReverify } from "./use-reverify";
@@ -624,5 +627,295 @@ describe("useReverify", () => {
 			"accountChanged",
 		);
 		expect(hook.result.current.method).toBeNull();
+	});
+
+	it("shows the lockout wait of a real ClerkAPIResponseError", async () => {
+		const { session, hook } = await setup([password]);
+		// Clerk sends `meta.lockout_expires_in_seconds` too, but the SDK's error
+		// type has no such field and drops it: the wait survives only in the text.
+		session.attemptFirstFactorVerification.mockRejectedValueOnce(
+			new ClerkAPIResponseError("Locked", {
+				status: 422,
+				data: [
+					{
+						code: "user_locked",
+						message: "Account locked",
+						long_message:
+							"Your account is locked. You will be able to try again in 30 minutes.",
+					},
+				],
+			}),
+		);
+		await act(() => hook.result.current.submit("wrong"));
+		expect(hook.result.current.error).toEqual({
+			key: "accountLocked",
+			lockoutSeconds: 1800,
+		});
+		expect(
+			authErrorMessage(messages.en, "en", hook.result.current.error),
+		).toContain("30 minutes");
+		expect(reportError).not.toHaveBeenCalled();
+	});
+
+	it("ignores 'Use my password' that lands with Cancel, before a rerender", async () => {
+		const { hook, settled } = await setup([password, email("e1", true)]);
+		await act(() => hook.result.current.sendCode());
+		expect(hook.result.current.method).toBe("code");
+		// Both calls hold the render from before Cancel.
+		const stale = hook.result.current;
+		await act(async () => {
+			stale.cancel();
+			stale.usePassword();
+		});
+		expect(settled).toHaveBeenCalledWith("cancelled");
+		expect(hook.result.current.method).toBeNull();
+		expect(hook.result.current.hasPassword).toBe(false);
+	});
+
+	it("ignores 'Email me a code' that lands with Cancel, before a rerender", async () => {
+		const { hook, session } = await setup([password, email("e1", true)]);
+		const stale = hook.result.current;
+		await act(async () => {
+			stale.cancel();
+			void stale.sendCode();
+		});
+		expect(hook.result.current.method).toBeNull();
+		expect(session.prepareFirstFactorVerification).not.toHaveBeenCalled();
+	});
+
+	describe("overlapping verify calls", () => {
+		it("share one Clerk verification and one result", async () => {
+			const { session, hook, settled } = await setup([password]);
+			const again = jest.fn<void, [ReverifyOutcome]>();
+			await act(async () => {
+				hook.result.current.verify(account).then(again);
+			});
+			expect(session.startVerification).toHaveBeenCalledTimes(1);
+			await act(() => hook.result.current.submit("secret"));
+			expect(settled.mock.calls).toEqual([["verified"]]);
+			expect(again.mock.calls).toEqual([["verified"]]);
+		});
+
+		it("share a rejection too", async () => {
+			const { session, hook, rejected } = await setup([password]);
+			const again = jest.fn();
+			await act(async () => {
+				hook.result.current.verify(account).then(undefined, again);
+			});
+			session.attemptFirstFactorVerification.mockRejectedValueOnce(
+				refusal("session_not_found"),
+			);
+			await act(() => hook.result.current.submit("secret"));
+			expect(gameErrorData(rejected.mock.calls[0]?.[0])?.code).toBe(
+				"accountSessionEnded",
+			);
+			expect(again.mock.calls[0]?.[0]).toBe(rejected.mock.calls[0]?.[0]);
+			expect(reportError).toHaveBeenCalledTimes(1);
+		});
+
+		it("share the call that is still starting", async () => {
+			const { session, hook } = await setup([password]);
+			await act(async () => hook.result.current.cancel());
+			session.startVerification.mockClear();
+			let answer!: (value: never) => void;
+			session.startVerification.mockReturnValueOnce(
+				new Promise((resolve) => {
+					answer = resolve;
+				}),
+			);
+			const first = hook.result.current.verify(account);
+			const second = hook.result.current.verify(account);
+			await act(async () => {
+				answer({ status: "complete" } as never);
+			});
+			await expect(first).resolves.toBe("verified");
+			await expect(second).resolves.toBe("verified");
+			expect(session.startVerification).toHaveBeenCalledTimes(1);
+		});
+
+		it("start a fresh verification once the first one is done", async () => {
+			const { session, hook } = await setup([password]);
+			await act(() => hook.result.current.submit("secret"));
+			session.startVerification.mockClear();
+			await act(async () => {
+				void hook.result.current.verify(account);
+			});
+			expect(session.startVerification).toHaveBeenCalledTimes(1);
+			expect(hook.result.current.method).toBe("password");
+		});
+	});
+
+	describe("with a password the caller already has", () => {
+		async function verifyWith(
+			hook: Awaited<ReturnType<typeof setup>>["hook"],
+			value = "typed",
+		) {
+			const settled = jest.fn<void, [ReverifyOutcome]>();
+			const rejected = jest.fn();
+			await act(async () => {
+				hook.result.current
+					.verify(account, { password: value })
+					.then(settled, rejected);
+			});
+			return { settled, rejected };
+		}
+
+		async function start(factors: unknown[], second: unknown[] | null = null) {
+			const made = await setup(factors, "needs_first_factor", second);
+			await act(async () => made.hook.result.current.cancel());
+			made.session.startVerification.mockClear();
+			return made;
+		}
+
+		it("verifies with it and never opens the sheet", async () => {
+			const { session, hook } = await start([password]);
+			const { settled } = await verifyWith(hook);
+			expect(session.attemptFirstFactorVerification).toHaveBeenCalledWith({
+				strategy: "password",
+				password: "typed",
+			});
+			expect(settled).toHaveBeenCalledWith("verified");
+			expect(hook.result.current.method).toBeNull();
+		});
+
+		it("goes on to the second step without asking for the password again", async () => {
+			const { session, hook } = await start([password], [totp]);
+			session.attemptFirstFactorVerification.mockResolvedValueOnce({
+				status: "needs_second_factor",
+				supportedSecondFactors: [totp],
+			});
+			const { settled } = await verifyWith(hook);
+			expect(hook.result.current.method).toBe("secondFactor");
+			expect(settled).not.toHaveBeenCalled();
+			await act(async () => {
+				await hook.result.current.secondFactor?.actions.verify(
+					"totp",
+					"123456",
+				);
+			});
+			expect(settled).toHaveBeenCalledWith("verified");
+			expect(session.attemptFirstFactorVerification).toHaveBeenCalledTimes(1);
+		});
+
+		it("hands a wrong password back to the caller instead of asking again in the sheet", async () => {
+			const { session, hook } = await start([password]);
+			const wrong = refusal("form_password_incorrect");
+			session.attemptFirstFactorVerification.mockRejectedValueOnce(wrong);
+			const { settled, rejected } = await verifyWith(hook);
+			expect(hook.result.current.method).toBeNull();
+			expect(settled).not.toHaveBeenCalled();
+			expect(rejected).toHaveBeenCalledWith(wrong);
+			expect(session.attemptFirstFactorVerification).toHaveBeenCalledTimes(1);
+			expect(reportError).not.toHaveBeenCalled();
+		});
+
+		it("keeps the lockout wait when that password locks the account", async () => {
+			const { session, hook } = await start([password]);
+			session.attemptFirstFactorVerification.mockRejectedValueOnce(
+				refusal("user_locked", { meta: { lockout_expires_in_seconds: 600 } }),
+			);
+			await verifyWith(hook);
+			expect(hook.result.current.error).toEqual({
+				key: "accountLocked",
+				lockoutSeconds: 600,
+			});
+		});
+
+		it("closes and rejects when the session ended", async () => {
+			const { session, hook } = await start([password]);
+			session.attemptFirstFactorVerification.mockRejectedValueOnce(
+				refusal("session_not_found"),
+			);
+			const { settled, rejected } = await verifyWith(hook);
+			expect(hook.result.current.method).toBeNull();
+			expect(settled).not.toHaveBeenCalled();
+			expect(gameErrorData(rejected.mock.calls[0]?.[0])?.code).toBe(
+				"accountSessionEnded",
+			);
+		});
+
+		it("ignores it for an account without a password, which gets the emailed code", async () => {
+			const { session, hook } = await start([email("e1", true)]);
+			await verifyWith(hook);
+			expect(session.attemptFirstFactorVerification).not.toHaveBeenCalled();
+			expect(hook.result.current.method).toBe("code");
+		});
+
+		it("never confirms another account that signed in meanwhile", async () => {
+			const { clerk, session, hook } = await start([password]);
+			session.attemptFirstFactorVerification.mockImplementationOnce(
+				async () => {
+					clerk.user.id = "user_2";
+					return { status: "complete" };
+				},
+			);
+			const { settled, rejected } = await verifyWith(hook);
+			expect(settled).not.toHaveBeenCalled();
+			expect(gameErrorData(rejected.mock.calls[0]?.[0])?.code).toBe(
+				"accountChanged",
+			);
+		});
+	});
+
+	describe("a session that ended after the screen was gone", () => {
+		const unseen = jest.fn();
+
+		async function openThenUnmount() {
+			const session = {
+				id: "sess_1",
+				startVerification: jest.fn(async () => ({
+					status: "needs_first_factor",
+					supportedFirstFactors: [password],
+				})),
+				attemptFirstFactorVerification: jest.fn(),
+			};
+			const clerk = { user: { id: "user_1" }, session };
+			const hook = await renderHook(() => useReverify(clerk as never, unseen));
+			await act(async () => {
+				hook.result.current.verify(account);
+			});
+			return { hook, session };
+		}
+
+		beforeEach(() => unseen.mockClear());
+
+		it("is handed over for an alert, once", async () => {
+			const { hook, session } = await openThenUnmount();
+			let reject!: (reason: unknown) => void;
+			session.attemptFirstFactorVerification.mockReturnValueOnce(
+				new Promise((_resolve, fail) => {
+					reject = fail;
+				}),
+			);
+			await act(async () => {
+				void hook.result.current.submit("secret");
+			});
+			await hook.unmount();
+			await act(async () => {
+				reject(refusal("session_not_found"));
+			});
+			expect(unseen).toHaveBeenCalledTimes(1);
+			expect(gameErrorData(unseen.mock.calls[0]?.[0])?.code).toBe(
+				"accountSessionEnded",
+			);
+		});
+
+		it("is not announced for a wrong entry or after cancelling", async () => {
+			const { hook, session } = await openThenUnmount();
+			let reject!: (reason: unknown) => void;
+			session.attemptFirstFactorVerification.mockReturnValueOnce(
+				new Promise((_resolve, fail) => {
+					reject = fail;
+				}),
+			);
+			await act(async () => {
+				void hook.result.current.submit("secret");
+			});
+			await act(async () => hook.result.current.cancel());
+			await act(async () => {
+				reject(refusal("session_not_found"));
+			});
+			expect(unseen).not.toHaveBeenCalled();
+		});
 	});
 });

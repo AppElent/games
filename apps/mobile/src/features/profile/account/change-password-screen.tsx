@@ -33,6 +33,7 @@ import {
 	useCredentialForm,
 } from "../../auth/components/use-credential-form";
 import { ReverifySheet } from "../reverify/reverify-sheet";
+import { useUnseenEnd } from "../reverify/use-unseen-end";
 import { useChangePassword } from "./use-change-password";
 
 export function ChangePasswordScreen() {
@@ -48,7 +49,7 @@ export function ChangePasswordScreen() {
 		busy,
 		error: errorKey,
 		reverify,
-	} = useChangePassword();
+	} = useChangePassword(useUnseenEnd());
 	const [leaving, setLeaving] = useState(false);
 	// Swiping back while Clerk works unmounts this screen; a late success
 	// must not then pop the Profile screen underneath.
@@ -85,7 +86,9 @@ export function ChangePasswordScreen() {
 			? copy.failed
 			: errorKey === "secondFactorUnsupported"
 				? t.serverErrors.accountSecondFactorUnsupported
-				: t.auth.errors[errorKey]
+				: errorKey === "accountChanged"
+					? t.serverErrors.accountChanged
+					: t.auth.errors[errorKey]
 		: null;
 
 	return (

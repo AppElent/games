@@ -25,7 +25,7 @@ export function SignUpScreen() {
 	const form = useCredentialForm({ firstName: "", email: "", password: "" });
 	const emailRef = useRef<TextInputInstance>(null);
 	const passwordRef = useRef<TextInputInstance>(null);
-	const error = useAuthError(flow.errorKey);
+	const error = useAuthError(flow.error);
 	const ready =
 		form.values.email.trim().length > 0 && form.values.password.length > 0;
 
