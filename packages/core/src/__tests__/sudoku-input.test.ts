@@ -104,9 +104,22 @@ describe("normalizeSudokuInputSettings", () => {
 				cornerLayout: "topRight",
 			}),
 		).toEqual({
+			...DEFAULT_SUDOKU_INPUT_SETTINGS,
 			tapCycle: { corner: true, center: true, color: false },
 			cornerLayout: "topRight",
 		});
+	});
+
+	it("keeps the hint settings and drops an unknown hint level", () => {
+		expect(
+			normalizeSudokuInputSettings({
+				hintsUpTo: "intermediate",
+				showHintLevel: false,
+			}),
+		).toMatchObject({ hintsUpTo: "intermediate", showHintLevel: false });
+		expect(
+			normalizeSudokuInputSettings({ hintsUpTo: "expert", showHintLevel: 1 }),
+		).toMatchObject({ hintsUpTo: "advanced", showHintLevel: true });
 	});
 
 	it("drops an unknown corner layout and unknown fields", () => {

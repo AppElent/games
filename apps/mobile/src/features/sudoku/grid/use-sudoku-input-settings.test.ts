@@ -18,6 +18,8 @@ describe("sudoku input settings", () => {
 		const settings = {
 			tapCycle: { corner: false, center: true, color: false },
 			cornerLayout: "topRight" as const,
+			hintsUpTo: "intermediate" as const,
+			showHintLevel: false,
 		};
 		writeJson(STORAGE_KEYS.sudokuInputSettings, settings);
 		expect(readSudokuInputSettings()).toEqual(settings);

@@ -39,6 +39,8 @@ describe("sudoku input settings store", () => {
 		const settings = {
 			tapCycle: { corner: true, center: false, color: false },
 			cornerLayout: "topRight" as const,
+			hintsUpTo: "intermediate" as const,
+			showHintLevel: false,
 		};
 		saveSudokuInputSettings(settings);
 		expect(loadSudokuInputSettings()).toEqual(settings);

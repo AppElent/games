@@ -18,7 +18,13 @@ import {
 } from "./sudoku";
 import { ADVANCED_TECHNIQUES, combinations } from "./sudoku-hints-advanced";
 
-type HintTechniqueLevel = "beginner" | "intermediate" | "advanced";
+/** Hint levels from simplest to hardest; the settings name them "Basic" up. */
+export const HINT_LEVELS = ["beginner", "intermediate", "advanced"] as const;
+export type HintTechniqueLevel = (typeof HINT_LEVELS)[number];
+
+function levelRank(level: HintTechniqueLevel) {
+	return HINT_LEVELS.indexOf(level);
+}
 
 type UnitKind = "row" | "column" | "box";
 export type HintUnit = { kind: UnitKind; index: number };
@@ -74,6 +80,11 @@ export type SudokuHint = {
 	 * hints are gone too.
 	 */
 	usesEarlierHints?: boolean;
+	/**
+	 * True when the next step needs a harder technique than the player's
+	 * maximum hint level: the client offers it instead of showing it.
+	 */
+	aboveMaxLevel?: boolean;
 };
 
 export type TechniqueDetector = {
@@ -469,7 +480,7 @@ export type HintHistory = readonly {
 	eliminations: SudokuHint["eliminations"];
 }[];
 
-type HintOptions = {
+export type HintOptions = {
 	/** The solved grid, when the client has it. */
 	solution?: SudokuGrid;
 	/** Non-zero for the puzzle's own digits, which are never the mistake. */
@@ -481,6 +492,8 @@ type HintOptions = {
 	 * with the cages, so the uniqueness techniques stay off.
 	 */
 	cages?: readonly unknown[];
+	/** The hardest technique the player wants hints for. */
+	maxLevel?: HintTechniqueLevel;
 };
 
 /** Adds a hint's eliminations to the history, tied to the board it saw. */
@@ -555,9 +568,15 @@ export function findHint(
 				...hint.cells,
 				...hint.eliminations.map((entry) => entry.cell),
 			];
-			return touched.some((cell) => plain[cell] !== candidates[cell])
+			const marked = touched.some((cell) => plain[cell] !== candidates[cell])
 				? { ...hint, usesEarlierHints: true }
 				: hint;
+			// Detectors run simplest first, so a step above the maximum means
+			// no step within it exists.
+			return options.maxLevel &&
+				levelRank(hint.level) > levelRank(options.maxLevel)
+				? { ...marked, aboveMaxLevel: true }
+				: marked;
 		}
 	}
 	return null;
