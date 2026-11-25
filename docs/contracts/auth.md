@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, sign-up, account, theme sync, or how the Clerk session reaches Convex.
-version: 1.8.0
+version: 1.9.0
 status: current
 ---
 
@@ -45,7 +45,13 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   `(auth)/sign-in-second-factor`. "Back to sign in" drops
   the attempt; closed another way it stays unused, because every first step starts a
   new one. A first step answered after its phone screen lost focus opens nothing
-  (`useOpenSecondFactor`). Reloading the web page starts the sign-in over.
+  (`useOpenSecondFactor`). Reloading the web page reopens the step on the method it
+  was on, without sending a new code: the tab remembers the attempt's id and page
+  while the step is open (`secondFactorResume.ts`), and resumes only that attempt.
+- Clerk writes every answer into one sign-in, so the web's sign-in forms count opened
+  forms and submits (`useSignInAttempt`). An answer to a superseded one does not
+  finalize, navigate or change a form; one whose form was only closed still signs in,
+  without navigating. The second step ends when another attempt took over.
 - Every auth form on the web (sign-in, sign-up, reset, `/account`, the dev test login)
   and on the phone reads Clerk failures through the one table in
   `@arcadeclub/core/auth-errors`; the web's `useAuthErrorText` turns the key into

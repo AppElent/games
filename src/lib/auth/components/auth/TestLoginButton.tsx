@@ -7,6 +7,7 @@ import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { orThrow } from "./clerkResult";
 import { useAuthErrorText } from "./useAuthErrorText";
+import { useSignInAttempt } from "./useSignInAttempt";
 
 export function TestLoginButton({
 	onSuccess,
@@ -21,6 +22,7 @@ export function TestLoginButton({
 	const { signIn } = useSignIn();
 	const copy = useMessages().auth;
 	const errorText = useAuthErrorText();
+	const begin = useSignInAttempt();
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 
@@ -29,6 +31,7 @@ export function TestLoginButton({
 	}
 
 	async function loginTestUser() {
+		const attempt = begin();
 		setError(null);
 		setLoading(true);
 		try {
@@ -38,16 +41,17 @@ export function TestLoginButton({
 					password: import.meta.env.VITE_TEST_USER_PASSWORD as string,
 				}),
 			);
+			if (!attempt.isLatest()) return;
 			if (signIn.status === "complete") {
 				await orThrow(signIn.finalize());
-				onSuccess();
+				if (attempt.isShown()) onSuccess();
 			} else if (needsSecondFactor(signIn.status)) {
 				onSecondFactor();
 			} else {
 				setError(copy.errors.unsupportedStep);
 			}
 		} catch (err) {
-			setError(errorText(err));
+			if (attempt.isLatest()) setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}

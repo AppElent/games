@@ -7,8 +7,10 @@ import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
 import { orThrow } from "./clerkResult";
 import { SecondFactorStep } from "./SecondFactorStep";
+import { useResumeSecondFactor } from "./secondFactorResume";
 import { UsernameHint } from "./UsernameHint";
 import { useAuthErrorText } from "./useAuthErrorText";
+import { useSignInAttempt } from "./useSignInAttempt";
 
 export function ForgotPasswordForm({
 	onSuccess,
@@ -21,6 +23,7 @@ export function ForgotPasswordForm({
 	const { signIn } = useSignIn();
 	const copy = useMessages().auth;
 	const errorText = useAuthErrorText();
+	const begin = useSignInAttempt();
 	const [step, setStep] = useState<"request" | "reset" | "secondFactor">(
 		"request",
 	);
@@ -29,17 +32,21 @@ export function ForgotPasswordForm({
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
+	const resuming = useResumeSecondFactor(() => setStep("secondFactor"));
 
 	async function requestCode(e: React.FormEvent) {
 		e.preventDefault();
+		const attempt = begin();
 		setError(null);
 		setLoading(true);
 		try {
 			await orThrow(signIn.create({ identifier: email }));
+			if (!attempt.isLatest()) return;
 			await orThrow(signIn.resetPasswordEmailCode.sendCode());
+			if (!attempt.isLatest()) return;
 			setStep("reset");
 		} catch (err) {
-			setError(errorText(err));
+			if (attempt.isLatest()) setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}
@@ -47,24 +54,35 @@ export function ForgotPasswordForm({
 
 	async function resetPassword(e: React.FormEvent) {
 		e.preventDefault();
+		const attempt = begin();
 		setError(null);
 		setLoading(true);
 		try {
 			await orThrow(signIn.resetPasswordEmailCode.verifyCode({ code }));
+			if (!attempt.isLatest()) return;
 			await orThrow(signIn.resetPasswordEmailCode.submitPassword({ password }));
+			if (!attempt.isLatest()) return;
 			if (signIn.status === "complete") {
 				await orThrow(signIn.finalize());
-				onSuccess();
+				if (attempt.isShown()) onSuccess();
 			} else if (needsSecondFactor(signIn.status)) {
 				setStep("secondFactor");
 			} else {
 				setError(copy.errors.unsupportedStep);
 			}
 		} catch (err) {
-			setError(errorText(err));
+			if (attempt.isLatest()) setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}
+	}
+
+	if (resuming) {
+		return (
+			<p role="status" className="text-center text-sm text-[var(--auth-muted)]">
+				{copy.signIn.busy}
+			</p>
+		);
 	}
 
 	if (step === "secondFactor") {

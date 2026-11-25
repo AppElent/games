@@ -1,23 +1,27 @@
+import { authErrorMessage } from "@arcadeclub/core/auth-errors";
 import { needsSecondFactor } from "@arcadeclub/core/second-factor";
 import { useSignIn } from "@clerk/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { authPageHref } from "#/lib/auth/core";
-import { fmt, useMessages } from "#/lib/i18n";
+import { fmt, useI18n } from "#/lib/i18n";
 import { AuthButton } from "./AuthButton";
 import { useAuthConfig } from "./AuthConfigProvider";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
 import { orThrow } from "./clerkResult";
 import { SecondFactorStep } from "./SecondFactorStep";
+import { useResumeSecondFactor } from "./secondFactorResume";
 import { TestLoginButton } from "./TestLoginButton";
 import { useAuthErrorText } from "./useAuthErrorText";
 import { EMAIL_CODE_LENGTH, useEmailCodeSignIn } from "./useEmailCodeSignIn";
+import { useSignInAttempt } from "./useSignInAttempt";
 
 /**
  * Email and password, or an emailed code for accounts that have no password
  * (made on the phone with a code). The code step replaces the password step
  * on the same screen; "Use a different email" drops the attempt and returns.
- * An account with two-step verification gets `SecondFactorStep` after either.
+ * An account with two-step verification gets `SecondFactorStep` after either,
+ * and a reload during that step reopens it.
  */
 export function SignInForm({
 	onSuccess,
@@ -29,9 +33,11 @@ export function SignInForm({
 }) {
 	const { signIn } = useSignIn();
 	const config = useAuthConfig();
-	const copy = useMessages().auth;
+	const { messages, locale } = useI18n();
+	const copy = messages.auth;
 	const errorText = useAuthErrorText();
 	const emailCode = useEmailCodeSignIn();
+	const begin = useSignInAttempt();
 	const [step, setStep] = useState<"password" | "code" | "secondFactor">(
 		"password",
 	);
@@ -46,6 +52,7 @@ export function SignInForm({
 	const stepShown = useRef(step);
 	const codeBodyId = useId();
 	const codeErrorId = useId();
+	const resuming = useResumeSecondFactor(() => setStep("secondFactor"));
 
 	// Focus follows the step, but not on first render.
 	useEffect(() => {
@@ -55,26 +62,28 @@ export function SignInForm({
 		(step === "code" ? codeRef : emailRef).current?.focus();
 	}, [step]);
 
-	const codeError = emailCode.errorKey ? copy.errors[emailCode.errorKey] : null;
+	const codeError = authErrorMessage(messages, locale, emailCode.error);
 	const busy = loading || emailCode.busy !== null;
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
+		const attempt = begin();
 		setError(null);
 		emailCode.clearError();
 		setLoading(true);
 		try {
 			await orThrow(signIn.password({ identifier: email, password }));
+			if (!attempt.isLatest()) return;
 			if (signIn.status === "complete") {
 				await orThrow(signIn.finalize());
-				onSuccess();
+				if (attempt.isShown()) onSuccess();
 			} else if (needsSecondFactor(signIn.status)) {
 				setStep("secondFactor");
 			} else {
 				setError(copy.errors.unsupportedStep);
 			}
 		} catch (err) {
-			setError(errorText(err));
+			if (attempt.isLatest()) setError(errorText(err));
 		} finally {
 			setLoading(false);
 		}
@@ -123,6 +132,14 @@ export function SignInForm({
 		setCode("");
 		setNotice(null);
 		setStep("password");
+	}
+
+	if (resuming) {
+		return (
+			<p role="status" className="text-center text-sm text-[var(--auth-muted)]">
+				{copy.signIn.busy}
+			</p>
+		);
 	}
 
 	if (step === "secondFactor") {

@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ok = { error: null };
 const signIn = {
+	id: undefined as string | undefined,
 	status: null as string | null,
+	secondFactorVerification: { strategy: null as string | null },
 	create: vi.fn(),
 	finalize: vi.fn(),
 	reset: vi.fn(),
@@ -16,7 +18,10 @@ const signIn = {
 		submitPassword: vi.fn(),
 	},
 };
-vi.mock("@clerk/react", () => ({ useSignIn: () => ({ signIn }) }));
+vi.mock("@clerk/react", () => ({
+	useSignIn: () => ({ signIn }),
+	useAuth: () => ({ isLoaded: true }),
+}));
 
 import { type Locale, LocaleProvider } from "#/lib/i18n";
 import { AuthConfigProvider } from "../AuthConfigProvider";
@@ -43,6 +48,10 @@ describe("ForgotPasswordForm", () => {
 	afterEach(() => {
 		cleanup();
 		signIn.status = null;
+		signIn.id = undefined;
+		signIn.secondFactorVerification.strategy = null;
+		sessionStorage.clear();
+		window.history.replaceState(null, "", "/");
 		for (const m of [
 			signIn.create,
 			signIn.finalize,
@@ -184,5 +193,36 @@ describe("ForgotPasswordForm", () => {
 		await vi.waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
 		expect(signIn.mfa.verifyTOTP).toHaveBeenCalledWith({ code: "654321" });
 		expect(onBackToSignIn).not.toHaveBeenCalled();
+	});
+
+	it("reopens the second step after a reload (APP-833)", async () => {
+		window.history.replaceState(null, "", "/forgot-password");
+		sessionStorage.setItem("arcade-second-factor", "/forgot-password sia_1");
+		signIn.id = "sia_1";
+		signIn.status = "needs_second_factor";
+		renderForm();
+		expect(
+			await screen.findByText(
+				"Your password is changed. One more step to sign in.",
+			),
+		).toBeDefined();
+	});
+
+	it("drops a reset answered after a newer form opened (APP-833)", async () => {
+		let answer: (value: typeof ok) => void = () => {};
+		signIn.create.mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					answer = resolve;
+				}),
+		);
+		renderForm();
+		fireEvent.click(screen.getByRole("button", { name: /send code/i }));
+		cleanup();
+		renderForm();
+		answer(ok);
+		await new Promise((resolve) => setTimeout(resolve));
+		expect(signIn.resetPasswordEmailCode.sendCode).not.toHaveBeenCalled();
+		expect(screen.getByLabelText("Email")).toBeDefined();
 	});
 });

@@ -4,15 +4,13 @@
  * `use-email-code-sign-in.ts`; on the web both steps live on one screen, so
  * one instance of this hook carries the whole attempt.
  *
- * Failures come back as `messages.auth.errors` keys, never Clerk's text.
+ * Failures come back as mapped errors, never Clerk's text.
  */
-import {
-	type AuthErrorKey,
-	pickClerkErrorKey,
-} from "@arcadeclub/core/auth-errors";
+import { type AuthError, pickClerkError } from "@arcadeclub/core/auth-errors";
 import { needsSecondFactor } from "@arcadeclub/core/second-factor";
 import { useSignIn } from "@clerk/react";
 import { useState } from "react";
+import { useSignInAttempt } from "./useSignInAttempt";
 
 /** Digits in the code Clerk emails. */
 export const EMAIL_CODE_LENGTH = 6;
@@ -23,6 +21,7 @@ type Failure = { error: unknown } | "unsupported" | null;
 
 export function useEmailCodeSignIn() {
 	const { signIn, errors } = useSignIn();
+	const begin = useSignInAttempt();
 	const [busy, setBusy] = useState<Busy>(null);
 	const [failure, setFailure] = useState<Failure>(null);
 
@@ -32,20 +31,24 @@ export function useEmailCodeSignIn() {
 	 */
 	async function run(kind: Exclude<Busy, null>, ...steps: Step[]) {
 		if (busy) return false;
+		const attempt = begin();
 		setFailure(null);
 		setBusy(kind);
 		let done = false;
 		try {
 			for (const step of steps) {
 				const result = await step();
+				// Answered too late: a newer sign-in has taken over.
+				if (!attempt.isLatest()) return false;
 				if (result === "unsupported" || result.error) {
 					setFailure(result);
 					return false;
 				}
 			}
 			done = true;
-			return true;
+			return attempt.isShown();
 		} catch (err) {
+			if (!attempt.isLatest()) return false;
 			setFailure({ error: err ?? new Error("email code sign-in failed") });
 			return false;
 		} finally {
@@ -54,11 +57,11 @@ export function useEmailCodeSignIn() {
 	}
 
 	// Read at render time: Clerk refreshes the `errors` signal per call.
-	const errorKey: AuthErrorKey | null =
+	const error: AuthError | null =
 		failure === "unsupported"
-			? "unsupportedStep"
+			? { key: "unsupportedStep" }
 			: failure
-				? pickClerkErrorKey(errors, failure.error)
+				? pickClerkError(errors, failure.error)
 				: null;
 
 	return {
@@ -107,6 +110,6 @@ export function useEmailCodeSignIn() {
 		},
 		clearError: () => setFailure(null),
 		busy,
-		errorKey,
+		error,
 	};
 }
