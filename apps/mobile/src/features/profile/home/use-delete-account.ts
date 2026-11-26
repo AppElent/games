@@ -39,12 +39,16 @@ export function useDeleteAccount(
 	const backendAuth = useBackendAuthReady();
 	const deleteMyData = useMutation(api.account.deleteMyData);
 	/**
-	 * The data is deleted, the account not yet: a session end must say so, on a later
-	 * try too. Another account gets a fresh screen (`AppQueryCacheProvider`).
+	 * The data is deleted, the account not yet: a whole-account run must say so,
+	 * on a later try too. Another account gets a fresh screen
+	 * (`AppQueryCacheProvider`).
 	 */
 	const dataGone = useRef(false);
+	/** The scope of the latest run: only a whole-account one has an account left to finish. */
+	const scopeNow = useRef<DeletionScope>("app");
+	const finishing = () => dataGone.current && scopeNow.current === "account";
 	const inContext = (failure: unknown) =>
-		dataGone.current ? onceDataIsGone(failure) : failure;
+		finishing() ? onceDataIsGone(failure) : failure;
 	const reverify = useReverify(clerk, (ended) =>
 		onUnseenEnd?.(inContext(ended)),
 	);
@@ -62,6 +66,7 @@ export function useDeleteAccount(
 	/** Resolves true once the deletion is done and this phone signed out. */
 	async function deleteAccount(scope: DeletionScope) {
 		if (busy) return false;
+		scopeNow.current = scope;
 		if (user && scope === "account" && !user.deleteSelfEnabled) {
 			setUnavailable(true);
 			return false;
@@ -79,7 +84,7 @@ export function useDeleteAccount(
 		return (
 			(await run(async () => {
 				try {
-					return await runDeletion(
+					const done = await runDeletion(
 						deletionSteps({
 							clerk,
 							account,
@@ -95,6 +100,11 @@ export function useDeleteAccount(
 							signOut: () => signOut(),
 						}),
 					);
+					// A cancelled retry deletes nothing more, but the data is still gone.
+					if (!done && finishing()) {
+						throw new GameRuleError("accountDeleteAgain");
+					}
+					return done;
 				} catch (caught) {
 					const failure = inContext(asSessionEnd(clerk, caught));
 					// A 401 signs the phone out, which can close this screen first.

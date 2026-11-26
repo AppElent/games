@@ -127,8 +127,8 @@ const SESSION_ENDED = new Set(["session_not_found", "authentication_invalid"]);
 
 /**
  * `caught` as `accountSessionEnded` when the session behind it is gone: Clerk
- * says so, or it has no user any more, whatever code the 401 carried. Anything
- * else comes back as it is.
+ * or Convex (`signInRequired`) says so, or Clerk has no user any more, whatever
+ * code the 401 carried. Anything else comes back as it is.
  */
 export function asSessionEnd(
 	clerk: Pick<LiveClerk, "user">,
@@ -139,6 +139,9 @@ export function asSessionEnd(
 	if (code === "accountChanged" && !clerk.user) {
 		return new GameRuleError("accountSessionEnded");
 	}
+	// Convex no longer has the sign-in (`requireUserId`).
+	if (code === "signInRequired")
+		return new GameRuleError("accountSessionEnded");
 	if (code) return caught;
 	if (clerk.user && !SESSION_ENDED.has(clerkErrorCode(caught) ?? "")) {
 		return caught;
