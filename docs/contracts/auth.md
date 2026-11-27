@@ -137,14 +137,20 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   Failures show through `@arcadeclub/core/auth-errors`, a locked account with Clerk's
   wait when it gives one; session or permission faults are still reported to Sentry.
   They also close the sheet with `accountSessionEnded` or `accountSignInFirst` ("Sign
-  in again"); once the data is gone both read `accountSignInToFinish`. Their copy,
+  in again"); once a whole-account run has deleted the data, both read
+  `accountSignInToFinish`, and any other failure of that run or a later one says the
+  data is gone too (`onceDataIsGone`: `accountSecondFactorToFinish` for a second factor
+  the app can't do, `accountDeleteAgain` otherwise, also for a cancelled retry;
+  `accountChanged` stays, since deleting again would reach the other account). Choosing
+  Arcade Club data only after that gets the plain messages. Their copy,
   and `accountChanged`'s, names no task, because change password shows them too.
   Clerk signs the phone out on a real 401 before the call answers, which can take
   either screen away: a session end that arrives then (Change password without a user,
   or the screen gone) is shown in a native alert (`useUnseenEnd`, once per screen)
   instead of a notice nobody would see, with `accountSignInToFinish` once the data is
   gone; none follows a cancelled sheet. The session counts as ended (`asSessionEnd`) on
-  Clerk's codes for it, and on any failure once Clerk has no user, whatever its code;
+  Clerk's codes for it, on Convex's `signInRequired` (from `deleteMyData`), and on any
+  failure once Clerk has no user, whatever its code;
   "reverification required" while signed in does not. Signed out, Change password says
   `accountSessionEnded` and offers the sign-in.
 

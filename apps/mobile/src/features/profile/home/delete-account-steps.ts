@@ -99,12 +99,31 @@ export function deletionSteps({
 	};
 }
 
-/** `failure` once the data is deleted: signing in again then finishes it. */
+/**
+ * `failure` once the data is deleted and the account not yet: whatever went
+ * wrong, the message says the data is gone and how to finish.
+ */
 export function onceDataIsGone(failure: unknown): unknown {
 	const code = gameErrorData(failure)?.code;
-	return code === "accountSignInFirst" || code === "accountSessionEnded"
-		? new GameRuleError("accountSignInToFinish")
-		: failure;
+	switch (code) {
+		case "accountSignInFirst":
+		case "accountSessionEnded":
+		case "accountVerifyUnsupported":
+			// Signing in again, then deleting again, finishes it.
+			return new GameRuleError("accountSignInToFinish");
+		case "accountSecondFactorUnsupported":
+			return new GameRuleError("accountSecondFactorToFinish");
+		case "accountSignInToFinish":
+		case "accountSecondFactorToFinish":
+		case "accountDeleteAgain":
+		// Another account is signed in: deleting again must not be advised.
+		case "accountChanged":
+			return failure;
+		default:
+			// Shown as a refusal from here on, so Sentry hears of a fault now.
+			if (!code) reportError(failure);
+			return new GameRuleError("accountDeleteAgain");
+	}
 }
 
 /** Refusals that a fresh sign-in, then deleting again, resolves (no session included). */

@@ -389,7 +389,134 @@ describe("DeleteAccountScreen re-verify sheet", () => {
 			await pressDelete();
 			expect(await screen.findByText(finish)).toBeTruthy();
 		});
+		/** A whole-account run that deletes the data, then stops at the account. */
+		async function deleteDataOnly() {
+			recentSignIn = true;
+			Object.assign(mockUser as object, {
+				delete: jest.fn().mockRejectedValue({
+					errors: [{ code: "session_reverification_required" }],
+				}),
+			});
+			await confirmDeletionAlert(copy.account.label);
+			await fireEvent.press(await screen.findByTestId("reverify-cancel"));
+			await screen.findByText(messages.en.serverErrors.accountDeleteAgain);
+			expect(mockDeleteMyData).toHaveBeenCalledTimes(1);
+		}
+
+		it("doesn't advise deleting the whole account once Arcade Club data only is chosen", async () => {
+			await deleteDataOnly();
+			await fireEvent.press(screen.getByText(copy.app.label));
+			recentSignIn = false;
+			mockAttemptFirstFactor.mockReset().mockImplementation(async () => {
+				mockSession = null;
+				throw { errors: [{ code: "session_not_found" }] };
+			});
+			await pressDelete();
+			await fireEvent.changeText(
+				await screen.findByTestId("reverify-password"),
+				"secret",
+			);
+			await fireEvent.press(screen.getByTestId("reverify-submit"));
+			expect(
+				await screen.findByText(messages.en.serverErrors.accountSessionEnded),
+			).toBeTruthy();
+			expect(screen.queryByText(finish)).toBeNull();
+
+			// Signed out by now: trying again says the same.
+			await pressDelete();
+			expect(
+				await screen.findByText(messages.en.serverErrors.accountSessionEnded),
+			).toBeTruthy();
+			expect(screen.queryByText(finish)).toBeNull();
+		});
+
+		it("stays quiet when an Arcade Club data only retry is cancelled", async () => {
+			await deleteDataOnly();
+			await fireEvent.press(screen.getByText(copy.app.label));
+			recentSignIn = false;
+			await pressDelete();
+			await fireEvent.press(await screen.findByTestId("reverify-cancel"));
+			await waitFor(() =>
+				expect(screen.queryByText(reverifyCopy.title)).toBeNull(),
+			);
+			expect(
+				screen.queryByText(messages.en.serverErrors.accountDeleteAgain),
+			).toBeNull();
+		});
+
+		it("still says so when a retry is cancelled", async () => {
+			await deleteDataOnly();
+			recentSignIn = false;
+			await pressDelete();
+			expect(await screen.findByText(reverifyCopy.title)).toBeTruthy();
+			// The retry cleared the last message.
+			expect(
+				screen.queryByText(messages.en.serverErrors.accountDeleteAgain),
+			).toBeNull();
+			await fireEvent.press(screen.getByTestId("reverify-cancel"));
+			expect(
+				await screen.findByText(messages.en.serverErrors.accountDeleteAgain),
+			).toBeTruthy();
+			expect(mockDeleteMyData).toHaveBeenCalledTimes(1);
+		});
+
+		it("still says so when a retry fails for another reason", async () => {
+			await deleteDataOnly();
+			mockDeleteMyData.mockRejectedValueOnce(new Error("offline"));
+			await pressDelete();
+			await waitFor(() => expect(mockDeleteMyData).toHaveBeenCalledTimes(2));
+			expect(
+				await screen.findByText(messages.en.serverErrors.accountDeleteAgain),
+			).toBeTruthy();
+			expect(screen.queryByText(copy.failed)).toBeNull();
+		});
+
+		it("still says so when the retry's sheet can't do the second step", async () => {
+			await deleteDataOnly();
+			recentSignIn = false;
+			Object.assign(mockSession as object, {
+				startVerification: async () => ({
+					status: "needs_second_factor",
+					supportedSecondFactors: [{ strategy: "passkey" }],
+				}),
+			});
+			await pressDelete();
+			expect(
+				await screen.findByText(
+					messages.en.serverErrors.accountSecondFactorToFinish,
+				),
+			).toBeTruthy();
+		});
 	});
+
+	it.each([true, false])(
+		"says the session ended when Convex wants a sign-in mid-deletion (screen gone: %s)",
+		async (gone) => {
+			recentSignIn = true;
+			let reject!: (reason: unknown) => void;
+			mockDeleteMyData.mockReturnValue(
+				new Promise((_resolve, fail) => {
+					reject = fail;
+				}),
+			);
+			const view = await confirmDeletionAlert(copy.account.label);
+			await waitFor(() => expect(mockDeleteMyData).toHaveBeenCalled());
+			if (gone) await view.unmount();
+			await act(async () => {
+				reject({ data: { code: "signInRequired" } });
+			});
+			const ended = messages.en.serverErrors.accountSessionEnded;
+			if (gone) {
+				expect(Alert.alert).toHaveBeenLastCalledWith(
+					reverifyCopy.endedTitle,
+					ended,
+				);
+			} else {
+				expect(screen.getByText(ended)).toBeTruthy();
+				expect(screen.getByLabelText(copy.signInAgain)).toBeTruthy();
+			}
+		},
+	);
 
 	it("tells what to do next, not to delete again, when the second factor can't be done after the data is gone", async () => {
 		recentSignIn = true;
