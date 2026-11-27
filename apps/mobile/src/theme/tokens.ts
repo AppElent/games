@@ -109,6 +109,13 @@ export const backgammonColors = {
 	selected: "#f59e0b",
 	target: "rgba(120, 220, 170, 0.85)",
 	targetFill: "rgba(120, 220, 170, 0.28)",
+	/** The lit point under a dragged checker. */
+	targetHover: "rgba(120, 220, 170, 0.45)",
+	targetHoverRing: "#8ff0c0",
+	/** Where a dropped checker will land. */
+	ghost: "rgba(255, 253, 246, 0.35)",
+	ghostEdge: "#fffdf6",
+	liftedShadow: "#000000",
 	die: "#fdf6e6",
 	dieEdge: "#b7a179",
 	pip: "#1c1207",
