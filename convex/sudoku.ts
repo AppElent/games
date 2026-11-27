@@ -68,18 +68,30 @@ function mergedGrid(givens: string, digits: string) {
 	});
 }
 
-function foldElapsed(state: {
-	elapsedSeconds: number;
-	lastResumedAt?: number;
-}) {
+function foldElapsed(
+	state: {
+		elapsedSeconds: number;
+		lastResumedAt?: number;
+	},
+	maxSeconds = Number.POSITIVE_INFINITY,
+) {
 	if (!state.lastResumedAt) {
 		return state.elapsedSeconds;
 	}
 	return (
 		state.elapsedSeconds +
-		Math.max(0, Math.round((Date.now() - state.lastResumedAt) / 1000))
+		Math.min(
+			maxSeconds,
+			Math.max(0, Math.round((Date.now() - state.lastResumedAt) / 1000)),
+		)
 	);
 }
+
+/**
+ * The most one `keepClock` folds: two of the web's one-minute heartbeats. A
+ * longer gap is a tab that was not running (a laptop asleep), not play.
+ */
+const KEEP_CLOCK_MAX_FOLD_SECONDS = 120;
 
 const puzzleArgs = {
 	source: sudokuSourceValidator,
@@ -336,8 +348,9 @@ export const setPaused = mutation({
  * Folds a running puzzle's time into `elapsedSeconds` and restarts the timer
  * base, as a pause and resume would. An open web tab sends it while the clock
  * runs, so a phone, which folds at most a few minutes of running time
- * (`saveFromBundle`), still sees the time played there. Leaves `updatedAt`
- * alone: the board does not change.
+ * (`saveFromBundle`), still sees the time played there. One call folds at
+ * most `KEEP_CLOCK_MAX_FOLD_SECONDS`. Leaves `updatedAt` alone: the board
+ * does not change.
  */
 export const keepClock = mutation({
 	args: puzzleCallArgs,
@@ -348,7 +361,7 @@ export const keepClock = mutation({
 			return;
 		}
 		await ctx.db.patch(state._id, {
-			elapsedSeconds: foldElapsed(state),
+			elapsedSeconds: foldElapsed(state, KEEP_CLOCK_MAX_FOLD_SECONDS),
 			lastResumedAt: Date.now(),
 		});
 	},

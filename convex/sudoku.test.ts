@@ -929,13 +929,25 @@ describe("keepClock", () => {
 	it("folds a running clock and restarts the timer base, without a new version", async () => {
 		const t = setup();
 		const { sessionId } = await createPuzzle(t);
-		advance(10 * 60_000);
+		advance(60_000);
 		await keepClock(t, sessionId);
 		const kept = await storedState(t, sessionId);
 		expect(kept.status).toBe("active");
-		expect(kept.elapsedSeconds).toBe(600);
-		expect(kept.lastResumedAt).toBe(T0 + 600_000);
+		expect(kept.elapsedSeconds).toBe(60);
+		expect(kept.lastResumedAt).toBe(T0 + 60_000);
 		expect(kept.updatedAt).toBe(T0);
+	});
+
+	it("folds at most two minutes, so a tab waking from sleep adds no idle hours", async () => {
+		const t = setup();
+		const { sessionId } = await createPuzzle(t);
+		advance(60_000);
+		await keepClock(t, sessionId);
+		advance(8 * 3600_000);
+		await keepClock(t, sessionId);
+		const kept = await storedState(t, sessionId);
+		expect(kept.elapsedSeconds).toBe(180);
+		expect(kept.lastResumedAt).toBe(T0 + 60_000 + 8 * 3600_000);
 	});
 
 	it("leaves no more than a minute for a phone to fold, so it keeps the web's time", async () => {
