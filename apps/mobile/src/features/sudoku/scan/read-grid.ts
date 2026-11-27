@@ -22,7 +22,13 @@ import {
 	grayToRgba,
 	readKillerSums,
 } from "@arcadeclub/core/sudoku-scan-killer-sums";
-import { withMargins } from "@arcadeclub/core/sudoku-scan-mesh";
+import {
+	clearOutside,
+	FLAT,
+	findMesh,
+	flatten,
+	withMargins,
+} from "@arcadeclub/core/sudoku-scan-mesh";
 import { readWarpedGrid } from "@arcadeclub/core/sudoku-scan-read";
 
 export type GridReader = {
@@ -68,20 +74,60 @@ export async function readGrid(
 
 /**
  * The cages and sums of a Killer, or null for a grid without cages: the
- * classic read takes over then. The grid is warped to its corners exactly,
- * as the web reads cages, and the sums' digits go to Vision as one batch.
+ * classic read takes over then. The grid is warped with margins and its
+ * lines straightened, as the classic read does, so corners placed on a frame
+ * around the grid or a curled page still read; the sums' digits go to Vision
+ * as one batch, at their place in the warped image.
  */
 export async function readKiller(
 	reader: GridReader,
-	photo: { uri: string },
+	photo: { uri: string; width: number; height: number },
 	corners: Point[],
 ): Promise<{ gridUri: string; scan: KillerScan } | null> {
-	const grid = await reader.warpGrid(photo.uri, corners);
-	const rgba = grayToRgba(grid.pixels);
-	const cages = readCages(rgba, grid.size);
+	const frame = withMargins(corners, photo);
+	const grid = await reader.warpGrid(photo.uri, frame.corners);
+	const gray = clearOutside(grid.pixels, grid.size);
+	const flat = flatten(
+		gray,
+		grid.size,
+		findMesh(gray, grid.size, frame.margins),
+	);
+	const rgba = grayToRgba(flat.pixels);
+	const cages = readCages(rgba, FLAT);
 	if (!isKillerRead(cages)) return null;
-	const sums = await readKillerSums(rgba, grid.size, cages, (boxes) =>
-		reader.readDigits(grid.uri, boxes),
+	const sums = await readKillerSums(rgba, FLAT, cages, (boxes) =>
+		reader.readDigits(
+			grid.uri,
+			boxes.map((box) => warpedBox(box, flat)),
+		),
 	);
 	return { gridUri: grid.uri, scan: killerScanFromRead(cages, sums) };
+}
+
+/** A box of the straightened grid, as the box around it in the warped image. */
+export function warpedBox(
+	box: InkBox,
+	{ mapX, mapY }: { mapX: Float32Array; mapY: Float32Array },
+): InkBox {
+	let left = Number.POSITIVE_INFINITY;
+	let top = Number.POSITIVE_INFINITY;
+	let right = Number.NEGATIVE_INFINITY;
+	let bottom = Number.NEGATIVE_INFINITY;
+	for (const x of [box.x, box.x + box.width - 1]) {
+		for (const y of [box.y, box.y + box.height - 1]) {
+			const index =
+				Math.min(FLAT - 1, Math.max(0, y)) * FLAT +
+				Math.min(FLAT - 1, Math.max(0, x));
+			left = Math.min(left, mapX[index]);
+			right = Math.max(right, mapX[index]);
+			top = Math.min(top, mapY[index]);
+			bottom = Math.max(bottom, mapY[index]);
+		}
+	}
+	return {
+		x: Math.round(left),
+		y: Math.round(top),
+		width: Math.round(right) - Math.round(left) + 1,
+		height: Math.round(bottom) - Math.round(top) + 1,
+	};
 }

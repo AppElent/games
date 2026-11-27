@@ -21,6 +21,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	Image,
+	Keyboard,
 	Pressable,
 	StyleSheet,
 	useWindowDimensions,
@@ -156,6 +157,7 @@ export function ScanKillerVerifyStep({
 	}
 
 	function toggleLine(edge: CageEdge) {
+		Keyboard.dismiss();
 		haptics.selectionChanged();
 		onChange(toggleKillerBorder(scan, edge));
 	}
@@ -166,6 +168,7 @@ export function ScanKillerVerifyStep({
 	const checkingRef = useRef(false);
 	function confirm() {
 		if (checkingRef.current) return;
+		Keyboard.dismiss();
 		checkingRef.current = true;
 		setChecking(true);
 		setTimeout(() => {
@@ -269,6 +272,8 @@ export function ScanKillerVerifyStep({
 								accessibilityLabel={cellName(cell)}
 								accessibilityState={{ selected: selected === cell }}
 								onPress={() => {
+									// The number pad has no return key: picking a cell closes it.
+									Keyboard.dismiss();
 									haptics.selectionChanged();
 									setSelected(cell);
 								}}
