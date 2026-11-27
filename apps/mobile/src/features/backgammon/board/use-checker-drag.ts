@@ -11,7 +11,7 @@
  *
  * Online, a committed move is only on the board once the server answers, so
  * the lifted checker waits on its landing slot (and its source stays one
- * short) until the board changes.
+ * short) until the board changes. A refused move springs back at once.
  */
 import type {
 	BackgammonColor,
@@ -226,13 +226,21 @@ export function useCheckerDrag({
 					target != null && target !== "bar"
 						? slotCenter(geometry, viewer, landingSlot(state, viewer, target))
 						: null;
-				const outcome = control.dropChecker(target);
+				let held: Pending | null = null;
+				// Refused: no new board is coming, so give the checker back now.
+				const refused = () => {
+					if (!held || pendingRef.current !== held) return;
+					setPendingBoth(null);
+					springBack();
+				};
+				const outcome = control.dropChecker(target, refused);
 				if (outcome.kind !== "move" || !landing) {
 					springBack();
 					return;
 				}
 				settledRef.current = false;
-				setPendingBoth({ key, hits: outcome.hits, mover: state.activeColor });
+				held = { key, hits: outcome.hits, mover: state.activeColor };
+				setPendingBoth(held);
 				flyTo(landing, SETTLE_MS, settled, SETTLE_CURVE);
 			},
 			cancel() {

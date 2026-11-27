@@ -8,7 +8,8 @@
  *
  * Drag: the board's gesture lifts a checker, reports the place under it and
  * drops it (`liftChecker`, `moveOver`, `dropChecker`). A drop commits the
- * same plan a tap would. An illegal drop leaves a sentence in `notice` until
+ * same plan a tap would, and calls back when `onPlan` resolves false (the
+ * server refused it). An illegal drop leaves a sentence in `notice` until
  * the next press. The hook decides every haptic, one per moment.
  */
 import {
@@ -62,7 +63,8 @@ export function useBoardSelection({
 	state: BackgammonTurnState;
 	interactive: boolean;
 	autoCombine: boolean;
-	onPlan: (plan: BackgammonMovePlan) => void;
+	/** A promise it returns resolves false when the move was refused (online: the server said no). */
+	onPlan: (plan: BackgammonMovePlan) => unknown;
 }) {
 	const { t } = useI18n();
 	const [picked, setPicked] = useState<BackgammonMoveSource | null>(null);
@@ -120,11 +122,15 @@ export function useBoardSelection({
 			.map((point) => point.point);
 	}, [movable, onBar, state.points, color]);
 
-	const play = (plan: BackgammonMovePlan) => {
+	const play = (plan: BackgammonMovePlan, onRefused?: () => void) => {
 		setPicked(null);
 		setDrag(null);
 		haptics[moveHaptic(state, plan)]();
-		onPlan(plan);
+		const sent = onPlan(plan);
+		if (onRefused && sent instanceof Promise)
+			void sent.then((accepted) => {
+				if (accepted === false) onRefused();
+			});
 	};
 
 	const commit = (to: BackgammonMoveDestination) => {
@@ -175,8 +181,14 @@ export function useBoardSelection({
 		if (isLit(lit, over)) haptics.targetEntered();
 	};
 
-	/** Lets go over `over`; the board animates by the outcome it returns. */
-	const dropChecker = (over: BackgammonDropTarget): BackgammonDropOutcome => {
+	/**
+	 * Lets go over `over`; the board animates by the outcome it returns, and
+	 * `onRefused` runs if the committed move is refused after all.
+	 */
+	const dropChecker = (
+		over: BackgammonDropTarget,
+		onRefused?: () => void,
+	): BackgammonDropOutcome => {
 		const current = dragRef.current;
 		setDrag(null);
 		if (!current || !movable) return { kind: "cancel" };
@@ -187,7 +199,7 @@ export function useBoardSelection({
 			autoCombine,
 		);
 		if (outcome.kind === "move") {
-			play(outcome.plan);
+			play(outcome.plan, onRefused);
 		} else if (outcome.kind === "reject") {
 			haptics.moveRejected();
 			const message = dropRejectionMessage(

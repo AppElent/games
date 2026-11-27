@@ -47,7 +47,7 @@ function played() {
 }
 
 async function setup(state: BackgammonTurnState, interactive = true) {
-	const onPlan = jest.fn<void, [BackgammonMovePlan]>();
+	const onPlan = jest.fn<unknown, [BackgammonMovePlan]>();
 	const wrapper = ({ children }: { children: ReactNode }) => (
 		<LocaleProvider>{children}</LocaleProvider>
 	);
@@ -106,6 +106,26 @@ describe("dragging a checker", () => {
 		expect(result.current.lifted).toBeNull();
 		expect(result.current.notice).toBeNull();
 		expect(played()).toEqual(["checkerLifted", "targetEntered", "moveMade"]);
+	});
+
+	it("calls back at once when the committed drop is refused", async () => {
+		const { result, onPlan } = await setup(rolled([5, 3]));
+		onPlan.mockReturnValueOnce(Promise.resolve(false));
+		const refused = jest.fn();
+		await act(() => void result.current.liftChecker(8));
+		await act(async () => void result.current.dropChecker(3, refused));
+		expect(onPlan).toHaveBeenCalledTimes(1);
+		expect(refused).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not call back when the committed drop is accepted", async () => {
+		const { result, onPlan } = await setup(rolled([5, 3]));
+		onPlan.mockReturnValueOnce(Promise.resolve(true));
+		const refused = jest.fn();
+		await act(() => void result.current.liftChecker(8));
+		await act(async () => void result.current.dropChecker(3, refused));
+		expect(onPlan).toHaveBeenCalledTimes(1);
+		expect(refused).not.toHaveBeenCalled();
 	});
 
 	it("plays the hit, not the move, when the drop hits a blot", async () => {

@@ -57,17 +57,23 @@ export function useOnlineMatch(sessionId: string) {
 		[bundle?.participants],
 	);
 
-	const play = (plan: BackgammonMovePlan, { autoSwitchTurn = false } = {}) => {
-		if (!live) return Promise.resolve();
+	/** Resolves false when the move was not made: the server refused it, or there is no seat. */
+	const play = async (
+		plan: BackgammonMovePlan,
+		{ autoSwitchTurn = false } = {},
+	) => {
+		if (!live) return false;
 		const after = applyBackgammonPlan(live.turn, plan);
-		return run(async (seat) => {
+		const done = await run(async (seat) => {
 			for (const step of plan.steps) {
 				await applyMove({ ...seat, from: step.from, to: step.to });
 			}
 			if (shouldAutoEndTurn(after, autoSwitchTurn)) {
 				await endTurnMutation(seat);
 			}
+			return true;
 		});
+		return done === true;
 	};
 
 	return {
