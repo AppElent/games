@@ -147,8 +147,11 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   Clerk signs the phone out on a real 401 before the call answers, which can take
   either screen away: a session end that arrives then (Change password without a user,
   or the screen gone) is shown in a native alert (`useUnseenEnd`, once per screen)
-  instead of a notice nobody would see, with `accountSignInToFinish` once the data is
-  gone; none follows a cancelled sheet. The session counts as ended (`asSessionEnd`) on
+  instead of a notice nobody would see; none follows a cancelled sheet. Once the data is
+  gone, any failure of that run with the screen gone gets the alert too, titled "Your
+  account isn't deleted yet": `accountSignInToFinish`, `accountSecondFactorToFinish`, or
+  `accountDeleteAgain`, which is also what leaving with the sheet open says, before any
+  401 that lands later. The session counts as ended (`asSessionEnd`) on
   Clerk's codes for it, on Convex's `signInRequired` (from `deleteMyData`), and on any
   failure once Clerk has no user, whatever its code;
   "reverification required" while signed in does not. Signed out, Change password says

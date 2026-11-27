@@ -97,6 +97,7 @@ export const profile = {
 		unavailable:
 			"Deleting your whole AppElent account isn't available right now. You can still delete your Arcade Club data.",
 		signInAgain: "Sign in again",
+		unfinishedTitle: "Your account isn't deleted yet",
 	},
 	displayName: "Display name",
 	displayNameHint: "Shown to other players when you join a game.",

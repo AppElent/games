@@ -100,6 +100,7 @@ export const profile = {
 		unavailable:
 			"Je hele AppElent-account verwijderen is nu niet beschikbaar. Je kunt je Arcade Club-gegevens wel verwijderen.",
 		signInAgain: "Opnieuw inloggen",
+		unfinishedTitle: "Je account is nog niet verwijderd",
 	},
 	displayName: "Weergavenaam",
 	displayNameHint: "Andere spelers zien deze naam als je meedoet.",
