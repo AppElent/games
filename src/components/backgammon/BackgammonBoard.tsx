@@ -6,6 +6,7 @@ import {
 	type BackgammonMovePlan,
 	type BackgammonMoveSource,
 	type BackgammonTurnState,
+	blotsHitBy,
 	canMoveNow,
 	getMoveHighlights,
 	planBackgammonMove,
@@ -16,7 +17,7 @@ import type {
 	OnlineOptions,
 } from "@arcadeclub/core/backgammon-local";
 import { dropRejectionMessage } from "@arcadeclub/core/backgammon-messages";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { fmt, plural, useI18n } from "#/lib/i18n";
 
 /**
@@ -86,6 +87,9 @@ const SETTLE_MS = 180;
 const RETURN_MS = 220;
 const RETURN_CURVE = "cubic-bezier(.2,.8,.2,1)";
 const SETTLE_CURVE = "cubic-bezier(.33,1,.68,1)";
+/** A hit blot slides to the bar, as on the phone. */
+const HIT_MS = 220;
+const HIT_CURVE = "cubic-bezier(.2,.8,.2,1)";
 /** An online move waits on the server; give up holding the settled checker after this. */
 const PENDING_MS = 4000;
 
@@ -123,6 +127,19 @@ type DragView = {
 	from: BackgammonMoveSource;
 	over: BackgammonDropTarget;
 	key: string;
+};
+
+/** A checker's spot and size in viewport pixels. */
+type Spot = { x: number; y: number; size: number };
+
+/** Blots a committed move will hit, seen where they stood before it. */
+type PendingHits = {
+	/** The board the move was made on: the next one carries it. */
+	key: string;
+	color: BackgammonColor;
+	/** The hit colour's bar count before the move. */
+	bar: number;
+	from: Spot[];
 };
 
 function stateKey(state: BackgammonTurnState, movable: boolean) {
@@ -238,6 +255,56 @@ function center(rect: DOMRect) {
 	return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 }
 
+function spotOf(el: Element | null | undefined): Spot | null {
+	if (!el) return null;
+	const rect = el.getBoundingClientRect();
+	return { ...center(rect), size: rect.width };
+}
+
+/** Slide a hit blot from its point to its bar slot; `done` runs when it arrives. Returns a cancel. */
+function slideToBar(
+	color: BackgammonColor,
+	from: Spot,
+	to: Spot,
+	done: () => void,
+) {
+	const el = document.createElement("div");
+	const look = checkerStyle(color, from.size);
+	const place = (spot: Spot) => {
+		el.style.left = `${spot.x}px`;
+		el.style.top = `${spot.y}px`;
+		el.style.width = `${spot.size}px`;
+		el.style.height = `${spot.size}px`;
+	};
+	Object.assign(el.style, {
+		position: "fixed",
+		zIndex: "9998",
+		borderRadius: "50%",
+		pointerEvents: "none",
+		transform: "translate(-50%,-50%)",
+		background: String(look.background),
+		border: String(look.border),
+		boxShadow: String(look.boxShadow),
+	} as Partial<CSSStyleDeclaration>);
+	place(from);
+	el.dataset.hitSlide = color;
+	document.body.appendChild(el);
+	// Style the start spot first, so the transition runs from the point.
+	el.getBoundingClientRect();
+	el.style.transition = ["left", "top", "width", "height"]
+		.map((prop) => `${prop} ${HIT_MS}ms ${HIT_CURVE}`)
+		.join(", ");
+	place(to);
+	const timer = setTimeout(() => {
+		el.remove();
+		done();
+	}, HIT_MS);
+	return () => {
+		clearTimeout(timer);
+		el.remove();
+	};
+}
+
 /** Where the checker will land: dashed outline, 35% fill. */
 function ghostStyle(size: number): React.CSSProperties {
 	return {
@@ -328,6 +395,14 @@ export function BackgammonBoard({
 	const [dragViewState, setDragView] = useState<DragView | null>(null);
 	/** The rejection sentence: replaces the status line until the next press. */
 	const [notice, setNotice] = useState<string | null>(null);
+	const rootRef = useRef<HTMLDivElement>(null);
+	const pendingHitsRef = useRef<PendingHits | null>(null);
+	/** Hit blots still sliding: their bar slot stays empty until they arrive. */
+	const [sliding, setSliding] = useState<Record<BackgammonColor, number>>({
+		white: 0,
+		black: 0,
+	});
+	const slidesRef = useRef(new Set<() => void>());
 
 	const active = state.activeColor;
 	const movable = interactive && canMoveNow(state);
@@ -399,8 +474,43 @@ export function BackgammonBoard({
 		else if (pd.phase !== "returning") finishDrag(pd);
 	}, [boardKey]);
 
+	// The committed move is on the board: slide each blot it hit from its point to the bar.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the board itself
+	useLayoutEffect(() => {
+		const pending = pendingHitsRef.current;
+		if (!pending || pending.key === boardKey) return;
+		pendingHitsRef.current = null;
+		const { color, from } = pending;
+		// Some other board (undo, a reset, the opponent): not the move's hits.
+		if (state.bar[color] !== pending.bar + from.length) return;
+		const stack = rootRef.current?.querySelector(`[data-bar-stack="${color}"]`);
+		const drawn = Array.from(stack?.children ?? []);
+		const targets = from.map((_, i) =>
+			spotOf(drawn[drawn.length - from.length + i] ?? drawn.at(-1) ?? stack),
+		);
+		const slides = from.flatMap((spot, i) => {
+			const to = targets[i];
+			return to ? [{ spot, to }] : [];
+		});
+		if (slides.length === 0) return;
+		// Set before paint, so the new bar checkers never flash in place.
+		setSliding((current) => ({
+			...current,
+			[color]: current[color] + slides.length,
+		}));
+		for (const { spot, to } of slides) {
+			const cancel = slideToBar(color, spot, to, () => {
+				slidesRef.current.delete(cancel);
+				setSliding((current) => ({ ...current, [color]: current[color] - 1 }));
+			});
+			slidesRef.current.add(cancel);
+		}
+	}, [boardKey]);
+
 	useEffect(
 		() => () => {
+			for (const cancel of slidesRef.current) cancel();
+			slidesRef.current.clear();
 			clickGuardRef.current?.();
 			const pd = dragRef.current;
 			if (!pd) return;
@@ -429,6 +539,36 @@ export function BackgammonBoard({
 				: null;
 	const barHidden = dragView?.from === "bar" ? 1 : 0;
 
+	/** Send `plan`, noting the blots it hits so the next board can slide them to the bar. */
+	function sendPlan(plan: BackgammonMovePlan) {
+		const hits = blotsHitBy(state, plan);
+		const color: BackgammonColor = active === "white" ? "black" : "white";
+		const from =
+			hits.length > 0 && !prefersReducedMotion()
+				? hits.flatMap((n) => {
+						const spot = spotOf(
+							rootRef.current?.querySelector(
+								`[data-dest="${n}"] [data-top-checker]`,
+							),
+						);
+						return spot ? [spot] : [];
+					})
+				: [];
+		const pending: PendingHits | null =
+			from.length > 0
+				? { key: boardKey, color, bar: state.bar[color], from }
+				: null;
+		pendingHitsRef.current = pending;
+		const sent = onPlan(plan);
+		if (pending && sent instanceof Promise)
+			void sent.then((accepted) => {
+				// Refused: no new board is coming, so nothing will slide.
+				if (accepted === false && pendingHitsRef.current === pending)
+					pendingHitsRef.current = null;
+			});
+		return sent;
+	}
+
 	function commitMove(
 		from: BackgammonMoveSource,
 		to: BackgammonMoveDestination,
@@ -438,7 +578,7 @@ export function BackgammonBoard({
 			return false;
 		}
 		setSelectedSource(null);
-		void onPlan(plan);
+		void sendPlan(plan);
 		return true;
 	}
 
@@ -602,7 +742,7 @@ export function BackgammonBoard({
 					},
 				);
 				pd.timer = setTimeout(() => finishDrag(pd), PENDING_MS);
-				const sent = onPlan(outcome.plan);
+				const sent = sendPlan(outcome.plan);
 				if (sent instanceof Promise)
 					void sent.then((accepted) => {
 						// Refused: no new board is coming, so give the checker back now.
@@ -846,7 +986,13 @@ export function BackgammonBoard({
 	const barActive = source === "bar";
 	const barSelectable = movable && source == null && state.bar[active] > 0;
 	const barCount = (color: BackgammonColor) =>
-		Math.min(state.bar[color] - (color === active ? barHidden : 0), 5);
+		Math.max(
+			0,
+			Math.min(
+				state.bar[color] - (color === active ? barHidden : 0) - sliding[color],
+				5,
+			),
+		);
 
 	const btnBase: React.CSSProperties = {
 		fontFamily: MONO,
@@ -906,6 +1052,7 @@ export function BackgammonBoard({
 
 	return (
 		<div
+			ref={rootRef}
 			style={{
 				width: "100%",
 				maxWidth: BACKGAMMON_DESIGN_WIDTH,
@@ -1260,6 +1407,7 @@ export function BackgammonBoard({
 						}}
 					>
 						<div
+							data-bar-stack="black"
 							style={{
 								display: "flex",
 								flexDirection: "column",
@@ -1290,6 +1438,7 @@ export function BackgammonBoard({
 							{backgammon.board.barLabel}
 						</div>
 						<div
+							data-bar-stack="white"
 							style={{
 								display: "flex",
 								flexDirection: "column-reverse",
