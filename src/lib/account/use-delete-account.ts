@@ -11,7 +11,7 @@ import { useClerk, useReverification, useUser } from "@clerk/react";
 import { isReverificationCancelledError } from "@clerk/react/errors";
 import { useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation } from "convex/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useErrorMessage } from "#/lib/games/errors";
 import { useGameAction } from "#/lib/games/use-game-action";
 import { useMessages } from "#/lib/i18n";
@@ -28,6 +28,8 @@ import { api } from "../../../convex/_generated/api";
  * true once it is done, and the player lands on the home page rather than the
  * sign-in redirect that `RequireSignedIn` starts when the session ends; after
  * deleting only the data, the home page says the login still works elsewhere.
+ * Once a whole-account run has deleted the data, every failure of it or a
+ * later whole-account run says the data is gone (`onceDataIsGone`).
  */
 export function useDeleteAccount() {
 	const { user } = useUser();
@@ -39,6 +41,11 @@ export function useDeleteAccount() {
 	const errorMessage = useErrorMessage();
 	const { error, setError, run } = useGameAction();
 	const [busy, setBusy] = useState(false);
+	/**
+	 * The Clerk user whose data a whole-account run deleted, the account not
+	 * yet. Kept by id: another tab can sign in to another account meanwhile.
+	 */
+	const dataGoneFor = useRef<string | null>(null);
 
 	// Clerk runs these again after its verify dialog; both re-check the live
 	// account each time.
@@ -67,10 +74,18 @@ export function useDeleteAccount() {
 			setError(copy.unavailable);
 			return false;
 		}
+		// Only a whole-account run has an account left to finish.
+		const finishing = () =>
+			scope === "account" && dataGoneFor.current === user.id;
+		const inContext = (failure: unknown) =>
+			finishing() ? onceDataIsGone(failure) : failure;
 		const sessionId = clerk.session?.id;
 		if (!sessionId) {
 			setError(
-				errorMessage(new GameRuleError("accountSessionEnded"), copy.failed),
+				errorMessage(
+					inContext(new GameRuleError("accountSessionEnded")),
+					copy.failed,
+				),
 			);
 			return false;
 		}
@@ -81,7 +96,15 @@ export function useDeleteAccount() {
 			const landing = scope === "app" ? "/?deleted=app" : "/";
 			const common = {
 				confirmRecentSignIn: () => confirmRecentSignIn(account),
-				deleteBatch: () => deleteMyData({ expectedSubject: account.userId }),
+				deleteBatch: async () => {
+					const batch = await deleteMyData({
+						expectedSubject: account.userId,
+					});
+					if (scope === "account" && batch.done) {
+						dataGoneFor.current = account.userId;
+					}
+					return batch;
+				},
 				signOut: () => clerk.signOut({ redirectUrl: landing }),
 			};
 			await run(async () => {
@@ -92,11 +115,11 @@ export function useDeleteAccount() {
 							: { ...common, scope, deleteUser: () => deleteUser(account) },
 					);
 				} catch (caught) {
-					// Clerk's dialog opens again on the next delete, so pressing
-					// delete is all it takes; the shared copy says to sign in.
-					throw gameErrorData(caught)?.code === "accountSignInToFinish"
-						? new GameRuleError("accountDeleteAgain")
-						: caught;
+					throw inContext(asSessionEnd(caught));
+				}
+				// A cancelled retry deletes nothing more, but the data is still gone.
+				if (!deleted && finishing()) {
+					throw new GameRuleError("accountDeleteAgain");
 				}
 			}, copy.failed);
 			if (deleted) {
@@ -120,4 +143,31 @@ export function useDeleteAccount() {
 		error,
 		clearError: () => setError(""),
 	};
+}
+
+/** Convex no longer has the sign-in (`requireUserId`): the session ended. */
+function asSessionEnd(caught: unknown): unknown {
+	return gameErrorData(caught)?.code === "signInRequired"
+		? new GameRuleError("accountSessionEnded")
+		: caught;
+}
+
+/**
+ * `failure` once the data is deleted and the account not yet: whatever went
+ * wrong, the message says the data is gone and how to finish.
+ */
+function onceDataIsGone(failure: unknown): unknown {
+	switch (gameErrorData(failure)?.code) {
+		case "accountSignInFirst":
+		case "accountSessionEnded":
+			// Only a fresh sign-in, then deleting again, finishes it.
+			return new GameRuleError("accountSignInToFinish");
+		// Another account is signed in: deleting again must not be advised.
+		case "accountChanged":
+			return failure;
+		default:
+			// Clerk's dialog opens again on the next delete, so pressing delete
+			// is all it takes (also for Clerk's `accountSignInToFinish`).
+			return new GameRuleError("accountDeleteAgain");
+	}
 }
