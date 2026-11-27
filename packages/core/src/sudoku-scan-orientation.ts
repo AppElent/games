@@ -12,7 +12,7 @@
 import type { DigitGuess } from "./sudoku-digit-net";
 import { type CageRead, cageSumInk } from "./sudoku-scan-cages";
 import type { GridFrame } from "./sudoku-scan-mesh";
-import { readWarpedGrid } from "./sudoku-scan-read";
+import { prepareWarpedGrid } from "./sudoku-scan-read";
 
 /**
  * The corners as seen from `turns` corners further along: warping them turns
@@ -88,16 +88,11 @@ export function uprightDigitScore(guesses: readonly (DigitGuess | null)[]) {
  * The network's guess for every single-digit cell of a warped grid, without
  * reading anything else.
  */
-export async function gridDigitGuesses(
+export function gridDigitGuesses(
 	grid: { pixels: ArrayLike<number>; size: number },
 	margins: GridFrame["margins"],
 ) {
-	const guesses: (DigitGuess | null)[] = [];
-	await readWarpedGrid(grid, margins, async (glyphs) => {
-		guesses.push(...glyphs.map((glyph) => glyph.guess));
-		return glyphs.map(() => ({ digit: 0, confidence: 0 }));
-	});
-	return guesses;
+	return prepareWarpedGrid(grid, margins).guesses;
 }
 
 export type TurnSearch = {

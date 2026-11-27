@@ -14,31 +14,7 @@ import {
 } from "../sudoku-scan-orientation";
 import { drawGrid } from "../testing/drawn-grid";
 import { CELL, paintGlyph, renderKiller, SIZE } from "../testing/drawn-killer";
-
-/** A square image turned clockwise by `quarters` quarter turns. */
-function turned<T extends Uint8Array | Uint8ClampedArray>(
-	pixels: T,
-	size: number,
-	channels: number,
-	quarters: number,
-): T {
-	let out = pixels;
-	for (let q = 0; q < ((quarters % 4) + 4) % 4; q += 1) {
-		const next = new (out.constructor as new (length: number) => T)(out.length);
-		for (let y = 0; y < size; y += 1) {
-			for (let x = 0; x < size; x += 1) {
-				// Clockwise: the old left column becomes the new top row.
-				const from = ((size - 1 - x) * size + y) * channels;
-				const to = (y * size + x) * channels;
-				for (let c = 0; c < channels; c += 1) {
-					next[to + c] = out[from + c];
-				}
-			}
-		}
-		out = next;
-	}
-	return out;
-}
+import { turned } from "../testing/turned";
 
 /** Equal pixel for pixel (`toEqual` takes seconds on an image). */
 const sameImage = (a: ArrayLike<number>, b: ArrayLike<number>) =>

@@ -8,7 +8,13 @@ Mac and runs the app's `readGrid` on every photo, so it needs macOS with Xcode.
 node apps/mobile/scripts/scan-bench/bench.mjs            # from the labelled corners
 node apps/mobile/scripts/scan-bench/bench.mjs --detect   # from the corners the app finds
 node apps/mobile/scripts/scan-bench/bench.mjs --cells    # and every wrong cell
+node apps/mobile/scripts/scan-bench/bench.mjs --turns    # and each photo turned 90°, 180°, 270°
 ```
+
+`--turns` turns each photo with Core Graphics, hands the scan its corners in the order
+the turned photo shows them, and checks that `readGrid` and, on a Killer, `readKiller`
+turn the grid back upright. The upright photo is redrawn the same way, so every turn
+reads the same pixels.
 
 `--only id,…` limits the photos, `--photos folder` takes another set, `--json file`
 writes the rows. A cell is right when its digit (or its notes) is. "Type right" also
@@ -71,6 +77,12 @@ grid in the photo as it is, so it now looks at both and keeps the largest rectan
 | Curled      | 146/148 → 146/148 | 146 → 144  | 0 → 0            | 3 → 2          | 0 → 0                 | 1 → 1               |
 | Handwritten | 211/375 → 369/375 | 204 → 361  | 0 → 0            | 19 → 19        | 0 → 0                 | 0 → 0               |
 | Total       | 487/653 → 645/653 | 480 → 635  | 0 → 0            | 22 → 21        | 0 → 0                 | 1 → 1               |
+
+With `--turns` (APP-902), from the labelled corners: all 60 turned and upright photos
+are read upright, and every turn reads the same number of cells right as the upright
+photo (2868/2928 in all, 717/732 a turn). `readKiller` finds `handwritten-killer` a
+Killer at every turn and reads the same cages and sums each time. From the corners the
+app finds, all 60 are read upright too.
 
 Vision finds no grid on `handwritten-newspaper` in either look; the player places
 those corners. `sudoku-scan-doubt.ts` (core) flags every cell of a read from a wrong

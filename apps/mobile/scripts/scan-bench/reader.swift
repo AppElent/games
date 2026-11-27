@@ -18,6 +18,28 @@ func answer(_ request: [String: Any]) throws -> Any {
     let output = folder.appendingPathComponent("photo-\(UUID().uuidString).jpg")
     try SudokuScanEngine.write(image, to: output, type: .jpeg)
     return ["uri": output.path, "width": image.width, "height": image.height]
+  case "turnPhoto":
+    // The bench's own: the photo turned `quarters` quarter turns clockwise.
+    let image = try SudokuScanEngine.loadImage(url(request["uri"]))
+    let quarters = Int(number(request["quarters"]))
+    let sideways = quarters % 2 == 1
+    let width = sideways ? image.height : image.width
+    let height = sideways ? image.width : image.height
+    guard let context = CGContext(
+      data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+    ) else { throw NSError(domain: "reader", code: 1) }
+    // Core Graphics counts y upwards, so a clockwise turn is a negative angle.
+    context.translateBy(x: CGFloat(width) / 2, y: CGFloat(height) / 2)
+    context.rotate(by: -CGFloat(quarters) * .pi / 2)
+    context.draw(image, in: CGRect(
+      x: -CGFloat(image.width) / 2, y: -CGFloat(image.height) / 2,
+      width: CGFloat(image.width), height: CGFloat(image.height)
+    ))
+    guard let turned = context.makeImage() else { throw NSError(domain: "reader", code: 2) }
+    let output = folder.appendingPathComponent("turned-\(UUID().uuidString).png")
+    try SudokuScanEngine.write(turned, to: output, type: .png)
+    return ["uri": output.path, "width": width, "height": height]
   case "detectGrid":
     let image = try SudokuScanEngine.loadImage(url(request["uri"]))
     return SudokuScanEngine.detectGrid(in: image)?.map { ["x": $0.x, "y": $0.y] } ?? NSNull() as Any

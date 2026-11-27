@@ -3,7 +3,7 @@
  * the grid's corners (prefilled from detection), read the cells, then check
  * and correct the recognized grid. A grid with cages is a Killer: its cages
  * and sums are checked on their own step. `readKiller` and `readGrid` do the
- * reading.
+ * reading, turning a photo taken sideways or upside down upright first.
  */
 import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
 import type { KillerScan } from "@arcadeclub/core/sudoku-scan-cages";
@@ -119,15 +119,16 @@ export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 		setStep({ id: "reading", gridUri: null, done: 0 });
 		try {
 			if (tryKiller) {
-				const killer = await readKiller(scanner, back.photo, back.corners);
+				const killer = await readKiller(
+					scanner,
+					back.photo,
+					back.corners,
+					reportError,
+				);
 				if (current !== run.current) return;
 				if (killer) {
-					setStep({
-						id: "verifyKiller",
-						photo: back.photo,
-						corners: back.corners,
-						...killer,
-					});
+					// Upright corners, so reading it as classic starts upright too.
+					setStep({ id: "verifyKiller", photo: back.photo, ...killer });
 					return;
 				}
 			}
@@ -140,9 +141,10 @@ export function useSudokuScan(copy: Messages["games"]["sudoku"]["scan"]) {
 					setStep({ id: "reading", ...progress });
 					return true;
 				},
+				reportError,
 			);
 			if (!grid || current !== run.current) return;
-			setStep({ id: "verify", ...grid });
+			setStep({ id: "verify", gridUri: grid.gridUri, cells: grid.cells });
 		} catch (cause) {
 			if (current !== run.current) return;
 			reportError(cause);

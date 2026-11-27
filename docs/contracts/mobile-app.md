@@ -67,8 +67,11 @@ the [mobile runbook](../runbooks/mobile.md).
   so a curled page reads straight, finds each cell's ink, and reads digits with a
   small network next to Vision. It is shared with the web, where tesseract.js
   stands in for Vision. When the lines say the grid is elsewhere in the photo,
-  every cell it read is flagged for a check. Measure a change to it with the
-  [scan bench](../../apps/mobile/scripts/scan-bench/README.md), which runs on the
+  every cell it read is flagged for a check. A photo taken sideways or upside down
+  is read upright, as on the web (`@arcadeclub/core/sudoku-scan-orientation`): a
+  Killer by where its sums sit, a classic grid by how sure the network is of its
+  digits; if that check fails, the photo is read as taken. Measure a change to it
+  with the [scan bench](../../apps/mobile/scripts/scan-bench/README.md), which runs on the
   phone's and the web's reader. The
   player checks the grid in the web's verify step before it becomes a classic
   save with `source: "scan"` and no difficulty or solution. A build without the
