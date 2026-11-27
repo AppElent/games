@@ -21,6 +21,12 @@ export type PuzzleProgress = Omit<
 >;
 
 const SAVE_DEBOUNCE_MS = 1200;
+/**
+ * How often a running puzzle folds its clock on the server (`keepClock`).
+ * Well under the five minutes a phone folds when it opens the session, so
+ * the phone never takes the clock lower than the time played here.
+ */
+export const KEEP_CLOCK_MS = 60_000;
 
 /**
  * A solo puzzle saves, pauses and completes on a best-effort basis: a failed
@@ -106,6 +112,7 @@ export function useSoloPuzzleSession(
 	const saveProgress = useMutation(api.sudoku.saveProgress);
 	const setPaused = useMutation(api.sudoku.setPaused);
 	const complete = useMutation(api.sudoku.complete);
+	const keepClock = useMutation(api.sudoku.keepClock);
 	const [status, setStatus] = useState(state.status);
 	const [elapsed, setElapsed] = useState(() => initialElapsed(state));
 
@@ -119,8 +126,15 @@ export function useSoloPuzzleSession(
 			return;
 		}
 		const timer = setInterval(() => setElapsed((value) => value + 1), 1000);
-		return () => clearInterval(timer);
-	}, [status]);
+		const heartbeat = setInterval(
+			() => bestEffort(keepClock(puzzleWrite(sessionId)), "sudoku:keepClock"),
+			KEEP_CLOCK_MS,
+		);
+		return () => {
+			clearInterval(timer);
+			clearInterval(heartbeat);
+		};
+	}, [status, keepClock, sessionId]);
 
 	const saveTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
 		undefined,

@@ -332,6 +332,28 @@ export const setPaused = mutation({
 	},
 });
 
+/**
+ * Folds a running puzzle's time into `elapsedSeconds` and restarts the timer
+ * base, as a pause and resume would. An open web tab sends it while the clock
+ * runs, so a phone, which folds at most a few minutes of running time
+ * (`saveFromBundle`), still sees the time played there. Leaves `updatedAt`
+ * alone: the board does not change.
+ */
+export const keepClock = mutation({
+	args: puzzleCallArgs,
+	handler: async (ctx, args) => {
+		const { session, state } = await loadGame(ctx, "sudoku", args.sessionId);
+		await requirePuzzleHost(ctx, session, args.guestId);
+		if (state.status !== "active") {
+			return;
+		}
+		await ctx.db.patch(state._id, {
+			elapsedSeconds: foldElapsed(state),
+			lastResumedAt: Date.now(),
+		});
+	},
+});
+
 export const complete = mutation({
 	args: {
 		...puzzleCallArgs,

@@ -644,6 +644,8 @@ describe("only the host writes", () => {
 					guestId,
 					paused: true,
 				}),
+			keepClock: () =>
+				caller.mutation(api.sudoku.keepClock, { sessionId, guestId }),
 			rename: () =>
 				caller.mutation(api.sudoku.rename, {
 					sessionId,
@@ -916,6 +918,60 @@ describe("setPaused", () => {
 			paused: true,
 		});
 		expect((await storedState(t, sessionId)).status).toBe("completed");
+	});
+});
+
+describe("keepClock", () => {
+	function keepClock(t: T, sessionId: SessionId) {
+		return t.mutation(api.sudoku.keepClock, { sessionId, guestId: SOLVER });
+	}
+
+	it("folds a running clock and restarts the timer base, without a new version", async () => {
+		const t = setup();
+		const { sessionId } = await createPuzzle(t);
+		advance(10 * 60_000);
+		await keepClock(t, sessionId);
+		const kept = await storedState(t, sessionId);
+		expect(kept.status).toBe("active");
+		expect(kept.elapsedSeconds).toBe(600);
+		expect(kept.lastResumedAt).toBe(T0 + 600_000);
+		expect(kept.updatedAt).toBe(T0);
+	});
+
+	it("leaves no more than a minute for a phone to fold, so it keeps the web's time", async () => {
+		const t = setup();
+		const { sessionId } = await createPuzzle(t);
+		// Ten minutes on the web without a board change, heartbeat each minute.
+		for (let minute = 0; minute < 10; minute++) {
+			advance(60_000);
+			await keepClock(t, sessionId);
+		}
+		const { state } = await bundle(t, sessionId);
+		// What the phone folds (at most five minutes) starts from here.
+		expect(state.elapsedSeconds).toBe(600);
+		expect(Date.now() - (state.lastResumedAt ?? 0)).toBeLessThan(60_000);
+	});
+
+	it("does nothing while paused or once completed", async () => {
+		const t = setup();
+		const { sessionId } = await createPuzzle(t);
+		advance(1000);
+		await t.mutation(api.sudoku.setPaused, {
+			sessionId,
+			guestId: SOLVER,
+			paused: true,
+		});
+		advance(60_000);
+		await keepClock(t, sessionId);
+		const paused = await storedState(t, sessionId);
+		expect(paused.elapsedSeconds).toBe(1);
+		expect(paused.lastResumedAt).toBeUndefined();
+		await complete(t, sessionId);
+		await keepClock(t, sessionId);
+		const completed = await storedState(t, sessionId);
+		expect(completed.status).toBe("completed");
+		expect(completed.elapsedSeconds).toBe(99);
+		expect(completed.lastResumedAt).toBeUndefined();
 	});
 });
 
