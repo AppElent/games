@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Backgammon board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: {{W}}px; display: flex; flex-direction: column; gap: 10px; font-family: {{font}}; color: {{ink}}">
+  <section aria-label="{{L.boardLabel}}" ref="{{boardRef}}" onPointerDown="{{onDown}}" onPointerMove="{{onMove}}" onPointerUp="{{onUp}}" onPointerCancel="{{onCancel}}" style="position: relative; width: {{W}}px; height: {{H}}px; border-radius: 8px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; cursor: {{cursor}}; background: linear-gradient(155deg,#4d2f1a 0%,#3a2313 48%,#2b190e 100%); box-shadow: 0 10px 28px rgba(0,0,0,0.35)">
+    <sc-for list="{{areas}}" as="a" hint-placeholder-count="4">
+      <div style="position: absolute; left: {{a.x}}px; top: {{a.y}}px; width: {{a.w}}px; height: {{a.h}}px; background: {{a.bg}}; border-radius: 3px"></div>
+    </sc-for>
+    <sc-for list="{{tris}}" as="t" hint-placeholder-count="24">
+      <div style="position: absolute; left: {{t.x}}px; top: {{t.y}}px; width: {{t.w}}px; height: {{t.h}}px; background: {{t.bg}}; clip-path: {{t.clip}}"></div>
+    </sc-for>
+    <sc-for list="{{nums}}" as="n" hint-placeholder-count="24">
+      <div style="position: absolute; left: {{n.x}}px; top: {{n.y}}px; width: {{n.w}}px; text-align: center; font-size: {{n.fs}}px; line-height: 1; font-weight: 600; color: rgba(255,244,224,0.7)">{{n.label}}</div>
+    </sc-for>
+    <sc-for list="{{marks}}" as="m" hint-placeholder-count="2">
+      <div style="position: absolute; left: {{m.x}}px; top: {{m.y}}px; width: {{m.w}}px; height: {{m.h}}px; box-sizing: border-box; border-radius: 6px; background: {{m.bg}}; border: {{m.border}}; box-shadow: {{m.shadow}}"></div>
+    </sc-for>
+    <sc-for list="{{slabs}}" as="s" hint-placeholder-count="1">
+      <div style="position: absolute; left: {{s.x}}px; top: {{s.y}}px; width: {{s.w}}px; height: {{s.h}}px; border-radius: 2px; background: {{s.bg}}; border: {{s.border}}; opacity: {{s.op}}; box-sizing: border-box"></div>
+    </sc-for>
+    <sc-for list="{{checkers}}" as="c" hint-placeholder-count="30">
+      <div style="position: absolute; left: {{c.x}}px; top: {{c.y}}px; width: {{c.s}}px; height: {{c.s}}px; box-sizing: border-box; border-radius: 50%; background: {{c.bg}}; border: {{c.border}}; opacity: {{c.op}}; box-shadow: {{c.shadow}}; display: flex; align-items: center; justify-content: center; font-size: {{c.fs}}px; font-weight: 700; color: {{c.ink}}">{{c.label}}</div>
+    </sc-for>
+    <sc-if value="{{hasTrail}}" hint-placeholder-val="{{ false }}">
+      <svg aria-hidden="true" width="{{W}}" height="{{H}}" style="position: absolute; left: 0; top: 0; pointer-events: none">
+        <line x1="{{trail.x1}}" y1="{{trail.y1}}" x2="{{trail.x2}}" y2="{{trail.y2}}" stroke="rgba(255,253,246,0.85)" stroke-width="2" stroke-dasharray="5 5" stroke-linecap="round"></line>
+        <circle cx="{{trail.x2}}" cy="{{trail.y2}}" r="4" fill="rgba(255,253,246,0.9)"></circle>
+      </svg>
+    </sc-if>
+    <sc-for list="{{floating}}" as="f" hint-placeholder-count="0">
+      <div style="position: absolute; left: {{f.x}}px; top: {{f.y}}px; width: {{f.s}}px; height: {{f.s}}px; box-sizing: border-box; border-radius: 50%; background: {{f.bg}}; border: {{f.border}}; box-shadow: 0 10px 18px rgba(0,0,0,0.5), 0 0 0 3px rgba(245,158,11,0.55); transition: {{f.tr}}; pointer-events: none; z-index: 5"></div>
+    </sc-for>
+    <sc-if value="{{showFinger}}" hint-placeholder-val="{{ false }}">
+      <div aria-hidden="true" style="position: absolute; left: {{finger.x}}px; top: {{finger.y}}px; width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.16); border: 2px solid rgba(255,255,255,0.6); pointer-events: none; z-index: 4"></div>
+    </sc-if>
+    <sc-if value="{{showCursor}}" hint-placeholder-val="{{ false }}">
+      <svg aria-hidden="true" width="22" height="26" viewBox="0 0 22 26" style="position: absolute; left: {{cursorAt.x}}px; top: {{cursorAt.y}}px; pointer-events: none; z-index: 6">
+        <path d="M6 10V4.5a1.8 1.8 0 0 1 3.6 0V9 M9.6 9V3a1.8 1.8 0 0 1 3.6 0v6 M13.2 9V4.5a1.8 1.8 0 0 1 3.6 0V10 M16.8 10V7.5a1.8 1.8 0 0 1 3.4 0V15c0 5-3 9-8 9h-1c-3 0-5-1.6-6.6-4L2 15.5a1.8 1.8 0 0 1 3-2L6 15V10" fill="#ffffff" stroke="#111111" stroke-width="1.4" stroke-linejoin="round"></path>
+      </svg>
+    </sc-if>
+  </section>
+
+  <div style="display: flex; align-items: center; gap: 12px; min-height: {{dieSize}}px">
+    <div style="display: flex; gap: 8px; flex-shrink: 0">
+      <sc-for list="{{dice}}" as="d" hint-placeholder-count="2">
+        <div aria-label="{{d.aria}}" style="width: {{dieSize}}px; height: {{dieSize}}px; box-sizing: border-box; border-radius: 7px; background: linear-gradient(155deg,#fdf6e6,#e6d3ab); border: 1px solid #b7a179; padding: 4px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); opacity: {{d.op}}">
+          <sc-for list="{{d.pips}}" as="p" hint-placeholder-count="9">
+            <div style="display: flex; align-items: center; justify-content: center"><div style="width: {{pip}}px; height: {{pip}}px; border-radius: 50%; background: {{p.bg}}"></div></div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+    <p role="status" aria-live="polite" style="margin: 0; flex: 1; display: flex; align-items: flex-start; gap: 6px; font-size: {{hintFs}}px; line-height: 1.35; font-weight: 500; color: {{hintInk}}">
+      <sc-if value="{{hintIsError}}" hint-placeholder-val="{{ false }}">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{danger}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px"><path d="M12 3 2 20h20L12 3z"></path><path d="M12 10v4"></path><path d="M12 17.5v.01"></path></svg>
+      </sc-if>
+      <span>{{hint}}</span>
+    </p>
+  </div>
+
+  <sc-if value="{{showHaptic}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+      <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1.5px dashed {{noteInk}}; background: {{noteBg}}; color: {{noteInk}}; font-size: 12px; font-weight: 600">
+        <svg aria-hidden="true" width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="{{noteInk}}" stroke-width="1.8" stroke-linecap="round"><path d="M1 7h0"></path><path d="M4 4v6"></path><path d="M7 1v12"></path><path d="M10 3v8"></path><path d="M13 5v4"></path><path d="M16 7h0"></path></svg>
+        <span style="letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; font-weight: 800">{{L.haptic}}</span>
+        <span>{{hapticName}}</span>
+        <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 500; opacity: 0.85">{{hapticApi}}</span>
+      </div>
+      <sc-if value="{{isLive}}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{roll}}" style="font: inherit; font-size: 13px; font-weight: 600; min-height: 36px; padding: 0 14px; border-radius: 999px; background: transparent; color: {{ink}}; border: 1px solid {{lineStrong}}; cursor: pointer">{{L.roll}}</button>
+        <button type="button" onClick="{{reset}}" style="font: inherit; font-size: 13px; font-weight: 600; min-height: 36px; padding: 0 14px; border-radius: 999px; background: transparent; color: {{ink}}; border: 1px solid {{lineStrong}}; cursor: pointer">{{L.reset}}</button>
+      </sc-if>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scene":{"editor":"enum","options":["idle","lifted","hover","illegal","hit","bearoff","live"],"default":"hover"},"width":{"editor":"int","min":300,"max":1000,"default":350},"direction":{"editor":"enum","options":["A","B"],"default":"A"},"pointer":{"editor":"enum","options":["touch","mouse"],"default":"touch"},"lang":{"editor":"enum","options":["en","nl"],"default":"en"},"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"showHaptic":{"editor":"boolean","default":true},"$preview":{"width":350,"height":420}}'>
+class Component extends DCLogic {
+  P1() { return { w: {24: 2, 13: 5, 8: 3, 6: 5}, b: {1: 2, 12: 5, 17: 3, 19: 4, 3: 1}, barW: 0, barB: 0, offW: 0, dice: [5, 3], used: [] }; }
+  P2() { return { w: {6: 3, 5: 4, 4: 3, 3: 2, 2: 1, 1: 1}, b: {19: 3, 20: 3, 22: 4, 24: 5}, barW: 0, barB: 0, offW: 1, dice: [6, 4], used: [] }; }
+
+  geo(W) {
+    const frame = Math.max(4, Math.round(W * 0.015));
+    const inner = W - frame * 2;
+    const unit = inner / 14.2;
+    const half = unit * 5;
+    const gap = unit * 1.1;
+    return { W, frame, unit, half, gap, H: half * 2 + gap + frame * 2, checker: unit * 0.92 };
+  }
+  colX(g, c) { return c < 6 ? c * g.unit : (c + 1) * g.unit; }
+  rect(g, n) {
+    const top = n >= 13;
+    const col = top ? n - 13 : 12 - n;
+    return { top, col, x: g.frame + this.colX(g, col), y: top ? g.frame : g.frame + g.half + g.gap, w: g.unit, h: g.half };
+  }
+  slot(g, n, k) {
+    const r = this.rect(g, n);
+    const kk = Math.min(Math.max(k, 0), 4);
+    return { x: r.x + g.unit / 2, y: r.top ? r.y + g.checker / 2 + 1 + kk * g.checker : r.y + g.half - g.checker / 2 - 1 - kk * g.checker };
+  }
+  barSlot(g, color, k) {
+    const x = g.frame + 6 * g.unit + g.unit / 2;
+    return { x, y: color === 'b' ? g.frame + g.half - g.checker / 2 - 2 - k * g.checker : g.frame + g.half + g.gap + g.checker / 2 + 2 + k * g.checker };
+  }
+  tray(g) { return { x: g.frame + 13 * g.unit, y: g.frame, w: 1.2 * g.unit, h: g.H - 2 * g.frame }; }
+  hitTest(g, x, y) {
+    const ix = x - g.frame, iy = y - g.frame;
+    if (ix < 0 || iy < 0 || ix > g.W - 2 * g.frame || iy > g.H - 2 * g.frame) return null;
+    if (ix >= 13 * g.unit) return 'off';
+    if (ix >= 6 * g.unit && ix < 7 * g.unit) return 'bar';
+    const c = ix < 6 * g.unit ? Math.floor(ix / g.unit) : Math.floor((ix - g.unit) / g.unit);
+    if (c < 0 || c > 11) return null;
+    return iy < g.half + g.gap / 2 ? 13 + c : 12 - c;
+  }
+
+  clone(s) { return { w: Object.assign({}, s.w), b: Object.assign({}, s.b), barW: s.barW, barB: s.barB, offW: s.offW, dice: s.dice.slice(), used: s.used.slice() }; }
+  remaining(s) { return s.dice.filter((d, i) => s.used.indexOf(i) < 0); }
+  allHome(s) { if (s.barW > 0) return false; for (const k in s.w) { if (s.w[k] > 0 && +k > 6) return false; } return true; }
+  highest(s) { let h = 0; for (const k in s.w) { if (s.w[k] > 0 && +k > h) h = +k; } return h; }
+  legal(s, from) {
+    const t = {};
+    if (from == null) return t;
+    if (s.barW > 0 && from !== 'bar') return t;
+    if (from === 'bar' && s.barW === 0) return t;
+    if (from !== 'bar' && !(s.w[from] > 0)) return t;
+    const rem = this.remaining(s);
+    const start = from === 'bar' ? 25 : from;
+    const open = (p) => (s.b[p] || 0) < 2;
+    const one = (st, d) => {
+      const dest = st - d;
+      if (dest >= 1) return open(dest) ? dest : null;
+      if (!this.allHome(s)) return null;
+      if (dest === 0) return 'off';
+      return st === this.highest(s) ? 'off' : null;
+    };
+    rem.forEach((d) => { const r = one(start, d); if (r != null && t[r] == null) t[r] = [d]; });
+    if (rem.length === 2 && rem[0] !== rem[1] && from !== 'bar') {
+      [[rem[0], rem[1]], [rem[1], rem[0]]].forEach((pair) => {
+        const mid = start - pair[0];
+        if (mid >= 1 && open(mid)) {
+          const dest = mid - pair[1];
+          if (dest >= 1 && open(dest) && t[dest] == null) t[dest] = pair;
+        }
+      });
+    }
+    return t;
+  }
+  apply(s, from, dest, ds) {
+    const n = this.clone(s);
+    let hit = false;
+    if (from === 'bar') n.barW -= 1; else n.w[from] -= 1;
+    if (dest === 'off') n.offW += 1;
+    else {
+      if ((n.b[dest] || 0) === 1) { n.b[dest] = 0; n.barB += 1; hit = true; }
+      n.w[dest] = (n.w[dest] || 0) + 1;
+    }
+    (ds || []).forEach((d) => {
+      for (let i = 0; i < n.dice.length; i++) {
+        if (n.used.indexOf(i) < 0 && n.dice[i] === d) { n.used.push(i); break; }
+      }
+    });
+    return { n, hit };
+  }
+  anyMove(s) {
+    if (s.barW > 0) return Object.keys(this.legal(s, 'bar')).length > 0;
+    for (const k in s.w) { if (s.w[k] > 0 && Object.keys(this.legal(s, +k)).length > 0) return true; }
+    return false;
+  }
+
+  copy(lang) {
+    const nl = lang === 'nl';
+    return nl ? {
+      boardLabel: 'Backgammonbord', haptic: 'Haptiek', roll: 'Nieuwe worp', reset: 'Opnieuw', and: 'en',
+      pickChecker: 'Sleep of tik op een schijf om te zetten.',
+      pickTarget: 'Laat los op een verlicht punt, of tik erop.',
+      enterFromBar: 'Breng eerst je schijf van de bar in.',
+      unreachable: 'Daar kun je niet heen met {dice}.',
+      blocked: 'Punt {n} is geblokkeerd.',
+      movesLeft1: 'Nog 1 zet deze beurt.',
+      done: 'Geen zetten meer — beëindig de beurt.',
+      won: 'Wit heeft alle 15 schijven uitgespeeld.',
+      die: 'Dobbelsteen {n}', dieUsed: 'Dobbelsteen {n}, gebruikt',
+      h: { none: ['Geen', 'geen haptiek'], lift: ['Lichte tik', 'impactAsync(Light)'], tick: ['Selectietik', 'selectionAsync()'], move: ['Middelzware tik', 'impactAsync(Medium)'], hit: ['Zware tik', 'impactAsync(Heavy)'], warn: ['Waarschuwing', 'notificationAsync(Warning)'], win: ['Succes', 'notificationAsync(Success)'], cancel: ['Geen (terugzetten)', 'geen haptiek'] }
+    } : {
+      boardLabel: 'Backgammon board', haptic: 'Haptic', roll: 'New roll', reset: 'Reset', and: 'and',
+      pickChecker: 'Drag or tap a checker to move.',
+      pickTarget: 'Drop on a lit point, or tap one.',
+      enterFromBar: 'Enter your checker from the bar first.',
+      unreachable: 'You can’t move there with {dice}.',
+      blocked: 'Point {n} is blocked.',
+      movesLeft1: '1 move left this turn.',
+      done: 'No moves left — end the turn.',
+      won: 'White has borne off all 15 checkers.',
+      die: 'Die {n}', dieUsed: 'Die {n}, used',
+      h: { none: ['None', 'no haptic'], lift: ['Light impact', 'impactAsync(Light)'], tick: ['Selection tick', 'selectionAsync()'], move: ['Medium impact', 'impactAsync(Medium)'], hit: ['Heavy impact', 'impactAsync(Heavy)'], warn: ['Warning', 'notificationAsync(Warning)'], win: ['Success', 'notificationAsync(Success)'], cancel: ['None (put back)', 'no haptic'] }
+    };
+  }
+  fmt(str, vars) { return str.replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m)); }
+  diceText(s, L) { const r = this.remaining(s); return r.length === 2 ? r[0] + ' ' + L.and + ' ' + r[1] : r.join(''); }
+
+  offset(g, pointerType) {
+    const dir = this.props.direction || 'A';
+    if (dir === 'B') return 0;
+    const surfacePhone = (this.props.pointer || 'touch') === 'touch';
+    if (surfacePhone || pointerType === 'touch' || pointerType === 'pen') return g.checker * 1.7;
+    return 0;
+  }
+  liveState() { const st = this.state || {}; return st.live || this.P1(); }
+  pt(e, g) {
+    const el = this.boardRef && this.boardRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const sc = r.width / g.W || 1;
+    return { x: (e.clientX - r.left) / sc, y: (e.clientY - r.top) / sc };
+  }
+  buzz(k, extra) { const st = this.state || {}; this.setState(Object.assign({ haptic: k, hapticN: (st.hapticN || 0) + 1 }, extra || {})); }
+  commit(from, dest, ds) {
+    const L = this.copy(this.props.lang);
+    const res = this.apply(this.liveState(), from, dest, ds);
+    const won = res.n.offW >= 15;
+    let msg = null;
+    if (won) msg = { kind: 'info', text: L.won };
+    else if (!this.anyMove(res.n)) msg = { kind: 'info', text: L.done };
+    this.buzz(won ? 'win' : res.hit ? 'hit' : 'move', { live: res.n, sel: null, drag: null, ret: null, msg });
+  }
+  startReturn(g, from, x, y) {
+    const s = this.liveState();
+    const src = from === 'bar' ? this.barSlot(g, 'w', Math.max(0, s.barW - 1)) : this.slot(g, from, (s.w[from] || 1) - 1);
+    const reduce = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { this.setState({ drag: null, ret: null }); return; }
+    this.setState({ drag: null, ret: { from, x, y, anim: false } });
+    requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ ret: { from, x: src.x, y: src.y, anim: true } })));
+    clearTimeout(this.retTimer);
+    this.retTimer = setTimeout(() => this.setState({ ret: null }), 260);
+  }
+
+  staticScene(scene, g) {
+    const L = this.copy(this.props.lang);
+    const off = this.offset(g, null);
+    const out = { s: this.P1(), drag: null, sel: null, flying: null, trail: null, msg: null, haptic: 'none', hideSource: null, hideBarB: 0 };
+    if (scene === 'lifted') {
+      const f = this.slot(g, 8, 2);
+      out.drag = { from: 8, fx: f.x, fy: f.y, cx: f.x, cy: f.y - off - (off ? 0 : 2), hover: null };
+      out.haptic = 'lift';
+    } else if (scene === 'hover') {
+      const c = this.slot(g, 5, 1);
+      out.drag = { from: 8, cx: c.x, cy: c.y, fx: c.x + 4, fy: c.y + off, hover: 5 };
+      out.haptic = 'tick';
+    } else if (scene === 'illegal') {
+      const a = this.slot(g, 4, 1), b = this.slot(g, 8, 2), t = 0.45;
+      out.trail = { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+      out.flying = { color: 'w', x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, scale: 1.1 };
+      out.hideSource = 8;
+      out.msg = { kind: 'err', text: this.fmt(L.unreachable, { dice: this.diceText(out.s, L) }) };
+      out.haptic = 'warn';
+    } else if (scene === 'hit') {
+      out.s = this.apply(this.P1(), 8, 3, [5]).n;
+      const a = this.slot(g, 3, 0), b = this.barSlot(g, 'b', 0), t = 0.55;
+      out.trail = { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+      out.flying = { color: 'b', x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, scale: 1 };
+      out.hideBarB = 1;
+      out.msg = { kind: 'info', text: L.movesLeft1 };
+      out.haptic = 'hit';
+    } else if (scene === 'bearoff') {
+      out.s = this.P2();
+      const tr = this.tray(g);
+      const c = { x: tr.x + tr.w / 2, y: g.frame + g.half + g.gap + g.half * 0.55 };
+      out.drag = { from: 6, cx: c.x, cy: c.y, fx: c.x - 6, fy: c.y + off, hover: 'off' };
+      out.haptic = 'tick';
+    }
+    return out;
+  }
+
+  renderVals() {
+    if (!this.boardRef) this.boardRef = { current: null };
+    const st = this.state || {};
+    const W = this.props.width || 350;
+    const g = this.geo(W);
+    const scene = this.props.scene || 'hover';
+    const live = scene === 'live';
+    const lang = this.props.lang || 'en';
+    const L = this.copy(lang);
+    const dark = (this.props.theme || 'dark') === 'dark';
+    const pointer = this.props.pointer || 'touch';
+    const dir = this.props.direction || 'A';
+    const R = (v) => Math.round(v * 10) / 10;
+
+    let v;
+    if (live) {
+      v = { s: this.liveState(), drag: st.drag || null, sel: st.sel != null ? st.sel : null, flying: null, trail: null, msg: st.msg || null, haptic: st.haptic || 'none', hideSource: null, hideBarB: 0 };
+      if (st.ret) { v.flying = { color: 'w', x: st.ret.x, y: st.ret.y, scale: 1.1, anim: st.ret.anim }; v.hideSource = st.ret.from; }
+    } else {
+      v = this.staticScene(scene, g);
+    }
+    const s = v.s;
+    const from = v.drag ? v.drag.from : v.sel;
+    const targets = from != null ? this.legal(s, from) : {};
+    const hover = v.drag ? v.drag.hover : null;
+    const hidden = v.drag ? v.drag.from : v.hideSource;
+
+    const felt = 'radial-gradient(140% 120% at 50% 50%, #cda471 0%, #b98d55 65%, #a2743f 100%)';
+    const ih = g.H - 2 * g.frame;
+    const areas = [
+      { x: R(g.frame), y: R(g.frame), w: R(6 * g.unit), h: R(ih), bg: felt },
+      { x: R(g.frame + 6 * g.unit), y: R(g.frame), w: R(g.unit), h: R(ih), bg: 'linear-gradient(180deg,#3a2313,#28170c)' },
+      { x: R(g.frame + 7 * g.unit), y: R(g.frame), w: R(6 * g.unit), h: R(ih), bg: felt },
+      { x: R(g.frame + 13 * g.unit + 2), y: R(g.frame), w: R(1.2 * g.unit - 2), h: R(ih), bg: 'linear-gradient(180deg,#3a2313,#28170c)' }
+    ];
+    const tris = [];
+    const nums = [];
+    const fs = Math.max(8, Math.min(14, g.unit * 0.4));
+    for (let n = 1; n <= 24; n++) {
+      const r = this.rect(g, n);
+      const parity = r.top ? 0 : 1;
+      const isDark = (r.col + parity) % 2 === 0;
+      const th = g.half * 0.9;
+      tris.push({ x: R(r.x), y: R(r.top ? r.y : r.y + g.half - th), w: R(g.unit), h: R(th), bg: isDark ? '#a54c38' : '#e7d2a4', clip: r.top ? 'polygon(6% 0, 94% 0, 50% 100%)' : 'polygon(50% 0, 94% 100%, 6% 100%)' });
+      nums.push({ x: R(r.x), w: R(g.unit), fs: R(fs), label: String(n), y: R(r.top ? g.frame + g.half + 3 : g.frame + g.half + g.gap - fs - 3) });
+    }
+
+    const marks = [];
+    const tr = this.tray(g);
+    Object.keys(targets).forEach((k) => {
+      const box = k === 'off' ? { x: tr.x + 1, y: tr.y, w: tr.w - 1, h: tr.h } : this.rect(g, +k);
+      const isHover = hover != null && String(hover) === k;
+      marks.push({ x: R(box.x + 1), y: R(box.y + 1), w: R(box.w - 2), h: R(box.h - 2),
+        bg: isHover ? 'rgba(120,220,170,0.45)' : 'rgba(120,220,170,0.22)',
+        border: isHover ? '3px solid #8ff0c0' : '2px solid rgba(120,220,170,0.85)',
+        shadow: isHover ? '0 0 18px rgba(120,220,170,0.7), inset 0 0 12px rgba(120,220,170,0.35)' : 'none' });
+    });
+    if (from != null && from !== 'bar') {
+      const r = this.rect(g, from);
+      marks.push({ x: R(r.x + 1), y: R(r.y + 1), w: R(r.w - 2), h: R(r.h - 2), bg: 'rgba(245,158,11,0.10)', border: '2px solid #f59e0b', shadow: 'none' });
+    }
+
+    const W_BG = 'radial-gradient(circle at 36% 28%, #fffdf6 0%, #f3e6c4 46%, #d7c092 100%)';
+    const B_BG = 'radial-gradient(circle at 36% 28%, #5c554c 0%, #2a2620 46%, #100e0b 100%)';
+    const checkers = [];
+    const pushChecker = (cx, cy, color, label, op, ghost) => {
+      checkers.push({ x: R(cx - g.checker / 2), y: R(cy - g.checker / 2), s: R(g.checker), bg: ghost ? 'rgba(255,253,246,0.35)' : (color === 'w' ? W_BG : B_BG),
+        border: ghost ? '2px dashed #fffdf6' : (color === 'w' ? '1px solid #b09863' : '1px solid #000'), op: op, shadow: ghost ? 'none' : '0 1px 2px rgba(0,0,0,0.35)',
+        fs: R(Math.max(9, g.checker * 0.42)), ink: color === 'w' ? '#3a2a12' : '#f2e6cc', label: label });
+    };
+    for (let n = 1; n <= 24; n++) {
+      ['w', 'b'].forEach((color) => {
+        let c = (color === 'w' ? s.w[n] : s.b[n]) || 0;
+        if (color === 'w' && hidden === n) c -= 1;
+        const shown = Math.min(c, 5);
+        for (let k = 0; k < shown; k++) {
+          const p = this.slot(g, n, k);
+          pushChecker(p.x, p.y, color, k === shown - 1 && c > 5 ? String(c) : '', 1, false);
+        }
+      });
+    }
+    const barW = s.barW - (hidden === 'bar' ? 1 : 0);
+    for (let k = 0; k < Math.min(barW, 3); k++) { const p = this.barSlot(g, 'w', k); pushChecker(p.x, p.y, 'w', '', 1, false); }
+    const barB = s.barB - v.hideBarB;
+    for (let k = 0; k < Math.min(barB, 3); k++) { const p = this.barSlot(g, 'b', k); pushChecker(p.x, p.y, 'b', '', 1, false); }
+
+    const slabH = Math.max(4, g.unit * 0.24);
+    const slabs = [];
+    for (let i = 0; i < s.offW; i++) {
+      slabs.push({ x: R(tr.x + tr.w * 0.14), y: R(g.H - g.frame - 4 - (i + 1) * (slabH + 2)), w: R(tr.w * 0.72), h: R(slabH), bg: 'linear-gradient(180deg,#f6ead0,#d5bd8f)', border: '1px solid #b39d6f', op: 1 });
+    }
+    if (hover != null) {
+      if (hover === 'off') {
+        slabs.push({ x: R(tr.x + tr.w * 0.14), y: R(g.H - g.frame - 4 - (s.offW + 1) * (slabH + 2)), w: R(tr.w * 0.72), h: R(slabH), bg: 'rgba(255,253,246,0.35)', border: '2px dashed #fffdf6', op: 1 });
+      } else {
+        const k = (s.b[hover] || 0) === 1 ? 0 : (s.w[hover] || 0);
+        const p = this.slot(g, hover, k);
+        pushChecker(p.x, p.y, 'w', '', 0.9, true);
+      }
+    }
+
+    const floating = [];
+    if (v.drag) {
+      const sc = dir === 'B' ? 1.15 : 1.3;
+      const size = g.checker * sc;
+      floating.push({ x: R(v.drag.cx - size / 2), y: R(v.drag.cy - size / 2), s: R(size), bg: W_BG, border: '1px solid #b09863', tr: 'none' });
+    } else if (v.flying) {
+      const size = g.checker * v.flying.scale;
+      floating.push({ x: R(v.flying.x - size / 2), y: R(v.flying.y - size / 2), s: R(size), bg: v.flying.color === 'w' ? W_BG : B_BG, border: v.flying.color === 'w' ? '1px solid #b09863' : '1px solid #000',
+        tr: v.flying.anim ? 'left 220ms cubic-bezier(.2,.8,.2,1), top 220ms cubic-bezier(.2,.8,.2,1)' : 'none' });
+    }
+
+    const showFinger = !live && pointer === 'touch' && !!v.drag;
+    const showCursor = !live && pointer === 'mouse' && !!v.drag;
+    const finger = v.drag ? { x: R(v.drag.fx - 23), y: R(v.drag.fy - 23) } : { x: 0, y: 0 };
+    const cursorAt = v.drag ? { x: R(v.drag.fx - 8), y: R(v.drag.fy - 6) } : { x: 0, y: 0 };
+
+    const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+    const dice = s.dice.map((d, i) => {
+      const used = s.used.indexOf(i) >= 0;
+      const on = PIPS[d] || [];
+      const pips = [];
+      for (let c = 0; c < 9; c++) pips.push({ bg: on.indexOf(c) >= 0 ? '#1c1207' : 'transparent' });
+      return { pips, op: used ? 0.35 : 1, aria: this.fmt(used ? L.dieUsed : L.die, { n: d }) };
+    });
+    const dieSize = W > 500 ? 44 : 32;
+
+    let hint, hintIsError = false;
+    if (v.msg) { hint = v.msg.text; hintIsError = v.msg.kind === 'err'; }
+    else if (v.drag || v.sel != null) hint = L.pickTarget;
+    else if (s.barW > 0) hint = L.enterFromBar;
+    else if (!this.anyMove(s)) hint = L.done;
+    else hint = L.pickChecker;
+
+    const hk = v.haptic || 'none';
+    const danger = dark ? '#fb7185' : '#be123c';
+
+    const onDown = (e) => {
+      if (!live) return;
+      const p = this.pt(e, g); if (!p) return;
+      const cur = this.liveState();
+      const sn = this.state || {};
+      const h = this.hitTest(g, p.x, p.y);
+      const own = (h === 'bar' && cur.barW > 0) || (typeof h === 'number' && cur.w[h] > 0 && cur.barW === 0);
+      if (sn.sel != null && h != null && !own) {
+        const T = this.legal(cur, sn.sel);
+        if (T[h] != null) { this.commit(sn.sel, h, T[h]); return; }
+        this.buzz('warn', { sel: null, msg: { kind: 'err', text: typeof h === 'number' && (cur.b[h] || 0) >= 2 ? this.fmt(L.blocked, { n: h }) : this.fmt(L.unreachable, { dice: this.diceText(cur, L) }) } });
+        return;
+      }
+      if (!own) return;
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+      this.pending = { from: h, sx: p.x, sy: p.y, moved: false, hover: null };
+    };
+    const onMove = (e) => {
+      const pd = this.pending; if (!pd) return;
+      const p = this.pt(e, g); if (!p) return;
+      let lifted = false;
+      if (!pd.moved) {
+        if (Math.hypot(p.x - pd.sx, p.y - pd.sy) < 6) return;
+        pd.moved = true; lifted = true;
+      }
+      const off = this.offset(g, e.pointerType);
+      const cx = p.x, cy = p.y - off;
+      const T = this.legal(this.liveState(), pd.from);
+      let h = this.hitTest(g, cx, cy);
+      if (h == null || T[h] == null) h = null;
+      const entered = h != null && h !== pd.hover;
+      pd.hover = h;
+      const next = { drag: { from: pd.from, cx, cy, fx: p.x, fy: p.y, hover: h }, sel: null, ret: null };
+      if (lifted) { next.msg = null; this.buzz('lift', next); }
+      else if (entered) this.buzz('tick', next);
+      else this.setState(next);
+    };
+    const onUp = () => {
+      const pd = this.pending; this.pending = null;
+      if (!pd) return;
+      const cur = this.liveState();
+      const sn = this.state || {};
+      if (!pd.moved) {
+        if (sn.sel != null && sn.sel !== pd.from) {
+          const T = this.legal(cur, sn.sel);
+          if (T[pd.from] != null) { this.commit(sn.sel, pd.from, T[pd.from]); return; }
+        }
+        if (sn.sel === pd.from) { this.buzz('tick', { sel: null }); return; }
+        this.buzz('tick', { sel: pd.from, msg: null });
+        return;
+      }
+      const d = sn.drag;
+      if (pd.hover != null) { const T = this.legal(cur, pd.from); this.commit(pd.from, pd.hover, T[pd.hover]); return; }
+      if (!d) { this.setState({ drag: null }); return; }
+      const under = this.hitTest(g, d.cx, d.cy);
+      if (under == null || under === pd.from) { this.setState({ haptic: 'cancel' }); this.startReturn(g, pd.from, d.cx, d.cy); return; }
+      const blocked = typeof under === 'number' && (cur.b[under] || 0) >= 2;
+      this.buzz('warn', { msg: { kind: 'err', text: blocked ? this.fmt(L.blocked, { n: under }) : this.fmt(L.unreachable, { dice: this.diceText(cur, L) }) } });
+      this.startReturn(g, pd.from, d.cx, d.cy);
+    };
+    const onCancel = () => {
+      const pd = this.pending; this.pending = null;
+      const sn = this.state || {};
+      if (pd && sn.drag) this.startReturn(g, pd.from, sn.drag.cx, sn.drag.cy);
+    };
+    const roll = () => {
+      const a = 1 + Math.floor(Math.random() * 6);
+      let b = 1 + Math.floor(Math.random() * 6);
+      while (b === a) b = 1 + Math.floor(Math.random() * 6);
+      const n = this.clone(this.liveState()); n.dice = [a, b]; n.used = [];
+      this.setState({ live: n, sel: null, drag: null, ret: null, msg: null, haptic: 'none' });
+    };
+    const reset = () => this.setState({ live: this.P1(), sel: null, drag: null, ret: null, msg: null, haptic: 'none' });
+
+    return {
+      W, H: R(g.H), L, boardRef: this.boardRef,
+      font: pointer === 'mouse' ? "Manrope, system-ui, sans-serif" : "-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif",
+      ink: dark ? '#f8fafc' : '#0f172a',
+      hintInk: hintIsError ? (dark ? '#f8fafc' : '#0f172a') : (dark ? '#aab6cc' : '#475569'),
+      lineStrong: dark ? 'rgba(148,163,184,0.6)' : 'rgba(15,23,42,0.5)',
+      noteInk: dark ? '#c4b5fd' : '#6d28d9', noteBg: dark ? 'rgba(167,139,250,0.12)' : 'rgba(109,40,217,0.07)',
+      danger,
+      cursor: live ? (st.drag ? 'grabbing' : 'grab') : 'default',
+      areas, tris, nums, marks, slabs, checkers, floating,
+      hasTrail: !!v.trail, trail: v.trail || { x1: 0, y1: 0, x2: 0, y2: 0 },
+      showFinger, finger, showCursor, cursorAt,
+      dice, dieSize, pip: dieSize > 40 ? 7 : 5,
+      hint, hintIsError, hintFs: W > 500 ? 16 : 14,
+      showHaptic: this.props.showHaptic !== false, isLive: live,
+      hapticName: (L.h[hk] || L.h.none)[0] + ((live && st.hapticN) ? ' · #' + st.hapticN : ''),
+      hapticApi: (L.h[hk] || L.h.none)[1],
+      onDown, onMove, onUp, onCancel, roll, reset
+    };
+  }
+}
+</script>
+</body>
+</html>

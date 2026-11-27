@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Backgammon on the web</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 920px; box-sizing: border-box; background: radial-gradient(900px 500px at 0% 0%, rgba(34,211,238,0.10), transparent 60%), radial-gradient(800px 500px at 100% 0%, rgba(244,114,182,0.08), transparent 60%), #080a12; color: #f8fafc; font-family: Manrope, system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; border-bottom: 1px solid rgba(148,163,184,0.18)">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px">Arcade Club</span>
+      <span style="color: #aab6cc; font-size: 15px">/</span>
+      <span style="font-size: 15px; font-weight: 600">Backgammon</span>
+    </div>
+    <button type="button" style="font: inherit; font-size: 14px; font-weight: 600; min-height: 40px; padding: 0 16px; border-radius: 12px; background: rgba(255,255,255,0.08); color: #f8fafc; border: 1px solid rgba(148,163,184,0.6)">{{t.leave}}</button>
+  </header>
+
+  <main style="flex: 1; display: flex; gap: 32px; padding: 28px 32px 32px">
+    <div style="flex-shrink: 0">
+      <dc-import name="Board" scene="{{scene}}" width="{{ 860 }}" direction="A" pointer="mouse" lang="{{lang}}" theme="dark" show-haptic="{{ false }}" hint-size="860px,760px"></dc-import>
+    </div>
+    <aside style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+      <section style="padding: 20px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.18); background: linear-gradient(160deg, rgba(25,31,52,0.94), rgba(18,22,38,0.82)); display: flex; flex-direction: column; gap: 14px">
+        <span style="font-size: 11.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #34d399">{{t.kicker}}</span>
+        <h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 600">{{t.toMove}}</h2>
+        <div style="display: flex; gap: 10px">
+          <button type="button" disabled="{{ true }}" style="flex: 1; font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; border-radius: 6px; background: #ffffff; color: #020617; border: 0; opacity: 0.5">{{t.roll}}</button>
+          <button type="button" disabled="{{ true }}" style="flex: 1; font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; border-radius: 12px; background: rgba(255,255,255,0.1); color: #f8fafc; border: 1px solid rgba(148,163,184,0.6); opacity: 0.5">{{t.endTurn}}</button>
+        </div>
+        <div style="display: flex; gap: 10px">
+          <button type="button" style="flex: 1; font: inherit; font-size: 14px; font-weight: 600; min-height: 40px; border-radius: 12px; background: transparent; color: #f8fafc; border: 1px solid rgba(148,163,184,0.6)">{{t.undo}}</button>
+          <button type="button" disabled="{{ true }}" style="flex: 1; font: inherit; font-size: 14px; font-weight: 600; min-height: 40px; border-radius: 12px; background: transparent; color: #f8fafc; border: 1px solid rgba(148,163,184,0.6); opacity: 0.5">{{t.redo}}</button>
+        </div>
+      </section>
+      <section style="padding: 20px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.18); background: linear-gradient(160deg, rgba(25,31,52,0.94), rgba(18,22,38,0.82)); display: flex; flex-direction: column; gap: 10px">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 700">{{t.logHeading}}</h3>
+        <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: #aab6cc; font-size: 14px">
+          <li>{{t.log1}}</li>
+          <li>{{t.log2}}</li>
+        </ol>
+      </section>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #aab6cc">{{t.dragHint}}</p>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["en","nl"],"default":"en"},"scene":{"editor":"enum","options":["idle","lifted","hover","illegal","hit","bearoff"],"default":"hover"},"$preview":{"width":1280,"height":920}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const lang = this.props.lang || 'en';
+    const t = lang === 'nl'
+      ? { leave: 'Verlaten', kicker: 'Lokaal spel', toMove: 'Wit is aan zet', roll: 'Gooien', endTurn: 'Beurt beëindigen', undo: '↶ Ongedaan maken', redo: '↷ Opnieuw doen', logHeading: 'Zettenlogboek', log1: 'Zwart: 1 naar 3 met 2', log2: 'Wit gegooid 5-3', dragHint: 'Klik of sleep een schijf — twee dobbelstenen kunnen samen één zet vormen' }
+      : { leave: 'Leave', kicker: 'Local game', toMove: 'White to move', roll: 'Roll', endTurn: 'End turn', undo: '↶ Undo', redo: '↷ Redo', logHeading: 'Move log', log1: 'Black: 1 to 3 using 2', log2: 'White rolled 5-3', dragHint: 'Click or drag a checker — two dice can combine into one move' };
+    return { t, lang, scene: this.props.scene || 'hover' };
+  }
+}
+</script>
+</body>
+</html>
