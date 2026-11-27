@@ -320,15 +320,16 @@ describe("DeleteAccountScreen re-verify sheet", () => {
 				"secret",
 			);
 			await fireEvent.press(screen.getByTestId("reverify-submit"));
+			// Leaving closes the sheet, which says the data is gone right away.
 			await view.unmount();
+			expect(Alert.alert).toHaveBeenLastCalledWith(
+				copy.unfinishedTitle,
+				messages.en.serverErrors.accountDeleteAgain,
+			);
 			await act(async () => {
 				reject({ errors: [{ code: "session_not_found" }] });
 			});
-			expect(Alert.alert).toHaveBeenLastCalledWith(
-				reverifyCopy.endedTitle,
-				finish,
-			);
-			// The confirmation, then this one.
+			// The confirmation, then that one: the 401 adds no second alert.
 			expect(Alert.alert).toHaveBeenCalledTimes(2);
 		});
 
@@ -351,7 +352,7 @@ describe("DeleteAccountScreen re-verify sheet", () => {
 				});
 				if (gone) {
 					expect(Alert.alert).toHaveBeenLastCalledWith(
-						reverifyCopy.endedTitle,
+						copy.unfinishedTitle,
 						finish,
 					);
 				} else {
@@ -389,6 +390,59 @@ describe("DeleteAccountScreen re-verify sheet", () => {
 			await pressDelete();
 			expect(await screen.findByText(finish)).toBeTruthy();
 		});
+		it("says so in an alert when deleting the account fails after the screen went", async () => {
+			recentSignIn = true;
+			let reject!: (reason: unknown) => void;
+			Object.assign(mockUser as object, {
+				delete: () =>
+					new Promise((_resolve, fail) => {
+						reject = fail;
+					}),
+			});
+			const view = await confirmDeletionAlert(copy.account.label);
+			await waitFor(() => expect(mockDeleteMyData).toHaveBeenCalled());
+			await view.unmount();
+			await act(async () => {
+				reject(new Error("offline"));
+			});
+			expect(Alert.alert).toHaveBeenLastCalledWith(
+				copy.unfinishedTitle,
+				messages.en.serverErrors.accountDeleteAgain,
+			);
+			// The confirmation, then this one.
+			expect(Alert.alert).toHaveBeenCalledTimes(2);
+		});
+
+		it("says so in an alert when the screen goes before the sheet opens", async () => {
+			recentSignIn = true;
+			Object.assign(mockUser as object, {
+				delete: jest.fn().mockRejectedValue({
+					errors: [{ code: "session_reverification_required" }],
+				}),
+			});
+			let answer!: (value: unknown) => void;
+			Object.assign(mockSession as object, {
+				startVerification: () =>
+					new Promise((resolve) => {
+						answer = resolve;
+					}),
+			});
+			const view = await confirmDeletionAlert(copy.account.label);
+			await waitFor(() => expect(answer).toBeDefined());
+			await view.unmount();
+			await act(async () => {
+				answer({
+					status: "needs_first_factor",
+					supportedFirstFactors: [{ strategy: "password" }],
+				});
+			});
+			expect(Alert.alert).toHaveBeenLastCalledWith(
+				copy.unfinishedTitle,
+				messages.en.serverErrors.accountDeleteAgain,
+			);
+			expect(Alert.alert).toHaveBeenCalledTimes(2);
+		});
+
 		/** A whole-account run that deletes the data, then stops at the account. */
 		async function deleteDataOnly() {
 			recentSignIn = true;
