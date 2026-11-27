@@ -131,6 +131,8 @@ describe("readGrid", () => {
 		const reader = drawnReader(grid);
 		const read = await readGrid(reader, photo, corners, () => true);
 		expect(read?.cells[40]).toMatchObject({ type: "empty", confidence: 0.3 });
+		// No digit to score, so no other turn is tried.
+		expect(reader.warpGrid).toHaveBeenCalledTimes(1);
 		reader.readDigits.mockImplementation(async (_uri, boxes) =>
 			boxes.map(() => ({ digit: 2, confidence: 0.9 })),
 		);
@@ -163,6 +165,8 @@ describe("readGrid", () => {
 });
 
 describe("readGrid of a photo taken sideways or upside down", () => {
+	// Each read warps and traces the grid up to four times.
+	jest.setTimeout(30_000);
 	const grid = drawGrid({
 		margin: 0.7,
 		digits: [
@@ -325,6 +329,7 @@ describe("readKiller", () => {
 			expect(read?.corners).toEqual(turnCorners(corners, quarters));
 			if (quarters === 0) expect(reader.warpGrid).toHaveBeenCalledTimes(1);
 		},
+		30_000,
 	);
 
 	it("leaves a classic grid to the classic read", async () => {

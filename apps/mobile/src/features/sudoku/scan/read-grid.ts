@@ -115,13 +115,17 @@ export async function readGrid(
 	if (!onProgress({ gridUri: first.grid.uri, done: 0 })) return null;
 	// Finding the lines takes a second on a phone: show the grid first.
 	await new Promise((resolve) => setTimeout(resolve, 0));
-	const { turns, view } = await uprightTurn(
-		prepare(first),
-		async (turn) => prepare(await warpAt(turn)),
-		({ prepared }) => uprightDigitScore(prepared.guesses),
-		CLASSIC_TURNS,
-		onCheckFailed,
-	);
+	const asTaken = prepare(first);
+	// Without a single digit, no turn can read any surer: keep the photo.
+	const { turns, view } = asTaken.prepared.guesses.some(Boolean)
+		? await uprightTurn(
+				asTaken,
+				async (turn) => prepare(await warpAt(turn)),
+				({ prepared }) => uprightDigitScore(prepared.guesses),
+				CLASSIC_TURNS,
+				onCheckFailed,
+			)
+		: { turns: 0, view: asTaken };
 	const { grid, prepared } = view;
 	if (turns !== 0 && !onProgress({ gridUri: grid.uri, done: 0 })) return null;
 	const cells = await readPreparedGrid(
