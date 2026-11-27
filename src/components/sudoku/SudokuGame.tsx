@@ -94,6 +94,8 @@ export function SudokuGame({
 	const [autoCleanup, setAutoCleanup] = useState(state.autoCleanup);
 	const [hint, setHint] = useState<SudokuHint | null>(null);
 	const [hintLevel, setHintLevel] = useState<1 | 2 | 3>(1);
+	// Set when the last Hint press found no step, so the card says so.
+	const [noHint, setNoHint] = useState(false);
 	// Eliminations of hints explained in full, so the next hint moves on.
 	const hintHistory = useRef<HintHistory>([]);
 	// The board the shown hint was found on: undo and redo keep the hint open.
@@ -148,6 +150,7 @@ export function SudokuGame({
 				return;
 			}
 			setHint(null);
+			setNoHint(false);
 			commit(applyAction(historyRef.current, action, { autoCleanup }), true);
 		},
 		[isActive, commit, autoCleanup],
@@ -157,6 +160,7 @@ export function SudokuGame({
 		if (!isActive()) {
 			return;
 		}
+		setNoHint(false);
 		commit(undo(historyRef.current), false);
 	}, [isActive, commit]);
 
@@ -164,6 +168,7 @@ export function SudokuGame({
 		if (!isActive()) {
 			return;
 		}
+		setNoHint(false);
 		commit(redo(historyRef.current), true);
 	}, [isActive, commit]);
 
@@ -233,20 +238,21 @@ export function SudokuGame({
 		const grid = effectiveGrid(history.current);
 		hintGrid.current = grid;
 		setHintLevel(1);
-		setHint(
-			findHint(grid, {
-				givens: history.current.givens,
-				history: hintHistory.current,
-				cages,
-				maxLevel: inputSettings.hintsUpTo,
-			}),
-		);
+		const found = findHint(grid, {
+			givens: history.current.givens,
+			history: hintHistory.current,
+			cages,
+			maxLevel: inputSettings.hintsUpTo,
+		});
+		setHint(found);
+		setNoHint(!found);
 	}, [isActive, hint, history, cages, inputSettings.hintsUpTo]);
 
 	// A changed maximum makes an open hint's offer or level stale.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs only when the maximum changes.
 	useEffect(() => {
 		setHint(null);
+		setNoHint(false);
 	}, [inputSettings.hintsUpTo]);
 
 	useEffect(() => {
@@ -441,64 +447,78 @@ export function SudokuGame({
 
 			{/* Controls column: hint, keypad, options, keyboard help. */}
 			<div className="flex w-full max-w-[min(94vw,600px)] flex-col items-center gap-4 lg:w-[360px] lg:max-w-[360px]">
-				{hint ? (
-					<div className="w-full rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-						<div className="flex items-center justify-between gap-2">
-							<div className="flex flex-wrap items-center gap-2">
-								<p className="font-bold">
-									{hintLevel >= 2 && !hint.aboveMaxLevel
-										? describeHint(hint, hintLevel, sudoku.hints).title
-										: sudoku.game.hintFallbackTitle}
-								</p>
-								{inputSettings.showHintLevel && hint.technique !== "mistake" ? (
-									<span className="rounded-full border border-amber-300/60 px-2 text-xs font-bold leading-5 text-amber-300">
-										{sudoku.inputSettings.hintLevels[hint.level]}
-									</span>
-								) : null}
+				{/* Always in the DOM, so screen readers hear each new hint. Empty, it
+				    stands outside the column's flex flow and adds no gap. */}
+				<div
+					aria-live="polite"
+					className={hint || noHint ? "w-full" : "absolute"}
+				>
+					{hint || noHint ? (
+						<div className="w-full rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+							<div className="flex items-center justify-between gap-2">
+								<div className="flex flex-wrap items-center gap-2">
+									<p className="font-bold">
+										{hint && hintLevel >= 2 && !hint.aboveMaxLevel
+											? describeHint(hint, hintLevel, sudoku.hints).title
+											: sudoku.game.hintFallbackTitle}
+									</p>
+									{hint &&
+									inputSettings.showHintLevel &&
+									hint.technique !== "mistake" ? (
+										<span className="rounded-full border border-amber-300/60 px-2 text-xs font-bold leading-5 text-amber-300">
+											{sudoku.inputSettings.hintLevels[hint.level]}
+										</span>
+									) : null}
+								</div>
+								<button
+									type="button"
+									onClick={() => {
+										setHint(null);
+										setNoHint(false);
+									}}
+									className="text-xs text-amber-200/80 hover:text-white"
+								>
+									{sudoku.game.dismissHint}
+								</button>
 							</div>
-							<button
-								type="button"
-								onClick={() => setHint(null)}
-								className="text-xs text-amber-200/80 hover:text-white"
-							>
-								{sudoku.game.dismissHint}
-							</button>
+							<p className="mt-1">
+								{!hint
+									? sudoku.game.noHint
+									: hint.aboveMaxLevel
+										? fmt(sudoku.game.hintAboveMax, {
+												needed: sudoku.game.hintNeeds[hint.level],
+												max: sudoku.game.hintMax[inputSettings.hintsUpTo],
+											})
+										: describeHint(hint, hintLevel, sudoku.hints).text}
+							</p>
+							{hint?.aboveMaxLevel ? (
+								<button
+									type="button"
+									onClick={() =>
+										setHint((shown) =>
+											shown ? { ...shown, aboveMaxLevel: undefined } : shown,
+										)
+									}
+									className="mt-2 rounded-md border border-amber-300/50 px-2 py-1 text-xs font-semibold hover:bg-amber-400/20"
+								>
+									{sudoku.game.showHintAnyway}
+								</button>
+							) : hint && hintLevel < 3 ? (
+								<button
+									type="button"
+									onClick={() =>
+										setHintLevel((level) =>
+											level < 3 ? ((level + 1) as 2 | 3) : level,
+										)
+									}
+									className="mt-2 rounded-md border border-amber-300/50 px-2 py-1 text-xs font-semibold hover:bg-amber-400/20"
+								>
+									{sudoku.game.tellMeMore}
+								</button>
+							) : null}
 						</div>
-						<p className="mt-1">
-							{hint.aboveMaxLevel
-								? fmt(sudoku.game.hintAboveMax, {
-										needed: sudoku.game.hintNeeds[hint.level],
-										max: sudoku.game.hintMax[inputSettings.hintsUpTo],
-									})
-								: describeHint(hint, hintLevel, sudoku.hints).text}
-						</p>
-						{hint.aboveMaxLevel ? (
-							<button
-								type="button"
-								onClick={() =>
-									setHint((shown) =>
-										shown ? { ...shown, aboveMaxLevel: undefined } : shown,
-									)
-								}
-								className="mt-2 rounded-md border border-amber-300/50 px-2 py-1 text-xs font-semibold hover:bg-amber-400/20"
-							>
-								{sudoku.game.showHintAnyway}
-							</button>
-						) : hintLevel < 3 ? (
-							<button
-								type="button"
-								onClick={() =>
-									setHintLevel((level) =>
-										level < 3 ? ((level + 1) as 2 | 3) : level,
-									)
-								}
-								className="mt-2 rounded-md border border-amber-300/50 px-2 py-1 text-xs font-semibold hover:bg-amber-400/20"
-							>
-								{sudoku.game.tellMeMore}
-							</button>
-						) : null}
-					</div>
-				) : null}
+					) : null}
+				</div>
 
 				<p className="sr-only" aria-live="polite">
 					{modeAnnounced
