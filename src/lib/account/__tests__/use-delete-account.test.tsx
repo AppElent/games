@@ -10,6 +10,8 @@ const deleteMyData = vi.fn();
 const deleteUser = vi.fn();
 const signOut = vi.fn();
 let deleteSelfEnabled = true;
+/** The signed-in user the page renders for. */
+let userId = "user_1";
 /** Whether the session's sign-in is recent enough for Clerk. */
 let recentSignIn = true;
 /** How the person answers Clerk's verify dialog. */
@@ -25,7 +27,7 @@ const cancelled = { code: "reverification_cancelled" };
 type Fetcher = (...args: unknown[]) => Promise<unknown>;
 vi.mock("@clerk/react", () => ({
 	useUser: () => ({
-		user: { id: "user_1", deleteSelfEnabled },
+		user: { id: userId, deleteSelfEnabled },
 	}),
 	useClerk: () => ({
 		signOut,
@@ -79,7 +81,36 @@ async function runDeletion(scope: DeletionScope = "account") {
 	await act(async () => {
 		ok = await hook.result.current.deleteAccount(scope);
 	});
-	return { ok, result: hook.result };
+	return { ok, result: hook.result, rerender: hook.rerender };
+}
+
+/** Runs the same page's deletion again, as pressing delete once more does. */
+async function again(
+	result: { current: ReturnType<typeof useDeleteAccount> },
+	scope: DeletionScope = "account",
+) {
+	let ok: boolean | undefined;
+	await act(async () => {
+		ok = await result.current.deleteAccount(scope);
+	});
+	return ok;
+}
+
+const DELETE_AGAIN =
+	"Your Arcade Club data is deleted, but your AppElent account isn't yet. Delete your account again to finish.";
+const SIGN_IN_TO_FINISH =
+	"Your Arcade Club data is deleted, but your AppElent account isn't yet: it needs a recent sign-in. Sign in again, then delete your whole account again to finish.";
+const FAILED = "Your data could not be deleted. Try again.";
+const SESSION_ENDED = "Your session ended. Sign in again, then try again.";
+
+/** A whole-account run that deletes the data, then fails on the Clerk user. */
+async function dataGoneRun() {
+	deleteMyData.mockResolvedValueOnce({ done: true });
+	deleteUser.mockRejectedValueOnce(new Error("network"));
+	const run = await runDeletion();
+	expect(run.ok).toBe(false);
+	expect(run.result.current.error).toBe(DELETE_AGAIN);
+	return run;
 }
 
 /** The `ConvexError` shape the backend throws for a keyed refusal. */
@@ -90,6 +121,7 @@ function refusal(code: string, params?: Record<string, number>) {
 describe("useDeleteAccount", () => {
 	beforeEach(() => {
 		deleteSelfEnabled = true;
+		userId = "user_1";
 		recentSignIn = true;
 		verifies = true;
 		verifyPrompts = 0;
@@ -309,5 +341,100 @@ describe("useDeleteAccount", () => {
 		expect(result.current.error).toBe(
 			"Your session ended. Sign in again, then try again.",
 		);
+	});
+	describe("once a whole-account run has deleted the data", () => {
+		it("says so when the account then fails for another reason", async () => {
+			await dataGoneRun();
+			expect(signOut).not.toHaveBeenCalled();
+			expect(navigate).not.toHaveBeenCalled();
+		});
+
+		it("says so when a retry's batch fails", async () => {
+			const { result } = await dataGoneRun();
+			deleteMyData.mockRejectedValueOnce(new Error("[CONVEX M] network"));
+			expect(await again(result)).toBe(false);
+			expect(result.current.error).toBe(DELETE_AGAIN);
+		});
+
+		it("says so when a retry's verify dialog is closed", async () => {
+			const { result } = await dataGoneRun();
+			recentSignIn = false;
+			verifies = false;
+			expect(await again(result)).toBe(false);
+			expect(verifyPrompts).toBe(1);
+			expect(result.current.error).toBe(DELETE_AGAIN);
+		});
+
+		it("says to sign in to finish when a retry's sign-in is still too old", async () => {
+			const { result } = await dataGoneRun();
+			checkAuthorization.mockReturnValue(false);
+			expect(await again(result)).toBe(false);
+			expect(result.current.error).toBe(SIGN_IN_TO_FINISH);
+		});
+
+		it("says to sign in to finish when the session ended before a retry", async () => {
+			const { result } = await dataGoneRun();
+			hasSession = false;
+			expect(await again(result)).toBe(false);
+			expect(result.current.error).toBe(SIGN_IN_TO_FINISH);
+		});
+
+		it("says to sign in to finish when Convex lost the sign-in on a retry", async () => {
+			const { result } = await dataGoneRun();
+			deleteMyData.mockRejectedValueOnce(refusal("signInRequired"));
+			expect(await again(result)).toBe(false);
+			expect(result.current.error).toBe(SIGN_IN_TO_FINISH);
+		});
+
+		it("keeps the account-switch refusal, which deleting again would not fix", async () => {
+			const { result } = await dataGoneRun();
+			deleteMyData.mockRejectedValueOnce(refusal("accountChanged"));
+			expect(await again(result)).toBe(false);
+			expect(result.current.error).toBe(
+				"You switched accounts. Sign in to the account you started with and try again.",
+			);
+		});
+
+		it("finishes on a retry", async () => {
+			const { result } = await dataGoneRun();
+			deleteMyData.mockResolvedValueOnce({ done: true });
+			expect(await again(result)).toBe(true);
+			expect(deleteUser).toHaveBeenCalledTimes(2);
+			expect(result.current.error).toBe("");
+		});
+
+		it("gives Arcade Club data only the plain messages", async () => {
+			const { result } = await dataGoneRun();
+			deleteMyData.mockRejectedValueOnce(new Error("[CONVEX M] network"));
+			expect(await again(result, "app")).toBe(false);
+			expect(result.current.error).toBe(FAILED);
+
+			recentSignIn = false;
+			verifies = false;
+			expect(await again(result, "app")).toBe(false);
+			expect(result.current.error).toBe("");
+
+			hasSession = false;
+			expect(await again(result, "app")).toBe(false);
+			expect(result.current.error).toBe(SESSION_ENDED);
+		});
+
+		it("gives another account signed in on the same page the plain messages", async () => {
+			const { result, rerender } = await dataGoneRun();
+			userId = "user_2";
+			clerkUserId = "user_2";
+			rerender();
+			deleteMyData.mockRejectedValueOnce(new Error("[CONVEX M] network"));
+			expect(await again(result)).toBe(false);
+			expect(result.current.error).toBe(FAILED);
+		});
+	});
+
+	it("says the session ended when Convex no longer has the sign-in", async () => {
+		deleteMyData.mockRejectedValueOnce(refusal("signInRequired"));
+		const { ok, result } = await runDeletion();
+		expect(ok).toBe(false);
+		expect(deleteUser).not.toHaveBeenCalled();
+		expect(result.current.error).toBe(SESSION_ENDED);
 	});
 });

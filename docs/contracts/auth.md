@@ -166,7 +166,13 @@ every Convex call. The UI in `src/lib/auth` is copied from the shared
   If Clerk still refuses the user after the data is gone, the sheet opens once more;
   cancelled, the app shows `accountDeleteAgain`, and when it can't help,
   `accountSignInToFinish`; the web, where deleting again reopens Clerk's dialog, shows
-  `accountDeleteAgain`. Refusals (`accountInActiveGame`, `accountChanged`) and a Clerk
+  `accountDeleteAgain`. On the web too, once a whole-account run has deleted the data,
+  any failure of it or a later whole-account run for the same user says so
+  (`onceDataIsGone` in `src/lib/account/use-delete-account.ts`): a session end, Convex's
+  `signInRequired` included, or a sign-in still too old reads `accountSignInToFinish`,
+  `accountChanged` stays, and anything else, a closed dialog too, `accountDeleteAgain`;
+  before that, and for Arcade Club data only, the messages are the plain ones, with
+  `signInRequired` as `accountSessionEnded`. Refusals (`accountInActiveGame`, `accountChanged`) and a Clerk
   session that has ended (`accountSessionEnded`, "Sign in again" on the app, also when
   nobody is signed in) show localized; a rerun resumes.
 - On the phone, the sign-in modal closes back to the screen it opened over (a guest on
