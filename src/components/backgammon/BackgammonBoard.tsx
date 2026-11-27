@@ -322,6 +322,8 @@ export function BackgammonBoard({
 	const [optionsOpen, setOptionsOpen] = useState(false);
 	const dragRef = useRef<DragState | null>(null);
 	const justDraggedRef = useRef(false);
+	/** Ends the current click guard: its timer, or its wait for the release. */
+	const clickGuardRef = useRef<(() => void) | null>(null);
 	const [dragViewState, setDragView] = useState<DragView | null>(null);
 	/** The rejection sentence: replaces the status line until the next press. */
 	const [notice, setNotice] = useState<string | null>(null);
@@ -340,6 +342,30 @@ export function BackgammonBoard({
 		setSelectedSource(null);
 		setNotice(null);
 	}, [active, diceKey]);
+
+	/** The press just ended: ignore the click the browser fires after it. */
+	function swallowClick() {
+		clickGuardRef.current?.();
+		justDraggedRef.current = true;
+		const timer = setTimeout(() => {
+			justDraggedRef.current = false;
+			clickGuardRef.current = null;
+		}, 300);
+		clickGuardRef.current = () => clearTimeout(timer);
+	}
+
+	/** The press is still down: ignore its click, however long it is held. */
+	function swallowClickAfterRelease() {
+		clickGuardRef.current?.();
+		justDraggedRef.current = true;
+		const release = () => swallowClick();
+		window.addEventListener("pointerup", release);
+		window.addEventListener("pointercancel", release);
+		clickGuardRef.current = () => {
+			window.removeEventListener("pointerup", release);
+			window.removeEventListener("pointercancel", release);
+		};
+	}
 
 	function finishDrag(pd: DragState) {
 		pd.stop();
@@ -365,11 +391,8 @@ export function BackgammonBoard({
 		const pd = dragRef.current;
 		if (!pd) return;
 		if (pd.phase === "lifted") {
-			// Swallow the click that ends this press, as a normal drop does.
-			justDraggedRef.current = true;
-			setTimeout(() => {
-				justDraggedRef.current = false;
-			}, 300);
+			// The button is still down: swallow the click that ends this press, as a normal drop does.
+			swallowClickAfterRelease();
 			springBack(pd);
 		} else if (pd.phase === "settling" && !pd.landed) pd.boardChanged = true;
 		else if (pd.phase !== "returning") finishDrag(pd);
@@ -377,6 +400,7 @@ export function BackgammonBoard({
 
 	useEffect(
 		() => () => {
+			clickGuardRef.current?.();
 			const pd = dragRef.current;
 			if (!pd) return;
 			pd.stop();
@@ -548,10 +572,7 @@ export function BackgammonBoard({
 				if (dragRef.current === pd) dragRef.current = null;
 				return;
 			}
-			justDraggedRef.current = true;
-			setTimeout(() => {
-				justDraggedRef.current = false;
-			}, 300);
+			swallowClick();
 			document.body.style.cursor = "";
 			if (ev.type === "pointercancel") {
 				springBack(pd);
