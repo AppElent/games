@@ -609,7 +609,8 @@ export function BackgammonBoard({
 						if (
 							accepted === false &&
 							dragRef.current === pd &&
-							pd.phase === "settling"
+							pd.phase === "settling" &&
+							!pd.boardChanged
 						)
 							springBack(pd);
 					});
