@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 import { isKillerRead } from "@arcadeclub/core/sudoku-scan-cages";
 import type { DigitRead, InkBox } from "@arcadeclub/core/sudoku-scan-ink";
+import { withMargins } from "@arcadeclub/core/sudoku-scan-mesh";
+import { readWarpedGrid } from "@arcadeclub/core/sudoku-scan-read";
 import { describe, expect, it, vi } from "vitest";
 import {
 	NETWORK_SURE,
@@ -184,6 +186,83 @@ describe("a classic grid on the sudoku-book-page fixture", () => {
 				{ smooth: true },
 			);
 			expect(isKillerRead(readWarpedCages(warped))).toBe(false);
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+});
+
+/** The printed givens of `sudoku-angled-print.png`, from the bench's labels. */
+const ANGLED_PRINT = [
+	"21.43..7.",
+	"......85.",
+	"..4..7.13",
+	".....2.95",
+	"...819...",
+	"96.7.....",
+	"89.5..7..",
+	".21......",
+	".3..78.69",
+].join("");
+
+describe("the classic read on the sudoku-angled-print fixture", () => {
+	it("reads the givens with the digit network alone", async () => {
+		const { width, height, rgba } = readGrayFixture("sudoku-angled-print.png");
+		vi.stubGlobal("document", { createElement: () => makeCanvas() });
+		try {
+			// The corners the scan's check step would confirm, as `recognizeGrid`
+			// warps them: with margins, smoothly.
+			const frame = withMargins(
+				[
+					{ x: 15, y: 5 },
+					{ x: 397, y: 21 },
+					{ x: 382, y: 393 },
+					{ x: 5, y: 386 },
+				],
+				{ width, height },
+			);
+			const warped = warpToSquare(
+				makeCanvas(width, height, rgba),
+				frame.corners,
+				{ smooth: true },
+			);
+			const { data } = warped
+				.getContext("2d")
+				?.getImageData(0, 0, warped.width, warped.height) ?? {
+				data: new Uint8ClampedArray(),
+			};
+			const pixels = Uint8Array.from(
+				{ length: warped.width * warped.height },
+				(_, i) => data[i * 4],
+			);
+			// What the web takes from the network without asking tesseract.
+			const cells = await readWarpedGrid(
+				{ pixels, size: warped.width },
+				frame.margins,
+				async (glyphs) =>
+					glyphs.map(({ guess }) => networkRead(guess) ?? empty),
+			);
+			if (!cells) {
+				throw new Error("the read stopped");
+			}
+			const read = cells.map((cell) =>
+				cell.type === "empty" ? "." : String(cell.digit),
+			);
+
+			// A few known cells: the top row, the middle box and the last row.
+			expect([read[0], read[3], read[7]]).toEqual(["2", "4", "7"]);
+			expect([read[39], read[41]]).toEqual(["8", "9"]);
+			expect([read[79], read[80]]).toEqual(["6", "9"]);
+			// No cell is read as the wrong digit, and no empty cell gets one;
+			// the network may leave a given it is unsure of to tesseract.
+			const wrong = read.flatMap((digit, cell) =>
+				digit === "." || digit === ANGLED_PRINT[cell] ? [] : [cell],
+			);
+			expect(wrong).toEqual([]);
+			const givens = [...ANGLED_PRINT].filter((digit) => digit !== ".");
+			expect(read.filter((digit) => digit !== ".").length).toBeGreaterThan(
+				givens.length - 3,
+			);
 		} finally {
 			vi.unstubAllGlobals();
 		}
