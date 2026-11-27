@@ -34,9 +34,28 @@ function slides() {
 	return document.body.querySelectorAll("[data-hit-slide]");
 }
 
-/** A board whose `onPlan` applies the move, like local play. */
-function playBoard() {
-	let state = blotOn21();
+/** White to move with 2-1, lone black checkers on 23, 22 and 21: 24 → 21 hits two on the way. */
+function blotsOnTheWay(): BackgammonTurnState {
+	const state = withBackgammonDice(createInitialBackgammonState(), [2, 1]);
+	const points = state.points.map((p) => ({ ...p }));
+	points[20] = { point: 21, color: "black", count: 1 };
+	points[21] = { point: 22, color: "black", count: 1 };
+	points[22] = { point: 23, color: "black", count: 1 };
+	return { ...state, points };
+}
+
+type Mode = "local" | "online" | "refused";
+
+/**
+ * A board whose `onPlan` answers like the caller: local applies the plan at
+ * once, online applies one step per server call, refused changes nothing.
+ */
+function playBoard(start = blotOn21(), mode: Mode = "local") {
+	let state = start;
+	const show = (next: BackgammonTurnState) => {
+		state = next;
+		utils.rerender(view(state));
+	};
 	const view = (s: BackgammonTurnState) => (
 		<LocaleProvider initialLocale="en">
 			<BackgammonBoard
@@ -46,12 +65,20 @@ function playBoard() {
 				canEndTurn={false}
 				options={{
 					showNumbers: false,
-					autoCombine: false,
+					autoCombine: mode === "online",
 					autoSwitchTurn: false,
 				}}
-				onPlan={(plan: BackgammonMovePlan) => {
-					state = applyBackgammonPlan(state, plan);
-					utils.rerender(view(state));
+				onPlan={async (plan: BackgammonMovePlan) => {
+					if (mode === "refused") return false;
+					if (mode === "local") {
+						show(applyBackgammonPlan(state, plan));
+						return true;
+					}
+					for (const step of plan.steps) {
+						await Promise.resolve();
+						show(applyBackgammonPlan(state, { steps: [step] }));
+					}
+					return true;
 				}}
 			/>
 		</LocaleProvider>
@@ -114,6 +141,37 @@ describe("BackgammonBoard hit slide", () => {
 		});
 		expect(slides()).toHaveLength(0);
 		expect(barCheckers(container)).toBe(1);
+	});
+
+	it("slides each blot as its step lands online, one server call per step", async () => {
+		const container = playBoard(blotsOnTheWay(), "online");
+		fireEvent.click(point(container, 24));
+		await act(async () => {
+			fireEvent.click(point(container, 21));
+			await Promise.resolve();
+			await Promise.resolve();
+			await Promise.resolve();
+		});
+
+		// Two steps, two hits: both blots in the air, both bar slots still empty.
+		expect(slides()).toHaveLength(2);
+		expect(barCheckers(container)).toBe(0);
+		act(() => {
+			vi.advanceTimersByTime(300);
+		});
+		expect(slides()).toHaveLength(0);
+		expect(barCheckers(container)).toBe(2);
+	});
+
+	it("slides nothing when the move is refused", async () => {
+		const container = playBoard(blotOn21(), "refused");
+		await act(async () => {
+			fireEvent.click(point(container, 24));
+			fireEvent.click(point(container, 21));
+			await Promise.resolve();
+		});
+		expect(slides()).toHaveLength(0);
+		expect(barCheckers(container)).toBe(0);
 	});
 
 	it("puts the blot on the bar at once under reduced motion", () => {

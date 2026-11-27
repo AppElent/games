@@ -140,6 +140,8 @@ type PendingHits = {
 	/** The hit colour's bar count before the move. */
 	bar: number;
 	from: Spot[];
+	/** How many of `from` have reached the bar so far. */
+	slid: number;
 };
 
 function stateKey(state: BackgammonTurnState, movable: boolean) {
@@ -479,16 +481,28 @@ export function BackgammonBoard({
 	useLayoutEffect(() => {
 		const pending = pendingHitsRef.current;
 		if (!pending || pending.key === boardKey) return;
-		pendingHitsRef.current = null;
 		const { color, from } = pending;
-		// Some other board (undo, a reset, the opponent): not the move's hits.
-		if (state.bar[color] !== pending.bar + from.length) return;
+		// Online, each step of the plan arrives as its own board: slide each blot as its hit lands.
+		const landed = state.bar[color] - pending.bar;
+		// The turn passed, or some other board (undo, a reset): not the move's hits.
+		if (
+			state.activeColor === color ||
+			landed < pending.slid ||
+			landed > from.length
+		) {
+			pendingHitsRef.current = null;
+			return;
+		}
+		const fresh = from.slice(pending.slid, landed);
+		pending.key = boardKey;
+		pending.slid = landed;
+		if (landed === from.length) pendingHitsRef.current = null;
 		const stack = rootRef.current?.querySelector(`[data-bar-stack="${color}"]`);
 		const drawn = Array.from(stack?.children ?? []);
-		const targets = from.map((_, i) =>
-			spotOf(drawn[drawn.length - from.length + i] ?? drawn.at(-1) ?? stack),
+		const targets = fresh.map((_, i) =>
+			spotOf(drawn[drawn.length - fresh.length + i] ?? drawn.at(-1) ?? stack),
 		);
-		const slides = from.flatMap((spot, i) => {
+		const slides = fresh.flatMap((spot, i) => {
 			const to = targets[i];
 			return to ? [{ spot, to }] : [];
 		});
@@ -556,7 +570,7 @@ export function BackgammonBoard({
 				: [];
 		const pending: PendingHits | null =
 			from.length > 0
-				? { key: boardKey, color, bar: state.bar[color], from }
+				? { key: boardKey, color, bar: state.bar[color], from, slid: 0 }
 				: null;
 		pendingHitsRef.current = pending;
 		const sent = onPlan(plan);
