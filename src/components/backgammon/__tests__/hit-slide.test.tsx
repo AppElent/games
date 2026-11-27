@@ -44,7 +44,7 @@ function blotsOnTheWay(): BackgammonTurnState {
 	return { ...state, points };
 }
 
-type Mode = "local" | "online" | "refused";
+type Mode = "local" | "local-pass" | "online" | "refused";
 
 /**
  * A board whose `onPlan` answers like the caller: local applies the plan at
@@ -72,6 +72,12 @@ function playBoard(start = blotOn21(), mode: Mode = "local") {
 					if (mode === "refused") return false;
 					if (mode === "local") {
 						show(applyBackgammonPlan(state, plan));
+						return true;
+					}
+					if (mode === "local-pass") {
+						// Auto switch turn: the move and the pass land as one board.
+						const moved = applyBackgammonPlan(state, plan);
+						show({ ...moved, activeColor: "black", dice: [], used: [] });
 						return true;
 					}
 					for (const step of plan.steps) {
@@ -161,6 +167,19 @@ describe("BackgammonBoard hit slide", () => {
 		});
 		expect(slides()).toHaveLength(0);
 		expect(barCheckers(container)).toBe(2);
+	});
+
+	it("slides the blot when the hitting move also passes the turn", () => {
+		const container = playBoard(blotOn21(), "local-pass");
+		fireEvent.click(point(container, 24));
+		fireEvent.click(point(container, 21));
+
+		expect(slides()).toHaveLength(1);
+		expect(barCheckers(container)).toBe(0);
+		act(() => {
+			vi.advanceTimersByTime(300);
+		});
+		expect(barCheckers(container)).toBe(1);
 	});
 
 	it("slides nothing when the move is refused", async () => {

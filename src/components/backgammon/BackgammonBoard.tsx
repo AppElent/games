@@ -484,19 +484,17 @@ export function BackgammonBoard({
 		const { color, from } = pending;
 		// Online, each step of the plan arrives as its own board: slide each blot as its hit lands.
 		const landed = state.bar[color] - pending.bar;
-		// The turn passed, or some other board (undo, a reset): not the move's hits.
-		if (
-			state.activeColor === color ||
-			landed < pending.slid ||
-			landed > from.length
-		) {
+		// Some other board (undo, a reset): not the move's hits.
+		if (landed < pending.slid || landed > from.length) {
 			pendingHitsRef.current = null;
 			return;
 		}
 		const fresh = from.slice(pending.slid, landed);
 		pending.key = boardKey;
 		pending.slid = landed;
-		if (landed === from.length) pendingHitsRef.current = null;
+		// All landed, or the turn passed (local play passes it with the move): stop waiting.
+		if (landed === from.length || state.activeColor === color)
+			pendingHitsRef.current = null;
 		const stack = rootRef.current?.querySelector(`[data-bar-stack="${color}"]`);
 		const drawn = Array.from(stack?.children ?? []);
 		const targets = fresh.map((_, i) =>
