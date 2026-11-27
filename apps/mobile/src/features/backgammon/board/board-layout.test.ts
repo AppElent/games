@@ -1,4 +1,11 @@
-import { boardGeometry, boardRows, fitBoardWidth } from "./board-layout";
+import {
+	boardGeometry,
+	boardRows,
+	fitBoardWidth,
+	hitGrid,
+	hitTestBoard,
+	slotCenter,
+} from "./board-layout";
 
 describe("board layout", () => {
 	it("puts the viewer's home board bottom right", () => {
@@ -43,5 +50,97 @@ describe("board layout", () => {
 		expect(boardGeometry(width).height).toBeLessThanOrEqual(350);
 		expect(boardGeometry(width + 1).height).toBeGreaterThan(350);
 		expect(fitBoardWidth(300, 1000)).toBe(300);
+	});
+});
+
+describe("hit test", () => {
+	const geometry = boardGeometry(360);
+	const { frame, unit, half, gap, height, width } = geometry;
+	const white = hitGrid(geometry, "white");
+	const black = hitGrid(geometry, "black");
+	const columnMiddle = (column: number) =>
+		frame + geometry.columnX(column) + unit / 2;
+
+	it("finds the point anywhere in its half-column", () => {
+		// Left edge of the top row is point 13 for White, 12 for Black.
+		expect(hitTestBoard(white, columnMiddle(0), frame + 1)).toBe(13);
+		expect(hitTestBoard(white, columnMiddle(0), frame + half - 1)).toBe(13);
+		expect(hitTestBoard(black, columnMiddle(0), frame + 1)).toBe(12);
+		// Bottom right is the viewer's ace point.
+		expect(hitTestBoard(white, columnMiddle(11), frame + half + gap + 1)).toBe(
+			1,
+		);
+		expect(hitTestBoard(black, columnMiddle(11), height - frame - 1)).toBe(24);
+		// Right of the bar, the columns carry on.
+		expect(hitTestBoard(white, columnMiddle(6), frame + 1)).toBe(19);
+	});
+
+	it("finds the bar and the tray over their full height", () => {
+		const barMiddle = frame + geometry.barX + geometry.barWidth / 2;
+		const trayMiddle = frame + geometry.trayX + geometry.trayWidth / 2;
+		expect(hitTestBoard(white, barMiddle, frame + 1)).toBe("bar");
+		expect(hitTestBoard(white, barMiddle, frame + half + gap / 2)).toBe("bar");
+		expect(hitTestBoard(white, trayMiddle, height - frame - 1)).toBe("off");
+	});
+
+	it("finds nothing on the frame, the middle band or outside", () => {
+		expect(hitTestBoard(white, frame / 2, frame + 10)).toBeNull();
+		expect(hitTestBoard(white, columnMiddle(3), frame / 2)).toBeNull();
+		expect(
+			hitTestBoard(white, columnMiddle(3), frame + half + gap / 2),
+		).toBeNull();
+		expect(hitTestBoard(white, columnMiddle(3), -40)).toBeNull();
+		expect(hitTestBoard(white, width + 10, frame + 10)).toBeNull();
+		expect(hitTestBoard(white, columnMiddle(3), height + 10)).toBeNull();
+	});
+});
+
+describe("slot centres", () => {
+	const geometry = boardGeometry(360);
+
+	it("lands back where the hit test finds the same place", () => {
+		const grid = hitGrid(geometry, "white");
+		for (const point of [1, 6, 7, 12, 13, 18, 19, 24]) {
+			for (const index of [0, 2, 4, 9]) {
+				const { x, y } = slotCenter(geometry, "white", {
+					kind: "point",
+					point,
+					index,
+				});
+				expect(hitTestBoard(grid, x, y)).toBe(point);
+			}
+		}
+		for (const side of ["viewer", "opponent"] as const) {
+			const { x, y } = slotCenter(geometry, "white", {
+				kind: "bar",
+				side,
+				index: 1,
+			});
+			expect(hitTestBoard(grid, x, y)).toBe("bar");
+		}
+		for (const side of ["viewer", "opponent"] as const) {
+			const off = slotCenter(geometry, "white", {
+				kind: "off",
+				side,
+				index: 14,
+			});
+			expect(hitTestBoard(grid, off.x, off.y)).toBe("off");
+		}
+		const viewerOff = slotCenter(geometry, "white", {
+			kind: "off",
+			side: "viewer",
+			index: 0,
+		});
+		expect(viewerOff.y).toBeGreaterThan(geometry.height / 2);
+	});
+
+	it("stacks from the rim inward and stops at the fifth checker", () => {
+		const at = (index: number) =>
+			slotCenter(geometry, "white", { kind: "point", point: 24, index });
+		expect(at(1).y).toBeCloseTo(at(0).y + geometry.checker);
+		expect(at(9)).toEqual(at(4));
+		const bottom = (index: number) =>
+			slotCenter(geometry, "white", { kind: "point", point: 1, index });
+		expect(bottom(1).y).toBeCloseTo(bottom(0).y - geometry.checker);
 	});
 });

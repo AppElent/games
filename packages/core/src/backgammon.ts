@@ -365,6 +365,77 @@ export function planBackgammonMove(
 	return null;
 }
 
+/** Where a dragged checker was let go: a point, the bar, the tray, or off the board. */
+export type BackgammonDropTarget = number | "bar" | "off" | null;
+
+export type BackgammonDropOutcome =
+	/** The same plan tap-to-move would make; `hits` lists the blots it sends to the bar. */
+	| { kind: "move"; plan: BackgammonMovePlan; hits: number[] }
+	/** Back on its own point, or off the board: put back, not a mistake. */
+	| { kind: "cancel" }
+	/** Two or more opposing checkers hold the point. */
+	| { kind: "reject"; reason: "blocked"; point: number }
+	/** Nothing the remaining dice allow ends here. */
+	| { kind: "reject"; reason: "reach" };
+
+/**
+ * What letting go of a checker dragged from `from` over `target` does. A
+ * legal target commits exactly the plan `planBackgammonMove` gives a tap.
+ */
+export function resolveBackgammonDrop(
+	state: BackgammonTurnState,
+	from: BackgammonMoveSource,
+	target: BackgammonDropTarget,
+	autoCombine = true,
+): BackgammonDropOutcome {
+	if (target == null || target === from) {
+		return { kind: "cancel" };
+	}
+	const plan =
+		target === "bar"
+			? null
+			: planBackgammonMove(state, from, target, autoCombine);
+	if (plan) {
+		return { kind: "move", plan, hits: blotsHitBy(state, plan) };
+	}
+	if (typeof target === "number") {
+		const point = getBackgammonPoint(state, target);
+		if (point?.color && point.color !== state.activeColor && point.count >= 2) {
+			return { kind: "reject", reason: "blocked", point: target };
+		}
+	}
+	return { kind: "reject", reason: "reach" };
+}
+
+/** Points where `plan` lands on a lone opposing checker, in step order. */
+export function blotsHitBy(
+	state: BackgammonTurnState,
+	plan: BackgammonMovePlan,
+): number[] {
+	const hits: number[] = [];
+	for (const step of plan.steps) {
+		if (step.to === "off") {
+			continue;
+		}
+		const point = getBackgammonPoint(state, step.to);
+		if (
+			point?.color &&
+			point.color !== state.activeColor &&
+			point.count === 1
+		) {
+			hits.push(step.to);
+		}
+	}
+	return hits;
+}
+
+/** The values of the dice not yet spent this turn, in roll order. */
+export function remainingBackgammonDice(
+	state: Pick<BackgammonTurnState, "dice" | "used">,
+) {
+	return availableDieIndexes(state).map((index) => state.dice[index]);
+}
+
 /** Applies a full plan (one or two steps) and marks the dice as spent. */
 export function applyBackgammonPlan(
 	state: BackgammonTurnState,

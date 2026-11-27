@@ -17,9 +17,8 @@ import {
 } from "@arcadeclub/core/backgammon-local";
 import { occupant, opponent } from "@arcadeclub/core/duel";
 import { gameErrorMessage } from "@arcadeclub/core/errors";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
 import { spacing } from "../../../theme";
 import { Button } from "../../../ui/button";
@@ -73,7 +72,6 @@ function OnlineMatchLoaded({
 	const winner = getBackgammonWinner(turn.off);
 
 	const onPlan = (plan: BackgammonMovePlan) => {
-		haptics.moveMade();
 		void match.play(plan, { autoSwitchTurn: options.autoSwitchTurn });
 	};
 	const selection = useBoardSelection({
@@ -84,9 +82,6 @@ function OnlineMatchLoaded({
 	});
 
 	const won = Boolean(winner && winner === match.myColor);
-	useEffect(() => {
-		if (won) haptics.gameWon();
-	}, [won]);
 
 	const viewer: BackgammonColor = match.myColor ?? "white";
 	const opponentColor = opponent(BACKGAMMON_COLORS, viewer);
@@ -110,10 +105,7 @@ function OnlineMatchLoaded({
 					viewer={viewer}
 					width={width}
 					showNumbers={options.showNumbers}
-					selected={selection.selected}
-					highlights={selection.highlights}
-					onPointPress={selection.tapPoint}
-					onOffPress={selection.tapOff}
+					control={selection}
 					testID="bg-board"
 				/>
 			)}
@@ -161,11 +153,12 @@ function OnlineMatchLoaded({
 								})
 					}
 					message={
-						hint
+						selection.notice ??
+						(hint
 							? copy.board[TURN_HINT_MESSAGE[hint]]
 							: match.myColor
 								? null
-								: copy.waitingRoom.bothSeatsClaimed
+								: copy.waitingRoom.bothSeatsClaimed)
 					}
 					canAct={match.isMyTurn}
 					busy={match.busy}

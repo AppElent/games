@@ -8,8 +8,6 @@ import {
 	rollBackgammonDice,
 } from "@arcadeclub/core/backgammon";
 import { LOCAL_OPTION_KEYS } from "@arcadeclub/core/backgammon-local";
-import { useEffect } from "react";
-import { haptics } from "../../../feedback/haptics";
 import { useI18n } from "../../../i18n";
 import { Button } from "../../../ui/button";
 import { BackgammonBoard } from "../board/backgammon-board";
@@ -30,7 +28,6 @@ export function LocalGameScreen() {
 	const winner = getBackgammonWinner(state.off);
 
 	const onPlan = (plan: BackgammonMovePlan) => {
-		haptics.moveMade();
 		dispatch({ type: "move", plan, dice: rollBackgammonDice() });
 	};
 	const selection = useBoardSelection({
@@ -39,10 +36,6 @@ export function LocalGameScreen() {
 		autoCombine: options.autoCombine,
 		onPlan,
 	});
-
-	useEffect(() => {
-		if (winner) haptics.gameWon();
-	}, [winner]);
 
 	const hint = turnHint(state, selection.selected);
 
@@ -60,10 +53,7 @@ export function LocalGameScreen() {
 					viewer="white"
 					width={width}
 					showNumbers={options.showNumbers}
-					selected={selection.selected}
-					highlights={selection.highlights}
-					onPointPress={selection.tapPoint}
-					onOffPress={selection.tapOff}
+					control={selection}
 					testID="bg-board"
 				/>
 			)}
@@ -76,7 +66,10 @@ export function LocalGameScreen() {
 						? copy.board.whiteToMove
 						: copy.board.blackToMove
 				}
-				message={hint ? copy.board[TURN_HINT_MESSAGE[hint]] : null}
+				message={
+					selection.notice ??
+					(hint ? copy.board[TURN_HINT_MESSAGE[hint]] : null)
+				}
 				canAct
 				onRoll={() => dispatch({ type: "roll", dice: rollBackgammonDice() })}
 				onEndTurn={() =>
