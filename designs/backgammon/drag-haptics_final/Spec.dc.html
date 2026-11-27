@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drag and haptics spec</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1400px; min-height: 960px; box-sizing: border-box; padding: 40px 44px; background: #080a12; color: #f8fafc; font-family: Manrope, system-ui, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #fb923c">APP-964 · Backgammon</span>
+    <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 600">Drag a checker, feel the move</h1>
+    <p style="margin: 0; font-size: 15px; color: #aab6cc; max-width: 1100px">Drag is added next to tap-to-move, never instead of it (tap and screen readers keep working). Phone gets drag and haptics; the web keeps its drag and gets the same drop targets and illegal-move feedback, without haptics.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; flex: 1; min-height: 0">
+    <section style="padding: 20px; border-radius: 12px; background: #121626; border: 1px solid rgba(148,163,184,0.18); display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 700">Gesture</h2>
+      <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 9px; font-size: 14px; line-height: 1.45; color: #d5dceb">
+        <li><b style="color: #f8fafc">Press</b> one of your checkers (the top of a stack, or the bar when you must enter). No long press.</li>
+        <li><b style="color: #f8fafc">Lift</b> after 6 pt of movement: the checker grows to 1.3×, gets a shadow and an orange ring, and rides 1.7 checker heights above the finger so the finger never hides it. The stack shows one fewer; legal points light up.</li>
+        <li><b style="color: #f8fafc">Hover</b>: the point under the lifted checker (not under the finger) is the target. A legal one brightens, glows, and shows a ghost where the checker will land. Illegal points stay unlit.</li>
+        <li><b style="color: #f8fafc">Release on a lit point</b>: the checker settles (spring, about 180 ms). A hit sends the blot to the bar (220 ms slide). Dropping on the tray bears off.</li>
+        <li><b style="color: #f8fafc">Release elsewhere on the board</b>: the checker springs back (220 ms ease-out) and the status line says why.</li>
+        <li><b style="color: #f8fafc">Release on its own point or off the board</b>: it springs back quietly. That is a cancel, not a mistake.</li>
+      </ol>
+      <div style="margin-top: auto; padding: 12px; border-radius: 10px; background: #191f34; font-size: 13px; line-height: 1.45; color: #aab6cc">Combined moves (both dice) light up like single ones when “Combine two dice” is on. Reduced motion: no flights or spring, checkers place at once; haptics stay. An opponent move arriving mid-drag (online) cancels the drag and puts the checker back. The board never scrolls while a checker is lifted.</div>
+    </section>
+
+    <section style="padding: 20px; border-radius: 12px; background: #121626; border: 1px solid rgba(148,163,184,0.18); display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 700">Haptics (phone, <code style="font-size: 14px">feedback/haptics.ts</code>)</h2>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13.5px">
+        <thead>
+          <tr style="text-align: left; color: #aab6cc">
+            <th style="padding: 6px 6px 8px 0; font-weight: 700; border-bottom: 1px solid rgba(148,163,184,0.3)">Moment</th>
+            <th style="padding: 6px 6px 8px; font-weight: 700; border-bottom: 1px solid rgba(148,163,184,0.3)">expo-haptics</th>
+            <th style="padding: 6px 0 8px 6px; font-weight: 700; border-bottom: 1px solid rgba(148,163,184,0.3)">Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+            <tr>
+              <td style="padding: 7px 6px 7px 0; border-bottom: 1px solid rgba(148,163,184,0.14); color: #f8fafc">{{r.moment}}</td>
+              <td style="padding: 7px 6px; border-bottom: 1px solid rgba(148,163,184,0.14); font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #c4b5fd">{{r.api}}</td>
+              <td style="padding: 7px 0 7px 6px; border-bottom: 1px solid rgba(148,163,184,0.14); font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: {{r.ink}}">{{r.name}}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #aab6cc">Green names are new; the rest exist today. One haptic per moment, never two in a row: a hit replaces <code>moveMade</code>, a win replaces both. The target tick fires once on entering a legal point, never on leaving one. iOS “System Haptics” off silences all of them; no in-app switch.</p>
+    </section>
+
+    <section style="padding: 20px; border-radius: 12px; background: #121626; border: 1px solid rgba(148,163,184,0.18); display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 700">Look and copy</h2>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.4">
+        <div style="display: flex; gap: 10px; align-items: center"><span style="width: 34px; height: 22px; flex-shrink: 0; border-radius: 5px; background: rgba(120,220,170,0.22); border: 2px solid rgba(120,220,170,0.85); box-sizing: border-box"></span><span>Legal point: <code>target</code> ring on <code>targetFill</code> (existing tokens)</span></div>
+        <div style="display: flex; gap: 10px; align-items: center"><span style="width: 34px; height: 22px; flex-shrink: 0; border-radius: 5px; background: rgba(120,220,170,0.45); border: 3px solid #8ff0c0; box-shadow: 0 0 10px rgba(120,220,170,0.7); box-sizing: border-box"></span><span>Hovered legal point: brighter fill, 3 pt ring, glow, ghost checker (new <code>targetHover</code>)</span></div>
+        <div style="display: flex; gap: 10px; align-items: center"><span style="width: 34px; height: 22px; flex-shrink: 0; border-radius: 5px; background: rgba(245,158,11,0.10); border: 2px solid #f59e0b; box-sizing: border-box"></span><span>Source point: <code>selected</code> ring, one checker fewer</span></div>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px">
+        <thead>
+          <tr style="text-align: left; color: #aab6cc">
+            <th style="padding: 6px 6px 8px 0; font-weight: 700; border-bottom: 1px solid rgba(148,163,184,0.3)">Key</th>
+            <th style="padding: 6px 6px 8px; font-weight: 700; border-bottom: 1px solid rgba(148,163,184,0.3)">EN</th>
+            <th style="padding: 6px 0 8px 6px; font-weight: 700; border-bottom: 1px solid rgba(148,163,184,0.3)">NL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{copy}}" as="k" hint-placeholder-count="4">
+            <tr>
+              <td style="padding: 7px 6px 7px 0; border-bottom: 1px solid rgba(148,163,184,0.14); font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: #aab6cc; vertical-align: top">{{k.key}}</td>
+              <td style="padding: 7px 6px; border-bottom: 1px solid rgba(148,163,184,0.14); vertical-align: top">{{k.en}}</td>
+              <td style="padding: 7px 0 7px 6px; border-bottom: 1px solid rgba(148,163,184,0.14); vertical-align: top">{{k.nl}}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #aab6cc">The rejection sentence replaces the hint in the status line (announced to VoiceOver) until the next press. Web keeps its <code>dragHint</code> and gets the same rejection lines; the mouse ghost sits under the cursor (no offset), touch on the web uses the phone offset.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const NEW = '#34d399', OLD = '#f8fafc';
+    return {
+      rows: [
+        { moment: 'Tap to select or deselect', api: 'selectionAsync()', name: 'selectionChanged', ink: OLD },
+        { moment: 'Lift (drag starts)', api: 'impactAsync(Light)', name: 'checkerLifted', ink: NEW },
+        { moment: 'Enter a legal point', api: 'selectionAsync()', name: 'targetEntered', ink: NEW },
+        { moment: 'Drop: move or bear off', api: 'impactAsync(Medium)', name: 'moveMade', ink: OLD },
+        { moment: 'Drop: hits a blot', api: 'impactAsync(Heavy)', name: 'checkerHit', ink: NEW },
+        { moment: 'Last checker off (win)', api: 'notificationAsync(Success)', name: 'gameWon', ink: OLD },
+        { moment: 'Drop on an illegal point', api: 'notificationAsync(Warning)', name: 'moveRejected', ink: OLD },
+        { moment: 'Drop on own point or off board', api: 'none', name: '—', ink: OLD },
+        { moment: 'Opponent moves (online)', api: 'none', name: '—', ink: OLD }
+      ],
+      copy: [
+        { key: 'hintPickChecker', en: 'Drag or tap a checker to move.', nl: 'Sleep of tik op een schijf om te zetten.' },
+        { key: 'hintPickTarget', en: 'Drop on a lit point, or tap one.', nl: 'Laat los op een verlicht punt, of tik erop.' },
+        { key: 'moveRejectedReach (new)', en: 'You can’t move there with {dice}.', nl: 'Daar kun je niet heen met {dice}.' },
+        { key: 'moveRejectedBlocked (new)', en: 'Point {number} is blocked.', nl: 'Punt {number} is geblokkeerd.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
