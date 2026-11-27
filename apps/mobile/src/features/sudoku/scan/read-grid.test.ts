@@ -1,7 +1,18 @@
+import { mulberry32 } from "@arcadeclub/core/random";
+import { generateSolvedGrid } from "@arcadeclub/core/sudoku";
+import { generateKillerCages } from "@arcadeclub/core/sudoku-killer";
 import { isLowConfidence } from "@arcadeclub/core/sudoku-scan";
+import { killerScanCages } from "@arcadeclub/core/sudoku-scan-cages";
 import type { InkBox, Point } from "@arcadeclub/core/sudoku-scan-ink";
+import { withMargins } from "@arcadeclub/core/sudoku-scan-mesh";
 import { drawGrid } from "@arcadeclub/core/testing/drawn-grid";
-import { readGrid } from "./read-grid";
+import {
+	CELL,
+	paintGlyph,
+	renderKiller,
+	SIZE,
+} from "@arcadeclub/core/testing/drawn-killer";
+import { readGrid, readKiller } from "./read-grid";
 
 const photo = { uri: "file://photo.jpg", width: 1200, height: 1600 };
 const corners = [
@@ -115,5 +126,89 @@ describe("readGrid", () => {
 		await expect(readGrid(reader, photo, corners, () => true)).rejects.toThrow(
 			"different number of boxes",
 		);
+	});
+});
+
+/** A printed 1: one upright bar, as tall as `paintGlyph`'s 0. */
+function paintOne(rgba: Uint8ClampedArray, x: number, y: number) {
+	for (let dy = 0; dy < 22; dy += 1) {
+		for (let dx = 4; dx < 8; dx += 1) {
+			const i = ((y + dy) * SIZE + x + dx) * 4;
+			rgba[i] = 30;
+			rgba[i + 1] = 30;
+			rgba[i + 2] = 30;
+		}
+	}
+}
+
+describe("readKiller", () => {
+	const rng = mulberry32(5);
+	const cages = generateKillerCages(generateSolvedGrid(rng), rng).map((cage) =>
+		[...cage.cells].sort((a, b) => a - b),
+	);
+	/**
+	 * A drawn Killer as the phone warps it: gray, with a margin of `margin`
+	 * cells around it, and a 1 then a 0 (10) in every cage's corner.
+	 */
+	function killerReader(margin: number) {
+		const rgba = renderKiller(cages, { rng: mulberry32(6) });
+		for (const cage of cages) {
+			const x = (cage[0] % 9) * CELL;
+			const y = Math.floor(cage[0] / 9) * CELL;
+			paintOne(rgba, x + 11, y + 11);
+			paintGlyph(rgba, x + 22, y + 11);
+		}
+		const pad = Math.round(margin * CELL);
+		const size = SIZE + pad * 2;
+		const gray = new Uint8Array(size * size).fill(255);
+		for (let y = 0; y < SIZE; y += 1) {
+			for (let x = 0; x < SIZE; x += 1) {
+				const i = (y * SIZE + x) * 4;
+				gray[(y + pad) * size + x + pad] = Math.round(
+					(rgba[i] + rgba[i + 1] + rgba[i + 2]) / 3,
+				);
+			}
+		}
+		return drawnReader({ gray, size, at: () => ({ x: 0, y: 0 }) });
+	}
+
+	const frame = withMargins(corners, photo);
+	const sorted = [...cages].sort((a, b) => a[0] - b[0]);
+
+	it("reads the cages and sums of a Killer, warped with margins", async () => {
+		const reader = killerReader(frame.margins.left);
+		reader.readDigits.mockImplementation(async (_uri, boxes) =>
+			boxes.map(() => ({ digit: 1, confidence: 0.9 })),
+		);
+		const read = await readKiller(reader, photo, corners);
+		expect(reader.warpGrid).toHaveBeenCalledWith(photo.uri, frame.corners);
+		expect(read?.gridUri).toBe("file://grid.png");
+		const found = killerScanCages(
+			read?.scan ?? { borders: [], doubtful: [], sums: {} },
+		);
+		expect(found.map((cage) => cage.cells)).toEqual(sorted);
+		expect(found.every((cage) => cage.sum === 10)).toBe(true);
+		// Vision is asked about each 1 where the warped image shows it.
+		const pad = frame.margins.left * CELL;
+		const [first] = reader.readDigits.mock.calls[0][1];
+		const corner = sorted[0][0];
+		expect(first.x).toBeGreaterThan(pad + (corner % 9) * CELL);
+		expect(first.x).toBeLessThan(pad + (corner % 9) * CELL + 25);
+	});
+
+	it("reads a Killer whose corners were placed on a frame around it", async () => {
+		// The grid sits half a cell inside where the corners put it.
+		const reader = killerReader(frame.margins.left + 0.5);
+		const read = await readKiller(reader, photo, corners);
+		const found = killerScanCages(
+			read?.scan ?? { borders: [], doubtful: [], sums: {} },
+		);
+		expect(found.map((cage) => cage.cells)).toEqual(sorted);
+	});
+
+	it("leaves a classic grid to the classic read", async () => {
+		const reader = drawnReader(curled());
+		expect(await readKiller(reader, photo, corners)).toBeNull();
+		expect(reader.readDigits).not.toHaveBeenCalled();
 	});
 });
