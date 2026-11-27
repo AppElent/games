@@ -60,10 +60,21 @@ tables above were measured before it was added:
 | Handwritten | 170/454 → 437/454 | 11 → 1           | 33 → 36        | 0 → 0                 | 0 → 0               |
 | Total       | 379/732 → 713/732 | 12 → 1           | 40 → 36        | 0 → 0                 | 1 → 1               |
 
-Vision's grid detection finds the wrong rectangle on `handwritten-2002` and
-`handwritten-2003`, and nothing on `handwritten-newspaper`; the player places those
-corners. `sudoku-scan-doubt.ts` (core) flags every cell of both reads: 54 and 4 digits would otherwise
-be wrong and unflagged. It sees a wrong rectangle only where a line between the boxes is
+From the corners the app finds, before → after APP-691, with `handwritten-killer`.
+Before, `detectGrid` looked only at the photo with its edges stretched, and found a
+wrong rectangle on `handwritten-2002` and `handwritten-2003`. Vision did find their
+grid in the photo as it is, so it now looks at both and keeps the largest rectangle:
+
+| Photos      | Right             | Type right | Wrong, unflagged | Right, flagged | Empty read as a digit | Empty read as notes |
+| ----------- | ----------------- | ---------- | ---------------- | -------------- | --------------------- | ------------------- |
+| Clean       | 130/130 → 130/130 | 130 → 130  | 0 → 0            | 0 → 0          | 0 → 0                 | 0 → 0               |
+| Curled      | 146/148 → 146/148 | 146 → 144  | 0 → 0            | 3 → 2          | 0 → 0                 | 1 → 1               |
+| Handwritten | 211/375 → 369/375 | 204 → 361  | 0 → 0            | 19 → 19        | 0 → 0                 | 0 → 0               |
+| Total       | 487/653 → 645/653 | 480 → 635  | 0 → 0            | 22 → 21        | 0 → 0                 | 1 → 1               |
+
+Vision finds no grid on `handwritten-newspaper` in either look; the player places
+those corners. `sudoku-scan-doubt.ts` (core) flags every cell of a read from a wrong
+rectangle. It sees a wrong rectangle only where a line between the boxes is
 missing, only the box lines are there, or the corners move three cells; a rectangle
 exactly one row off can pass it. A right grid with such a line missing is flagged too.
 

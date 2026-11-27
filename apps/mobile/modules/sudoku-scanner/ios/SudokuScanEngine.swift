@@ -64,11 +64,19 @@ enum SudokuScanEngine {
   /// The grid's corners (top-left, top-right, bottom-right, bottom-left) in
   /// pixels from the top-left, or nil when no near-square quad stands out.
   /// The largest quad wins: a sudoku's 3x3 boxes are quads too. Vision misses
-  /// a rectangle that touches the photo's edge, so it looks at the photo with
-  /// its edges stretched outward.
+  /// a rectangle that touches the photo's edge, so it also looks at the photo
+  /// with its edges stretched outward. Neither look finds every grid alone: on
+  /// some handwritten photos only the photo as it is shows the whole grid.
   static func detectGrid(in image: CGImage) -> [CGPoint]? {
     let inset = max(image.width, image.height) / 20
-    guard let padded = padded(image, margin: inset) else { return nil }
+    let quads = rectangles(in: image, margin: 0)
+      + (padded(image, margin: inset).map { rectangles(in: $0, margin: inset) } ?? [])
+    return quads.max { area($0) < area($1) }
+  }
+
+  /// The near-square quads Vision finds in `image`, in pixels of the photo
+  /// it was padded from by `margin`.
+  private static func rectangles(in image: CGImage, margin inset: Int) -> [[CGPoint]] {
     let margin = CGFloat(inset)
     let request = VNDetectRectanglesRequest()
     request.minimumAspectRatio = 0.6
@@ -78,22 +86,21 @@ enum SudokuScanEngine {
     request.quadratureTolerance = 35
     request.minimumConfidence = 0.4
     do {
-      try VNImageRequestHandler(cgImage: padded, options: [:]).perform([request])
+      try VNImageRequestHandler(cgImage: image, options: [:]).perform([request])
     } catch {
-      return nil
+      return []
     }
-    let width = CGFloat(padded.width)
-    let height = CGFloat(padded.height)
+    let width = CGFloat(image.width)
+    let height = CGFloat(image.height)
     func pixels(_ point: CGPoint) -> CGPoint {
       CGPoint(
-        x: min(max(point.x * width - margin, 0), CGFloat(image.width)),
-        y: min(max((1 - point.y) * height - margin, 0), CGFloat(image.height))
+        x: min(max(point.x * width - margin, 0), width - margin * 2),
+        y: min(max((1 - point.y) * height - margin, 0), height - margin * 2)
       )
     }
-    let quads = (request.results ?? []).map { quad in
+    return (request.results ?? []).map { quad in
       [pixels(quad.topLeft), pixels(quad.topRight), pixels(quad.bottomRight), pixels(quad.bottomLeft)]
     }
-    return quads.max { area($0) < area($1) }
   }
 
   /// The photo with `margin` pixels added around it, repeating its edge
