@@ -2,11 +2,15 @@
  * Measures the sudoku scan on a labelled photo set, macOS only:
  *
  *     node apps/mobile/scripts/scan-bench/bench.mjs [--only id,…] [--detect]
- *       [--cells] [--json file] [--photos folder]
+ *       [--cells] [--json file] [--photos folder] [--turns]
  *
  * It compiles the app's own scan engine (Apple Vision) for the Mac and runs
  * the app's `readGrid` over every photo in `photos/labels.json`, from the
  * labelled grid corners, or with `--detect` from the corners the app finds.
+ *
+ * `--turns` also turns each photo a quarter, a half and three quarters, hands
+ * the scan its corners in the order the turned photo shows them, and checks
+ * that `readGrid` and, on a Killer, `readKiller` turn the grid back upright.
  */
 import { execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -60,6 +64,7 @@ function startReader(folder) {
 	return {
 		prepareImage: (uri) => call({ call: "prepareImage", uri }),
 		detectGrid: (uri) => call({ call: "detectGrid", uri }),
+		turnPhoto: (uri, quarters) => call({ call: "turnPhoto", uri, quarters }),
 		warpGrid: async (uri, corners) => {
 			const grid = await call({ call: "warpGrid", uri, corners });
 			return { ...grid, pixels: new Uint8Array(readFileSync(grid.raw)) };
@@ -67,6 +72,17 @@ function startReader(folder) {
 		readDigits: (uri, boxes) => call({ call: "readDigits", uri, boxes }),
 		stop: () => child.stdin.end(),
 	};
+}
+
+/** Whether the read's top-left corner is the grid's own, of the four. */
+function isUpright(read, truth) {
+	const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+	const nearest = truth.reduce(
+		(best, corner, i) =>
+			distance(read[0], corner) < distance(read[0], truth[best]) ? i : best,
+		0,
+	);
+	return nearest === 0;
 }
 
 const folder = mkdtempSync(path.join(tmpdir(), "scan-bench-"));
@@ -80,50 +96,107 @@ const vite = await createServer({
 });
 const reader = startReader(folder);
 try {
-	const { readGrid } = await vite.ssrLoadModule(
+	const { readGrid, readKiller } = await vite.ssrLoadModule(
 		path.join(mobile, "src/features/sudoku/scan/read-grid.ts"),
+	);
+	const { turnCorners } = await vite.ssrLoadModule(
+		path.join(root, "packages/core/src/sudoku-scan-orientation.ts"),
+	);
+	const { killerScanCages } = await vite.ssrLoadModule(
+		path.join(root, "packages/core/src/sudoku-scan-cages.ts"),
 	);
 	const all = [];
 	const rows = [];
+	const turns = flag("turns") ? [0, 1, 2, 3] : [0];
+	const missedTurns = [];
+	const killers = { read: 0, upright: 0, same: 0, missed: [] };
 	for (const photo of labels) {
-		const image = await reader.prepareImage(
+		const asTaken = await reader.prepareImage(
 			path.join(photos, `${photo.id}.jpg`),
 		);
-		const corners = flag("detect")
-			? await reader.detectGrid(image.uri)
-			: photo.corners.map(([x, y]) => ({ x, y }));
-		const started = performance.now();
-		const read = corners
-			? await readGrid(reader, image, corners, () => true)
-			: null;
-		const ms = Math.round(performance.now() - started);
-		if (!read) {
-			console.log(`${photo.id}: no grid found`);
-			continue;
-		}
-		const results = read.cells.map((cell, index) => ({
-			photo: photo.id,
-			group: photo.kind,
-			...judge(photo, index, cell),
-		}));
-		all.push(...results);
-		rows.push({ name: photo.id, ...tally(results), ms });
-		if (flag("cells")) {
-			const wrong = results.filter(
-				(result) => result.kind !== "skip" && !result.right,
-			);
-			console.log(
-				`${photo.id}: ${wrong
-					.map(
-						({ place, kind, want, found, sure }) =>
-							`${place} ${kind} ${want}→${found}${sure ? "!" : ""}`,
-					)
-					.join("; ")}`,
-			);
+		let uprightCages = null;
+		for (const quarters of turns) {
+			const name = quarters ? `${photo.id}@${quarters * 90}` : photo.id;
+			// With --turns the upright photo is redrawn too, so every turn reads
+			// the same pixels.
+			const image = flag("turns")
+				? await reader.turnPhoto(asTaken.uri, quarters)
+				: asTaken;
+			// Where the labelled corners are in the turned photo, top-left first.
+			const truth = photo.corners.map(([x, y]) => {
+				for (let q = 0; q < quarters; q += 1) {
+					const height = q % 2 === 0 ? asTaken.height : asTaken.width;
+					[x, y] = [height - y, x];
+				}
+				return { x, y };
+			});
+			// The corner finder orders corners as the turned photo shows them.
+			const corners = flag("detect")
+				? await reader.detectGrid(image.uri)
+				: turnCorners(truth, 4 - quarters);
+			const started = performance.now();
+			const read = corners
+				? await readGrid(reader, image, corners, () => true, console.error)
+				: null;
+			const ms = Math.round(performance.now() - started);
+			if (!read) {
+				console.log(`${name}: no grid found`);
+				continue;
+			}
+			if (!isUpright(read.corners, truth)) missedTurns.push(name);
+			if (flag("turns")) {
+				const killer = await readKiller(reader, image, corners, console.error);
+				if (killer) {
+					const cages = killerScanCages(killer.scan).map(
+						(cage) => `${cage.cells.join(" ")}=${cage.sum}`,
+					);
+					if (quarters === 0) uprightCages = cages;
+					killers.read += 1;
+					if (isUpright(killer.corners, truth)) killers.upright += 1;
+					else killers.missed.push(name);
+					const differ = [
+						...(uprightCages ?? []).filter((cage) => !cages.includes(cage)),
+						...cages.filter((cage) => !uprightCages?.includes(cage)),
+					];
+					if (differ.length === 0) killers.same += 1;
+					else if (flag("cells")) {
+						console.log(`${name} Killer differs: ${differ.join("; ")}`);
+					}
+				}
+			}
+			const results = read.cells.map((cell, index) => ({
+				photo: name,
+				group: photo.kind,
+				...judge(photo, index, cell),
+			}));
+			all.push(...results);
+			rows.push({ name, ...tally(results), ms });
+			if (flag("cells")) {
+				const wrong = results.filter(
+					(result) => result.kind !== "skip" && !result.right,
+				);
+				console.log(
+					`${name}: ${wrong
+						.map(
+							({ place, kind, want, found, sure }) =>
+								`${place} ${kind} ${want}→${found}${sure ? "!" : ""}`,
+						)
+						.join("; ")}`,
+				);
+			}
 		}
 	}
 	summarize(all, rows);
 	printTable(rows);
+	if (flag("turns")) {
+		const count = labels.length * 4;
+		console.log(
+			`Turned back upright: ${count - missedTurns.length}/${count}${missedTurns.length ? ` (missed ${missedTurns.join(", ")})` : ""}`,
+		);
+		console.log(
+			`Killer reads turned back upright: ${killers.upright}/${killers.read}, same cages and sums as upright: ${killers.same}/${killers.read}${killers.missed.length ? ` (missed ${killers.missed.join(", ")})` : ""}`,
+		);
+	}
 	if (option("json")) {
 		writeFileSync(option("json"), JSON.stringify(rows, null, "\t"));
 	}

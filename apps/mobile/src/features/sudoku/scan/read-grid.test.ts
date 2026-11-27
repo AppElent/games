@@ -5,6 +5,7 @@ import { isLowConfidence } from "@arcadeclub/core/sudoku-scan";
 import { killerScanCages } from "@arcadeclub/core/sudoku-scan-cages";
 import type { InkBox, Point } from "@arcadeclub/core/sudoku-scan-ink";
 import { withMargins } from "@arcadeclub/core/sudoku-scan-mesh";
+import { turnCorners } from "@arcadeclub/core/sudoku-scan-orientation";
 import { drawGrid } from "@arcadeclub/core/testing/drawn-grid";
 import {
 	CELL,
@@ -12,6 +13,7 @@ import {
 	renderKiller,
 	SIZE,
 } from "@arcadeclub/core/testing/drawn-killer";
+import { turned } from "@arcadeclub/core/testing/turned";
 import { readGrid, readKiller } from "./read-grid";
 
 const photo = { uri: "file://photo.jpg", width: 1200, height: 1600 };
@@ -30,6 +32,37 @@ function drawnReader(grid: ReturnType<typeof drawGrid>) {
 			size: grid.size,
 			pixels: grid.gray,
 		})),
+		readDigits: jest.fn(async (_uri: string, boxes: InkBox[]) =>
+			boxes.map(() => ({ digit: 0, confidence: 0 })),
+		),
+	};
+}
+
+/**
+ * A reader for a photo taken `quarters` turns clockwise, with `corners` in
+ * the order the turned photo shows them: warping them starting `turn`
+ * corners further along shows the grid turned `quarters - turn` clockwise.
+ */
+function turnedReader(
+	{ gray, size }: { gray: Uint8Array; size: number },
+	quarters: number,
+) {
+	const starts = [0, 1, 2, 3].map(
+		(turn) => withMargins(turnCorners(corners, turn), photo).corners[0],
+	);
+	const warp = async (_uri: string, warped: Point[]) => {
+		const turn = starts.findIndex(
+			(start) => start.x === warped[0].x && start.y === warped[0].y,
+		);
+		return {
+			uri: `file://grid-${turn}.png`,
+			size,
+			pixels: turned(gray, size, 1, quarters - turn + 4),
+		};
+	};
+	return {
+		warp,
+		warpGrid: jest.fn(warp),
 		readDigits: jest.fn(async (_uri: string, boxes: InkBox[]) =>
 			boxes.map(() => ({ digit: 0, confidence: 0 })),
 		),
@@ -129,6 +162,74 @@ describe("readGrid", () => {
 	});
 });
 
+describe("readGrid of a photo taken sideways or upside down", () => {
+	const grid = drawGrid({
+		margin: 0.7,
+		digits: [
+			{ row: 0, column: 1, digit: 7 },
+			{ row: 1, column: 5, digit: 4 },
+			{ row: 2, column: 7, digit: 2 },
+			{ row: 4, column: 3, digit: 7 },
+			{ row: 5, column: 0, digit: 2 },
+			{ row: 6, column: 8, digit: 4 },
+			{ row: 7, column: 2, digit: 1 },
+			{ row: 8, column: 6, digit: 7 },
+		],
+	});
+	const digitsOf = (cells: { type: string; digit?: number }[] | undefined) =>
+		cells?.flatMap((cell, index) =>
+			cell.type === "empty" ? [] : [[index, cell.digit]],
+		);
+
+	it.each([1, 2, 3])(
+		"reads the same cells as upright when turned %i quarters",
+		async (quarters) => {
+			const upright = await readGrid(
+				turnedReader(grid, 0),
+				photo,
+				corners,
+				() => true,
+			);
+			const read = await readGrid(
+				turnedReader(grid, quarters),
+				photo,
+				corners,
+				() => true,
+			);
+			expect(digitsOf(read?.cells)).toEqual(digitsOf(upright?.cells));
+			expect(digitsOf(read?.cells)).toHaveLength(8);
+			expect(read?.corners).toEqual(turnCorners(corners, quarters));
+			expect(read?.gridUri).toBe(`file://grid-${quarters}.png`);
+		},
+	);
+
+	it("keeps an upright photo as taken, warping it once", async () => {
+		const reader = turnedReader(grid, 0);
+		const read = await readGrid(reader, photo, corners, () => true);
+		expect(read?.corners).toEqual(corners);
+		expect(reader.warpGrid).toHaveBeenCalledTimes(1);
+	});
+
+	it("reads the photo as taken when the check fails", async () => {
+		const reader = turnedReader(grid, 1);
+		const fails = new Error("no warp");
+		reader.warpGrid
+			.mockImplementationOnce(reader.warp)
+			.mockRejectedValue(fails);
+		const onCheckFailed = jest.fn();
+		const read = await readGrid(
+			reader,
+			photo,
+			corners,
+			() => true,
+			onCheckFailed,
+		);
+		expect(onCheckFailed).toHaveBeenCalledWith(fails);
+		expect(read?.corners).toEqual(corners);
+		expect(read?.gridUri).toBe("file://grid-0.png");
+	});
+});
+
 /** A printed 1: one upright bar, as tall as `paintGlyph`'s 0. */
 function paintOne(rgba: Uint8ClampedArray, x: number, y: number) {
 	for (let dy = 0; dy < 22; dy += 1) {
@@ -150,7 +251,7 @@ describe("readKiller", () => {
 	 * A drawn Killer as the phone warps it: gray, with a margin of `margin`
 	 * cells around it, and a 1 then a 0 (10) in every cage's corner.
 	 */
-	function killerReader(margin: number) {
+	function killerGrid(margin: number) {
 		const rgba = renderKiller(cages, { rng: mulberry32(6) });
 		for (const cage of cages) {
 			const x = (cage[0] % 9) * CELL;
@@ -169,8 +270,10 @@ describe("readKiller", () => {
 				);
 			}
 		}
-		return drawnReader({ gray, size, at: () => ({ x: 0, y: 0 }) });
+		return { gray, size };
 	}
+	const killerReader = (margin: number) =>
+		drawnReader({ ...killerGrid(margin), at: () => ({ x: 0, y: 0 }) });
 
 	const frame = withMargins(corners, photo);
 	const sorted = [...cages].sort((a, b) => a[0] - b[0]);
@@ -205,6 +308,24 @@ describe("readKiller", () => {
 		);
 		expect(found.map((cage) => cage.cells)).toEqual(sorted);
 	});
+
+	it.each([0, 1, 2, 3])(
+		"reads the same cages and sums when turned %i quarters",
+		async (quarters) => {
+			const reader = turnedReader(killerGrid(frame.margins.left), quarters);
+			reader.readDigits.mockImplementation(async (_uri, boxes) =>
+				boxes.map(() => ({ digit: 1, confidence: 0.9 })),
+			);
+			const read = await readKiller(reader, photo, corners);
+			const found = killerScanCages(
+				read?.scan ?? { borders: [], doubtful: [], sums: {} },
+			);
+			expect(found.map((cage) => cage.cells)).toEqual(sorted);
+			expect(found.every((cage) => cage.sum === 10)).toBe(true);
+			expect(read?.corners).toEqual(turnCorners(corners, quarters));
+			if (quarters === 0) expect(reader.warpGrid).toHaveBeenCalledTimes(1);
+		},
+	);
 
 	it("leaves a classic grid to the classic read", async () => {
 		const reader = drawnReader(curled());

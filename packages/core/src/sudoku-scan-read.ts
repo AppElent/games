@@ -84,6 +84,36 @@ function planOf(ink: CellInk, printed: boolean): CellReadPlan {
 }
 
 /**
+ * A warped grid's lines found and its ink sorted, with the network's guess
+ * for every single-digit cell: everything `readPreparedGrid` needs but the
+ * reader. The upright check scores these guesses, so reading the turn it
+ * keeps costs no second look at the grid.
+ */
+export type PreparedGrid = {
+	mesh: ReturnType<typeof findMesh>;
+	flat: ReturnType<typeof flatten>;
+	dark: ReturnType<typeof darkness>;
+	inks: CellInk[];
+	guesses: (DigitGuess | null)[];
+};
+
+/** Prepares a grid warped with `withMargins` for reading. */
+export function prepareWarpedGrid(
+	grid: { pixels: ArrayLike<number>; size: number },
+	margins: GridFrame["margins"],
+): PreparedGrid {
+	const gray = clearOutside(grid.pixels, grid.size);
+	const mesh = findMesh(gray, grid.size, margins);
+	const flat = flatten(gray, grid.size, mesh);
+	const dark = darkness(flat.pixels);
+	const inks = gridInk(dark);
+	const guesses = inks.map((ink) =>
+		ink.kind === "digit" ? guessDigit(glyphImage(ink.ink)) : null,
+	);
+	return { mesh, flat, dark, inks, guesses };
+}
+
+/**
  * The 81 cells of a grid warped with `withMargins`. `onRow` hears how many
  * cells are read after each row; null when it answers false, because a newer
  * scan took over.
@@ -94,19 +124,20 @@ export async function readWarpedGrid(
 	readRow: ReadGlyphs,
 	onRow: (done: number) => boolean = () => true,
 ): Promise<ScanCell[] | null> {
-	const gray = clearOutside(grid.pixels, grid.size);
-	const mesh = findMesh(gray, grid.size, margins);
-	const flat = flatten(gray, grid.size, mesh);
-	const dark = darkness(flat.pixels);
-	const inks = gridInk(dark);
+	return readPreparedGrid(prepareWarpedGrid(grid, margins), readRow, onRow);
+}
+
+/** The 81 cells of a prepared grid, as `readWarpedGrid` reads them. */
+export async function readPreparedGrid(
+	{ mesh, flat, dark, inks, guesses }: PreparedGrid,
+	readRow: ReadGlyphs,
+	onRow: (done: number) => boolean = () => true,
+): Promise<ScanCell[] | null> {
 	const reads: DigitRead[][] = [];
-	const guesses: (DigitGuess | null)[] = [];
 	// A row at a time, so the screen can count the cells read.
 	for (let row = 0; row < 9; row += 1) {
-		const rowInks = inks.slice(row * CELLS_PER_ROW, (row + 1) * CELLS_PER_ROW);
-		const rowGuesses = rowInks.map((ink) =>
-			ink.kind === "digit" ? guessDigit(glyphImage(ink.ink)) : null,
-		);
+		const from = row * CELLS_PER_ROW;
+		const rowInks = inks.slice(from, from + CELLS_PER_ROW);
 		const glyphs = rowInks.flatMap((ink, i) =>
 			piecesOf(ink).map((piece) => ({
 				box: imageBox(
@@ -114,18 +145,17 @@ export async function readWarpedGrid(
 					flat,
 					ink.kind === "digit" ? DIGIT_MARGIN : MARK_MARGIN,
 				),
-				guess: rowGuesses[i],
+				guess: guesses[from + i],
 			})),
 		);
 		const rowReads = glyphs.length > 0 ? await readRow(glyphs) : [];
 		if (rowReads.length !== glyphs.length) {
 			throw new Error("The reader answered for a different number of boxes");
 		}
-		for (const [i, ink] of rowInks.entries()) {
+		for (const ink of rowInks) {
 			reads.push(rowReads.splice(0, piecesOf(ink).length));
-			guesses.push(rowGuesses[i]);
 		}
-		if (!onRow(guesses.length)) return null;
+		if (!onRow(reads.length)) return null;
 	}
 
 	const digits = inks.flatMap((ink, cell) => {
