@@ -146,7 +146,8 @@ export function useCheckerDrag({
 
 	/** The checker in the air and the stack it left, which draws one short. */
 	const [away, setAway] = useState<{
-		source: BackgammonMoveSource;
+		/** Null once the new board has the move: nothing to draw short any more. */
+		source: BackgammonMoveSource | null;
 		color: BackgammonColor;
 	} | null>(null);
 	const [pending, setPending] = useState<Pending | null>(null);
@@ -253,7 +254,8 @@ export function useCheckerDrag({
 		if (!held || held.key === key) return;
 		handlers.setPendingBoth(null);
 		if (settledRef.current) handlers.hide();
-		else setAway(null);
+		// Still settling: keep the mover's colour (the turn may have passed already).
+		else setAway((current) => current && { ...current, source: null });
 		if (latest.current.quiet || held.hits.length === 0) return;
 		const hitColor: BackgammonColor =
 			held.mover === "white" ? "black" : "white";

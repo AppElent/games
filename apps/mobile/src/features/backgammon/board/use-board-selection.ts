@@ -88,7 +88,11 @@ export function useBoardSelection({
 			? "bar"
 			: stillPicked
 		: null;
-	const lifted = movable ? (drag?.from ?? null) : null;
+	// Like `stillPicked`: a newer board may have emptied the source before the reset runs.
+	const lifted =
+		movable && drag && (drag.from === "bar" ? onBar : ownsPoint(drag.from))
+			? drag.from
+			: null;
 	const selected = lifted ?? tapSelected;
 
 	// A new roll or a new player starts without a pick or a leftover sentence.
@@ -216,7 +220,6 @@ export function useBoardSelection({
 		draggable,
 		/** The rejection sentence, in place of the hint until the next press. */
 		notice,
-		clearNotice: () => setNotice(null),
 		liftChecker,
 		moveOver,
 		dropChecker,

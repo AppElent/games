@@ -364,8 +364,14 @@ export function BackgammonBoard({
 	useEffect(() => {
 		const pd = dragRef.current;
 		if (!pd) return;
-		if (pd.phase === "lifted") springBack(pd);
-		else if (pd.phase === "settling" && !pd.landed) pd.boardChanged = true;
+		if (pd.phase === "lifted") {
+			// Swallow the click that ends this press, as a normal drop does.
+			justDraggedRef.current = true;
+			setTimeout(() => {
+				justDraggedRef.current = false;
+			}, 300);
+			springBack(pd);
+		} else if (pd.phase === "settling" && !pd.landed) pd.boardChanged = true;
 		else if (pd.phase !== "returning") finishDrag(pd);
 	}, [boardKey]);
 
