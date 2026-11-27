@@ -71,9 +71,8 @@ function OnlineMatchLoaded({
 	const { session } = live.bundle;
 	const winner = getBackgammonWinner(turn.off);
 
-	const onPlan = (plan: BackgammonMovePlan) => {
-		void match.play(plan, { autoSwitchTurn: options.autoSwitchTurn });
-	};
+	const onPlan = (plan: BackgammonMovePlan) =>
+		match.play(plan, { autoSwitchTurn: options.autoSwitchTurn });
 	const selection = useBoardSelection({
 		state: turn,
 		interactive: match.isMyTurn && !match.busy,

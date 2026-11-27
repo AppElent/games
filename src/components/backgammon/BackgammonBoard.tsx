@@ -44,7 +44,8 @@ type Props = {
 	/** Which options appear in the gear menu; menu hidden when empty. */
 	optionKeys?: readonly BackgammonOptionKey[];
 	onToggleOption?: (key: BackgammonOptionKey) => void;
-	onPlan: (plan: BackgammonMovePlan) => void | Promise<void>;
+	/** A promise it returns resolves false when the move was refused (online: the server said no). */
+	onPlan: (plan: BackgammonMovePlan) => unknown;
 	/** Unset for a viewer without a seat: the button still shows, disabled. */
 	onRoll?: () => unknown;
 	/** Unset for a viewer without a seat: the button still shows, disabled. */
@@ -601,7 +602,18 @@ export function BackgammonBoard({
 					},
 				);
 				pd.timer = setTimeout(() => finishDrag(pd), PENDING_MS);
-				void onPlan(outcome.plan);
+				const sent = onPlan(outcome.plan);
+				if (sent instanceof Promise)
+					void sent.then((accepted) => {
+						// Refused: no new board is coming, so give the checker back now.
+						if (
+							accepted === false &&
+							dragRef.current === pd &&
+							pd.phase === "settling" &&
+							!pd.boardChanged
+						)
+							springBack(pd);
+					});
 				return;
 			}
 			if (outcome.kind === "reject") {

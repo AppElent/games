@@ -81,9 +81,9 @@ export function BackgammonMatch({
 
 	function handlePlan(plan: BackgammonMovePlan) {
 		if (!seat || !turnState) {
-			return;
+			return Promise.resolve(false);
 		}
-		run(async () => {
+		return run(async () => {
 			for (const step of plan.steps) {
 				await applyMove({ ...seat, from: step.from, to: step.to });
 			}

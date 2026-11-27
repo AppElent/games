@@ -34,9 +34,9 @@ export function useSeatedSession(sessionId: string) {
 	const { run: runAction, busy, error } = useSessionAction();
 
 	const run = useCallback(
-		async (action: (seat: SeatArgs) => Promise<unknown>) => {
-			if (seat) await runAction(() => action(seat));
-		},
+		/** Resolves the action's result, or null when there is no seat or it failed. */
+		async <T>(action: (seat: SeatArgs) => Promise<T>) =>
+			seat ? runAction(() => action(seat)) : null,
 		[seat, runAction],
 	);
 
