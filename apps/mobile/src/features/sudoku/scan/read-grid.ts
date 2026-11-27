@@ -1,10 +1,10 @@
 /**
  * Photo and grid corners in, recognized cells out, read upright from a photo
  * taken sideways or upside down. The native module warps the photo and reads
- * with Apple Vision; the grid's lines, the ink in its
- * cells and the digit network are core JavaScript (`readWarpedGrid`), shared
- * with the web and improved by update. `scripts/scan-bench` measures this
- * same function.
+ * with Apple Vision; the grid's lines, the ink in its cells and the digit
+ * network are core JavaScript (`prepareWarpedGrid`, `readPreparedGrid`),
+ * shared with the web and improved by update. `scripts/scan-bench` measures
+ * this same function.
  */
 import type { ScanCell } from "@arcadeclub/core/sudoku-scan";
 import {

@@ -70,8 +70,8 @@ the [mobile runbook](../runbooks/mobile.md).
   every cell it read is flagged for a check. A photo taken sideways or upside down
   is read upright, as on the web (`@arcadeclub/core/sudoku-scan-orientation`): a
   Killer by where its sums sit, a classic grid by how sure the network is of its
-  digits; if that check fails, the photo is read as taken. Measure a change to it with the
-  [scan bench](../../apps/mobile/scripts/scan-bench/README.md), which runs on the
+  digits; if that check fails, the photo is read as taken. Measure a change to it
+  with the [scan bench](../../apps/mobile/scripts/scan-bench/README.md), which runs on the
   phone's and the web's reader. The
   player checks the grid in the web's verify step before it becomes a classic
   save with `source: "scan"` and no difficulty or solution. A build without the
