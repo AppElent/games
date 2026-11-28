@@ -268,7 +268,7 @@ function edgeScore(ink: Uint8Array, size: number, edge: CageEdge) {
 const SNAP_SLACK = 0.18;
 
 /** Above this an edge is a cage border. */
-export const BORDER_SCORE = 0.6;
+const BORDER_SCORE = 0.6;
 /** Between these the read is doubtful. */
 const DOUBT_LOW = 0.15;
 const DOUBT_HIGH = 1.15;

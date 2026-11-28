@@ -265,15 +265,14 @@ async function readWithSecondLook(
 	const sure = boxes.flatMap((_, i) =>
 		reads[i].confidence >= READ_AGAIN ? [i] : [],
 	);
-	if (weak.length === 0) {
+	// Without a sure box the same request would only get the same answer.
+	if (weak.length === 0 || sure.length === 0) {
 		return { reads, disagree };
 	}
-	const order = weak.flatMap((index, k) =>
-		sure.length > 0 ? [index, sure[k % sure.length]] : [index],
-	);
+	const order = weak.flatMap((index, k) => [index, sure[k % sure.length]]);
 	const again = await read(order.map((index) => boxes[index]));
 	weak.forEach((index, k) => {
-		const second = again[sure.length > 0 ? k * 2 : k];
+		const second = again[k * 2];
 		const first = reads[index];
 		if (first.digit >= 1 && second.digit >= 1 && first.digit !== second.digit) {
 			disagree.add(index);

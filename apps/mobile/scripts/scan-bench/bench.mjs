@@ -249,7 +249,7 @@ try {
 		summarize(all, rows);
 		printTable(rows);
 	}
-	if (flag("turns")) {
+	if (flag("turns") && !flag("killer")) {
 		const count = labels.length * 4;
 		console.log(
 			`Turned back upright: ${count - missedTurns.length}/${count}${missedTurns.length ? ` (missed ${missedTurns.join(", ")})` : ""}`,
