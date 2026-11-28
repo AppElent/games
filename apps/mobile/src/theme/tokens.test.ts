@@ -86,6 +86,21 @@ describe.each(schemes)("%s colour pairs meet WCAG AA", (_name, t) => {
 		const border = parse(t.borderStrong, surface);
 		expect(contrast(border, ground)).toBeGreaterThanOrEqual(3);
 	});
+
+	// A scan's unsure lines and sums: a mark on the grid, and a sum on it.
+	it("amberMark reaches 3:1 against surface, onAmberMark 4.5:1 on it", () => {
+		const mark = parse(t.amberMark);
+		expect(contrast(mark, surface)).toBeGreaterThanOrEqual(3);
+		expect(contrast(parse(t.onAmberMark), mark)).toBeGreaterThanOrEqual(4.5);
+	});
+
+	it("amberMark reads as amber: hue 35-50°", () => {
+		const [r, g, b] = parse(t.amberMark);
+		const hue =
+			(Math.atan2(Math.sqrt(3) * (g - b), 2 * r - g - b) * 180) / Math.PI;
+		expect(hue).toBeGreaterThanOrEqual(35);
+		expect(hue).toBeLessThanOrEqual(50);
+	});
 });
 
 describe("web tokens match the phone's", () => {

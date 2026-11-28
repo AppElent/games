@@ -96,6 +96,19 @@ describe("ScanKillerVerifyStep", () => {
 		).toBeTruthy();
 	});
 
+	it("starts on a sum read with doubt, and names it so", async () => {
+		const last = killerScanCages(complete).at(-1) ?? first;
+		const cell = last.cells[0];
+		await setup({ ...complete, unsureSums: [cell] });
+		expect(
+			screen.getByText("1 sum read with doubt is outlined in amber."),
+		).toBeTruthy();
+		const named = screen.getByLabelText(
+			`Row ${Math.floor(cell / 9) + 1}, column ${(cell % 9) + 1}: cage of ${last.cells.length}, sum ${last.sum}, read with doubt`,
+		);
+		expect(named.props.accessibilityState).toMatchObject({ selected: true });
+	});
+
 	it("draws or removes the line beside the picked cell", async () => {
 		const unsure = {
 			...complete,

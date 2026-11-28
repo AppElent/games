@@ -280,6 +280,10 @@ describe("readKiller", () => {
 
 	const frame = withMargins(corners, photo);
 	const sorted = [...cages].sort((a, b) => a[0] - b[0]);
+	// Every cage prints 10, which only a cage of two to four cells can make:
+	// the read leaves the others for the player.
+	const readsTen = (cage: { cells: number[]; sum: number | null }) =>
+		cage.sum === (cage.cells.length >= 2 && cage.cells.length <= 4 ? 10 : null);
 
 	it("reads the cages and sums of a Killer, warped with margins", async () => {
 		const reader = killerReader(frame.margins.left);
@@ -293,7 +297,7 @@ describe("readKiller", () => {
 			read?.scan ?? { borders: [], doubtful: [], sums: {} },
 		);
 		expect(found.map((cage) => cage.cells)).toEqual(sorted);
-		expect(found.every((cage) => cage.sum === 10)).toBe(true);
+		expect(found.every(readsTen)).toBe(true);
 		// Vision is asked about each 1 where the warped image shows it.
 		const pad = frame.margins.left * CELL;
 		const [first] = reader.readDigits.mock.calls[0][1];
@@ -324,7 +328,7 @@ describe("readKiller", () => {
 				read?.scan ?? { borders: [], doubtful: [], sums: {} },
 			);
 			expect(found.map((cage) => cage.cells)).toEqual(sorted);
-			expect(found.every((cage) => cage.sum === 10)).toBe(true);
+			expect(found.every(readsTen)).toBe(true);
 			expect(read?.corners).toEqual(turnCorners(corners, quarters));
 			if (quarters === 0) expect(reader.warpGrid).toHaveBeenCalledTimes(1);
 		},

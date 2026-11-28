@@ -11,6 +11,10 @@ Sudoku photos with every digit labelled by hand, in `labels.json`:
 - `cutOff`: cells the photo's edge cuts through; not measured.
 - `unreadable`: cells written over so often that no digit is certain; not
   measured.
+- `cages` and `sums`, on a Killer: nine rows of nine letters, one letter per
+  cage, and each cage's sum by its first cell (`row,column`). The cages of
+  `handwritten-killer` are checked against its solved digits: each adds up to
+  its sum.
 
 Every photo is scaled to at most 1600 px (the size the app works on) and
 recompressed. `curled-book-page`, `handwritten-2001`, `handwritten-2002`,

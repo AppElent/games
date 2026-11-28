@@ -1,7 +1,7 @@
 /**
  * Check a Killer read from a photo before playing, as the web's Killer check
  * does: the cages drawn from the dashes found, the sums read in their
- * corners, and the lines the read was unsure of in amber. Tapping a cell
+ * corners, and the lines and sums the read was unsure of in amber. Tapping a cell
  * shows its cage's sum to correct and the four lines around it to draw or
  * remove. The puzzle starts once the sums add up to 405 and its cages allow
  * exactly one solution.
@@ -116,6 +116,10 @@ export function ScanKillerVerifyStep({
 	}, [cages]);
 	const doubtful = useMemo(() => new Set(scan.doubtful), [scan.doubtful]);
 	const borders = useMemo(() => new Set(scan.borders), [scan.borders]);
+	const unsureSums = useMemo(
+		() => new Set(scan.unsureSums ?? []),
+		[scan.unsureSums],
+	);
 	const quickCheck = useMemo(
 		() => checkKillerScan(scan, { checkUnique: false }),
 		[scan],
@@ -131,6 +135,8 @@ export function ScanKillerVerifyStep({
 	const [selected, setSelected] = useState(() => {
 		const missing = cages.find((cage) => cage.sum === null);
 		if (missing) return missing.cells[0];
+		const unsureSum = scan.unsureSums?.[0];
+		if (unsureSum !== undefined) return unsureSum;
 		const unsure = scan.doubtful[0];
 		return unsure ? Number.parseInt(unsure, 10) : 0;
 	});
@@ -199,7 +205,13 @@ export function ScanKillerVerifyStep({
 
 	function cellName(cell: number) {
 		const entry = cages[cageOf[cell]];
-		return fmt(entry?.sum == null ? killer.cellNameNoSum : killer.cellName, {
+		const name =
+			entry?.sum == null
+				? killer.cellNameNoSum
+				: unsureSums.has(entry.cells[0])
+					? killer.cellNameUnsure
+					: killer.cellName;
+		return fmt(name, {
 			row: Math.floor(cell / 9) + 1,
 			col: (cell % 9) + 1,
 			count: entry?.cells.length ?? 1,
@@ -264,6 +276,7 @@ export function ScanKillerVerifyStep({
 						const col = cell % 9;
 						const entry = cages[cageOf[cell]];
 						const first = entry?.cells[0] === cell;
+						const sumUnsure = entry?.sum != null && unsureSums.has(cell);
 						return (
 							<Pressable
 								// biome-ignore lint/suspicious/noArrayIndexKey: fixed 81-cell grid
@@ -295,6 +308,7 @@ export function ScanKillerVerifyStep({
 										style={[
 											styles.sum,
 											entry?.sum == null && styles.sumMissing,
+											sumUnsure && styles.sumUnsure,
 										]}
 									>
 										<AppText
@@ -304,7 +318,9 @@ export function ScanKillerVerifyStep({
 												styles.sumText,
 												{
 													color:
-														entry?.sum == null ? tokens.onAccent : tokens.text,
+														entry?.sum == null
+															? tokens.onAmberMark
+															: tokens.text,
 												},
 											]}
 										>
@@ -367,7 +383,7 @@ export function ScanKillerVerifyStep({
 								y1={line.y1}
 								x2={line.x2}
 								y2={line.y2}
-								stroke={tokens.amber}
+								stroke={tokens.amberMark}
 								strokeWidth={0.1}
 								strokeLinecap="round"
 							/>
@@ -381,11 +397,18 @@ export function ScanKillerVerifyStep({
 						accessibilityLabel={copy.correctedGridAlt}
 						accessibilityIgnoresInvertColors
 					/>
-					<AppText variant="secondary" style={styles.grow}>
-						{scan.doubtful.length > 0
-							? plural(locale, scan.doubtful.length, killer.unsureLines)
-							: killer.allLinesSure}
-					</AppText>
+					<View style={styles.grow}>
+						<AppText variant="secondary">
+							{scan.doubtful.length > 0
+								? plural(locale, scan.doubtful.length, killer.unsureLines)
+								: killer.allLinesSure}
+						</AppText>
+						{unsureSums.size > 0 ? (
+							<AppText variant="secondary">
+								{plural(locale, unsureSums.size, killer.unsureSums)}
+							</AppText>
+						) : null}
+					</View>
 				</View>
 			</View>
 			{cage ? (
@@ -505,7 +528,12 @@ const createStyles = (colors: Tokens) =>
 			paddingHorizontal: 2,
 			borderRadius: 3,
 		},
-		sumMissing: { backgroundColor: colors.amber },
+		sumMissing: { backgroundColor: colors.amberMark },
+		sumUnsure: {
+			borderWidth: 2,
+			borderColor: colors.amberMark,
+			paddingHorizontal: 1,
+		},
 		sumText: { fontWeight: "700" },
 		summary: { flexDirection: "row", alignItems: "center", gap: spacing.md },
 		thumbnail: {

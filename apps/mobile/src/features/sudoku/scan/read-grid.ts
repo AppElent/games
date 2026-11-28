@@ -181,15 +181,19 @@ export async function readKiller(
 		onCheckFailed,
 	);
 	const { grid, flat, rgba, cages } = view;
-	const sums = await readKillerSums(rgba, FLAT, cages, (boxes) =>
-		reader.readDigits(
-			grid.uri,
-			boxes.map((box) => warpedBox(box, flat)),
-		),
+	const { read, sums, unsure } = await readKillerSums(
+		rgba,
+		FLAT,
+		cages,
+		(boxes) =>
+			reader.readDigits(
+				grid.uri,
+				boxes.map((box) => warpedBox(box, flat)),
+			),
 	);
 	return {
 		gridUri: grid.uri,
-		scan: killerScanFromRead(cages, sums),
+		scan: killerScanFromRead(read, sums, unsure),
 		corners: turnCorners(corners, turns),
 	};
 }

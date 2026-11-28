@@ -7,6 +7,9 @@
 import {
 	type CageRead,
 	cageSumInk,
+	cagesFromBorders,
+	edgeBetween,
+	edgeKey,
 	parseCageSum,
 	type SumInk,
 } from "./sudoku-scan-cages";
@@ -37,8 +40,9 @@ export function looksLikeZero(sum: SumInk, digit: InkBox) {
 	if (width < 3 || height < 5) {
 		return false;
 	}
+	// The ink as found, not grown: growing it closes a small 0's hole.
 	const ink = (x: number, y: number) =>
-		sum.mask[(digit.y + y) * sum.box.width + digit.x + x] === 1;
+		sum.ink[(digit.y + y) * sum.box.width + digit.x + x] === 1;
 	// Paper reached from the digit's edge is outside; what is left is a hole.
 	const outside = new Uint8Array(width * height);
 	const stack: number[] = [];
@@ -129,6 +133,165 @@ const DIGIT_PAD = 2;
 /** A read this sure counts; below it the digit is left for the player. */
 const DIGIT_SURE = 0.3;
 
+/** A read less sure than this is read again, and its sum marked unsure. */
+const READ_AGAIN = 0.8;
+
+/**
+ * A sum's digits are about one height: ink much taller, shorter or wider
+ * than the grid's usual sum digit is a handwritten digit or a scribble in
+ * the corner, not a sum.
+ */
+const SUM_HEIGHT = { low: 0.7, high: 1.35 };
+const SUM_WIDTH = 1.25;
+
+/** What `readKillerSums` read. */
+export type KillerSumsRead = {
+	/**
+	 * The cages, with a cage that has no sum of its own joined to the
+	 * neighbour across its weakest unsure line: every Killer cage prints a sum.
+	 */
+	read: CageRead;
+	/** Per cage of `read`, its sum, or null where none could be read. */
+	sums: (number | null)[];
+	/** Per cage of `read`, whether its sum was read with doubt. */
+	unsure: boolean[];
+};
+
+/** The sum ink of each cage, or null where its corner holds none. */
+function sumInks(rgba: ArrayLike<number>, size: number, read: CageRead) {
+	return read.cages.map(
+		(cage) =>
+			cageSumInk(rgba, size, cage, read.bounds, { ignoreBlue: true }) ??
+			cageSumInk(rgba, size, cage, read.bounds, { ignoreBlue: false }),
+	);
+}
+
+/** Drops ink unlike the grid's usual sum digit: see `SUM_HEIGHT`. */
+function sumSized(inks: (SumInk | null)[]): (SumInk | null)[] {
+	const heights = inks
+		.flatMap((ink) => ink?.digits ?? [])
+		.map((digit) => digit.height)
+		.sort((a, b) => a - b);
+	if (heights.length === 0) {
+		return inks;
+	}
+	const usual = heights[Math.floor(heights.length / 2)];
+	return inks.map((ink) =>
+		ink?.digits.every(
+			(digit) =>
+				digit.height >= usual * SUM_HEIGHT.low &&
+				digit.height <= usual * SUM_HEIGHT.high &&
+				digit.width <= usual * SUM_WIDTH,
+		)
+			? ink
+			: null,
+	);
+}
+
+/**
+ * Joins each cage without a sum to a neighbour across its weakest unsure
+ * line: a stray mark can pass for a dashed line, but never prints a sum. A
+ * line the read was sure of stays, and so does a join past nine cells.
+ */
+function joinCagesWithoutSums(
+	read: CageRead,
+	hasSum: boolean[],
+): CageRead | null {
+	const { scores } = read;
+	if (!scores) {
+		return null;
+	}
+	const doubtful = new Set(read.doubtful.map(edgeKey));
+	const cageOf = new Array<number>(81);
+	read.cages.forEach((cells, index) => {
+		for (const cell of cells) cageOf[cell] = index;
+	});
+	const removed = new Set<string>();
+	read.cages.forEach((cells, index) => {
+		if (hasSum[index]) {
+			return;
+		}
+		let weakest: { key: string; score: number } | null = null;
+		for (const cell of cells) {
+			for (const other of [cell - 9, cell - 1, cell + 1, cell + 9]) {
+				const edge = other >= 0 && other < 81 ? edgeBetween(cell, other) : null;
+				if (!edge || cageOf[other] === index) continue;
+				const key = edgeKey(edge);
+				const size = cells.length + read.cages[cageOf[other]].length;
+				if (
+					doubtful.has(key) &&
+					size <= 9 &&
+					(!weakest || scores[key] < weakest.score)
+				) {
+					weakest = { key, score: scores[key] };
+				}
+			}
+		}
+		if (weakest) removed.add(weakest.key);
+	});
+	if (removed.size === 0) {
+		return null;
+	}
+	const borders = read.borders.filter((edge) => !removed.has(edgeKey(edge)));
+	const kept = new Set(borders.map(edgeKey));
+	return {
+		...read,
+		borders,
+		cages: cagesFromBorders((edge) => kept.has(edgeKey(edge))),
+	};
+}
+
+/**
+ * Reads every box, and the boxes read with doubt once more. Vision reads a
+ * box better or worse by what else is in its request, so a doubtful box is
+ * read again among boxes it read surely.
+ */
+async function readWithSecondLook(
+	boxes: InkBox[],
+	readDigits: BoxDigitReader,
+): Promise<{ reads: DigitRead[]; disagree: Set<number> }> {
+	const read = async (asked: InkBox[]) => {
+		const reads = asked.length > 0 ? await readDigits(asked) : [];
+		if (reads.length !== asked.length) {
+			throw new Error("The reader answered for a different number of boxes");
+		}
+		return reads;
+	};
+	const reads = await read(boxes);
+	const disagree = new Set<number>();
+	const weak = boxes.flatMap((_, i) =>
+		reads[i].confidence < READ_AGAIN ? [i] : [],
+	);
+	const sure = boxes.flatMap((_, i) =>
+		reads[i].confidence >= READ_AGAIN ? [i] : [],
+	);
+	if (weak.length === 0) {
+		return { reads, disagree };
+	}
+	const order = weak.flatMap((index, k) =>
+		sure.length > 0 ? [index, sure[k % sure.length]] : [index],
+	);
+	const again = await read(order.map((index) => boxes[index]));
+	weak.forEach((index, k) => {
+		const second = again[sure.length > 0 ? k * 2 : k];
+		const first = reads[index];
+		if (first.digit >= 1 && second.digit >= 1 && first.digit !== second.digit) {
+			disagree.add(index);
+		}
+		if (second.confidence > first.confidence) {
+			reads[index] = second;
+		}
+	});
+	return { reads, disagree };
+}
+
+/** Whether `cells` distinct digits 1-9 can add up to `sum`. */
+function sumFits(sum: number, cells: number) {
+	const least = (cells * (cells + 1)) / 2;
+	const most = (cells * (19 - cells)) / 2;
+	return sum >= least && sum <= most;
+}
+
 /**
  * The sum printed in each cage, or null where none could be read: the
  * player types those on the check screen.
@@ -136,14 +299,19 @@ const DIGIT_SURE = 0.3;
 export async function readKillerSums(
 	rgba: ArrayLike<number>,
 	size: number,
-	read: CageRead,
+	cageRead: CageRead,
 	readDigits: BoxDigitReader,
-): Promise<(number | null)[]> {
-	const inks = read.cages.map(
-		(cage) =>
-			cageSumInk(rgba, size, cage, read.bounds, { ignoreBlue: true }) ??
-			cageSumInk(rgba, size, cage, read.bounds, { ignoreBlue: false }),
+): Promise<KillerSumsRead> {
+	let read = cageRead;
+	let inks = sumSized(sumInks(rgba, size, read));
+	const joined = joinCagesWithoutSums(
+		read,
+		inks.map((ink) => ink !== null),
 	);
+	if (joined) {
+		read = joined;
+		inks = sumSized(sumInks(rgba, size, read));
+	}
 	// Every digit that is not a 0 goes to the reader in one batch.
 	const boxes: InkBox[] = [];
 	const plans = inks.map((sum) =>
@@ -168,11 +336,9 @@ export async function readKillerSums(
 				})
 			: null,
 	);
-	const reads = boxes.length > 0 ? await readDigits(boxes) : [];
-	if (reads.length !== boxes.length) {
-		throw new Error("The reader answered for a different number of boxes");
-	}
-	return inks.map((sum, index) => {
+	const { reads, disagree } = await readWithSecondLook(boxes, readDigits);
+	const unsure = read.cages.map(() => false);
+	const sums = inks.map((sum, index) => {
 		const plan = plans[index];
 		if (!sum || !plan || plan.length === 0) {
 			return null;
@@ -188,8 +354,20 @@ export async function readKillerSums(
 			if (!digit || digit.digit < 1 || digit.confidence < DIGIT_SURE) {
 				return null;
 			}
+			if (digit.confidence < READ_AGAIN || disagree.has(entry)) {
+				unsure[index] = true;
+			}
 			text += String(digit.digit);
 		}
-		return parseCageSum(text);
+		const value = parseCageSum(text);
+		// A sum its cells cannot make is a misread: a digit was lost.
+		return value !== null && sumFits(value, read.cages[index].length)
+			? value
+			: null;
 	});
+	return {
+		read,
+		sums,
+		unsure: unsure.map((doubt, index) => doubt && sums[index] !== null),
+	};
 }
