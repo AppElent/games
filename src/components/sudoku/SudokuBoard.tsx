@@ -47,7 +47,7 @@ const TONE_RINGS = [
 /** A hint cell and a hint line as a ring, on a colour-marked cell. */
 const HINT_RING = "inset-ring-3 inset-ring-amber-700 dark:inset-ring-amber-300";
 const HINT_LINE_RING =
-	"inset-ring-2 inset-ring-amber-600 dark:inset-ring-amber-300/80";
+	"inset-ring-2 inset-ring-amber-700 dark:inset-ring-amber-300/80";
 
 const CORNER_SLOTS: Record<CornerNoteSlot, string> = {
 	topLeft: "left-0.5 top-0",

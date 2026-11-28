@@ -60,7 +60,7 @@ describe("SudokuBoard chain tones", () => {
 		expect(hint).not.toContain("bg-amber-300");
 		const line = cellAt(2).className;
 		expect(line).toContain("bg-emerald-500/40");
-		expect(line).toContain("inset-ring-amber-600");
+		expect(line).toContain("inset-ring-2 inset-ring-amber-700");
 		expect(line).not.toContain("bg-amber-300");
 		// Unmarked hint cells and hint lines keep their fills, with no ring.
 		expect(cellAt(3).className).toContain("bg-amber-300/50");

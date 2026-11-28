@@ -313,7 +313,7 @@ const BoardCell = memo(function BoardCell({
 					: hinted
 						? { borderColor: tokens.orange, borderWidth: 3 }
 						: hintLine
-							? { borderColor: tokens.amberMark, borderWidth: 2 }
+							? { borderColor: tokens.amber, borderWidth: 2 }
 							: undefined;
 	const background = selected
 		? tokens.accentDim

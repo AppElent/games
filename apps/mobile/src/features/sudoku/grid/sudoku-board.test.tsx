@@ -93,9 +93,7 @@ describe("SudokuBoard chain tones", () => {
 		expect(uses(hint, "borderColor", "orange", { borderWidth: 3 })).toBe(true);
 		expect(uses(hint, "backgroundColor", "orangeDim")).toBe(false);
 		const line = stylesIn(/^Row 1, column 2,/);
-		expect(uses(line, "borderColor", "amberMark", { borderWidth: 2 })).toBe(
-			true,
-		);
+		expect(uses(line, "borderColor", "amber", { borderWidth: 2 })).toBe(true);
 		expect(uses(line, "backgroundColor", "amberDim")).toBe(false);
 		// Unmarked hint cells and hint lines keep their fills, with no ring.
 		const plainHint = stylesIn(/^Row 1, column 3,/);
@@ -103,6 +101,6 @@ describe("SudokuBoard chain tones", () => {
 		expect(uses(plainHint, "borderColor", "orange")).toBe(false);
 		const plainLine = stylesIn(/^Row 1, column 4,/);
 		expect(uses(plainLine, "backgroundColor", "amberDim")).toBe(true);
-		expect(uses(plainLine, "borderColor", "amberMark")).toBe(false);
+		expect(uses(plainLine, "borderColor", "amber")).toBe(false);
 	});
 });
