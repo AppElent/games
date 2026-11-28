@@ -241,7 +241,10 @@ export function countSolutions(
 }
 
 /** The solution of a grid with exactly one, else null. */
-export function solveSudoku(grid: SudokuGrid): SudokuGrid | null {
+export function solveSudoku(
+	grid: SudokuGrid,
+	candidatesOf: CandidatesFn = computeCandidates,
+): SudokuGrid | null {
 	if (findConflicts(grid).size > 0) {
 		return null;
 	}
@@ -249,7 +252,7 @@ export function solveSudoku(grid: SudokuGrid): SudokuGrid | null {
 	let solved: SudokuGrid | null = null;
 	let count = 0;
 	const fill = (): boolean => {
-		const candidates = computeCandidates(work);
+		const candidates = candidatesOf(work);
 		const { cell, size } = findBestCell(work, candidates);
 		if (cell === -1) {
 			count += 1;

@@ -5,6 +5,7 @@ import {
 	findConflicts,
 	generateSolvedGrid,
 	SUDOKU_CELL_COUNT,
+	solveSudoku,
 } from "../sudoku";
 import { createBoardState } from "../sudoku-board";
 import {
@@ -16,6 +17,7 @@ import {
 	isBoardSolved,
 	isKillerSolved,
 	killerCageLayout,
+	solveKiller,
 	validateKillerCages,
 } from "../sudoku-killer";
 
@@ -185,5 +187,22 @@ describe("killerCageLayout", () => {
 			left: true,
 			right: true,
 		});
+	});
+});
+
+describe("solveKiller", () => {
+	it("solves givens that need their cages to be unique", () => {
+		const { givens, solution, cages } = generateKillerPuzzle(
+			"expert",
+			mulberry32(11),
+		);
+		expect(solveSudoku(givens)).toBeNull();
+		expect(solveKiller(givens, cages)).toEqual(solution);
+	});
+
+	it("returns null when the cages do not fit the givens", () => {
+		const { givens } = generateKillerPuzzle("expert", mulberry32(11));
+		const other = generateKillerPuzzle("expert", mulberry32(12));
+		expect(solveKiller(givens, other.cages)).toBeNull();
 	});
 });

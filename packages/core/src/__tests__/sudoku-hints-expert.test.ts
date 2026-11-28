@@ -7,6 +7,7 @@ import {
 	digitMask,
 	digitsInMask,
 	generatePuzzle,
+	generateSolvedGrid,
 	parseGrid,
 } from "../sudoku";
 import {
@@ -19,6 +20,7 @@ import {
 	SUDOKU_TECHNIQUES,
 	type SudokuHint,
 } from "../sudoku-hints";
+import { generateKillerCages } from "../sudoku-killer";
 
 /**
  * Board states from generated Expert puzzles, each the first point where the
@@ -274,12 +276,24 @@ describe("expert sudoku hints", () => {
 
 	it("reveals only when it knows the solution", () => {
 		const state = STATES["reveal-cell"];
-		// Killer givens are not unique on their own, so nothing is revealed
-		// unless the client passes the solution.
-		expect(hintAt(state, { cages: [{}] })?.technique).toBe("snyder-pair");
+		// Cages from another solved grid leave the Killer with no solution,
+		// so nothing is revealed unless the client passes one.
+		const wrongCages = generateKillerCages(
+			generateSolvedGrid(mulberry32(3)),
+			mulberry32(3),
+		);
+		expect(hintAt(state, { cages: wrongCages })?.technique).toBe("snyder-pair");
 		expect(
-			hintAt(state, { cages: [{}], solution: parseGrid(state.solution) }),
+			hintAt(state, { cages: wrongCages, solution: parseGrid(state.solution) }),
 		).toMatchObject(EXPECTED["reveal-cell"]);
+	});
+
+	it("reveals on a Killer from the givens and cages, without a solution", () => {
+		const state = STATES["reveal-cell"];
+		// What the web passes: the givens and the cages, never the solution.
+		const cages = generateKillerCages(parseGrid(state.solution), mulberry32(5));
+		const hint = hintAt(state, { cages });
+		expect(hint).toMatchObject(EXPECTED["reveal-cell"]);
 	});
 
 	it("reveals at any maximum, without the earlier-hints note", () => {

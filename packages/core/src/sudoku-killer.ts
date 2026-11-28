@@ -13,6 +13,7 @@ import {
 	SUDOKU_CELL_COUNT,
 	type SudokuDifficulty,
 	type SudokuGrid,
+	solveSudoku,
 } from "./sudoku";
 import {
 	boardConflicts,
@@ -185,6 +186,12 @@ export function countKillerSolutions(
 	return countSolutions(grid, limit, (current) =>
 		killerCandidates(current, lookup),
 	);
+}
+
+/** The solution of givens and cages with exactly one, else null. */
+export function solveKiller(givens: SudokuGrid, cages: readonly KillerCage[]) {
+	const lookup = buildCageLookup([...cages]);
+	return solveSudoku(givens, (current) => killerCandidates(current, lookup));
 }
 
 type GeneratedKillerPuzzle = {
