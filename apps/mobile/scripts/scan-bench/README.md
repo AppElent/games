@@ -9,12 +9,18 @@ node apps/mobile/scripts/scan-bench/bench.mjs            # from the labelled cor
 node apps/mobile/scripts/scan-bench/bench.mjs --detect   # from the corners the app finds
 node apps/mobile/scripts/scan-bench/bench.mjs --cells    # and every wrong cell
 node apps/mobile/scripts/scan-bench/bench.mjs --turns    # and each photo turned 90°, 180°, 270°
+node apps/mobile/scripts/scan-bench/bench.mjs --killer   # a Killer's cages and sums
 ```
 
 `--turns` turns each photo with Core Graphics, hands the scan its corners in the order
 the turned photo shows them, and checks that `readGrid` and, on a Killer, `readKiller`
 turn the grid back upright. The upright photo is redrawn the same way, so every turn
 reads the same pixels.
+
+`--killer` runs `readKiller` on every photo labelled with cages and counts the sums
+missing or wrong, the cages split by a line read where there is none, the cages
+merged by a line missed, and the lines marked unsure. With `--cells` it also lists
+them and draws the cages read. It takes `--detect` too.
 
 `--only id,…` limits the photos, `--photos folder` takes another set, `--json file`
 writes the rows. A cell is right when its digit (or its notes) is. "Type right" also
@@ -83,6 +89,19 @@ are read upright, and every turn reads the same number of cells right as the upr
 photo (2868/2928 in all, 717/732 a turn). `readKiller` finds `handwritten-killer` a
 Killer at every turn and reads the same cages and sums each time. From the corners the
 app finds, all 60 are read upright too.
+
+`--killer` on `handwritten-killer` (33 cages), before → after APP-958. Vision reads a
+digit better or worse by what else is in its request: a sum digit it is unsure of
+is now read a second time among digits it read surely. A cage without a printed
+sum is joined to its neighbour across its weakest unsure line, ink much taller or
+wider than a sum digit (a handwritten digit in the corner) no longer counts as a
+sum, a small 0 is told by its ink before it is grown, and a sum its cells cannot
+make (the 1 left of 16 when the 6 touches a pen stroke) is left for the player:
+
+| Corners  | Sums missing | Sums wrong | Cages split | Cages merged | Lines unsure |
+| -------- | ------------ | ---------- | ----------- | ------------ | ------------ |
+| Labelled | 1 → 1        | 1 → 0      | 2 → 0       | 0 → 0        | 20 → 20      |
+| Detected | 4 → 1        | 1 → 0      | 2 → 0       | 0 → 0        | 22 → 22      |
 
 Vision finds no grid on `handwritten-newspaper` in either look; the player places
 those corners. `sudoku-scan-doubt.ts` (core) flags every cell of a read from a wrong

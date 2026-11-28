@@ -100,3 +100,39 @@ export function printTable(rows) {
 		);
 	}
 }
+
+/**
+ * A Killer read against its labels: `cages` is nine rows of nine letters, one
+ * letter per cage, and `sums` each cage's sum by its first cell (`row,column`).
+ * `read` is `killerScanCages` of the scan: cells 0-80 and the sum or null.
+ */
+export function judgeKiller(photo, read) {
+	const letters = photo.cages.join("");
+	const truth = new Map();
+	[...letters].forEach((letter, cell) => {
+		truth.set(letter, [...(truth.get(letter) ?? []), cell]);
+	});
+	const place = (cell) => `${Math.floor(cell / 9) + 1},${(cell % 9) + 1}`;
+	const cageOf = new Map();
+	read.forEach((cage, index) => {
+		for (const cell of cage.cells) cageOf.set(cell, index);
+	});
+	const missing = [];
+	const wrong = [];
+	const split = [];
+	for (const cells of truth.values()) {
+		const first = place(cells[0]);
+		const want = photo.sums[first];
+		const parts = new Set(cells.map((cell) => cageOf.get(cell)));
+		if (parts.size > 1) split.push(first);
+		const cage = read[cageOf.get(cells[0])];
+		// The sum is judged on the read cage that starts at the cage's first cell.
+		const found = cage.cells[0] === cells[0] ? cage.sum : null;
+		if (found === null) missing.push(first);
+		else if (found !== want) wrong.push(`${first} ${want}→${found}`);
+	}
+	const merged = read.filter(
+		(cage) => new Set(cage.cells.map((cell) => letters[cell])).size > 1,
+	).length;
+	return { cages: truth.size, missing, wrong, split, merged };
+}

@@ -409,6 +409,8 @@ export const sudoku = {
 			gridLabel: "Recognized cages — tap a cell to correct its cage",
 			cellName: "Row {row}, column {col}: cage of {count}, sum {sum}",
 			cellNameNoSum: "Row {row}, column {col}: cage of {count}, no sum yet",
+			cellNameUnsure:
+				"Row {row}, column {col}: cage of {count}, sum {sum}, read with doubt",
 			unsureLines: {
 				one: "{count} unsure cage line is marked in amber. Compare it with the photo.",
 				other:
@@ -416,6 +418,10 @@ export const sudoku = {
 			},
 			allLinesSure:
 				"Every cage line read clearly. Still, compare the cages with the photo.",
+			unsureSums: {
+				one: "{count} sum read with doubt is outlined in amber.",
+				other: "{count} sums read with doubt are outlined in amber.",
+			},
 			cageLabel: {
 				one: "Cage of {count} cell",
 				other: "Cage of {count} cells",

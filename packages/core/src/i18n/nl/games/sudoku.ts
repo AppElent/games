@@ -415,13 +415,19 @@ export const sudoku = {
 			gridLabel: "Herkende kooien — tik op een vakje om de kooi te verbeteren",
 			cellName: "Rij {row}, kolom {col}: kooi van {count}, som {sum}",
 			cellNameNoSum: "Rij {row}, kolom {col}: kooi van {count}, nog geen som",
+			cellNameUnsure:
+				"Rij {row}, kolom {col}: kooi van {count}, som {sum}, met twijfel gelezen",
 			unsureLines: {
-				one: "{count} twijfelachtige kooilijn is geel gemarkeerd. Vergelijk hem met de foto.",
+				one: "{count} twijfelachtige kooilijn is in amber gemarkeerd. Vergelijk hem met de foto.",
 				other:
-					"{count} twijfelachtige kooilijnen zijn geel gemarkeerd. Vergelijk ze met de foto.",
+					"{count} twijfelachtige kooilijnen zijn in amber gemarkeerd. Vergelijk ze met de foto.",
 			},
 			allLinesSure:
 				"Elke kooilijn is duidelijk gelezen. Vergelijk de kooien toch even met de foto.",
+			unsureSums: {
+				one: "{count} met twijfel gelezen som is in amber omlijnd.",
+				other: "{count} met twijfel gelezen sommen zijn in amber omlijnd.",
+			},
 			cageLabel: {
 				one: "Kooi van {count} vakje",
 				other: "Kooi van {count} vakjes",

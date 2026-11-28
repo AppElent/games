@@ -33,6 +33,11 @@ export type CageRead = {
 	borders: CageEdge[];
 	/** Edges the read is unsure of; the verify step marks them. */
 	doubtful: CageEdge[];
+	/**
+	 * How strongly each inner edge looked like a cage line, by `edgeKey`: 0
+	 * (no dashes) to 2 (dashes on both sides). Above `BORDER_SCORE` is a line.
+	 */
+	scores?: Record<string, number>;
 	/** Where the cells are in the image the read was given. */
 	bounds: GridBounds;
 };
@@ -312,13 +317,12 @@ export function cagesFromBorders(isBorder: (edge: CageEdge) => boolean) {
 }
 
 function readWithInk(ink: Uint8Array, size: number): Omit<CageRead, "bounds"> {
-	const scores = new Map<string, number>();
-	const key = (edge: CageEdge) => `${edge.cell}${edge.side}`;
+	const scores: Record<string, number> = {};
 	const doubtful: CageEdge[] = [];
 	const borders: CageEdge[] = [];
 	for (const edge of innerEdges()) {
 		const score = edgeScore(ink, size, edge);
-		scores.set(key(edge), score);
+		scores[edgeKey(edge)] = score;
 		if (score > BORDER_SCORE) {
 			borders.push(edge);
 		}
@@ -327,11 +331,10 @@ function readWithInk(ink: Uint8Array, size: number): Omit<CageRead, "bounds"> {
 		}
 	}
 	return {
-		cages: cagesFromBorders(
-			(edge) => (scores.get(key(edge)) ?? 0) > BORDER_SCORE,
-		),
+		cages: cagesFromBorders((edge) => scores[edgeKey(edge)] > BORDER_SCORE),
 		borders,
 		doubtful,
+		scores,
 	};
 }
 
@@ -526,6 +529,8 @@ export type KillerScan = {
 	doubtful: string[];
 	/** Sum per cage, by the cage's first cell. */
 	sums: Record<number, number>;
+	/** First cells of the cages whose sum was read with doubt. */
+	unsureSums?: number[];
 };
 
 export function edgeKey(edge: CageEdge) {
@@ -547,6 +552,7 @@ export function edgeBetween(a: number, b: number): CageEdge | null {
 export function killerScanFromRead(
 	read: CageRead,
 	sums: (number | null)[],
+	unsure: boolean[] = [],
 ): KillerScan {
 	const byFirst: Record<number, number> = {};
 	read.cages.forEach((cells, index) => {
@@ -559,6 +565,9 @@ export function killerScanFromRead(
 		borders: read.borders.map(edgeKey),
 		doubtful: read.doubtful.map(edgeKey),
 		sums: byFirst,
+		unsureSums: read.cages.flatMap((cells, index) =>
+			unsure[index] ? [cells[0]] : [],
+		),
 	};
 }
 
@@ -593,7 +602,11 @@ export function toggleKillerBorder(
 			sums[Number(cell)] = sum;
 		}
 	}
-	return { ...toggled, sums };
+	return {
+		...toggled,
+		sums,
+		unsureSums: scan.unsureSums?.filter((cell) => firsts.has(cell)),
+	};
 }
 
 /** A typed or read cage sum: a whole number from 1 to 45, else null. */
@@ -623,7 +636,12 @@ export function setKillerSum(
 	} else {
 		sums[cage.cells[0]] = sum;
 	}
-	return { ...scan, sums };
+	// A sum the player typed is theirs: it is no longer unsure.
+	return {
+		...scan,
+		sums,
+		unsureSums: scan.unsureSums?.filter((cell) => cell !== cage.cells[0]),
+	};
 }
 
 export type KillerScanCheck =
@@ -661,6 +679,11 @@ export type SumInk = {
 	box: InkBox;
 	/** Row by row, `box.width` x `box.height`. */
 	mask: Uint8Array;
+	/**
+	 * The same ink, not grown: a small 0's hole stays open in it. Row by row,
+	 * as `mask`.
+	 */
+	ink: Uint8Array;
 	/** Each digit's box, left to right, in `box`'s own pixels. */
 	digits: InkBox[];
 };
@@ -873,10 +896,14 @@ export function cageSumInk(
 	const boxWidth = Math.min(width - 1, right + pad) - boxLeft + 1;
 	const boxHeight = Math.min(height - 1, bottom + pad) - boxTop + 1;
 	const mask = new Uint8Array(boxWidth * boxHeight);
+	const solid = new Uint8Array(boxWidth * boxHeight);
 	for (const piece of kept) {
 		for (const index of piece.pixels) {
 			const px = (index % width) - boxLeft;
 			const py = Math.floor(index / width) - boxTop;
+			if (px >= 0 && py >= 0 && px < boxWidth && py < boxHeight) {
+				solid[py * boxWidth + px] = 1;
+			}
 			// Grown by a pixel, so the soft edge of each stroke stays.
 			for (let dy = -1; dy <= 1; dy += 1) {
 				for (let dx = -1; dx <= 1; dx += 1) {
@@ -897,6 +924,7 @@ export function cageSumInk(
 			height: boxHeight,
 		},
 		mask,
+		ink: solid,
 		digits: [...line]
 			.sort((a, b) => a.left - b.left)
 			.map((digit) => {

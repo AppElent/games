@@ -19,7 +19,7 @@ import path from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
-import { judge, printTable, summarize, tally } from "./judge.mjs";
+import { judge, judgeKiller, printTable, summarize, tally } from "./judge.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../../../..");
@@ -85,6 +85,62 @@ function isUpright(read, truth) {
 	return nearest === 0;
 }
 
+/** The cages a read draws, one letter per cage, as nine rows. */
+function cageMap(cages) {
+	const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	const map = new Array(81).fill("?");
+	cages.forEach((cage, index) => {
+		for (const cell of cage.cells) map[cell] = letters[index % letters.length];
+	});
+	return Array.from({ length: 9 }, (_, row) =>
+		map.slice(row * 9, row * 9 + 9).join(""),
+	);
+}
+
+/**
+ * `--killer`: reads the cages and sums of every photo labelled with `cages`,
+ * and counts the sums missing or wrong and the cages split or merged.
+ */
+async function benchKiller(readKiller, killerScanCages) {
+	const totals = { cages: 0, missing: 0, wrong: 0, split: 0, merged: 0 };
+	console.log(
+		"| Photo | Cages | Sums missing | Sums wrong | Cages split | Cages merged | Lines unsure |\n| --- | --- | --- | --- | --- | --- | --- |",
+	);
+	for (const photo of labels.filter((entry) => entry.cages)) {
+		const image = await reader.prepareImage(
+			path.join(photos, `${photo.id}.jpg`),
+		);
+		const corners = flag("detect")
+			? await reader.detectGrid(image.uri)
+			: photo.corners.map(([x, y]) => ({ x, y }));
+		const read = corners
+			? await readKiller(reader, image, corners, console.error)
+			: null;
+		if (!read) {
+			console.log(`| ${photo.id} | not read as a Killer | | | | | |`);
+			continue;
+		}
+		const cages = killerScanCages(read.scan);
+		const result = judgeKiller(photo, cages);
+		totals.cages += result.cages;
+		totals.missing += result.missing.length;
+		totals.wrong += result.wrong.length;
+		totals.split += result.split.length;
+		totals.merged += result.merged;
+		console.log(
+			`| ${photo.id} | ${cages.length}/${result.cages} | ${result.missing.length} | ${result.wrong.length} | ${result.split.length} | ${result.merged} | ${read.scan.doubtful.length} |`,
+		);
+		if (flag("cells")) {
+			console.log(
+				`  missing ${result.missing.join("; ")}\n  wrong ${result.wrong.join("; ")}\n  split ${result.split.join("; ")}\n  read cages:\n    ${cageMap(cages).join("\n    ")}`,
+			);
+		}
+	}
+	console.log(
+		`| total | ${totals.cages} | ${totals.missing} | ${totals.wrong} | ${totals.split} | ${totals.merged} | |`,
+	);
+}
+
 const folder = mkdtempSync(path.join(tmpdir(), "scan-bench-"));
 const vite = await createServer({
 	configFile: false,
@@ -105,12 +161,15 @@ try {
 	const { killerScanCages } = await vite.ssrLoadModule(
 		path.join(root, "packages/core/src/sudoku-scan-cages.ts"),
 	);
+	if (flag("killer")) {
+		await benchKiller(readKiller, killerScanCages);
+	}
 	const all = [];
 	const rows = [];
 	const turns = flag("turns") ? [0, 1, 2, 3] : [0];
 	const missedTurns = [];
 	const killers = { read: 0, upright: 0, same: 0, missed: [] };
-	for (const photo of labels) {
+	for (const photo of flag("killer") ? [] : labels) {
 		const asTaken = await reader.prepareImage(
 			path.join(photos, `${photo.id}.jpg`),
 		);
@@ -186,9 +245,11 @@ try {
 			}
 		}
 	}
-	summarize(all, rows);
-	printTable(rows);
-	if (flag("turns")) {
+	if (!flag("killer")) {
+		summarize(all, rows);
+		printTable(rows);
+	}
+	if (flag("turns") && !flag("killer")) {
 		const count = labels.length * 4;
 		console.log(
 			`Turned back upright: ${count - missedTurns.length}/${count}${missedTurns.length ? ` (missed ${missedTurns.join(", ")})` : ""}`,

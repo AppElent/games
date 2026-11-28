@@ -103,12 +103,34 @@ const liveRegion = () => {
 
 const card = () => within(liveRegion());
 
+/** A fresh localStorage per test; newer Node ships an empty global one that hides jsdom's. */
+function memoryStorage(): Storage {
+	const items = new Map<string, string>();
+	return {
+		get length() {
+			return items.size;
+		},
+		clear: () => items.clear(),
+		getItem: (key) => items.get(key) ?? null,
+		key: (index) => [...items.keys()][index] ?? null,
+		removeItem: (key) => {
+			items.delete(key);
+		},
+		setItem: (key, value) => {
+			items.set(key, value);
+		},
+	};
+}
+
 describe("Sudoku hint card", () => {
 	beforeEach(() => {
 		found.hint = null;
-		localStorage.clear();
+		vi.stubGlobal("localStorage", memoryStorage());
 	});
-	afterEach(cleanup);
+	afterEach(() => {
+		cleanup();
+		vi.unstubAllGlobals();
+	});
 
 	it("says so when no step is found, and dismisses", () => {
 		play();

@@ -40,6 +40,12 @@ export const darkColors = {
 	amber: "#fbbf24",
 	amberDim: "rgba(251, 191, 36, 0.14)",
 	onAmber: "#1c1404",
+	/**
+	 * A mark the copy calls amber (a scan's unsure lines and sums), as the
+	 * web draws it with `amber-400`. Light `amber` is a text brown instead.
+	 */
+	amberMark: "#fbbf24",
+	onAmberMark: "#1c1404",
 } as const;
 
 export type Tokens = { readonly [K in keyof typeof darkColors]: string };
@@ -71,6 +77,8 @@ export const lightColors: Tokens = {
 	amber: "#92400e",
 	amberDim: "rgba(146, 64, 14, 0.09)",
 	onAmber: "#ffffff",
+	amberMark: "#c58100",
+	onAmberMark: "#000000",
 };
 
 /**

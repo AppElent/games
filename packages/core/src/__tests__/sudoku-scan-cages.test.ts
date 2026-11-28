@@ -318,4 +318,21 @@ describe("toggleKillerBorder and sums", () => {
 		const split = toggleKillerBorder(joined, edge);
 		expect(checkKillerScan(split)).toEqual({ kind: "missingSums", count: 1 });
 	});
+
+	it("keeps the sums read with doubt until the player sets them", () => {
+		const rows = Array.from({ length: 9 }, (_, row) =>
+			Array.from({ length: 9 }, (_, col) => row * 9 + col),
+		);
+		const scan = killerScanFromRead(
+			readOf(rows),
+			rows.map(() => 45),
+			rows.map((_, row) => row < 2),
+		);
+		expect(scan.unsureSums).toEqual([0, 9]);
+		// A typed sum is the player's own; a join drops the absorbed cage's.
+		expect(setKillerSum(scan, 3, 45).unsureSums).toEqual([9]);
+		expect(
+			toggleKillerBorder(scan, { cell: 0, side: "bottom" }).unsureSums,
+		).toEqual([0]);
+	});
 });
