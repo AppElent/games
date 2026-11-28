@@ -18,6 +18,7 @@ import {
 } from "./sudoku";
 import { ADVANCED_TECHNIQUES, combinations } from "./sudoku-hints-advanced";
 import { EXPERT_TECHNIQUES } from "./sudoku-hints-expert";
+import { type KillerCage, solveKiller } from "./sudoku-killer";
 
 /** Hint levels from simplest to hardest; the settings name them "Basic" up. */
 export const HINT_LEVELS = [
@@ -510,9 +511,10 @@ export type HintOptions = {
 	history?: HintHistory;
 	/**
 	 * Killer cages, when the puzzle has them: its solution is then unique only
-	 * with the cages, so the uniqueness techniques stay off.
+	 * with the cages, so the uniqueness techniques stay off and the solution
+	 * for a reveal comes from the givens and cages together.
 	 */
-	cages?: readonly unknown[];
+	cages?: readonly KillerCage[];
 	/** The hardest technique the player wants hints for. */
 	maxLevel?: HintTechniqueLevel;
 };
@@ -556,10 +558,14 @@ let uniqueCheck: {
 	solution?: SudokuGrid;
 } | null = null;
 
-function checkGivens(givens: SudokuGrid) {
-	const key = givens.join("");
+function checkGivens(givens: SudokuGrid, cages?: readonly KillerCage[]) {
+	const key = cages?.length
+		? `${givens.join("")}|${cages.map((cage) => `${cage.sum}:${cage.cells.join(",")}`).join(";")}`
+		: givens.join("");
 	if (uniqueCheck?.key !== key) {
-		const solution = solveSudoku(givens) ?? undefined;
+		const solution =
+			(cages?.length ? solveKiller(givens, cages) : solveSudoku(givens)) ??
+			undefined;
 		uniqueCheck = { key, unique: solution !== undefined, solution };
 	}
 	return uniqueCheck;
@@ -608,12 +614,12 @@ export function findHint(
 	grid: SudokuGrid,
 	options: HintOptions = {},
 ): SudokuHint | null {
-	// Killer givens are rarely unique without their cages, so only a
-	// solution the client passes is trusted there.
+	// Killer givens are rarely unique without their cages, so a Killer
+	// solution comes from the givens and cages together.
 	const solution =
 		options.solution ??
-		(!options.cages?.length && options.givens
-			? checkGivens(options.givens).solution
+		(options.givens
+			? checkGivens(options.givens, options.cages).solution
 			: undefined);
 	const mistake = findMistake(grid, { ...options, solution });
 	if (mistake) {

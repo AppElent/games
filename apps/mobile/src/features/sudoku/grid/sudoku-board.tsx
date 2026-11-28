@@ -301,21 +301,26 @@ const BoardCell = memo(function BoardCell({
 	const row = rowOf(cell);
 	const col = colOf(cell);
 
+	// A colour-marked cell keeps its mark as the fill, so a chain or
+	// colouring tone shows there as a ring instead.
+	const toneRing = marker > 0 && hintTone > 0;
 	const background = selected
 		? tokens.accentDim
-		: hintTone === 1
-			? tokens.greenDim
-			: hintTone === 2
-				? tokens.pinkDim
-				: hinted
-					? tokens.orangeDim
-					: hintLine
-						? tokens.amberDim
-						: sameDigit
-							? tokens.accentDim
-							: peer
-								? tokens.surface2
-								: "transparent";
+		: toneRing
+			? "transparent"
+			: hintTone === 1
+				? tokens.greenDim
+				: hintTone === 2
+					? tokens.pinkDim
+					: hinted
+						? tokens.orangeDim
+						: hintLine
+							? tokens.amberDim
+							: sameDigit
+								? tokens.accentDim
+								: peer
+									? tokens.surface2
+									: "transparent";
 	const digitColor = conflict
 		? tokens.danger
 		: given
@@ -397,7 +402,18 @@ const BoardCell = memo(function BoardCell({
 					{cageSum}
 				</AppText>
 			) : null}
-			{!selected && (hinted || hintTone > 0 || sameDigit || marker > 0) ? (
+			{toneRing && !selected ? (
+				<View
+					pointerEvents="none"
+					style={[
+						styles.toneRing,
+						{ borderColor: hintTone === 1 ? tokens.green : tokens.pink },
+					]}
+				/>
+			) : null}
+			{!selected &&
+			!toneRing &&
+			(hinted || hintTone > 0 || sameDigit || marker > 0) ? (
 				// The grid line beside a filled cell drops to about 2:1 in dark mode,
 				// so a hinted, same-digit or colour-marked cell carries its own 3:1 edge.
 				<View pointerEvents="none" style={styles.filledRing} />
@@ -487,6 +503,14 @@ const createStyles = (colors: Tokens) =>
 			bottom: 0,
 			borderWidth: 2,
 			borderColor: colors.accent,
+		},
+		toneRing: {
+			position: "absolute",
+			top: 0,
+			left: 0,
+			right: 0,
+			bottom: 0,
+			borderWidth: 3,
 		},
 		filledRing: {
 			position: "absolute",
