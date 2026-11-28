@@ -44,6 +44,11 @@ const TONE_RINGS = [
 	"inset-ring-3 inset-ring-pink-700 dark:inset-ring-pink-300",
 ] as const;
 
+/** A hint cell and a hint line as a ring, on a colour-marked cell. */
+const HINT_RING = "inset-ring-3 inset-ring-amber-700 dark:inset-ring-amber-300";
+const HINT_LINE_RING =
+	"inset-ring-2 inset-ring-amber-700 dark:inset-ring-amber-300/80";
+
 const CORNER_SLOTS: Record<CornerNoteSlot, string> = {
 	topLeft: "left-0.5 top-0",
 	topRight: "right-0.5 top-0",
@@ -127,13 +132,19 @@ export function SudokuBoard({
 						: undefined;
 				const colorClass = SUDOKU_COLORS[board.colors[cell] - 1]?.tint ?? "";
 				// A colour-marked cell keeps its mark as the fill, so a chain or
-				// colouring tone shows there as a ring instead.
+				// colouring tone, a hint cell or a hint line shows there as a ring.
 				const tone =
 					toneIndex === undefined || colorClass ? "" : TONE_FILLS[toneIndex];
-				const toneRing =
-					toneIndex !== undefined && colorClass && !isSelected
-						? TONE_RINGS[toneIndex]
-						: "";
+				const markRing =
+					!colorClass || isSelected
+						? ""
+						: toneIndex !== undefined
+							? TONE_RINGS[toneIndex]
+							: isHint
+								? HINT_RING
+								: isHintLine
+									? HINT_LINE_RING
+									: "";
 
 				// The board's own `border-2` is the outer edge, so cells on the edge
 				// draw no border there; box lines inside are 2px, cell lines 1px.
@@ -175,7 +186,7 @@ export function SudokuBoard({
 				// carries its own 3:1 edge: the box-line colour, one pixel inside.
 				const filledRing =
 					!modeRing &&
-					!toneRing &&
+					!markRing &&
 					(isSelected || isHint || tone || sameDigit || colorClass)
 						? "inset-ring-1 inset-ring-slate-600 dark:inset-ring-slate-300/70"
 						: "";
@@ -183,7 +194,7 @@ export function SudokuBoard({
 				// One fill per cell, so no two `bg-*` classes compete (Tailwind's
 				// stylesheet order, not the class order, would pick the winner).
 				// Order: selected, colour mark, hint tone, hint, hint line, same
-				// digit, peer. A tone on a colour-marked cell is its ring instead.
+				// digit, peer. On a colour-marked cell the tone or hint is its ring instead.
 				// The selected fill stays on a marked cell so the player can see
 				// where they are.
 				const background = isSelected
@@ -213,7 +224,7 @@ export function SudokuBoard({
 							col: col + 1,
 						})}
 						onClick={() => onSelectCell?.(cell)}
-						className={`@container relative flex items-center justify-center overflow-hidden p-0 ${borders} ${corner} ${background} ${modeRing || toneRing} ${filledRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
+						className={`@container relative flex items-center justify-center overflow-hidden p-0 ${borders} ${corner} ${background} ${modeRing || markRing} ${filledRing} focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
 					>
 						{cageEdges && !hidden ? (
 							<span
