@@ -302,11 +302,22 @@ const BoardCell = memo(function BoardCell({
 	const col = colOf(cell);
 
 	// A colour-marked cell keeps its mark as the fill, so a chain or
-	// colouring tone shows there as a ring instead.
-	const toneRing = marker > 0 && hintTone > 0;
+	// colouring tone, a hint cell or a hint line shows there as a ring.
+	const markRing =
+		marker === 0
+			? undefined
+			: hintTone === 1
+				? { borderColor: tokens.green, borderWidth: 3 }
+				: hintTone === 2
+					? { borderColor: tokens.pink, borderWidth: 3 }
+					: hinted
+						? { borderColor: tokens.orange, borderWidth: 3 }
+						: hintLine
+							? { borderColor: tokens.amberMark, borderWidth: 2 }
+							: undefined;
 	const background = selected
 		? tokens.accentDim
-		: toneRing
+		: marker > 0
 			? "transparent"
 			: hintTone === 1
 				? tokens.greenDim
@@ -402,17 +413,11 @@ const BoardCell = memo(function BoardCell({
 					{cageSum}
 				</AppText>
 			) : null}
-			{toneRing && !selected ? (
-				<View
-					pointerEvents="none"
-					style={[
-						styles.toneRing,
-						{ borderColor: hintTone === 1 ? tokens.green : tokens.pink },
-					]}
-				/>
+			{markRing && !selected ? (
+				<View pointerEvents="none" style={[styles.markRing, markRing]} />
 			) : null}
 			{!selected &&
-			!toneRing &&
+			!markRing &&
 			(hinted || hintTone > 0 || sameDigit || marker > 0) ? (
 				// The grid line beside a filled cell drops to about 2:1 in dark mode,
 				// so a hinted, same-digit or colour-marked cell carries its own 3:1 edge.
@@ -504,13 +509,12 @@ const createStyles = (colors: Tokens) =>
 			borderWidth: 2,
 			borderColor: colors.accent,
 		},
-		toneRing: {
+		markRing: {
 			position: "absolute",
 			top: 0,
 			left: 0,
 			right: 0,
 			bottom: 0,
-			borderWidth: 3,
 		},
 		filledRing: {
 			position: "absolute",

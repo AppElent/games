@@ -39,4 +39,33 @@ describe("SudokuBoard chain tones", () => {
 		expect(plain).toContain("bg-pink-300/50");
 		expect(plain).not.toContain("inset-ring-pink-700");
 	});
+
+	it("keeps the colour mark and rings a marked hint cell and hint line", () => {
+		const colors = new Array(81).fill(0);
+		colors[0] = 2;
+		colors[1] = 2;
+		render(
+			<LocaleProvider initialLocale="en">
+				<SudokuBoard
+					board={createBoardState(new Array(81).fill(0), { colors })}
+					selectedCell={null}
+					hintCells={new Set([0, 2])}
+					hintLines={new Set([1, 3])}
+				/>
+			</LocaleProvider>,
+		);
+		const hint = cellAt(1).className;
+		expect(hint).toContain("bg-emerald-500/40");
+		expect(hint).toContain("inset-ring-amber-700");
+		expect(hint).not.toContain("bg-amber-300");
+		const line = cellAt(2).className;
+		expect(line).toContain("bg-emerald-500/40");
+		expect(line).toContain("inset-ring-amber-600");
+		expect(line).not.toContain("bg-amber-300");
+		// Unmarked hint cells and hint lines keep their fills, with no ring.
+		expect(cellAt(3).className).toContain("bg-amber-300/50");
+		expect(cellAt(3).className).not.toContain("inset-ring-amber");
+		expect(cellAt(4).className).toContain("bg-amber-300/20");
+		expect(cellAt(4).className).not.toContain("inset-ring-amber");
+	});
 });
